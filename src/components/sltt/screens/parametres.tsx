@@ -15,6 +15,8 @@ import {
   Coins,
   Users,
   User,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { UserInput, UserRole } from "@/lib/store";
@@ -609,6 +611,7 @@ function SecurityTab() {
 
 function PreferencesTab() {
   const { toast } = useToast();
+  const resetAll = useStore((s) => s.resetAll);
   const [emailNotif, setEmailNotif] = useState(true);
 
   return (
@@ -703,6 +706,43 @@ function PreferencesTab() {
             <Button type="submit">Enregistrer</Button>
           </div>
         </form>
+      </Card>
+
+      <Card className="p-6 shadow-sm border-border/80 border-red-200/60">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+            <AlertTriangle className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-slate-900">
+              Réinitialiser les données
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Restaure toutes les données (dossiers, clients, écritures, stock, bons, utilisateurs)
+              à leur état initial. Cette action est irréversible.
+            </p>
+            <Button
+              variant="destructive"
+              className="mt-3 h-9"
+              onClick={() => {
+                if (
+                  confirm(
+                    "Voulez-vous vraiment réinitialiser toutes les données ? Cette action est irréversible.",
+                  )
+                ) {
+                  resetAll();
+                  toast({
+                    title: "Données réinitialisées",
+                    description: "Toutes les données ont été restaurées à l'état initial.",
+                  });
+                }
+              }}
+            >
+              <RotateCcw className="size-4" />
+              Réinitialiser les données
+            </Button>
+          </div>
+        </div>
       </Card>
     </div>
   );

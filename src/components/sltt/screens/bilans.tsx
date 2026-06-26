@@ -10,10 +10,12 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import {
-  recapParClient,
   evolutionEncaissements,
 } from "@/lib/mock-data";
-import { formatFCFA, formatFCFACompact } from "@/lib/format";
+import { useStore } from "@/lib/store";
+import { formatFCFA, formatFCFACompact, formatDateShort } from "@/lib/format";
+import { exportToCSV, printHTML } from "@/lib/export";
+import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcartValue } from "@/components/sltt/status-badge";
@@ -128,16 +130,34 @@ const periodes = [
 ];
 
 export function BilansScreen() {
+  const { toast } = useToast();
   const [periode, setPeriode] = useState("mensuel");
   const [mois, setMois] = useState("2026-01");
 
+  const ecritures = useStore((s) => s.ecritures);
+  const clients = useStore((s) => s.clients);
+
+  // Build recap per client from live store data
+  const recapParClient = useMemo(() => {
+    return clients
+      .map((c) => {
+        const clientEcritures = ecritures.filter((e) => e.clientId === c.id);
+        const investi = clientEcritures.reduce((s, e) => s + e.montantInvesti, 0);
+        const encaisse = clientEcritures.reduce((s, e) => s + e.montantPaye, 0);
+        const reste = Math.max(0, investi - encaisse);
+        const ecart = encaisse - investi;
+        return { client: c.nom, investi, encaisse, reste, ecart };
+      })
+      .filter((r) => r.investi > 0 || r.encaisse > 0);
+  }, [clients, ecritures]);
+
   const totalInvesti = useMemo(
-    () => evolutionEncaissements.reduce((s, e) => s + e.investi, 0),
-    [],
+    () => recapParClient.reduce((s, e) => s + e.investi, 0),
+    [recapParClient],
   );
   const totalEncaisse = useMemo(
-    () => evolutionEncaissements.reduce((s, e) => s + e.encaisse, 0),
-    [],
+    () => recapParClient.reduce((s, e) => s + e.encaisse, 0),
+    [recapParClient],
   );
   const totalDu = totalInvesti - totalEncaisse;
   const ecartGlobal = totalEncaisse - totalInvesti;
@@ -154,7 +174,7 @@ export function BilansScreen() {
         },
         { investi: 0, encaisse: 0, reste: 0, ecart: 0 },
       ),
-    [],
+    [recapParClient],
   );
 
   const pieData = [
@@ -163,17 +183,64 @@ export function BilansScreen() {
   ];
   const pieTotal = recapTotaux.encaisse + recapTotaux.reste;
 
+  function handleExportExcel() {
+    exportToCSV(
+      `bilans-${periode}-${mois}`,
+      [
+        { header: "Client", accessor: (r) => r.client },
+        { header: "Investi (FCFA)", accessor: (r) => r.investi },
+        { header: "Encaissé (FCFA)", accessor: (r) => r.encaisse },
+        { header: "Reste à payer (FCFA)", accessor: (r) => r.reste },
+        { header: "Écart (FCFA)", accessor: (r) => r.ecart },
+      ],
+      recapParClient,
+    );
+    toast({ title: "Export Excel généré", description: `${recapParClient.length} clients exportés.` });
+  }
+
+  function handleExportPDF() {
+    const rowsHTML = recapParClient
+      .map(
+        (r) => `<tr>
+          <td>${r.client}</td>
+          <td class="num">${formatFCFA(r.investi, false)}</td>
+          <td class="num">${formatFCFA(r.encaisse, false)}</td>
+          <td class="num">${formatFCFA(r.reste, false)}</td>
+          <td class="num">${r.ecart.toLocaleString("fr-FR")}</td>
+        </tr>`,
+      )
+      .join("");
+    printHTML(`Bilan ${periode} — ${mois}`, `
+      <h1>Bilan périodique (${periodes.find(p=>p.value===periode)?.label})</h1>
+      <div class="subtitle">Période : ${mois} · ${formatDateShort(new Date())}</div>
+      <table>
+        <thead><tr>
+          <th>Client</th><th class="num">Investi</th><th class="num">Encaissé</th>
+          <th class="num">Reste à payer</th><th class="num">Écart</th>
+        </tr></thead>
+        <tbody>${rowsHTML}</tbody>
+        <tfoot><tr class="total-row">
+          <td>Total</td>
+          <td class="num">${formatFCFA(recapTotaux.investi, false)}</td>
+          <td class="num">${formatFCFA(recapTotaux.encaisse, false)}</td>
+          <td class="num">${formatFCFA(recapTotaux.reste, false)}</td>
+          <td class="num">${recapTotaux.ecart.toLocaleString("fr-FR")}</td>
+        </tr></tfoot>
+      </table>
+    `);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Bilans périodiques"
         description="Analyse financière par période"
       >
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExportPDF} disabled={recapParClient.length === 0}>
           <FileText className="size-4" />
           Exporter PDF
         </Button>
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExportExcel} disabled={recapParClient.length === 0}>
           <FileSpreadsheet className="size-4" />
           Exporter Excel
         </Button>

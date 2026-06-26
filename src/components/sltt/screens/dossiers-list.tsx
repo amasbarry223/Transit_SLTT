@@ -18,9 +18,11 @@ import {
   calculerEcart,
   type DossierStatut,
 } from "@/lib/mock-data";
-import { formatFCFA } from "@/lib/format";
+import { formatFCFA, formatDateShort } from "@/lib/format";
+import { exportToCSV, printHTML } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
+import { useToast } from "@/hooks/use-toast";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,7 @@ const STATUT_OPTIONS: (DossierStatut | "Tous")[] = [
  */
 export function DossiersListScreen() {
   const { openDossier } = useNav();
+  const { toast } = useToast();
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
 
@@ -62,6 +65,8 @@ export function DossiersListScreen() {
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [statutFilter, setStatutFilter] = useState<string>("Tous");
   const [periode, setPeriode] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 8;
 
   const filtered = useMemo(() => {
     // Date "aujourd'hui" simulée (en cohérence avec les données mock qui
@@ -98,6 +103,65 @@ export function DossiersListScreen() {
       return true;
     });
   }, [dossiers, search, clientFilter, statutFilter, periode]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  // Clamp page to valid range (handles filter changes reducing result count)
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endIdx = Math.min(safePage * pageSize, filtered.length);
+
+  function handleExportExcel() {
+    exportToCSV(
+      `dossiers-transit-${new Date().toISOString().slice(0, 10)}`,
+      [
+        { header: "Référence", accessor: (d) => d.reference },
+        { header: "Client", accessor: (d) => d.clientNom },
+        { header: "N° BL", accessor: (d) => d.bl },
+        { header: "N° camion", accessor: (d) => d.camion },
+        { header: "Nature marchandise", accessor: (d) => d.nature },
+        { header: "Droit de douane (FCFA)", accessor: (d) => d.droitDouane },
+        { header: "Frais circuit (FCFA)", accessor: (d) => d.fraisCircuit },
+        { header: "Frais prestation (FCFA)", accessor: (d) => d.fraisPrestation },
+        { header: "Montant investi (FCFA)", accessor: (d) => d.montantInvesti },
+        { header: "Montant payé (FCFA)", accessor: (d) => d.montantPaye },
+        { header: "Reste à payer (FCFA)", accessor: (d) => Math.max(0, d.montantInvesti - d.montantPaye) },
+        { header: "Écart (FCFA)", accessor: (d) => calculerEcart(d) },
+        { header: "Statut", accessor: (d) => d.statut },
+        { header: "Date", accessor: (d) => formatDateShort(d.date) },
+      ],
+      filtered,
+    );
+    toast({ title: "Export Excel généré", description: `${filtered.length} dossiers exportés en CSV.` });
+  }
+
+  function handleExportPDF() {
+    const rowsHTML = filtered
+      .map(
+        (d) => `<tr>
+          <td>${d.reference}</td>
+          <td>${d.clientNom}</td>
+          <td>${d.bl}</td>
+          <td>${d.camion}</td>
+          <td>${d.nature}</td>
+          <td class="num">${formatFCFA(d.fraisPrestation, false)}</td>
+          <td class="num">${calculerEcart(d).toLocaleString("fr-FR")}</td>
+          <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${d.statut}</span></td>
+        </tr>`,
+      )
+      .join("");
+    printHTML("Liste des dossiers de transit", `
+      <h1>Dossiers de transit</h1>
+      <div class="subtitle">${filtered.length} dossier(s) · ${formatDateShort(new Date())}</div>
+      <table>
+        <thead><tr>
+          <th>Référence</th><th>Client</th><th>N° BL</th><th>Camion</th>
+          <th>Nature</th><th class="num">Prestation</th><th class="num">Écart</th><th>Statut</th>
+        </tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    `);
+  }
 
   return (
     <div className="space-y-6">
@@ -167,13 +231,13 @@ export function DossiersListScreen() {
             </SelectContent>
           </Select>
 
-          {/* Export buttons (visuel uniquement) */}
+          {/* Export buttons */}
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" className="h-9">
+            <Button variant="outline" className="h-9" onClick={handleExportPDF} disabled={filtered.length === 0}>
               <FileText className="size-4" />
               Exporter PDF
             </Button>
-            <Button variant="outline" className="h-9">
+            <Button variant="outline" className="h-9" onClick={handleExportExcel} disabled={filtered.length === 0}>
               <FileSpreadsheet className="size-4" />
               Exporter Excel
             </Button>
@@ -217,7 +281,7 @@ export function DossiersListScreen() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((d) => (
+              {paged.map((d) => (
                 <TableRow
                   key={d.id}
                   className="hover:bg-slate-50/60 border-b border-border"
@@ -297,38 +361,39 @@ export function DossiersListScreen() {
         <div className="flex items-center justify-between px-4 py-3 border-t border-border">
           <p className="text-sm text-slate-500">
             {filtered.length > 0
-              ? `1–${filtered.length} sur ${dossiers.length}`
-              : `0 sur ${dossiers.length}`}
+              ? `${startIdx}–${endIdx} sur ${filtered.length}`
+              : `0 sur ${filtered.length}`}
           </p>
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon"
               className="size-8"
-              disabled
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               aria-label="Page précédente"
             >
               <ChevronLeft className="size-4" />
             </Button>
-            <Button
-              size="sm"
-              className="size-8 p-0 min-w-8"
-              aria-label="Page 1"
-            >
-              1
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="size-8 p-0 min-w-8"
-              aria-label="Page 2"
-            >
-              2
-            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Button
+                key={p}
+                variant={p === safePage ? "default" : "outline"}
+                size="sm"
+                className="size-8 p-0 min-w-8"
+                onClick={() => setPage(p)}
+                aria-label={`Page ${p}`}
+                aria-current={p === safePage ? "page" : undefined}
+              >
+                {p}
+              </Button>
+            ))}
             <Button
               variant="outline"
               size="icon"
               className="size-8"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               aria-label="Page suivante"
             >
               <ChevronRight className="size-4" />
