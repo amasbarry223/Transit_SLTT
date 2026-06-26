@@ -1,0 +1,810 @@
+     1→"use client";
+     2→
+     3→import { useState } from "react";
+     4→import {
+     5→  UserPlus,
+     6→  Pencil,
+     7→  MoreHorizontal,
+     8→  Shield,
+     9→  Lock,
+    10→  KeyRound,
+    11→  RefreshCw,
+    12→  Bell,
+    13→  Globe,
+    14→  Calendar,
+    15→  Coins,
+    16→  Users,
+    17→  User,
+    18→  RotateCcw,
+    19→  AlertTriangle,
+    20→} from "lucide-react";
+    21→import { useStore } from "@/lib/store";
+    22→import type { UserInput, UserRole } from "@/lib/store";
+    23→import { formatDateShort } from "@/lib/format";
+    24→import { ToneBadge } from "@/components/sltt/status-badge";
+    25→import { useToast } from "@/hooks/use-toast";
+    26→import { Card } from "@/components/ui/card";
+    27→import { Button } from "@/components/ui/button";
+    28→import { Input } from "@/components/ui/input";
+    29→import { Label } from "@/components/ui/label";
+    30→import { Switch } from "@/components/ui/switch";
+    31→import { Checkbox } from "@/components/ui/checkbox";
+    32→import {
+    33→  Select,
+    34→  SelectContent,
+    35→  SelectItem,
+    36→  SelectTrigger,
+    37→  SelectValue,
+    38→} from "@/components/ui/select";
+    39→import {
+    40→  Sheet,
+    41→  SheetContent,
+    42→  SheetDescription,
+    43→  SheetHeader,
+    44→  SheetTitle,
+    45→  SheetFooter,
+    46→  SheetClose,
+    47→} from "@/components/ui/sheet";
+    48→import {
+    49→  Table,
+    50→  TableHeader,
+    51→  TableBody,
+    52→  TableRow,
+    53→  TableHead,
+    54→  TableCell,
+    55→} from "@/components/ui/table";
+    56→import { cn } from "@/lib/utils";
+    57→
+    58→type ParamTab = "users" | "profile" | "security" | "preferences";
+    59→
+    60→const tabs: { key: ParamTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    61→  { key: "users", label: "Utilisateurs & rôles", icon: Users },
+    62→  { key: "profile", label: "Mon profil", icon: User },
+    63→  { key: "security", label: "Sécurité", icon: Shield },
+    64→  { key: "preferences", label: "Préférences", icon: Globe },
+    65→];
+    66→
+    67→const roleTone: Record<UserRole, "red" | "blue" | "emerald" | "amber" | "indigo"> = {
+    68→  Administrateur: "red",
+    69→  "Agent de transit": "blue",
+    70→  Comptable: "emerald",
+    71→  Magasinier: "amber",
+    72→  Commercial: "indigo",
+    73→};
+    74→
+    75→const allRoles: UserRole[] = [
+    76→  "Administrateur",
+    77→  "Agent de transit",
+    78→  "Comptable",
+    79→  "Magasinier",
+    80→  "Commercial",
+    81→];
+    82→
+    83→const modulesList = [
+    84→  "Dossiers",
+    85→  "Comptabilité",
+    86→  "Stock",
+    87→  "Bons de sortie",
+    88→  "Clients",
+    89→  "Rapports",
+    90→];
+    91→
+    92→function getInitials(name: string): string {
+    93→  const words = name.trim().split(/\s+/).filter(Boolean);
+    94→  if (words.length >= 2) {
+    95→    return (words[0][0] + words[1][0]).toUpperCase();
+    96→  }
+    97→  if (words.length === 1) {
+    98→    return words[0].slice(0, 2).toUpperCase();
+    99→  }
+   100→  return "?";
+   101→}
+   102→
+   103→function generateCode(): string {
+   104→  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+   105→  let code = "";
+   106→  for (let i = 0; i < 6; i++) {
+   107→    code += chars[Math.floor(Math.random() * chars.length)];
+   108→  }
+   109→  return code;
+   110→}
+   111→
+   112→/* ------------------------------------------------------------------ */
+   113→/* SUB-COMPONENTS PER TAB                                              */
+   114→/* ------------------------------------------------------------------ */
+   115→
+   116→function UsersTab() {
+   117→  const { toast } = useToast();
+   118→  const users = useStore((s) => s.users);
+   119→  const addUser = useStore((s) => s.addUser);
+   120→  const toggleUserActive = useStore((s) => s.toggleUserActive);
+   121→
+   122→  const [sheetOpen, setSheetOpen] = useState(false);
+   123→  const [accessCode, setAccessCode] = useState(() => generateCode());
+   124→  const [nom, setNom] = useState("");
+   125→  const [email, setEmail] = useState("");
+   126→  const [role, setRole] = useState<UserRole>("Agent de transit");
+   127→  const [perms, setPerms] = useState<Record<string, boolean>>({
+   128→    Dossiers: true,
+   129→    Comptabilité: false,
+   130→    Stock: false,
+   131→    "Bons de sortie": false,
+   132→    Clients: true,
+   133→    Rapports: false,
+   134→  });
+   135→
+   136→  function refreshCode() {
+   137→    setAccessCode(generateCode());
+   138→  }
+   139→
+   140→  function resetForm() {
+   141→    setNom("");
+   142→    setEmail("");
+   143→    setRole("Agent de transit");
+   144→    setPerms({
+   145→      Dossiers: true,
+   146→      Comptabilité: false,
+   147→      Stock: false,
+   148→      "Bons de sortie": false,
+   149→      Clients: true,
+   150→      Rapports: false,
+   151→    });
+   152→    setAccessCode(generateCode());
+   153→  }
+   154→
+   155→  function handleSubmit(e: React.FormEvent) {
+   156→    e.preventDefault();
+   157→    if (!nom.trim() || !email.trim()) return;
+   158→    const permissions = Object.entries(perms)
+   159→      .filter(([, v]) => v)
+   160→      .map(([k]) => k);
+   161→    const input: UserInput = {
+   162→      nom: nom.trim(),
+   163→      email: email.trim(),
+   164→      role,
+   165→      permissions,
+   166→    };
+   167→    addUser(input);
+   168→    toast({ title: "Utilisateur créé avec succès" });
+   169→    setSheetOpen(false);
+   170→    resetForm();
+   171→  }
+   172→
+   173→  return (
+   174→    <div className="space-y-6">
+   175→      {/* Header */}
+   176→      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   177→        <div>
+   178→          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Utilisateurs</h2>
+   179→          <p className="mt-1 text-sm text-slate-500">
+   180→            Gérez les comptes, rôles et permissions de l'équipe.
+   181→          </p>
+   182→        </div>
+   183→        <Button onClick={() => setSheetOpen(true)}>
+   184→          <UserPlus className="size-4" />
+   185→          Ajouter un utilisateur
+   186→        </Button>
+   187→      </div>
+   188→
+   189→      {/* Users table */}
+   190→      <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
+   191→        <Table>
+   192→          <TableHeader>
+   193→            <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
+   194→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   195→                Nom
+   196→              </TableHead>
+   197→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   198→                E-mail
+   199→              </TableHead>
+   200→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   201→                Rôle
+   202→              </TableHead>
+   203→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   204→                Statut
+   205→              </TableHead>
+   206→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   207→                Dernière connexion
+   208→              </TableHead>
+   209→              <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
+   210→                Actions
+   211→              </TableHead>
+   212→            </TableRow>
+   213→          </TableHeader>
+   214→          <TableBody>
+   215→            {users.map((u) => (
+   216→              <TableRow
+   217→                key={u.id}
+   218→                className="hover:bg-slate-50/60 border-b border-border"
+   219→              >
+   220→                <TableCell className="py-3">
+   221→                  <div className="flex items-center gap-3">
+   222→                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xs font-bold">
+   223→                      {getInitials(u.nom)}
+   224→                    </div>
+   225→                    <span className="font-medium text-slate-900">{u.nom}</span>
+   226→                  </div>
+   227→                </TableCell>
+   228→                <TableCell className="py-3 text-slate-600">{u.email}</TableCell>
+   229→                <TableCell className="py-3">
+   230→                  <ToneBadge tone={roleTone[u.role]}>{u.role}</ToneBadge>
+   231→                </TableCell>
+   232→                <TableCell className="py-3">
+   233→                  <ToneBadge tone={u.actif ? "emerald" : "slate"}>
+   234→                    {u.actif ? "Actif" : "Inactif"}
+   235→                  </ToneBadge>
+   236→                </TableCell>
+   237→                <TableCell className="py-3 text-slate-500 tabular-nums">
+   238→                  {formatDateShort(u.derniereConnexion)}
+   239→                </TableCell>
+   240→                <TableCell className="py-3">
+   241→                  <div className="flex items-center justify-end gap-2">
+   242→                    <div className="flex items-center gap-2">
+   243→                      <Switch
+   244→                        checked={u.actif}
+   245→                        onCheckedChange={() => {
+   246→                          toggleUserActive(u.id);
+   247→                          toast({
+   248→                            title: "Statut mis à jour",
+   249→                            description: `${u.nom} est maintenant ${u.actif ? "inactif" : "actif"}.`,
+   250→                          });
+   251→                        }}
+   252→                        aria-label={`Basculer le statut de ${u.nom}`}
+   253→                      />
+   254→                    </div>
+   255→                    <Button
+   256→                      variant="ghost"
+   257→                      size="icon"
+   258→                      className="size-8 text-slate-500 hover:text-primary"
+   259→                      aria-label={`Modifier ${u.nom}`}
+   260→                      title="Modifier"
+   261→                    >
+   262→                      <Pencil className="size-4" />
+   263→                    </Button>
+   264→                    <Button
+   265→                      variant="ghost"
+   266→                      size="icon"
+   267→                      className="size-8 text-slate-500 hover:text-primary"
+   268→                      aria-label="Plus d'options"
+   269→                      title="Plus d'options"
+   270→                    >
+   271→                      <MoreHorizontal className="size-4" />
+   272→                    </Button>
+   273→                  </div>
+   274→                </TableCell>
+   275→              </TableRow>
+   276→            ))}
+   277→          </TableBody>
+   278→        </Table>
+   279→      </Card>
+   280→
+   281→      {/* Add user sheet */}
+   282→      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+   283→        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+   284→          <SheetHeader>
+   285→            <SheetTitle className="text-lg">Nouvel utilisateur</SheetTitle>
+   286→            <SheetDescription>
+   287→              Créez un compte et définissez ses permissions.
+   288→            </SheetDescription>
+   289→          </SheetHeader>
+   290→
+   291→          <form
+   292→            onSubmit={handleSubmit}
+   293→            className="flex flex-1 flex-col gap-5 px-4 py-2 overflow-y-auto"
+   294→          >
+   295→            <div className="space-y-2">
+   296→              <Label htmlFor="u-nom" className="text-sm font-medium text-slate-700">
+   297→                Nom complet
+   298→              </Label>
+   299→              <Input
+   300→                id="u-nom"
+   301→                placeholder="ex. Awa Traoré"
+   302→                required
+   303→                value={nom}
+   304→                onChange={(e) => setNom(e.target.value)}
+   305→              />
+   306→            </div>
+   307→
+   308→            <div className="space-y-2">
+   309→              <Label htmlFor="u-email" className="text-sm font-medium text-slate-700">
+   310→                E-mail
+   311→              </Label>
+   312→              <Input
+   313→                id="u-email"
+   314→                type="email"
+   315→                placeholder="awa.traore@sltt.ml"
+   316→                required
+   317→                value={email}
+   318→                onChange={(e) => setEmail(e.target.value)}
+   319→              />
+   320→            </div>
+   321→
+   322→            <div className="space-y-2">
+   323→              <Label className="text-sm font-medium text-slate-700">Rôle</Label>
+   324→              <Select
+   325→                value={role}
+   326→                onValueChange={(v) => setRole(v as UserRole)}
+   327→              >
+   328→                <SelectTrigger className="w-full">
+   329→                  <SelectValue placeholder="Sélectionner un rôle" />
+   330→                </SelectTrigger>
+   331→                <SelectContent>
+   332→                  {allRoles.map((r) => (
+   333→                    <SelectItem key={r} value={r}>
+   334→                      {r}
+   335→                    </SelectItem>
+   336→                  ))}
+   337→                </SelectContent>
+   338→              </Select>
+   339→            </div>
+   340→
+   341→            <div className="space-y-2">
+   342→              <Label className="text-sm font-medium text-slate-700">
+   343→                Code d'accès
+   344→              </Label>
+   345→              <div className="flex items-center gap-2">
+   346→                <Input
+   347→                  value={accessCode}
+   348→                  readOnly
+   349→                  className="font-mono tracking-[0.3em] text-center font-semibold text-slate-900"
+   350→                />
+   351→                <Button
+   352→                  type="button"
+   353→                  variant="outline"
+   354→                  size="icon"
+   355→                  onClick={refreshCode}
+   356→                  aria-label="Régénérer le code"
+   357→                  title="Régénérer le code"
+   358→                >
+   359→                  <RefreshCw className="size-4" />
+   360→                </Button>
+   361→              </div>
+   362→              <p className="text-xs text-slate-500">
+   363→                Code à 6 caractères, communiquez-le à l'utilisateur.
+   364→              </p>
+   365→            </div>
+   366→
+   367→            <div className="space-y-3">
+   368→              <Label className="text-sm font-medium text-slate-700">
+   369→                Permissions
+   370→              </Label>
+   371→              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 p-3 sm:grid-cols-2">
+   372→                {modulesList.map((m) => (
+   373→                  <label
+   374→                    key={m}
+   375→                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 hover:bg-white"
+   376→                  >
+   377→                    <Checkbox
+   378→                      checked={perms[m]}
+   379→                      onCheckedChange={(v) =>
+   380→                        setPerms((prev) => ({ ...prev, [m]: Boolean(v) }))
+   381→                      }
+   382→                    />
+   383→                    {m}
+   384→                  </label>
+   385→                ))}
+   386→              </div>
+   387→            </div>
+   388→          </form>
+   389→
+   390→          <SheetFooter className="flex-row justify-end gap-2 border-t border-border">
+   391→            <SheetClose asChild>
+   392→              <Button type="button" variant="outline">
+   393→                Annuler
+   394→              </Button>
+   395→            </SheetClose>
+   396→            <Button type="button" onClick={handleSubmit}>
+   397→              Créer le compte
+   398→            </Button>
+   399→          </SheetFooter>
+   400→        </SheetContent>
+   401→      </Sheet>
+   402→    </div>
+   403→  );
+   404→}
+   405→
+   406→function ProfileTab() {
+   407→  const { toast } = useToast();
+   408→  return (
+   409→    <div className="space-y-6">
+   410→      <div>
+   411→        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Mon profil</h2>
+   412→        <p className="mt-1 text-sm text-slate-500">
+   413→          Vos informations personnelles et professionnelles.
+   414→        </p>
+   415→      </div>
+   416→      <Card className="p-6 shadow-sm border-border/80">
+   417→        <form
+   418→          onSubmit={(e) => {
+   419→            e.preventDefault();
+   420→            toast({ title: "Modifications enregistrées" });
+   421→          }}
+   422→          className="space-y-5"
+   423→        >
+   424→          <div className="flex items-center gap-4">
+   425→            <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-bold">
+   426→              AT
+   427→            </div>
+   428→            <div>
+   429→              <p className="font-semibold text-slate-900">Amadou Traoré</p>
+   430→              <p className="text-sm text-slate-500">Administrateur</p>
+   431→            </div>
+   432→          </div>
+   433→
+   434→          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+   435→            <div className="space-y-2">
+   436→              <Label htmlFor="p-nom" className="text-sm font-medium text-slate-700">
+   437→                Nom complet
+   438→              </Label>
+   439→              <Input id="p-nom" defaultValue="Amadou Traoré" />
+   440→            </div>
+   441→            <div className="space-y-2">
+   442→              <Label htmlFor="p-email" className="text-sm font-medium text-slate-700">
+   443→                E-mail
+   444→              </Label>
+   445→              <Input id="p-email" type="email" defaultValue="amadou.traore@sltt.ml" />
+   446→            </div>
+   447→            <div className="space-y-2">
+   448→              <Label htmlFor="p-tel" className="text-sm font-medium text-slate-700">
+   449→                Téléphone
+   450→              </Label>
+   451→              <Input id="p-tel" defaultValue="+223 76 12 34 56" />
+   452→            </div>
+   453→            <div className="space-y-2">
+   454→              <Label htmlFor="p-poste" className="text-sm font-medium text-slate-700">
+   455→                Poste
+   456→              </Label>
+   457→              <Input id="p-poste" defaultValue="Directeur des opérations" />
+   458→            </div>
+   459→          </div>
+   460→
+   461→          <div className="flex justify-end pt-2">
+   462→            <Button type="submit">Enregistrer les modifications</Button>
+   463→          </div>
+   464→        </form>
+   465→      </Card>
+   466→    </div>
+   467→  );
+   468→}
+   469→
+   470→function SecurityTab() {
+   471→  const { toast } = useToast();
+   472→  const [autoLogout, setAutoLogout] = useState(true);
+   473→  const [twoFA, setTwoFA] = useState(false);
+   474→
+   475→  const loginLog = [
+   476→    { date: "2026-01-09T08:12:00", user: "Amadou Traoré", ip: "41.202.18.45", device: "Chrome · Windows" },
+   477→    { date: "2026-01-08T17:40:00", user: "Fatoumata Diallo", ip: "41.202.18.50", device: "Firefox · macOS" },
+   478→    { date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", ip: "154.66.12.7", device: "Safari · iPhone" },
+   479→    { date: "2026-01-07T16:20:00", user: "Oumar Cissé", ip: "41.202.18.61", device: "Chrome · Android" },
+   480→  ];
+   481→
+   482→  return (
+   483→    <div className="space-y-6">
+   484→      <div>
+   485→        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Sécurité</h2>
+   486→        <p className="mt-1 text-sm text-slate-500">
+   487→          Mot de passe, authentification et historique de connexion.
+   488→        </p>
+   489→      </div>
+   490→
+   491→      {/* Mot de passe */}
+   492→      <Card className="p-6 shadow-sm border-border/80">
+   493→        <div className="flex items-center gap-2">
+   494→          <Lock className="size-4 text-slate-500" />
+   495→          <h3 className="text-sm font-semibold text-slate-900">Mot de passe</h3>
+   496→        </div>
+   497→        <form
+   498→          onSubmit={(e) => {
+   499→            e.preventDefault();
+   500→            toast({ title: "Mot de passe mis à jour" });
+   501→          }}
+   502→          className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
+   503→        >
+   504→          <div className="space-y-2">
+   505→            <Label htmlFor="cur-pwd" className="text-sm font-medium text-slate-700">
+   506→              Mot de passe actuel
+   507→            </Label>
+   508→            <Input id="cur-pwd" type="password" placeholder="••••••••" />
+   509→          </div>
+   510→          <div className="space-y-2">
+   511→            <Label htmlFor="new-pwd" className="text-sm font-medium text-slate-700">
+   512→              Nouveau mot de passe
+   513→            </Label>
+   514→            <Input id="new-pwd" type="password" placeholder="••••••••" />
+   515→          </div>
+   516→          <div className="space-y-2">
+   517→            <Label htmlFor="conf-pwd" className="text-sm font-medium text-slate-700">
+   518→              Confirmer
+   519→            </Label>
+   520→            <Input id="conf-pwd" type="password" placeholder="••••••••" />
+   521→          </div>
+   522→          <div className="sm:col-span-3 flex justify-end">
+   523→            <Button type="submit">Mettre à jour</Button>
+   524→          </div>
+   525→        </form>
+   526→      </Card>
+   527→
+   528→      {/* Préférences de sécurité */}
+   529→      <Card className="p-6 shadow-sm border-border/80">
+   530→        <div className="flex items-center gap-2">
+   531→          <Shield className="size-4 text-slate-500" />
+   532→          <h3 className="text-sm font-semibold text-slate-900">
+   533→            Préférences de sécurité
+   534→          </h3>
+   535→        </div>
+   536→        <div className="mt-4 space-y-4">
+   537→          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
+   538→            <div>
+   539→              <p className="text-sm font-medium text-slate-900">
+   540→                Déconnexion automatique après 30 min d'inactivité
+   541→              </p>
+   542→              <p className="text-xs text-slate-500 mt-0.5">
+   543→                Protège votre session en cas d'absence prolongée.
+   544→              </p>
+   545→            </div>
+   546→            <Switch checked={autoLogout} onCheckedChange={setAutoLogout} />
+   547→          </div>
+   548→          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
+   549→            <div>
+   550→              <p className="text-sm font-medium text-slate-900">
+   551→                Authentification à deux facteurs
+   552→              </p>
+   553→              <p className="text-xs text-slate-500 mt-0.5">
+   554→                Renforcez la sécurité avec un code temporaire à la connexion.
+   555→              </p>
+   556→            </div>
+   557→            <Switch checked={twoFA} onCheckedChange={setTwoFA} />
+   558→          </div>
+   559→        </div>
+   560→      </Card>
+   561→
+   562→      {/* Journal des connexions */}
+   563→      <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
+   564→        <div className="flex items-center gap-2 border-b border-border px-5 py-3">
+   565→          <KeyRound className="size-4 text-slate-500" />
+   566→          <h3 className="text-sm font-semibold text-slate-900">
+   567→            Journal des connexions
+   568→          </h3>
+   569→        </div>
+   570→        <Table>
+   571→          <TableHeader>
+   572→            <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
+   573→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   574→                Date
+   575→              </TableHead>
+   576→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   577→                Utilisateur
+   578→              </TableHead>
+   579→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   580→                Adresse IP
+   581→              </TableHead>
+   582→              <TableHead className="text-xs font-medium uppercase text-slate-500">
+   583→                Appareil
+   584→              </TableHead>
+   585→            </TableRow>
+   586→          </TableHeader>
+   587→          <TableBody>
+   588→            {loginLog.map((row, i) => (
+   589→              <TableRow
+   590→                key={i}
+   591→                className="hover:bg-slate-50/60 border-b border-border"
+   592→              >
+   593→                <TableCell className="py-3 text-slate-600 tabular-nums">
+   594→                  {formatDateShort(row.date)}
+   595→                </TableCell>
+   596→                <TableCell className="py-3 font-medium text-slate-900">
+   597→                  {row.user}
+   598→                </TableCell>
+   599→                <TableCell className="py-3 text-slate-600 font-mono text-xs">
+   600→                  {row.ip}
+   601→                </TableCell>
+   602→                <TableCell className="py-3 text-slate-600">{row.device}</TableCell>
+   603→              </TableRow>
+   604→            ))}
+   605→          </TableBody>
+   606→        </Table>
+   607→      </Card>
+   608→    </div>
+   609→  );
+   610→}
+   611→
+   612→function PreferencesTab() {
+   613→  const { toast } = useToast();
+   614→  const resetAll = useStore((s) => s.resetAll);
+   615→  const [emailNotif, setEmailNotif] = useState(true);
+   616→
+   617→  return (
+   618→    <div className="space-y-6">
+   619→      <div>
+   620→        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Préférences</h2>
+   621→        <p className="mt-1 text-sm text-slate-500">
+   622→          Personnalisez la langue, les formats et les notifications.
+   623→        </p>
+   624→      </div>
+   625→      <Card className="p-6 shadow-sm border-border/80">
+   626→        <form
+   627→          onSubmit={(e) => {
+   628→            e.preventDefault();
+   629→            toast({ title: "Préférences enregistrées" });
+   630→          }}
+   631→          className="space-y-5"
+   632→        >
+   633→          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+   634→            <div className="space-y-2">
+   635→              <Label htmlFor="lang" className="text-sm font-medium text-slate-700">
+   636→                <span className="inline-flex items-center gap-1.5">
+   637→                  <Globe className="size-3.5 text-slate-400" />
+   638→                  Langue
+   639→                </span>
+   640→              </Label>
+   641→              <Select defaultValue="fr">
+   642→                <SelectTrigger id="lang" className="w-full">
+   643→                  <SelectValue />
+   644→                </SelectTrigger>
+   645→                <SelectContent>
+   646→                  <SelectItem value="fr">Français</SelectItem>
+   647→                  <SelectItem value="en">English</SelectItem>
+   648→                  <SelectItem value="bmb">Bambara</SelectItem>
+   649→                </SelectContent>
+   650→              </Select>
+   651→            </div>
+   652→
+   653→            <div className="space-y-2">
+   654→              <Label htmlFor="dfmt" className="text-sm font-medium text-slate-700">
+   655→                <span className="inline-flex items-center gap-1.5">
+   656→                  <Calendar className="size-3.5 text-slate-400" />
+   657→                  Format de date
+   658→                </span>
+   659→              </Label>
+   660→              <Select defaultValue="dmy">
+   661→                <SelectTrigger id="dfmt" className="w-full">
+   662→                  <SelectValue />
+   663→                </SelectTrigger>
+   664→                <SelectContent>
+   665→                  <SelectItem value="dmy">JJ/MM/AAAA</SelectItem>
+   666→                  <SelectItem value="mdy">MM/JJ/AAAA</SelectItem>
+   667→                  <SelectItem value="ymd">AAAA-MM-JJ</SelectItem>
+   668→                </SelectContent>
+   669→              </Select>
+   670→            </div>
+   671→
+   672→            <div className="space-y-2">
+   673→              <Label htmlFor="cur" className="text-sm font-medium text-slate-700">
+   674→                <span className="inline-flex items-center gap-1.5">
+   675→                  <Coins className="size-3.5 text-slate-400" />
+   676→                  Devise
+   677→                </span>
+   678→              </Label>
+   679→              <Select defaultValue="fcfa">
+   680→                <SelectTrigger id="cur" className="w-full">
+   681→                  <SelectValue />
+   682→                </SelectTrigger>
+   683→                <SelectContent>
+   684→                  <SelectItem value="fcfa">FCFA (XOF)</SelectItem>
+   685→                  <SelectItem value="eur">Euro (€)</SelectItem>
+   686→                  <SelectItem value="usd">Dollar US ($)</SelectItem>
+   687→                </SelectContent>
+   688→              </Select>
+   689→            </div>
+   690→          </div>
+   691→
+   692→          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
+   693→            <div>
+   694→              <p className="text-sm font-medium text-slate-900 inline-flex items-center gap-1.5">
+   695→                <Bell className="size-4 text-slate-400" />
+   696→                Notifications par e-mail
+   697→              </p>
+   698→              <p className="text-xs text-slate-500 mt-0.5">
+   699→                Recevez un message à chaque dossier en attente ou alerte de stock.
+   700→              </p>
+   701→            </div>
+   702→            <Switch checked={emailNotif} onCheckedChange={setEmailNotif} />
+   703→          </div>
+   704→
+   705→          <div className="flex justify-end pt-2">
+   706→            <Button type="submit">Enregistrer</Button>
+   707→          </div>
+   708→        </form>
+   709→      </Card>
+   710→
+   711→      <Card className="p-6 shadow-sm border-border/80 border-red-200/60">
+   712→        <div className="flex items-start gap-3">
+   713→          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+   714→            <AlertTriangle className="size-5" />
+   715→          </div>
+   716→          <div className="min-w-0 flex-1">
+   717→            <h3 className="text-sm font-semibold text-slate-900">
+   718→              Réinitialiser les données
+   719→            </h3>
+   720→            <p className="mt-1 text-xs text-slate-500">
+   721→              Restaure toutes les données (dossiers, clients, écritures, stock, bons, utilisateurs)
+   722→              à leur état initial. Cette action est irréversible.
+   723→            </p>
+   724→            <Button
+   725→              variant="destructive"
+   726→              className="mt-3 h-9"
+   727→              onClick={() => {
+   728→                if (
+   729→                  confirm(
+   730→                    "Voulez-vous vraiment réinitialiser toutes les données ? Cette action est irréversible.",
+   731→                  )
+   732→                ) {
+   733→                  resetAll();
+   734→                  toast({
+   735→                    title: "Données réinitialisées",
+   736→                    description: "Toutes les données ont été restaurées à l'état initial.",
+   737→                  });
+   738→                }
+   739→              }}
+   740→            >
+   741→              <RotateCcw className="size-4" />
+   742→              Réinitialiser les données
+   743→            </Button>
+   744→          </div>
+   745→        </div>
+   746→      </Card>
+   747→    </div>
+   748→  );
+   749→}
+   750→
+   751→/* ------------------------------------------------------------------ */
+   752→/* MAIN SCREEN                                                          */
+   753→/* ------------------------------------------------------------------ */
+   754→
+   755→export function ParametresScreen() {
+   756→  const [active, setActive] = useState<ParamTab>("users");
+   757→
+   758→  return (
+   759→    <div className="space-y-6">
+   760→      <div>
+   761→        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Paramètres</h1>
+   762→        <p className="mt-1 text-sm text-slate-500">
+   763→          Gérez votre compte, les utilisateurs et les préférences de l'application.
+   764→        </p>
+   765→      </div>
+   766→
+   767→      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+   768→        {/* Left sidebar */}
+   769→        <Card className="p-2 shadow-sm border-border/80 lg:col-span-1 h-fit">
+   770→          <nav className="flex flex-col gap-1">
+   771→            {tabs.map((t) => {
+   772→              const isActive = active === t.key;
+   773→              const Icon = t.icon;
+   774→              return (
+   775→                <button
+   776→                  key={t.key}
+   777→                  onClick={() => setActive(t.key)}
+   778→                  className={cn(
+   779→                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors text-left",
+   780→                    isActive
+   781→                      ? "bg-sidebar-accent text-primary font-medium"
+   782→                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+   783→                  )}
+   784→                  aria-current={isActive ? "page" : undefined}
+   785→                >
+   786→                  <Icon
+   787→                    className={cn(
+   788→                      "size-4 shrink-0",
+   789→                      isActive ? "text-primary" : "text-slate-400",
+   790→                    )}
+   791→                  />
+   792→                  <span className="truncate">{t.label}</span>
+   793→                </button>
+   794→              );
+   795→            })}
+   796→          </nav>
+   797→        </Card>
+   798→
+   799→        {/* Right content */}
+   800→        <div className="lg:col-span-3">
+   801→          {active === "users" && <UsersTab />}
+   802→          {active === "profile" && <ProfileTab />}
+   803→          {active === "security" && <SecurityTab />}
+   804→          {active === "preferences" && <PreferencesTab />}
+   805→        </div>
+   806→      </div>
+   807→    </div>
+   808→  );
+   809→}
+   810→

@@ -612,3 +612,62 @@ Stage Summary:
 - All new dialogs follow the existing form style (Label above Input, h-10
   inputs, sm:max-w-md) and include a sr-only DialogDescription for
   accessibility.
+
+---
+Task ID: WIRE-D
+Agent: full-stack-developer (Paramètres user edit + profile)
+Task: Wire user edit dialog + profile form + password change in Paramètres
+
+Work Log:
+- Added `Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
+  DialogTitle` imports from `@/components/ui/dialog` (kept existing imports
+  intact, only the new block was appended after the Sheet import).
+- UsersTab:
+  - Imported `updateUser` from the store via `useStore((s) => s.updateUser)`.
+  - Added edit dialog state: `editOpen`, `editingUserId`, `editNom`,
+    `editEmail`, `editRole`, `editPerms` (Record<string,boolean>).
+  - Added `openEditUser(id)` helper that looks up the user, pre-fills the
+    edit form fields (nom/email/role) and resets perms to a default record,
+    then opens the dialog.
+  - Added `handleEditSubmit` that builds a `UserInput` (permissions derived
+    from `editPerms`), calls `updateUser(editingUserId, input)`, toasts
+    "Utilisateur mis à jour", and closes the dialog.
+  - Wired the Pencil button `onClick` to `openEditUser(u.id)`.
+  - Rendered a new `<Dialog>` after the existing Sheet with title
+    "Modifier l'utilisateur", a sr-only `DialogDescription`, Nom/E-mail/Rôle
+    form fields, and a footer with "Annuler" (outline) + "Enregistrer"
+    (primary, `disabled={!editNom.trim()}`).
+- ProfileTab:
+  - Reads the first Administrateur user from the store to initialize the
+    controlled inputs (`pNom`, `pEmail` from store, `pTel` / `pPoste`
+    fallback to the previous hardcoded values).
+  - Replaced all four `defaultValue` Inputs with controlled `value` +
+    `onChange` Inputs.
+  - Submit handler now toasts "Profil mis à jour avec succès" (kept
+    client-only, no store mutation since it's the current user).
+  - Header name now reflects `pNom` dynamically.
+- SecurityTab:
+  - Added `curPwd`, `newPwd`, `confPwd` controlled state.
+  - Replaced the three password Inputs with controlled inputs.
+  - Submit handler now validates:
+      1) if `newPwd` is empty → destructive toast
+         "Veuillez saisir un nouveau mot de passe";
+      2) if `newPwd !== confPwd` → destructive toast
+         "Les mots de passe ne correspondent pas";
+      3) otherwise → success toast "Mot de passe mis à jour" and clears all
+         three fields.
+- No other files touched. No visual design changes — same Card/Table form
+  styling, same h-10 inputs, same Label-above-Input pattern, same French
+  copy, light theme only. "use client" kept at top of file.
+
+Stage Summary:
+- Paramètres screen now has three fully wired interactions:
+  1) The Pencil button on each user row opens a pre-filled edit dialog that
+     persists changes through `updateUser` and toasts on success.
+  2) The Profile tab form is fully controlled and gives feedback on submit.
+  3) The Security tab password form is fully controlled and validates
+     empty/confirm-password cases with destructive toasts before showing
+     success and clearing the fields.
+- All new behavior uses existing shadcn components (Dialog, Input, Label,
+  Select, Button) and the existing toast hook. No new dependencies, no
+  backend, no API routes, no visual changes.

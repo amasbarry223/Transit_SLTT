@@ -122,6 +122,7 @@ interface SLTTState {
 
   // ---- Users ----
   addUser: (input: UserInput) => User;
+  updateUser: (id: string, input: UserInput) => void;
   toggleUserActive: (id: string) => void;
 
   // ---- Reset ----
@@ -332,6 +333,13 @@ export const useStore = create<SLTTState>()(
         set((s) => ({
           users: s.users.map((u) =>
             u.id === id ? { ...u, actif: !u.actif } : u,
+          ),
+        }));
+      },
+      updateUser: (id, input) => {
+        set((s) => ({
+          users: s.users.map((u) =>
+            u.id === id ? { ...u, ...input } : u,
           ),
         }));
       },

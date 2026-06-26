@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -140,6 +141,14 @@ export function DashboardScreen() {
   const dossiers = useStore((s) => s.dossiers);
   const ecritures = useStore((s) => s.ecritures);
   const stock = useStore((s) => s.stock);
+  const [refreshing, setRefreshing] = useState(false);
+
+  function handleRefresh() {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 600);
+  }
 
   // ---- Live KPI computations ----
   const chiffreEncaisse = React.useMemo(
@@ -221,8 +230,9 @@ export function DashboardScreen() {
           size="icon"
           aria-label="Actualiser"
           title="Actualiser"
+          onClick={handleRefresh}
         >
-          <RefreshCw className="size-4" />
+          <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
         </Button>
       </PageHeader>
 

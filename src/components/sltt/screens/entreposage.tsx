@@ -11,11 +11,14 @@ import {
   History,
   ArrowDownToLine,
   ArrowUpFromLine,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 
 import { useStore } from "@/lib/store";
 import type { StockItem } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { exportToCSV, printHTML } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge, StockStatutBadge } from "@/components/sltt/status-badge";
@@ -108,6 +111,54 @@ export function EntreposageScreen() {
     setTabValue("mouvements");
   }
 
+  function handleExportStockCSV() {
+    exportToCSV(
+      `inventaire-stock-${new Date().toISOString().slice(0, 10)}`,
+      [
+        { header: "Marchandise", accessor: (s) => s.marchandise },
+        { header: "Quantité disponible", accessor: (s) => s.quantite },
+        { header: "Unité", accessor: (s) => s.unite },
+        { header: "Seuil", accessor: (s) => s.seuil },
+        { header: "Dépositaire", accessor: (s) => s.depositaire },
+        { header: "Commercial", accessor: (s) => s.commercial },
+        { header: "Somme payée (FCFA)", accessor: (s) => s.sommePayee },
+        { header: "Reste à payer (FCFA)", accessor: (s) => s.resteAPayer },
+        { header: "Statut", accessor: (s) => (s.quantite < s.seuil ? "Stock faible" : "Disponible") },
+      ],
+      stock,
+    );
+    toast({
+      title: "Inventaire exporté",
+      description: `${stock.length} articles exportés en CSV.`,
+    });
+  }
+
+  function handlePrintStock() {
+    const rowsHTML = stock
+      .map(
+        (s) => `<tr>
+          <td>${s.marchandise}</td>
+          <td class="num">${s.quantite} ${s.unite}</td>
+          <td>${s.depositaire}</td>
+          <td>${s.commercial}</td>
+          <td class="num">${formatFCFA(s.sommePayee + s.resteAPayer, false)}</td>
+          <td>${s.quantite < s.seuil ? '<span class="badge" style="background:#fee2e2;color:#991b1b">Stock faible</span>' : '<span class="badge" style="background:#d1fae5;color:#065f46">Disponible</span>'}</td>
+        </tr>`,
+      )
+      .join("");
+    printHTML("Inventaire du stock", `
+      <h1>Inventaire du stock</h1>
+      <div class="subtitle">${stock.length} article(s) · ${formatDateShort(new Date())}</div>
+      <table>
+        <thead><tr>
+          <th>Marchandise</th><th class="num">Quantité</th><th>Dépositaire</th>
+          <th>Commercial</th><th class="num">Valeur</th><th>Statut</th>
+        </tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    `);
+  }
+
   function submitEntry() {
     if (!entryStockId) return;
     const qty = parseInt(entryQty, 10);
@@ -158,6 +209,14 @@ export function EntreposageScreen() {
         >
           <PackageMinus className="size-4" />
           Sortie
+        </Button>
+        <Button variant="outline" onClick={handlePrintStock}>
+          <FileText className="size-4" />
+          <span className="hidden sm:inline">Imprimer</span>
+        </Button>
+        <Button variant="outline" onClick={handleExportStockCSV}>
+          <FileSpreadsheet className="size-4" />
+          <span className="hidden sm:inline">Exporter</span>
         </Button>
       </PageHeader>
 

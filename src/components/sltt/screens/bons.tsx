@@ -13,6 +13,7 @@ import {
 
 import { useStore, type BonMotif, type StockItem } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { printHTML } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
@@ -150,17 +151,49 @@ export function BonsScreen() {
     resetForm();
   }
 
+  function buildBonHTML(b: { reference: string; date: string; clientNom: string; marchandise: string; quantite: number; unite: string; motif: BonMotif; montant: number; statut: string }) {
+    const motifColors: Record<string, string> = {
+      Vente: "background:#dbeafe;color:#1e3a8a",
+      Livraison: "background:#e0e7ff;color:#3730a3",
+      Transfert: "background:#fef3c7;color:#92400e",
+    };
+    return `
+      <h1>Bon de sortie</h1>
+      <div class="subtitle">Référence : <strong>${b.reference}</strong> · <span class="badge" style="${motifColors[b.motif] ?? ""}">${b.motif}</span></div>
+      <table>
+        <tbody>
+          <tr><th style="width:40%">Date</th><td>${formatDateShort(b.date)}</td></tr>
+          <tr><th>Client</th><td>${b.clientNom}</td></tr>
+          <tr><th>Marchandise</th><td>${b.marchandise}</td></tr>
+          <tr><th>Quantité sortie</th><td>${b.quantite} ${b.unite}</td></tr>
+          <tr><th>Motif de sortie</th><td>${b.motif}</td></tr>
+          <tr class="total-row"><th>Montant</th><td class="num">${formatFCFA(b.montant)}</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:64px;display:flex;justify-content:space-between">
+        <div>
+          <div style="border-top:1px solid #94a3b8;width:200px;padding-top:6px;font-size:11px;color:#64748b">Signature du responsable</div>
+        </div>
+        <div>
+          <div style="border-top:1px solid #94a3b8;width:200px;padding-top:6px;font-size:11px;color:#64748b;text-align:right">Cachet SLTT</div>
+        </div>
+      </div>
+    `;
+  }
+
   function handleView(ref: string) {
-    toast({
-      title: "Visualisation",
-      description: `Bon ${ref} (démo).`,
-    });
+    const b = bons.find((x) => x.reference === ref);
+    if (!b) return;
+    printHTML(`Bon ${ref}`, buildBonHTML(b));
   }
 
   function handlePrint(ref: string) {
+    const b = bons.find((x) => x.reference === ref);
+    if (!b) return;
+    printHTML(`Bon ${ref}`, buildBonHTML(b));
     toast({
-      title: "Impression / PDF",
-      description: `Bon ${ref} — génération PDF (démo).`,
+      title: "Bon prêt à imprimer",
+      description: `${ref} — ${b.clientNom}.`,
     });
   }
 
