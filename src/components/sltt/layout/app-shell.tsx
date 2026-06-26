@@ -24,7 +24,7 @@ export function AppShell() {
         <MobileNav />
         <Topbar />
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="w-full">
             {view === "dashboard" && <DashboardScreen />}
             {view === "dossiers" && <DossiersListScreen />}
             {view === "dossier-form" && <DossierFormScreen />}
@@ -46,7 +46,7 @@ export function AppShell() {
 function AppFooter() {
   return (
     <footer className="mt-auto border-t border-border bg-white px-4 py-4 sm:px-6">
-      <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 text-xs text-slate-500 sm:flex-row">
+      <div className="flex w-full flex-col items-center justify-between gap-2 text-xs text-slate-500 sm:flex-row">
         <p>
           © 2026 SLTT — Société Traoré de Logistique, Transit et Transport.
         </p>
