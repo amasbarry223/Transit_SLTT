@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Save,
@@ -46,15 +46,28 @@ const numStr = (n: number | undefined): string =>
  * DossierFormScreen — création / édition d'un dossier de transit.
  * Lit `useNav` pour `selectedId` et `dossierFormMode`.
  * L'écart est calculé en direct : fraisPrestation − (droitDouane + fraisCircuit).
+ *
+ * Un `key` basé sur (mode, selectedId) force le remontage du formulaire interne
+ * quand on change de dossier — c'est le pattern recommandé par React pour
+ * réinitialiser l'état sans setState-in-effect.
  */
 export function DossierFormScreen() {
+  const { selectedId, dossierFormMode } = useNav();
+  return (
+    <DossierFormInner
+      key={`${dossierFormMode}-${selectedId ?? "new"}`}
+    />
+  );
+}
+
+function DossierFormInner() {
   const { selectedId, dossierFormMode, go } = useNav();
   const { toast } = useToast();
 
   const isEdit = dossierFormMode === "edit";
   const existing = isEdit && selectedId ? getDossierById(selectedId) : undefined;
 
-  // --- Form state ---
+  // --- Form state (initialisé une seule fois au montage grâce au `key`) ---
   const [clientId, setClientId] = useState<string>(existing?.clientId ?? "");
   const [nature, setNature] = useState<string>(existing?.nature ?? "");
   const [bl, setBl] = useState<string>(existing?.bl ?? "");
@@ -66,26 +79,6 @@ export function DossierFormScreen() {
   const [montantInvesti, setMontantInvesti] = useState<string>(numStr(existing?.montantInvesti));
   const [statut, setStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
-
-  // Re-synchronise le formulaire quand on change de dossier ou de mode
-  // (utile si le composant n'est pas remonté par React).
-  useEffect(() => {
-    const ex =
-      dossierFormMode === "edit" && selectedId
-        ? getDossierById(selectedId)
-        : undefined;
-    setClientId(ex?.clientId ?? "");
-    setNature(ex?.nature ?? "");
-    setBl(ex?.bl ?? "");
-    setCamion(ex?.camion ?? "");
-    setDate(ex?.date ?? "");
-    setDroitDouane(numStr(ex?.droitDouane));
-    setFraisCircuit(numStr(ex?.fraisCircuit));
-    setFraisPrestation(numStr(ex?.fraisPrestation));
-    setMontantInvesti(numStr(ex?.montantInvesti));
-    setStatut(ex?.statut ?? "En cours");
-    setNotes(ex?.notes ?? "");
-  }, [selectedId, dossierFormMode]);
 
   // --- Calculs dérivés ---
   const dN = parseAmount(droitDouane);

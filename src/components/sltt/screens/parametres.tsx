@@ -36,6 +36,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetFooter,
@@ -233,9 +234,9 @@ function UsersTab() {
         <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="text-lg">Nouvel utilisateur</SheetTitle>
-            <p className="text-sm text-slate-500">
+            <SheetDescription>
               Créez un compte et définissez ses permissions.
-            </p>
+            </SheetDescription>
           </SheetHeader>
 
           <form

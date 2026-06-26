@@ -46,6 +46,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -319,6 +320,9 @@ export function BonsScreen() {
                 BS-2026-0052
               </Badge>
             </div>
+            <DialogDescription className="sr-only">
+              Créez un bon de sortie en sélectionnant un client, une marchandise et une quantité à sortir.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
