@@ -37,28 +37,7 @@ export function AppShell() {
             {view === "parametres" && <ParametresScreen />}
           </div>
         </main>
-        <AppFooter />
       </div>
     </div>
-  );
-}
-
-function AppFooter() {
-  return (
-    <footer className="mt-auto border-t border-border bg-white px-4 py-4 sm:px-6">
-      <div className="flex w-full flex-col items-center justify-between gap-2 text-xs text-slate-500 sm:flex-row">
-        <p>
-          © 2026 SLTT — Société Traoré de Logistique, Transit et Transport.
-        </p>
-        <p className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1">
-            <span className="size-1.5 rounded-full bg-emerald-500" />
-            Accès sécurisé
-          </span>
-          <span className="text-slate-300">·</span>
-          <span>Plateforme de gestion v1.0</span>
-        </p>
-      </div>
-    </footer>
   );
 }
