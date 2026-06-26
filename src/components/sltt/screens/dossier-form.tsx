@@ -1,0 +1,517 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  Save,
+  FileText,
+  Info,
+  Wallet,
+  FolderKanban,
+  ListChecks,
+} from "lucide-react";
+
+import { useNav } from "@/lib/nav-store";
+import {
+  clients,
+  getDossierById,
+  type DossierStatut,
+} from "@/lib/mock-data";
+import { formatFCFA, parseAmount } from "@/lib/format";
+import { DossierStatutBadge } from "@/components/sltt/status-badge";
+import { useToast } from "@/hooks/use-toast";
+
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const STATUTS: DossierStatut[] = ["En cours", "Dédouané", "Livré", "Soldé"];
+const NEW_REFERENCE = "SLTT-TR-2026-0043";
+
+/** Convertit un nombre en chaîne pour un champ Input. */
+const numStr = (n: number | undefined): string =>
+  n != null ? n.toString() : "";
+
+/**
+ * DossierFormScreen — création / édition d'un dossier de transit.
+ * Lit `useNav` pour `selectedId` et `dossierFormMode`.
+ * L'écart est calculé en direct : fraisPrestation − (droitDouane + fraisCircuit).
+ */
+export function DossierFormScreen() {
+  const { selectedId, dossierFormMode, go } = useNav();
+  const { toast } = useToast();
+
+  const isEdit = dossierFormMode === "edit";
+  const existing = isEdit && selectedId ? getDossierById(selectedId) : undefined;
+
+  // --- Form state ---
+  const [clientId, setClientId] = useState<string>(existing?.clientId ?? "");
+  const [nature, setNature] = useState<string>(existing?.nature ?? "");
+  const [bl, setBl] = useState<string>(existing?.bl ?? "");
+  const [camion, setCamion] = useState<string>(existing?.camion ?? "");
+  const [date, setDate] = useState<string>(existing?.date ?? "");
+  const [droitDouane, setDroitDouane] = useState<string>(numStr(existing?.droitDouane));
+  const [fraisCircuit, setFraisCircuit] = useState<string>(numStr(existing?.fraisCircuit));
+  const [fraisPrestation, setFraisPrestation] = useState<string>(numStr(existing?.fraisPrestation));
+  const [montantInvesti, setMontantInvesti] = useState<string>(numStr(existing?.montantInvesti));
+  const [statut, setStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
+  const [notes, setNotes] = useState<string>(existing?.notes ?? "");
+
+  // Re-synchronise le formulaire quand on change de dossier ou de mode
+  // (utile si le composant n'est pas remonté par React).
+  useEffect(() => {
+    const ex =
+      dossierFormMode === "edit" && selectedId
+        ? getDossierById(selectedId)
+        : undefined;
+    setClientId(ex?.clientId ?? "");
+    setNature(ex?.nature ?? "");
+    setBl(ex?.bl ?? "");
+    setCamion(ex?.camion ?? "");
+    setDate(ex?.date ?? "");
+    setDroitDouane(numStr(ex?.droitDouane));
+    setFraisCircuit(numStr(ex?.fraisCircuit));
+    setFraisPrestation(numStr(ex?.fraisPrestation));
+    setMontantInvesti(numStr(ex?.montantInvesti));
+    setStatut(ex?.statut ?? "En cours");
+    setNotes(ex?.notes ?? "");
+  }, [selectedId, dossierFormMode]);
+
+  // --- Calculs dérivés ---
+  const dN = parseAmount(droitDouane);
+  const fN = parseAmount(fraisCircuit);
+  const pN = parseAmount(fraisPrestation);
+  const iN = parseAmount(montantInvesti);
+  const montantPaye = existing?.montantPaye ?? 0;
+
+  const ecart = useMemo(
+    () => pN - (dN + fN),
+    [pN, dN, fN],
+  );
+  const reste = useMemo(
+    () => Math.max(0, iN - montantPaye),
+    [iN, montantPaye],
+  );
+
+  const reference = existing?.reference ?? NEW_REFERENCE;
+
+  // --- Cas : dossier introuvable en édition ---
+  if (isEdit && selectedId && !existing) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <div className="size-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+          <Info className="size-7" />
+        </div>
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Dossier introuvable
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Le dossier demandé n&apos;existe pas ou a été supprimé.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => go("dossiers")}>
+          <ArrowLeft className="size-4" />
+          Retour à la liste
+        </Button>
+      </div>
+    );
+  }
+
+  const handleSave = () => {
+    toast({
+      title: "Succès",
+      description: "Dossier enregistré avec succès",
+    });
+    go("dossiers");
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Back button */}
+      <Button
+        variant="ghost"
+        className="text-slate-500 hover:text-slate-900 -ml-2"
+        onClick={() => go("dossiers")}
+      >
+        <ArrowLeft className="size-4" />
+        Retour à la liste
+      </Button>
+
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {isEdit ? `Dossier ${reference}` : "Nouveau dossier de transit"}
+          </h1>
+          <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-xs font-mono">
+            {reference}
+          </span>
+          <DossierStatutBadge statut={statut} />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => go("dossiers")}>
+            Annuler
+          </Button>
+          <Button onClick={handleSave}>
+            <Save className="size-4" />
+            Enregistrer
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ===== Left / main column ===== */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* --- Informations générales --- */}
+          <Card className="p-5 shadow-sm border-border/80">
+            <SectionTitle
+              icon={<FolderKanban className="size-4" />}
+              tone="blue"
+              title="Informations générales"
+              description="Client et caractéristiques de la marchandise"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Client">
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger className="w-full h-10" aria-label="Sélectionner un client">
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field label="Nature de la marchandise">
+                <Input
+                  className="h-10"
+                  value={nature}
+                  onChange={(e) => setNature(e.target.value)}
+                  placeholder="Ex. Matériel électronique"
+                />
+              </Field>
+
+              <Field label="N° de BL">
+                <Input
+                  className="h-10"
+                  value={bl}
+                  onChange={(e) => setBl(e.target.value)}
+                  placeholder="BL-0000"
+                />
+              </Field>
+
+              <Field label="N° du camion">
+                <Input
+                  className="h-10"
+                  value={camion}
+                  onChange={(e) => setCamion(e.target.value)}
+                  placeholder="Ex. RJ 4521 KM"
+                />
+              </Field>
+
+              <Field label="Date">
+                <Input
+                  type="date"
+                  className="h-10"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </Field>
+            </div>
+          </Card>
+
+          {/* --- Montants --- */}
+          <Card className="p-5 shadow-sm border-border/80">
+            <SectionTitle
+              icon={<Wallet className="size-4" />}
+              tone="emerald"
+              title="Montants (FCFA)"
+              description="Saisissez les montants — l'écart est calculé automatiquement"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <AmountField
+                label="Droit de douane"
+                value={droitDouane}
+                onChange={setDroitDouane}
+              />
+              <AmountField
+                label="Frais de circuit global"
+                value={fraisCircuit}
+                onChange={setFraisCircuit}
+              />
+              <AmountField
+                label="Frais de prestation"
+                value={fraisPrestation}
+                onChange={setFraisPrestation}
+              />
+              <AmountField
+                label="Montant investi"
+                value={montantInvesti}
+                onChange={setMontantInvesti}
+              />
+
+              {/* Écart calculé — pleine largeur */}
+              <div className="sm:col-span-2">
+                <div
+                  className={`rounded-lg border px-4 py-3 flex items-center justify-between gap-4 ${
+                    ecart >= 0
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                      : "bg-red-50 border-red-200 text-red-700"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                      Écart calculé automatiquement
+                    </div>
+                    <div className="text-xs opacity-70 mt-0.5">
+                      Prestation − (Droit de douane + Frais de circuit)
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold tabular-nums whitespace-nowrap">
+                    {ecart >= 0 ? "+" : ""}
+                    {formatFCFA(ecart)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* --- Suivi --- */}
+          <Card className="p-5 shadow-sm border-border/80">
+            <SectionTitle
+              icon={<ListChecks className="size-4" />}
+              tone="indigo"
+              title="Suivi"
+              description="Statut du dossier et observations internes"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Statut">
+                <Select
+                  value={statut}
+                  onValueChange={(v) => setStatut(v as DossierStatut)}
+                >
+                  <SelectTrigger className="w-full h-10" aria-label="Sélectionner un statut">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUTS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <div className="sm:col-span-2">
+                <Field label="Notes">
+                  <Textarea
+                    className="min-h-24"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Observations, particularités du dossier…"
+                  />
+                </Field>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* ===== Right summary column ===== */}
+        <div className="lg:col-span-1">
+          <div className="lg:sticky lg:top-24 space-y-4">
+            <Card className="p-5 shadow-sm border-border/80">
+              <SectionTitle
+                icon={<Info className="size-4" />}
+                tone="amber"
+                title="Récapitulatif"
+                description="Synthèse des montants saisis"
+              />
+
+              <div className="divide-y divide-border">
+                <SummaryRow
+                  label="Frais prestation"
+                  value={formatFCFA(pN)}
+                />
+                <SummaryRow
+                  label="Montant investi"
+                  value={formatFCFA(iN)}
+                />
+                <SummaryRow
+                  label="Reste à payer"
+                  value={formatFCFA(reste)}
+                  tone="amber"
+                />
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="text-xs text-slate-500 mb-1">Écart</div>
+                <div
+                  className={`text-2xl font-bold tabular-nums ${
+                    ecart >= 0 ? "text-emerald-600" : "text-red-600"
+                  }`}
+                >
+                  {ecart >= 0 ? "+" : ""}
+                  {formatFCFA(ecart)}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  {ecart >= 0
+                    ? "Marge positive sur ce dossier."
+                    : "Marge négative — à surveiller."}
+                </p>
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="flex flex-col gap-2">
+                <Button className="w-full" onClick={handleSave}>
+                  <Save className="size-4" />
+                  Enregistrer le dossier
+                </Button>
+                <Button variant="outline" className="w-full">
+                  <FileText className="size-4" />
+                  Générer le PDF
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sous-composants                                                     */
+/* ------------------------------------------------------------------ */
+
+const toneMap: Record<
+  "blue" | "emerald" | "amber" | "indigo",
+  string
+> = {
+  blue: "bg-blue-50 text-blue-600",
+  emerald: "bg-emerald-50 text-emerald-600",
+  amber: "bg-amber-50 text-amber-600",
+  indigo: "bg-indigo-50 text-indigo-600",
+};
+
+function SectionTitle({
+  icon,
+  title,
+  description,
+  tone,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  tone: "blue" | "emerald" | "amber" | "indigo";
+}) {
+  return (
+    <div className="flex items-start gap-2.5 mb-4">
+      <span
+        className={`flex size-7 items-center justify-center rounded-md shrink-0 ${toneMap[tone]}`}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        {description && (
+          <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col">
+      <Label className="text-sm font-medium text-slate-700 mb-1.5">
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+function AmountField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col">
+      <Label className="text-sm font-medium text-slate-700 mb-1.5">
+        {label}
+      </Label>
+      <div className="relative">
+        <Input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          className="h-10 text-right tabular-nums pr-14"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="0"
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">
+          FCFA
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "amber";
+}) {
+  if (tone === "amber") {
+    return (
+      <div className="flex items-center justify-between py-3 first:pt-0">
+        <span className="text-sm font-medium text-amber-700">{label}</span>
+        <span className="text-sm font-semibold tabular-nums text-amber-700">
+          {value}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center justify-between py-3 first:pt-0">
+      <span className="text-sm text-slate-600">{label}</span>
+      <span className="text-sm font-semibold tabular-nums text-slate-900">
+        {value}
+      </span>
+    </div>
+  );
+}

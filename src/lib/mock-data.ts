@@ -1,0 +1,849 @@
+/**
+ * Mock data for the SLTT application.
+ * All amounts are in FCFA. All text in French.
+ */
+
+export type DossierStatut = "En cours" | "Dédouané" | "Livré" | "Soldé";
+export type PaiementMode =
+  | "Espèces"
+  | "Virement"
+  | "Mobile Money"
+  | "Chèque";
+export type EcritureStatut = "Soldé" | "En attente";
+export type StockStatut = "Disponible" | "Stock faible";
+export type BonMotif = "Vente" | "Livraison" | "Transfert";
+export type ClientType = "Particulier" | "Entreprise";
+export type UserRole =
+  | "Administrateur"
+  | "Agent de transit"
+  | "Comptable"
+  | "Magasinier"
+  | "Commercial";
+
+export interface Client {
+  id: string;
+  nom: string;
+  type: ClientType;
+  telephone: string;
+  email: string;
+  adresse: string;
+  nbDossiers: number;
+  totalDu: number;
+  totalPaye: number;
+}
+
+export interface Dossier {
+  id: string;
+  reference: string;
+  clientId: string;
+  clientNom: string;
+  bl: string;
+  camion: string;
+  nature: string;
+  droitDouane: number;
+  fraisCircuit: number;
+  fraisPrestation: number;
+  montantInvesti: number;
+  montantPaye: number;
+  statut: DossierStatut;
+  date: string;
+  notes?: string;
+}
+
+export interface Ecriture {
+  id: string;
+  date: string;
+  clientId: string;
+  clientNom: string;
+  montantInvesti: number;
+  montantPaye: number;
+  modePaiement: PaiementMode;
+  note?: string;
+}
+
+export interface StockItem {
+  id: string;
+  marchandise: string;
+  quantite: number;
+  unite: string;
+  seuil: number;
+  depositaire: string;
+  commercial: string;
+  sommePayee: number;
+  resteAPayer: number;
+}
+
+export interface Mouvement {
+  id: string;
+  date: string;
+  type: "Entrée" | "Sortie";
+  marchandise: string;
+  quantite: number;
+  unite: string;
+  responsable: string;
+  bonRef?: string;
+}
+
+export interface BonSortie {
+  id: string;
+  reference: string;
+  date: string;
+  clientId: string;
+  clientNom: string;
+  marchandise: string;
+  quantite: number;
+  unite: string;
+  motif: BonMotif;
+  montant: number;
+  statut: "Validé" | "Brouillon";
+}
+
+export interface User {
+  id: string;
+  nom: string;
+  email: string;
+  role: UserRole;
+  actif: boolean;
+  derniereConnexion: string;
+}
+
+export interface AppAlert {
+  id: string;
+  niveau: "danger" | "warning";
+  message: string;
+  detail: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* CLIENTS                                                              */
+/* ------------------------------------------------------------------ */
+
+export const clients: Client[] = [
+  {
+    id: "C-001",
+    nom: "Société des Établissements Diallo",
+    type: "Entreprise",
+    telephone: "+223 76 12 34 56",
+    email: "contact@diallo-sa.ml",
+    adresse: "Av. de l'Indépendance, Bamako",
+    nbDossiers: 8,
+    totalDu: 1_250_000,
+    totalPaye: 9_800_000,
+  },
+  {
+    id: "C-002",
+    nom: "Traoré & Frères Commerce",
+    type: "Entreprise",
+    telephone: "+223 65 98 76 54",
+    email: "traorefreres@gmail.com",
+    adresse: "Rue 30, Hamdallaye, Bamako",
+    nbDossiers: 5,
+    totalDu: 680_000,
+    totalPaye: 4_200_000,
+  },
+  {
+    id: "C-003",
+    nom: "Aïssata Koné",
+    type: "Particulier",
+    telephone: "+223 90 11 22 33",
+    email: "aissata.kone@orange.ml",
+    adresse: "Magnambougou, Bamako",
+    nbDossiers: 2,
+    totalDu: 0,
+    totalPaye: 1_350_000,
+  },
+  {
+    id: "C-004",
+    nom: "Groupe Keïta Distribution",
+    type: "Entreprise",
+    telephone: "+223 78 44 55 66",
+    email: "direction@keita-group.ml",
+    adresse: "Zone Industrielle, Ségou",
+    nbDossiers: 11,
+    totalDu: 920_000,
+    totalPaye: 12_400_000,
+  },
+  {
+    id: "C-005",
+    nom: "Boutique Cissé Import",
+    type: "Entreprise",
+    telephone: "+223 67 77 88 99",
+    email: "cisse.import@gmail.com",
+    adresse: "Marché Médine, Bamako",
+    nbDossiers: 3,
+    totalDu: 350_000,
+    totalPaye: 2_100_000,
+  },
+  {
+    id: "C-006",
+    nom: "Moussa Diarra",
+    type: "Particulier",
+    telephone: "+223 91 23 45 67",
+    email: "moussa.diarra@yahoo.fr",
+    adresse: "Kalaban Coura, Bamako",
+    nbDossiers: 1,
+    totalDu: 0,
+    totalPaye: 780_000,
+  },
+  {
+    id: "C-007",
+    nom: "Sahel Agro Industries",
+    type: "Entreprise",
+    telephone: "+223 80 00 11 22",
+    email: "contact@sahelagro.ml",
+    adresse: "Route de Koulikoro, Bamako",
+    nbDossiers: 6,
+    totalDu: 0,
+    totalPaye: 7_650_000,
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* DOSSIERS DE TRANSIT                                                  */
+/* ------------------------------------------------------------------ */
+
+export const dossiers: Dossier[] = [
+  {
+    id: "D-0042",
+    reference: "SLTT-TR-2026-0042",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    bl: "BL-7821",
+    camion: "RJ 4521 KM",
+    nature: "Matériel électronique",
+    droitDouane: 1_200_000,
+    fraisCircuit: 450_000,
+    fraisPrestation: 850_000,
+    montantInvesti: 2_500_000,
+    montantPaye: 1_800_000,
+    statut: "En cours",
+    date: "2026-01-08",
+    notes: "Conteneur 40 pieds, dédouanement en cours.",
+  },
+  {
+    id: "D-0041",
+    reference: "SLTT-TR-2026-0041",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta Distribution",
+    bl: "BL-7790",
+    camion: "KN 8890 PQ",
+    nature: "Sacs de ciment",
+    droitDouane: 980_000,
+    fraisCircuit: 320_000,
+    fraisPrestation: 600_000,
+    montantInvesti: 1_900_000,
+    montantPaye: 1_900_000,
+    statut: "Soldé",
+    date: "2026-01-05",
+  },
+  {
+    id: "D-0040",
+    reference: "SLTT-TR-2026-0040",
+    clientId: "C-002",
+    clientNom: "Traoré & Frères Commerce",
+    bl: "BL-7765",
+    camion: "LM 3344 RT",
+    nature: "Pièces automobiles",
+    droitDouane: 1_500_000,
+    fraisCircuit: 500_000,
+    fraisPrestation: 900_000,
+    montantInvesti: 2_900_000,
+    montantPaye: 2_200_000,
+    statut: "Dédouané",
+    date: "2026-01-03",
+  },
+  {
+    id: "D-0039",
+    reference: "SLTT-TR-2026-0039",
+    clientId: "C-005",
+    clientNom: "Boutique Cissé Import",
+    bl: "BL-7740",
+    camion: "OP 1199 MN",
+    nature: "Textiles & vêtements",
+    droitDouane: 600_000,
+    fraisCircuit: 200_000,
+    fraisPrestation: 350_000,
+    montantInvesti: 1_150_000,
+    montantPaye: 800_000,
+    statut: "Livré",
+    date: "2026-01-02",
+  },
+  {
+    id: "D-0038",
+    reference: "SLTT-TR-2026-0038",
+    clientId: "C-007",
+    clientNom: "Sahel Agro Industries",
+    bl: "BL-7712",
+    camion: "QR 5566 ST",
+    nature: "Équipements agricoles",
+    droitDouane: 2_100_000,
+    fraisCircuit: 700_000,
+    fraisPrestation: 1_200_000,
+    montantInvesti: 4_000_000,
+    montantPaye: 4_000_000,
+    statut: "Soldé",
+    date: "2025-12-28",
+  },
+  {
+    id: "D-0037",
+    reference: "SLTT-TR-2026-0037",
+    clientId: "C-003",
+    clientNom: "Aïssata Koné",
+    bl: "BL-7688",
+    camion: "UV 2233 WX",
+    nature: "Électroménager",
+    droitDouane: 450_000,
+    fraisCircuit: 150_000,
+    fraisPrestation: 300_000,
+    montantInvesti: 900_000,
+    montantPaye: 900_000,
+    statut: "Soldé",
+    date: "2025-12-22",
+  },
+  {
+    id: "D-0036",
+    reference: "SLTT-TR-2026-0036",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    bl: "BL-7655",
+    camion: "RJ 4521 KM",
+    nature: "Conserves alimentaires",
+    droitDouane: 880_000,
+    fraisCircuit: 280_000,
+    fraisPrestation: 520_000,
+    montantInvesti: 1_680_000,
+    montantPaye: 1_300_000,
+    statut: "En cours",
+    date: "2025-12-18",
+  },
+  {
+    id: "D-0035",
+    reference: "SLTT-TR-2026-0035",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta Distribution",
+    bl: "BL-7621",
+    camion: "KN 8890 PQ",
+    nature: "Carburant & lubrifiants",
+    droitDouane: 1_750_000,
+    fraisCircuit: 560_000,
+    fraisPrestation: 980_000,
+    montantInvesti: 3_290_000,
+    montantPaye: 2_900_000,
+    statut: "Dédouané",
+    date: "2025-12-15",
+  },
+  {
+    id: "D-0034",
+    reference: "SLTT-TR-2026-0034",
+    clientId: "C-002",
+    clientNom: "Traoré & Frères Commerce",
+    bl: "BL-7599",
+    camion: "LM 3344 RT",
+    nature: "Matériel informatique",
+    droitDouane: 1_320_000,
+    fraisCircuit: 410_000,
+    fraisPrestation: 720_000,
+    montantInvesti: 2_450_000,
+    montantPaye: 2_450_000,
+    statut: "Soldé",
+    date: "2025-12-10",
+  },
+  {
+    id: "D-0033",
+    reference: "SLTT-TR-2026-0033",
+    clientId: "C-006",
+    clientNom: "Moussa Diarra",
+    bl: "BL-7570",
+    camion: "YZ 7788 AB",
+    nature: "Mobilier domestique",
+    droitDouane: 380_000,
+    fraisCircuit: 120_000,
+    fraisPrestation: 280_000,
+    montantInvesti: 780_000,
+    montantPaye: 780_000,
+    statut: "Soldé",
+    date: "2025-12-05",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* ÉCRITURES COMPTABLES                                                 */
+/* ------------------------------------------------------------------ */
+
+export const ecritures: Ecriture[] = [
+  {
+    id: "E-1001",
+    date: "2026-01-08",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    montantInvesti: 2_500_000,
+    montantPaye: 1_800_000,
+    modePaiement: "Virement",
+    note: "Acompte dossier SLTT-TR-2026-0042",
+  },
+  {
+    id: "E-1000",
+    date: "2026-01-05",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta Distribution",
+    montantInvesti: 1_900_000,
+    montantPaye: 1_900_000,
+    modePaiement: "Virement",
+    note: "Solde dossier SLTT-TR-2026-0041",
+  },
+  {
+    id: "E-0999",
+    date: "2026-01-03",
+    clientId: "C-002",
+    clientNom: "Traoré & Frères Commerce",
+    montantInvesti: 2_900_000,
+    montantPaye: 2_200_000,
+    modePaiement: "Mobile Money",
+    note: "Acompte dossier SLTT-TR-2026-0040",
+  },
+  {
+    id: "E-0998",
+    date: "2026-01-02",
+    clientId: "C-005",
+    clientNom: "Boutique Cissé Import",
+    montantInvesti: 1_150_000,
+    montantPaye: 800_000,
+    modePaiement: "Espèces",
+    note: "Acompte dossier SLTT-TR-2026-0039",
+  },
+  {
+    id: "E-0997",
+    date: "2025-12-28",
+    clientId: "C-007",
+    clientNom: "Sahel Agro Industries",
+    montantInvesti: 4_000_000,
+    montantPaye: 4_000_000,
+    modePaiement: "Virement",
+    note: "Solde dossier SLTT-TR-2026-0038",
+  },
+  {
+    id: "E-0996",
+    date: "2025-12-22",
+    clientId: "C-003",
+    clientNom: "Aïssata Koné",
+    montantInvesti: 900_000,
+    montantPaye: 900_000,
+    modePaiement: "Mobile Money",
+  },
+  {
+    id: "E-0995",
+    date: "2025-12-18",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    montantInvesti: 1_680_000,
+    montantPaye: 1_300_000,
+    modePaiement: "Chèque",
+  },
+  {
+    id: "E-0994",
+    date: "2025-12-15",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta Distribution",
+    montantInvesti: 3_290_000,
+    montantPaye: 2_900_000,
+    modePaiement: "Virement",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* STOCK & MOUVEMENTS                                                   */
+/* ------------------------------------------------------------------ */
+
+export const stock: StockItem[] = [
+  {
+    id: "S-01",
+    marchandise: "Sacs de ciment 50kg",
+    quantite: 420,
+    unite: "sacs",
+    seuil: 100,
+    depositaire: "Entrepôt A — Bamako",
+    commercial: "Amadou Traoré",
+    sommePayee: 3_500_000,
+    resteAPayer: 500_000,
+  },
+  {
+    id: "S-02",
+    marchandise: "Riz parfumé 25kg",
+    quantite: 65,
+    unite: "sacs",
+    seuil: 80,
+    depositaire: "Entrepôt B — Bamako",
+    commercial: "Fatoumata Diallo",
+    sommePayee: 2_200_000,
+    resteAPayer: 0,
+  },
+  {
+    id: "S-03",
+    marchandise: "Huile végétale 20L",
+    quantite: 180,
+    unite: "bidons",
+    seuil: 60,
+    depositaire: "Entrepôt A — Bamako",
+    commercial: "Amadou Traoré",
+    sommePayee: 1_800_000,
+    resteAPayer: 300_000,
+  },
+  {
+    id: "S-04",
+    marchandise: "Pièces automobiles diverses",
+    quantite: 28,
+    unite: "lots",
+    seuil: 40,
+    depositaire: "Entrepôt C — Ségou",
+    commercial: "Ibrahim Keïta",
+    sommePayee: 4_600_000,
+    resteAPayer: 1_200_000,
+  },
+  {
+    id: "S-05",
+    marchandise: "Matériel électronique",
+    quantite: 95,
+    unite: "unités",
+    seuil: 50,
+    depositaire: "Entrepôt A — Bamako",
+    commercial: "Fatoumata Diallo",
+    sommePayee: 5_300_000,
+    resteAPayer: 0,
+  },
+  {
+    id: "S-06",
+    marchandise: "Textiles & vêtements",
+    quantite: 32,
+    unite: "balles",
+    seuil: 50,
+    depositaire: "Entrepôt B — Bamako",
+    commercial: "Ibrahim Keïta",
+    sommePayee: 1_950_000,
+    resteAPayer: 200_000,
+  },
+  {
+    id: "S-07",
+    marchandise: "Conserves alimentaires",
+    quantite: 540,
+    unite: "cartons",
+    seuil: 150,
+    depositaire: "Entrepôt A — Bamako",
+    commercial: "Amadou Traoré",
+    sommePayee: 2_850_000,
+    resteAPayer: 1_000_000,
+  },
+];
+
+export const mouvements: Mouvement[] = [
+  {
+    id: "M-021",
+    date: "2026-01-09",
+    type: "Sortie",
+    marchandise: "Sacs de ciment 50kg",
+    quantite: 80,
+    unite: "sacs",
+    responsable: "Oumar Cissé",
+    bonRef: "BS-2026-0051",
+  },
+  {
+    id: "M-020",
+    date: "2026-01-08",
+    type: "Entrée",
+    marchandise: "Matériel électronique",
+    quantite: 120,
+    unite: "unités",
+    responsable: "Oumar Cissé",
+    bonRef: "—",
+  },
+  {
+    id: "M-019",
+    date: "2026-01-07",
+    type: "Sortie",
+    marchandise: "Huile végétale 20L",
+    quantite: 30,
+    unite: "bidons",
+    responsable: "Oumar Cissé",
+    bonRef: "BS-2026-0050",
+  },
+  {
+    id: "M-018",
+    date: "2026-01-05",
+    type: "Entrée",
+    marchandise: "Conserves alimentaires",
+    quantite: 200,
+    unite: "cartons",
+    responsable: "Oumar Cissé",
+  },
+  {
+    id: "M-017",
+    date: "2026-01-03",
+    type: "Sortie",
+    marchandise: "Textiles & vêtements",
+    quantite: 18,
+    unite: "balles",
+    responsable: "Oumar Cissé",
+    bonRef: "BS-2026-0049",
+  },
+  {
+    id: "M-016",
+    date: "2025-12-30",
+    type: "Entrée",
+    marchandise: "Pièces automobiles diverses",
+    quantite: 45,
+    unite: "lots",
+    responsable: "Oumar Cissé",
+  },
+  {
+    id: "M-015",
+    date: "2025-12-28",
+    type: "Sortie",
+    marchandise: "Riz parfumé 25kg",
+    quantite: 35,
+    unite: "sacs",
+    responsable: "Oumar Cissé",
+    bonRef: "BS-2026-0048",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* BONS DE SORTIE                                                       */
+/* ------------------------------------------------------------------ */
+
+export const bonsSortie: BonSortie[] = [
+  {
+    id: "B-0051",
+    reference: "BS-2026-0051",
+    date: "2026-01-09",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta Distribution",
+    marchandise: "Sacs de ciment 50kg",
+    quantite: 80,
+    unite: "sacs",
+    motif: "Vente",
+    montant: 1_600_000,
+    statut: "Validé",
+  },
+  {
+    id: "B-0050",
+    reference: "BS-2026-0050",
+    date: "2026-01-07",
+    clientId: "C-002",
+    clientNom: "Traoré & Frères Commerce",
+    marchandise: "Huile végétale 20L",
+    quantite: 30,
+    unite: "bidons",
+    motif: "Vente",
+    montant: 540_000,
+    statut: "Validé",
+  },
+  {
+    id: "B-0049",
+    reference: "BS-2026-0049",
+    date: "2026-01-03",
+    clientId: "C-005",
+    clientNom: "Boutique Cissé Import",
+    marchandise: "Textiles & vêtements",
+    quantite: 18,
+    unite: "balles",
+    motif: "Vente",
+    montant: 720_000,
+    statut: "Validé",
+  },
+  {
+    id: "B-0048",
+    reference: "BS-2026-0048",
+    date: "2025-12-28",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    marchandise: "Riz parfumé 25kg",
+    quantite: 35,
+    unite: "sacs",
+    motif: "Livraison",
+    montant: 875_000,
+    statut: "Validé",
+  },
+  {
+    id: "B-0047",
+    reference: "BS-2026-0047",
+    date: "2025-12-20",
+    clientId: "C-007",
+    clientNom: "Sahel Agro Industries",
+    marchandise: "Conserves alimentaires",
+    quantite: 120,
+    unite: "cartons",
+    motif: "Transfert",
+    montant: 1_440_000,
+    statut: "Validé",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* UTILISATEURS                                                         */
+/* ------------------------------------------------------------------ */
+
+export const users: User[] = [
+  {
+    id: "U-01",
+    nom: "Amadou Traoré",
+    email: "amadou.traore@sltt.ml",
+    role: "Administrateur",
+    actif: true,
+    derniereConnexion: "2026-01-09T08:12:00",
+  },
+  {
+    id: "U-02",
+    nom: "Fatoumata Diallo",
+    email: "fatoumata.diallo@sltt.ml",
+    role: "Comptable",
+    actif: true,
+    derniereConnexion: "2026-01-08T17:40:00",
+  },
+  {
+    id: "U-03",
+    nom: "Ibrahim Keïta",
+    email: "ibrahim.keita@sltt.ml",
+    role: "Agent de transit",
+    actif: true,
+    derniereConnexion: "2026-01-09T09:05:00",
+  },
+  {
+    id: "U-04",
+    nom: "Oumar Cissé",
+    email: "oumar.cisse@sltt.ml",
+    role: "Magasinier",
+    actif: true,
+    derniereConnexion: "2026-01-07T16:20:00",
+  },
+  {
+    id: "U-05",
+    nom: "Aminata Sangaré",
+    email: "aminata.sangare@sltt.ml",
+    role: "Commercial",
+    actif: false,
+    derniereConnexion: "2025-12-15T11:00:00",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* ALERTES                                                              */
+/* ------------------------------------------------------------------ */
+
+export const alertes: AppAlert[] = [
+  {
+    id: "AL-1",
+    niveau: "danger",
+    message: "Stock faible : Riz parfumé 25kg",
+    detail: "65 sacs restants (seuil 80) — Entrepôt B",
+  },
+  {
+    id: "AL-2",
+    niveau: "danger",
+    message: "Stock faible : Pièces automobiles diverses",
+    detail: "28 lots restants (seuil 40) — Entrepôt C",
+  },
+  {
+    id: "AL-3",
+    niveau: "danger",
+    message: "Stock faible : Textiles & vêtements",
+    detail: "32 balles restantes (seuil 50) — Entrepôt B",
+  },
+  {
+    id: "AL-4",
+    niveau: "warning",
+    message: "Dossier non soldé : SLTT-TR-2026-0042",
+    detail: "Reste à payer : 700 000 FCFA — Diallo",
+  },
+  {
+    id: "AL-5",
+    niveau: "warning",
+    message: "Dossier non soldé : SLTT-TR-2026-0040",
+    detail: "Reste à payer : 700 000 FCFA — Traoré & Frères",
+  },
+  {
+    id: "AL-6",
+    niveau: "warning",
+    message: "Dossier non soldé : SLTT-TR-2026-0039",
+    detail: "Reste à payer : 350 000 FCFA — Cissé Import",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* SÉRIES GRAPHIQUES                                                    */
+/* ------------------------------------------------------------------ */
+
+export const encaissementsParMois = [
+  { mois: "Juil", valeur: 5_200_000 },
+  { mois: "Août", valeur: 6_100_000 },
+  { mois: "Sept", valeur: 5_800_000 },
+  { mois: "Oct", valeur: 7_300_000 },
+  { mois: "Nov", valeur: 7_900_000 },
+  { mois: "Déc", valeur: 8_750_000 },
+];
+
+export const ecartsParPeriode = [
+  { periode: "Juil", ecart: 320_000 },
+  { periode: "Août", ecart: -150_000 },
+  { periode: "Sept", ecart: 480_000 },
+  { periode: "Oct", ecart: 210_000 },
+  { periode: "Nov", ecart: -90_000 },
+  { periode: "Déc", ecart: 560_000 },
+];
+
+export const evolutionEncaissements = [
+  { periode: "S1", investi: 12_400_000, encaisse: 9_800_000 },
+  { periode: "S2", investi: 14_200_000, encaisse: 11_500_000 },
+  { periode: "S3", investi: 13_900_000, encaisse: 12_100_000 },
+  { periode: "S4", investi: 15_600_000, encaisse: 14_300_000 },
+  { periode: "S5", investi: 16_800_000, encaisse: 15_900_000 },
+  { periode: "S6", investi: 18_200_000, encaisse: 17_400_000 },
+];
+
+export const recapParClient = [
+  { client: "Diallo", investi: 5_180_000, encaisse: 4_100_000, reste: 1_250_000, ecart: 1_080_000 },
+  { client: "Keïta", investi: 7_180_000, encaisse: 6_260_000, reste: 920_000, ecart: 920_000 },
+  { client: "Traoré", investi: 6_250_000, encaisse: 5_570_000, reste: 680_000, ecart: 750_000 },
+  { client: "Cissé", investi: 1_150_000, encaisse: 800_000, reste: 350_000, ecart: 0 },
+  { client: "Sahel Agro", investi: 4_000_000, encaisse: 4_000_000, reste: 0, ecart: 0 },
+];
+
+/* ------------------------------------------------------------------ */
+/* HELPERS                                                              */
+/* ------------------------------------------------------------------ */
+
+/** Calcule l'écart = fraisPrestation - montantInvesti (positif = bénéfice) */
+export function calculerEcart(d: {
+  droitDouane: number;
+  fraisCircuit: number;
+  fraisPrestation: number;
+  montantInvesti: number;
+}): number {
+  // L'écart représente la marge : prestation perçue - coûts engagés
+  return d.fraisPrestation - (d.droitDouane + d.fraisCircuit);
+}
+
+export function resteAPayer(d: {
+  montantInvesti: number;
+  montantPaye: number;
+}): number {
+  return Math.max(0, d.montantInvesti - d.montantPaye);
+}
+
+export function getClientById(id: string): Client | undefined {
+  return clients.find((c) => c.id === id);
+}
+
+export function getDossierById(id: string): Dossier | undefined {
+  return dossiers.find((d) => d.id === id);
+}
+
+export function getDossiersByClient(clientId: string): Dossier[] {
+  return dossiers.filter((d) => d.clientId === clientId);
+}
+
+export function getEcrituresByClient(clientId: string): Ecriture[] {
+  return ecritures.filter((e) => e.clientId === clientId);
+}
+
+export function getBonsByClient(clientId: string): BonSortie[] {
+  return bonsSortie.filter((b) => b.clientId === clientId);
+}
