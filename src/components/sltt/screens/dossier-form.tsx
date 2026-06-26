@@ -13,7 +13,8 @@ import {
 
 import { useNav } from "@/lib/nav-store";
 import { useStore, type DossierStatut } from "@/lib/store";
-import { formatFCFA, parseAmount } from "@/lib/format";
+import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
+import { printHTML } from "@/lib/export";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
 
@@ -161,9 +162,51 @@ function DossierFormInner() {
   };
 
   const handlePdf = () => {
+    const clientNom = clients.find((c) => c.id === clientId)?.nom ?? "—";
+    const ecartVal = ecart;
+    const statutBadge = (s: string) => {
+      const colors: Record<string, string> = {
+        "En cours": "background:#dbeafe;color:#1e3a8a",
+        Dédouané: "background:#e0e7ff;color:#3730a3",
+        Livré: "background:#fef3c7;color:#92400e",
+        Soldé: "background:#d1fae5;color:#065f46",
+      };
+      return `<span class="badge" style="${colors[s] ?? ""}">${s}</span>`;
+    };
+    printHTML(`Dossier ${reference}`, `
+      <h1>Dossier de transit</h1>
+      <div class="subtitle">Référence : <strong>${reference}</strong> · ${statutBadge(statut)}</div>
+      <table>
+        <tbody>
+          <tr><th style="width:35%">Client</th><td>${clientNom}</td></tr>
+          <tr><th>Nature de la marchandise</th><td>${nature || "—"}</td></tr>
+          <tr><th>N° de BL</th><td>${bl || "—"}</td></tr>
+          <tr><th>N° du camion</th><td>${camion || "—"}</td></tr>
+          <tr><th>Date</th><td>${date ? formatDateShort(date) : "—"}</td></tr>
+        </tbody>
+      </table>
+      <h2 style="margin-top:24px;font-size:14px;color:#1e40af">Montants (FCFA)</h2>
+      <table>
+        <tbody>
+          <tr><th style="width:35%">Droit de douane</th><td class="num">${formatFCFA(dN, false)}</td></tr>
+          <tr><th>Frais de circuit global</th><td class="num">${formatFCFA(fN, false)}</td></tr>
+          <tr><th>Frais de prestation</th><td class="num">${formatFCFA(pN, false)}</td></tr>
+          <tr><th>Montant investi</th><td class="num">${formatFCFA(iN, false)}</td></tr>
+          <tr><th>Montant payé</th><td class="num">${formatFCFA(montantPaye, false)}</td></tr>
+          <tr><th>Reste à payer</th><td class="num">${formatFCFA(reste, false)}</td></tr>
+          <tr class="total-row">
+            <th>Écart calculé</th>
+            <td class="num" style="color:${ecartVal >= 0 ? "#059669" : "#dc2626"}">
+              ${ecartVal >= 0 ? "+" : ""}${ecartVal.toLocaleString("fr-FR")}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      ${notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${notes}</p>` : ""}
+    `);
     toast({
-      title: "Génération du PDF",
-      description: "Génération du PDF en cours…",
+      title: "PDF généré",
+      description: "Le document s'est ouvert dans une nouvelle fenêtre.",
     });
   };
 

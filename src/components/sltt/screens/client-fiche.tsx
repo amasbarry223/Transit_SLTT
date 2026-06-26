@@ -177,7 +177,7 @@ export function ClientFicheScreen() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => go("clients")}>
               <Pencil className="size-4" />
               Modifier la fiche
             </Button>

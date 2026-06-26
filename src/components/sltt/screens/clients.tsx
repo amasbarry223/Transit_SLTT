@@ -45,16 +45,20 @@ export function ClientsScreen() {
   const openClient = useNav((s) => s.openClient);
   const clients = useStore((s) => s.clients);
   const addClient = useStore((s) => s.addClient);
+  const updateClient = useStore((s) => s.updateClient);
 
   const [query, setQuery] = useState("");
 
-  // Creation dialog state
+  // Dialog state (create OR edit)
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formNom, setFormNom] = useState("");
   const [formType, setFormType] = useState<ClientType>("Entreprise");
   const [formTelephone, setFormTelephone] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formAdresse, setFormAdresse] = useState("");
+
+  const isEdit = editingId !== null;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -73,14 +77,27 @@ export function ClientsScreen() {
     setFormTelephone("");
     setFormEmail("");
     setFormAdresse("");
+    setEditingId(null);
   }
 
-  function openDialog() {
+  function openCreateDialog() {
     resetForm();
     setOpen(true);
   }
 
-  function handleCreate() {
+  function openEditDialog(id: string) {
+    const c = clients.find((cl) => cl.id === id);
+    if (!c) return;
+    setEditingId(id);
+    setFormNom(c.nom);
+    setFormType(c.type);
+    setFormTelephone(c.telephone);
+    setFormEmail(c.email);
+    setFormAdresse(c.adresse);
+    setOpen(true);
+  }
+
+  function handleSave() {
     const trimmedNom = formNom.trim();
     if (!trimmedNom) {
       toast({
@@ -97,11 +114,19 @@ export function ClientsScreen() {
       email: formEmail.trim(),
       adresse: formAdresse.trim(),
     };
-    addClient(input);
-    toast({
-      title: "Client créé avec succès",
-      description: `${input.nom} a été ajouté à l'annuaire clients.`,
-    });
+    if (isEdit && editingId) {
+      updateClient(editingId, input);
+      toast({
+        title: "Client mis à jour",
+        description: `${input.nom} a été modifié.`,
+      });
+    } else {
+      addClient(input);
+      toast({
+        title: "Client créé avec succès",
+        description: `${input.nom} a été ajouté à l'annuaire clients.`,
+      });
+    }
     setOpen(false);
     resetForm();
   }
@@ -109,7 +134,7 @@ export function ClientsScreen() {
   return (
     <div className="space-y-6">
       <PageHeader title="Clients" description="Annuaire et fiches clients">
-        <Button onClick={openDialog}>
+        <Button onClick={openCreateDialog}>
           <UserPlus className="size-4" />
           Nouveau client
         </Button>
@@ -219,6 +244,7 @@ export function ClientsScreen() {
                         variant="ghost"
                         size="icon"
                         className="size-8 text-slate-500 hover:text-primary"
+                        onClick={() => openEditDialog(c.id)}
                         aria-label={`Modifier ${c.nom}`}
                         title="Modifier"
                       >
@@ -233,14 +259,17 @@ export function ClientsScreen() {
         </Table>
       </Card>
 
-      {/* Creation dialog */}
+      {/* Create / Edit dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Nouveau client</DialogTitle>
+            <DialogTitle>
+              {isEdit ? "Modifier le client" : "Nouveau client"}
+            </DialogTitle>
             <DialogDescription className="sr-only">
-              Créez un nouveau client en renseignant son nom, son type et ses
-              coordonnées (téléphone, e-mail, adresse).
+              {isEdit
+                ? "Modifiez les informations du client."
+                : "Créez un nouveau client en renseignant son nom, son type et ses coordonnées (téléphone, e-mail, adresse)."}
             </DialogDescription>
           </DialogHeader>
 
@@ -327,9 +356,9 @@ export function ClientsScreen() {
               <X className="size-4" />
               Annuler
             </Button>
-            <Button onClick={handleCreate} disabled={!formNom.trim()}>
+            <Button onClick={handleSave} disabled={!formNom.trim()}>
               <Check className="size-4" />
-              Créer le client
+              {isEdit ? "Enregistrer" : "Créer le client"}
             </Button>
           </DialogFooter>
         </DialogContent>

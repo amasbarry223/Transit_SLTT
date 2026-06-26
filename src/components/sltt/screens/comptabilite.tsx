@@ -41,6 +41,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -68,8 +76,12 @@ const modeOptions: PaiementMode[] = [
 export function ComptabiliteScreen() {
   const { toast } = useToast();
   const ecritures = useStore((s) => s.ecritures);
+  const clients = useStore((s) => s.clients);
+  const dossiers = useStore((s) => s.dossiers);
   const recordPayment = useStore((s) => s.recordPayment);
+  const addEcriture = useStore((s) => s.addEcriture);
 
+  // Payment panel state
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Ecriture | null>(null);
   const [montant, setMontant] = useState("");
@@ -78,6 +90,23 @@ export function ComptabiliteScreen() {
     new Date().toISOString().slice(0, 10),
   );
   const [note, setNote] = useState("");
+
+  // New ecriture dialog state
+  const [newOpen, setNewOpen] = useState(false);
+  const [neClientId, setNeClientId] = useState("");
+  const [neDossierId, setNeDossierId] = useState("");
+  const [neInvesti, setNeInvesti] = useState("");
+  const [nePaye, setNePaye] = useState("");
+  const [neMode, setNeMode] = useState<PaiementMode>("Virement");
+  const [neDate, setNeDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [neNote, setNeNote] = useState("");
+
+  const clientDossiers = useMemo(
+    () => (neClientId ? dossiers.filter((d) => d.clientId === neClientId) : []),
+    [neClientId, dossiers],
+  );
 
   const totalInvesti = useMemo(
     () => ecritures.reduce((s, e) => s + e.montantInvesti, 0),
@@ -111,13 +140,61 @@ export function ComptabiliteScreen() {
     setSelected(null);
   }
 
+  function resetNewEcriture() {
+    setNeClientId("");
+    setNeDossierId("");
+    setNeInvesti("");
+    setNePaye("");
+    setNeMode("Virement");
+    setNeDate(new Date().toISOString().slice(0, 10));
+    setNeNote("");
+  }
+
+  function handleCreateEcriture() {
+    if (!neClientId) {
+      toast({
+        title: "Client requis",
+        description: "Veuillez sélectionner un client.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const client = clients.find((c) => c.id === neClientId);
+    if (!client) return;
+    const investi = Number(neInvesti.replace(/\s/g, "")) || 0;
+    const paye = Number(nePaye.replace(/\s/g, "")) || 0;
+    if (investi <= 0) {
+      toast({
+        title: "Montant invalide",
+        description: "Le montant investi doit être supérieur à 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+    addEcriture({
+      date: neDate,
+      clientId: neClientId,
+      clientNom: client.nom,
+      montantInvesti: investi,
+      montantPaye: Math.min(paye, investi),
+      modePaiement: neMode,
+      note: neNote || undefined,
+    });
+    toast({
+      title: "Écriture créée",
+      description: `${client.nom} — ${formatFCFA(investi)} investi.`,
+    });
+    setNewOpen(false);
+    resetNewEcriture();
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Comptabilité"
         description="Suivi des écritures et des paiements"
       >
-        <Button>
+        <Button onClick={() => { resetNewEcriture(); setNewOpen(true); }}>
           <Plus className="size-4" />
           Nouvelle écriture
         </Button>
@@ -380,6 +457,148 @@ export function ComptabiliteScreen() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* New ecriture dialog */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nouvelle écriture comptable</DialogTitle>
+            <DialogDescription className="sr-only">
+              Créez une nouvelle écriture en sélectionnant un client, un dossier
+              et en saisissant les montants investis et payés.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ne-client" className="text-sm font-medium text-slate-700">
+                Client <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={neClientId}
+                onValueChange={(v) => { setNeClientId(v); setNeDossierId(""); }}
+              >
+                <SelectTrigger id="ne-client" className="w-full h-10">
+                  <SelectValue placeholder="Sélectionner un client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {clientDossiers.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="ne-dossier" className="text-sm font-medium text-slate-700">
+                  Dossier lié (optionnel)
+                </Label>
+                <Select value={neDossierId} onValueChange={setNeDossierId}>
+                  <SelectTrigger id="ne-dossier" className="w-full h-10">
+                    <SelectValue placeholder="Aucun dossier lié" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientDossiers.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.reference} — {d.nature}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ne-investi" className="text-sm font-medium text-slate-700">
+                  Montant investi (FCFA) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="ne-investi"
+                  type="number"
+                  value={neInvesti}
+                  onChange={(e) => setNeInvesti(e.target.value)}
+                  placeholder="0"
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ne-paye" className="text-sm font-medium text-slate-700">
+                  Montant payé (FCFA)
+                </Label>
+                <Input
+                  id="ne-paye"
+                  type="number"
+                  value={nePaye}
+                  onChange={(e) => setNePaye(e.target.value)}
+                  placeholder="0"
+                  className="h-10"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ne-mode" className="text-sm font-medium text-slate-700">
+                  Mode de paiement
+                </Label>
+                <Select value={neMode} onValueChange={(v) => setNeMode(v as PaiementMode)}>
+                  <SelectTrigger id="ne-mode" className="w-full h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modeOptions.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ne-date" className="text-sm font-medium text-slate-700">
+                  Date
+                </Label>
+                <Input
+                  id="ne-date"
+                  type="date"
+                  value={neDate}
+                  onChange={(e) => setNeDate(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ne-note" className="text-sm font-medium text-slate-700">
+                Note
+              </Label>
+              <Textarea
+                id="ne-note"
+                value={neNote}
+                onChange={(e) => setNeNote(e.target.value)}
+                rows={3}
+                placeholder="Référence, acompte…"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleCreateEcriture}
+              disabled={!neClientId || !neInvesti}
+            >
+              Créer l&apos;écriture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
