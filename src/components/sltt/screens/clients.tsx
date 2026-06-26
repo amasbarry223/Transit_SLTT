@@ -1,15 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { UserPlus, Search, Eye, Pencil } from "lucide-react";
+import { UserPlus, Search, Eye, Pencil, X, Check } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
-import { clients } from "@/lib/mock-data";
+import { useStore } from "@/lib/store";
+import type { ClientInput } from "@/lib/store";
+import type { ClientType } from "@/lib/mock-data";
 import { formatFCFA } from "@/lib/format";
+import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableHeader,
@@ -18,10 +22,39 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+const clientTypes: ClientType[] = ["Entreprise", "Particulier"];
 
 export function ClientsScreen() {
+  const { toast } = useToast();
   const openClient = useNav((s) => s.openClient);
+  const clients = useStore((s) => s.clients);
+  const addClient = useStore((s) => s.addClient);
+
   const [query, setQuery] = useState("");
+
+  // Creation dialog state
+  const [open, setOpen] = useState(false);
+  const [formNom, setFormNom] = useState("");
+  const [formType, setFormType] = useState<ClientType>("Entreprise");
+  const [formTelephone, setFormTelephone] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formAdresse, setFormAdresse] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -32,12 +65,51 @@ export function ClientsScreen() {
         .toLowerCase()
         .includes(q),
     );
-  }, [query]);
+  }, [query, clients]);
+
+  function resetForm() {
+    setFormNom("");
+    setFormType("Entreprise");
+    setFormTelephone("");
+    setFormEmail("");
+    setFormAdresse("");
+  }
+
+  function openDialog() {
+    resetForm();
+    setOpen(true);
+  }
+
+  function handleCreate() {
+    const trimmedNom = formNom.trim();
+    if (!trimmedNom) {
+      toast({
+        title: "Champ requis",
+        description: "Veuillez saisir le nom ou la raison sociale du client.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const input: ClientInput = {
+      nom: trimmedNom,
+      type: formType,
+      telephone: formTelephone.trim(),
+      email: formEmail.trim(),
+      adresse: formAdresse.trim(),
+    };
+    addClient(input);
+    toast({
+      title: "Client créé avec succès",
+      description: `${input.nom} a été ajouté à l'annuaire clients.`,
+    });
+    setOpen(false);
+    resetForm();
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader title="Clients" description="Annuaire et fiches clients">
-        <Button>
+        <Button onClick={openDialog}>
           <UserPlus className="size-4" />
           Nouveau client
         </Button>
@@ -160,6 +232,108 @@ export function ClientsScreen() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Creation dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nouveau client</DialogTitle>
+            <DialogDescription className="sr-only">
+              Créez un nouveau client en renseignant son nom, son type et ses
+              coordonnées (téléphone, e-mail, adresse).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cl-nom" className="text-sm text-slate-700">
+                Nom / Raison sociale <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="cl-nom"
+                value={formNom}
+                onChange={(e) => setFormNom(e.target.value)}
+                placeholder="Ex. Société des Établissements Diallo"
+                className="h-10"
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cl-type" className="text-sm text-slate-700">
+                Type
+              </Label>
+              <Select
+                value={formType}
+                onValueChange={(v) => setFormType(v as ClientType)}
+              >
+                <SelectTrigger id="cl-type" className="w-full h-10">
+                  <SelectValue placeholder="Sélectionner un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientTypes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cl-tel" className="text-sm text-slate-700">
+                  Téléphone
+                </Label>
+                <Input
+                  id="cl-tel"
+                  value={formTelephone}
+                  onChange={(e) => setFormTelephone(e.target.value)}
+                  placeholder="+223 …"
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cl-email" className="text-sm text-slate-700">
+                  E-mail
+                </Label>
+                <Input
+                  id="cl-email"
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  placeholder="contact@exemple.ml"
+                  className="h-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cl-adresse" className="text-sm text-slate-700">
+                Adresse
+              </Label>
+              <Input
+                id="cl-adresse"
+                value={formAdresse}
+                onChange={(e) => setFormAdresse(e.target.value)}
+                placeholder="Quartier, ville"
+                className="h-10"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              <X className="size-4" />
+              Annuler
+            </Button>
+            <Button onClick={handleCreate} disabled={!formNom.trim()}>
+              <Check className="size-4" />
+              Créer le client
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

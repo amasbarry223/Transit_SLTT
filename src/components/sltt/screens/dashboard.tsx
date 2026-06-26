@@ -40,13 +40,9 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 
 import { useNav } from "@/lib/nav-store";
+import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact } from "@/lib/format";
-import {
-  dossiers,
-  alertes,
-  encaissementsParMois,
-  ecartsParPeriode,
-} from "@/lib/mock-data";
+import { encaissementsParMois, ecartsParPeriode } from "@/lib/mock-data";
 
 /* ------------------------------------------------------------------ */
 /* CHART COLORS                                                        */
@@ -125,12 +121,89 @@ function EcartsTooltip({
 }
 
 /* ------------------------------------------------------------------ */
+/* ALERT TYPE (computed live from store)                               */
+/* ------------------------------------------------------------------ */
+
+interface LiveAlert {
+  id: string;
+  niveau: "danger" | "warning";
+  message: string;
+  detail: string;
+}
+
+/* ------------------------------------------------------------------ */
 /* SCREEN                                                              */
 /* ------------------------------------------------------------------ */
 
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
-  const derniersDossiers = dossiers.slice(0, 6);
+  const dossiers = useStore((s) => s.dossiers);
+  const ecritures = useStore((s) => s.ecritures);
+  const stock = useStore((s) => s.stock);
+
+  // ---- Live KPI computations ----
+  const chiffreEncaisse = React.useMemo(
+    () => ecritures.reduce((sum, e) => sum + e.montantPaye, 0),
+    [ecritures],
+  );
+
+  const { totalRestesAPayer, nbDossiersNonSoldes } = React.useMemo(() => {
+    let total = 0;
+    let count = 0;
+    for (const e of ecritures) {
+      const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+      if (reste > 0) {
+        total += reste;
+        count += 1;
+      }
+    }
+    return { totalRestesAPayer: total, nbDossiersNonSoldes: count };
+  }, [ecritures]);
+
+  const dossiersEnCours = React.useMemo(
+    () => dossiers.filter((d) => d.statut === "En cours").length,
+    [dossiers],
+  );
+
+  const valeurStock = React.useMemo(
+    () => stock.reduce((sum, s) => sum + s.sommePayee + s.resteAPayer, 0),
+    [stock],
+  );
+
+  // ---- Derniers dossiers (sorted by date desc, first 6) ----
+  const derniersDossiers = React.useMemo(
+    () =>
+      [...dossiers]
+        .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+        .slice(0, 6),
+    [dossiers],
+  );
+
+  // ---- Live alerts (low stock + unpaid dossiers) ----
+  const alertes = React.useMemo<LiveAlert[]>(() => {
+    const lowStock: LiveAlert[] = stock
+      .filter((s) => s.quantite < s.seuil)
+      .map((s) => ({
+        id: `stock-${s.id}`,
+        niveau: "danger" as const,
+        message: `Stock faible : ${s.marchandise}`,
+        detail: `${s.quantite} ${s.unite} restants — ${s.depositaire}`,
+      }));
+
+    const unpaid: LiveAlert[] = dossiers
+      .filter((d) => d.montantInvesti - d.montantPaye > 0)
+      .slice(0, 4)
+      .map((d) => ({
+        id: `dossier-${d.id}`,
+        niveau: "warning" as const,
+        message: `Dossier non soldé : ${d.reference}`,
+        detail: `Reste à payer : ${formatFCFA(
+          d.montantInvesti - d.montantPaye,
+        )} — ${d.clientNom}`,
+      }));
+
+    return [...lowStock, ...unpaid];
+  }, [stock, dossiers]);
 
   return (
     <div className="space-y-6">
@@ -157,7 +230,7 @@ export function DashboardScreen() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Chiffre encaissé (ce mois)"
-          value="8 750 000 FCFA"
+          value={formatFCFA(chiffreEncaisse)}
           icon={Wallet}
           tone="emerald"
           variation={12}
@@ -165,24 +238,24 @@ export function DashboardScreen() {
         />
         <KpiCard
           label="Total restes à payer"
-          value="3 200 000 FCFA"
+          value={formatFCFA(totalRestesAPayer)}
           icon={Clock}
           tone="amber"
-          sublabel="Sur 8 dossiers"
+          sublabel={`Sur ${nbDossiersNonSoldes} dossier${nbDossiersNonSoldes > 1 ? "s" : ""}`}
         />
         <KpiCard
           label="Dossiers en cours"
-          value="24"
+          value={String(dossiersEnCours)}
           icon={FolderKanban}
           tone="blue"
           sublabel="6 à dédouaner"
         />
         <KpiCard
           label="Valeur du stock"
-          value="15 400 000 FCFA"
+          value={formatFCFA(valeurStock)}
           icon={Warehouse}
           tone="indigo"
-          sublabel="7 articles"
+          sublabel={`${stock.length} article${stock.length > 1 ? "s" : ""}`}
         />
       </div>
 
@@ -340,28 +413,39 @@ export function DashboardScreen() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {derniersDossiers.map((d) => (
-                  <TableRow
-                    key={d.id}
-                    className="border-b border-border hover:bg-slate-50/60"
-                  >
-                    <TableCell className="font-medium text-slate-900">
-                      {d.reference}
-                    </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-slate-700">
-                      {d.clientNom}
-                    </TableCell>
-                    <TableCell className="tabular-nums text-slate-700">
-                      {d.bl}
-                    </TableCell>
-                    <TableCell>
-                      <DossierStatutBadge statut={d.statut} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums font-medium text-slate-900">
-                      {formatFCFA(d.montantInvesti)}
+                {derniersDossiers.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-10 text-center text-sm text-slate-500"
+                    >
+                      Aucun dossier enregistré.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  derniersDossiers.map((d) => (
+                    <TableRow
+                      key={d.id}
+                      className="border-b border-border hover:bg-slate-50/60"
+                    >
+                      <TableCell className="font-medium text-slate-900">
+                        {d.reference}
+                      </TableCell>
+                      <TableCell className="max-w-[220px] truncate text-slate-700">
+                        {d.clientNom}
+                      </TableCell>
+                      <TableCell className="tabular-nums text-slate-700">
+                        {d.bl}
+                      </TableCell>
+                      <TableCell>
+                        <DossierStatutBadge statut={d.statut} />
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-medium text-slate-900">
+                        {formatFCFA(d.montantInvesti)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -373,7 +457,7 @@ export function DashboardScreen() {
             <div>
               <h2 className="text-base font-semibold text-slate-900">Alertes</h2>
               <p className="text-xs text-slate-500">
-                {alertes.length} alertes actives
+                {alertes.length} alerte{alertes.length > 1 ? "s" : ""} active{alertes.length > 1 ? "s" : ""}
               </p>
             </div>
             <span className="inline-flex size-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
@@ -382,36 +466,42 @@ export function DashboardScreen() {
           </div>
 
           <div className="max-h-[360px] overflow-y-auto sltt-scroll divide-y divide-border">
-            {alertes.map((alert) => {
-              const isDanger = alert.niveau === "danger";
-              const Icon = isDanger ? AlertTriangle : AlertCircle;
-              const iconWrapClass = isDanger
-                ? "bg-red-50 text-red-600"
-                : "bg-amber-50 text-amber-600";
-              return (
-                <div
-                  key={alert.id}
-                  className="flex items-start gap-3 p-4 transition-colors hover:bg-slate-50/60"
-                >
-                  <span
-                    className={
-                      "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg " +
-                      iconWrapClass
-                    }
+            {alertes.length === 0 ? (
+              <div className="p-6 text-center text-sm text-slate-500">
+                Aucune alerte active.
+              </div>
+            ) : (
+              alertes.map((alert) => {
+                const isDanger = alert.niveau === "danger";
+                const Icon = isDanger ? AlertTriangle : AlertCircle;
+                const iconWrapClass = isDanger
+                  ? "bg-red-50 text-red-600"
+                  : "bg-amber-50 text-amber-600";
+                return (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 p-4 transition-colors hover:bg-slate-50/60"
                   >
-                    <Icon className="size-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900">
-                      {alert.message}
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {alert.detail}
-                    </p>
+                    <span
+                      className={
+                        "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg " +
+                        iconWrapClass
+                      }
+                    >
+                      <Icon className="size-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900">
+                        {alert.message}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {alert.detail}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </Card>
       </div>

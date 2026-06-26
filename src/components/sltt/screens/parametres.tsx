@@ -16,7 +16,8 @@ import {
   Users,
   User,
 } from "lucide-react";
-import { users, type UserRole } from "@/lib/mock-data";
+import { useStore } from "@/lib/store";
+import type { UserInput, UserRole } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
@@ -112,8 +113,14 @@ function generateCode(): string {
 
 function UsersTab() {
   const { toast } = useToast();
+  const users = useStore((s) => s.users);
+  const addUser = useStore((s) => s.addUser);
+  const toggleUserActive = useStore((s) => s.toggleUserActive);
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const [accessCode, setAccessCode] = useState(() => generateCode());
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("Agent de transit");
   const [perms, setPerms] = useState<Record<string, boolean>>({
     Dossiers: true,
@@ -128,10 +135,37 @@ function UsersTab() {
     setAccessCode(generateCode());
   }
 
+  function resetForm() {
+    setNom("");
+    setEmail("");
+    setRole("Agent de transit");
+    setPerms({
+      Dossiers: true,
+      Comptabilité: false,
+      Stock: false,
+      "Bons de sortie": false,
+      Clients: true,
+      Rapports: false,
+    });
+    setAccessCode(generateCode());
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!nom.trim() || !email.trim()) return;
+    const permissions = Object.entries(perms)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    const input: UserInput = {
+      nom: nom.trim(),
+      email: email.trim(),
+      role,
+      permissions,
+    };
+    addUser(input);
+    toast({ title: "Utilisateur créé avec succès" });
     setSheetOpen(false);
-    toast({ title: "Utilisateur créé", description: "Le compte a été créé avec succès." });
+    resetForm();
   }
 
   return (
@@ -202,7 +236,20 @@ function UsersTab() {
                   {formatDateShort(u.derniereConnexion)}
                 </TableCell>
                 <TableCell className="py-3">
-                  <div className="flex items-center justify-end gap-1">
+                  <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={u.actif}
+                        onCheckedChange={() => {
+                          toggleUserActive(u.id);
+                          toast({
+                            title: "Statut mis à jour",
+                            description: `${u.nom} est maintenant ${u.actif ? "inactif" : "actif"}.`,
+                          });
+                        }}
+                        aria-label={`Basculer le statut de ${u.nom}`}
+                      />
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -247,7 +294,13 @@ function UsersTab() {
               <Label htmlFor="u-nom" className="text-sm font-medium text-slate-700">
                 Nom complet
               </Label>
-              <Input id="u-nom" placeholder="ex. Awa Traoré" required />
+              <Input
+                id="u-nom"
+                placeholder="ex. Awa Traoré"
+                required
+                value={nom}
+                onChange={(e) => setNom(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
@@ -259,6 +312,8 @@ function UsersTab() {
                 type="email"
                 placeholder="awa.traore@sltt.ml"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 

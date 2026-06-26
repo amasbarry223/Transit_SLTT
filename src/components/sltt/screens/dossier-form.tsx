@@ -12,11 +12,7 @@ import {
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
-import {
-  clients,
-  getDossierById,
-  type DossierStatut,
-} from "@/lib/mock-data";
+import { useStore, type DossierStatut } from "@/lib/store";
 import { formatFCFA, parseAmount } from "@/lib/format";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
@@ -36,7 +32,6 @@ import {
 } from "@/components/ui/select";
 
 const STATUTS: DossierStatut[] = ["En cours", "Dédouané", "Livré", "Soldé"];
-const NEW_REFERENCE = "SLTT-TR-2026-0043";
 
 /** Convertit un nombre en chaîne pour un champ Input. */
 const numStr = (n: number | undefined): string =>
@@ -64,8 +59,18 @@ function DossierFormInner() {
   const { selectedId, dossierFormMode, go } = useNav();
   const { toast } = useToast();
 
+  // Reactive store data + actions
+  const clients = useStore((s) => s.clients);
+  const dossiers = useStore((s) => s.dossiers);
+  const addDossier = useStore((s) => s.addDossier);
+  const updateDossier = useStore((s) => s.updateDossier);
+  const dossierSeq = useStore((s) => s.dossierSeq);
+
   const isEdit = dossierFormMode === "edit";
-  const existing = isEdit && selectedId ? getDossierById(selectedId) : undefined;
+  const existing =
+    isEdit && selectedId
+      ? dossiers.find((d) => d.id === selectedId)
+      : undefined;
 
   // --- Form state (initialisé une seule fois au montage grâce au `key`) ---
   const [clientId, setClientId] = useState<string>(existing?.clientId ?? "");
@@ -96,7 +101,9 @@ function DossierFormInner() {
     [iN, montantPaye],
   );
 
-  const reference = existing?.reference ?? NEW_REFERENCE;
+  const reference =
+    existing?.reference ??
+    `SLTT-TR-2026-${String(dossierSeq).padStart(4, "0")}`;
 
   // --- Cas : dossier introuvable en édition ---
   if (isEdit && selectedId && !existing) {
@@ -122,11 +129,42 @@ function DossierFormInner() {
   }
 
   const handleSave = () => {
-    toast({
-      title: "Succès",
-      description: "Dossier enregistré avec succès",
-    });
+    const clientNom = clients.find((c) => c.id === clientId)?.nom ?? "";
+    const input = {
+      clientId,
+      clientNom,
+      nature,
+      bl,
+      camion,
+      date,
+      droitDouane: dN,
+      fraisCircuit: fN,
+      fraisPrestation: pN,
+      montantInvesti: iN,
+      statut,
+      notes,
+    };
+    if (isEdit && selectedId) {
+      updateDossier(selectedId, input);
+      toast({
+        title: "Succès",
+        description: "Dossier mis à jour",
+      });
+    } else {
+      addDossier(input);
+      toast({
+        title: "Succès",
+        description: "Dossier créé avec succès",
+      });
+    }
     go("dossiers");
+  };
+
+  const handlePdf = () => {
+    toast({
+      title: "Génération du PDF",
+      description: "Génération du PDF en cours…",
+    });
   };
 
   return (
@@ -376,7 +414,7 @@ function DossierFormInner() {
                   <Save className="size-4" />
                   Enregistrer le dossier
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={handlePdf}>
                   <FileText className="size-4" />
                   Générer le PDF
                 </Button>

@@ -13,9 +13,8 @@ import {
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
+import { useStore } from "@/lib/store";
 import {
-  dossiers,
-  clients,
   calculerEcart,
   type DossierStatut,
 } from "@/lib/mock-data";
@@ -56,6 +55,8 @@ const STATUT_OPTIONS: (DossierStatut | "Tous")[] = [
  */
 export function DossiersListScreen() {
   const { openDossier } = useNav();
+  const dossiers = useStore((s) => s.dossiers);
+  const clients = useStore((s) => s.clients);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
@@ -96,7 +97,7 @@ export function DossiersListScreen() {
 
       return true;
     });
-  }, [search, clientFilter, statutFilter, periode]);
+  }, [dossiers, search, clientFilter, statutFilter, periode]);
 
   return (
     <div className="space-y-6">

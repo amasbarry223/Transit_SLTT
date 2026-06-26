@@ -13,7 +13,8 @@ import {
   ArrowUpFromLine,
 } from "lucide-react";
 
-import { stock, mouvements, type StockItem } from "@/lib/mock-data";
+import { useStore } from "@/lib/store";
+import type { StockItem } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -22,6 +23,8 @@ import { useToast } from "@/hooks/use-toast";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -31,9 +34,46 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const motifs = ["Vente", "Livraison", "Transfert", "Autre"] as const;
+type SortieMotif = (typeof motifs)[number];
 
 export function EntreposageScreen() {
   const { toast } = useToast();
+  const stock = useStore((s) => s.stock);
+  const mouvements = useStore((s) => s.mouvements);
+  const addStockEntry = useStore((s) => s.addStockEntry);
+  const addStockExit = useStore((s) => s.addStockExit);
+
+  const [tabValue, setTabValue] = useState("stock");
+
+  // ---- Entry dialog state ----
+  const [entryOpen, setEntryOpen] = useState(false);
+  const [entryStockId, setEntryStockId] = useState<string>("");
+  const [entryQty, setEntryQty] = useState<string>("1");
+  const [entryResp, setEntryResp] = useState<string>("Oumar Cissé");
+
+  // ---- Exit dialog state ----
+  const [exitOpen, setExitOpen] = useState(false);
+  const [exitStockId, setExitStockId] = useState<string>("");
+  const [exitQty, setExitQty] = useState<string>("1");
+  const [exitResp, setExitResp] = useState<string>("Oumar Cissé");
+  const [exitMotif, setExitMotif] = useState<SortieMotif>("Vente");
 
   const articlesEnStock = stock.length;
   const valeurStock = stock.reduce(
@@ -43,23 +83,59 @@ export function EntreposageScreen() {
   const mouvementsCeMois = mouvements.length;
   const alertesStockFaible = stock.filter((s) => s.quantite < s.seuil).length;
 
-  function notifyEntree() {
-    toast({
-      title: "Entrée de marchandise",
-      description: "Formulaire d'entrée de marchandise (démo).",
-    });
+  function openEntry(stockId: string | null) {
+    const id = stockId ?? stock[0]?.id ?? "";
+    setEntryStockId(id);
+    setEntryQty("1");
+    setEntryResp("Oumar Cissé");
+    setEntryOpen(true);
   }
 
-  function notifySortie() {
-    toast({
-      title: "Sortie de marchandise",
-      description: "Formulaire de sortie de marchandise (démo).",
-    });
+  function openExit(stockId: string | null) {
+    const id = stockId ?? stock[0]?.id ?? "";
+    setExitStockId(id);
+    setExitQty("1");
+    setExitResp("Oumar Cissé");
+    setExitMotif("Vente");
+    setExitOpen(true);
   }
 
-  function notifyAction(titre: string) {
-    toast({ title: titre, description: "Action visuelle (démo)." });
+  function notifyHistory(marchandise: string) {
+    toast({
+      title: `Historique des mouvements pour ${marchandise}`,
+      description: "Affichage de l'historique dans l'onglet dédié.",
+    });
+    setTabValue("mouvements");
   }
+
+  function submitEntry() {
+    if (!entryStockId) return;
+    const qty = parseInt(entryQty, 10);
+    if (!qty || qty <= 0) return;
+    addStockEntry(entryStockId, qty, entryResp.trim() || "Oumar Cissé");
+    toast({ title: "Entrée enregistrée — stock mis à jour" });
+    setEntryOpen(false);
+  }
+
+  function submitExit() {
+    if (!exitStockId) return;
+    const qty = parseInt(exitQty, 10);
+    if (!qty || qty <= 0) return;
+    const item = stock.find((s) => s.id === exitStockId);
+    if (!item || qty > item.quantite) return;
+    addStockExit(exitStockId, qty, exitResp.trim() || "Oumar Cissé");
+    toast({ title: "Sortie enregistrée — stock décrémenté" });
+    setExitOpen(false);
+  }
+
+  const entryQtyNum = parseInt(entryQty, 10) || 0;
+  const entryDisabled = !entryStockId || entryQtyNum <= 0;
+
+  const exitStock = stock.find((s) => s.id === exitStockId);
+  const exitQtyNum = parseInt(exitQty, 10) || 0;
+  const exitOverflow = exitStock != null && exitQtyNum > exitStock.quantite;
+  const exitDisabled =
+    !exitStockId || exitQtyNum <= 0 || exitOverflow;
 
   return (
     <div className="space-y-6">
@@ -70,7 +146,7 @@ export function EntreposageScreen() {
         <Button
           variant="outline"
           className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-          onClick={notifyEntree}
+          onClick={() => openEntry(null)}
         >
           <PackagePlus className="size-4" />
           Entrée de marchandise
@@ -78,7 +154,7 @@ export function EntreposageScreen() {
         <Button
           variant="outline"
           className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
-          onClick={notifySortie}
+          onClick={() => openExit(null)}
         >
           <PackageMinus className="size-4" />
           Sortie
@@ -118,7 +194,7 @@ export function EntreposageScreen() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="stock">
+      <Tabs value={tabValue} onValueChange={setTabValue}>
         <TabsList>
           <TabsTrigger value="stock">Stock</TabsTrigger>
           <TabsTrigger value="mouvements">Historique des mouvements</TabsTrigger>
@@ -164,7 +240,9 @@ export function EntreposageScreen() {
                   <StockRow
                     key={item.id}
                     item={item}
-                    onAction={notifyAction}
+                    onEntry={(id) => openEntry(id)}
+                    onExit={(id) => openExit(id)}
+                    onHistory={(m) => notifyHistory(m)}
                   />
                 ))}
               </TableBody>
@@ -250,16 +328,209 @@ export function EntreposageScreen() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ---- Entrée de marchandise dialog ---- */}
+      <Dialog open={entryOpen} onOpenChange={setEntryOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Entrée de marchandise</DialogTitle>
+            <DialogDescription className="sr-only">
+              Enregistrer une entrée de stock et mettre à jour la quantité
+              disponible.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label
+                htmlFor="entry-marchandise"
+                className="text-sm font-medium text-slate-700"
+              >
+                Marchandise
+              </Label>
+              <Select value={entryStockId} onValueChange={setEntryStockId}>
+                <SelectTrigger id="entry-marchandise" className="w-full">
+                  <SelectValue placeholder="Sélectionner une marchandise" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stock.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.marchandise} (stock actuel : {s.quantite} {s.unite})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="entry-qty"
+                className="text-sm font-medium text-slate-700"
+              >
+                Quantité à entrer
+              </Label>
+              <Input
+                id="entry-qty"
+                type="number"
+                min={1}
+                value={entryQty}
+                onChange={(e) => setEntryQty(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="entry-resp"
+                className="text-sm font-medium text-slate-700"
+              >
+                Responsable
+              </Label>
+              <Input
+                id="entry-resp"
+                value={entryResp}
+                onChange={(e) => setEntryResp(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEntryOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="button" onClick={submitEntry} disabled={entryDisabled}>
+              Valider l&apos;entrée
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- Sortie de marchandise dialog ---- */}
+      <Dialog open={exitOpen} onOpenChange={setExitOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sortie de marchandise</DialogTitle>
+            <DialogDescription className="sr-only">
+              Enregistrer une sortie de stock et décrémenter la quantité
+              disponible.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label
+                htmlFor="exit-marchandise"
+                className="text-sm font-medium text-slate-700"
+              >
+                Marchandise
+              </Label>
+              <Select value={exitStockId} onValueChange={setExitStockId}>
+                <SelectTrigger id="exit-marchandise" className="w-full">
+                  <SelectValue placeholder="Sélectionner une marchandise" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stock.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.marchandise} (stock actuel : {s.quantite} {s.unite})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="exit-qty"
+                className="text-sm font-medium text-slate-700"
+              >
+                Quantité à sortir
+              </Label>
+              <Input
+                id="exit-qty"
+                type="number"
+                min={1}
+                value={exitQty}
+                onChange={(e) => setExitQty(e.target.value)}
+                aria-invalid={exitOverflow}
+              />
+              {exitOverflow && (
+                <p className="text-xs text-red-600">
+                  La quantité dépasse le stock disponible ({exitStock?.quantite}{" "}
+                  {exitStock?.unite}).
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="exit-resp"
+                className="text-sm font-medium text-slate-700"
+              >
+                Responsable
+              </Label>
+              <Input
+                id="exit-resp"
+                value={exitResp}
+                onChange={(e) => setExitResp(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="exit-motif"
+                className="text-sm font-medium text-slate-700"
+              >
+                Motif
+              </Label>
+              <Select
+                value={exitMotif}
+                onValueChange={(v) => setExitMotif(v as SortieMotif)}
+              >
+                <SelectTrigger id="exit-motif" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {motifs.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setExitOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="button" onClick={submitExit} disabled={exitDisabled}>
+              Valider la sortie
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function StockRow({
   item,
-  onAction,
+  onEntry,
+  onExit,
+  onHistory,
 }: {
   item: StockItem;
-  onAction: (titre: string) => void;
+  onEntry: (id: string) => void;
+  onExit: (id: string) => void;
+  onHistory: (marchandise: string) => void;
 }) {
   const faible = item.quantite < item.seuil;
   const statut = faible ? "Stock faible" : "Disponible";
@@ -301,9 +572,7 @@ function StockRow({
             size="icon"
             className="size-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
             aria-label="Entrée de marchandise"
-            onClick={() =>
-              onAction(`Entrée — ${item.marchandise}`)
-            }
+            onClick={() => onEntry(item.id)}
           >
             <PackagePlus className="size-4" />
           </Button>
@@ -312,9 +581,7 @@ function StockRow({
             size="icon"
             className="size-8 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
             aria-label="Sortie de marchandise"
-            onClick={() =>
-              onAction(`Sortie — ${item.marchandise}`)
-            }
+            onClick={() => onExit(item.id)}
           >
             <PackageMinus className="size-4" />
           </Button>
@@ -323,9 +590,7 @@ function StockRow({
             size="icon"
             className="size-8 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
             aria-label="Historique"
-            onClick={() =>
-              onAction(`Historique — ${item.marchandise}`)
-            }
+            onClick={() => onHistory(item.marchandise)}
           >
             <History className="size-4" />
           </Button>

@@ -11,13 +11,7 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  bonsSortie,
-  clients,
-  stock,
-  type BonMotif,
-  type StockItem,
-} from "@/lib/mock-data";
+import { useStore, type BonMotif, type StockItem } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { ToneBadge } from "@/components/sltt/status-badge";
@@ -68,6 +62,12 @@ const motifs: BonMotif[] = ["Vente", "Livraison", "Transfert"];
 export function BonsScreen() {
   const { toast } = useToast();
 
+  // Reactive store data
+  const bons = useStore((s) => s.bons);
+  const addBon = useStore((s) => s.addBon);
+  const stock = useStore((s) => s.stock);
+  const clients = useStore((s) => s.clients);
+
   // Filters
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState("tous");
@@ -86,7 +86,7 @@ export function BonsScreen() {
   const [formMontant, setFormMontant] = useState<string>("");
 
   const filtered = useMemo(() => {
-    return bonsSortie.filter((b) => {
+    return bons.filter((b) => {
       if (
         search &&
         !b.reference.toLowerCase().includes(search.toLowerCase()) &&
@@ -99,15 +99,15 @@ export function BonsScreen() {
       if (dateFilter && b.date !== dateFilter) return false;
       return true;
     });
-  }, [search, clientFilter, motifFilter, dateFilter]);
+  }, [bons, search, clientFilter, motifFilter, dateFilter]);
 
   const selectedStock: StockItem | undefined = useMemo(
     () => stock.find((s) => s.id === formStockId),
-    [formStockId],
+    [stock, formStockId],
   );
   const selectedClient = useMemo(
     () => clients.find((c) => c.id === formClientId),
-    [formClientId],
+    [clients, formClientId],
   );
 
   const quantiteNum = Number(formQuantite) || 0;
@@ -131,6 +131,17 @@ export function BonsScreen() {
   }
 
   function handleValider() {
+    if (!selectedStock || !selectedClient || !formMotif) return;
+    addBon({
+      date: formDate,
+      clientId: formClientId,
+      clientNom: selectedClient.nom,
+      marchandise: selectedStock.marchandise,
+      quantite: quantiteNum,
+      unite: selectedStock.unite,
+      motif: formMotif,
+      montant: montantNum,
+    });
     toast({
       title: "Bon de sortie validé",
       description: "Bon de sortie validé — stock décrémenté.",

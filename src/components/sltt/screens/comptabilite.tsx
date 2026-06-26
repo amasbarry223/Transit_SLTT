@@ -12,7 +12,7 @@ import {
   CreditCard,
   HandCoins,
 } from "lucide-react";
-import { ecritures, type Ecriture, type PaiementMode } from "@/lib/mock-data";
+import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -67,10 +67,11 @@ const modeOptions: PaiementMode[] = [
 
 export function ComptabiliteScreen() {
   const { toast } = useToast();
+  const ecritures = useStore((s) => s.ecritures);
+  const recordPayment = useStore((s) => s.recordPayment);
+
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Ecriture | null>(null);
-  // Local copy so we can reflect payment updates visually (no real backend).
-  const [rows, setRows] = useState<Ecriture[]>(ecritures);
   const [montant, setMontant] = useState("");
   const [mode, setMode] = useState<PaiementMode>("Virement");
   const [datePaiement, setDatePaiement] = useState(
@@ -79,12 +80,12 @@ export function ComptabiliteScreen() {
   const [note, setNote] = useState("");
 
   const totalInvesti = useMemo(
-    () => rows.reduce((s, e) => s + e.montantInvesti, 0),
-    [rows],
+    () => ecritures.reduce((s, e) => s + e.montantInvesti, 0),
+    [ecritures],
   );
   const totalPaye = useMemo(
-    () => rows.reduce((s, e) => s + e.montantPaye, 0),
-    [rows],
+    () => ecritures.reduce((s, e) => s + e.montantPaye, 0),
+    [ecritures],
   );
   const totalDu = totalInvesti - totalPaye;
 
@@ -101,21 +102,7 @@ export function ComptabiliteScreen() {
   function valider() {
     if (!selected) return;
     const montantNum = Number(montant.replace(/\s/g, "")) || 0;
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === selected.id
-          ? {
-              ...r,
-              montantPaye: Math.min(
-                r.montantInvesti,
-                r.montantPaye + montantNum,
-              ),
-              modePaiement: mode,
-              note: note || r.note,
-            }
-          : r,
-      ),
-    );
+    recordPayment(selected.id, montantNum, mode, datePaiement, note);
     toast({
       title: "Paiement enregistré",
       description: "Le solde a été mis à jour.",
@@ -172,7 +159,7 @@ export function ComptabiliteScreen() {
             variant="secondary"
             className="rounded-full bg-slate-100 text-slate-600 border-slate-200"
           >
-            {rows.length}
+            {ecritures.length}
           </Badge>
         </div>
         <Table>
@@ -208,7 +195,7 @@ export function ComptabiliteScreen() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((e) => {
+            {ecritures.map((e) => {
               const reste = Math.max(0, e.montantInvesti - e.montantPaye);
               const ecart = e.montantPaye - e.montantInvesti;
               const ModeIcon = modeIcon[e.modePaiement];

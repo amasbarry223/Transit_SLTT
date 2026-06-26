@@ -13,11 +13,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
+import { useStore } from "@/lib/store";
 import {
-  getClientById,
-  getDossiersByClient,
-  getEcrituresByClient,
-  getBonsByClient,
   resteAPayer,
   type Ecriture,
   type EcritureStatut,
@@ -75,23 +72,46 @@ function EmptyState({ label }: { label: string }) {
 
 export function ClientFicheScreen() {
   const { selectedId, go, openDossier } = useNav();
+  const clients = useStore((s) => s.clients);
+  const allDossiers = useStore((s) => s.dossiers);
+  const allEcritures = useStore((s) => s.ecritures);
+  const allBons = useStore((s) => s.bons);
+
   const client = useMemo(
-    () => (selectedId ? getClientById(selectedId) : undefined),
-    [selectedId],
+    () => clients.find((c) => c.id === selectedId),
+    [clients, selectedId],
   );
 
   const dossiers = useMemo(
-    () => (selectedId ? getDossiersByClient(selectedId) : []),
-    [selectedId],
+    () =>
+      selectedId
+        ? allDossiers.filter((d) => d.clientId === selectedId)
+        : [],
+    [allDossiers, selectedId],
   );
   const ecritures = useMemo(
-    () => (selectedId ? getEcrituresByClient(selectedId) : []),
-    [selectedId],
+    () =>
+      selectedId
+        ? allEcritures.filter((e) => e.clientId === selectedId)
+        : [],
+    [allEcritures, selectedId],
   );
   const bons = useMemo(
-    () => (selectedId ? getBonsByClient(selectedId) : []),
-    [selectedId],
+    () =>
+      selectedId ? allBons.filter((b) => b.clientId === selectedId) : [],
+    [allBons, selectedId],
   );
+
+  // Compute live KPI values from the client's ecritures for accuracy.
+  const { totalPaye, totalDu } = useMemo(() => {
+    let paye = 0;
+    let du = 0;
+    for (const e of ecritures) {
+      paye += e.montantPaye;
+      du += resteAPayer(e);
+    }
+    return { totalPaye: paye, totalDu: du };
+  }, [ecritures]);
 
   if (!client) {
     return (
@@ -180,14 +200,14 @@ export function ClientFicheScreen() {
         />
         <KpiCard
           label="Total payé"
-          value={formatFCFA(client.totalPaye)}
+          value={formatFCFA(totalPaye)}
           icon={Wallet}
           tone="emerald"
           sublabel="encaissements"
         />
         <KpiCard
           label="Reste à payer"
-          value={formatFCFA(client.totalDu)}
+          value={formatFCFA(totalDu)}
           icon={Clock}
           tone="amber"
           sublabel="solde dû"
