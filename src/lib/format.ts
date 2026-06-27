@@ -24,16 +24,6 @@ export function formatFCFACompact(amount: number): string {
   return new Intl.NumberFormat("fr-FR").format(amount);
 }
 
-/** Format a date as "12 janv. 2026" */
-export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(d);
-}
-
 /** Format a date as "12/01/2026" */
 export function formatDateShort(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;

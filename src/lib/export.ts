@@ -1,11 +1,5 @@
 "use client";
 
-/**
- * Export utilities for CSV and printing.
- * All amounts are formatted in FCFA.
- */
-
-/** Escape a value for CSV (handle commas, quotes, newlines). */
 function csvEscape(value: unknown): string {
   const s = value == null ? "" : String(value);
   if (/[",\n;]/.test(s)) {
@@ -43,15 +37,6 @@ export function exportToCSV<T>(
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-}
-
-/**
- * Open the browser print dialog for the current page.
- * The calling component should ensure the page is in a printable state
- * (or just print the whole page — the @media print CSS will handle layout).
- */
-export function printPage(): void {
-  window.print();
 }
 
 /**
