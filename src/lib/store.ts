@@ -10,6 +10,8 @@ import {
   mouvements as seedMouvements,
   bonsSortie as seedBons,
   users as seedUsers,
+  subDossiers as seedSubDossiers,
+  fichiers as seedFichiers,
   type Client,
   type Dossier,
   type DossierStatut,
@@ -21,6 +23,8 @@ import {
   type BonMotif,
   type User,
   type UserRole,
+  type SubDossier,
+  type DossierFichier,
 } from "@/lib/mock-data";
 
 export type {
@@ -35,6 +39,8 @@ export type {
   BonMotif,
   User,
   UserRole,
+  SubDossier,
+  DossierFichier,
 };
 
 /** Input for creating/editing a dossier (without generated id/reference). */
@@ -70,6 +76,33 @@ export interface BonInput {
   unite: string;
   motif: BonMotif;
   montant: number;
+  statut?: "Validé" | "Brouillon";
+}
+
+export interface StockItemInput {
+  marchandise: string;
+  quantite: number;
+  unite: string;
+  seuil: number;
+  depositaire: string;
+  commercial: string;
+  sommePayee: number;
+  resteAPayer: number;
+}
+
+export interface SubDossierInput {
+  dossierId: string;
+  nom: string;
+  description?: string;
+}
+
+export interface FichierInput {
+  dossierId: string;
+  sousDossierId?: string;
+  nom: string;
+  taille: number;
+  type: string;
+  dataUrl: string;
 }
 
 export interface UserInput {
@@ -88,6 +121,8 @@ interface SLTTState {
   mouvements: Mouvement[];
   bons: BonSortie[];
   users: User[];
+  subDossiers: SubDossier[];
+  fichiers: DossierFichier[];
 
   // Counters for reference generation
   dossierSeq: number;
@@ -97,6 +132,7 @@ interface SLTTState {
   addDossier: (input: DossierInput) => Dossier;
   updateDossier: (id: string, input: DossierInput) => void;
   getDossier: (id: string) => Dossier | undefined;
+  transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string) => void;
 
   // ---- Clients ----
   addClient: (input: ClientInput) => Client;
@@ -114,16 +150,29 @@ interface SLTTState {
   addEcriture: (e: Omit<Ecriture, "id">) => Ecriture;
 
   // ---- Stock ----
+  addStockItem: (input: StockItemInput) => StockItem;
   addStockEntry: (stockId: string, quantite: number, responsable: string) => void;
   addStockExit: (stockId: string, quantite: number, responsable: string, bonRef?: string) => void;
 
   // ---- Bons de sortie ----
   addBon: (input: BonInput) => BonSortie;
+  validateBon: (id: string) => void;
 
   // ---- Users ----
   addUser: (input: UserInput) => User;
   updateUser: (id: string, input: UserInput) => void;
   toggleUserActive: (id: string) => void;
+  removeUser: (id: string) => void;
+
+  // ---- Sous-dossiers ----
+  addSubDossier: (input: SubDossierInput) => SubDossier;
+  updateSubDossier: (id: string, nom: string, description?: string) => void;
+  deleteSubDossier: (id: string) => void;
+
+  // ---- Fichiers ----
+  addFichier: (input: FichierInput) => DossierFichier;
+  deleteFichier: (id: string) => void;
+  deleteFichiersByDossier: (dossierId: string) => void;
 
   // ---- Reset ----
   resetAll: () => void;
@@ -143,6 +192,8 @@ export const useStore = create<SLTTState>()(
       mouvements: seedMouvements,
       bons: seedBons,
       users: seedUsers,
+      subDossiers: seedSubDossiers,
+      fichiers: seedFichiers,
       dossierSeq: 43, // next will be SLTT-TR-2026-0043
       bonSeq: 52, // next will be BS-2026-0052
 
@@ -161,6 +212,9 @@ export const useStore = create<SLTTState>()(
         set((s) => ({
           dossiers: [newDossier, ...s.dossiers],
           dossierSeq: seq + 1,
+          clients: s.clients.map((c) =>
+            c.id === input.clientId ? { ...c, nbDossiers: c.nbDossiers + 1 } : c,
+          ),
         }));
         return newDossier;
       },
@@ -172,6 +226,40 @@ export const useStore = create<SLTTState>()(
         }));
       },
       getDossier: (id) => get().dossiers.find((d) => d.id === id),
+      transitionDossier: (id, newStatut, montantRecu, modePaiement, transitionNote) => {
+        const dossier = get().dossiers.find((d) => d.id === id);
+        if (!dossier) return;
+        const updatedMontantPaye =
+          montantRecu !== undefined
+            ? Math.min(dossier.montantInvesti, dossier.montantPaye + montantRecu)
+            : dossier.montantPaye;
+
+        set((s) => {
+          const updatedDossiers = s.dossiers.map((d) =>
+            d.id === id
+              ? { ...d, statut: newStatut, montantPaye: updatedMontantPaye }
+              : d,
+          );
+          // Auto-create écriture when dossier is soldé with a payment
+          let updatedEcritures = s.ecritures;
+          if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
+            const seq = s.ecritures.length + 1002;
+            const autoEcriture: Ecriture = {
+              id: `E-${seq}`,
+              date: new Date().toISOString().slice(0, 10),
+              clientId: dossier.clientId,
+              clientNom: dossier.clientNom,
+              dossierId: dossier.id,
+              montantInvesti: dossier.montantInvesti,
+              montantPaye: updatedMontantPaye,
+              modePaiement: modePaiement ?? "Virement",
+              note: transitionNote || `Solde dossier ${dossier.reference}`,
+            };
+            updatedEcritures = [autoEcriture, ...s.ecritures];
+          }
+          return { dossiers: updatedDossiers, ecritures: updatedEcritures };
+        });
+      },
 
       // ---- Clients ----
       addClient: (input) => {
@@ -223,6 +311,13 @@ export const useStore = create<SLTTState>()(
       },
 
       // ---- Stock ----
+      addStockItem: (input) => {
+        const seq = get().stock.length + 8;
+        const id = `S-${pad(seq, 2)}`;
+        const newItem: StockItem = { id, ...input };
+        set((s) => ({ stock: [...s.stock, newItem] }));
+        return newItem;
+      },
       addStockEntry: (stockId, quantite, responsable) => {
         const now = new Date();
         const seq = get().mouvements.length + 22;
@@ -274,26 +369,23 @@ export const useStore = create<SLTTState>()(
         const seq = get().bonSeq;
         const id = `B-${pad(seq, 4)}`;
         const reference = `BS-2026-${pad(seq, 4)}`;
+        const isBrouillon = input.statut === "Brouillon";
         const newBon: BonSortie = {
           id,
           reference,
           ...input,
-          statut: "Validé",
+          statut: isBrouillon ? "Brouillon" : "Validé",
         };
-        // Decrement stock
-        const item = get().stock.find(
-          (s) => s.marchandise === input.marchandise,
-        );
+        const item = !isBrouillon
+          ? get().stock.find((s) => s.marchandise === input.marchandise)
+          : undefined;
         set((s) => ({
           bons: [newBon, ...s.bons],
           bonSeq: seq + 1,
           stock: item
             ? s.stock.map((it) =>
                 it.id === item.id
-                  ? {
-                      ...it,
-                      quantite: Math.max(0, it.quantite - input.quantite),
-                    }
+                  ? { ...it, quantite: Math.max(0, it.quantite - input.quantite) }
                   : it,
               )
             : s.stock,
@@ -314,6 +406,36 @@ export const useStore = create<SLTTState>()(
             : s.mouvements,
         }));
         return newBon;
+      },
+      validateBon: (id) => {
+        const bon = get().bons.find((b) => b.id === id);
+        if (!bon || bon.statut !== "Brouillon") return;
+        const item = get().stock.find((s) => s.marchandise === bon.marchandise);
+        set((s) => ({
+          bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" } : b)),
+          stock: item
+            ? s.stock.map((it) =>
+                it.id === item.id
+                  ? { ...it, quantite: Math.max(0, it.quantite - bon.quantite) }
+                  : it,
+              )
+            : s.stock,
+          mouvements: item
+            ? [
+                {
+                  id: `M-${pad(s.mouvements.length + 22, 3)}`,
+                  date: bon.date,
+                  type: "Sortie" as const,
+                  marchandise: bon.marchandise,
+                  quantite: bon.quantite,
+                  unite: bon.unite,
+                  responsable: "Oumar Cissé",
+                  bonRef: bon.reference,
+                },
+                ...s.mouvements,
+              ]
+            : s.mouvements,
+        }));
       },
 
       // ---- Users ----
@@ -343,6 +465,54 @@ export const useStore = create<SLTTState>()(
           ),
         }));
       },
+      removeUser: (id) => {
+        set((s) => ({ users: s.users.filter((u) => u.id !== id) }));
+      },
+
+      // ---- Sous-dossiers ----
+      addSubDossier: (input) => {
+        const seq = get().subDossiers.length + 1;
+        const id = `SD-${pad(seq, 4)}`;
+        const newSD: SubDossier = {
+          id,
+          ...input,
+          dateCreation: new Date().toISOString().slice(0, 10),
+        };
+        set((s) => ({ subDossiers: [newSD, ...s.subDossiers] }));
+        return newSD;
+      },
+      updateSubDossier: (id, nom, description) => {
+        set((s) => ({
+          subDossiers: s.subDossiers.map((sd) =>
+            sd.id === id ? { ...sd, nom, description } : sd,
+          ),
+        }));
+      },
+      deleteSubDossier: (id) => {
+        set((s) => ({
+          subDossiers: s.subDossiers.filter((sd) => sd.id !== id),
+          fichiers: s.fichiers.filter((f) => f.sousDossierId !== id),
+        }));
+      },
+
+      // ---- Fichiers ----
+      addFichier: (input) => {
+        const seq = get().fichiers.length + 1;
+        const id = `F-${pad(seq, 4)}`;
+        const newF: DossierFichier = {
+          id,
+          ...input,
+          dateUpload: new Date().toISOString().slice(0, 10),
+        };
+        set((s) => ({ fichiers: [newF, ...s.fichiers] }));
+        return newF;
+      },
+      deleteFichier: (id) => {
+        set((s) => ({ fichiers: s.fichiers.filter((f) => f.id !== id) }));
+      },
+      deleteFichiersByDossier: (dossierId) => {
+        set((s) => ({ fichiers: s.fichiers.filter((f) => f.dossierId !== dossierId) }));
+      },
 
       // ---- Reset ----
       resetAll: () => {
@@ -354,6 +524,8 @@ export const useStore = create<SLTTState>()(
           mouvements: seedMouvements,
           bons: seedBons,
           users: seedUsers,
+          subDossiers: seedSubDossiers,
+          fichiers: seedFichiers,
           dossierSeq: 43,
           bonSeq: 52,
         });
@@ -370,6 +542,8 @@ export const useStore = create<SLTTState>()(
         mouvements: s.mouvements,
         bons: s.bons,
         users: s.users,
+        subDossiers: s.subDossiers,
+        fichiers: s.fichiers,
         dossierSeq: s.dossierSeq,
         bonSeq: s.bonSeq,
       }),

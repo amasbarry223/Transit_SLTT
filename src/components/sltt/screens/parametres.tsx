@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   UserPlus,
   Pencil,
-  MoreHorizontal,
+  Trash2,
   Shield,
   Lock,
-  KeyRound,
   RefreshCw,
   Bell,
   Globe,
@@ -17,6 +16,10 @@ import {
   User,
   RotateCcw,
   AlertTriangle,
+  ScrollText,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { UserInput, UserRole } from "@/lib/store";
@@ -37,15 +40,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -54,6 +48,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableHeader,
   TableBody,
@@ -61,15 +65,79 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { PageHeader } from "@/components/sltt/page-header";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-type ParamTab = "users" | "profile" | "security" | "preferences";
+type ParamTab = "users" | "profile" | "security" | "audit" | "preferences";
 
-const tabs: { key: ParamTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: "users", label: "Utilisateurs & rôles", icon: Users },
-  { key: "profile", label: "Mon profil", icon: User },
-  { key: "security", label: "Sécurité", icon: Shield },
-  { key: "preferences", label: "Préférences", icon: Globe },
+const AUDIT_PAGE_SIZE = 8;
+
+type AuditAction =
+  | "Connexion"
+  | "Création"
+  | "Modification"
+  | "Validation"
+  | "Paiement"
+  | "Export";
+
+type AuditModule =
+  | "Authentification"
+  | "Dossiers"
+  | "Comptabilité"
+  | "Stock"
+  | "Bons"
+  | "Clients"
+  | "Utilisateurs";
+
+type AuditEntry = {
+  id: string;
+  date: string;
+  user: string;
+  module: AuditModule;
+  action: AuditAction;
+  detail: string;
+  ip: string;
+};
+
+const auditLog: AuditEntry[] = [
+  { id: "A-001", date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", module: "Dossiers", action: "Création", detail: "Dossier DOS-2026-0142 créé — Client SEDIM SA", ip: "154.66.12.7" },
+  { id: "A-002", date: "2026-01-09T08:45:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Paiement", detail: "Paiement 850 000 FCFA — Écriture EC-2026-0089", ip: "41.202.18.50" },
+  { id: "A-003", date: "2026-01-09T08:12:00", user: "Amadou Traoré", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Chrome · Windows", ip: "41.202.18.45" },
+  { id: "A-004", date: "2026-01-08T17:40:00", user: "Fatoumata Diallo", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Firefox · macOS", ip: "41.202.18.50" },
+  { id: "A-005", date: "2026-01-08T16:22:00", user: "Oumar Cissé", module: "Stock", action: "Modification", detail: "Sortie 120 sacs — Riz parfumé (entrepôt A)", ip: "41.202.18.61" },
+  { id: "A-006", date: "2026-01-08T14:10:00", user: "Amadou Traoré", module: "Bons", action: "Validation", detail: "Bon BS-2026-0048 validé — Vente", ip: "41.202.18.45" },
+  { id: "A-007", date: "2026-01-08T11:30:00", user: "Awa Traoré", module: "Clients", action: "Création", detail: "Client « Trans Mali Express » ajouté", ip: "41.202.18.72" },
+  { id: "A-008", date: "2026-01-07T16:20:00", user: "Oumar Cissé", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Chrome · Android", ip: "41.202.18.61" },
+  { id: "A-009", date: "2026-01-07T15:05:00", user: "Amadou Traoré", module: "Dossiers", action: "Export", detail: "Export PDF — 24 dossiers filtrés", ip: "41.202.18.45" },
+  { id: "A-010", date: "2026-01-07T10:18:00", user: "Amadou Traoré", module: "Utilisateurs", action: "Modification", detail: "Rôle mis à jour — Ibrahim Keïta → Agent de transit", ip: "41.202.18.45" },
+  { id: "A-011", date: "2026-01-06T09:55:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Création", detail: "Écriture EC-2026-0087 — SEDIM SA", ip: "41.202.18.50" },
+  { id: "A-012", date: "2026-01-05T17:30:00", user: "Oumar Cissé", module: "Stock", action: "Création", detail: "Entrée 500 L — Huile végétale", ip: "41.202.18.61" },
+];
+
+const actionTone: Record<
+  AuditAction,
+  "blue" | "emerald" | "amber" | "indigo" | "slate" | "red"
+> = {
+  Connexion: "slate",
+  Création: "blue",
+  Modification: "indigo",
+  Validation: "emerald",
+  Paiement: "emerald",
+  Export: "amber",
+};
+
+const tabs: {
+  key: ParamTab;
+  label: string;
+  shortLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { key: "users", label: "Utilisateurs & rôles", shortLabel: "Utilisateurs", icon: Users },
+  { key: "profile", label: "Mon profil", shortLabel: "Profil", icon: User },
+  { key: "security", label: "Sécurité", shortLabel: "Sécurité", icon: Shield },
+  { key: "audit", label: "Audit & traçabilité", shortLabel: "Audit", icon: ScrollText },
+  { key: "preferences", label: "Préférences", shortLabel: "Préférences", icon: Globe },
 ];
 
 const roleTone: Record<UserRole, "red" | "blue" | "emerald" | "amber" | "indigo"> = {
@@ -127,8 +195,12 @@ function UsersTab() {
   const addUser = useStore((s) => s.addUser);
   const updateUser = useStore((s) => s.updateUser);
   const toggleUserActive = useStore((s) => s.toggleUserActive);
+  const removeUser = useStore((s) => s.removeUser);
 
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const userToDelete = users.find((u) => u.id === deleteId);
+
+  const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editNom, setEditNom] = useState("");
@@ -224,21 +296,17 @@ function UsersTab() {
     };
     addUser(input);
     toast({ title: "Utilisateur créé avec succès" });
-    setSheetOpen(false);
+    setCreateOpen(false);
     resetForm();
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Utilisateurs</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Gérez les comptes, rôles et permissions de l'équipe.
-          </p>
-        </div>
-        <Button onClick={() => setSheetOpen(true)}>
+        <p className="text-sm text-slate-500">
+          Gérez les comptes, rôles et permissions de l&apos;équipe.
+        </p>
+        <Button onClick={() => setCreateOpen(true)} className="shrink-0">
           <UserPlus className="size-4" />
           Ajouter un utilisateur
         </Button>
@@ -323,11 +391,12 @@ function UsersTab() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-slate-500 hover:text-primary"
-                      aria-label="Plus d'options"
-                      title="Plus d'options"
+                      className="size-8 text-slate-500 hover:text-destructive"
+                      aria-label={`Supprimer ${u.nom}`}
+                      title="Supprimer l'utilisateur"
+                      onClick={() => setDeleteId(u.id)}
                     >
-                      <MoreHorizontal className="size-4" />
+                      <Trash2 className="size-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -337,20 +406,45 @@ function UsersTab() {
         </Table>
       </Card>
 
-      {/* Add user sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="text-lg">Nouvel utilisateur</SheetTitle>
-            <SheetDescription>
-              Créez un compte et définissez ses permissions.
-            </SheetDescription>
-          </SheetHeader>
+      {/* Delete user confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => { if (!v) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l&apos;utilisateur ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L&apos;utilisateur <strong>{userToDelete?.nom}</strong> sera définitivement supprimé.
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteId) {
+                  removeUser(deleteId);
+                  toast({ title: "Utilisateur supprimé", description: `${userToDelete?.nom} a été supprimé.` });
+                  setDeleteId(null);
+                }
+              }}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-1 flex-col gap-5 px-4 py-2 overflow-y-auto"
-          >
+      {/* Add user dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nouvel utilisateur</DialogTitle>
+            <DialogDescription>
+              Créez un compte et définissez ses permissions.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="u-nom" className="text-sm font-medium text-slate-700">
                 Nom complet
@@ -399,7 +493,7 @@ function UsersTab() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
-                Code d'accès
+                Code d&apos;accès
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -419,7 +513,7 @@ function UsersTab() {
                 </Button>
               </div>
               <p className="text-xs text-slate-500">
-                Code à 6 caractères, communiquez-le à l'utilisateur.
+                Code à 6 caractères, communiquez-le à l&apos;utilisateur.
               </p>
             </div>
 
@@ -444,20 +538,20 @@ function UsersTab() {
                 ))}
               </div>
             </div>
-          </form>
 
-          <SheetFooter className="flex-row justify-end gap-2 border-t border-border">
-            <SheetClose asChild>
-              <Button type="button" variant="outline">
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+              >
                 Annuler
               </Button>
-            </SheetClose>
-            <Button type="button" onClick={handleSubmit}>
-              Créer le compte
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+              <Button type="submit">Créer le compte</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit user dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -540,13 +634,10 @@ function ProfileTab() {
   const [pTel, setPTel] = useState("+223 76 12 34 56");
   const [pPoste, setPPoste] = useState("Directeur des opérations");
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Mon profil</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Vos informations personnelles et professionnelles.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500">
+        Vos informations personnelles et professionnelles.
+      </p>
       <Card className="p-6 shadow-sm border-border/80">
         <form
           onSubmit={(e) => {
@@ -557,7 +648,7 @@ function ProfileTab() {
         >
           <div className="flex items-center gap-4">
             <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-bold">
-              AT
+              {getInitials(pNom || "Amadou Traoré")}
             </div>
             <div>
               <p className="font-semibold text-slate-900">{pNom || "Amadou Traoré"}</p>
@@ -626,21 +717,11 @@ function SecurityTab() {
   const [newPwd, setNewPwd] = useState("");
   const [confPwd, setConfPwd] = useState("");
 
-  const loginLog = [
-    { date: "2026-01-09T08:12:00", user: "Amadou Traoré", ip: "41.202.18.45", device: "Chrome · Windows" },
-    { date: "2026-01-08T17:40:00", user: "Fatoumata Diallo", ip: "41.202.18.50", device: "Firefox · macOS" },
-    { date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", ip: "154.66.12.7", device: "Safari · iPhone" },
-    { date: "2026-01-07T16:20:00", user: "Oumar Cissé", ip: "41.202.18.61", device: "Chrome · Android" },
-  ];
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Sécurité</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Mot de passe, authentification et historique de connexion.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500">
+        Mot de passe, authentification et options de sécurité du compte.
+      </p>
 
       {/* Mot de passe */}
       <Card className="p-6 shadow-sm border-border/80">
@@ -747,52 +828,238 @@ function SecurityTab() {
           </div>
         </div>
       </Card>
+    </div>
+  );
+}
 
-      {/* Journal des connexions */}
-      <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-border px-5 py-3">
-          <KeyRound className="size-4 text-slate-500" />
+function AuditTab() {
+  const [query, setQuery] = useState("");
+  const [moduleFilter, setModuleFilter] = useState<string>("all");
+  const [actionFilter, setActionFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+
+  const modules = useMemo(
+    () => [...new Set(auditLog.map((e) => e.module))].sort(),
+    [],
+  );
+  const actions = useMemo(
+    () => [...new Set(auditLog.map((e) => e.action))].sort(),
+    [],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return auditLog.filter((e) => {
+      if (moduleFilter !== "all" && e.module !== moduleFilter) return false;
+      if (actionFilter !== "all" && e.action !== actionFilter) return false;
+      if (q) {
+        const haystack = `${e.user} ${e.module} ${e.action} ${e.detail} ${e.ip}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [query, moduleFilter, actionFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / AUDIT_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice(
+    (safePage - 1) * AUDIT_PAGE_SIZE,
+    safePage * AUDIT_PAGE_SIZE,
+  );
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * AUDIT_PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * AUDIT_PAGE_SIZE, filtered.length);
+
+  const hasActiveFilters =
+    query.trim() !== "" || moduleFilter !== "all" || actionFilter !== "all";
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500">
+        Journal des actions utilisateurs — connexions, modifications et opérations
+        sensibles.
+      </p>
+
+      <Card className="p-4 shadow-sm border-border/80">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Rechercher utilisateur, action…"
+              className="h-10 pl-9"
+              aria-label="Rechercher dans le journal d'audit"
+            />
+          </div>
+
+          <Select
+            value={moduleFilter}
+            onValueChange={(v) => {
+              setModuleFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-48" aria-label="Filtrer par module">
+              <SelectValue placeholder="Module" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les modules</SelectItem>
+              {modules.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={actionFilter}
+            onValueChange={(v) => {
+              setActionFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filtrer par action">
+              <SelectValue placeholder="Action" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les actions</SelectItem>
+              {actions.map((a) => (
+                <SelectItem key={a} value={a}>
+                  {a}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500"
+              onClick={() => {
+                setQuery("");
+                setModuleFilter("all");
+                setActionFilter("all");
+                setPage(1);
+              }}
+            >
+              Réinitialiser
+            </Button>
+          )}
+
+          <p className="ml-auto text-xs tabular-nums text-slate-500">
+            {filtered.length} entrée{filtered.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+      </Card>
+
+      <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+          <ScrollText className="size-4 text-slate-400" />
           <h3 className="text-sm font-semibold text-slate-900">
-            Journal des connexions
+            Journal d&apos;audit
           </h3>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
-                Date
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
-                Utilisateur
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
-                Adresse IP
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
-                Appareil
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loginLog.map((row, i) => (
-              <TableRow
-                key={i}
-                className="hover:bg-slate-50/60 border-b border-border"
-              >
-                <TableCell className="py-3 text-slate-600 tabular-nums">
-                  {formatDateShort(row.date)}
-                </TableCell>
-                <TableCell className="py-3 font-medium text-slate-900">
-                  {row.user}
-                </TableCell>
-                <TableCell className="py-3 text-slate-600 font-mono text-xs">
-                  {row.ip}
-                </TableCell>
-                <TableCell className="py-3 text-slate-600">{row.device}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center text-sm text-slate-500">
+            Aucune entrée ne correspond aux filtres sélectionnés.
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Date / Heure
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Utilisateur
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Module
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Action
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Détail
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                      IP
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className="border-b border-border hover:bg-slate-50/60"
+                    >
+                      <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                        {formatDateShort(row.date)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3.5 font-medium text-slate-900">
+                        {row.user}
+                      </TableCell>
+                      <TableCell className="hidden px-4 py-3.5 sm:table-cell">
+                        <ToneBadge tone="slate">{row.module}</ToneBadge>
+                      </TableCell>
+                      <TableCell className="px-4 py-3.5">
+                        <ToneBadge tone={actionTone[row.action]}>{row.action}</ToneBadge>
+                      </TableCell>
+                      <TableCell className="max-w-[280px] px-4 py-3.5 text-sm text-slate-600">
+                        <span className="line-clamp-2" title={row.detail}>
+                          {row.detail}
+                        </span>
+                      </TableCell>
+                      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-500 md:table-cell">
+                        {row.ip}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs tabular-nums text-slate-500">
+                {startIdx}–{endIdx} sur {filtered.length} entrée
+                {filtered.length !== 1 ? "s" : ""}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  aria-label="Page précédente"
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
+                  {safePage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  aria-label="Page suivante"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </Card>
     </div>
   );
@@ -804,13 +1071,10 @@ function PreferencesTab() {
   const [emailNotif, setEmailNotif] = useState(true);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Préférences</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Personnalisez la langue, les formats et les notifications.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500">
+        Personnalisez la langue, les formats et les notifications.
+      </p>
       <Card className="p-6 shadow-sm border-border/80">
         <form
           onSubmit={(e) => {
@@ -941,58 +1205,87 @@ function PreferencesTab() {
 /* MAIN SCREEN                                                          */
 /* ------------------------------------------------------------------ */
 
+function UsersTabBadge() {
+  const count = useStore((s) => s.users.length);
+  return (
+    <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600">
+      {count}
+    </span>
+  );
+}
+
 export function ParametresScreen() {
   const [active, setActive] = useState<ParamTab>("users");
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Paramètres</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Gérez votre compte, les utilisateurs et les préférences de l'application.
-        </p>
-      </div>
+      <PageHeader
+        title="Paramètres"
+        description="Gérez votre compte, les utilisateurs et les préférences de l'application."
+      />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-        {/* Left sidebar */}
-        <Card className="p-2 shadow-sm border-border/80 lg:col-span-1 h-fit">
-          <nav className="flex flex-col gap-1">
+      <Tabs
+        value={active}
+        onValueChange={(v) => setActive(v as ParamTab)}
+        className="gap-0"
+      >
+        {/* Barre d'onglets pleine largeur (alignée sur les bords du layout) */}
+        <div
+          className={cn(
+            "sticky top-0 z-10 -mx-4 border-b border-border bg-background/95 backdrop-blur sm:-mx-6 lg:-mx-8",
+            "supports-[backdrop-filter]:bg-background/80",
+          )}
+        >
+          <TabsList
+            className={cn(
+              "flex h-12 w-full items-stretch rounded-none bg-slate-50/80 p-0",
+              "dark:bg-muted/30",
+            )}
+          >
             {tabs.map((t) => {
-              const isActive = active === t.key;
               const Icon = t.icon;
               return (
-                <button
+                <TabsTrigger
                   key={t.key}
-                  onClick={() => setActive(t.key)}
+                  value={t.key}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors text-left",
-                    isActive
-                      ? "bg-sidebar-accent text-primary font-medium"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                    "relative flex flex-1 items-center justify-center gap-2 rounded-none",
+                    "border-0 border-b-2 border-transparent bg-transparent px-2 py-0",
+                    "text-sm font-medium text-slate-500 shadow-none transition-colors",
+                    "hover:bg-white/60 hover:text-slate-900",
+                    "data-[state=active]:border-primary data-[state=active]:bg-white",
+                    "data-[state=active]:text-primary data-[state=active]:shadow-none",
+                    "focus-visible:ring-0 focus-visible:ring-offset-0",
+                    "[&[data-state=active]_svg]:text-primary",
+                    "min-w-0",
                   )}
-                  aria-current={isActive ? "page" : undefined}
                 >
-                  <Icon
-                    className={cn(
-                      "size-4 shrink-0",
-                      isActive ? "text-primary" : "text-slate-400",
-                    )}
-                  />
-                  <span className="truncate">{t.label}</span>
-                </button>
+                  <Icon className="size-4 shrink-0 text-slate-400" />
+                  <span className="hidden truncate sm:inline">{t.label}</span>
+                  <span className="truncate sm:hidden">{t.shortLabel}</span>
+                  {t.key === "users" && <UsersTabBadge />}
+                </TabsTrigger>
               );
             })}
-          </nav>
-        </Card>
-
-        {/* Right content */}
-        <div className="lg:col-span-3">
-          {active === "users" && <UsersTab />}
-          {active === "profile" && <ProfileTab />}
-          {active === "security" && <SecurityTab />}
-          {active === "preferences" && <PreferencesTab />}
+          </TabsList>
         </div>
-      </div>
+
+        <TabsContent value="users" className="mt-6 focus-visible:outline-none">
+          <UsersTab />
+        </TabsContent>
+        <TabsContent value="profile" className="mt-6 focus-visible:outline-none">
+          <ProfileTab />
+        </TabsContent>
+        <TabsContent value="security" className="mt-6 focus-visible:outline-none">
+          <SecurityTab />
+        </TabsContent>
+        <TabsContent value="audit" className="mt-6 focus-visible:outline-none">
+          <AuditTab />
+        </TabsContent>
+        <TabsContent value="preferences" className="mt-6 focus-visible:outline-none">
+          <PreferencesTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

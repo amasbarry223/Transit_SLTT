@@ -36,7 +36,12 @@ export function Sidebar() {
   const go = useNav((s) => s.go);
 
   const isActive = (key: ViewKey) => {
-    if (key === "dossiers" && view === "dossier-form") return true;
+    if (
+      key === "dossiers" &&
+      (view === "dossier-form" || view === "dossier-detail")
+    ) {
+      return true;
+    }
     if (key === "clients" && view === "client-fiche") return true;
     return view === key;
   };
@@ -121,7 +126,12 @@ export function MobileNav() {
   const go = useNav((s) => s.go);
 
   const isActive = (key: ViewKey) => {
-    if (key === "dossiers" && view === "dossier-form") return true;
+    if (
+      key === "dossiers" &&
+      (view === "dossier-form" || view === "dossier-detail")
+    ) {
+      return true;
+    }
     if (key === "clients" && view === "client-fiche") return true;
     return view === key;
   };

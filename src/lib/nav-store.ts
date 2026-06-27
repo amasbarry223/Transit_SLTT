@@ -7,6 +7,7 @@ export type ViewKey =
   | "dashboard"
   | "dossiers"
   | "dossier-form"
+  | "dossier-detail"
   | "comptabilite"
   | "bilans"
   | "entreposage"
@@ -24,6 +25,7 @@ interface NavState {
   isAuthenticated: boolean;
   go: (view: ViewKey, opts?: { id?: string | null }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
+  openDossierDetail: (id: string) => void;
   openClient: (id: string | null) => void;
   login: () => void;
   logout: () => void;
@@ -39,6 +41,8 @@ export const useNav = create<NavState>()(
       go: (view, opts) => set({ view, selectedId: opts?.id ?? null }),
       openDossier: (id, mode = "edit") =>
         set({ view: "dossier-form", selectedId: id, dossierFormMode: mode }),
+      openDossierDetail: (id) =>
+        set({ view: "dossier-detail", selectedId: id }),
       openClient: (id) => set({ view: "client-fiche", selectedId: id }),
       login: () => set({ isAuthenticated: true, view: "dashboard" }),
       logout: () =>

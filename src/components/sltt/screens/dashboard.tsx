@@ -43,7 +43,6 @@ import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact } from "@/lib/format";
-import { encaissementsParMois, ecartsParPeriode } from "@/lib/mock-data";
 
 /* ------------------------------------------------------------------ */
 /* CHART COLORS                                                        */
@@ -178,6 +177,36 @@ export function DashboardScreen() {
     () => stock.reduce((sum, s) => sum + s.sommePayee + s.resteAPayer, 0),
     [stock],
   );
+
+  // ---- Chart: encaissements des 6 derniers mois ----
+  const encaissementsParMois = React.useMemo(() => {
+    const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const m = d.getMonth();
+      const y = d.getFullYear();
+      const valeur = dossiers
+        .filter((dos) => { const dd = new Date(dos.date); return dd.getFullYear() === y && dd.getMonth() === m; })
+        .reduce((sum, dos) => sum + dos.montantPaye, 0);
+      return { mois: MONTHS[m], valeur };
+    });
+  }, [dossiers]);
+
+  // ---- Chart: marge brute des 6 derniers mois ----
+  const ecartsParPeriode = React.useMemo(() => {
+    const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const m = d.getMonth();
+      const y = d.getFullYear();
+      const ecart = dossiers
+        .filter((dos) => { const dd = new Date(dos.date); return dd.getFullYear() === y && dd.getMonth() === m; })
+        .reduce((sum, dos) => sum + (dos.fraisPrestation - dos.droitDouane - dos.fraisCircuit), 0);
+      return { periode: MONTHS[m], ecart };
+    });
+  }, [dossiers]);
 
   // ---- Derniers dossiers (sorted by date desc, first 6) ----
   const derniersDossiers = React.useMemo(

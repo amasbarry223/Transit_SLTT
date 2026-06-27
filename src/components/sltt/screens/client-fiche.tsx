@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Phone,
   Mail,
@@ -11,9 +11,17 @@ import {
   Wallet,
   Clock,
   ArrowLeft,
+  Truck,
+  TrendingUp,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Building2,
+  User,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import type { Client } from "@/lib/mock-data";
 import {
   resteAPayer,
   type Ecriture,
@@ -21,6 +29,7 @@ import {
   type BonMotif,
 } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import {
   ToneBadge,
@@ -38,6 +47,22 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 6;
+
+type FicheTab = "dossiers" | "paiements" | "bons";
+
+const tabs: {
+  key: FicheTab;
+  label: string;
+  shortLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban },
+  { key: "paiements", label: "Paiements", shortLabel: "Paiements", icon: Wallet },
+  { key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: Truck },
+];
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -48,6 +73,12 @@ function getInitials(name: string): string {
     return words[0].slice(0, 2).toUpperCase();
   }
   return "?";
+}
+
+function avatarGradient(type: Client["type"]): string {
+  return type === "Entreprise"
+    ? "from-blue-600 to-indigo-700"
+    : "from-slate-600 to-slate-800";
 }
 
 function deriveEcritureStatut(e: Ecriture): EcritureStatut {
@@ -64,18 +95,154 @@ function bonStatutTone(statut: "Validé" | "Brouillon"): "emerald" | "amber" {
   return statut === "Validé" ? "emerald" : "amber";
 }
 
-function EmptyState({ label }: { label: string }) {
+function TablePagination({
+  startIdx,
+  endIdx,
+  totalItems,
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  startIdx: number;
+  endIdx: number;
+  totalItems: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems === 0) return null;
   return (
-    <div className="py-12 text-center text-sm text-slate-500">{label}</div>
+    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs tabular-nums text-slate-500">
+        {startIdx}–{endIdx} sur {totalItems}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page <= 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          aria-label="Page précédente"
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
+          {page} / {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          aria-label="Page suivante"
+        >
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  label,
+  action,
+}: {
+  label: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+      <p className="text-sm text-slate-500">{label}</p>
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
+function ClientProfileCard({
+  client,
+  onEdit,
+  onNewDossier,
+}: {
+  client: Client;
+  onEdit: () => void;
+  onNewDossier: () => void;
+}) {
+  const TypeIcon = client.type === "Entreprise" ? Building2 : User;
+
+  return (
+    <Card className="overflow-hidden p-0 shadow-sm border-border/80">
+      <div className="bg-gradient-to-r from-primary/5 via-blue-50/50 to-transparent px-6 py-5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div
+              className={cn(
+                "flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-lg font-bold text-white shadow-md",
+                avatarGradient(client.type),
+              )}
+            >
+              {getInitials(client.nom)}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                  {client.nom}
+                </h2>
+                <ToneBadge tone={client.type === "Entreprise" ? "blue" : "slate"}>
+                  <TypeIcon className="size-3" />
+                  {client.type}
+                </ToneBadge>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                {client.telephone && (
+                  <span className="inline-flex items-center gap-2 text-slate-600">
+                    <Phone className="size-3.5 shrink-0 text-slate-400" />
+                    <span className="font-mono text-xs">{client.telephone}</span>
+                  </span>
+                )}
+                {client.email && (
+                  <span className="inline-flex items-center gap-2 truncate text-slate-600">
+                    <Mail className="size-3.5 shrink-0 text-slate-400" />
+                    <span className="truncate text-xs">{client.email}</span>
+                  </span>
+                )}
+                {client.adresse && (
+                  <span className="inline-flex items-start gap-2 text-slate-600 sm:col-span-2 lg:col-span-1">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
+                    <span className="text-xs leading-relaxed">{client.adresse}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" className="h-9" onClick={onEdit}>
+              <Pencil className="size-4" />
+              Modifier
+            </Button>
+            <Button size="sm" className="h-9" onClick={onNewDossier}>
+              <Plus className="size-4" />
+              Nouveau dossier
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 
 export function ClientFicheScreen() {
-  const { selectedId, go, openDossier } = useNav();
+  const { selectedId, go, openDossier, openDossierDetail } = useNav();
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
   const allBons = useStore((s) => s.bons);
+
+  const [activeTab, setActiveTab] = useState<FicheTab>("dossiers");
+  const [dossierPage, setDossierPage] = useState(1);
+  const [paiementPage, setPaiementPage] = useState(1);
+  const [bonPage, setBonPage] = useState(1);
 
   const client = useMemo(
     () => clients.find((c) => c.id === selectedId),
@@ -84,34 +251,51 @@ export function ClientFicheScreen() {
 
   const dossiers = useMemo(
     () =>
-      selectedId
-        ? allDossiers.filter((d) => d.clientId === selectedId)
-        : [],
+      selectedId ? allDossiers.filter((d) => d.clientId === selectedId) : [],
     [allDossiers, selectedId],
   );
   const ecritures = useMemo(
     () =>
-      selectedId
-        ? allEcritures.filter((e) => e.clientId === selectedId)
-        : [],
+      selectedId ? allEcritures.filter((e) => e.clientId === selectedId) : [],
     [allEcritures, selectedId],
   );
   const bons = useMemo(
-    () =>
-      selectedId ? allBons.filter((b) => b.clientId === selectedId) : [],
+    () => (selectedId ? allBons.filter((b) => b.clientId === selectedId) : []),
     [allBons, selectedId],
   );
 
-  // Compute live KPI values from the client's ecritures for accuracy.
-  const { totalPaye, totalDu } = useMemo(() => {
+  const { totalInvesti, totalPaye, totalDu } = useMemo(() => {
+    let investi = 0;
     let paye = 0;
     let du = 0;
     for (const e of ecritures) {
+      investi += e.montantInvesti;
       paye += e.montantPaye;
       du += resteAPayer(e);
     }
-    return { totalPaye: paye, totalDu: du };
+    return { totalInvesti: investi, totalPaye: paye, totalDu: du };
   }, [ecritures]);
+
+  const dossierPages = Math.max(1, Math.ceil(dossiers.length / PAGE_SIZE));
+  const dossierSafePage = Math.min(dossierPage, dossierPages);
+  const pagedDossiers = dossiers.slice(
+    (dossierSafePage - 1) * PAGE_SIZE,
+    dossierSafePage * PAGE_SIZE,
+  );
+
+  const paiementPages = Math.max(1, Math.ceil(ecritures.length / PAGE_SIZE));
+  const paiementSafePage = Math.min(paiementPage, paiementPages);
+  const pagedEcritures = ecritures.slice(
+    (paiementSafePage - 1) * PAGE_SIZE,
+    paiementSafePage * PAGE_SIZE,
+  );
+
+  const bonPages = Math.max(1, Math.ceil(bons.length / PAGE_SIZE));
+  const bonSafePage = Math.min(bonPage, bonPages);
+  const pagedBons = bons.slice(
+    (bonSafePage - 1) * PAGE_SIZE,
+    bonSafePage * PAGE_SIZE,
+  );
 
   if (!client) {
     return (
@@ -120,10 +304,10 @@ export function ClientFicheScreen() {
           <ArrowLeft className="size-4" />
           Retour aux clients
         </Button>
-        <Card className="p-10 shadow-sm border-border/80 text-center">
+        <Card className="border-border/80 p-10 text-center shadow-sm">
           <p className="text-lg font-semibold text-slate-900">Client introuvable</p>
           <p className="mt-1 text-sm text-slate-500">
-            Le client demandé n'existe pas ou a été supprimé.
+            Le client demandé n&apos;existe pas ou a été supprimé.
           </p>
         </Card>
       </div>
@@ -132,71 +316,57 @@ export function ClientFicheScreen() {
 
   return (
     <div className="space-y-6">
-      {/* Back button */}
-      <div>
+      <div className="flex flex-col gap-4">
         <Button
           variant="ghost"
           onClick={() => go("clients")}
-          className="text-slate-600 hover:text-slate-900"
+          className="-ml-2 w-fit text-slate-600 hover:text-slate-900"
         >
           <ArrowLeft className="size-4" />
           Retour aux clients
         </Button>
+        <PageHeader
+          title="Fiche client"
+          description="Vue consolidée du client"
+        />
       </div>
 
-      {/* Client header card */}
-      <Card className="p-6 shadow-sm border-border/80">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-bold">
-              {getInitials(client.nom)}
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                  {client.nom}
-                </h2>
-                <ToneBadge tone={client.type === "Entreprise" ? "blue" : "slate"}>
-                  {client.type}
-                </ToneBadge>
-              </div>
-              <div className="mt-2 flex flex-col gap-1 text-sm text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-5 sm:gap-y-1">
-                <span className="inline-flex items-center gap-1.5">
-                  <Phone className="size-3.5 text-slate-400" />
-                  <span className="font-mono text-xs">{client.telephone}</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Mail className="size-3.5 text-slate-400" />
-                  {client.email}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="size-3.5 text-slate-400" />
-                  {client.adresse}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => go("clients")}>
-              <Pencil className="size-4" />
-              Modifier la fiche
-            </Button>
-            <Button onClick={() => openDossier(null, "create")}>
-              <Plus className="size-4" />
-              Nouveau dossier pour ce client
-            </Button>
+      <ClientProfileCard
+        client={client}
+        onEdit={() => go("clients")}
+        onNewDossier={() => openDossier(null, "create")}
+      />
+
+      {totalDu > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
+          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-medium text-amber-900">
+              Solde impayé : {formatFCFA(totalDu)}
+            </p>
+            <p className="mt-0.5 text-xs text-amber-800/80">
+              {ecritures.filter((e) => resteAPayer(e) > 0).length} écriture
+              {ecritures.filter((e) => resteAPayer(e) > 0).length !== 1 ? "s" : ""}{" "}
+              en attente de règlement.
+            </p>
           </div>
         </div>
-      </Card>
+      )}
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
-          label="Total dossiers"
+          label="Dossiers"
           value={String(dossiers.length)}
           icon={FolderKanban}
           tone="blue"
           sublabel="dossiers de transit"
+        />
+        <KpiCard
+          label="Total investi"
+          value={formatFCFA(totalInvesti)}
+          icon={TrendingUp}
+          tone="indigo"
+          sublabel="montant engagé"
         />
         <KpiCard
           label="Total payé"
@@ -210,244 +380,327 @@ export function ClientFicheScreen() {
           value={formatFCFA(totalDu)}
           icon={Clock}
           tone="amber"
-          sublabel="solde dû"
+          sublabel={totalDu > 0 ? "solde dû" : "compte soldé"}
         />
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="dossiers" className="gap-4">
-        <TabsList>
-          <TabsTrigger value="dossiers">
-            Dossiers
-            <span className="ml-1 rounded bg-slate-200/70 px-1.5 py-0.5 text-xs tabular-nums text-slate-700">
-              {dossiers.length}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="paiements">
-            Paiements
-            <span className="ml-1 rounded bg-slate-200/70 px-1.5 py-0.5 text-xs tabular-nums text-slate-700">
-              {ecritures.length}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="bons">
-            Bons de sortie
-            <span className="ml-1 rounded bg-slate-200/70 px-1.5 py-0.5 text-xs tabular-nums text-slate-700">
-              {bons.length}
-            </span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as FicheTab)}
+        className="gap-0"
+      >
+        <div
+          className={cn(
+            "sticky top-0 z-10 -mx-4 border-b border-border bg-background/95 backdrop-blur sm:-mx-6 lg:-mx-8",
+            "supports-[backdrop-filter]:bg-background/80",
+          )}
+        >
+          <TabsList className="flex h-12 w-full items-stretch rounded-none bg-slate-50/80 p-0">
+            {tabs.map((t) => {
+              const Icon = t.icon;
+              const count =
+                t.key === "dossiers"
+                  ? dossiers.length
+                  : t.key === "paiements"
+                    ? ecritures.length
+                    : bons.length;
+              return (
+                <TabsTrigger
+                  key={t.key}
+                  value={t.key}
+                  className={cn(
+                    "relative flex flex-1 items-center justify-center gap-2 rounded-none",
+                    "border-0 border-b-2 border-transparent bg-transparent px-2 py-0",
+                    "text-sm font-medium text-slate-500 shadow-none transition-colors",
+                    "hover:bg-white/60 hover:text-slate-900",
+                    "data-[state=active]:border-primary data-[state=active]:bg-white",
+                    "data-[state=active]:text-primary data-[state=active]:shadow-none",
+                    "focus-visible:ring-0 focus-visible:ring-offset-0",
+                    "[&[data-state=active]_svg]:text-primary",
+                    "min-w-0",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0 text-slate-400" />
+                  <span className="hidden truncate sm:inline">{t.label}</span>
+                  <span className="truncate sm:hidden">{t.shortLabel}</span>
+                  <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600">
+                    {count}
+                  </span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
 
-        {/* Dossiers tab */}
-        <TabsContent value="dossiers">
-          <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border px-5 py-3">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Dossiers de transit
-              </h3>
-              <span className="text-xs text-slate-500 tabular-nums">
-                {dossiers.length} enregistrement{dossiers.length > 1 ? "s" : ""}
-              </span>
-            </div>
+        {/* Dossiers */}
+        <TabsContent value="dossiers" className="mt-6 focus-visible:outline-none">
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
             {dossiers.length === 0 ? (
-              <EmptyState label="Aucun enregistrement" />
+              <EmptyState
+                label="Aucun dossier pour ce client."
+                action={
+                  <Button size="sm" onClick={() => openDossier(null, "create")}>
+                    <Plus className="size-4" />
+                    Créer un dossier
+                  </Button>
+                }
+              />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Référence
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Date
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      N° BL
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Statut
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
-                      Montant
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dossiers.map((d) => (
-                    <TableRow
-                      key={d.id}
-                      className="hover:bg-slate-50/60 border-b border-border"
-                    >
-                      <TableCell className="py-3 font-medium text-slate-900">
-                        {d.reference}
-                      </TableCell>
-                      <TableCell className="py-3 text-slate-600 tabular-nums">
-                        {formatDateShort(d.date)}
-                      </TableCell>
-                      <TableCell className="py-3 text-slate-600 font-mono text-xs">
-                        {d.bl}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <DossierStatutBadge statut={d.statut} />
-                      </TableCell>
-                      <TableCell className="py-3 text-right tabular-nums text-slate-900 font-medium">
-                        {formatFCFA(d.montantInvesti)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Référence
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                          Date
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                          N° BL
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Statut
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Montant
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedDossiers.map((d) => (
+                        <TableRow
+                          key={d.id}
+                          className="cursor-pointer border-b border-border hover:bg-slate-50/80"
+                          onClick={() => openDossierDetail(d.id)}
+                        >
+                          <TableCell className="px-4 py-3.5 font-medium text-slate-900">
+                            {d.reference}
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 sm:table-cell">
+                            {formatDateShort(d.date)}
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 md:table-cell">
+                            {d.bl}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <DossierStatutBadge statut={d.statut} />
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-900">
+                            {formatFCFA(d.montantInvesti)}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <div
+                              className="flex justify-end"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-slate-500 hover:text-primary"
+                                aria-label={`Voir ${d.reference}`}
+                                title="Voir le dossier"
+                                onClick={() => openDossierDetail(d.id)}
+                              >
+                                <Eye className="size-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <TablePagination
+                  startIdx={
+                    dossiers.length === 0
+                      ? 0
+                      : (dossierSafePage - 1) * PAGE_SIZE + 1
+                  }
+                  endIdx={Math.min(dossierSafePage * PAGE_SIZE, dossiers.length)}
+                  totalItems={dossiers.length}
+                  page={dossierSafePage}
+                  totalPages={dossierPages}
+                  onPageChange={setDossierPage}
+                />
+              </>
             )}
           </Card>
         </TabsContent>
 
-        {/* Paiements tab */}
-        <TabsContent value="paiements">
-          <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border px-5 py-3">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Écritures de paiement
-              </h3>
-              <span className="text-xs text-slate-500 tabular-nums">
-                {ecritures.length} enregistrement{ecritures.length > 1 ? "s" : ""}
-              </span>
-            </div>
+        {/* Paiements */}
+        <TabsContent value="paiements" className="mt-6 focus-visible:outline-none">
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
             {ecritures.length === 0 ? (
-              <EmptyState label="Aucun enregistrement" />
+              <EmptyState label="Aucune écriture de paiement pour ce client." />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Date
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
-                      Montant investi
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
-                      Montant payé
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
-                      Reste à payer
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Mode
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Statut
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ecritures.map((e) => (
-                    <TableRow
-                      key={e.id}
-                      className="hover:bg-slate-50/60 border-b border-border"
-                    >
-                      <TableCell className="py-3 text-slate-600 tabular-nums">
-                        {formatDateShort(e.date)}
-                      </TableCell>
-                      <TableCell className="py-3 text-right tabular-nums text-slate-700">
-                        {formatFCFA(e.montantInvesti)}
-                      </TableCell>
-                      <TableCell className="py-3 text-right tabular-nums text-emerald-700 font-medium">
-                        {formatFCFA(e.montantPaye)}
-                      </TableCell>
-                      <TableCell className="py-3 text-right tabular-nums">
-                        {resteAPayer(e) > 0 ? (
-                          <span className="font-medium text-amber-600">
-                            {formatFCFA(resteAPayer(e))}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3 text-slate-600">
-                        {e.modePaiement}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <EcritureStatutBadge statut={deriveEcritureStatut(e)} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Date
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                          Investi
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                          Payé
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Reste dû
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
+                          Mode
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Statut
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedEcritures.map((e) => {
+                        const reste = resteAPayer(e);
+                        return (
+                          <TableRow
+                            key={e.id}
+                            className={cn(
+                              "border-b border-border hover:bg-slate-50/60",
+                              reste > 0 && "bg-amber-50/20",
+                            )}
+                          >
+                            <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                              {formatDateShort(e.date)}
+                            </TableCell>
+                            <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 sm:table-cell">
+                              {formatFCFA(e.montantInvesti)}
+                            </TableCell>
+                            <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 md:table-cell">
+                              {formatFCFA(e.montantPaye)}
+                            </TableCell>
+                            <TableCell className="px-4 py-3.5 text-right tabular-nums">
+                              {reste > 0 ? (
+                                <span className="font-semibold text-amber-600">
+                                  {formatFCFA(reste)}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-emerald-600">Soldé</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 lg:table-cell">
+                              {e.modePaiement}
+                            </TableCell>
+                            <TableCell className="px-4 py-3.5">
+                              <EcritureStatutBadge statut={deriveEcritureStatut(e)} />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <TablePagination
+                  startIdx={
+                    ecritures.length === 0
+                      ? 0
+                      : (paiementSafePage - 1) * PAGE_SIZE + 1
+                  }
+                  endIdx={Math.min(paiementSafePage * PAGE_SIZE, ecritures.length)}
+                  totalItems={ecritures.length}
+                  page={paiementSafePage}
+                  totalPages={paiementPages}
+                  onPageChange={setPaiementPage}
+                />
+              </>
             )}
           </Card>
         </TabsContent>
 
-        {/* Bons tab */}
-        <TabsContent value="bons">
-          <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border px-5 py-3">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Bons de sortie
-              </h3>
-              <span className="text-xs text-slate-500 tabular-nums">
-                {bons.length} enregistrement{bons.length > 1 ? "s" : ""}
-              </span>
-            </div>
+        {/* Bons */}
+        <TabsContent value="bons" className="mt-6 focus-visible:outline-none">
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
             {bons.length === 0 ? (
-              <EmptyState label="Aucun enregistrement" />
+              <EmptyState label="Aucun bon de sortie pour ce client." />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Référence
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Date
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Marchandise
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
-                      Quantité
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Motif
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
-                      Montant
-                    </TableHead>
-                    <TableHead className="text-xs font-medium uppercase text-slate-500">
-                      Statut
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bons.map((b) => (
-                    <TableRow
-                      key={b.id}
-                      className="hover:bg-slate-50/60 border-b border-border"
-                    >
-                      <TableCell className="py-3 font-medium text-slate-900">
-                        {b.reference}
-                      </TableCell>
-                      <TableCell className="py-3 text-slate-600 tabular-nums">
-                        {formatDateShort(b.date)}
-                      </TableCell>
-                      <TableCell className="py-3 text-slate-600">
-                        {b.marchandise}
-                      </TableCell>
-                      <TableCell className="py-3 text-right tabular-nums text-slate-700">
-                        {b.quantite} {b.unite}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <ToneBadge tone={bonMotifTone[b.motif]}>{b.motif}</ToneBadge>
-                      </TableCell>
-                      <TableCell className="py-3 text-right tabular-nums text-slate-900 font-medium">
-                        {formatFCFA(b.montant)}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <ToneBadge tone={bonStatutTone(b.statut)}>
-                          {b.statut}
-                        </ToneBadge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Référence
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                          Date
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Marchandise
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Qté
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                          Motif
+                        </TableHead>
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                          Montant
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Statut
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedBons.map((b) => (
+                        <TableRow
+                          key={b.id}
+                          className="border-b border-border hover:bg-slate-50/60"
+                        >
+                          <TableCell className="px-4 py-3.5 font-mono text-xs font-medium text-slate-900">
+                            {b.reference}
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 sm:table-cell">
+                            {formatDateShort(b.date)}
+                          </TableCell>
+                          <TableCell className="max-w-[140px] px-4 py-3.5">
+                            <span className="line-clamp-1 text-sm text-slate-600">
+                              {b.marchandise}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                            {b.quantite}{" "}
+                            <span className="text-xs text-slate-500">{b.unite}</span>
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 md:table-cell">
+                            <ToneBadge tone={bonMotifTone[b.motif]}>{b.motif}</ToneBadge>
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 sm:table-cell">
+                            {formatFCFA(b.montant)}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <ToneBadge tone={bonStatutTone(b.statut)}>
+                              {b.statut}
+                            </ToneBadge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <TablePagination
+                  startIdx={bons.length === 0 ? 0 : (bonSafePage - 1) * PAGE_SIZE + 1}
+                  endIdx={Math.min(bonSafePage * PAGE_SIZE, bons.length)}
+                  totalItems={bons.length}
+                  page={bonSafePage}
+                  totalPages={bonPages}
+                  onPageChange={setBonPage}
+                />
+              </>
             )}
           </Card>
         </TabsContent>

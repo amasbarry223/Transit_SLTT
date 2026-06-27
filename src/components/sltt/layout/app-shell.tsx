@@ -6,6 +6,7 @@ import { Topbar } from "./topbar";
 import { DashboardScreen } from "@/components/sltt/screens/dashboard";
 import { DossiersListScreen } from "@/components/sltt/screens/dossiers-list";
 import { DossierFormScreen } from "@/components/sltt/screens/dossier-form";
+import { DossierDetailScreen } from "@/components/sltt/screens/dossier-detail";
 import { ComptabiliteScreen } from "@/components/sltt/screens/comptabilite";
 import { BilansScreen } from "@/components/sltt/screens/bilans";
 import { EntreposageScreen } from "@/components/sltt/screens/entreposage";
@@ -28,6 +29,7 @@ export function AppShell() {
             {view === "dashboard" && <DashboardScreen />}
             {view === "dossiers" && <DossiersListScreen />}
             {view === "dossier-form" && <DossierFormScreen />}
+            {view === "dossier-detail" && <DossierDetailScreen />}
             {view === "comptabilite" && <ComptabiliteScreen />}
             {view === "bilans" && <BilansScreen />}
             {view === "entreposage" && <EntreposageScreen />}

@@ -21,6 +21,7 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Vue d'ensemble de votre activité" },
   dossiers: { title: "Dossiers de transit", sub: "Suivi des dossiers douaniers" },
   "dossier-form": { title: "Dossier de transit", sub: "Création et édition" },
+  "dossier-detail": { title: "Dossier de transit", sub: "Fiche détaillée du dossier" },
   comptabilite: { title: "Comptabilité", sub: "Écritures et paiements" },
   bilans: { title: "Bilans & rapports", sub: "Analyse financière périodique" },
   entreposage: { title: "Entreposage", sub: "Gestion du stock et mouvements" },
@@ -34,7 +35,10 @@ export function Topbar() {
   const view = useNav((s) => s.view);
   const go = useNav((s) => s.go);
   const logout = useNav((s) => s.logout);
-  const meta = viewTitles[view];
+  const meta = viewTitles[view] ?? {
+    title: "SLTT",
+    sub: "Société Traoré de Logistique, Transit et Transport",
+  };
 
   const stock = useStore((s) => s.stock);
   const dossiers = useStore((s) => s.dossiers);

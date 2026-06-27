@@ -55,6 +55,7 @@ export interface Ecriture {
   date: string;
   clientId: string;
   clientNom: string;
+  dossierId?: string;
   montantInvesti: number;
   montantPaye: number;
   modePaiement: PaiementMode;
@@ -107,12 +108,27 @@ export interface User {
   derniereConnexion: string;
 }
 
-export interface AppAlert {
+export interface SubDossier {
   id: string;
-  niveau: "danger" | "warning";
-  message: string;
-  detail: string;
+  dossierId: string;
+  nom: string;
+  description?: string;
+  dateCreation: string;
 }
+
+export interface DossierFichier {
+  id: string;
+  dossierId: string;
+  sousDossierId?: string;
+  nom: string;
+  taille: number;
+  type: string;
+  dateUpload: string;
+  dataUrl: string;
+}
+
+export const subDossiers: SubDossier[] = [];
+export const fichiers: DossierFichier[] = [];
 
 /* ------------------------------------------------------------------ */
 /* CLIENTS                                                              */
@@ -725,88 +741,6 @@ export const users: User[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/* ALERTES                                                              */
-/* ------------------------------------------------------------------ */
-
-export const alertes: AppAlert[] = [
-  {
-    id: "AL-1",
-    niveau: "danger",
-    message: "Stock faible : Riz parfumé 25kg",
-    detail: "65 sacs restants (seuil 80) — Entrepôt B",
-  },
-  {
-    id: "AL-2",
-    niveau: "danger",
-    message: "Stock faible : Pièces automobiles diverses",
-    detail: "28 lots restants (seuil 40) — Entrepôt C",
-  },
-  {
-    id: "AL-3",
-    niveau: "danger",
-    message: "Stock faible : Textiles & vêtements",
-    detail: "32 balles restantes (seuil 50) — Entrepôt B",
-  },
-  {
-    id: "AL-4",
-    niveau: "warning",
-    message: "Dossier non soldé : SLTT-TR-2026-0042",
-    detail: "Reste à payer : 700 000 FCFA — Diallo",
-  },
-  {
-    id: "AL-5",
-    niveau: "warning",
-    message: "Dossier non soldé : SLTT-TR-2026-0040",
-    detail: "Reste à payer : 700 000 FCFA — Traoré & Frères",
-  },
-  {
-    id: "AL-6",
-    niveau: "warning",
-    message: "Dossier non soldé : SLTT-TR-2026-0039",
-    detail: "Reste à payer : 350 000 FCFA — Cissé Import",
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/* SÉRIES GRAPHIQUES                                                    */
-/* ------------------------------------------------------------------ */
-
-export const encaissementsParMois = [
-  { mois: "Juil", valeur: 5_200_000 },
-  { mois: "Août", valeur: 6_100_000 },
-  { mois: "Sept", valeur: 5_800_000 },
-  { mois: "Oct", valeur: 7_300_000 },
-  { mois: "Nov", valeur: 7_900_000 },
-  { mois: "Déc", valeur: 8_750_000 },
-];
-
-export const ecartsParPeriode = [
-  { periode: "Juil", ecart: 320_000 },
-  { periode: "Août", ecart: -150_000 },
-  { periode: "Sept", ecart: 480_000 },
-  { periode: "Oct", ecart: 210_000 },
-  { periode: "Nov", ecart: -90_000 },
-  { periode: "Déc", ecart: 560_000 },
-];
-
-export const evolutionEncaissements = [
-  { periode: "S1", investi: 12_400_000, encaisse: 9_800_000 },
-  { periode: "S2", investi: 14_200_000, encaisse: 11_500_000 },
-  { periode: "S3", investi: 13_900_000, encaisse: 12_100_000 },
-  { periode: "S4", investi: 15_600_000, encaisse: 14_300_000 },
-  { periode: "S5", investi: 16_800_000, encaisse: 15_900_000 },
-  { periode: "S6", investi: 18_200_000, encaisse: 17_400_000 },
-];
-
-export const recapParClient = [
-  { client: "Diallo", investi: 5_180_000, encaisse: 4_100_000, reste: 1_250_000, ecart: 1_080_000 },
-  { client: "Keïta", investi: 7_180_000, encaisse: 6_260_000, reste: 920_000, ecart: 920_000 },
-  { client: "Traoré", investi: 6_250_000, encaisse: 5_570_000, reste: 680_000, ecart: 750_000 },
-  { client: "Cissé", investi: 1_150_000, encaisse: 800_000, reste: 350_000, ecart: 0 },
-  { client: "Sahel Agro", investi: 4_000_000, encaisse: 4_000_000, reste: 0, ecart: 0 },
-];
-
-/* ------------------------------------------------------------------ */
 /* HELPERS                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -828,22 +762,3 @@ export function resteAPayer(d: {
   return Math.max(0, d.montantInvesti - d.montantPaye);
 }
 
-export function getClientById(id: string): Client | undefined {
-  return clients.find((c) => c.id === id);
-}
-
-export function getDossierById(id: string): Dossier | undefined {
-  return dossiers.find((d) => d.id === id);
-}
-
-export function getDossiersByClient(clientId: string): Dossier[] {
-  return dossiers.filter((d) => d.clientId === clientId);
-}
-
-export function getEcrituresByClient(clientId: string): Ecriture[] {
-  return ecritures.filter((e) => e.clientId === clientId);
-}
-
-export function getBonsByClient(clientId: string): BonSortie[] {
-  return bonsSortie.filter((b) => b.clientId === clientId);
-}

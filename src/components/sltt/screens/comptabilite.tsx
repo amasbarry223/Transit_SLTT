@@ -11,6 +11,11 @@ import {
   Smartphone,
   CreditCard,
   HandCoins,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  Receipt,
 } from "lucide-react";
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -23,7 +28,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -32,14 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +51,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 8;
+
+type StatutFilter = "all" | "En attente" | "Soldé";
 
 const modeIcon: Record<
   PaiementMode,
@@ -73,6 +74,62 @@ const modeOptions: PaiementMode[] = [
   "Chèque",
 ];
 
+function TablePagination({
+  startIdx,
+  endIdx,
+  totalItems,
+  itemLabel,
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  startIdx: number;
+  endIdx: number;
+  totalItems: number;
+  itemLabel: string;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs tabular-nums text-slate-500">
+        {startIdx}–{endIdx} sur {totalItems} {itemLabel}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page <= 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          aria-label="Page précédente"
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
+          {page} / {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          aria-label="Page suivante"
+        >
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function deriveStatut(e: Ecriture): "Soldé" | "En attente" {
+  const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+  return reste === 0 ? "Soldé" : "En attente";
+}
+
 export function ComptabiliteScreen() {
   const { toast } = useToast();
   const ecritures = useStore((s) => s.ecritures);
@@ -81,7 +138,11 @@ export function ComptabiliteScreen() {
   const recordPayment = useStore((s) => s.recordPayment);
   const addEcriture = useStore((s) => s.addEcriture);
 
-  // Payment panel state
+  const [query, setQuery] = useState("");
+  const [statutFilter, setStatutFilter] = useState<StatutFilter>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Ecriture | null>(null);
   const [montant, setMontant] = useState("");
@@ -91,16 +152,13 @@ export function ComptabiliteScreen() {
   );
   const [note, setNote] = useState("");
 
-  // New ecriture dialog state
   const [newOpen, setNewOpen] = useState(false);
   const [neClientId, setNeClientId] = useState("");
   const [neDossierId, setNeDossierId] = useState("");
   const [neInvesti, setNeInvesti] = useState("");
   const [nePaye, setNePaye] = useState("");
   const [neMode, setNeMode] = useState<PaiementMode>("Virement");
-  const [neDate, setNeDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const [neDate, setNeDate] = useState(new Date().toISOString().slice(0, 10));
   const [neNote, setNeNote] = useState("");
 
   const clientDossiers = useMemo(
@@ -117,6 +175,39 @@ export function ComptabiliteScreen() {
     [ecritures],
   );
   const totalDu = totalInvesti - totalPaye;
+  const enAttenteCount = useMemo(
+    () => ecritures.filter((e) => deriveStatut(e) === "En attente").length,
+    [ecritures],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return ecritures.filter((e) => {
+      if (clientFilter !== "all" && e.clientId !== clientFilter) return false;
+      if (statutFilter !== "all" && deriveStatut(e) !== statutFilter) return false;
+      if (q) {
+        const haystack = `${e.clientNom} ${e.id} ${e.modePaiement} ${e.note ?? ""}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [ecritures, query, statutFilter, clientFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
+
+  const hasActiveFilters =
+    query.trim() !== "" || statutFilter !== "all" || clientFilter !== "all";
+
+  function clearFilters() {
+    setQuery("");
+    setStatutFilter("all");
+    setClientFilter("all");
+    setPage(1);
+  }
 
   function openPanel(e: Ecriture) {
     const reste = Math.max(0, e.montantInvesti - e.montantPaye);
@@ -175,6 +266,7 @@ export function ComptabiliteScreen() {
       date: neDate,
       clientId: neClientId,
       clientNom: client.nom,
+      dossierId: neDossierId || undefined,
       montantInvesti: investi,
       montantPaye: Math.min(paye, investi),
       modePaiement: neMode,
@@ -194,161 +286,308 @@ export function ComptabiliteScreen() {
         title="Comptabilité"
         description="Suivi des écritures et des paiements"
       >
-        <Button onClick={() => { resetNewEcriture(); setNewOpen(true); }}>
+        <Button
+          onClick={() => {
+            resetNewEcriture();
+            setNewOpen(true);
+          }}
+        >
           <Plus className="size-4" />
           Nouvelle écriture
         </Button>
       </PageHeader>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard
           label="Total investi"
           value={formatFCFA(totalInvesti)}
           icon={TrendingUp}
           tone="blue"
-          sublabel="Cumul des dossiers"
+          sublabel="cumul des dossiers"
         />
         <KpiCard
           label="Total encaissé"
           value={formatFCFA(totalPaye)}
           icon={Wallet}
           tone="emerald"
-          variation={12}
-          variationLabel="vs période préc."
+          sublabel="paiements reçus"
         />
         <KpiCard
           label="Total dû"
           value={formatFCFA(totalDu)}
           icon={Clock}
           tone="amber"
-          sublabel="Restes à encaisser"
+          sublabel={`${enAttenteCount} écriture${enAttenteCount !== 1 ? "s" : ""} en attente`}
         />
       </div>
 
-      {/* Entries table */}
-      <Card className="p-5 shadow-sm border-border/80 gap-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-slate-900">
-            Écritures comptables
-          </h2>
-          <Badge
-            variant="secondary"
-            className="rounded-full bg-slate-100 text-slate-600 border-slate-200"
-          >
-            {ecritures.length}
-          </Badge>
+      {enAttenteCount > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
+          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-medium text-amber-900">
+              {enAttenteCount} écriture{enAttenteCount > 1 ? "s" : ""} en attente
+              de paiement
+            </p>
+            <p className="mt-0.5 text-xs text-amber-800/80">
+              {formatFCFA(totalDu)} reste à encaisser au total.
+            </p>
+          </div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border">
-              <TableHead className="bg-slate-50 text-xs font-medium uppercase text-slate-500">
-                Date
-              </TableHead>
-              <TableHead className="bg-slate-50 text-xs font-medium uppercase text-slate-500">
-                Client
-              </TableHead>
-              <TableHead className="bg-slate-50 text-right text-xs font-medium uppercase text-slate-500">
-                Montant investi
-              </TableHead>
-              <TableHead className="bg-slate-50 text-right text-xs font-medium uppercase text-slate-500">
-                Montant payé
-              </TableHead>
-              <TableHead className="bg-slate-50 text-right text-xs font-medium uppercase text-slate-500">
-                Reste à payer
-              </TableHead>
-              <TableHead className="bg-slate-50 text-right text-xs font-medium uppercase text-slate-500">
-                Écart
-              </TableHead>
-              <TableHead className="bg-slate-50 text-xs font-medium uppercase text-slate-500">
-                Mode
-              </TableHead>
-              <TableHead className="bg-slate-50 text-xs font-medium uppercase text-slate-500">
-                Statut
-              </TableHead>
-              <TableHead className="bg-slate-50 text-right text-xs font-medium uppercase text-slate-500">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ecritures.map((e) => {
-              const reste = Math.max(0, e.montantInvesti - e.montantPaye);
-              const ecart = e.montantPaye - e.montantInvesti;
-              const ModeIcon = modeIcon[e.modePaiement];
-              return (
-                <TableRow
-                  key={e.id}
-                  className="border-b border-border hover:bg-slate-50/60"
-                >
-                  <TableCell className="tabular-nums text-slate-600">
-                    {formatDateShort(e.date)}
-                  </TableCell>
-                  <TableCell className="font-medium text-slate-700">
-                    {e.clientNom}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-slate-700">
-                    {formatFCFA(e.montantInvesti)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-emerald-600">
-                    {formatFCFA(e.montantPaye)}
-                  </TableCell>
-                  <TableCell className="text-right font-medium tabular-nums text-amber-600">
-                    {formatFCFA(reste)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <EcartValue value={ecart} />
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center gap-1.5 text-slate-600">
-                      <ModeIcon className="size-3.5" />
-                      {e.modePaiement}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {reste === 0 ? (
-                      <EcritureStatutBadge statut="Soldé" />
-                    ) : (
-                      <EcritureStatutBadge statut="En attente" />
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {reste > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openPanel(e)}
-                      >
-                        <HandCoins className="size-3.5" />
-                        Enregistrer un paiement
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      )}
+
+      <Card className="p-4 shadow-sm border-border/80">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Rechercher client, référence…"
+              className="h-10 pl-9"
+              aria-label="Rechercher une écriture"
+            />
+          </div>
+
+          <Select
+            value={statutFilter}
+            onValueChange={(v) => {
+              setStatutFilter(v as StatutFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Filtrer par statut">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les statuts</SelectItem>
+              <SelectItem value="En attente">En attente</SelectItem>
+              <SelectItem value="Soldé">Soldé</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={clientFilter}
+            onValueChange={(v) => {
+              setClientFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Filtrer par client">
+              <SelectValue placeholder="Client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les clients</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nom}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500"
+              onClick={clearFilters}
+            >
+              Réinitialiser
+            </Button>
+          )}
+
+          <p className="ml-auto text-xs tabular-nums text-slate-500">
+            {filtered.length} écriture{filtered.length !== 1 ? "s" : ""}
+          </p>
+        </div>
       </Card>
 
-      {/* Payment side panel */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="right"
-          className="w-full gap-0 sm:max-w-md p-0"
-        >
-          <SheetHeader className="border-b border-border px-5 py-4">
-            <SheetTitle className="text-base">
-              Enregistrer un paiement
-            </SheetTitle>
-            {selected && (
-              <SheetDescription>
-                {selected.clientNom} · {selected.id}
-              </SheetDescription>
-            )}
-          </SheetHeader>
+      <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+          <Receipt className="size-4 text-slate-400" />
+          <h2 className="text-sm font-semibold text-slate-900">
+            Écritures comptables
+          </h2>
+        </div>
 
-          <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Receipt className="size-7" />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Aucune écriture trouvée
+            </h3>
+            <p className="mt-1 max-w-sm text-sm text-slate-500">
+              {hasActiveFilters
+                ? "Modifiez vos filtres ou créez une nouvelle écriture."
+                : "Commencez par enregistrer votre première écriture comptable."}
+            </p>
+            {!hasActiveFilters && (
+              <Button
+                className="mt-5"
+                onClick={() => {
+                  resetNewEcriture();
+                  setNewOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                Nouvelle écriture
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Date
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Client
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Investi
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                      Payé
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Reste dû
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
+                      Écart
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                      Mode
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Statut
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((e) => {
+                    const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+                    const ecart = e.montantPaye - e.montantInvesti;
+                    const statut = deriveStatut(e);
+                    const ModeIcon = modeIcon[e.modePaiement];
+                    const solde = reste === 0;
+
+                    return (
+                      <TableRow
+                        key={e.id}
+                        className={cn(
+                          "border-b border-border hover:bg-slate-50/60",
+                          !solde && "bg-amber-50/20",
+                        )}
+                      >
+                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                          {formatDateShort(e.date)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <p className="font-medium text-slate-900">{e.clientNom}</p>
+                          <p className="mt-0.5 font-mono text-xs text-slate-400 sm:hidden">
+                            {e.id}
+                          </p>
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 sm:table-cell">
+                          {formatFCFA(e.montantInvesti)}
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-emerald-600 md:table-cell">
+                          {formatFCFA(e.montantPaye)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums">
+                          {solde ? (
+                            <span className="text-sm font-medium text-emerald-600">
+                              Soldé
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-amber-600">
+                              {formatFCFA(reste)}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-right lg:table-cell">
+                          <EcartValue value={ecart} />
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 md:table-cell">
+                          <span
+                            className="inline-flex items-center gap-1.5 text-slate-600"
+                            title={e.modePaiement}
+                          >
+                            <ModeIcon className="size-3.5 shrink-0 text-slate-400" />
+                            <span className="text-sm">{e.modePaiement}</span>
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <EcritureStatutBadge statut={statut} />
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <div className="flex items-center justify-end gap-1">
+                            {solde ? (
+                              <span
+                                className="flex size-8 items-center justify-center text-emerald-500"
+                                title="Écriture soldée"
+                                aria-label="Écriture soldée"
+                              >
+                                <CircleCheck className="size-4" />
+                              </span>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-primary hover:bg-primary/10 hover:text-primary"
+                                onClick={() => openPanel(e)}
+                                aria-label={`Enregistrer un paiement pour ${e.clientNom}`}
+                                title="Enregistrer un paiement"
+                              >
+                                <HandCoins className="size-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={filtered.length}
+              itemLabel={`écriture${filtered.length !== 1 ? "s" : ""}`}
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </>
+        )}
+      </Card>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enregistrer un paiement</DialogTitle>
+            {selected && (
+              <DialogDescription>
+                {selected.clientNom} · {selected.id}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="space-y-4">
             {selected && (
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
                 <div className="flex items-center justify-between">
@@ -387,7 +626,7 @@ export function ComptabiliteScreen() {
                   inputMode="numeric"
                   value={montant}
                   onChange={(e) => setMontant(e.target.value)}
-                  className="pr-16 tabular-nums"
+                  className="h-10 pr-16 tabular-nums"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
                   FCFA
@@ -403,7 +642,7 @@ export function ComptabiliteScreen() {
                 value={mode}
                 onValueChange={(v) => setMode(v as PaiementMode)}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -425,6 +664,7 @@ export function ComptabiliteScreen() {
                 type="date"
                 value={datePaiement}
                 onChange={(e) => setDatePaiement(e.target.value)}
+                className="h-10"
               />
             </div>
 
@@ -436,36 +676,30 @@ export function ComptabiliteScreen() {
                 id="note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                rows={4}
+                rows={3}
                 placeholder="Référence, acompte, complément d'information…"
               />
             </div>
           </div>
 
-          <SheetFooter className="flex flex-row gap-2 border-t border-border px-5 py-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setOpen(false)}
-            >
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setOpen(false)}>
               Annuler
             </Button>
-            <Button className="flex-1" onClick={valider}>
+            <Button onClick={valider}>
               <Wallet className="size-4" />
               Valider le paiement
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* New ecriture dialog */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Nouvelle écriture comptable</DialogTitle>
-            <DialogDescription className="sr-only">
-              Créez une nouvelle écriture en sélectionnant un client, un dossier
-              et en saisissant les montants investis et payés.
+            <DialogDescription>
+              Sélectionnez un client et saisissez les montants investi et payé.
             </DialogDescription>
           </DialogHeader>
 
@@ -476,9 +710,12 @@ export function ComptabiliteScreen() {
               </Label>
               <Select
                 value={neClientId}
-                onValueChange={(v) => { setNeClientId(v); setNeDossierId(""); }}
+                onValueChange={(v) => {
+                  setNeClientId(v);
+                  setNeDossierId("");
+                }}
               >
-                <SelectTrigger id="ne-client" className="w-full h-10">
+                <SelectTrigger id="ne-client" className="h-10 w-full">
                   <SelectValue placeholder="Sélectionner un client" />
                 </SelectTrigger>
                 <SelectContent>
@@ -497,7 +734,7 @@ export function ComptabiliteScreen() {
                   Dossier lié (optionnel)
                 </Label>
                 <Select value={neDossierId} onValueChange={setNeDossierId}>
-                  <SelectTrigger id="ne-dossier" className="w-full h-10">
+                  <SelectTrigger id="ne-dossier" className="h-10 w-full">
                     <SelectValue placeholder="Aucun dossier lié" />
                   </SelectTrigger>
                   <SelectContent>
@@ -511,7 +748,7 @@ export function ComptabiliteScreen() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="ne-investi" className="text-sm font-medium text-slate-700">
                   Montant investi (FCFA) <span className="text-red-500">*</span>
@@ -540,13 +777,16 @@ export function ComptabiliteScreen() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="ne-mode" className="text-sm font-medium text-slate-700">
                   Mode de paiement
                 </Label>
-                <Select value={neMode} onValueChange={(v) => setNeMode(v as PaiementMode)}>
-                  <SelectTrigger id="ne-mode" className="w-full h-10">
+                <Select
+                  value={neMode}
+                  onValueChange={(v) => setNeMode(v as PaiementMode)}
+                >
+                  <SelectTrigger id="ne-mode" className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -586,7 +826,7 @@ export function ComptabiliteScreen() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setNewOpen(false)}>
               Annuler
             </Button>

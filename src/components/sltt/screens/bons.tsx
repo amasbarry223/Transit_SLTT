@@ -8,13 +8,20 @@ import {
   Check,
   Search,
   Truck,
-  X,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  CheckCircle2,
+  FilePen,
+  Wallet,
+  Package,
 } from "lucide-react";
 
 import { useStore, type BonMotif, type StockItem } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
+import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,6 +53,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 8;
 
 const motifTone: Record<BonMotif, "blue" | "indigo" | "amber"> = {
   Vente: "blue",
@@ -60,22 +70,73 @@ const statutTone: Record<"Validé" | "Brouillon", "emerald" | "slate"> = {
 
 const motifs: BonMotif[] = ["Vente", "Livraison", "Transfert"];
 
+function TablePagination({
+  startIdx,
+  endIdx,
+  totalItems,
+  itemLabel,
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  startIdx: number;
+  endIdx: number;
+  totalItems: number;
+  itemLabel: string;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs tabular-nums text-slate-500">
+        {startIdx}–{endIdx} sur {totalItems} {itemLabel}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page <= 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          aria-label="Page précédente"
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
+          {page} / {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          aria-label="Page suivante"
+        >
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function BonsScreen() {
   const { toast } = useToast();
 
-  // Reactive store data
   const bons = useStore((s) => s.bons);
   const addBon = useStore((s) => s.addBon);
+  const validateBon = useStore((s) => s.validateBon);
   const stock = useStore((s) => s.stock);
   const clients = useStore((s) => s.clients);
 
-  // Filters
   const [search, setSearch] = useState("");
-  const [clientFilter, setClientFilter] = useState("tous");
-  const [motifFilter, setMotifFilter] = useState("tous");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [motifFilter, setMotifFilter] = useState("all");
+  const [statutFilter, setStatutFilter] = useState<"all" | "Validé" | "Brouillon">("all");
   const [dateFilter, setDateFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-  // Creation dialog
   const [open, setOpen] = useState(false);
   const [formDate, setFormDate] = useState(
     new Date().toISOString().slice(0, 10),
@@ -86,21 +147,50 @@ export function BonsScreen() {
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
   const [formMontant, setFormMontant] = useState<string>("");
 
+  const nextRef = useMemo(() => {
+    const n = bons.length + 1;
+    return `BS-2026-${String(n).padStart(4, "0")}`;
+  }, [bons.length]);
+
+  const stats = useMemo(() => {
+    let valides = 0;
+    let brouillons = 0;
+    let montantTotal = 0;
+    for (const b of bons) {
+      if (b.statut === "Validé") valides++;
+      else brouillons++;
+      montantTotal += b.montant;
+    }
+    return { total: bons.length, valides, brouillons, montantTotal };
+  }, [bons]);
+
   const filtered = useMemo(() => {
     return bons.filter((b) => {
-      if (
-        search &&
-        !b.reference.toLowerCase().includes(search.toLowerCase()) &&
-        !b.clientNom.toLowerCase().includes(search.toLowerCase())
-      ) {
-        return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const haystack = `${b.reference} ${b.clientNom} ${b.marchandise}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
-      if (clientFilter !== "tous" && b.clientId !== clientFilter) return false;
-      if (motifFilter !== "tous" && b.motif !== motifFilter) return false;
+      if (clientFilter !== "all" && b.clientId !== clientFilter) return false;
+      if (motifFilter !== "all" && b.motif !== motifFilter) return false;
+      if (statutFilter !== "all" && b.statut !== statutFilter) return false;
       if (dateFilter && b.date !== dateFilter) return false;
       return true;
     });
-  }, [bons, search, clientFilter, motifFilter, dateFilter]);
+  }, [bons, search, clientFilter, motifFilter, statutFilter, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
+
+  const hasActiveFilters =
+    search.trim() !== "" ||
+    clientFilter !== "all" ||
+    motifFilter !== "all" ||
+    statutFilter !== "all" ||
+    dateFilter !== "";
 
   const selectedStock: StockItem | undefined = useMemo(
     () => stock.find((s) => s.id === formStockId),
@@ -116,6 +206,15 @@ export function BonsScreen() {
   const depasseStock =
     selectedStock !== undefined && quantiteNum > stockDisponible;
   const montantNum = Number(formMontant) || 0;
+
+  function clearFilters() {
+    setSearch("");
+    setClientFilter("all");
+    setMotifFilter("all");
+    setStatutFilter("all");
+    setDateFilter("");
+    setPage(1);
+  }
 
   function resetForm() {
     setFormDate(new Date().toISOString().slice(0, 10));
@@ -142,6 +241,7 @@ export function BonsScreen() {
       unite: selectedStock.unite,
       motif: formMotif,
       montant: montantNum,
+      statut: "Validé",
     });
     toast({
       title: "Bon de sortie validé",
@@ -151,7 +251,46 @@ export function BonsScreen() {
     resetForm();
   }
 
-  function buildBonHTML(b: { reference: string; date: string; clientNom: string; marchandise: string; quantite: number; unite: string; motif: BonMotif; montant: number; statut: string }) {
+  function handleSaveDraft() {
+    if (!selectedStock || !selectedClient || !formMotif) return;
+    addBon({
+      date: formDate,
+      clientId: formClientId,
+      clientNom: selectedClient.nom,
+      marchandise: selectedStock.marchandise,
+      quantite: quantiteNum,
+      unite: selectedStock.unite,
+      motif: formMotif,
+      montant: montantNum,
+      statut: "Brouillon",
+    });
+    toast({
+      title: "Brouillon enregistré",
+      description: "Le bon a été sauvegardé comme brouillon.",
+    });
+    setOpen(false);
+    resetForm();
+  }
+
+  function handleValidateBon(id: string, ref: string) {
+    validateBon(id);
+    toast({
+      title: "Bon validé",
+      description: `${ref} — stock décrémenté.`,
+    });
+  }
+
+  function buildBonHTML(b: {
+    reference: string;
+    date: string;
+    clientNom: string;
+    marchandise: string;
+    quantite: number;
+    unite: string;
+    motif: BonMotif;
+    montant: number;
+    statut: string;
+  }) {
     const motifColors: Record<string, string> = {
       Vente: "background:#dbeafe;color:#1e3a8a",
       Livraison: "background:#e0e7ff;color:#3730a3",
@@ -209,24 +348,79 @@ export function BonsScreen() {
         </Button>
       </PageHeader>
 
-      {/* Filter bar */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard
+          label="Total bons"
+          value={String(stats.total)}
+          icon={ClipboardList}
+          tone="blue"
+          sublabel="bons enregistrés"
+        />
+        <KpiCard
+          label="Validés"
+          value={String(stats.valides)}
+          icon={CheckCircle2}
+          tone="emerald"
+          sublabel="sorties confirmées"
+        />
+        <KpiCard
+          label="Brouillons"
+          value={String(stats.brouillons)}
+          icon={FilePen}
+          tone="amber"
+          sublabel="en attente de validation"
+        />
+        <KpiCard
+          label="Montant total"
+          value={formatFCFA(stats.montantTotal)}
+          icon={Wallet}
+          tone="indigo"
+          sublabel="valeur des sorties"
+        />
+      </div>
+
+      {stats.brouillons > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
+          <FilePen className="mt-0.5 size-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-medium text-amber-900">
+              {stats.brouillons} bon{stats.brouillons > 1 ? "s" : ""} en brouillon
+            </p>
+            <p className="mt-0.5 text-xs text-amber-800/80">
+              Finalisez ou validez les bons en attente pour mettre à jour le stock.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Card className="p-4 shadow-sm border-border/80">
-        <div className="flex flex-wrap gap-3">
-          <div className="relative min-w-[220px] flex-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <Input
-              placeholder="Référence, client…"
+              placeholder="Référence, client, marchandise…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="h-10 pl-9"
+              aria-label="Rechercher un bon"
             />
           </div>
-          <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="w-[220px]">
+
+          <Select
+            value={clientFilter}
+            onValueChange={(v) => {
+              setClientFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Filtrer par client">
               <SelectValue placeholder="Client" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="tous">Tous les clients</SelectItem>
+              <SelectItem value="all">Tous les clients</SelectItem>
               {clients.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.nom}
@@ -234,12 +428,19 @@ export function BonsScreen() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={motifFilter} onValueChange={setMotifFilter}>
-            <SelectTrigger className="w-[180px]">
+
+          <Select
+            value={motifFilter}
+            onValueChange={(v) => {
+              setMotifFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filtrer par motif">
               <SelectValue placeholder="Motif" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="tous">Tous les motifs</SelectItem>
+              <SelectItem value="all">Tous les motifs</SelectItem>
               {motifs.map((m) => (
                 <SelectItem key={m} value={m}>
                   {m}
@@ -247,111 +448,217 @@ export function BonsScreen() {
               ))}
             </SelectContent>
           </Select>
+
+          <Select
+            value={statutFilter}
+            onValueChange={(v) => {
+              setStatutFilter(v as typeof statutFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filtrer par statut">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les statuts</SelectItem>
+              <SelectItem value="Validé">Validé</SelectItem>
+              <SelectItem value="Brouillon">Brouillon</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Input
             type="date"
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="w-[180px]"
+            onChange={(e) => {
+              setDateFilter(e.target.value);
+              setPage(1);
+            }}
+            className="h-10 w-full sm:w-40"
+            aria-label="Filtrer par date"
           />
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 text-slate-500"
+              onClick={clearFilters}
+            >
+              Réinitialiser
+            </Button>
+          )}
+
+          <p className="ml-auto text-xs tabular-nums text-slate-500">
+            {filtered.length} bon{filtered.length !== 1 ? "s" : ""}
+          </p>
         </div>
       </Card>
 
-      {/* List table */}
-      <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-              <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                Référence
-              </TableHead>
-              <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                Date
-              </TableHead>
-              <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                Client
-              </TableHead>
-              <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                Motif
-              </TableHead>
-              <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                Quantité
-              </TableHead>
-              <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                Montant
-              </TableHead>
-              <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                Statut
-              </TableHead>
-              <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center text-slate-500 py-10"
-                >
-                  Aucun bon de sortie trouvé.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((b) => (
-                <TableRow
-                  key={b.id}
-                  className="hover:bg-slate-50/60 border-b border-border"
-                >
-                  <TableCell className="font-mono text-xs text-slate-700">
-                    {b.reference}
-                  </TableCell>
-                  <TableCell className="text-slate-600 tabular-nums">
-                    {formatDateShort(b.date)}
-                  </TableCell>
-                  <TableCell className="text-slate-700">{b.clientNom}</TableCell>
-                  <TableCell>
-                    <ToneBadge tone={motifTone[b.motif]}>{b.motif}</ToneBadge>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-slate-700">
-                    {b.quantite} {b.unite}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums font-medium text-slate-900">
-                    {formatFCFA(b.montant)}
-                  </TableCell>
-                  <TableCell>
-                    <ToneBadge tone={statutTone[b.statut]}>{b.statut}</ToneBadge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                        aria-label="Visualiser"
-                        onClick={() => handleView(b.reference)}
-                      >
-                        <Eye className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                        aria-label="PDF / Imprimer"
-                        onClick={() => handlePrint(b.reference)}
-                      >
-                        <FileText className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+      <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+          <Truck className="size-4 text-slate-400" />
+          <h2 className="text-sm font-semibold text-slate-900">
+            Liste des bons de sortie
+          </h2>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <ClipboardList className="size-7" />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Aucun bon trouvé
+            </h3>
+            <p className="mt-1 max-w-sm text-sm text-slate-500">
+              {hasActiveFilters
+                ? "Modifiez vos filtres ou créez un nouveau bon de sortie."
+                : "Enregistrez votre premier bon pour tracer une sortie de marchandise."}
+            </p>
+            {!hasActiveFilters && (
+              <Button className="mt-5" onClick={openDialog}>
+                <Plus className="size-4" />
+                Nouveau bon de sortie
+              </Button>
             )}
-          </TableBody>
-        </Table>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Référence
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Date
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Client
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                      Marchandise
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Motif
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Qté
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Montant
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Statut
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((b) => {
+                    const isBrouillon = b.statut === "Brouillon";
+                    return (
+                      <TableRow
+                        key={b.id}
+                        className={cn(
+                          "border-b border-border hover:bg-slate-50/60",
+                          isBrouillon && "bg-amber-50/25",
+                        )}
+                      >
+                        <TableCell className="px-4 py-3.5">
+                          <p className="font-mono text-xs font-medium text-slate-900">
+                            {b.reference}
+                          </p>
+                          <p className="mt-0.5 text-xs tabular-nums text-slate-500 sm:hidden">
+                            {formatDateShort(b.date)}
+                          </p>
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 sm:table-cell">
+                          {formatDateShort(b.date)}
+                        </TableCell>
+                        <TableCell className="max-w-[160px] px-4 py-3.5">
+                          <p className="truncate font-medium text-slate-700">
+                            {b.clientNom}
+                          </p>
+                        </TableCell>
+                        <TableCell className="hidden max-w-[140px] px-4 py-3.5 md:table-cell">
+                          <span className="flex items-center gap-1.5 text-sm text-slate-600">
+                            <Package className="size-3.5 shrink-0 text-slate-400" />
+                            <span className="truncate">{b.marchandise}</span>
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <ToneBadge tone={motifTone[b.motif]}>{b.motif}</ToneBadge>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                          {b.quantite}{" "}
+                          <span className="text-xs text-slate-500">{b.unite}</span>
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 sm:table-cell">
+                          {formatFCFA(b.montant)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <ToneBadge tone={statutTone[b.statut]}>{b.statut}</ToneBadge>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <div className="flex items-center justify-end gap-1">
+                            {isBrouillon && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-amber-600 hover:text-emerald-600"
+                                aria-label={`Valider ${b.reference}`}
+                                title="Valider le bon"
+                                onClick={() => handleValidateBon(b.id, b.reference)}
+                              >
+                                <Check className="size-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-slate-500 hover:text-primary"
+                              aria-label={`Visualiser ${b.reference}`}
+                              title="Visualiser"
+                              onClick={() => handleView(b.reference)}
+                            >
+                              <Eye className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-slate-500 hover:text-primary"
+                              aria-label={`Imprimer ${b.reference}`}
+                              title="PDF / Imprimer"
+                              onClick={() => handlePrint(b.reference)}
+                            >
+                              <FileText className="size-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={filtered.length}
+              itemLabel={`bon${filtered.length !== 1 ? "s" : ""}`}
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </>
+        )}
       </Card>
 
-      {/* Creation dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-3xl lg:max-w-4xl">
           <DialogHeader>
@@ -359,21 +666,20 @@ export function BonsScreen() {
               <DialogTitle>Nouveau bon de sortie</DialogTitle>
               <Badge
                 variant="outline"
-                className="font-mono text-xs text-slate-500 bg-slate-50 border-slate-200"
+                className="border-slate-200 bg-slate-50 font-mono text-xs text-slate-500"
               >
-                BS-2026-0052
+                {nextRef}
               </Badge>
             </div>
-            <DialogDescription className="sr-only">
-              Créez un bon de sortie en sélectionnant un client, une marchandise et une quantité à sortir.
+            <DialogDescription>
+              Sélectionnez le client, la marchandise et la quantité à sortir du stock.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Form */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="bs-date" className="text-sm text-slate-700">
+                <Label htmlFor="bs-date" className="text-sm font-medium text-slate-700">
                   Date
                 </Label>
                 <Input
@@ -381,18 +687,16 @@ export function BonsScreen() {
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
+                  className="h-10"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-client" className="text-sm text-slate-700">
-                  Client
+                <Label htmlFor="bs-client" className="text-sm font-medium text-slate-700">
+                  Client <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={formClientId}
-                  onValueChange={setFormClientId}
-                >
-                  <SelectTrigger id="bs-client" className="w-full">
+                <Select value={formClientId} onValueChange={setFormClientId}>
+                  <SelectTrigger id="bs-client" className="h-10 w-full">
                     <SelectValue placeholder="Sélectionner un client" />
                   </SelectTrigger>
                   <SelectContent>
@@ -406,14 +710,11 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-stock" className="text-sm text-slate-700">
-                  Marchandise
+                <Label htmlFor="bs-stock" className="text-sm font-medium text-slate-700">
+                  Marchandise <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={formStockId}
-                  onValueChange={setFormStockId}
-                >
-                  <SelectTrigger id="bs-stock" className="w-full">
+                <Select value={formStockId} onValueChange={setFormStockId}>
+                  <SelectTrigger id="bs-stock" className="h-10 w-full">
                     <SelectValue placeholder="Sélectionner une marchandise" />
                   </SelectTrigger>
                   <SelectContent>
@@ -427,8 +728,8 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-quantite" className="text-sm text-slate-700">
-                  Quantité à sortir
+                <Label htmlFor="bs-quantite" className="text-sm font-medium text-slate-700">
+                  Quantité à sortir <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="bs-quantite"
@@ -438,9 +739,10 @@ export function BonsScreen() {
                   onChange={(e) => setFormQuantite(e.target.value)}
                   aria-invalid={depasseStock}
                   placeholder="0"
+                  className="h-10"
                 />
                 {depasseStock && selectedStock && (
-                  <p className="text-sm text-red-600">
+                  <p className="text-xs text-red-600">
                     La quantité dépasse le stock disponible ({stockDisponible}{" "}
                     {selectedStock.unite}).
                   </p>
@@ -448,14 +750,14 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-motif" className="text-sm text-slate-700">
-                  Motif
+                <Label htmlFor="bs-motif" className="text-sm font-medium text-slate-700">
+                  Motif <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formMotif}
                   onValueChange={(v) => setFormMotif(v as BonMotif)}
                 >
-                  <SelectTrigger id="bs-motif" className="w-full">
+                  <SelectTrigger id="bs-motif" className="h-10 w-full">
                     <SelectValue placeholder="Sélectionner un motif" />
                   </SelectTrigger>
                   <SelectContent>
@@ -469,7 +771,7 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-montant" className="text-sm text-slate-700">
+                <Label htmlFor="bs-montant" className="text-sm font-medium text-slate-700">
                   Montant
                 </Label>
                 <div className="relative">
@@ -480,7 +782,7 @@ export function BonsScreen() {
                     value={formMontant}
                     onChange={(e) => setFormMontant(e.target.value)}
                     placeholder="0"
-                    className="pr-16"
+                    className="h-10 pr-16"
                   />
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
                     FCFA
@@ -489,10 +791,9 @@ export function BonsScreen() {
               </div>
             </div>
 
-            {/* Preview */}
             <div className="hidden md:block">
               <BonPreview
-                reference="BS-2026-0052"
+                reference={nextRef}
                 date={formDate}
                 client={selectedClient?.nom}
                 marchandise={selectedStock?.marchandise}
@@ -504,14 +805,27 @@ export function BonsScreen() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setOpen(false)}>
-              <X className="size-4" />
               Annuler
             </Button>
             <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={!formClientId || !formStockId || !formMotif || quantiteNum <= 0}
+            >
+              <FilePen className="size-4" />
+              Brouillon
+            </Button>
+            <Button
               onClick={handleValider}
-              disabled={depasseStock || !formClientId || !formStockId || !formMotif || quantiteNum <= 0}
+              disabled={
+                depasseStock ||
+                !formClientId ||
+                !formStockId ||
+                !formMotif ||
+                quantiteNum <= 0
+              }
             >
               <Check className="size-4" />
               Valider le bon
@@ -572,14 +886,13 @@ function BonPreview({
 
   return (
     <div className="rounded-lg border-2 border-dashed border-slate-200 bg-white p-6 font-[var(--font-heading)]">
-      {/* Header */}
       <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
         <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Truck className="size-5" />
         </div>
         <div>
-          <p className="font-bold text-slate-900 leading-tight">SLTT</p>
-          <p className="text-[11px] text-slate-500 leading-tight">
+          <p className="font-bold leading-tight text-slate-900">SLTT</p>
+          <p className="text-[11px] leading-tight text-slate-500">
             Société Traoré de Logistique,
             <br />
             Transit et Transport
@@ -587,7 +900,6 @@ function BonPreview({
         </div>
       </div>
 
-      {/* Title */}
       <div className="my-5 text-center">
         <p className="text-lg font-bold tracking-tight text-slate-900">
           BON DE SORTIE
@@ -595,22 +907,21 @@ function BonPreview({
         <p className="mt-1 font-mono text-xs text-slate-500">{reference}</p>
       </div>
 
-      {/* Mini table */}
       <div className="overflow-hidden rounded-md border border-slate-200">
         <table className="w-full text-sm">
           <tbody>
             {rows.map((r, i) => (
               <tr
                 key={r.label}
-                className={
-                  (i % 2 === 0 ? "bg-slate-50/50 " : "") +
-                  "border-b border-slate-100 last:border-0"
-                }
+                className={cn(
+                  "border-b border-slate-100 last:border-0",
+                  i % 2 === 0 && "bg-slate-50/50",
+                )}
               >
                 <td className="w-1/3 px-3 py-1.5 text-xs font-medium uppercase text-slate-500">
                   {r.label}
                 </td>
-                <td className="px-3 py-1.5 text-slate-800 tabular-nums">
+                <td className="px-3 py-1.5 tabular-nums text-slate-800">
                   {r.value}
                 </td>
               </tr>
@@ -619,11 +930,8 @@ function BonPreview({
         </table>
       </div>
 
-      {/* Signature */}
       <div className="mt-8 flex items-end justify-between">
-        <div className="text-xs text-slate-500">
-          Signature du responsable
-        </div>
+        <div className="text-xs text-slate-500">Signature du responsable</div>
         <div className="text-xs text-slate-400">__________</div>
       </div>
     </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Package,
   PackagePlus,
   PackageMinus,
+  Plus,
   Wallet,
   ArrowLeftRight,
   AlertTriangle,
@@ -13,10 +14,14 @@ import {
   ArrowUpFromLine,
   FileText,
   FileSpreadsheet,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { useStore } from "@/lib/store";
-import type { StockItem } from "@/lib/store";
+import type { StockItem, StockItemInput } from "@/lib/store";
+import type { Mouvement } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -28,6 +33,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -52,9 +58,545 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const motifs = ["Vente", "Livraison", "Transfert", "Autre"] as const;
 type SortieMotif = (typeof motifs)[number];
+type EntrepotTab = "stock" | "mouvements";
+type MouvementFilter = "all" | "Entrée" | "Sortie";
+
+const PAGE_SIZE = 8;
+
+function TablePagination({
+  startIdx,
+  endIdx,
+  totalItems,
+  itemLabel,
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  startIdx: number;
+  endIdx: number;
+  totalItems: number;
+  itemLabel: string;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs tabular-nums text-slate-500">
+        {startIdx}–{endIdx} sur {totalItems} {itemLabel}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page <= 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          aria-label="Page précédente"
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
+          {page} / {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          aria-label="Page suivante"
+        >
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const tabs: {
+  key: EntrepotTab;
+  label: string;
+  shortLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { key: "stock", label: "Inventaire", shortLabel: "Stock", icon: Package },
+  {
+    key: "mouvements",
+    label: "Historique des mouvements",
+    shortLabel: "Mouvements",
+    icon: History,
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* STOCK TAB                                                           */
+/* ------------------------------------------------------------------ */
+
+function StockTab({
+  stock,
+  onEntry,
+  onExit,
+  onHistory,
+  onPrint,
+  onExport,
+}: {
+  stock: StockItem[];
+  onEntry: (id: string | null) => void;
+  onExit: (id: string | null) => void;
+  onHistory: (marchandise: string) => void;
+  onPrint: () => void;
+  onExport: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return stock;
+    return stock.filter((s) =>
+      [s.marchandise, s.depositaire, s.commercial, s.unite]
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [stock, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-slate-500">
+          Consultez les quantités, valeurs et statuts de chaque référence en stock.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+            onClick={() => onEntry(null)}
+          >
+            <PackagePlus className="size-4" />
+            Entrée
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+            onClick={() => onExit(null)}
+          >
+            <PackageMinus className="size-4" />
+            Sortie
+          </Button>
+          <Button variant="outline" size="sm" className="h-9" onClick={onPrint}>
+            <FileText className="size-4" />
+            Imprimer
+          </Button>
+          <Button variant="outline" size="sm" className="h-9" onClick={onExport}>
+            <FileSpreadsheet className="size-4" />
+            Exporter
+          </Button>
+        </div>
+      </div>
+
+      <Card className="p-4 shadow-sm border-border/80">
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Rechercher une marchandise, dépositaire…"
+            className="h-10 pl-9"
+            aria-label="Rechercher dans le stock"
+          />
+        </div>
+      </Card>
+
+      <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center text-sm text-slate-500">
+            Aucun article ne correspond à votre recherche.
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Marchandise
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Quantité
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                      Dépositaire
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
+                      Commercial
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Payé
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Reste dû
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Statut
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((item) => (
+                    <StockRow
+                      key={item.id}
+                      item={item}
+                      onEntry={(id) => onEntry(id)}
+                      onExit={(id) => onExit(id)}
+                      onHistory={(m) => onHistory(m)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={filtered.length}
+              itemLabel={`article${filtered.length !== 1 ? "s" : ""}`}
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function StockRow({
+  item,
+  onEntry,
+  onExit,
+  onHistory,
+}: {
+  item: StockItem;
+  onEntry: (id: string) => void;
+  onExit: (id: string) => void;
+  onHistory: (marchandise: string) => void;
+}) {
+  const faible = item.quantite < item.seuil;
+  const statut = faible ? "Stock faible" : "Disponible";
+
+  return (
+    <TableRow
+      className={cn(
+        "border-b border-border hover:bg-slate-50/60",
+        faible && "bg-red-50/40",
+      )}
+    >
+      <TableCell className="px-4 py-3.5">
+        <span className="flex items-center gap-1.5 font-medium text-slate-900">
+          {faible && (
+            <AlertTriangle className="size-3.5 shrink-0 text-red-500" />
+          )}
+          {item.marchandise}
+        </span>
+        <p className="mt-0.5 text-xs text-slate-500 md:hidden">
+          {item.depositaire}
+        </p>
+      </TableCell>
+      <TableCell className="px-4 py-3.5 text-right tabular-nums">
+        <span className="font-semibold text-slate-900">{item.quantite}</span>
+        <span className="ml-1 text-xs text-slate-500">{item.unite}</span>
+      </TableCell>
+      <TableCell className="hidden px-4 py-3.5 text-slate-600 md:table-cell">
+        {item.depositaire}
+      </TableCell>
+      <TableCell className="hidden px-4 py-3.5 text-slate-600 lg:table-cell">
+        {item.commercial}
+      </TableCell>
+      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 sm:table-cell">
+        {formatFCFA(item.sommePayee)}
+      </TableCell>
+      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-amber-600 sm:table-cell">
+        {formatFCFA(item.resteAPayer)}
+      </TableCell>
+      <TableCell className="px-4 py-3.5">
+        <StockStatutBadge statut={statut} />
+      </TableCell>
+      <TableCell className="px-4 py-3.5">
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+            aria-label="Entrée de marchandise"
+            title="Entrée"
+            onClick={() => onEntry(item.id)}
+          >
+            <PackagePlus className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+            aria-label="Sortie de marchandise"
+            title="Sortie"
+            onClick={() => onExit(item.id)}
+          >
+            <PackageMinus className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Historique"
+            title="Historique"
+            onClick={() => onHistory(item.marchandise)}
+          >
+            <History className="size-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* MOUVEMENTS TAB                                                      */
+/* ------------------------------------------------------------------ */
+
+function MouvementsTab({
+  mouvements,
+  marchandiseFilter,
+  onClearMarchandiseFilter,
+}: {
+  mouvements: Mouvement[];
+  marchandiseFilter: string;
+  onClearMarchandiseFilter: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<MouvementFilter>("all");
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    let list = mouvements;
+    if (marchandiseFilter) {
+      list = list.filter((m) => m.marchandise === marchandiseFilter);
+    }
+    if (typeFilter !== "all") {
+      list = list.filter((m) => m.type === typeFilter);
+    }
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter((m) =>
+        [m.marchandise, m.responsable, m.bonRef, m.type]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      );
+    }
+    return list;
+  }, [mouvements, marchandiseFilter, typeFilter, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
+
+  useEffect(() => {
+    setPage(1);
+  }, [marchandiseFilter]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-slate-500">
+          Suivez toutes les entrées et sorties de marchandises enregistrées.
+        </p>
+        {marchandiseFilter && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0"
+            onClick={() => {
+              onClearMarchandiseFilter();
+              setPage(1);
+            }}
+          >
+            Tout afficher
+          </Button>
+        )}
+      </div>
+
+      {marchandiseFilter && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+          <History className="size-4 shrink-0" />
+          Filtré sur : <span className="font-medium">{marchandiseFilter}</span>
+        </div>
+      )}
+
+      <Card className="p-4 shadow-sm border-border/80">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Rechercher un mouvement…"
+              className="h-10 pl-9"
+              aria-label="Rechercher un mouvement"
+            />
+          </div>
+          <Select
+            value={typeFilter}
+            onValueChange={(v) => {
+              setTypeFilter(v as MouvementFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filtrer par type">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="Entrée">Entrées</SelectItem>
+              <SelectItem value="Sortie">Sorties</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="ml-auto text-xs tabular-nums text-slate-500">
+            {filtered.length} mouvement{filtered.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+      </Card>
+
+      <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center text-sm text-slate-500">
+            Aucun mouvement ne correspond aux filtres sélectionnés.
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Date
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Type
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Marchandise
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Quantité
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Responsable
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                      Bon lié
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((m) => {
+                    const isEntree = m.type === "Entrée";
+                    const hasBon = m.bonRef && m.bonRef !== "—";
+                    return (
+                      <TableRow
+                        key={m.id}
+                        className="border-b border-border hover:bg-slate-50/60"
+                      >
+                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                          {formatDateShort(m.date)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <ToneBadge
+                            tone={isEntree ? "emerald" : "amber"}
+                            dot={false}
+                            className="gap-1"
+                          >
+                            {isEntree ? (
+                              <ArrowDownToLine className="size-3" />
+                            ) : (
+                              <ArrowUpFromLine className="size-3" />
+                            )}
+                            {m.type}
+                          </ToneBadge>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 font-medium text-slate-900">
+                          {m.marchandise}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                          {m.quantite} {m.unite}
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-slate-600 sm:table-cell">
+                          {m.responsable}
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 md:table-cell">
+                          {hasBon ? (
+                            <span className="cursor-pointer font-mono text-xs text-primary hover:underline">
+                              {m.bonRef}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={filtered.length}
+              itemLabel={`mouvement${filtered.length !== 1 ? "s" : ""}`}
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* MAIN SCREEN                                                         */
+/* ------------------------------------------------------------------ */
 
 export function EntreposageScreen() {
   const { toast } = useToast();
@@ -62,16 +604,57 @@ export function EntreposageScreen() {
   const mouvements = useStore((s) => s.mouvements);
   const addStockEntry = useStore((s) => s.addStockEntry);
   const addStockExit = useStore((s) => s.addStockExit);
+  const addStockItem = useStore((s) => s.addStockItem);
 
-  const [tabValue, setTabValue] = useState("stock");
+  const [newItemOpen, setNewItemOpen] = useState(false);
+  const [niMarchandise, setNiMarchandise] = useState("");
+  const [niUnite, setNiUnite] = useState("");
+  const [niQuantite, setNiQuantite] = useState("0");
+  const [niSeuil, setNiSeuil] = useState("10");
+  const [niDepositaire, setNiDepositaire] = useState("");
+  const [niCommercial, setNiCommercial] = useState("");
+  const [niSommePayee, setNiSommePayee] = useState("0");
+  const [niResteAPayer, setNiResteAPayer] = useState("0");
 
-  // ---- Entry dialog state ----
+  function openNewItemDialog() {
+    setNiMarchandise("");
+    setNiUnite("");
+    setNiQuantite("0");
+    setNiSeuil("10");
+    setNiDepositaire("");
+    setNiCommercial("");
+    setNiSommePayee("0");
+    setNiResteAPayer("0");
+    setNewItemOpen(true);
+  }
+
+  function handleAddStockItem() {
+    const marchandise = niMarchandise.trim();
+    const unite = niUnite.trim();
+    if (!marchandise || !unite) return;
+    const input: StockItemInput = {
+      marchandise,
+      quantite: Number(niQuantite) || 0,
+      unite,
+      seuil: Number(niSeuil) || 10,
+      depositaire: niDepositaire.trim() || "—",
+      commercial: niCommercial.trim() || "—",
+      sommePayee: Number(niSommePayee) || 0,
+      resteAPayer: Number(niResteAPayer) || 0,
+    };
+    addStockItem(input);
+    toast({ title: "Article ajouté", description: `${marchandise} ajouté au stock.` });
+    setNewItemOpen(false);
+  }
+
+  const [activeTab, setActiveTab] = useState<EntrepotTab>("stock");
+  const [marchandiseFilter, setMarchandiseFilter] = useState("");
+
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryStockId, setEntryStockId] = useState<string>("");
   const [entryQty, setEntryQty] = useState<string>("1");
   const [entryResp, setEntryResp] = useState<string>("Oumar Cissé");
 
-  // ---- Exit dialog state ----
   const [exitOpen, setExitOpen] = useState(false);
   const [exitStockId, setExitStockId] = useState<string>("");
   const [exitQty, setExitQty] = useState<string>("1");
@@ -103,12 +686,13 @@ export function EntreposageScreen() {
     setExitOpen(true);
   }
 
-  function notifyHistory(marchandise: string) {
+  function goToHistory(marchandise: string) {
+    setMarchandiseFilter(marchandise);
+    setActiveTab("mouvements");
     toast({
-      title: `Historique des mouvements pour ${marchandise}`,
-      description: "Affichage de l'historique dans l'onglet dédié.",
+      title: `Historique — ${marchandise}`,
+      description: "Mouvements filtrés pour cette marchandise.",
     });
-    setTabValue("mouvements");
   }
 
   function handleExportStockCSV() {
@@ -123,7 +707,10 @@ export function EntreposageScreen() {
         { header: "Commercial", accessor: (s) => s.commercial },
         { header: "Somme payée (FCFA)", accessor: (s) => s.sommePayee },
         { header: "Reste à payer (FCFA)", accessor: (s) => s.resteAPayer },
-        { header: "Statut", accessor: (s) => (s.quantite < s.seuil ? "Stock faible" : "Disponible") },
+        {
+          header: "Statut",
+          accessor: (s) => (s.quantite < s.seuil ? "Stock faible" : "Disponible"),
+        },
       ],
       stock,
     );
@@ -134,29 +721,167 @@ export function EntreposageScreen() {
   }
 
   function handlePrintStock() {
+    const sumPayee = stock.reduce((acc, s) => acc + s.sommePayee, 0);
+    const sumReste = stock.reduce((acc, s) => acc + s.resteAPayer, 0);
+    const valeurTotale = sumPayee + sumReste;
+    const nbFaible = stock.filter((s) => s.quantite < s.seuil).length;
+    const nbDisponibles = stock.length - nbFaible;
+
     const rowsHTML = stock
       .map(
-        (s) => `<tr>
-          <td>${s.marchandise}</td>
-          <td class="num">${s.quantite} ${s.unite}</td>
-          <td>${s.depositaire}</td>
-          <td>${s.commercial}</td>
-          <td class="num">${formatFCFA(s.sommePayee + s.resteAPayer, false)}</td>
-          <td>${s.quantite < s.seuil ? '<span class="badge" style="background:#fee2e2;color:#991b1b">Stock faible</span>' : '<span class="badge" style="background:#d1fae5;color:#065f46">Disponible</span>'}</td>
-        </tr>`,
+        (s, i) => {
+          const faible = s.quantite < s.seuil;
+          return `<tr class="${faible ? "row-faible" : ""}">
+            <td class="col-num">${i + 1}</td>
+            <td>
+              <strong class="${faible ? "name-warn" : ""}">${faible ? "⚠ " : ""}${s.marchandise}</strong>
+            </td>
+            <td class="num">${s.quantite}</td>
+            <td class="num col-seuil">${s.seuil}</td>
+            <td class="col-unit">${s.unite}</td>
+            <td>${s.depositaire}</td>
+            <td>${s.commercial}</td>
+            <td class="num col-payee">${formatFCFA(s.sommePayee, false)}</td>
+            <td class="num col-reste">${s.resteAPayer > 0 ? formatFCFA(s.resteAPayer, false) : "—"}</td>
+            <td>${faible
+              ? '<span class="badge" style="background:#fee2e2;color:#991b1b">Stock faible</span>'
+              : '<span class="badge" style="background:#d1fae5;color:#065f46">Disponible</span>'
+            }</td>
+          </tr>`;
+        }
       )
       .join("");
-    printHTML("Inventaire du stock", `
+
+    printHTML(
+      "Inventaire du stock",
+      `
+      <style>
+        .kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
+          margin-bottom: 32px;
+        }
+        .kpi-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 16px;
+          border-left: 4px solid;
+        }
+        .kpi-blue   { border-left-color: #1e40af; }
+        .kpi-indigo { border-left-color: #4338ca; }
+        .kpi-green  { border-left-color: #059669; }
+        .kpi-red    { border-left-color: #dc2626; }
+        .kpi-value {
+          font-size: 22px; font-weight: 800; color: #0f172a;
+          line-height: 1.1; margin-bottom: 4px;
+        }
+        .kpi-value.sm { font-size: 15px; }
+        .kpi-label {
+          font-size: 10px; color: #64748b; font-weight: 600;
+          text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        .section-header {
+          display: flex; align-items: center; gap: 10px;
+          margin: 0 0 14px;
+        }
+        .section-title {
+          font-size: 11px; font-weight: 700; color: #1e40af;
+          text-transform: uppercase; letter-spacing: 0.08em; margin: 0;
+          white-space: nowrap;
+        }
+        .section-line { flex: 1; height: 1px; background: #dbeafe; }
+        .section-count {
+          font-size: 11px; color: #64748b; background: #f1f5f9;
+          border-radius: 9999px; padding: 2px 8px; font-weight: 500;
+          white-space: nowrap;
+        }
+        .col-num { color: #94a3b8; font-size: 11px; width: 24px; }
+        .col-seuil { color: #94a3b8; }
+        .col-unit { color: #64748b; font-size: 12px; }
+        .col-payee { color: #047857 !important; font-weight: 600; }
+        .col-reste { color: #b45309 !important; font-weight: 600; }
+        .row-faible td { background: #fffbeb !important; }
+        .name-warn { color: #c2410c; }
+        .totals-row td {
+          font-weight: 700;
+          background: #f1f5f9 !important;
+          border-top: 2px solid #1e40af !important;
+        }
+        .legend {
+          margin-top: 20px; font-size: 11px; color: #64748b;
+          padding: 10px 14px; background: #fefce8;
+          border-radius: 6px; border: 1px solid #fde68a;
+        }
+      </style>
+
       <h1>Inventaire du stock</h1>
-      <div class="subtitle">${stock.length} article(s) · ${formatDateShort(new Date())}</div>
+      <div class="subtitle">
+        ${stock.length} article${stock.length !== 1 ? "s" : ""} · Édité le ${formatDateShort(new Date())}
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-value">${stock.length}</div>
+          <div class="kpi-label">Articles en stock</div>
+        </div>
+        <div class="kpi-card kpi-indigo">
+          <div class="kpi-value sm">${formatFCFA(valeurTotale, false)}</div>
+          <div class="kpi-label">Valeur totale (FCFA)</div>
+        </div>
+        <div class="kpi-card kpi-green">
+          <div class="kpi-value">${nbDisponibles}</div>
+          <div class="kpi-label">Disponibles</div>
+        </div>
+        <div class="kpi-card kpi-red">
+          <div class="kpi-value">${nbFaible}</div>
+          <div class="kpi-label">Stock faible</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2 class="section-title">Inventaire détaillé</h2>
+        <div class="section-line"></div>
+        <span class="section-count">${stock.length} référence${stock.length !== 1 ? "s" : ""}</span>
+      </div>
+
       <table>
-        <thead><tr>
-          <th>Marchandise</th><th class="num">Quantité</th><th>Dépositaire</th>
-          <th>Commercial</th><th class="num">Valeur</th><th>Statut</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th style="width:28px">#</th>
+            <th>Marchandise</th>
+            <th class="num">Qté dispo</th>
+            <th class="num">Seuil</th>
+            <th>Unité</th>
+            <th>Dépositaire</th>
+            <th>Commercial</th>
+            <th class="num">Somme payée</th>
+            <th class="num">Reste à payer</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
         <tbody>${rowsHTML}</tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td colspan="7">
+              Total général · ${stock.length} article${stock.length !== 1 ? "s" : ""}
+            </td>
+            <td class="num col-payee">${formatFCFA(sumPayee, false)}</td>
+            <td class="num col-reste">${formatFCFA(sumReste, false)}</td>
+            <td></td>
+          </tr>
+        </tfoot>
       </table>
-    `);
+
+      ${nbFaible > 0 ? `
+      <div class="legend">
+        ⚠ <strong>${nbFaible} article${nbFaible > 1 ? "s" : ""}</strong>
+        ${nbFaible > 1 ? "ont" : "a"} une quantité inférieure au seuil de réapprovisionnement
+        et nécessite${nbFaible > 1 ? "nt" : ""} une commande.
+      </div>
+      ` : ""}
+      `,
+    );
   }
 
   function submitEntry() {
@@ -185,8 +910,7 @@ export function EntreposageScreen() {
   const exitStock = stock.find((s) => s.id === exitStockId);
   const exitQtyNum = parseInt(exitQty, 10) || 0;
   const exitOverflow = exitStock != null && exitQtyNum > exitStock.quantite;
-  const exitDisabled =
-    !exitStockId || exitQtyNum <= 0 || exitOverflow;
+  const exitDisabled = !exitStockId || exitQtyNum <= 0 || exitOverflow;
 
   return (
     <div className="space-y-6">
@@ -194,201 +918,120 @@ export function EntreposageScreen() {
         title="Entreposage"
         description="Gestion du stock et des mouvements"
       >
-        <Button
-          variant="outline"
-          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-          onClick={() => openEntry(null)}
-        >
-          <PackagePlus className="size-4" />
-          Entrée de marchandise
-        </Button>
-        <Button
-          variant="outline"
-          className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
-          onClick={() => openExit(null)}
-        >
-          <PackageMinus className="size-4" />
-          Sortie
-        </Button>
-        <Button variant="outline" onClick={handlePrintStock}>
-          <FileText className="size-4" />
-          <span className="hidden sm:inline">Imprimer</span>
-        </Button>
-        <Button variant="outline" onClick={handleExportStockCSV}>
-          <FileSpreadsheet className="size-4" />
-          <span className="hidden sm:inline">Exporter</span>
+        <Button onClick={openNewItemDialog}>
+          <Plus className="size-4" />
+          Nouvel article
         </Button>
       </PageHeader>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {alertesStockFaible > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200/80 bg-red-50/60 px-4 py-3">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-600" />
+          <div>
+            <p className="text-sm font-medium text-red-900">
+              {alertesStockFaible} article{alertesStockFaible > 1 ? "s" : ""} en
+              stock faible
+            </p>
+            <p className="mt-0.5 text-xs text-red-700/80">
+              Pensez à réapprovisionner ou à enregistrer une entrée de marchandise.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
           label="Articles en stock"
           value={String(articlesEnStock)}
           icon={Package}
           tone="blue"
-          sublabel="Références distinctes"
+          sublabel="références distinctes"
         />
         <KpiCard
           label="Valeur du stock"
           value={formatFCFA(valeurStock)}
           icon={Wallet}
           tone="indigo"
-          sublabel="Valeur totale"
+          sublabel="valeur totale"
         />
         <KpiCard
           label="Mouvements ce mois"
           value={String(mouvementsCeMois)}
           icon={ArrowLeftRight}
           tone="emerald"
-          sublabel="Entrées et sorties"
+          sublabel="entrées et sorties"
         />
         <KpiCard
           label="Alertes stock faible"
           value={String(alertesStockFaible)}
           icon={AlertTriangle}
           tone="red"
-          sublabel="À réapprovisionner"
+          sublabel="à réapprovisionner"
         />
       </div>
 
-      {/* Tabs */}
-      <Tabs value={tabValue} onValueChange={setTabValue}>
-        <TabsList>
-          <TabsTrigger value="stock">Stock</TabsTrigger>
-          <TabsTrigger value="mouvements">Historique des mouvements</TabsTrigger>
-        </TabsList>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as EntrepotTab)}
+        className="gap-0"
+      >
+        <div className="sticky top-0 z-10 -mx-1 bg-background/95 px-1 pb-0 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <TabsList
+            className={cn(
+              "h-auto w-full justify-start gap-0 overflow-x-auto rounded-none bg-transparent p-0",
+              "scrollbar-none [&::-webkit-scrollbar]:hidden",
+            )}
+          >
+            {tabs.map((t) => {
+              const Icon = t.icon;
+              const count =
+                t.key === "stock" ? stock.length : mouvements.length;
+              return (
+                <TabsTrigger
+                  key={t.key}
+                  value={t.key}
+                  className={cn(
+                    "relative shrink-0 rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3",
+                    "text-sm font-medium text-slate-500 shadow-none transition-colors",
+                    "hover:text-slate-900 data-[state=active]:border-primary data-[state=active]:bg-transparent",
+                    "data-[state=active]:text-primary data-[state=active]:shadow-none",
+                    "focus-visible:ring-0 focus-visible:ring-offset-0",
+                    "[&[data-state=active]_svg]:text-primary",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0 text-slate-400" />
+                  <span className="hidden sm:inline">{t.label}</span>
+                  <span className="sm:hidden">{t.shortLabel}</span>
+                  <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600">
+                    {count}
+                  </span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+          <Separator />
+        </div>
 
-        {/* Tab: Stock */}
-        <TabsContent value="stock">
-          <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Marchandise
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                    Quantité disponible
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Unité
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Dépositaire
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Commercial rattaché
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                    Somme payée
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                    Reste à payer
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Statut stock
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stock.map((item) => (
-                  <StockRow
-                    key={item.id}
-                    item={item}
-                    onEntry={(id) => openEntry(id)}
-                    onExit={(id) => openExit(id)}
-                    onHistory={(m) => notifyHistory(m)}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+        <TabsContent value="stock" className="mt-6 focus-visible:outline-none">
+          <StockTab
+            stock={stock}
+            onEntry={openEntry}
+            onExit={openExit}
+            onHistory={goToHistory}
+            onPrint={handlePrintStock}
+            onExport={handleExportStockCSV}
+          />
         </TabsContent>
 
-        {/* Tab: Mouvements */}
-        <TabsContent value="mouvements">
-          <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Date
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Type
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Marchandise
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium text-right">
-                    Quantité
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Responsable
-                  </TableHead>
-                  <TableHead className="text-xs uppercase text-slate-500 font-medium">
-                    Bon lié
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mouvements.map((m) => {
-                  const isEntree = m.type === "Entrée";
-                  const hasBon = m.bonRef && m.bonRef !== "—";
-                  return (
-                    <TableRow
-                      key={m.id}
-                      className="hover:bg-slate-50/60 border-b border-border"
-                    >
-                      <TableCell className="text-slate-600 tabular-nums">
-                        {formatDateShort(m.date)}
-                      </TableCell>
-                      <TableCell>
-                        <ToneBadge
-                          tone={isEntree ? "emerald" : "amber"}
-                          dot={false}
-                          className="gap-1"
-                        >
-                          {isEntree ? (
-                            <ArrowDownToLine className="size-3" />
-                          ) : (
-                            <ArrowUpFromLine className="size-3" />
-                          )}
-                          {m.type}
-                        </ToneBadge>
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-900">
-                        {m.marchandise}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-slate-700">
-                        {m.quantite} {m.unite}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {m.responsable}
-                      </TableCell>
-                      <TableCell>
-                        {hasBon ? (
-                          <span className="text-primary text-xs font-mono hover:underline cursor-pointer">
-                            {m.bonRef}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Card>
+        <TabsContent value="mouvements" className="mt-6 focus-visible:outline-none">
+          <MouvementsTab
+            mouvements={mouvements}
+            marchandiseFilter={marchandiseFilter}
+            onClearMarchandiseFilter={() => setMarchandiseFilter("")}
+          />
         </TabsContent>
       </Tabs>
 
-      {/* ---- Entrée de marchandise dialog ---- */}
       <Dialog open={entryOpen} onOpenChange={setEntryOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -401,20 +1044,17 @@ export function EntreposageScreen() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label
-                htmlFor="entry-marchandise"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="entry-marchandise" className="text-sm font-medium text-slate-700">
                 Marchandise
               </Label>
               <Select value={entryStockId} onValueChange={setEntryStockId}>
-                <SelectTrigger id="entry-marchandise" className="w-full">
+                <SelectTrigger id="entry-marchandise" className="h-10 w-full">
                   <SelectValue placeholder="Sélectionner une marchandise" />
                 </SelectTrigger>
                 <SelectContent>
                   {stock.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.marchandise} (stock actuel : {s.quantite} {s.unite})
+                      {s.marchandise} (stock : {s.quantite} {s.unite})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -422,10 +1062,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="entry-qty"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="entry-qty" className="text-sm font-medium text-slate-700">
                 Quantité à entrer
               </Label>
               <Input
@@ -434,30 +1071,25 @@ export function EntreposageScreen() {
                 min={1}
                 value={entryQty}
                 onChange={(e) => setEntryQty(e.target.value)}
+                className="h-10"
               />
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="entry-resp"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="entry-resp" className="text-sm font-medium text-slate-700">
                 Responsable
               </Label>
               <Input
                 id="entry-resp"
                 value={entryResp}
                 onChange={(e) => setEntryResp(e.target.value)}
+                className="h-10"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEntryOpen(false)}
-            >
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setEntryOpen(false)}>
               Annuler
             </Button>
             <Button type="button" onClick={submitEntry} disabled={entryDisabled}>
@@ -467,7 +1099,6 @@ export function EntreposageScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* ---- Sortie de marchandise dialog ---- */}
       <Dialog open={exitOpen} onOpenChange={setExitOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -480,20 +1111,17 @@ export function EntreposageScreen() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label
-                htmlFor="exit-marchandise"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="exit-marchandise" className="text-sm font-medium text-slate-700">
                 Marchandise
               </Label>
               <Select value={exitStockId} onValueChange={setExitStockId}>
-                <SelectTrigger id="exit-marchandise" className="w-full">
+                <SelectTrigger id="exit-marchandise" className="h-10 w-full">
                   <SelectValue placeholder="Sélectionner une marchandise" />
                 </SelectTrigger>
                 <SelectContent>
                   {stock.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.marchandise} (stock actuel : {s.quantite} {s.unite})
+                      {s.marchandise} (stock : {s.quantite} {s.unite})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -501,10 +1129,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="exit-qty"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="exit-qty" className="text-sm font-medium text-slate-700">
                 Quantité à sortir
               </Label>
               <Input
@@ -513,6 +1138,7 @@ export function EntreposageScreen() {
                 min={1}
                 value={exitQty}
                 onChange={(e) => setExitQty(e.target.value)}
+                className="h-10"
                 aria-invalid={exitOverflow}
               />
               {exitOverflow && (
@@ -524,31 +1150,26 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="exit-resp"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="exit-resp" className="text-sm font-medium text-slate-700">
                 Responsable
               </Label>
               <Input
                 id="exit-resp"
                 value={exitResp}
                 onChange={(e) => setExitResp(e.target.value)}
+                className="h-10"
               />
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="exit-motif"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="exit-motif" className="text-sm font-medium text-slate-700">
                 Motif
               </Label>
               <Select
                 value={exitMotif}
                 onValueChange={(v) => setExitMotif(v as SortieMotif)}
               >
-                <SelectTrigger id="exit-motif" className="w-full">
+                <SelectTrigger id="exit-motif" className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -562,12 +1183,8 @@ export function EntreposageScreen() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setExitOpen(false)}
-            >
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setExitOpen(false)}>
               Annuler
             </Button>
             <Button type="button" onClick={submitExit} disabled={exitDisabled}>
@@ -576,85 +1193,141 @@ export function EntreposageScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog — Nouvel article */}
+      <Dialog open={newItemOpen} onOpenChange={setNewItemOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nouvel article</DialogTitle>
+            <DialogDescription>
+              Enregistrez un nouveau type de marchandise dans le stock.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="ni-marchandise" className="text-sm font-medium text-slate-700">
+                Marchandise <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="ni-marchandise"
+                value={niMarchandise}
+                onChange={(e) => setNiMarchandise(e.target.value)}
+                placeholder="ex. Riz parfumé 25 kg"
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ni-unite" className="text-sm font-medium text-slate-700">
+                Unité <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="ni-unite"
+                value={niUnite}
+                onChange={(e) => setNiUnite(e.target.value)}
+                placeholder="ex. sacs, kg, L"
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ni-quantite" className="text-sm font-medium text-slate-700">
+                Quantité initiale
+              </Label>
+              <Input
+                id="ni-quantite"
+                type="number"
+                min={0}
+                value={niQuantite}
+                onChange={(e) => setNiQuantite(e.target.value)}
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ni-seuil" className="text-sm font-medium text-slate-700">
+                Seuil d&apos;alerte
+              </Label>
+              <Input
+                id="ni-seuil"
+                type="number"
+                min={0}
+                value={niSeuil}
+                onChange={(e) => setNiSeuil(e.target.value)}
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ni-depositaire" className="text-sm font-medium text-slate-700">
+                Dépositaire
+              </Label>
+              <Input
+                id="ni-depositaire"
+                value={niDepositaire}
+                onChange={(e) => setNiDepositaire(e.target.value)}
+                placeholder="Nom du dépositaire"
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ni-commercial" className="text-sm font-medium text-slate-700">
+                Commercial
+              </Label>
+              <Input
+                id="ni-commercial"
+                value={niCommercial}
+                onChange={(e) => setNiCommercial(e.target.value)}
+                placeholder="Nom du commercial"
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ni-payee" className="text-sm font-medium text-slate-700">
+                Somme payée (FCFA)
+              </Label>
+              <Input
+                id="ni-payee"
+                type="number"
+                min={0}
+                value={niSommePayee}
+                onChange={(e) => setNiSommePayee(e.target.value)}
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ni-reste" className="text-sm font-medium text-slate-700">
+                Reste à payer (FCFA)
+              </Label>
+              <Input
+                id="ni-reste"
+                type="number"
+                min={0}
+                value={niResteAPayer}
+                onChange={(e) => setNiResteAPayer(e.target.value)}
+                className="h-10"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setNewItemOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleAddStockItem}
+              disabled={!niMarchandise.trim() || !niUnite.trim()}
+            >
+              <Plus className="size-4" />
+              Ajouter au stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-}
-
-function StockRow({
-  item,
-  onEntry,
-  onExit,
-  onHistory,
-}: {
-  item: StockItem;
-  onEntry: (id: string) => void;
-  onExit: (id: string) => void;
-  onHistory: (marchandise: string) => void;
-}) {
-  const faible = item.quantite < item.seuil;
-  const statut = faible ? "Stock faible" : "Disponible";
-
-  return (
-    <TableRow
-      className={
-        "border-b border-border hover:bg-slate-50/60 " +
-        (faible ? "bg-red-50/40" : "")
-      }
-    >
-      <TableCell className="font-medium text-slate-900">
-        <span className="flex items-center gap-1.5">
-          {faible && (
-            <AlertTriangle className="size-3.5 text-red-500 shrink-0" />
-          )}
-          {item.marchandise}
-        </span>
-      </TableCell>
-      <TableCell className="text-right tabular-nums text-slate-900">
-        {item.quantite} {item.unite}
-      </TableCell>
-      <TableCell className="text-slate-600">{item.unite}</TableCell>
-      <TableCell className="text-slate-600">{item.depositaire}</TableCell>
-      <TableCell className="text-slate-600">{item.commercial}</TableCell>
-      <TableCell className="text-right tabular-nums text-slate-700">
-        {formatFCFA(item.sommePayee)}
-      </TableCell>
-      <TableCell className="text-right tabular-nums text-amber-600">
-        {formatFCFA(item.resteAPayer)}
-      </TableCell>
-      <TableCell>
-        <StockStatutBadge statut={statut} />
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-            aria-label="Entrée de marchandise"
-            onClick={() => onEntry(item.id)}
-          >
-            <PackagePlus className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-            aria-label="Sortie de marchandise"
-            onClick={() => onExit(item.id)}
-          >
-            <PackageMinus className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-            aria-label="Historique"
-            onClick={() => onHistory(item.marchandise)}
-          >
-            <History className="size-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
   );
 }

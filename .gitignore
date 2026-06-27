@@ -47,6 +47,10 @@ local-*
 dev.log
 dev.out.log
 test
+
+# internal artifacts
+tool-results/
+worklog.md
 prompt
 
 server.log
