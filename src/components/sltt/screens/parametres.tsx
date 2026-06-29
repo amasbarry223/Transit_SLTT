@@ -22,6 +22,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useNav } from "@/lib/nav-store";
 import type { UserInput, UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
@@ -1176,7 +1177,9 @@ function UsersTabBadge() {
 }
 
 export function ParametresScreen() {
-  const [active, setActive] = useState<ParamTab>("users");
+  const currentRole = useNav((s) => s.currentRole);
+  const isAdmin = currentRole === "Administrateur";
+  const [active, setActive] = useState<ParamTab>(isAdmin ? "users" : "profile");
 
   return (
     <div className="space-y-6">
@@ -1203,7 +1206,7 @@ export function ParametresScreen() {
               "dark:bg-muted/30",
             )}
           >
-            {tabs.map((t) => {
+            {tabs.filter((t) => t.key !== "users" || isAdmin).map((t) => {
               const Icon = t.icon;
               return (
                 <TabsTrigger
@@ -1231,9 +1234,11 @@ export function ParametresScreen() {
           </TabsList>
         </div>
 
-        <TabsContent value="users" className="mt-6 focus-visible:outline-none">
-          <UsersTab />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="users" className="mt-6 focus-visible:outline-none">
+            <UsersTab />
+          </TabsContent>
+        )}
         <TabsContent value="profile" className="mt-6 focus-visible:outline-none">
           <ProfileTab />
         </TabsContent>
