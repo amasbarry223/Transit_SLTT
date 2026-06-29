@@ -1186,8 +1186,8 @@ export function ParametresScreen() {
     if (isAdmin) {
       setActive((prev) => (prev === "profile" ? "users" : prev));
     } else {
-      // Non-admin : s'assurer qu'on n'est jamais sur "users"
-      setActive((prev) => (prev === "users" ? "profile" : prev));
+      // Non-admin : s'assurer qu'on n'est jamais sur "users" ou "audit"
+      setActive((prev) => (prev === "users" || prev === "audit" ? "profile" : prev));
     }
   }, [isAdmin]);
 
@@ -1216,7 +1216,7 @@ export function ParametresScreen() {
               "dark:bg-muted/30",
             )}
           >
-            {tabs.filter((t) => t.key !== "users" || isAdmin).map((t) => {
+            {tabs.filter((t) => (t.key !== "users" && t.key !== "audit") || isAdmin).map((t) => {
               const Icon = t.icon;
               return (
                 <TabsTrigger
@@ -1255,9 +1255,11 @@ export function ParametresScreen() {
         <TabsContent value="security" className="mt-6 focus-visible:outline-none">
           <SecurityTab />
         </TabsContent>
-        <TabsContent value="audit" className="mt-6 focus-visible:outline-none">
-          <AuditTab />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="audit" className="mt-6 focus-visible:outline-none">
+            <AuditTab />
+          </TabsContent>
+        )}
         <TabsContent value="preferences" className="mt-6 focus-visible:outline-none">
           <PreferencesTab />
         </TabsContent>
