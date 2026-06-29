@@ -14,6 +14,7 @@ import {
 
 import { useNav } from "@/lib/nav-store";
 import { useStore, type DossierStatut } from "@/lib/store";
+import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printHTML } from "@/lib/export";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
@@ -83,7 +84,6 @@ function DossierFormInner() {
   const [droitDouane, setDroitDouane] = useState<string>(numStr(existing?.droitDouane));
   const [fraisCircuit, setFraisCircuit] = useState<string>(numStr(existing?.fraisCircuit));
   const [fraisPrestation, setFraisPrestation] = useState<string>(numStr(existing?.fraisPrestation));
-  const [montantInvesti, setMontantInvesti] = useState<string>(numStr(existing?.montantInvesti));
   const [statut, setStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
 
@@ -103,7 +103,7 @@ function DossierFormInner() {
   const dN = parseAmount(droitDouane);
   const fN = parseAmount(fraisCircuit);
   const pN = parseAmount(fraisPrestation);
-  const iN = parseAmount(montantInvesti);
+  const iN = dN + fN + pN;
   const montantPaye = existing?.montantPaye ?? 0;
 
   const ecart = useMemo(() => pN - (dN + fN), [pN, dN, fN]);
@@ -124,8 +124,7 @@ function DossierFormInner() {
         date ||
         droitDouane ||
         fraisCircuit ||
-        fraisPrestation ||
-        montantInvesti
+        fraisPrestation
       );
     }
     if (!existing) return false;
@@ -138,7 +137,6 @@ function DossierFormInner() {
       parseAmount(droitDouane) !== existing.droitDouane ||
       parseAmount(fraisCircuit) !== existing.fraisCircuit ||
       parseAmount(fraisPrestation) !== existing.fraisPrestation ||
-      parseAmount(montantInvesti) !== existing.montantInvesti ||
       statut !== existing.statut ||
       notes !== (existing.notes ?? "")
     );
@@ -153,7 +151,6 @@ function DossierFormInner() {
     droitDouane,
     fraisCircuit,
     fraisPrestation,
-    montantInvesti,
     statut,
     notes,
   ]);
@@ -331,30 +328,38 @@ function DossierFormInner() {
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Client" required error={errors.clientId}>
-                <Select
-                  value={clientId}
-                  onValueChange={(v) => {
-                    setClientId(v);
-                    setErrors((p) => ({ ...p, clientId: undefined }));
-                  }}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "h-10 w-full",
-                      errors.clientId && "border-red-400",
-                    )}
-                    aria-label="Sélectionner un client"
+                <div className="flex gap-2">
+                  <Select
+                    value={clientId}
+                    onValueChange={(v) => {
+                      setClientId(v);
+                      setErrors((p) => ({ ...p, clientId: undefined }));
+                    }}
                   >
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger
+                      className={cn(
+                        "h-10 w-full",
+                        errors.clientId && "border-red-400",
+                      )}
+                      aria-label="Sélectionner un client"
+                    >
+                      <SelectValue placeholder="Sélectionner un client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <QuickClientButton
+                    onCreated={(id) => {
+                      setClientId(id);
+                      setErrors((p) => ({ ...p, clientId: undefined }));
+                    }}
+                  />
+                </div>
               </Field>
 
               <Field
@@ -435,11 +440,13 @@ function DossierFormInner() {
                 value={fraisPrestation}
                 onChange={setFraisPrestation}
               />
-              <AmountField
-                label="Montant investi"
-                value={montantInvesti}
-                onChange={setMontantInvesti}
-              />
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Montant investi (calculé)</label>
+                <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-100 px-3 tabular-nums text-sm font-semibold text-slate-800">
+                  {formatFCFA(iN)}
+                </div>
+                <p className="text-[11px] text-slate-400">Droit de douane + Frais de circuit + Frais de prestation</p>
+              </div>
 
               <div className="sm:col-span-2">
                 <div
@@ -488,13 +495,24 @@ function DossierFormInner() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {STATUTS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
+                    {STATUTS.map((s) => {
+                      const blocked = s === "Soldé" && reste > 0;
+                      return (
+                        <SelectItem key={s} value={s} disabled={blocked}>
+                          <span className={blocked ? "text-slate-400" : undefined}>
+                            {s}
+                            {blocked && " (reste à payer non soldé)"}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
+                {statut !== "Soldé" && reste > 0 && (
+                  <p className="text-xs text-amber-600">
+                    Reste à payer : {formatFCFA(reste)} — soldez via la transition de dossier.
+                  </p>
+                )}
               </Field>
 
               <div className="sm:col-span-2">

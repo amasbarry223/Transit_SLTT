@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "SLTT" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo.png",
   },
 };
 

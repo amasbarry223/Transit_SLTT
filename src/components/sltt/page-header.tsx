@@ -7,11 +7,14 @@ export function PageHeader({
   description,
   children,
   className,
+  showTitle = false,
 }: {
   title: string;
   description?: string;
   children?: React.ReactNode;
   className?: string;
+  /** Afficher le titre h1 — par défaut masqué car déjà dans la Topbar */
+  showTitle?: boolean;
 }) {
   return (
     <div
@@ -21,11 +24,15 @@ export function PageHeader({
       )}
     >
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          {title}
-        </h1>
+        {showTitle && (
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {title}
+          </h1>
+        )}
         {description && (
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
+          <p className={cn("text-sm text-slate-500", showTitle && "mt-1")}>
+            {description}
+          </p>
         )}
       </div>
       {children && (

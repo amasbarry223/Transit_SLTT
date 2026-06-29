@@ -20,7 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
-import { useStore } from "@/lib/store";
+import { useStore, type ClientInput } from "@/lib/store";
 import type { Client } from "@/lib/mock-data";
 import {
   resteAPayer,
@@ -28,6 +28,7 @@ import {
   type EcritureStatut,
   type BonMotif,
 } from "@/lib/mock-data";
+import { useToast } from "@/hooks/use-toast";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -38,6 +39,23 @@ import {
 } from "@/components/sltt/status-badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -233,16 +251,26 @@ function ClientProfileCard({
 }
 
 export function ClientFicheScreen() {
+  const { toast } = useToast();
   const { selectedId, go, openDossier, openDossierDetail } = useNav();
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
   const allBons = useStore((s) => s.bons);
+  const updateClient = useStore((s) => s.updateClient);
 
   const [activeTab, setActiveTab] = useState<FicheTab>("dossiers");
   const [dossierPage, setDossierPage] = useState(1);
   const [paiementPage, setPaiementPage] = useState(1);
   const [bonPage, setBonPage] = useState(1);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editNom, setEditNom] = useState("");
+  const [editType, setEditType] = useState<Client["type"]>("Entreprise");
+  const [editTelephone, setEditTelephone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editAdresse, setEditAdresse] = useState("");
 
   const client = useMemo(
     () => clients.find((c) => c.id === selectedId),
@@ -268,13 +296,37 @@ export function ClientFicheScreen() {
     let investi = 0;
     let paye = 0;
     let du = 0;
-    for (const e of ecritures) {
-      investi += e.montantInvesti;
-      paye += e.montantPaye;
-      du += resteAPayer(e);
+    for (const d of dossiers) {
+      investi += d.montantInvesti;
+      paye += d.montantPaye;
+      du += Math.max(0, d.montantInvesti - d.montantPaye);
     }
     return { totalInvesti: investi, totalPaye: paye, totalDu: du };
-  }, [ecritures]);
+  }, [dossiers]);
+
+  function openEditDialog() {
+    if (!client) return;
+    setEditNom(client.nom);
+    setEditType(client.type);
+    setEditTelephone(client.telephone ?? "");
+    setEditEmail(client.email ?? "");
+    setEditAdresse(client.adresse ?? "");
+    setEditOpen(true);
+  }
+
+  function handleSaveEdit() {
+    if (!client || !editNom.trim()) return;
+    const input: ClientInput = {
+      nom: editNom.trim(),
+      type: editType,
+      telephone: editTelephone.trim(),
+      email: editEmail.trim(),
+      adresse: editAdresse.trim(),
+    };
+    updateClient(client.id, input);
+    setEditOpen(false);
+    toast({ title: "Client mis à jour", description: editNom.trim() });
+  }
 
   const dossierPages = Math.max(1, Math.ceil(dossiers.length / PAGE_SIZE));
   const dossierSafePage = Math.min(dossierPage, dossierPages);
@@ -333,7 +385,7 @@ export function ClientFicheScreen() {
 
       <ClientProfileCard
         client={client}
-        onEdit={() => go("clients")}
+        onEdit={openEditDialog}
         onNewDossier={() => openDossier(null, "create")}
       />
 
@@ -345,8 +397,8 @@ export function ClientFicheScreen() {
               Solde impayé : {formatFCFA(totalDu)}
             </p>
             <p className="mt-0.5 text-xs text-amber-800/80">
-              {ecritures.filter((e) => resteAPayer(e) > 0).length} écriture
-              {ecritures.filter((e) => resteAPayer(e) > 0).length !== 1 ? "s" : ""}{" "}
+              {dossiers.filter((d) => Math.max(0, d.montantInvesti - d.montantPaye) > 0).length} dossier
+              {dossiers.filter((d) => Math.max(0, d.montantInvesti - d.montantPaye) > 0).length !== 1 ? "s" : ""}{" "}
               en attente de règlement.
             </p>
           </div>
@@ -705,6 +757,84 @@ export function ClientFicheScreen() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Modifier le client</DialogTitle>
+            <DialogDescription>
+              Mettez à jour les informations du client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">
+                Nom / Raison sociale <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={editNom}
+                onChange={(e) => setEditNom(e.target.value)}
+                className="h-10"
+                placeholder="Nom ou raison sociale"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Type</Label>
+              <Select
+                value={editType}
+                onValueChange={(v) => setEditType(v as Client["type"])}
+              >
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Entreprise">Entreprise</SelectItem>
+                  <SelectItem value="Particulier">Particulier</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Téléphone</Label>
+                <Input
+                  value={editTelephone}
+                  onChange={(e) => setEditTelephone(e.target.value)}
+                  className="h-10"
+                  placeholder="+223 76 00 00 00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">E-mail</Label>
+                <Input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="h-10"
+                  placeholder="contact@exemple.ml"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Adresse</Label>
+              <Input
+                value={editAdresse}
+                onChange={(e) => setEditAdresse(e.target.value)}
+                className="h-10"
+                placeholder="Adresse complète"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={!editNom.trim()}>
+              <Pencil className="size-4" />
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

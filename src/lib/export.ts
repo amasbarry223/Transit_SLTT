@@ -71,10 +71,8 @@ export function printHTML(title: string, bodyHTML: string): void {
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand-logo {
-      width: 36px; height: 36px; border-radius: 8px;
-      background: #1e40af; color: white;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 14px;
+      width: 64px; height: 64px;
+      object-fit: contain;
     }
     .brand-name { font-weight: 700; font-size: 15px; }
     .brand-sub { font-size: 11px; color: #64748b; }
@@ -103,7 +101,7 @@ export function printHTML(title: string, bodyHTML: string): void {
 <body>
   <div class="doc-header">
     <div class="brand">
-      <div class="brand-logo">ST</div>
+      <img class="brand-logo" src="${window.location.origin}/logo.png" alt="SLTT" />
       <div>
         <div class="brand-name">SLTT</div>
         <div class="brand-sub">Société Traoré de Logistique, Transit et Transport</div>

@@ -80,20 +80,15 @@ export function LoginScreen() {
 
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="overflow-hidden rounded-2xl border border-white/25 bg-white shadow-[0_24px_80px_-12px_rgba(15,23,42,0.45)]">
-          <div className="px-8 pb-5 pt-8 text-center">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-blue-50 ring-1 ring-primary/10">
-              <Image
-                src="/logo.svg"
-                alt="SLTT"
-                width={36}
-                height={36}
-                className="size-9"
-                priority
-              />
-            </div>
-            <h1 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-bold tracking-tight text-slate-900">
-              SLTT
-            </h1>
+          <div className="flex flex-col items-center px-8 pb-5 pt-8">
+            <Image
+              src="/logo-login.png"
+              alt="SLTT"
+              width={96}
+              height={96}
+              className="size-24 object-contain drop-shadow-md"
+              priority
+            />
           </div>
 
           <Separator className="bg-slate-200" />
@@ -196,9 +191,6 @@ export function LoginScreen() {
               <ShieldCheck className="size-3.5" />
               Accès sécurisé · SLTT © 2026
             </div>
-            <p className="mt-2 text-center text-[11px] text-slate-400">
-              Démo — identifiants administrateur pré-remplis.
-            </p>
           </div>
         </div>
       </div>

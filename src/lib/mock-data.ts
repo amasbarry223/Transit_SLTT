@@ -53,6 +53,7 @@ export interface Dossier {
 export interface Ecriture {
   id: string;
   date: string;
+  datePaiement?: string;
   clientId: string;
   clientNom: string;
   dossierId?: string;
@@ -104,6 +105,7 @@ export interface User {
   nom: string;
   email: string;
   role: UserRole;
+  permissions: string[];
   actif: boolean;
   derniereConnexion: string;
 }
@@ -392,6 +394,7 @@ export const ecritures: Ecriture[] = [
     date: "2026-01-08",
     clientId: "C-001",
     clientNom: "Société des Établissements Diallo",
+    dossierId: "D-0042",
     montantInvesti: 2_500_000,
     montantPaye: 1_800_000,
     modePaiement: "Virement",
@@ -400,8 +403,10 @@ export const ecritures: Ecriture[] = [
   {
     id: "E-1000",
     date: "2026-01-05",
+    datePaiement: "2026-01-05",
     clientId: "C-004",
     clientNom: "Groupe Keïta Distribution",
+    dossierId: "D-0041",
     montantInvesti: 1_900_000,
     montantPaye: 1_900_000,
     modePaiement: "Virement",
@@ -412,6 +417,7 @@ export const ecritures: Ecriture[] = [
     date: "2026-01-03",
     clientId: "C-002",
     clientNom: "Traoré & Frères Commerce",
+    dossierId: "D-0040",
     montantInvesti: 2_900_000,
     montantPaye: 2_200_000,
     modePaiement: "Mobile Money",
@@ -422,6 +428,7 @@ export const ecritures: Ecriture[] = [
     date: "2026-01-02",
     clientId: "C-005",
     clientNom: "Boutique Cissé Import",
+    dossierId: "D-0039",
     montantInvesti: 1_150_000,
     montantPaye: 800_000,
     modePaiement: "Espèces",
@@ -430,8 +437,10 @@ export const ecritures: Ecriture[] = [
   {
     id: "E-0997",
     date: "2025-12-28",
+    datePaiement: "2025-12-28",
     clientId: "C-007",
     clientNom: "Sahel Agro Industries",
+    dossierId: "D-0038",
     montantInvesti: 4_000_000,
     montantPaye: 4_000_000,
     modePaiement: "Virement",
@@ -440,29 +449,36 @@ export const ecritures: Ecriture[] = [
   {
     id: "E-0996",
     date: "2025-12-22",
+    datePaiement: "2025-12-22",
     clientId: "C-003",
     clientNom: "Aïssata Koné",
+    dossierId: "D-0037",
     montantInvesti: 900_000,
     montantPaye: 900_000,
     modePaiement: "Mobile Money",
+    note: "Solde dossier SLTT-TR-2026-0037",
   },
   {
     id: "E-0995",
     date: "2025-12-18",
     clientId: "C-001",
     clientNom: "Société des Établissements Diallo",
+    dossierId: "D-0036",
     montantInvesti: 1_680_000,
     montantPaye: 1_300_000,
     modePaiement: "Chèque",
+    note: "Acompte dossier SLTT-TR-2026-0036",
   },
   {
     id: "E-0994",
     date: "2025-12-15",
     clientId: "C-004",
     clientNom: "Groupe Keïta Distribution",
+    dossierId: "D-0035",
     montantInvesti: 3_290_000,
     montantPaye: 2_900_000,
     modePaiement: "Virement",
+    note: "Acompte dossier SLTT-TR-2026-0035",
   },
 ];
 
@@ -703,6 +719,7 @@ export const users: User[] = [
     nom: "Amadou Traoré",
     email: "amadou.traore@sltt.ml",
     role: "Administrateur",
+    permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "comptabilite:read", "comptabilite:write", "clients:read", "clients:write", "stock:read", "stock:write", "bons:read", "bons:write", "parametres:read", "parametres:write", "rapports:read"],
     actif: true,
     derniereConnexion: "2026-01-09T08:12:00",
   },
@@ -711,6 +728,7 @@ export const users: User[] = [
     nom: "Fatoumata Diallo",
     email: "fatoumata.diallo@sltt.ml",
     role: "Comptable",
+    permissions: ["dossiers:read", "comptabilite:read", "comptabilite:write", "clients:read", "rapports:read"],
     actif: true,
     derniereConnexion: "2026-01-08T17:40:00",
   },
@@ -719,6 +737,7 @@ export const users: User[] = [
     nom: "Ibrahim Keïta",
     email: "ibrahim.keita@sltt.ml",
     role: "Agent de transit",
+    permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "clients:read"],
     actif: true,
     derniereConnexion: "2026-01-09T09:05:00",
   },
@@ -727,6 +746,7 @@ export const users: User[] = [
     nom: "Oumar Cissé",
     email: "oumar.cisse@sltt.ml",
     role: "Magasinier",
+    permissions: ["stock:read", "stock:write", "bons:read", "bons:write"],
     actif: true,
     derniereConnexion: "2026-01-07T16:20:00",
   },
@@ -735,6 +755,7 @@ export const users: User[] = [
     nom: "Aminata Sangaré",
     email: "aminata.sangare@sltt.ml",
     role: "Commercial",
+    permissions: ["clients:read", "clients:write", "bons:read", "dossiers:read"],
     actif: false,
     derniereConnexion: "2025-12-15T11:00:00",
   },

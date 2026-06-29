@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -111,7 +112,7 @@ function TablePagination({
         <Button
           variant="outline"
           size="sm"
-          className="h-8"
+          className="h-9"
           disabled={page <= 1}
           onClick={() => onPageChange(Math.max(1, page - 1))}
           aria-label="Page précédente"
@@ -124,7 +125,7 @@ function TablePagination({
         <Button
           variant="outline"
           size="sm"
-          className="h-8"
+          className="h-9"
           disabled={page >= totalPages}
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           aria-label="Page suivante"
@@ -136,11 +137,34 @@ function TablePagination({
   );
 }
 
+function DossiersTableSkeleton() {
+  return (
+    <div className="divide-y divide-border">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="hidden h-4 w-24 md:block" />
+          <Skeleton className="hidden h-4 w-20 lg:block" />
+          <Skeleton className="ml-auto h-5 w-16 rounded-full" />
+          <Skeleton className="h-7 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function DossiersListScreen() {
   const { openDossier, openDossierDetail } = useNav();
   const { toast } = useToast();
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoaded(true), 300);
+    return () => clearTimeout(t);
+  }, []);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
@@ -212,12 +236,15 @@ export function DossiersListScreen() {
   const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
 
-  const hasActiveFilters =
-    search.trim() !== "" ||
-    clientFilter !== "all" ||
-    statutFilter !== "Tous" ||
-    periode !== "all" ||
-    yearFilter !== "all";
+  const activeFiltersCount = [
+    search.trim() !== "",
+    clientFilter !== "all",
+    statutFilter !== "Tous",
+    periode !== "all",
+    yearFilter !== "all",
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = activeFiltersCount > 0;
 
   function clearFilters() {
     setSearch("");
@@ -472,10 +499,13 @@ export function DossiersListScreen() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500"
+              className="h-10 gap-1.5 text-slate-500"
               onClick={clearFilters}
             >
               Réinitialiser
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+                {activeFiltersCount}
+              </span>
             </Button>
           )}
 
@@ -518,7 +548,9 @@ export function DossiersListScreen() {
           </span>
         </div>
 
-        {filtered.length === 0 ? (
+        {!isLoaded ? (
+          <DossiersTableSkeleton />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
             <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
               <FolderKanban className="size-7" />

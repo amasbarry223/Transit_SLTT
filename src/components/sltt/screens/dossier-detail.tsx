@@ -20,6 +20,9 @@ import {
   Folder,
   FolderPlus,
   FolderOpen,
+  Wallet,
+  History,
+  Clock,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -28,9 +31,17 @@ import { calculerEcart } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
-import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
+import { DossierStatutBadge, EcartValue, EcritureStatutBadge } from "@/components/sltt/status-badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -493,6 +504,8 @@ export function DossierDetailScreen() {
   const deleteSubDossier = useStore((s) => s.deleteSubDossier);
   const addFichier = useStore((s) => s.addFichier);
   const deleteFichier = useStore((s) => s.deleteFichier);
+  const allEcritures = useStore((s) => s.ecritures);
+  const auditLogs = useStore((s) => s.auditLogs);
 
   const [transitionOpen, setTransitionOpen] = useState(false);
 
@@ -527,6 +540,16 @@ export function DossierDetailScreen() {
     () => allFichiers.filter((f) => f.dossierId === dossierId).length,
     [allFichiers, dossierId],
   );
+
+  const dossierEcritures = useMemo(
+    () => allEcritures.filter((e) => e.dossierId === dossierId),
+    [allEcritures, dossierId],
+  );
+
+  const dossierAuditLogs = useMemo(() => {
+    if (!dossier) return [];
+    return auditLogs.filter((a) => a.detail.includes(dossier.reference));
+  }, [auditLogs, dossier]);
 
   if (!dossier) {
     return (
@@ -703,6 +726,15 @@ export function DossierDetailScreen() {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="paiements">
+            Paiements
+            {dossierEcritures.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                {dossierEcritures.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="historique">Historique</TabsTrigger>
         </TabsList>
 
         {/* ---- TAB: Informations ---- */}
@@ -949,6 +981,149 @@ export function DossierDetailScreen() {
               />
             ))}
           </div>
+        </TabsContent>
+
+        {/* ---- TAB: Paiements ---- */}
+        <TabsContent value="paiements">
+          <Card className="border-border/80 p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <Wallet className="size-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Paiements liés à ce dossier
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Écritures comptables enregistrées pour {dossier.reference}
+                </p>
+              </div>
+            </div>
+
+            {dossierEcritures.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Wallet className="size-10 text-slate-200" />
+                <p className="mt-3 text-sm text-slate-500">
+                  Aucun paiement enregistré pour ce dossier.
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Les paiements apparaissent ici lors du passage en statut Soldé ou via la comptabilité.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Date
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Investi
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Payé
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Reste dû
+                      </TableHead>
+                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                        Mode
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Statut
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dossierEcritures.map((e) => {
+                      const resteE = Math.max(0, e.montantInvesti - e.montantPaye);
+                      const statut: "Soldé" | "En attente" = resteE === 0 ? "Soldé" : "En attente";
+                      return (
+                        <TableRow
+                          key={e.id}
+                          className="border-b border-border hover:bg-slate-50/60"
+                        >
+                          <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                            {formatDateShort(e.date)}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                            {formatFCFA(e.montantInvesti)}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700">
+                            {formatFCFA(e.montantPaye)}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums">
+                            {resteE > 0 ? (
+                              <span className="font-semibold text-amber-600">
+                                {formatFCFA(resteE)}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-emerald-600">Soldé</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 sm:table-cell">
+                            {e.modePaiement}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <EcritureStatutBadge statut={statut} />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* ---- TAB: Historique ---- */}
+        <TabsContent value="historique">
+          <Card className="border-border/80 p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                <History className="size-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Historique du dossier
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Toutes les actions enregistrées sur {dossier.reference}
+                </p>
+              </div>
+            </div>
+
+            {dossierAuditLogs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <History className="size-10 text-slate-200" />
+                <p className="mt-3 text-sm text-slate-500">
+                  Aucune action enregistrée pour ce dossier.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {dossierAuditLogs.map((a) => (
+                  <div key={a.id} className="flex items-start gap-3 py-3.5">
+                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                      <Clock className="size-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900">{a.action}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{a.detail}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-xs tabular-nums text-slate-500">
+                        {formatDateShort(a.date.slice(0, 10))}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-400">{a.user}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </TabsContent>
       </Tabs>
 

@@ -43,6 +43,34 @@ export type {
   DossierFichier,
 };
 
+export type AuditAction =
+  | "Connexion"
+  | "Création"
+  | "Modification"
+  | "Validation"
+  | "Paiement"
+  | "Export"
+  | "Suppression";
+
+export type AuditModule =
+  | "Authentification"
+  | "Dossiers"
+  | "Comptabilité"
+  | "Stock"
+  | "Bons"
+  | "Clients"
+  | "Utilisateurs";
+
+export type AuditEntry = {
+  id: string;
+  date: string;
+  user: string;
+  module: AuditModule;
+  action: AuditAction;
+  detail: string;
+  ip: string;
+};
+
 /** Input for creating/editing a dossier (without generated id/reference). */
 export interface DossierInput {
   clientId: string;
@@ -112,6 +140,31 @@ export interface UserInput {
   permissions: string[];
 }
 
+function syncClientStats(dossiers: Dossier[], clients: Client[]): Client[] {
+  return clients.map((c) => {
+    const cd = dossiers.filter((d) => d.clientId === c.id);
+    return {
+      ...c,
+      nbDossiers: cd.length,
+      totalPaye: cd.reduce((s, d) => s + d.montantPaye, 0),
+      totalDu: cd.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0),
+    };
+  });
+}
+
+function getConnectedUserName(): string {
+  try {
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem("sltt-auth");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { state?: { currentUserName?: string } };
+        return parsed?.state?.currentUserName ?? "Système";
+      }
+    }
+  } catch { /* ignore */ }
+  return "Système";
+}
+
 interface SLTTState {
   // Data
   clients: Client[];
@@ -123,10 +176,19 @@ interface SLTTState {
   users: User[];
   subDossiers: SubDossier[];
   fichiers: DossierFichier[];
+  auditLogs: AuditEntry[];
 
   // Counters for reference generation
   dossierSeq: number;
   bonSeq: number;
+  auditSeq: number;
+  ecritureSeq: number;
+  clientSeq: number;
+  stockSeq: number;
+  userSeq: number;
+
+  // ---- Audit ----
+  addAuditLog: (module: AuditModule, action: AuditAction, detail: string) => void;
 
   // ---- Dossiers ----
   addDossier: (input: DossierInput) => Dossier;
@@ -194,8 +256,40 @@ export const useStore = create<SLTTState>()(
       users: seedUsers,
       subDossiers: seedSubDossiers,
       fichiers: seedFichiers,
-      dossierSeq: 43, // next will be SLTT-TR-2026-0043
-      bonSeq: 52, // next will be BS-2026-0052
+      auditLogs: [
+        { id: "A-001", date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", module: "Dossiers", action: "Création", detail: "Dossier DOS-2026-0142 créé — Client SEDIM SA", ip: "154.66.12.7" },
+        { id: "A-002", date: "2026-01-09T08:45:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Paiement", detail: "Paiement 850 000 FCFA — Écriture EC-2026-0089", ip: "41.202.18.50" },
+        { id: "A-003", date: "2026-01-09T08:12:00", user: "Amadou Traoré", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Chrome · Windows", ip: "41.202.18.45" },
+        { id: "A-004", date: "2026-01-08T17:40:00", user: "Fatoumata Diallo", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Firefox · macOS", ip: "41.202.18.50" },
+        { id: "A-005", date: "2026-01-08T16:22:00", user: "Oumar Cissé", module: "Stock", action: "Modification", detail: "Sortie 120 sacs — Riz parfumé (entrepôt A)", ip: "41.202.18.61" },
+        { id: "A-006", date: "2026-01-08T14:10:00", user: "Amadou Traoré", module: "Bons", action: "Validation", detail: "Bon BS-2026-0048 validé — Vente", ip: "41.202.18.45" },
+      ],
+      dossierSeq: 43,
+      bonSeq: 52,
+      auditSeq: 7,
+      ecritureSeq: 1010,
+      clientSeq: 8,
+      stockSeq: 8,
+      userSeq: 6,
+
+      // ---- Audit ----
+      addAuditLog: (module, action, detail) => {
+        const seq = get().auditSeq;
+        const id = `A-${pad(seq, 3)}`;
+        const newLog: AuditEntry = {
+          id,
+          date: new Date().toISOString(),
+          user: getConnectedUserName(),
+          module,
+          action,
+          detail,
+          ip: "N/A",
+        };
+        set((s) => ({
+          auditLogs: [newLog, ...s.auditLogs],
+          auditSeq: seq + 1,
+        }));
+      },
 
       // ---- Dossiers ----
       addDossier: (input) => {
@@ -209,21 +303,29 @@ export const useStore = create<SLTTState>()(
           montantPaye: 0,
           notes: input.notes ?? "",
         };
-        set((s) => ({
-          dossiers: [newDossier, ...s.dossiers],
-          dossierSeq: seq + 1,
-          clients: s.clients.map((c) =>
-            c.id === input.clientId ? { ...c, nbDossiers: c.nbDossiers + 1 } : c,
-          ),
-        }));
+        set((s) => {
+          const updatedDossiers = [newDossier, ...s.dossiers];
+          return {
+            dossiers: updatedDossiers,
+            dossierSeq: seq + 1,
+            clients: syncClientStats(updatedDossiers, s.clients),
+          };
+        });
+        get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
         return newDossier;
       },
       updateDossier: (id, input) => {
-        set((s) => ({
-          dossiers: s.dossiers.map((d) =>
-            d.id === id ? { ...d, ...input } : d,
-          ),
-        }));
+        const existing = get().dossiers.find((d) => d.id === id);
+        set((s) => {
+          const updatedDossiers = s.dossiers.map((d) => d.id === id ? { ...d, ...input } : d);
+          return {
+            dossiers: updatedDossiers,
+            clients: syncClientStats(updatedDossiers, s.clients),
+          };
+        });
+        if (existing) {
+          get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`);
+        }
       },
       getDossier: (id) => get().dossiers.find((d) => d.id === id),
       transitionDossier: (id, newStatut, montantRecu, modePaiement, transitionNote) => {
@@ -240,30 +342,58 @@ export const useStore = create<SLTTState>()(
               ? { ...d, statut: newStatut, montantPaye: updatedMontantPaye }
               : d,
           );
-          // Auto-create écriture when dossier is soldé with a payment
+
           let updatedEcritures = s.ecritures;
           if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
-            const seq = s.ecritures.length + 1002;
-            const autoEcriture: Ecriture = {
-              id: `E-${seq}`,
-              date: new Date().toISOString().slice(0, 10),
-              clientId: dossier.clientId,
-              clientNom: dossier.clientNom,
-              dossierId: dossier.id,
-              montantInvesti: dossier.montantInvesti,
-              montantPaye: updatedMontantPaye,
-              modePaiement: modePaiement ?? "Virement",
-              note: transitionNote || `Solde dossier ${dossier.reference}`,
-            };
-            updatedEcritures = [autoEcriture, ...s.ecritures];
+            const today = new Date().toISOString().slice(0, 10);
+            const existingIdx = s.ecritures.findIndex((e) => e.dossierId === id);
+            if (existingIdx >= 0) {
+              // Met à jour l'écriture existante plutôt que d'en créer une nouvelle
+              updatedEcritures = s.ecritures.map((e) =>
+                e.dossierId === id
+                  ? {
+                      ...e,
+                      montantPaye: updatedMontantPaye,
+                      modePaiement: modePaiement ?? e.modePaiement,
+                      datePaiement: today,
+                      note: transitionNote || e.note || `Solde dossier ${dossier.reference}`,
+                    }
+                  : e,
+              );
+            } else {
+              const seq = get().ecritureSeq;
+              const autoEcriture: Ecriture = {
+                id: `E-${seq}`,
+                date: today,
+                datePaiement: today,
+                clientId: dossier.clientId,
+                clientNom: dossier.clientNom,
+                dossierId: dossier.id,
+                montantInvesti: dossier.montantInvesti,
+                montantPaye: updatedMontantPaye,
+                modePaiement: modePaiement ?? "Virement",
+                note: transitionNote || `Solde dossier ${dossier.reference}`,
+              };
+              updatedEcritures = [autoEcriture, ...s.ecritures];
+            }
           }
-          return { dossiers: updatedDossiers, ecritures: updatedEcritures };
+
+          return {
+            dossiers: updatedDossiers,
+            ecritures: updatedEcritures,
+            clients: syncClientStats(updatedDossiers, s.clients),
+          };
         });
+        get().addAuditLog(
+          "Dossiers",
+          "Validation",
+          `Dossier ${dossier.reference} → ${newStatut}${montantRecu ? ` — ${montantRecu.toLocaleString("fr-FR")} FCFA reçus` : ""}`,
+        );
       },
 
       // ---- Clients ----
       addClient: (input) => {
-        const seq = get().clients.length + 8;
+        const seq = get().clientSeq;
         const id = `C-${pad(seq, 3)}`;
         const newClient: Client = {
           id,
@@ -272,7 +402,8 @@ export const useStore = create<SLTTState>()(
           totalDu: 0,
           totalPaye: 0,
         };
-        set((s) => ({ clients: [newClient, ...s.clients] }));
+        set((s) => ({ clients: [newClient, ...s.clients], clientSeq: seq + 1 }));
+        get().addAuditLog("Clients", "Création", `Client « ${input.nom} » ajouté`);
         return newClient;
       },
       updateClient: (id, input) => {
@@ -286,41 +417,77 @@ export const useStore = create<SLTTState>()(
 
       // ---- Comptabilité ----
       recordPayment: (ecritureId, montant, mode, date, note) => {
-        set((s) => ({
-          ecritures: s.ecritures.map((e) =>
+        const ecriture = get().ecritures.find((e) => e.id === ecritureId);
+        if (!ecriture) return;
+        set((s) => {
+          const updatedEcritures = s.ecritures.map((e) =>
             e.id === ecritureId
               ? {
                   ...e,
-                  montantPaye: Math.min(
-                    e.montantInvesti,
-                    e.montantPaye + montant,
-                  ),
+                  montantPaye: Math.min(e.montantInvesti, e.montantPaye + montant),
                   modePaiement: mode,
+                  datePaiement: date,
                   note: note || e.note,
                 }
               : e,
-          ),
-        }));
+          );
+          if (!ecriture.dossierId) return { ecritures: updatedEcritures };
+          const totalPaye = updatedEcritures
+            .filter((e) => e.dossierId === ecriture.dossierId)
+            .reduce((sum, e) => sum + e.montantPaye, 0);
+          const updatedDossiers = s.dossiers.map((d) =>
+            d.id === ecriture.dossierId
+              ? { ...d, montantPaye: Math.min(d.montantInvesti, totalPaye) }
+              : d,
+          );
+          return {
+            ecritures: updatedEcritures,
+            dossiers: updatedDossiers,
+            clients: syncClientStats(updatedDossiers, s.clients),
+          };
+        });
+        get().addAuditLog(
+          "Comptabilité",
+          "Paiement",
+          `Paiement ${montant.toLocaleString("fr-FR")} FCFA — Écriture ${ecritureId}`,
+        );
       },
       addEcriture: (e) => {
-        const seq = get().ecritures.length + 1002;
+        const seq = get().ecritureSeq;
         const id = `E-${seq}`;
         const newEcriture: Ecriture = { id, ...e };
-        set((s) => ({ ecritures: [newEcriture, ...s.ecritures] }));
+        set((s) => {
+          const updatedEcritures = [newEcriture, ...s.ecritures];
+          if (!e.dossierId) return { ecritures: updatedEcritures, ecritureSeq: seq + 1 };
+          const totalPaye = updatedEcritures
+            .filter((ec) => ec.dossierId === e.dossierId)
+            .reduce((sum, ec) => sum + ec.montantPaye, 0);
+          const updatedDossiers = s.dossiers.map((d) =>
+            d.id === e.dossierId
+              ? { ...d, montantPaye: Math.min(d.montantInvesti, totalPaye) }
+              : d,
+          );
+          return {
+            ecritures: updatedEcritures,
+            ecritureSeq: seq + 1,
+            dossiers: updatedDossiers,
+            clients: syncClientStats(updatedDossiers, s.clients),
+          };
+        });
         return newEcriture;
       },
 
       // ---- Stock ----
       addStockItem: (input) => {
-        const seq = get().stock.length + 8;
+        const seq = get().stockSeq;
         const id = `S-${pad(seq, 2)}`;
         const newItem: StockItem = { id, ...input };
-        set((s) => ({ stock: [...s.stock, newItem] }));
+        set((s) => ({ stock: [...s.stock, newItem], stockSeq: seq + 1 }));
         return newItem;
       },
       addStockEntry: (stockId, quantite, responsable) => {
         const now = new Date();
-        const seq = get().mouvements.length + 22;
+        const seq = get().mouvements.length + 100;
         const mvt: Mouvement = {
           id: `M-${pad(seq, 3)}`,
           date: now.toISOString().slice(0, 10),
@@ -342,7 +509,7 @@ export const useStore = create<SLTTState>()(
       },
       addStockExit: (stockId, quantite, responsable, bonRef) => {
         const now = new Date();
-        const seq = get().mouvements.length + 22;
+        const seq = get().mouvements.length + 101;
         const item = get().stock.find((s) => s.id === stockId);
         const mvt: Mouvement = {
           id: `M-${pad(seq, 3)}`,
@@ -392,13 +559,13 @@ export const useStore = create<SLTTState>()(
           mouvements: item
             ? [
                 {
-                  id: `M-${pad(s.mouvements.length + 22, 3)}`,
+                  id: `M-${pad(s.mouvements.length + 100, 3)}`,
                   date: input.date,
                   type: "Sortie" as const,
                   marchandise: input.marchandise,
                   quantite: input.quantite,
                   unite: input.unite,
-                  responsable: "Oumar Cissé",
+                  responsable: getConnectedUserName(),
                   bonRef: reference,
                 },
                 ...s.mouvements,
@@ -423,13 +590,13 @@ export const useStore = create<SLTTState>()(
           mouvements: item
             ? [
                 {
-                  id: `M-${pad(s.mouvements.length + 22, 3)}`,
+                  id: `M-${pad(s.mouvements.length + 100, 3)}`,
                   date: bon.date,
                   type: "Sortie" as const,
                   marchandise: bon.marchandise,
                   quantite: bon.quantite,
                   unite: bon.unite,
-                  responsable: "Oumar Cissé",
+                  responsable: getConnectedUserName(),
                   bonRef: bon.reference,
                 },
                 ...s.mouvements,
@@ -440,15 +607,19 @@ export const useStore = create<SLTTState>()(
 
       // ---- Users ----
       addUser: (input) => {
-        const seq = get().users.length + 6;
+        const seq = get().userSeq;
         const id = `U-${pad(seq, 2)}`;
         const newUser: User = {
           id,
-          ...input,
+          nom: input.nom,
+          email: input.email,
+          role: input.role,
+          permissions: input.permissions,
           actif: true,
           derniereConnexion: new Date().toISOString(),
         };
-        set((s) => ({ users: [...s.users, newUser] }));
+        set((s) => ({ users: [...s.users, newUser], userSeq: seq + 1 }));
+        get().addAuditLog("Utilisateurs", "Création", `Utilisateur ${input.nom} (${input.role}) ajouté`);
         return newUser;
       },
       toggleUserActive: (id) => {
@@ -466,7 +637,9 @@ export const useStore = create<SLTTState>()(
         }));
       },
       removeUser: (id) => {
+        const u = get().users.find((x) => x.id === id);
         set((s) => ({ users: s.users.filter((u) => u.id !== id) }));
+        if (u) get().addAuditLog("Utilisateurs", "Suppression", `Utilisateur ${u.nom} supprimé`);
       },
 
       // ---- Sous-dossiers ----
@@ -528,6 +701,11 @@ export const useStore = create<SLTTState>()(
           fichiers: seedFichiers,
           dossierSeq: 43,
           bonSeq: 52,
+          auditSeq: 7,
+          ecritureSeq: 1010,
+          clientSeq: 8,
+          stockSeq: 8,
+          userSeq: 6,
         });
       },
     }),
@@ -544,8 +722,14 @@ export const useStore = create<SLTTState>()(
         users: s.users,
         subDossiers: s.subDossiers,
         fichiers: s.fichiers,
+        auditLogs: s.auditLogs,
         dossierSeq: s.dossierSeq,
         bonSeq: s.bonSeq,
+        auditSeq: s.auditSeq,
+        ecritureSeq: s.ecritureSeq,
+        clientSeq: s.clientSeq,
+        stockSeq: s.stockSeq,
+        userSeq: s.userSeq,
       }),
     },
   ),

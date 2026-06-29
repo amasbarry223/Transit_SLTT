@@ -18,6 +18,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
+import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -222,10 +223,23 @@ export function ComptabiliteScreen() {
   function valider() {
     if (!selected) return;
     const montantNum = Number(montant.replace(/\s/g, "")) || 0;
+    const reste = Math.max(0, selected.montantInvesti - selected.montantPaye);
+    if (montantNum <= 0) {
+      toast({ title: "Montant invalide", description: "Le montant doit être supérieur à 0.", variant: "destructive" });
+      return;
+    }
+    if (montantNum > reste) {
+      toast({
+        title: "Montant invalide",
+        description: `Le paiement (${formatFCFA(montantNum)}) dépasse le reste à payer (${formatFCFA(reste)}).`,
+        variant: "destructive",
+      });
+      return;
+    }
     recordPayment(selected.id, montantNum, mode, datePaiement, note);
     toast({
       title: "Paiement enregistré",
-      description: "Le solde a été mis à jour.",
+      description: "Le solde du dossier a été mis à jour.",
     });
     setOpen(false);
     setSelected(null);
@@ -708,24 +722,32 @@ export function ComptabiliteScreen() {
               <Label htmlFor="ne-client" className="text-sm font-medium text-slate-700">
                 Client <span className="text-red-500">*</span>
               </Label>
-              <Select
-                value={neClientId}
-                onValueChange={(v) => {
-                  setNeClientId(v);
-                  setNeDossierId("");
-                }}
-              >
-                <SelectTrigger id="ne-client" className="h-10 w-full">
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={neClientId}
+                  onValueChange={(v) => {
+                    setNeClientId(v);
+                    setNeDossierId("");
+                  }}
+                >
+                  <SelectTrigger id="ne-client" className="h-10 w-full">
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <QuickClientButton
+                  onCreated={(id) => {
+                    setNeClientId(id);
+                    setNeDossierId("");
+                  }}
+                />
+              </div>
             </div>
 
             {clientDossiers.length > 0 && (

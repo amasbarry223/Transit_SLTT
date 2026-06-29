@@ -428,9 +428,6 @@ function MouvementsTab({
   const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
 
-  useEffect(() => {
-    setPage(1);
-  }, [marchandiseFilter]);
 
   return (
     <div className="space-y-4">
@@ -1025,6 +1022,7 @@ export function EntreposageScreen() {
 
         <TabsContent value="mouvements" className="mt-6 focus-visible:outline-none">
           <MouvementsTab
+            key={marchandiseFilter}
             mouvements={mouvements}
             marchandiseFilter={marchandiseFilter}
             onClearMarchandiseFilter={() => setMarchandiseFilter("")}

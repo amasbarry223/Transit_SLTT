@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { useStore, type BonMotif, type StockItem } from "@/lib/store";
+import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -129,6 +130,7 @@ export function BonsScreen() {
   const validateBon = useStore((s) => s.validateBon);
   const stock = useStore((s) => s.stock);
   const clients = useStore((s) => s.clients);
+  const bonSeq = useStore((s) => s.bonSeq);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
@@ -147,10 +149,7 @@ export function BonsScreen() {
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
   const [formMontant, setFormMontant] = useState<string>("");
 
-  const nextRef = useMemo(() => {
-    const n = bons.length + 1;
-    return `BS-2026-${String(n).padStart(4, "0")}`;
-  }, [bons.length]);
+  const nextRef = `BS-2026-${String(bonSeq).padStart(4, "0")}`;
 
   const stats = useMemo(() => {
     let valides = 0;
@@ -695,18 +694,21 @@ export function BonsScreen() {
                 <Label htmlFor="bs-client" className="text-sm font-medium text-slate-700">
                   Client <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formClientId} onValueChange={setFormClientId}>
-                  <SelectTrigger id="bs-client" className="h-10 w-full">
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={formClientId} onValueChange={setFormClientId}>
+                    <SelectTrigger id="bs-client" className="h-10 w-full">
+                      <SelectValue placeholder="Sélectionner un client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <QuickClientButton onCreated={setFormClientId} />
+                </div>
               </div>
 
               <div className="space-y-2">

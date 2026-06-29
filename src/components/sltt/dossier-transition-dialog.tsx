@@ -148,9 +148,11 @@ export function TransitionDialog({
   function handleConfirm() {
     const errs: { montantRecu?: string; date?: string } = {};
 
-    if (transition === "solder") {
+    if (transition === "solder" && reste > 0) {
       const amt = parseAmount(montantRecu);
-      if (amt <= 0) errs.montantRecu = "Le montant doit être supérieur à 0.";
+      if (amt < reste) {
+        errs.montantRecu = `Le paiement doit couvrir le solde dû (${formatFCFA(reste)}).`;
+      }
       if (!date) errs.date = "La date de paiement est requise.";
     }
     if (transition === "livrer" && !date) {
@@ -163,7 +165,7 @@ export function TransitionDialog({
     }
 
     const montantRecu_n =
-      transition === "solder" ? parseAmount(montantRecu) : undefined;
+      transition === "solder" && reste > 0 ? parseAmount(montantRecu) : undefined;
 
     transitionDossierFn(
       dossier.id,
@@ -206,63 +208,70 @@ export function TransitionDialog({
 
         <div className="space-y-4">
           {transition === "solder" && (
-            <>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
-                <span className="text-amber-700">Reste à payer : </span>
-                <span className="font-bold text-amber-900">
-                  {formatFCFA(reste)}
-                </span>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="td-montant">Montant reçu *</Label>
-                <div className="relative">
-                  <Input
-                    id="td-montant"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    value={montantRecu}
-                    onChange={(e) => {
-                      setMontantRecu(e.target.value);
-                      setErrors((p) => ({ ...p, montantRecu: undefined }));
-                    }}
-                    className={cn(
-                      "h-10 pr-14 text-right tabular-nums",
-                      errors.montantRecu && "border-red-400",
-                    )}
-                  />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                    FCFA
+            reste > 0 ? (
+              <>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+                  <span className="text-amber-700">Reste à payer : </span>
+                  <span className="font-bold text-amber-900">
+                    {formatFCFA(reste)}
                   </span>
                 </div>
-                {errors.montantRecu && (
-                  <p className="text-xs text-red-500">{errors.montantRecu}</p>
-                )}
-              </div>
 
-              <div className="space-y-1.5">
-                <Label>Mode de paiement</Label>
-                <Select
-                  value={mode}
-                  onValueChange={(v) => setMode(v as PaiementMode)}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAIEMENT_MODES.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-1.5">
+                  <Label htmlFor="td-montant">Montant reçu *</Label>
+                  <div className="relative">
+                    <Input
+                      id="td-montant"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={montantRecu}
+                      onChange={(e) => {
+                        setMontantRecu(e.target.value);
+                        setErrors((p) => ({ ...p, montantRecu: undefined }));
+                      }}
+                      className={cn(
+                        "h-10 pr-14 text-right tabular-nums",
+                        errors.montantRecu && "border-red-400",
+                      )}
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                      FCFA
+                    </span>
+                  </div>
+                  {errors.montantRecu && (
+                    <p className="text-xs text-red-500">{errors.montantRecu}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Mode de paiement</Label>
+                  <Select
+                    value={mode}
+                    onValueChange={(v) => setMode(v as PaiementMode)}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAIEMENT_MODES.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+                <span className="text-emerald-700 font-medium">Dossier déjà soldé.</span>
+                <span className="text-emerald-800"> Aucun paiement supplémentaire requis.</span>
               </div>
-            </>
+            )
           )}
 
-          {(transition === "livrer" || transition === "solder") && (
+          {(transition === "livrer" || (transition === "solder" && reste > 0)) && (
             <div className="space-y-1.5">
               <Label htmlFor="td-date">
                 {transition === "livrer"

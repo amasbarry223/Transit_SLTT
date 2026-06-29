@@ -22,7 +22,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import type { UserInput, UserRole } from "@/lib/store";
+import type { UserInput, UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
@@ -73,48 +73,6 @@ type ParamTab = "users" | "profile" | "security" | "audit" | "preferences";
 
 const AUDIT_PAGE_SIZE = 8;
 
-type AuditAction =
-  | "Connexion"
-  | "Création"
-  | "Modification"
-  | "Validation"
-  | "Paiement"
-  | "Export";
-
-type AuditModule =
-  | "Authentification"
-  | "Dossiers"
-  | "Comptabilité"
-  | "Stock"
-  | "Bons"
-  | "Clients"
-  | "Utilisateurs";
-
-type AuditEntry = {
-  id: string;
-  date: string;
-  user: string;
-  module: AuditModule;
-  action: AuditAction;
-  detail: string;
-  ip: string;
-};
-
-const auditLog: AuditEntry[] = [
-  { id: "A-001", date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", module: "Dossiers", action: "Création", detail: "Dossier DOS-2026-0142 créé — Client SEDIM SA", ip: "154.66.12.7" },
-  { id: "A-002", date: "2026-01-09T08:45:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Paiement", detail: "Paiement 850 000 FCFA — Écriture EC-2026-0089", ip: "41.202.18.50" },
-  { id: "A-003", date: "2026-01-09T08:12:00", user: "Amadou Traoré", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Chrome · Windows", ip: "41.202.18.45" },
-  { id: "A-004", date: "2026-01-08T17:40:00", user: "Fatoumata Diallo", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Firefox · macOS", ip: "41.202.18.50" },
-  { id: "A-005", date: "2026-01-08T16:22:00", user: "Oumar Cissé", module: "Stock", action: "Modification", detail: "Sortie 120 sacs — Riz parfumé (entrepôt A)", ip: "41.202.18.61" },
-  { id: "A-006", date: "2026-01-08T14:10:00", user: "Amadou Traoré", module: "Bons", action: "Validation", detail: "Bon BS-2026-0048 validé — Vente", ip: "41.202.18.45" },
-  { id: "A-007", date: "2026-01-08T11:30:00", user: "Awa Traoré", module: "Clients", action: "Création", detail: "Client « Trans Mali Express » ajouté", ip: "41.202.18.72" },
-  { id: "A-008", date: "2026-01-07T16:20:00", user: "Oumar Cissé", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Chrome · Android", ip: "41.202.18.61" },
-  { id: "A-009", date: "2026-01-07T15:05:00", user: "Amadou Traoré", module: "Dossiers", action: "Export", detail: "Export PDF — 24 dossiers filtrés", ip: "41.202.18.45" },
-  { id: "A-010", date: "2026-01-07T10:18:00", user: "Amadou Traoré", module: "Utilisateurs", action: "Modification", detail: "Rôle mis à jour — Ibrahim Keïta → Agent de transit", ip: "41.202.18.45" },
-  { id: "A-011", date: "2026-01-06T09:55:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Création", detail: "Écriture EC-2026-0087 — SEDIM SA", ip: "41.202.18.50" },
-  { id: "A-012", date: "2026-01-05T17:30:00", user: "Oumar Cissé", module: "Stock", action: "Création", detail: "Entrée 500 L — Huile végétale", ip: "41.202.18.61" },
-];
-
 const actionTone: Record<
   AuditAction,
   "blue" | "emerald" | "amber" | "indigo" | "slate" | "red"
@@ -125,6 +83,7 @@ const actionTone: Record<
   Validation: "emerald",
   Paiement: "emerald",
   Export: "amber",
+  Suppression: "red",
 };
 
 const tabs: {
@@ -833,23 +792,24 @@ function SecurityTab() {
 }
 
 function AuditTab() {
+  const auditLogs = useStore((s) => s.auditLogs);
   const [query, setQuery] = useState("");
   const [moduleFilter, setModuleFilter] = useState<string>("all");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const modules = useMemo(
-    () => [...new Set(auditLog.map((e) => e.module))].sort(),
-    [],
+    () => [...new Set(auditLogs.map((e) => e.module))].sort(),
+    [auditLogs],
   );
   const actions = useMemo(
-    () => [...new Set(auditLog.map((e) => e.action))].sort(),
-    [],
+    () => [...new Set(auditLogs.map((e) => e.action))].sort(),
+    [auditLogs],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return auditLog.filter((e) => {
+    return auditLogs.filter((e) => {
       if (moduleFilter !== "all" && e.module !== moduleFilter) return false;
       if (actionFilter !== "all" && e.action !== actionFilter) return false;
       if (q) {
@@ -858,7 +818,7 @@ function AuditTab() {
       }
       return true;
     });
-  }, [query, moduleFilter, actionFilter]);
+  }, [auditLogs, query, moduleFilter, actionFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / AUDIT_PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
