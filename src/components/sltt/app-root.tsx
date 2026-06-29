@@ -12,7 +12,13 @@ export function AppRoot() {
   const logout = useNav((s) => s.logout);
 
   useEffect(() => {
-    if (!isAuthenticated || loginAt === null) return;
+    if (!isAuthenticated) return;
+
+    // Session sans loginAt = ancien format (avant refonte auth) → déconnexion forcée
+    if (loginAt === null) {
+      logout();
+      return;
+    }
 
     const ttl = rememberMe ? SESSION_TTL_LONG : SESSION_TTL_SHORT;
     const elapsed = Date.now() - loginAt;

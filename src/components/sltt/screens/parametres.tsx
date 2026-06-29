@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   UserPlus,
   Pencil,
@@ -1179,7 +1179,17 @@ function UsersTabBadge() {
 export function ParametresScreen() {
   const currentRole = useNav((s) => s.currentRole);
   const isAdmin = currentRole === "Administrateur";
-  const [active, setActive] = useState<ParamTab>(isAdmin ? "users" : "profile");
+  const [active, setActive] = useState<ParamTab>("profile");
+
+  // Corrige le tab actif après hydratation Zustand (currentRole peut arriver après le premier render)
+  useEffect(() => {
+    if (isAdmin) {
+      setActive((prev) => (prev === "profile" ? "users" : prev));
+    } else {
+      // Non-admin : s'assurer qu'on n'est jamais sur "users"
+      setActive((prev) => (prev === "users" ? "profile" : prev));
+    }
+  }, [isAdmin]);
 
   return (
     <div className="space-y-6">

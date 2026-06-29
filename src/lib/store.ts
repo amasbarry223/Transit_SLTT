@@ -720,7 +720,7 @@ export const useStore = create<SLTTState>()(
       },
     }),
     {
-      name: "sltt-data-v1",
+      name: "sltt-data-v2",
       // Only persist data, not the methods (methods are recreated by the store)
       partialize: (s) => ({
         clients: s.clients,
