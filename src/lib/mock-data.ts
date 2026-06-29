@@ -106,6 +106,7 @@ export interface User {
   email: string;
   role: UserRole;
   permissions: string[];
+  motDePasse: string;
   actif: boolean;
   derniereConnexion: string;
 }
@@ -720,6 +721,7 @@ export const users: User[] = [
     email: "amadou.traore@sltt.ml",
     role: "Administrateur",
     permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "comptabilite:read", "comptabilite:write", "clients:read", "clients:write", "stock:read", "stock:write", "bons:read", "bons:write", "parametres:read", "parametres:write", "rapports:read"],
+    motDePasse: "sltt2026",
     actif: true,
     derniereConnexion: "2026-01-09T08:12:00",
   },
@@ -729,6 +731,7 @@ export const users: User[] = [
     email: "fatoumata.diallo@sltt.ml",
     role: "Comptable",
     permissions: ["dossiers:read", "comptabilite:read", "comptabilite:write", "clients:read", "rapports:read"],
+    motDePasse: "compta2026",
     actif: true,
     derniereConnexion: "2026-01-08T17:40:00",
   },
@@ -738,6 +741,7 @@ export const users: User[] = [
     email: "ibrahim.keita@sltt.ml",
     role: "Agent de transit",
     permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "clients:read"],
+    motDePasse: "transit2026",
     actif: true,
     derniereConnexion: "2026-01-09T09:05:00",
   },
@@ -747,6 +751,7 @@ export const users: User[] = [
     email: "oumar.cisse@sltt.ml",
     role: "Magasinier",
     permissions: ["stock:read", "stock:write", "bons:read", "bons:write"],
+    motDePasse: "stock2026",
     actif: true,
     derniereConnexion: "2026-01-07T16:20:00",
   },
@@ -756,6 +761,7 @@ export const users: User[] = [
     email: "aminata.sangare@sltt.ml",
     role: "Commercial",
     permissions: ["clients:read", "clients:write", "bons:read", "dossiers:read"],
+    motDePasse: "sales2026",
     actif: false,
     derniereConnexion: "2025-12-15T11:00:00",
   },

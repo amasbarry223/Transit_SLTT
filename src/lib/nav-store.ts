@@ -17,22 +17,37 @@ export type ViewKey =
   | "client-fiche"
   | "parametres";
 
+/** TTL session sans "Rester connecté" : 8 heures */
+export const SESSION_TTL_SHORT = 8 * 60 * 60 * 1000;
+/** TTL session avec "Rester connecté" : 7 jours */
+export const SESSION_TTL_LONG = 7 * 24 * 60 * 60 * 1000;
+
 interface NavState {
   view: ViewKey;
-  /** Optional context id (e.g. selected client, dossier) */
   selectedId: string | null;
-  /** Whether the dossier form is in "create" vs "edit" mode */
   dossierFormMode: "create" | "edit";
   isAuthenticated: boolean;
   currentRole: UserRole;
   currentUserName: string;
+  currentUserId: string | null;
+  loginAt: number | null;
+  rememberMe: boolean;
   go: (view: ViewKey, opts?: { id?: string | null }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
   openDossierDetail: (id: string) => void;
   openClient: (id: string | null) => void;
-  login: (role?: UserRole, name?: string) => void;
+  login: (role: UserRole, name: string, userId: string, remember: boolean) => void;
   logout: () => void;
 }
+
+const LOGGED_OUT = {
+  isAuthenticated: false,
+  currentRole: "Agent de transit" as UserRole,
+  currentUserName: "",
+  currentUserId: null as string | null,
+  loginAt: null as number | null,
+  rememberMe: false,
+};
 
 export const useNav = create<NavState>()(
   persist(
@@ -40,24 +55,32 @@ export const useNav = create<NavState>()(
       view: "dashboard",
       selectedId: null,
       dossierFormMode: "create",
-      isAuthenticated: false,
-      currentRole: "Administrateur" as UserRole,
-      currentUserName: "Amadou Traoré",
+      ...LOGGED_OUT,
+
       go: (view, opts) => set({ view, selectedId: opts?.id ?? null }),
       openDossier: (id, mode = "edit") =>
         set({ view: "dossier-form", selectedId: id, dossierFormMode: mode }),
       openDossierDetail: (id) =>
         set({ view: "dossier-detail", selectedId: id }),
       openClient: (id) => set({ view: "client-fiche", selectedId: id }),
-      login: (role = "Administrateur" as UserRole, name = "Amadou Traoré") =>
-        set({ isAuthenticated: true, view: "dashboard", currentRole: role, currentUserName: name }),
+
+      login: (role, name, userId, remember) =>
+        set({
+          isAuthenticated: true,
+          view: "dashboard",
+          currentRole: role,
+          currentUserName: name,
+          currentUserId: userId,
+          loginAt: Date.now(),
+          rememberMe: remember,
+        }),
+
       logout: () =>
         set({
-          isAuthenticated: false,
+          ...LOGGED_OUT,
           view: "dashboard",
           selectedId: null,
-          currentRole: "Administrateur" as UserRole,
-          currentUserName: "Amadou Traoré",
+          dossierFormMode: "create",
         }),
     }),
     {
@@ -66,6 +89,9 @@ export const useNav = create<NavState>()(
         isAuthenticated: s.isAuthenticated,
         currentRole: s.currentRole,
         currentUserName: s.currentUserName,
+        currentUserId: s.currentUserId,
+        loginAt: s.loginAt,
+        rememberMe: s.rememberMe,
       }),
     },
   ),

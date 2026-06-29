@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import { useNav, type ViewKey } from "@/lib/nav-store";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import {
@@ -77,6 +87,7 @@ export function Topbar() {
   const currentRole = useNav((s) => s.currentRole);
   const currentUserName = useNav((s) => s.currentUserName);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const initials = getInitials(currentUserName);
   const shortName = currentUserName.split(" ").map((w, i) => i === 0 ? w : w[0] + ".").join(" ");
 
@@ -261,7 +272,7 @@ export function Topbar() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={logout}
+              onClick={() => setLogoutConfirm(true)}
               className="text-red-600 focus:bg-red-50 focus:text-red-700"
             >
               Se déconnecter
@@ -269,6 +280,27 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
+
+      {/* Dialog de confirmation déconnexion */}
+      <AlertDialog open={logoutConfirm} onOpenChange={setLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Votre session sera fermée. Les données non enregistrées seront perdues.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={logout}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Se déconnecter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Mobile navigation drawer — Sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

@@ -138,6 +138,7 @@ export interface UserInput {
   email: string;
   role: UserRole;
   permissions: string[];
+  motDePasse?: string;
 }
 
 function syncClientStats(dossiers: Dossier[], clients: Client[]): Client[] {
@@ -225,6 +226,7 @@ interface SLTTState {
   updateUser: (id: string, input: UserInput) => void;
   toggleUserActive: (id: string) => void;
   removeUser: (id: string) => void;
+  updateLastLogin: (id: string) => void;
 
   // ---- Sous-dossiers ----
   addSubDossier: (input: SubDossierInput) => SubDossier;
@@ -615,6 +617,7 @@ export const useStore = create<SLTTState>()(
           email: input.email,
           role: input.role,
           permissions: input.permissions,
+          motDePasse: input.motDePasse ?? "sltt2026",
           actif: true,
           derniereConnexion: new Date().toISOString(),
         };
@@ -640,6 +643,13 @@ export const useStore = create<SLTTState>()(
         const u = get().users.find((x) => x.id === id);
         set((s) => ({ users: s.users.filter((u) => u.id !== id) }));
         if (u) get().addAuditLog("Utilisateurs", "Suppression", `Utilisateur ${u.nom} supprimé`);
+      },
+      updateLastLogin: (id) => {
+        set((s) => ({
+          users: s.users.map((u) =>
+            u.id === id ? { ...u, derniereConnexion: new Date().toISOString() } : u,
+          ),
+        }));
       },
 
       // ---- Sous-dossiers ----

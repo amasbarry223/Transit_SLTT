@@ -3,75 +3,107 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useNav } from "@/lib/nav-store";
+import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ShieldCheck,
+  AlertTriangle,
+} from "lucide-react";
+
+const MAX_ATTEMPTS = 5;
 
 function LoginBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {/* Base gradient — profondeur bleue SLTT */}
       <div className="absolute inset-0 bg-[#0c1a4a]" />
       <div className="absolute inset-0 bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#0f172a]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_-10%,rgba(96,165,250,0.45),transparent_55%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_100%_100%,rgba(30,64,175,0.6),transparent_50%)]" />
-
-      {/* Grille technique */}
       <div
         className="absolute inset-0 opacity-[0.14]"
         style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.9) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.9) 1px, transparent 1px)
-          `,
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.9) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.9) 1px, transparent 1px)`,
           backgroundSize: "64px 64px",
         }}
       />
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)
-          `,
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`,
           backgroundSize: "16px 16px",
         }}
       />
-
-      {/* Orbes lumineux */}
       <div className="absolute -left-24 top-1/4 size-96 rounded-full bg-blue-400/20 blur-3xl" />
       <div className="absolute -right-16 bottom-0 size-80 rounded-full bg-indigo-500/25 blur-3xl" />
       <div className="absolute left-1/2 top-1/2 size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-300/10 blur-3xl" />
-
-      {/* Vignette pour focaliser le container */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(15,23,42,0.35)_100%)]" />
     </div>
   );
 }
 
 export function LoginScreen() {
-  const login = useNav((s) => s.login);
+  const loginNav = useNav((s) => s.login);
+  const users = useStore((s) => s.users);
+  const updateLastLogin = useStore((s) => s.updateLastLogin);
+
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("amadou.traore@sltt.ml");
-  const [password, setPassword] = useState("sltt2026");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
+  const [attempts, setAttempts] = useState(0);
+
+  const isLocked = attempts >= MAX_ATTEMPTS;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isLocked || loading) return;
     setError("");
     setLoading(true);
+
     setTimeout(() => {
       setLoading(false);
-      if (email === "amadou.traore@sltt.ml" && password === "sltt2026") {
-        login();
-      } else {
-        setError("Identifiants incorrects. Vérifiez votre e-mail et mot de passe.");
+
+      const user = users.find(
+        (u) =>
+          u.email.toLowerCase() === email.toLowerCase().trim() &&
+          u.motDePasse === password,
+      );
+
+      if (!user) {
+        const next = attempts + 1;
+        setAttempts(next);
+        if (next >= MAX_ATTEMPTS) {
+          setError(
+            `Compte bloqué après ${MAX_ATTEMPTS} tentatives échouées. Contactez votre administrateur.`,
+          );
+        } else {
+          setError(
+            `Identifiants incorrects. ${MAX_ATTEMPTS - next} tentative(s) restante(s).`,
+          );
+        }
+        return;
       }
-    }, 700);
+
+      if (!user.actif) {
+        setError(
+          "Votre compte est désactivé. Veuillez contacter votre administrateur.",
+        );
+        return;
+      }
+
+      updateLastLogin(user.id);
+      loginNav(user.role, user.nom, user.id, rememberMe);
+    }, 600);
   }
 
   return (
@@ -105,8 +137,11 @@ export function LoginScreen() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                  Identifiant ou e-mail
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Adresse e-mail
                 </Label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -114,10 +149,15 @@ export function LoginScreen() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
+                    }}
                     placeholder="vous@sltt.ml"
                     className="h-11 border-slate-200 bg-slate-50/50 pl-10 focus:bg-white"
                     required
+                    disabled={isLocked}
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -130,12 +170,6 @@ export function LoginScreen() {
                   >
                     Mot de passe
                   </Label>
-                  <button
-                    type="button"
-                    className="shrink-0 text-xs font-medium text-primary hover:underline"
-                  >
-                    Mot de passe oublié ?
-                  </button>
                 </div>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -143,18 +177,22 @@ export function LoginScreen() {
                     id="password"
                     type={showPwd ? "text" : "password"}
                     value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError("");
+                    }}
                     placeholder="••••••••"
                     className="h-11 border-slate-200 bg-slate-50/50 pl-10 pr-10 focus:bg-white"
                     required
+                    disabled={isLocked}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPwd((v) => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    aria-label={
-                      showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"
-                    }
+                    aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                    tabIndex={-1}
                   >
                     {showPwd ? (
                       <EyeOff className="size-4" />
@@ -166,24 +204,32 @@ export function LoginScreen() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Checkbox id="remember" defaultChecked />
-                <Label htmlFor="remember" className="cursor-pointer text-sm text-slate-600">
-                  Rester connecté
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(v) => setRememberMe(v === true)}
+                />
+                <Label
+                  htmlFor="remember"
+                  className="cursor-pointer text-sm text-slate-600"
+                >
+                  Rester connecté (7 jours)
                 </Label>
               </div>
 
               {error && (
-                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
-                  {error}
+                <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
               <Button
                 type="submit"
                 className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/20"
-                disabled={loading}
+                disabled={loading || isLocked}
               >
-                {loading ? "Connexion en cours…" : "Se connecter"}
+                {loading ? "Vérification…" : isLocked ? "Compte bloqué" : "Se connecter"}
               </Button>
             </form>
 

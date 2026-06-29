@@ -252,6 +252,7 @@ function UsersTab() {
       email: email.trim(),
       role,
       permissions,
+      motDePasse: accessCode,
     };
     addUser(input);
     toast({ title: "Utilisateur créé avec succès" });
