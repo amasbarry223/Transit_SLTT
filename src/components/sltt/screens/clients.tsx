@@ -16,12 +16,14 @@ import {
   Phone,
   FolderKanban,
   MapPin,
+  Printer,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { ClientInput } from "@/lib/store";
 import type { ClientType } from "@/lib/mock-data";
 import { formatFCFA } from "@/lib/format";
+import { printClients } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -257,12 +259,32 @@ export function ClientsScreen() {
     setPage(1);
   }
 
+  function handlePrint() {
+    const rows = filtered.map((c) => ({
+      nom: c.nom,
+      type: c.type,
+      telephone: c.telephone || undefined,
+      email: c.email || undefined,
+      adresse: c.adresse || undefined,
+      nbDossiers: clientStats.get(c.id)?.nbDossiers ?? 0,
+      totalDu: clientStats.get(c.id)?.totalDu ?? 0,
+    }));
+    const parts: string[] = [];
+    if (typeFilter !== "all") parts.push(typeFilter);
+    if (query.trim()) parts.push(`"${query.trim()}"`);
+    printClients(rows, parts.length ? `Filtre : ${parts.join(" · ")}` : undefined);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Clients"
         description="Annuaire, fiches et suivi des créances clients"
       >
+        <Button variant="outline" onClick={handlePrint} disabled={filtered.length === 0}>
+          <Printer className="size-4" />
+          Imprimer la liste
+        </Button>
         <Button onClick={openCreateDialog}>
           <UserPlus className="size-4" />
           Nouveau client

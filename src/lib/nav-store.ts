@@ -15,6 +15,10 @@ export type ViewKey =
   | "bons"
   | "clients"
   | "client-fiche"
+  | "devis"
+  | "devis-detail"
+  | "calendrier"
+  | "transporteurs"
   | "parametres";
 
 /** TTL session sans "Rester connecté" : 8 heures */
@@ -26,6 +30,7 @@ interface NavState {
   view: ViewKey;
   selectedId: string | null;
   dossierFormMode: "create" | "edit";
+  devisEditMode: boolean;
   isAuthenticated: boolean;
   currentRole: UserRole;
   currentUserName: string;
@@ -35,6 +40,7 @@ interface NavState {
   go: (view: ViewKey, opts?: { id?: string | null }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
   openDossierDetail: (id: string) => void;
+  openDevisDetail: (id: string, edit?: boolean) => void;
   openClient: (id: string | null) => void;
   login: (role: UserRole, name: string, userId: string, remember: boolean) => void;
   logout: () => void;
@@ -55,6 +61,7 @@ export const useNav = create<NavState>()(
       view: "dashboard",
       selectedId: null,
       dossierFormMode: "create",
+      devisEditMode: false,
       ...LOGGED_OUT,
 
       go: (view, opts) => set({ view, selectedId: opts?.id ?? null }),
@@ -62,6 +69,8 @@ export const useNav = create<NavState>()(
         set({ view: "dossier-form", selectedId: id, dossierFormMode: mode }),
       openDossierDetail: (id) =>
         set({ view: "dossier-detail", selectedId: id }),
+      openDevisDetail: (id, edit = false) =>
+        set({ view: "devis-detail", selectedId: id, devisEditMode: edit }),
       openClient: (id) => set({ view: "client-fiche", selectedId: id }),
 
       login: (role, name, userId, remember) =>

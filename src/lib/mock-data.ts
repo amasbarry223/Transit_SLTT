@@ -133,6 +133,16 @@ export interface DossierFichier {
 export const subDossiers: SubDossier[] = [];
 export const fichiers: DossierFichier[] = [];
 
+export interface DossierComment {
+  id: string;
+  dossierId: string;
+  userName: string;
+  texte: string;
+  date: string;
+}
+
+export const dossierComments: DossierComment[] = [];
+
 /* ------------------------------------------------------------------ */
 /* CLIENTS                                                              */
 /* ------------------------------------------------------------------ */
@@ -711,6 +721,85 @@ export const bonsSortie: BonSortie[] = [
 ];
 
 /* ------------------------------------------------------------------ */
+/* DEVIS                                                                */
+/* ------------------------------------------------------------------ */
+
+export type DevisStatut = "Brouillon" | "Envoyé" | "Accepté" | "Refusé" | "Expiré";
+
+export interface Devis {
+  id: string;
+  reference: string;
+  clientId: string;
+  clientNom: string;
+  nature: string;
+  droitDouane: number;
+  fraisCircuit: number;
+  fraisPrestation: number;
+  total: number;
+  statut: DevisStatut;
+  dateCreation: string;
+  dateValidite: string;
+  notes?: string;
+}
+
+export interface DevisInput {
+  clientId: string;
+  clientNom: string;
+  nature: string;
+  droitDouane: number;
+  fraisCircuit: number;
+  fraisPrestation: number;
+  dateValidite: string;
+  notes?: string;
+}
+
+export const devis: Devis[] = [
+  {
+    id: "DV-001",
+    reference: "DEVIS-2026-0001",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    nature: "Matériaux de construction (acier, ciment)",
+    droitDouane: 1_200_000,
+    fraisCircuit: 450_000,
+    fraisPrestation: 320_000,
+    total: 1_970_000,
+    statut: "Envoyé",
+    dateCreation: "2026-01-05",
+    dateValidite: "2026-02-05",
+    notes: "Lot de 20 conteneurs — port de Dakar via Bamako",
+  },
+  {
+    id: "DV-002",
+    reference: "DEVIS-2026-0002",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta International",
+    nature: "Équipements agricoles",
+    droitDouane: 850_000,
+    fraisCircuit: 310_000,
+    fraisPrestation: 195_000,
+    total: 1_355_000,
+    statut: "Accepté",
+    dateCreation: "2025-12-20",
+    dateValidite: "2026-01-20",
+  },
+  {
+    id: "DV-003",
+    reference: "DEVIS-2026-0003",
+    clientId: "C-002",
+    clientNom: "Traoré Frères SARL",
+    nature: "Produits alimentaires (riz, sucre)",
+    droitDouane: 620_000,
+    fraisCircuit: 230_000,
+    fraisPrestation: 145_000,
+    total: 995_000,
+    statut: "Brouillon",
+    dateCreation: "2026-01-08",
+    dateValidite: "2026-02-08",
+  },
+];
+
+/* ------------------------------------------------------------------ */
 /* UTILISATEURS                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -764,6 +853,115 @@ export const users: User[] = [
     motDePasse: "sales2026",
     actif: false,
     derniereConnexion: "2025-12-15T11:00:00",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* TRANSPORTEURS                                                        */
+/* ------------------------------------------------------------------ */
+
+export type TransporteurStatut = "Actif" | "Inactif";
+export type TypeVehicule = "Camion" | "Remorque" | "Semi-remorque" | "Benne" | "Fourgon";
+
+export interface Transporteur {
+  id: string;
+  nom: string;
+  contact: string;
+  telephone: string;
+  email?: string;
+  vehicule: TypeVehicule;
+  immatriculation: string;
+  trajet: string;
+  capacite: number;
+  statut: TransporteurStatut;
+  nbDossiers: number;
+  dateCreation: string;
+  notes?: string;
+}
+
+export interface TransporteurInput {
+  nom: string;
+  contact: string;
+  telephone: string;
+  email?: string;
+  vehicule: TypeVehicule;
+  immatriculation: string;
+  trajet: string;
+  capacite: number;
+  statut: TransporteurStatut;
+  notes?: string;
+}
+
+export const transporteurs: Transporteur[] = [
+  {
+    id: "TRP-001",
+    nom: "Société Konaté Transport",
+    contact: "Mamadou Konaté",
+    telephone: "+223 76 12 34 56",
+    email: "konate.transport@mail.ml",
+    vehicule: "Semi-remorque",
+    immatriculation: "BK-0845-ML",
+    trajet: "Bamako – Dakar",
+    capacite: 30,
+    statut: "Actif",
+    nbDossiers: 12,
+    dateCreation: "2025-03-15",
+    notes: "Partenaire fiable, délais respectés",
+  },
+  {
+    id: "TRP-002",
+    nom: "Diarra & Frères Logistique",
+    contact: "Seydou Diarra",
+    telephone: "+223 66 98 77 44",
+    vehicule: "Camion",
+    immatriculation: "BK-2210-ML",
+    trajet: "Bamako – Abidjan",
+    capacite: 20,
+    statut: "Actif",
+    nbDossiers: 8,
+    dateCreation: "2025-05-01",
+  },
+  {
+    id: "TRP-003",
+    nom: "Trans-Sahel SARL",
+    contact: "Aliou Coulibaly",
+    telephone: "+223 79 55 22 11",
+    email: "transahel@sltt.ml",
+    vehicule: "Remorque",
+    immatriculation: "BK-3301-ML",
+    trajet: "Bamako – Conakry",
+    capacite: 25,
+    statut: "Actif",
+    nbDossiers: 5,
+    dateCreation: "2025-07-20",
+  },
+  {
+    id: "TRP-004",
+    nom: "Touré Express Fret",
+    contact: "Kadiatou Touré",
+    telephone: "+223 65 40 33 99",
+    vehicule: "Fourgon",
+    immatriculation: "BK-1155-ML",
+    trajet: "Local Bamako",
+    capacite: 5,
+    statut: "Actif",
+    nbDossiers: 20,
+    dateCreation: "2024-11-10",
+    notes: "Spécialisé livraisons urbaines",
+  },
+  {
+    id: "TRP-005",
+    nom: "Sidibé Camions Lourds",
+    contact: "Boubacar Sidibé",
+    telephone: "+223 72 88 66 00",
+    vehicule: "Benne",
+    immatriculation: "BK-0092-ML",
+    trajet: "Bamako – Niamey",
+    capacite: 35,
+    statut: "Inactif",
+    nbDossiers: 3,
+    dateCreation: "2025-01-08",
+    notes: "Véhicule en maintenance",
   },
 ];
 

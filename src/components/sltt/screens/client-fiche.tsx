@@ -18,6 +18,10 @@ import {
   ChevronRight,
   Building2,
   User,
+  BellRing,
+  Copy,
+  MessageCircle,
+  Check,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore, type ClientInput } from "@/lib/store";
@@ -49,6 +53,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -180,12 +185,16 @@ function EmptyState({
 
 function ClientProfileCard({
   client,
+  totalDu,
   onEdit,
   onNewDossier,
+  onRelance,
 }: {
   client: Client;
+  totalDu: number;
   onEdit: () => void;
   onNewDossier: () => void;
+  onRelance: () => void;
 }) {
   const TypeIcon = client.type === "Entreprise" ? Building2 : User;
 
@@ -235,6 +244,17 @@ function ClientProfileCard({
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {totalDu > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                onClick={onRelance}
+              >
+                <BellRing className="size-4" />
+                Relancer
+              </Button>
+            )}
             <Button variant="outline" size="sm" className="h-9" onClick={onEdit}>
               <Pencil className="size-4" />
               Modifier
@@ -263,6 +283,11 @@ export function ClientFicheScreen() {
   const [dossierPage, setDossierPage] = useState(1);
   const [paiementPage, setPaiementPage] = useState(1);
   const [bonPage, setBonPage] = useState(1);
+
+  // Relance dialog state
+  const [relanceOpen, setRelanceOpen] = useState(false);
+  const [relanceMsg, setRelanceMsg] = useState("");
+  const [copied, setCopied] = useState(false);
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
@@ -303,6 +328,35 @@ export function ClientFicheScreen() {
     }
     return { totalInvesti: investi, totalPaye: paye, totalDu: du };
   }, [dossiers]);
+
+  function openRelanceDialog() {
+    if (!client) return;
+    const unpaid = dossiers.filter((d) => d.montantInvesti - d.montantPaye > 0);
+    const lignes = unpaid
+      .map((d) => `  • ${d.reference} — ${new Intl.NumberFormat("fr-FR").format(d.montantInvesti - d.montantPaye)} FCFA`)
+      .join("\n");
+    const total = new Intl.NumberFormat("fr-FR").format(totalDu);
+    const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+    const msg = `Bamako, le ${today}\n\nObjet : Rappel de solde — SLTT\n\nBonjour${client.type === "Entreprise" ? "" : " M./Mme"},\n\nNous vous contactons au sujet du solde restant dû sur vos dossiers de transit :\n\n${lignes}\n\nMontant total dû : ${total} FCFA\n\nNous vous prions de bien vouloir régulariser ce solde dans les meilleurs délais. Pour tout renseignement, n'hésitez pas à nous contacter.\n\nCordialement,\nSLTT — Bamako`;
+    setRelanceMsg(msg);
+    setCopied(false);
+    setRelanceOpen(true);
+  }
+
+  function handleCopyRelance() {
+    navigator.clipboard.writeText(relanceMsg).then(() => {
+      setCopied(true);
+      toast({ title: "Message copié" });
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
+  function handleWhatsApp() {
+    const phone = client?.telephone?.replace(/[\s+]/g, "");
+    if (!phone) return;
+    const encoded = encodeURIComponent(relanceMsg);
+    window.open(`https://wa.me/${phone}?text=${encoded}`, "_blank");
+  }
 
   function openEditDialog() {
     if (!client) return;
@@ -385,8 +439,10 @@ export function ClientFicheScreen() {
 
       <ClientProfileCard
         client={client}
+        totalDu={totalDu}
         onEdit={openEditDialog}
         onNewDossier={() => openDossier(null, "create")}
+        onRelance={openRelanceDialog}
       />
 
       {totalDu > 0 && (
@@ -832,6 +888,51 @@ export function ClientFicheScreen() {
               <Pencil className="size-4" />
               Enregistrer
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog relance */}
+      <Dialog open={relanceOpen} onOpenChange={setRelanceOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BellRing className="size-4 text-amber-600" />
+              Relance client
+            </DialogTitle>
+            <DialogDescription>
+              Message pré-rédigé pour {client?.nom}. Modifiez-le avant d&apos;envoyer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              value={relanceMsg}
+              onChange={(e) => setRelanceMsg(e.target.value)}
+              rows={12}
+              className="font-mono text-xs leading-relaxed"
+            />
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={handleCopyRelance}
+            >
+              {copied ? (
+                <><Check className="size-4 text-emerald-600" /> Copié !</>
+              ) : (
+                <><Copy className="size-4" /> Copier le texte</>
+              )}
+            </Button>
+            {client?.telephone && (
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto"
+                onClick={handleWhatsApp}
+              >
+                <MessageCircle className="size-4" />
+                Ouvrir WhatsApp
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

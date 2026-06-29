@@ -5,11 +5,14 @@ import {
   ArrowLeft,
   Pencil,
   FileText,
+  Receipt,
   Check,
+  MessageSquare,
+  Send,
+  Trash2,
   CheckCircle2,
   Info,
   Plus,
-  Trash2,
   Upload,
   Download,
   File,
@@ -26,10 +29,10 @@ import {
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import type { SubDossierInput, FichierInput, SubDossier, DossierFichier } from "@/lib/store";
+import type { SubDossierInput, FichierInput, SubDossier, DossierFichier, DossierComment } from "@/lib/store";
 import { calculerEcart } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printHTML } from "@/lib/export";
+import { printHTML, printInvoice } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { DossierStatutBadge, EcartValue, EcritureStatutBadge } from "@/components/sltt/status-badge";
 import { Card } from "@/components/ui/card";
@@ -497,7 +500,12 @@ export function DossierDetailScreen() {
   const { toast } = useToast();
 
   const dossier = useStore((s) => s.dossiers.find((d) => d.id === selectedId));
+  const client = useStore((s) => s.clients.find((c) => c.id === dossier?.clientId));
   const allSubDossiers = useStore((s) => s.subDossiers);
+  const allComments = useStore((s) => s.comments);
+  const addComment = useStore((s) => s.addComment);
+  const deleteComment = useStore((s) => s.deleteComment);
+  const currentUserName = useNav((s) => s.currentUserName);
   const allFichiers = useStore((s) => s.fichiers);
   const addSubDossier = useStore((s) => s.addSubDossier);
   const updateSubDossier = useStore((s) => s.updateSubDossier);
@@ -508,6 +516,7 @@ export function DossierDetailScreen() {
   const auditLogs = useStore((s) => s.auditLogs);
 
   const [transitionOpen, setTransitionOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
 
   // Sub-dossier dialog states
   const [sdDialogOpen, setSdDialogOpen] = useState(false);
@@ -544,6 +553,11 @@ export function DossierDetailScreen() {
   const dossierEcritures = useMemo(
     () => allEcritures.filter((e) => e.dossierId === dossierId),
     [allEcritures, dossierId],
+  );
+
+  const dossierComments = useMemo(
+    () => allComments.filter((c) => c.dossierId === dossierId),
+    [allComments, dossierId],
   );
 
   const dossierAuditLogs = useMemo(() => {
@@ -617,6 +631,35 @@ export function DossierDetailScreen() {
     });
   }
 
+  function handleInvoice() {
+    if (!dossier) return;
+    const year = new Date(dossier.date || new Date()).getFullYear();
+    const seq = dossier.id.replace(/\D/g, "");
+    const invoiceNum = `FACT-${year}-${seq.padStart(4, "0")}`;
+    printInvoice(
+      {
+        reference: dossier.reference,
+        clientNom: dossier.clientNom,
+        clientAdresse: client?.adresse,
+        clientTelephone: client?.telephone,
+        clientEmail: client?.email,
+        nature: dossier.nature,
+        bl: dossier.bl,
+        date: dossier.date,
+        droitDouane: dossier.droitDouane,
+        fraisCircuit: dossier.fraisCircuit,
+        fraisPrestation: dossier.fraisPrestation,
+        montantInvesti: dossier.montantInvesti,
+        montantPaye: dossier.montantPaye,
+      },
+      invoiceNum,
+    );
+    toast({
+      title: "Facture générée",
+      description: `${invoiceNum} — ${dossier.clientNom}`,
+    });
+  }
+
   function handlePdf() {
     if (!dossier) return;
     const d = dossier;
@@ -687,6 +730,10 @@ export function DossierDetailScreen() {
           <DossierStatutBadge statut={dossier.statut} />
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleInvoice}>
+            <Receipt className="size-4" />
+            Facture
+          </Button>
           <Button variant="outline" onClick={handlePdf}>
             <FileText className="size-4" />
             PDF
@@ -731,6 +778,14 @@ export function DossierDetailScreen() {
             {dossierEcritures.length > 0 && (
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                 {dossierEcritures.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="discussion">
+            Discussion
+            {dossierComments.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                {dossierComments.length}
               </span>
             )}
           </TabsTrigger>
@@ -1075,6 +1130,105 @@ export function DossierDetailScreen() {
                 </Table>
               </div>
             )}
+          </Card>
+        </TabsContent>
+
+        {/* ---- TAB: Discussion ---- */}
+        <TabsContent value="discussion">
+          <Card className="border-border/80 shadow-sm">
+            <div className="p-5 border-b border-border flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <MessageSquare className="size-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Discussion interne</h2>
+                <p className="text-xs text-slate-500">Notes et échanges entre membres de l&apos;équipe</p>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="min-h-[200px] divide-y divide-border">
+              {dossierComments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-14 text-center">
+                  <MessageSquare className="size-10 text-slate-200" />
+                  <p className="mt-3 text-sm text-slate-500">Aucun message pour ce dossier.</p>
+                  <p className="text-xs text-slate-400">Soyez le premier à laisser une note.</p>
+                </div>
+              ) : (
+                [...dossierComments].reverse().map((c) => {
+                  const isOwn = c.userName === currentUserName;
+                  return (
+                    <div key={c.id} className="flex items-start gap-3 p-4 group">
+                      <div className={cn(
+                        "flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white",
+                        isOwn ? "bg-gradient-to-br from-blue-600 to-blue-800" : "bg-gradient-to-br from-slate-500 to-slate-700",
+                      )}>
+                        {c.userName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-semibold text-slate-900">{c.userName}</span>
+                          <span className="text-xs text-slate-400">
+                            {new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{c.texte}</p>
+                      </div>
+                      {isOwn && (
+                        <button
+                          onClick={() => deleteComment(c.id)}
+                          className="shrink-0 p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-border p-4">
+              <div className="flex gap-2">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-xs font-bold text-white">
+                  {currentUserName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div className="relative flex-1">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        const t = commentText.trim();
+                        if (!t) return;
+                        addComment(dossierId, t);
+                        setCommentText("");
+                        toast({ title: "Message envoyé" });
+                      }
+                    }}
+                    placeholder="Écrire un message... (Entrée pour envoyer, Maj+Entrée pour sauter une ligne)"
+                    rows={2}
+                    className="w-full resize-none rounded-xl border border-border bg-slate-50/60 px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <button
+                    onClick={() => {
+                      const t = commentText.trim();
+                      if (!t) return;
+                      addComment(dossierId, t);
+                      setCommentText("");
+                      toast({ title: "Message envoyé" });
+                    }}
+                    disabled={!commentText.trim()}
+                    className="absolute bottom-2.5 right-2.5 flex size-6 items-center justify-center rounded-lg bg-primary text-white disabled:opacity-30 hover:bg-primary/90 transition-colors"
+                  >
+                    <Send className="size-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </Card>
         </TabsContent>
 

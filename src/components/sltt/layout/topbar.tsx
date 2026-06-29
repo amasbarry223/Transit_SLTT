@@ -27,6 +27,9 @@ import {
   Users,
   BarChart3,
   Settings,
+  ClipboardList,
+  CalendarDays,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -62,16 +65,23 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   bons: { title: "Bons de sortie", sub: "Sorties de marchandises" },
   clients: { title: "Clients", sub: "Annuaire et fiches clients" },
   "client-fiche": { title: "Fiche client", sub: "Vue consolidée du client" },
+  devis: { title: "Devis", sub: "Estimations avant ouverture de dossier" },
+  "devis-detail": { title: "Fiche devis", sub: "Détail et modification du devis" },
+  calendrier: { title: "Calendrier", sub: "Vue mensuelle des activités" },
+  transporteurs: { title: "Transporteurs", sub: "Annuaire des transporteurs et chauffeurs partenaires" },
   parametres: { title: "Paramètres", sub: "Utilisateurs, rôles et sécurité" },
 };
 
 const mobileNavItems: ({ key: ViewKey; label: string; icon: React.ComponentType<{ className?: string }> } & NavRoleAccess)[] = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { key: "dossiers", label: "Dossiers de transit", icon: FolderKanban, roles: ["Administrateur", "Agent de transit", "Comptable"] },
+  { key: "devis", label: "Devis", icon: ClipboardList, roles: ["Administrateur", "Agent de transit", "Commercial"] },
+  { key: "calendrier", label: "Calendrier", icon: CalendarDays },
   { key: "comptabilite", label: "Comptabilité", icon: Wallet, roles: ["Administrateur", "Comptable"] },
   { key: "entreposage", label: "Entreposage", icon: Warehouse, roles: ["Administrateur", "Magasinier"] },
   { key: "bons", label: "Bons de sortie", icon: FileOutput, roles: ["Administrateur", "Magasinier", "Commercial"] },
   { key: "clients", label: "Clients", icon: Users, roles: ["Administrateur", "Agent de transit", "Commercial"] },
+  { key: "transporteurs", label: "Transporteurs", icon: Truck, roles: ["Administrateur", "Agent de transit"] },
   { key: "bilans", label: "Bilans & rapports", icon: BarChart3, roles: ["Administrateur", "Comptable"] },
   { key: "parametres", label: "Paramètres", icon: Settings, roles: ["Administrateur"] },
 ];
@@ -132,6 +142,9 @@ export function Topbar() {
     } else if (view === "client-fiche") {
       parentKey = "clients";
       parentLabel = "Clients";
+    } else if (view === "devis-detail") {
+      parentKey = "devis";
+      parentLabel = "Devis";
     }
 
     if (parentKey) {
