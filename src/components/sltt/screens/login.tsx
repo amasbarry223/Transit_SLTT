@@ -19,6 +19,24 @@ import {
 } from "lucide-react";
 
 const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const LOCKOUT_KEY = "sltt-lockout";
+
+function getLockoutState(): { attempts: number; lockedUntil: number | null } {
+  try {
+    const raw = localStorage.getItem(LOCKOUT_KEY);
+    if (raw) return JSON.parse(raw) as { attempts: number; lockedUntil: number | null };
+  } catch { /* ignore */ }
+  return { attempts: 0, lockedUntil: null };
+}
+
+function saveLockoutState(attempts: number, lockedUntil: number | null) {
+  try { localStorage.setItem(LOCKOUT_KEY, JSON.stringify({ attempts, lockedUntil })); } catch { /* ignore */ }
+}
+
+function clearLockout() {
+  try { localStorage.removeItem(LOCKOUT_KEY); } catch { /* ignore */ }
+}
 
 function LoginBackground() {
   return (
@@ -60,9 +78,12 @@ export function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
-  const [attempts, setAttempts] = useState(0);
+  const [attempts, setAttempts] = useState(() => getLockoutState().attempts);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(() => getLockoutState().lockedUntil);
 
-  const isLocked = attempts >= MAX_ATTEMPTS;
+  const now = Date.now();
+  const isLocked = (lockedUntil !== null && now < lockedUntil) || attempts >= MAX_ATTEMPTS;
+  const lockoutRemainingMin = lockedUntil ? Math.ceil((lockedUntil - now) / 60000) : 0;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,12 +102,17 @@ export function LoginScreen() {
 
       if (!user) {
         const next = attempts + 1;
-        setAttempts(next);
         if (next >= MAX_ATTEMPTS) {
+          const until = Date.now() + LOCKOUT_DURATION_MS;
+          setLockedUntil(until);
+          setAttempts(next);
+          saveLockoutState(next, until);
           setError(
-            `Compte bloqué après ${MAX_ATTEMPTS} tentatives échouées. Contactez votre administrateur.`,
+            `Compte bloqué pour ${LOCKOUT_DURATION_MS / 60000} minutes après ${MAX_ATTEMPTS} tentatives échouées.`,
           );
         } else {
+          setAttempts(next);
+          saveLockoutState(next, null);
           setError(
             `Identifiants incorrects. ${MAX_ATTEMPTS - next} tentative(s) restante(s).`,
           );
@@ -101,6 +127,9 @@ export function LoginScreen() {
         return;
       }
 
+      clearLockout();
+      setAttempts(0);
+      setLockedUntil(null);
       updateLastLogin(user.id);
       loginNav(user.role, user.nom, user.id, rememberMe);
     }, 600);
@@ -229,7 +258,7 @@ export function LoginScreen() {
                 className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/20"
                 disabled={loading || isLocked}
               >
-                {loading ? "Vérification…" : isLocked ? "Compte bloqué" : "Se connecter"}
+                {loading ? "Vérification…" : isLocked ? `Bloqué${lockoutRemainingMin > 0 ? ` (${lockoutRemainingMin} min)` : ""}` : "Se connecter"}
               </Button>
             </form>
 

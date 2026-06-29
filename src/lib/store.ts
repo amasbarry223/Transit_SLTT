@@ -12,6 +12,9 @@ import {
   users as seedUsers,
   subDossiers as seedSubDossiers,
   fichiers as seedFichiers,
+  devis as seedDevis,
+  dossierComments as seedComments,
+  transporteurs as seedTransporteurs,
   type Client,
   type Dossier,
   type DossierStatut,
@@ -25,6 +28,14 @@ import {
   type UserRole,
   type SubDossier,
   type DossierFichier,
+  type Devis,
+  type DevisStatut,
+  type DevisInput,
+  type DossierComment,
+  type Transporteur,
+  type TransporteurInput,
+  type TransporteurStatut,
+  type TypeVehicule,
 } from "@/lib/mock-data";
 
 export type {
@@ -41,6 +52,14 @@ export type {
   UserRole,
   SubDossier,
   DossierFichier,
+  Devis,
+  DevisStatut,
+  DevisInput,
+  DossierComment,
+  Transporteur,
+  TransporteurInput,
+  TransporteurStatut,
+  TypeVehicule,
 };
 
 export type AuditAction =
@@ -187,6 +206,9 @@ interface SLTTState {
   clientSeq: number;
   stockSeq: number;
   userSeq: number;
+  mouvementSeq: number;
+  subDossierSeq: number;
+  fichierSeq: number;
 
   // ---- Audit ----
   addAuditLog: (module: AuditModule, action: AuditAction, detail: string) => void;
@@ -194,6 +216,7 @@ interface SLTTState {
   // ---- Dossiers ----
   addDossier: (input: DossierInput) => Dossier;
   updateDossier: (id: string, input: DossierInput) => void;
+  removeDossier: (id: string) => void;
   getDossier: (id: string) => Dossier | undefined;
   transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string) => void;
 
@@ -238,6 +261,29 @@ interface SLTTState {
   deleteFichier: (id: string) => void;
   deleteFichiersByDossier: (dossierId: string) => void;
 
+  // ---- Commentaires dossiers ----
+  comments: DossierComment[];
+  commentSeq: number;
+  addComment: (dossierId: string, texte: string) => DossierComment;
+  deleteComment: (id: string) => void;
+
+  // ---- Devis ----
+  devis: Devis[];
+  devisSeq: number;
+  addDevis: (input: DevisInput) => Devis;
+  updateDevis: (id: string, input: DevisInput) => void;
+  updateDevisStatut: (id: string, statut: DevisStatut) => void;
+  convertDevisToDossier: (id: string) => Dossier | null;
+  removeDevis: (id: string) => void;
+
+  // ---- Transporteurs ----
+  transporteurs: Transporteur[];
+  transporteurSeq: number;
+  addTransporteur: (input: TransporteurInput) => Transporteur;
+  updateTransporteur: (id: string, input: TransporteurInput) => void;
+  updateTransporteurStatut: (id: string, statut: TransporteurStatut) => void;
+  removeTransporteur: (id: string) => void;
+
   // ---- Reset ----
   resetAll: () => void;
 }
@@ -258,6 +304,15 @@ export const useStore = create<SLTTState>()(
       users: seedUsers,
       subDossiers: seedSubDossiers,
       fichiers: seedFichiers,
+      devis: seedDevis,
+      devisSeq: 4,
+      comments: seedComments,
+      commentSeq: 1,
+      transporteurs: seedTransporteurs,
+      transporteurSeq: 6,
+      mouvementSeq: 22,
+      subDossierSeq: 1,
+      fichierSeq: 1,
       auditLogs: [
         { id: "A-001", date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", module: "Dossiers", action: "Création", detail: "Dossier DOS-2026-0142 créé — Client SEDIM SA", ip: "154.66.12.7" },
         { id: "A-002", date: "2026-01-09T08:45:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Paiement", detail: "Paiement 850 000 FCFA — Écriture EC-2026-0089", ip: "41.202.18.50" },
@@ -297,7 +352,8 @@ export const useStore = create<SLTTState>()(
       addDossier: (input) => {
         const seq = get().dossierSeq;
         const id = `D-${pad(seq, 4)}`;
-        const reference = `SLTT-TR-2026-${pad(seq, 4)}`;
+        const year = new Date().getFullYear();
+        const reference = `SLTT-TR-${year}-${pad(seq, 4)}`;
         const newDossier: Dossier = {
           id,
           reference,
@@ -327,6 +383,22 @@ export const useStore = create<SLTTState>()(
         });
         if (existing) {
           get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`);
+        }
+      },
+      removeDossier: (id) => {
+        const dossier = get().dossiers.find((d) => d.id === id);
+        set((s) => {
+          const updatedDossiers = s.dossiers.filter((d) => d.id !== id);
+          return {
+            dossiers: updatedDossiers,
+            clients: syncClientStats(updatedDossiers, s.clients),
+            ecritures: s.ecritures.filter((e) => e.dossierId !== id),
+            fichiers: s.fichiers.filter((f) => f.dossierId !== id),
+            subDossiers: s.subDossiers.filter((sd) => sd.dossierId !== id),
+          };
+        });
+        if (dossier) {
+          get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé — Client ${dossier.clientNom}`);
         }
       },
       getDossier: (id) => get().dossiers.find((d) => d.id === id),
@@ -409,11 +481,17 @@ export const useStore = create<SLTTState>()(
         return newClient;
       },
       updateClient: (id, input) => {
-        set((s) => ({
-          clients: s.clients.map((c) =>
-            c.id === id ? { ...c, ...input } : c,
-          ),
-        }));
+        set((s) => {
+          const updatedClients = s.clients.map((c) => c.id === id ? { ...c, ...input } : c);
+          // Cascade du nom sur les dossiers et écritures existants
+          const updatedDossiers = s.dossiers.map((d) =>
+            d.clientId === id ? { ...d, clientNom: input.nom } : d,
+          );
+          const updatedEcritures = s.ecritures.map((e) =>
+            e.clientId === id ? { ...e, clientNom: input.nom } : e,
+          );
+          return { clients: updatedClients, dossiers: updatedDossiers, ecritures: updatedEcritures };
+        });
       },
       getClient: (id) => get().clients.find((c) => c.id === id),
 
@@ -489,7 +567,7 @@ export const useStore = create<SLTTState>()(
       },
       addStockEntry: (stockId, quantite, responsable) => {
         const now = new Date();
-        const seq = get().mouvements.length + 100;
+        const seq = get().mouvementSeq;
         const mvt: Mouvement = {
           id: `M-${pad(seq, 3)}`,
           date: now.toISOString().slice(0, 10),
@@ -507,11 +585,12 @@ export const useStore = create<SLTTState>()(
               : it,
           ),
           mouvements: [mvt, ...s.mouvements],
+          mouvementSeq: seq + 1,
         }));
       },
       addStockExit: (stockId, quantite, responsable, bonRef) => {
         const now = new Date();
-        const seq = get().mouvements.length + 101;
+        const seq = get().mouvementSeq;
         const item = get().stock.find((s) => s.id === stockId);
         const mvt: Mouvement = {
           id: `M-${pad(seq, 3)}`,
@@ -530,6 +609,7 @@ export const useStore = create<SLTTState>()(
               : it,
           ),
           mouvements: [mvt, ...s.mouvements],
+          mouvementSeq: seq + 1,
         }));
       },
 
@@ -537,7 +617,8 @@ export const useStore = create<SLTTState>()(
       addBon: (input) => {
         const seq = get().bonSeq;
         const id = `B-${pad(seq, 4)}`;
-        const reference = `BS-2026-${pad(seq, 4)}`;
+        const year = new Date().getFullYear();
+        const reference = `BS-${year}-${pad(seq, 4)}`;
         const isBrouillon = input.statut === "Brouillon";
         const newBon: BonSortie = {
           id,
@@ -561,7 +642,7 @@ export const useStore = create<SLTTState>()(
           mouvements: item
             ? [
                 {
-                  id: `M-${pad(s.mouvements.length + 100, 3)}`,
+                  id: `M-${pad(s.mouvementSeq, 3)}`,
                   date: input.date,
                   type: "Sortie" as const,
                   marchandise: input.marchandise,
@@ -573,6 +654,7 @@ export const useStore = create<SLTTState>()(
                 ...s.mouvements,
               ]
             : s.mouvements,
+          mouvementSeq: item ? s.mouvementSeq + 1 : s.mouvementSeq,
         }));
         return newBon;
       },
@@ -592,7 +674,7 @@ export const useStore = create<SLTTState>()(
           mouvements: item
             ? [
                 {
-                  id: `M-${pad(s.mouvements.length + 100, 3)}`,
+                  id: `M-${pad(s.mouvementSeq, 3)}`,
                   date: bon.date,
                   type: "Sortie" as const,
                   marchandise: bon.marchandise,
@@ -604,6 +686,7 @@ export const useStore = create<SLTTState>()(
                 ...s.mouvements,
               ]
             : s.mouvements,
+          mouvementSeq: item ? s.mouvementSeq + 1 : s.mouvementSeq,
         }));
       },
 
@@ -654,14 +737,14 @@ export const useStore = create<SLTTState>()(
 
       // ---- Sous-dossiers ----
       addSubDossier: (input) => {
-        const seq = get().subDossiers.length + 1;
+        const seq = get().subDossierSeq;
         const id = `SD-${pad(seq, 4)}`;
         const newSD: SubDossier = {
           id,
           ...input,
           dateCreation: new Date().toISOString().slice(0, 10),
         };
-        set((s) => ({ subDossiers: [newSD, ...s.subDossiers] }));
+        set((s) => ({ subDossiers: [newSD, ...s.subDossiers], subDossierSeq: seq + 1 }));
         return newSD;
       },
       updateSubDossier: (id, nom, description) => {
@@ -680,14 +763,14 @@ export const useStore = create<SLTTState>()(
 
       // ---- Fichiers ----
       addFichier: (input) => {
-        const seq = get().fichiers.length + 1;
+        const seq = get().fichierSeq;
         const id = `F-${pad(seq, 4)}`;
         const newF: DossierFichier = {
           id,
           ...input,
           dateUpload: new Date().toISOString().slice(0, 10),
         };
-        set((s) => ({ fichiers: [newF, ...s.fichiers] }));
+        set((s) => ({ fichiers: [newF, ...s.fichiers], fichierSeq: seq + 1 }));
         return newF;
       },
       deleteFichier: (id) => {
@@ -695,6 +778,113 @@ export const useStore = create<SLTTState>()(
       },
       deleteFichiersByDossier: (dossierId) => {
         set((s) => ({ fichiers: s.fichiers.filter((f) => f.dossierId !== dossierId) }));
+      },
+
+      // ---- Commentaires ----
+      addComment: (dossierId, texte) => {
+        const seq = get().commentSeq;
+        const id = `CMT-${pad(seq, 4)}`;
+        const newComment: DossierComment = {
+          id,
+          dossierId,
+          userName: getConnectedUserName(),
+          texte,
+          date: new Date().toISOString(),
+        };
+        set((s) => ({ comments: [...s.comments, newComment], commentSeq: seq + 1 }));
+        return newComment;
+      },
+      deleteComment: (id) => {
+        set((s) => ({ comments: s.comments.filter((c) => c.id !== id) }));
+      },
+
+      // ---- Devis ----
+      addDevis: (input) => {
+        const seq = get().devisSeq;
+        const year = new Date().getFullYear();
+        const id = `DV-${pad(seq, 3)}`;
+        const reference = `DEVIS-${year}-${pad(seq, 4)}`;
+        const total = input.droitDouane + input.fraisCircuit + input.fraisPrestation;
+        const newDevis: Devis = {
+          id,
+          reference,
+          ...input,
+          total,
+          statut: "Brouillon",
+          dateCreation: new Date().toISOString().slice(0, 10),
+        };
+        set((s) => ({ devis: [newDevis, ...s.devis], devisSeq: seq + 1 }));
+        get().addAuditLog("Dossiers", "Création", `Devis ${reference} créé — ${input.clientNom}`);
+        return newDevis;
+      },
+      updateDevis: (id, input) => {
+        const total = input.droitDouane + input.fraisCircuit + input.fraisPrestation;
+        set((s) => ({
+          devis: s.devis.map((d) => d.id === id ? { ...d, ...input, total } : d),
+        }));
+      },
+      updateDevisStatut: (id, statut) => {
+        set((s) => ({
+          devis: s.devis.map((d) => d.id === id ? { ...d, statut } : d),
+        }));
+      },
+      convertDevisToDossier: (id) => {
+        const dv = get().devis.find((d) => d.id === id);
+        if (!dv) return null;
+        const newDossier = get().addDossier({
+          clientId: dv.clientId,
+          clientNom: dv.clientNom,
+          nature: dv.nature,
+          bl: "",
+          camion: "",
+          date: new Date().toISOString().slice(0, 10),
+          droitDouane: dv.droitDouane,
+          fraisCircuit: dv.fraisCircuit,
+          fraisPrestation: dv.fraisPrestation,
+          montantInvesti: dv.total,
+          statut: "En cours",
+          notes: dv.notes,
+        });
+        set((s) => ({
+          devis: s.devis.map((d) => d.id === id ? { ...d, statut: "Accepté" } : d),
+        }));
+        return newDossier;
+      },
+      removeDevis: (id) => {
+        const dv = get().devis.find((d) => d.id === id);
+        set((s) => ({ devis: s.devis.filter((d) => d.id !== id) }));
+        if (dv) get().addAuditLog("Dossiers", "Suppression", `Devis ${dv.reference} supprimé`);
+      },
+
+      // ---- Transporteurs ----
+      addTransporteur: (input) => {
+        const seq = get().transporteurSeq;
+        const id = `TRP-${pad(seq, 3)}`;
+        const t: Transporteur = {
+          ...input,
+          id,
+          nbDossiers: 0,
+          dateCreation: new Date().toISOString().slice(0, 10),
+        };
+        set((s) => ({ transporteurs: [t, ...s.transporteurs], transporteurSeq: seq + 1 }));
+        get().addAuditLog("Clients", "Création", `Transporteur ${t.nom} ajouté`);
+        return t;
+      },
+      updateTransporteur: (id, input) => {
+        set((s) => ({
+          transporteurs: s.transporteurs.map((t) => t.id === id ? { ...t, ...input } : t),
+        }));
+        get().addAuditLog("Clients", "Modification", `Transporteur ${id} mis à jour`);
+      },
+      updateTransporteurStatut: (id, statut) => {
+        set((s) => ({
+          transporteurs: s.transporteurs.map((t) => t.id === id ? { ...t, statut } : t),
+        }));
+      },
+      removeTransporteur: (id) => {
+        const t = get().transporteurs.find((x) => x.id === id);
+        set((s) => ({ transporteurs: s.transporteurs.filter((x) => x.id !== id) }));
+        if (t) get().addAuditLog("Clients", "Suppression", `Transporteur ${t.nom} supprimé`);
       },
 
       // ---- Reset ----
@@ -709,6 +899,9 @@ export const useStore = create<SLTTState>()(
           users: seedUsers,
           subDossiers: seedSubDossiers,
           fichiers: seedFichiers,
+          devis: seedDevis,
+          comments: seedComments,
+          commentSeq: 1,
           dossierSeq: 43,
           bonSeq: 52,
           auditSeq: 7,
@@ -716,11 +909,17 @@ export const useStore = create<SLTTState>()(
           clientSeq: 8,
           stockSeq: 8,
           userSeq: 6,
+          mouvementSeq: 22,
+          subDossierSeq: 1,
+          fichierSeq: 1,
+          devisSeq: 4,
+          transporteurs: seedTransporteurs,
+          transporteurSeq: 6,
         });
       },
     }),
     {
-      name: "sltt-data-v2",
+      name: "sltt-data-v4",
       // Only persist data, not the methods (methods are recreated by the store)
       partialize: (s) => ({
         clients: s.clients,
@@ -740,6 +939,15 @@ export const useStore = create<SLTTState>()(
         clientSeq: s.clientSeq,
         stockSeq: s.stockSeq,
         userSeq: s.userSeq,
+        mouvementSeq: s.mouvementSeq,
+        subDossierSeq: s.subDossierSeq,
+        fichierSeq: s.fichierSeq,
+        devis: s.devis,
+        devisSeq: s.devisSeq,
+        comments: s.comments,
+        commentSeq: s.commentSeq,
+        transporteurs: s.transporteurs,
+        transporteurSeq: s.transporteurSeq,
       }),
     },
   ),

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -25,7 +24,11 @@ import {
   AlertTriangle,
   AlertCircle,
   ArrowRight,
-  RefreshCw,
+  TrendingUp,
+  Package,
+  Users,
+  ClipboardList,
+  CheckCircle2,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -108,6 +111,225 @@ function EcartsTooltip({
 }
 
 /* ------------------------------------------------------------------ */
+/* ROLE-SPECIFIC PANELS                                                */
+/* ------------------------------------------------------------------ */
+
+function AgentPanel({ go }: { go: (v: "dossiers" | "devis") => void }) {
+  const dossiers = useStore((s) => s.dossiers);
+  const pipeline: Record<string, number> = { "En cours": 0, "Dédouané": 0, "Livré": 0, "Soldé": 0 };
+  for (const d of dossiers) pipeline[d.statut] = (pipeline[d.statut] ?? 0) + 1;
+
+  const steps = [
+    { label: "En cours",  count: pipeline["En cours"],  color: "bg-blue-500",    bg: "bg-blue-50",    text: "text-blue-700"  },
+    { label: "Dédouané",  count: pipeline["Dédouané"],  color: "bg-violet-500",  bg: "bg-violet-50",  text: "text-violet-700"},
+    { label: "Livré",     count: pipeline["Livré"],     color: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700"},
+    { label: "Soldé",     count: pipeline["Soldé"],     color: "bg-slate-400",   bg: "bg-slate-100",  text: "text-slate-600" },
+  ];
+
+  return (
+    <Card className="border-border/80 p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900">Pipeline dossiers</h2>
+          <p className="text-xs text-slate-500">État de votre portefeuille</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => go("dossiers")}>
+          Voir tous <ArrowRight className="ml-1 size-3.5" />
+        </Button>
+      </div>
+      <div className="grid grid-cols-4 gap-3">
+        {steps.map((s) => (
+          <div key={s.label} className={`rounded-xl p-4 text-center ${s.bg}`}>
+            <p className={`text-2xl font-bold tabular-nums ${s.text}`}>{s.count}</p>
+            <p className="mt-1 text-xs font-medium text-slate-600">{s.label}</p>
+            <div className={`mx-auto mt-2 h-1 w-8 rounded-full ${s.color}`} />
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons") => void }) {
+  const stock = useStore((s) => s.stock);
+  const bons = useStore((s) => s.bons);
+  const lowStock = stock.filter((s) => s.quantite <= s.seuil);
+  const bonsBrouillon = bons.filter((b) => b.statut === "Brouillon");
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <Card className="border-border/80 p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">État du stock</h2>
+            <p className="text-xs text-slate-500">{stock.length} articles gérés</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => go("entreposage")}>
+            Stock <ArrowRight className="ml-1 size-3.5" />
+          </Button>
+        </div>
+        {stock.slice(0, 4).map((s) => {
+          const pct = Math.min(100, Math.round((s.quantite / Math.max(1, s.seuil * 2)) * 100));
+          const low = s.quantite <= s.seuil;
+          return (
+            <div key={s.id} className="mb-3 last:mb-0">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="font-medium text-slate-700 truncate max-w-[60%]">{s.marchandise}</span>
+                <span className={`tabular-nums font-semibold ${low ? "text-red-600" : "text-slate-600"}`}>
+                  {s.quantite} {s.unite}
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-slate-100">
+                <div
+                  className={`h-1.5 rounded-full transition-all ${low ? "bg-red-400" : "bg-emerald-500"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+        {lowStock.length > 0 && (
+          <p className="mt-3 text-xs font-medium text-red-600">⚠ {lowStock.length} article{lowStock.length > 1 ? "s" : ""} sous le seuil</p>
+        )}
+      </Card>
+
+      <Card className="border-border/80 p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Bons en attente</h2>
+            <p className="text-xs text-slate-500">{bonsBrouillon.length} brouillon{bonsBrouillon.length !== 1 ? "s" : ""} à valider</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => go("bons")}>
+            Bons <ArrowRight className="ml-1 size-3.5" />
+          </Button>
+        </div>
+        {bonsBrouillon.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <CheckCircle2 className="size-8 text-emerald-300" />
+            <p className="mt-2 text-sm text-slate-500">Aucun bon en attente</p>
+          </div>
+        ) : (
+          bonsBrouillon.slice(0, 4).map((b) => (
+            <div key={b.id} className="mb-3 flex items-center gap-3 last:mb-0">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-50">
+                <Package className="size-3.5 text-amber-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-slate-900">{b.reference}</p>
+                <p className="truncate text-xs text-slate-500">{b.marchandise} · {b.quantite} {b.unite}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function CommercialPanel({ go }: { go: (v: "devis" | "clients") => void }) {
+  const clients = useStore((s) => s.clients);
+  const devis = useStore((s) => s.devis);
+  const topClients = [...clients].sort((a, b) => b.totalPaye - a.totalPaye).slice(0, 5);
+  const devisEnvoyés = devis.filter((d) => d.statut === "Envoyé").length;
+  const devisAcceptés = devis.filter((d) => d.statut === "Accepté").length;
+  const totalDevis = devis.length;
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <Card className="border-border/80 p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Pipeline devis</h2>
+            <p className="text-xs text-slate-500">{totalDevis} devis au total</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => go("devis")}>
+            Devis <ArrowRight className="ml-1 size-3.5" />
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {[
+            { label: "Envoyés (en attente)", count: devisEnvoyés, color: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+            { label: "Acceptés", count: devisAcceptés, color: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700" },
+            { label: "Total", count: totalDevis, color: "bg-slate-400", bg: "bg-slate-100", text: "text-slate-700" },
+          ].map((row) => (
+            <div key={row.label} className={`flex items-center justify-between rounded-lg px-4 py-3 ${row.bg}`}>
+              <div className="flex items-center gap-2">
+                <span className={`size-2 rounded-full ${row.color}`} />
+                <span className="text-xs font-medium text-slate-700">{row.label}</span>
+              </div>
+              <span className={`text-lg font-bold tabular-nums ${row.text}`}>{row.count}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="border-border/80 p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Meilleurs clients</h2>
+            <p className="text-xs text-slate-500">Par chiffre encaissé</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => go("clients")}>
+            Clients <ArrowRight className="ml-1 size-3.5" />
+          </Button>
+        </div>
+        {topClients.map((c, i) => (
+          <div key={c.id} className="mb-3 flex items-center gap-3 last:mb-0">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
+              {i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-slate-900">{c.nom}</p>
+              <p className="text-xs text-slate-500">{c.nbDossiers} dossiers</p>
+            </div>
+            <span className="text-xs font-semibold tabular-nums text-slate-700">{formatFCFA(c.totalPaye)}</span>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+}
+
+function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans") => void }) {
+  const ecritures = useStore((s) => s.ecritures);
+  const dossiers = useStore((s) => s.dossiers);
+  const totalDu = dossiers.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0);
+  const nbImpayés = dossiers.filter((d) => d.montantInvesti - d.montantPaye > 0).length;
+  const dernières = [...ecritures]
+    .sort((a, b) => (a.date > b.date ? -1 : 1))
+    .slice(0, 5);
+
+  return (
+    <Card className="border-border/80 p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900">Créances en cours</h2>
+          <p className="text-xs text-slate-500">{nbImpayés} dossier{nbImpayés !== 1 ? "s" : ""} non soldé{nbImpayés !== 1 ? "s" : ""} · {formatFCFA(totalDu)} restants</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => go("comptabilite")}>
+          Comptabilité <ArrowRight className="ml-1 size-3.5" />
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {dernières.map((e) => (
+          <div key={e.id} className="flex items-center gap-3 rounded-lg border border-border/70 px-3 py-2.5">
+            <div className={`size-2 shrink-0 rounded-full ${e.montantPaye >= e.montantInvesti ? "bg-emerald-500" : "bg-amber-400"}`} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-slate-900">{e.clientNom}</p>
+              <p className="text-xs text-slate-500">{e.date}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-semibold tabular-nums text-slate-900">{formatFCFA(e.montantPaye)}</p>
+              <p className="text-[10px] text-slate-400">/ {formatFCFA(e.montantInvesti)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* ALERT TYPE (computed live from store)                               */
 /* ------------------------------------------------------------------ */
 
@@ -124,17 +346,11 @@ interface LiveAlert {
 
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
+  const currentRole = useNav((s) => s.currentRole);
+  const currentUserName = useNav((s) => s.currentUserName);
   const dossiers = useStore((s) => s.dossiers);
   const ecritures = useStore((s) => s.ecritures);
   const stock = useStore((s) => s.stock);
-  const [refreshing, setRefreshing] = useState(false);
-
-  function handleRefresh() {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 600);
-  }
 
   const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
@@ -281,26 +497,19 @@ export function DashboardScreen() {
     return [...lowStock, ...unpaid];
   }, [stock, dossiers]);
 
+  const firstName = currentUserName.split(" ")[0];
+
   return (
     <div className="space-y-6">
       {/* 1. PAGE HEADER */}
       <PageHeader
         title="Tableau de bord"
-        description="Vue d'ensemble de votre activité ce mois-ci"
+        description={`Bonjour ${firstName} — Vue d'ensemble de votre activité ce mois-ci`}
       >
         <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-white px-3 py-1.5 text-sm shadow-sm">
           <span className="text-slate-500">Période :</span>
           <span className="font-medium text-slate-900">{periodeLabel}</span>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Actualiser"
-          title="Actualiser"
-          onClick={handleRefresh}
-        >
-          <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
-        </Button>
       </PageHeader>
 
       {/* 2. KPI ROW */}
@@ -335,6 +544,20 @@ export function DashboardScreen() {
           sublabel={`${stock.length} article${stock.length > 1 ? "s" : ""}`}
         />
       </div>
+
+      {/* 2b. ROLE PANEL */}
+      {currentRole === "Agent de transit" && (
+        <AgentPanel go={go as (v: "dossiers" | "devis") => void} />
+      )}
+      {currentRole === "Magasinier" && (
+        <MagasinierPanel go={go as (v: "entreposage" | "bons") => void} />
+      )}
+      {currentRole === "Commercial" && (
+        <CommercialPanel go={go as (v: "devis" | "clients") => void} />
+      )}
+      {currentRole === "Comptable" && (
+        <ComptablePanel go={go as (v: "comptabilite" | "bilans") => void} />
+      )}
 
       {/* 3. CHARTS ROW */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

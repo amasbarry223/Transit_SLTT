@@ -198,13 +198,14 @@ function UsersTab() {
     setEditNom(u.nom);
     setEditEmail(u.email);
     setEditRole(u.role);
+    // Charger les permissions réelles de l'utilisateur
     setEditPerms({
-      Dossiers: true,
-      Comptabilité: false,
-      Stock: false,
-      "Bons de sortie": false,
-      Clients: true,
-      Rapports: false,
+      Dossiers: u.permissions.some((p) => p.startsWith("dossiers")),
+      Comptabilité: u.permissions.some((p) => p.startsWith("comptabilite")),
+      Stock: u.permissions.some((p) => p.startsWith("stock")),
+      "Bons de sortie": u.permissions.some((p) => p.startsWith("bons")),
+      Clients: u.permissions.some((p) => p.startsWith("clients")),
+      Rapports: u.permissions.some((p) => p.startsWith("rapports")),
     });
     setEditOpen(true);
   }

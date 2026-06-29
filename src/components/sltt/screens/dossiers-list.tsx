@@ -174,6 +174,13 @@ export function DossiersListScreen() {
   const [sortBy, setSortBy] = useState<SortKey>("date-desc");
   const [page, setPage] = useState(1);
 
+  // Ancrage temporel sur la date la plus récente des données (cohérent avec le dashboard)
+  const refDate = useMemo(() => {
+    if (dossiers.length === 0) return new Date();
+    const max = dossiers.reduce((a, b) => (a.date > b.date ? a : b)).date;
+    return new Date(max);
+  }, [dossiers]);
+
   const availableYears = useMemo(() => {
     const years = new Set(dossiers.map((d) => d.date.slice(0, 4)).filter(Boolean));
     return [...years].sort().reverse();
@@ -206,9 +213,8 @@ export function DossiersListScreen() {
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
       if (yearFilter !== "all" && d.date.slice(0, 4) !== yearFilter) return false;
       if (periode !== "all") {
-        const today = new Date();
         const dDate = new Date(d.date);
-        const diffDays = (today.getTime() - dDate.getTime()) / (1000 * 60 * 60 * 24);
+        const diffDays = (refDate.getTime() - dDate.getTime()) / (1000 * 60 * 60 * 24);
         if (periode === "month" && (diffDays > 31 || diffDays < 0)) return false;
         if (periode === "quarter" && (diffDays > 92 || diffDays < 0)) return false;
       }
@@ -228,7 +234,7 @@ export function DossiersListScreen() {
         default: return 0;
       }
     });
-  }, [dossiers, search, clientFilter, statutFilter, periode, yearFilter, sortBy]);
+  }, [dossiers, search, clientFilter, statutFilter, periode, yearFilter, sortBy, refDate]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
