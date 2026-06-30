@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, Fragment } from "react";
 import {
   ArrowLeft, Pencil, X, CheckCircle2, Clock, XCircle, AlertCircle,
   Send, FolderKanban, Trash2, Save, AlertTriangle, User, Package,
@@ -286,17 +286,23 @@ export function DevisDetailScreen() {
   const [fDateValidite,    setFDateValidite]    = useState("");
   const [fNotes,           setFNotes]           = useState("");
 
-  useEffect(() => {
-    if (!isEditing || !devis) return;
-    setFClientId(devis.clientId);
-    setFClientNom(devis.clientNom);
-    setFNature(devis.nature);
-    setFDroitDouane(String(devis.droitDouane));
-    setFFraisCircuit(String(devis.fraisCircuit));
-    setFFraisPrestation(String(devis.fraisPrestation));
-    setFDateValidite(devis.dateValidite);
-    setFNotes(devis.notes ?? "");
-  }, [isEditing, devis]);
+  // Réinitialise le formulaire d'édition quand on entre en mode édition ou que le devis change.
+  // Pattern "adjust state during rendering" — évite un rendu en cascade via useEffect.
+  const editKey = isEditing ? (devis?.id ?? null) : null;
+  const [prevEditKey, setPrevEditKey] = useState<string | null>(null);
+  if (editKey !== prevEditKey) {
+    setPrevEditKey(editKey);
+    if (editKey !== null && devis) {
+      setFClientId(devis.clientId);
+      setFClientNom(devis.clientNom);
+      setFNature(devis.nature);
+      setFDroitDouane(String(devis.droitDouane));
+      setFFraisCircuit(String(devis.fraisCircuit));
+      setFFraisPrestation(String(devis.fraisPrestation));
+      setFDateValidite(devis.dateValidite);
+      setFNotes(devis.notes ?? "");
+    }
+  }
 
   /* Guard */
   if (!devis) {

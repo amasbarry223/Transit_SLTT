@@ -1,4 +1,6 @@
 "use client";
+// TanStack Table retourne des fonctions non mémoïsables — on exclut ce fichier du React Compiler.
+"use no memo";
 
 import * as React from "react";
 import {
@@ -283,6 +285,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
