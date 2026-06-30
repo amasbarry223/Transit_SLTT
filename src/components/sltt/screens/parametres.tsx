@@ -191,15 +191,9 @@ function UsersTab() {
     setEditNom(u.nom);
     setEditEmail(u.email);
     setEditRole(u.role);
-    // Charger les permissions réelles de l'utilisateur
-    setEditPerms({
-      Dossiers: u.permissions.some((p) => p.startsWith("dossiers")),
-      Comptabilité: u.permissions.some((p) => p.startsWith("comptabilite")),
-      Stock: u.permissions.some((p) => p.startsWith("stock")),
-      "Bons de sortie": u.permissions.some((p) => p.startsWith("bons")),
-      Clients: u.permissions.some((p) => p.startsWith("clients")),
-      Rapports: u.permissions.some((p) => p.startsWith("rapports")),
-    });
+    setEditPerms(
+      Object.fromEntries(modulesList.map((m) => [m, u.permissions.includes(m)])) as Record<string, boolean>
+    );
     setEditOpen(true);
   }
 
@@ -510,11 +504,11 @@ function UsersTab() {
 
       {/* Edit user dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifier l'utilisateur</DialogTitle>
             <DialogDescription className="sr-only">
-              Modifiez le nom, l'e-mail et le rôle de l'utilisateur.
+              Modifiez le nom, l'e-mail, le rôle et les permissions de l'utilisateur.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4">
@@ -560,6 +554,27 @@ function UsersTab() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-slate-700">
+                Permissions
+              </Label>
+              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 p-3 sm:grid-cols-2">
+                {modulesList.map((m) => (
+                  <label
+                    key={m}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 hover:bg-white"
+                  >
+                    <Checkbox
+                      checked={editPerms[m]}
+                      onCheckedChange={(v) =>
+                        setEditPerms((prev) => ({ ...prev, [m]: Boolean(v) }))
+                      }
+                    />
+                    {m}
+                  </label>
+                ))}
+              </div>
             </div>
             <DialogFooter className="gap-2">
               <Button
