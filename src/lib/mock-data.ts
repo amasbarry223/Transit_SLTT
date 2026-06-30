@@ -53,8 +53,96 @@ export interface Dossier {
   dateDedouanement?: string;
   /** IDs des documents de la checklist reçus. */
   checklistDocs?: string[];
+  /** Mode de transport principal. */
+  modeTransport?: "Maritime" | "Aérien" | "Routier" | "Ferroviaire";
+  /** Numéro de conteneur (si Maritime). */
+  noConteneur?: string;
+  /** Port ou aéroport d'entrée. */
+  portEntree?: string;
+  /** Poids total en kg. */
+  poidsTotal?: number;
   notes?: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* FOURNISSEURS / SOUS-TRAITANTS                                        */
+/* ------------------------------------------------------------------ */
+
+export type FournisseurType =
+  | "Transporteur"
+  | "Manutentionnaire"
+  | "Commissionnaire en douane"
+  | "Loueur"
+  | "Autre";
+
+export type FournisseurStatut = "Actif" | "Inactif";
+
+export interface Fournisseur {
+  id: string;
+  nom: string;
+  type: FournisseurType;
+  contact: string;
+  telephone: string;
+  email: string;
+  adresse: string;
+  tarifContractuel?: number;
+  nbDossiers: number;
+  montantTotal: number;
+  statut: FournisseurStatut;
+}
+
+export interface FournisseurInput {
+  nom: string;
+  type: FournisseurType;
+  contact: string;
+  telephone: string;
+  email: string;
+  adresse: string;
+  tarifContractuel?: number;
+  statut: FournisseurStatut;
+}
+
+export interface DossierFournisseur {
+  id: string;
+  dossierId: string;
+  dossierRef?: string;
+  fournisseurId: string;
+  fournisseurNom: string;
+  type: FournisseurType;
+  description: string;
+  montantBudgete: number;
+  montantReel: number;
+  statut: "En attente" | "Payé" | "Litige";
+  date: string;
+}
+
+export interface DossierFournisseurInput {
+  dossierId: string;
+  dossierRef?: string;
+  fournisseurId: string;
+  fournisseurNom: string;
+  type: FournisseurType;
+  description: string;
+  montantBudgete: number;
+  montantReel: number;
+  statut: "En attente" | "Payé" | "Litige";
+  date: string;
+}
+
+export const fournisseurs: Fournisseur[] = [
+  { id: "F-001", nom: "Trans-Sahel Transport", type: "Transporteur", contact: "Moussa Konaté", telephone: "+223 76 12 34 56", email: "konat.moussa@transsahel.ml", adresse: "Zone Industrielle, Bamako", tarifContractuel: 350_000, nbDossiers: 8, montantTotal: 2_800_000, statut: "Actif" },
+  { id: "F-002", nom: "Douane Conseil Mali", type: "Commissionnaire en douane", contact: "Aminata Coulibaly", telephone: "+223 66 98 76 54", email: "a.coulibaly@douanemali.ml", adresse: "Près de la Direction des Douanes, Bamako", tarifContractuel: 200_000, nbDossiers: 12, montantTotal: 2_400_000, statut: "Actif" },
+  { id: "F-003", nom: "Manutention Express", type: "Manutentionnaire", contact: "Ibrahim Dembélé", telephone: "+223 65 44 22 11", email: "contact@manut-express.ml", adresse: "Port Sec de Bamako", tarifContractuel: 120_000, nbDossiers: 5, montantTotal: 600_000, statut: "Actif" },
+  { id: "F-004", nom: "Location Camions Mali", type: "Loueur", contact: "Seydou Traoré", telephone: "+223 75 33 11 99", email: "s.traore@loccam.ml", adresse: "Route de Koulikoro, Bamako", tarifContractuel: 180_000, nbDossiers: 3, montantTotal: 540_000, statut: "Actif" },
+  { id: "F-005", nom: "Gestion Entrepôts SA", type: "Manutentionnaire", contact: "Fatoumata Sissoko", telephone: "+223 79 55 66 77", email: "f.sissoko@gesamali.ml", adresse: "Zone Industrielle de Sotuba", tarifContractuel: 90_000, nbDossiers: 2, montantTotal: 180_000, statut: "Inactif" },
+];
+
+export const dossierFournisseurs: DossierFournisseur[] = [
+  { id: "DF-001", dossierId: "D-0042", dossierRef: "SLTT-TR-2026-0042", fournisseurId: "F-001", fournisseurNom: "Trans-Sahel Transport", type: "Transporteur", description: "Transport Dakar → Bamako", montantBudgete: 400_000, montantReel: 380_000, statut: "En attente", date: "2026-01-08" },
+  { id: "DF-002", dossierId: "D-0042", dossierRef: "SLTT-TR-2026-0042", fournisseurId: "F-002", fournisseurNom: "Douane Conseil Mali", type: "Commissionnaire en douane", description: "Assistance dédouanement matériel électronique", montantBudgete: 200_000, montantReel: 200_000, statut: "Payé", date: "2026-01-09" },
+  { id: "DF-003", dossierId: "D-0040", dossierRef: "SLTT-TR-2026-0040", fournisseurId: "F-001", fournisseurNom: "Trans-Sahel Transport", type: "Transporteur", description: "Transport pièces automobiles", montantBudgete: 350_000, montantReel: 370_000, statut: "Payé", date: "2026-01-04" },
+  { id: "DF-004", dossierId: "D-0040", dossierRef: "SLTT-TR-2026-0040", fournisseurId: "F-003", fournisseurNom: "Manutention Express", type: "Manutentionnaire", description: "Déchargement et mise en entrepôt", montantBudgete: 120_000, montantReel: 115_000, statut: "Payé", date: "2026-01-05" },
+];
 
 /** Documents standards d'un dossier de transit. */
 export const CHECKLIST_DOCS = [
@@ -268,6 +356,10 @@ export const dossiers: Dossier[] = [
     date: "2026-01-08",
     dateEcheance: "2026-01-12",
     checklistDocs: ["bl", "facture-commerciale"],
+    modeTransport: "Maritime",
+    noConteneur: "MSCU4521789",
+    portEntree: "Port de Dakar",
+    poidsTotal: 12500,
     notes: "Conteneur 40 pieds, dédouanement en cours.",
   },
   {
@@ -307,6 +399,9 @@ export const dossiers: Dossier[] = [
     dateEcheance: "2026-01-11",
     dateDedouanement: "2026-01-10",
     checklistDocs: ["bl", "dau", "bad", "facture-commerciale", "colisage"],
+    modeTransport: "Routier",
+    portEntree: "Frontière Mali-Côte d'Ivoire",
+    poidsTotal: 8200,
   },
   {
     id: "D-0039",

@@ -10,6 +10,7 @@ import {
   FolderKanban,
   ListChecks,
   AlertTriangle,
+  Truck,
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
@@ -87,6 +88,10 @@ function DossierFormInner() {
   const [statut, setStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
   const [dateEcheance, setDateEcheance] = useState<string>(existing?.dateEcheance ?? "");
   const [dateDedouanement, setDateDedouanement] = useState<string>(existing?.dateDedouanement ?? "");
+  const [modeTransport, setModeTransport] = useState<string>(existing?.modeTransport ?? "");
+  const [noConteneur, setNoConteneur] = useState<string>(existing?.noConteneur ?? "");
+  const [portEntree, setPortEntree] = useState<string>(existing?.portEntree ?? "");
+  const [poidsTotal, setPoidsTotal] = useState<string>(existing?.poidsTotal ? String(existing.poidsTotal) : "");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
 
   // Validation errors
@@ -235,6 +240,10 @@ function DossierFormInner() {
       date,
       dateEcheance: dateEcheance || undefined,
       dateDedouanement: dateDedouanement || undefined,
+      modeTransport: (modeTransport as "Maritime" | "Aérien" | "Routier" | "Ferroviaire") || undefined,
+      noConteneur: noConteneur || undefined,
+      portEntree: portEntree || undefined,
+      poidsTotal: poidsTotal ? parseFloat(poidsTotal) : undefined,
       droitDouane: dN,
       fraisCircuit: fN,
       fraisPrestation: pN,
@@ -451,6 +460,41 @@ function DossierFormInner() {
                     validateField("date", date);
                   }}
                 />
+              </Field>
+            </div>
+          </Card>
+
+          {/* Transport & Logistique */}
+          <Card className="border-border/80 p-5 shadow-sm">
+            <SectionTitle
+              icon={<Truck className="size-4" />}
+              tone="indigo"
+              title="Transport & Logistique"
+              description="Mode de transport, conteneur et point d'entrée"
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Mode de transport">
+                <Select value={modeTransport} onValueChange={setModeTransport}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Sélectionner…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Maritime", "Aérien", "Routier", "Ferroviaire"].map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Port / Frontière d'entrée">
+                <Input className="h-10" value={portEntree} onChange={(e) => setPortEntree(e.target.value)} placeholder="Ex. Port de Dakar" />
+              </Field>
+              {modeTransport === "Maritime" && (
+                <Field label="N° de conteneur">
+                  <Input className="h-10 font-mono" value={noConteneur} onChange={(e) => setNoConteneur(e.target.value)} placeholder="Ex. MSCU4521789" />
+                </Field>
+              )}
+              <Field label="Poids total (kg)">
+                <Input type="number" className="h-10" value={poidsTotal} onChange={(e) => setPoidsTotal(e.target.value)} placeholder="0" />
               </Field>
             </div>
           </Card>

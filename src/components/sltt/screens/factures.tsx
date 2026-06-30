@@ -333,14 +333,27 @@ const TABS: Array<{ key: FactureStatut | "Tous"; label: string }> = [
 ];
 
 export function FacturesScreen() {
-  const factures          = useStore((s) => s.factures);
-  const removeFacture     = useStore((s) => s.removeFacture);
+  const factures            = useStore((s) => s.factures);
+  const dossiers            = useStore((s) => s.dossiers);
+  const removeFacture       = useStore((s) => s.removeFacture);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
-  const go                = useNav((s) => s.go);
+  const go                  = useNav((s) => s.go);
+  const selectedId          = useNav((s) => s.selectedId);
 
   const [search,     setSearch]     = React.useState("");
   const [activeTab,  setActiveTab]  = React.useState<FactureStatut | "Tous">("Tous");
   const [showForm,   setShowForm]   = React.useState(false);
+  const [prefillDossierId, setPrefillDossierId] = React.useState<string | undefined>();
+
+  // Auto-open form when navigating from dossier-detail
+  React.useEffect(() => {
+    if (selectedId && selectedId.startsWith("D-")) {
+      setPrefillDossierId(selectedId);
+      setShowForm(true);
+      go("factures"); // clear selectedId
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   const filtered = React.useMemo(() => {
     return factures.filter((f) => {
@@ -368,7 +381,24 @@ export function FacturesScreen() {
 
   return (
     <div className="space-y-5">
-      <FactureFormModal open={showForm} onClose={() => setShowForm(false)} />
+      <FactureFormModal
+        open={showForm}
+        onClose={() => { setShowForm(false); setPrefillDossierId(undefined); }}
+        prefill={prefillDossierId ? (() => {
+          const d = dossiers.find((x) => x.id === prefillDossierId);
+          if (!d) return {};
+          return {
+            dossierId: d.id,
+            clientId: d.clientId,
+            clientNom: d.clientNom,
+            lignes: [
+              { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.fraisPrestation, montantHT: d.fraisPrestation },
+              { description: `Droits de douane`, quantite: 1, prixUnitaire: d.droitDouane, montantHT: d.droitDouane },
+              { description: `Frais de circuit`, quantite: 1, prixUnitaire: d.fraisCircuit, montantHT: d.fraisCircuit },
+            ],
+          };
+        })() : undefined}
+      />
 
       <PageHeader title="Factures" description="Gestion et suivi de la facturation client">
         <Button onClick={() => setShowForm(true)}>

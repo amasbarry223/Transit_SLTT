@@ -53,6 +53,7 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   transporteurs:    { title: "Transporteurs",   sub: "Annuaire des transporteurs et chauffeurs partenaires" },
   factures:         { title: "Factures",         sub: "Gestion et suivi de la facturation client" },
   "facture-detail": { title: "Détail facture",   sub: "Visualiser, modifier et imprimer la facture" },
+  fournisseurs:     { title: "Fournisseurs",     sub: "Prestataires, sous-traitants et coûts externes" },
   parametres:       { title: "Paramètres",       sub: "Utilisateurs, rôles et sécurité" },
 };
 

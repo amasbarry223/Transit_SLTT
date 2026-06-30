@@ -21,6 +21,7 @@ export type ViewKey =
   | "transporteurs"
   | "factures"
   | "facture-detail"
+  | "fournisseurs"
   | "parametres";
 
 /** TTL session sans "Rester connecté" : 8 heures */

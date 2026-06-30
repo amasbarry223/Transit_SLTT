@@ -37,10 +37,29 @@ import {
   type TransporteurInput,
   type TransporteurStatut,
   type TypeVehicule,
+  type Fournisseur,
+  type FournisseurInput,
+  type FournisseurType,
+  type FournisseurStatut,
+  type DossierFournisseur,
+  type DossierFournisseurInput,
+  fournisseurs as seedFournisseurs,
+  dossierFournisseurs as seedDossierFournisseurs,
   CHECKLIST_DOCS,
 } from "@/lib/mock-data";
 
-export { CHECKLIST_DOCS };
+export {
+  CHECKLIST_DOCS,
+};
+
+export type {
+  Fournisseur,
+  FournisseurInput,
+  FournisseurType,
+  FournisseurStatut,
+  DossierFournisseur,
+  DossierFournisseurInput,
+};
 
 export type {
   Client,
@@ -151,6 +170,10 @@ export interface DossierInput {
   date: string;
   dateEcheance?: string;
   dateDedouanement?: string;
+  modeTransport?: "Maritime" | "Aérien" | "Routier" | "Ferroviaire";
+  noConteneur?: string;
+  portEntree?: string;
+  poidsTotal?: number;
   droitDouane: number;
   fraisCircuit: number;
   fraisPrestation: number;
@@ -348,6 +371,18 @@ interface SLTTState {
   updateFactureStatut: (id: string, statut: FactureStatut) => void;
   recordFacturePaiement: (id: string, montant: number) => void;
 
+  // ---- Fournisseurs ----
+  fournisseurs: Fournisseur[];
+  dossierFournisseurs: DossierFournisseur[];
+  fournisseurSeq: number;
+  dossierFournisseurSeq: number;
+  addFournisseur: (input: FournisseurInput) => Fournisseur;
+  updateFournisseur: (id: string, input: FournisseurInput) => void;
+  removeFournisseur: (id: string) => void;
+  addDossierFournisseur: (input: DossierFournisseurInput) => DossierFournisseur;
+  updateDossierFournisseur: (id: string, input: Partial<DossierFournisseurInput>) => void;
+  removeDossierFournisseur: (id: string) => void;
+
   // ---- Reset ----
   resetAll: () => void;
 }
@@ -372,6 +407,8 @@ const INITIAL_SEQUENCES = {
   transporteurSeq: 6,
   commentSeq: 1,
   factureSeq: 1,
+  fournisseurSeq: 6,
+  dossierFournisseurSeq: 5,
 } as const;
 
 const initialAuditLogs: AuditEntry[] = [
@@ -399,6 +436,8 @@ export const useStore = create<SLTTState>()(
       comments: seedComments,
       transporteurs: seedTransporteurs,
       factures: [],
+      fournisseurs: seedFournisseurs,
+      dossierFournisseurs: seedDossierFournisseurs,
       auditLogs: initialAuditLogs,
       ...INITIAL_SEQUENCES,
 
@@ -1087,6 +1126,45 @@ export const useStore = create<SLTTState>()(
         if (f) get().addAuditLog("Factures", "Paiement", `${montant.toLocaleString("fr-FR")} FCFA — Facture ${f.numero}`);
       },
 
+      // ---- Fournisseurs ----
+      addFournisseur: (input) => {
+        const seq = get().fournisseurSeq;
+        const f: Fournisseur = { id: `F-${pad(seq, 3)}`, ...input, nbDossiers: 0, montantTotal: 0 };
+        set((s) => ({ fournisseurs: [f, ...s.fournisseurs], fournisseurSeq: seq + 1 }));
+        return f;
+      },
+      updateFournisseur: (id, input) => {
+        set((s) => ({ fournisseurs: s.fournisseurs.map((f) => f.id === id ? { ...f, ...input } : f) }));
+      },
+      removeFournisseur: (id) => {
+        set((s) => ({ fournisseurs: s.fournisseurs.filter((f) => f.id !== id) }));
+      },
+      addDossierFournisseur: (input) => {
+        const seq = get().dossierFournisseurSeq;
+        const df: DossierFournisseur = { id: `DF-${pad(seq, 3)}`, ...input };
+        set((s) => {
+          const fournisseurs = s.fournisseurs.map((f) =>
+            f.id !== input.fournisseurId ? f : {
+              ...f,
+              nbDossiers: f.nbDossiers + 1,
+              montantTotal: f.montantTotal + input.montantReel,
+            }
+          );
+          return { dossierFournisseurs: [df, ...s.dossierFournisseurs], dossierFournisseurSeq: seq + 1, fournisseurs };
+        });
+        return df;
+      },
+      updateDossierFournisseur: (id, input) => {
+        set((s) => ({
+          dossierFournisseurs: s.dossierFournisseurs.map((df) =>
+            df.id === id ? { ...df, ...input } : df
+          ),
+        }));
+      },
+      removeDossierFournisseur: (id) => {
+        set((s) => ({ dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.id !== id) }));
+      },
+
       // ---- Reset ----
       resetAll: () => {
         set({
@@ -1104,12 +1182,14 @@ export const useStore = create<SLTTState>()(
           auditLogs: initialAuditLogs,
           transporteurs: seedTransporteurs,
           factures: [],
+          fournisseurs: seedFournisseurs,
+          dossierFournisseurs: seedDossierFournisseurs,
           ...INITIAL_SEQUENCES,
         });
       },
     }),
     {
-      name: "sltt-data-v6",
+      name: "sltt-data-v7",
       // SEC-05: custom storage wrapper to catch QuotaExceededError
       storage: createJSONStorage(() => ({
         getItem: (name) => {
@@ -1162,6 +1242,10 @@ export const useStore = create<SLTTState>()(
         transporteurSeq: s.transporteurSeq,
         factures: s.factures,
         factureSeq: s.factureSeq,
+        fournisseurs: s.fournisseurs,
+        dossierFournisseurs: s.dossierFournisseurs,
+        fournisseurSeq: s.fournisseurSeq,
+        dossierFournisseurSeq: s.dossierFournisseurSeq,
       }),
     },
   ),

@@ -38,7 +38,7 @@ import { useStore, CHECKLIST_DOCS } from "@/lib/store";
 import type { SubDossierInput, FichierInput, SubDossier, DossierFichier, DossierComment } from "@/lib/store";
 import { calculerEcart } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printHTML, printInvoice } from "@/lib/export";
+import { printHTML } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { DossierStatutBadge, EcartValue, EcritureStatutBadge } from "@/components/sltt/status-badge";
 import { Card } from "@/components/ui/card";
@@ -667,31 +667,8 @@ export function DossierDetailScreen() {
 
   function handleInvoice() {
     if (!dossier) return;
-    const year = new Date(dossier.date || new Date()).getFullYear();
-    const seq = dossier.id.replace(/\D/g, "");
-    const invoiceNum = `FACT-${year}-${seq.padStart(4, "0")}`;
-    printInvoice(
-      {
-        reference: dossier.reference,
-        clientNom: dossier.clientNom,
-        clientAdresse: client?.adresse,
-        clientTelephone: client?.telephone,
-        clientEmail: client?.email,
-        nature: dossier.nature,
-        bl: dossier.bl,
-        date: dossier.date,
-        droitDouane: dossier.droitDouane,
-        fraisCircuit: dossier.fraisCircuit,
-        fraisPrestation: dossier.fraisPrestation,
-        montantInvesti: dossier.montantInvesti,
-        montantPaye: dossier.montantPaye,
-      },
-      invoiceNum,
-    );
-    toast({
-      title: "Facture générée",
-      description: `${invoiceNum} — ${dossier.clientNom}`,
-    });
+    // Naviguer vers le module Factures avec le dossier pré-rempli
+    go("factures", { id: dossier.id });
   }
 
   function handlePdf() {
@@ -848,6 +825,18 @@ export function DossierDetailScreen() {
                   label="N° du camion"
                   value={<span className="font-mono text-slate-700">{dossier.camion}</span>}
                 />
+                {dossier.modeTransport && (
+                  <InfoRow label="Mode de transport" value={dossier.modeTransport} />
+                )}
+                {dossier.portEntree && (
+                  <InfoRow label="Port / Frontière d'entrée" value={dossier.portEntree} />
+                )}
+                {dossier.noConteneur && (
+                  <InfoRow label="N° conteneur" value={<span className="font-mono text-slate-700">{dossier.noConteneur}</span>} />
+                )}
+                {dossier.poidsTotal && (
+                  <InfoRow label="Poids total" value={`${dossier.poidsTotal.toLocaleString("fr-FR")} kg`} />
+                )}
                 <InfoRow
                   label="Date d'ouverture"
                   value={dossier.date ? formatDateShort(dossier.date) : "—"}
@@ -1020,6 +1009,58 @@ export function DossierDetailScreen() {
                       Générer le PDF
                     </Button>
                   </div>
+                </Card>
+
+                {/* Rentabilité */}
+                <Card className="border-border/80 p-5 shadow-sm">
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Rentabilité</h2>
+                  {(() => {
+                    const recettes = dossier.fraisPrestation;
+                    const charges  = dossier.droitDouane + dossier.fraisCircuit;
+                    const marge    = recettes - charges;
+                    const tauxMarge = recettes > 0 ? Math.round((marge / recettes) * 100) : 0;
+                    const tauxRec   = dossier.montantInvesti > 0 ? Math.round((dossier.montantPaye / dossier.montantInvesti) * 100) : 0;
+                    return (
+                      <>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-500">Recettes (prestation)</span>
+                            <span className="font-semibold tabular-nums">{formatFCFA(recettes)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-500">Charges (douane + circuit)</span>
+                            <span className="font-semibold tabular-nums text-red-600">−{formatFCFA(charges)}</span>
+                          </div>
+                          <Separator className="my-1" />
+                          <div className="flex justify-between text-sm font-semibold">
+                            <span>Marge brute</span>
+                            <span className={marge >= 0 ? "text-emerald-600" : "text-red-600"}>
+                              {marge >= 0 ? "+" : ""}{formatFCFA(marge)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-500">Taux de marge</span>
+                            <span className={cn("font-semibold tabular-nums", marge >= 0 ? "text-emerald-600" : "text-red-600")}>
+                              {tauxMarge}%
+                            </span>
+                          </div>
+                        </div>
+                        <Separator className="my-3" />
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-500">Recouvrement</span>
+                            <span className="font-semibold tabular-nums">{tauxRec}%</span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className={cn("h-full rounded-full transition-all", tauxRec >= 100 ? "bg-emerald-500" : "bg-blue-500")}
+                              style={{ width: `${Math.min(100, tauxRec)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </Card>
 
                 {/* Quick stats */}

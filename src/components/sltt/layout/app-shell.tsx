@@ -21,6 +21,7 @@ import { CalendrierScreen } from "@/components/sltt/screens/calendrier";
 import { TransporteursScreen } from "@/components/sltt/screens/transporteurs";
 import { FacturesScreen } from "@/components/sltt/screens/factures";
 import { FactureDetailScreen } from "@/components/sltt/screens/facture-detail";
+import { FournisseursScreen } from "@/components/sltt/screens/fournisseurs";
 
 export function AppShell() {
   const view = useNav((s) => s.view);
@@ -49,6 +50,7 @@ export function AppShell() {
             {view === "transporteurs" && <TransporteursScreen />}
             {view === "factures" && <FacturesScreen />}
             {view === "facture-detail" && <FactureDetailScreen />}
+            {view === "fournisseurs" && <FournisseursScreen />}
             {view === "parametres" && <ParametresScreen />}
           </div>
         </main>
