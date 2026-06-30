@@ -947,7 +947,7 @@ export const useStore = create<SLTTState>()(
       },
     }),
     {
-      name: "sltt-data-v4",
+      name: "sltt-data-v5",
       // SEC-05: custom storage wrapper to catch QuotaExceededError
       storage: createJSONStorage(() => ({
         getItem: (name) => {
