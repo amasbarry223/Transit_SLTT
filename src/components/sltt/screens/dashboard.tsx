@@ -463,9 +463,11 @@ export function DashboardScreen() {
 
   const totalDossiers = dossiers.length;
 
-  // ---- Live alerts (low stock + unpaid dossiers) ----
+  // ---- Live alerts (low stock + unpaid dossiers + échéances) ----
   const alertes = React.useMemo<LiveAlert[]>(() => {
-    const lowStock: LiveAlert[] = stock
+    const todayMs = new Date().setHours(0, 0, 0, 0);
+
+    const lowStockAlerts: LiveAlert[] = stock
       .filter((s) => s.quantite < s.seuil)
       .map((s) => ({
         id: `stock-${s.id}`,
@@ -473,6 +475,29 @@ export function DashboardScreen() {
         message: `Stock faible : ${s.marchandise}`,
         detail: `${s.quantite} ${s.unite} restants — ${s.depositaire}`,
       }));
+
+    const echeanceAlerts: LiveAlert[] = dossiers
+      .filter((d) => d.dateEcheance && !["Livré", "Soldé"].includes(d.statut))
+      .reduce<LiveAlert[]>((acc, d) => {
+        const echeance = new Date(d.dateEcheance!).setHours(0, 0, 0, 0);
+        const jours = Math.ceil((echeance - todayMs) / 86400000);
+        if (jours < 0) {
+          acc.push({
+            id: `echeance-${d.id}`,
+            niveau: "danger",
+            message: `Échéance dépassée : ${d.reference.replace("SLTT-TR-", "")}`,
+            detail: `Dépassée de ${Math.abs(jours)}j — ${d.clientNom}`,
+          });
+        } else if (jours <= 3) {
+          acc.push({
+            id: `echeance-${d.id}`,
+            niveau: "warning",
+            message: `Échéance dans ${jours}j : ${d.reference.replace("SLTT-TR-", "")}`,
+            detail: `${d.clientNom} — ${d.nature}`,
+          });
+        }
+        return acc;
+      }, []);
 
     const unpaid: LiveAlert[] = dossiers
       .filter((d) => d.montantInvesti - d.montantPaye > 0)
@@ -486,7 +511,7 @@ export function DashboardScreen() {
         )} — ${d.clientNom}`,
       }));
 
-    return [...lowStock, ...unpaid];
+    return [...lowStockAlerts, ...echeanceAlerts, ...unpaid];
   }, [stock, dossiers]);
 
   const firstName = currentUserName.split(" ")[0];

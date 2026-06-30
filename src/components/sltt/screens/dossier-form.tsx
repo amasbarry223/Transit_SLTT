@@ -85,6 +85,8 @@ function DossierFormInner() {
   const [fraisCircuit, setFraisCircuit] = useState<string>(numStr(existing?.fraisCircuit));
   const [fraisPrestation, setFraisPrestation] = useState<string>(numStr(existing?.fraisPrestation));
   const [statut, setStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
+  const [dateEcheance, setDateEcheance] = useState<string>(existing?.dateEcheance ?? "");
+  const [dateDedouanement, setDateDedouanement] = useState<string>(existing?.dateDedouanement ?? "");
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
 
   // Validation errors
@@ -231,6 +233,8 @@ function DossierFormInner() {
       bl,
       camion,
       date,
+      dateEcheance: dateEcheance || undefined,
+      dateDedouanement: dateDedouanement || undefined,
       droitDouane: dN,
       fraisCircuit: fN,
       fraisPrestation: pN,
@@ -548,6 +552,24 @@ function DossierFormInner() {
                     Reste à payer : {formatFCFA(reste)} — soldez via la transition de dossier.
                   </p>
                 )}
+              </Field>
+
+              <Field label="Date d'échéance">
+                <Input
+                  type="date"
+                  className="h-10"
+                  value={dateEcheance}
+                  onChange={(e) => setDateEcheance(e.target.value)}
+                />
+              </Field>
+
+              <Field label="Date de dédouanement">
+                <Input
+                  type="date"
+                  className="h-10"
+                  value={dateDedouanement}
+                  onChange={(e) => setDateDedouanement(e.target.value)}
+                />
               </Field>
 
               <div className="sm:col-span-2">

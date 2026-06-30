@@ -27,9 +27,14 @@ import {
   Wallet,
   History,
   Clock,
+  CalendarClock,
+  CalendarCheck2,
+  AlertTriangle,
+  ShieldCheck,
+  SquareCheckBig,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
-import { useStore } from "@/lib/store";
+import { useStore, CHECKLIST_DOCS } from "@/lib/store";
 import type { SubDossierInput, FichierInput, SubDossier, DossierFichier, DossierComment } from "@/lib/store";
 import { calculerEcart } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -526,6 +531,7 @@ export function DossierDetailScreen() {
   const deleteSubDossier = useStore((s) => s.deleteSubDossier);
   const addFichier = useStore((s) => s.addFichier);
   const deleteFichier = useStore((s) => s.deleteFichier);
+  const updateDossierChecklist = useStore((s) => s.updateDossierChecklist);
   // PERF-01: subscribe only to relevant slice for this dossier
   const dossierId = selectedId ?? "";
   const allSubDossiers = useStore(useShallow((s) => s.subDossiers.filter((sd) => sd.dossierId === dossierId)));
@@ -533,6 +539,7 @@ export function DossierDetailScreen() {
   const allFichiers = useStore(useShallow((s) => s.fichiers.filter((f) => f.dossierId === dossierId)));
   const allEcritures = useStore(useShallow((s) => s.ecritures.filter((e) => e.dossierId === dossierId)));
   const auditLogs = useStore(useShallow((s) => s.auditLogs));
+  const dossierFactures = useStore(useShallow((s) => s.factures.filter((f) => f.dossierId === dossierId)));
 
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -605,6 +612,18 @@ export function DossierDetailScreen() {
   const nextTransition = getNextTransition(dossier.statut);
   const ecart = calculerEcart(dossier);
   const reste = Math.max(0, dossier.montantInvesti - dossier.montantPaye);
+
+  // Échéance
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const echeanceDate = dossier.dateEcheance ? new Date(dossier.dateEcheance) : null;
+  const joursRestants = echeanceDate ? Math.ceil((echeanceDate.getTime() - today.getTime()) / 86400000) : null;
+  const echeanceDepassee = joursRestants !== null && joursRestants < 0;
+  const echeanceImminente = joursRestants !== null && joursRestants >= 0 && joursRestants <= 3;
+
+  // Checklist progression
+  const checklistChecked = dossier.checklistDocs ?? [];
+  const checklistTotal = CHECKLIST_DOCS.length;
+  const checklistDone = checklistChecked.length;
 
   /* ---------- Handlers ---------- */
 
@@ -774,11 +793,14 @@ export function DossierDetailScreen() {
           <TabsTrigger value="informations">Informations</TabsTrigger>
           <TabsTrigger value="documents">
             Documents
-            {totalFichiers > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {totalFichiers}
-              </span>
-            )}
+            <span className={cn(
+              "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+              checklistDone === checklistTotal
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-primary/10 text-primary"
+            )}>
+              {checklistDone}/{checklistTotal}
+            </span>
           </TabsTrigger>
           <TabsTrigger value="sous-dossiers">
             Sous-dossiers
@@ -830,7 +852,62 @@ export function DossierDetailScreen() {
                   label="Date d'ouverture"
                   value={dossier.date ? formatDateShort(dossier.date) : "—"}
                 />
+                {dossier.dateEcheance && (
+                  <InfoRow
+                    label="Date d'échéance"
+                    value={
+                      <span className={cn(
+                        "flex items-center gap-1.5 font-medium",
+                        echeanceDepassee ? "text-red-600" : echeanceImminente ? "text-amber-600" : "text-slate-700"
+                      )}>
+                        {echeanceDepassee ? <AlertTriangle className="size-3.5" /> : <CalendarClock className="size-3.5" />}
+                        {formatDateShort(dossier.dateEcheance)}
+                        {echeanceDepassee && <span className="text-xs font-normal">(dépassée de {Math.abs(joursRestants!)}j)</span>}
+                        {echeanceImminente && <span className="text-xs font-normal">({joursRestants}j restants)</span>}
+                      </span>
+                    }
+                  />
+                )}
+                {dossier.dateDedouanement && (
+                  <InfoRow
+                    label="Date de dédouanement"
+                    value={
+                      <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                        <CalendarCheck2 className="size-3.5" />
+                        {formatDateShort(dossier.dateDedouanement)}
+                      </span>
+                    }
+                  />
+                )}
               </Card>
+
+              {/* Alerte échéance dépassée */}
+              {echeanceDepassee && (
+                <Card className="border-l-4 border-l-red-500 border-border/80 p-4 shadow-sm bg-red-50/60">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="size-5 shrink-0 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-800">Échéance dépassée</p>
+                      <p className="text-xs text-red-600 mt-0.5">
+                        La date limite du {formatDateShort(dossier.dateEcheance!)} est dépassée de {Math.abs(joursRestants!)} jour{Math.abs(joursRestants!) > 1 ? "s" : ""}. Des surestaries peuvent s'appliquer.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              )}
+              {echeanceImminente && !echeanceDepassee && (
+                <Card className="border-l-4 border-l-amber-500 border-border/80 p-4 shadow-sm bg-amber-50/60">
+                  <div className="flex items-start gap-3">
+                    <CalendarClock className="size-5 shrink-0 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-800">Échéance imminente</p>
+                      <p className="text-xs text-amber-600 mt-0.5">
+                        Il reste {joursRestants} jour{joursRestants! > 1 ? "s" : ""} avant la date limite du {formatDateShort(dossier.dateEcheance!)}.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Notes */}
               {dossier.notes && (
@@ -974,27 +1051,96 @@ export function DossierDetailScreen() {
 
         {/* ---- TAB: Documents ---- */}
         <TabsContent value="documents">
-          <Card className="border-border/80 p-6 shadow-sm">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <FileText className="size-4" />
+          <div className="space-y-4">
+            {/* Checklist documentaire */}
+            <Card className="border-border/80 p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                    <ShieldCheck className="size-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-slate-900">Checklist documentaire</h2>
+                    <p className="text-xs text-slate-500">Documents standards d'un dossier de transit</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-slate-900">{checklistDone}/{checklistTotal}</p>
+                  <p className="text-xs text-slate-400">reçus</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">
-                  Documents du dossier
-                </h2>
-                <p className="text-xs text-slate-500">
-                  BL, factures, certificats et tout autre document lié à ce dossier
-                </p>
+              {/* Barre de progression */}
+              <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    checklistDone === checklistTotal ? "bg-emerald-500" : "bg-blue-500"
+                  )}
+                  style={{ width: `${Math.round((checklistDone / checklistTotal) * 100)}%` }}
+                />
               </div>
-            </div>
-            <FileDropZone
-              dossierId={dossier.id}
-              fichiers={dossierFichiers}
-              onUpload={addFichier}
-              onDelete={deleteFichier}
-            />
-          </Card>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {CHECKLIST_DOCS.map((doc) => {
+                  const isChecked = checklistChecked.includes(doc.id);
+                  return (
+                    <button
+                      key={doc.id}
+                      onClick={() => updateDossierChecklist(dossier.id, doc.id, !isChecked)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg border p-3 text-left transition-all",
+                        isChecked
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                          : "border-border bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                      )}
+                    >
+                      <div className={cn(
+                        "flex size-5 shrink-0 items-center justify-center rounded",
+                        isChecked ? "bg-emerald-500 text-white" : "border border-slate-300 bg-white"
+                      )}>
+                        {isChecked && <Check className="size-3" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-medium">{doc.label}</span>
+                        {doc.obligatoire && !isChecked && (
+                          <span className="ml-1.5 text-[10px] text-red-500">obligatoire</span>
+                        )}
+                      </div>
+                      {isChecked && <SquareCheckBig className="size-4 shrink-0 text-emerald-500" />}
+                    </button>
+                  );
+                })}
+              </div>
+              {checklistDone === checklistTotal && (
+                <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700">
+                  <CheckCircle2 className="size-4 shrink-0" />
+                  <p className="text-sm font-medium">Tous les documents ont été reçus.</p>
+                </div>
+              )}
+            </Card>
+
+            {/* Fichiers uploadés */}
+            <Card className="border-border/80 p-6 shadow-sm">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <FileText className="size-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    Fichiers joints
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Déposez les documents numérisés liés à ce dossier
+                  </p>
+                </div>
+              </div>
+              <FileDropZone
+                dossierId={dossier.id}
+                fichiers={dossierFichiers}
+                onUpload={addFichier}
+                onDelete={deleteFichier}
+              />
+            </Card>
+          </div>
         </TabsContent>
 
         {/* ---- TAB: Sous-dossiers ---- */}

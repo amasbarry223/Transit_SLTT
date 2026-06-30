@@ -37,7 +37,10 @@ import {
   type TransporteurInput,
   type TransporteurStatut,
   type TypeVehicule,
+  CHECKLIST_DOCS,
 } from "@/lib/mock-data";
+
+export { CHECKLIST_DOCS };
 
 export type {
   Client,
@@ -146,6 +149,8 @@ export interface DossierInput {
   bl: string;
   camion: string;
   date: string;
+  dateEcheance?: string;
+  dateDedouanement?: string;
   droitDouane: number;
   fraisCircuit: number;
   fraisPrestation: number;
@@ -262,6 +267,7 @@ interface SLTTState {
   // ---- Dossiers ----
   addDossier: (input: DossierInput) => Dossier;
   updateDossier: (id: string, input: DossierInput) => void;
+  updateDossierChecklist: (dossierId: string, docId: string, checked: boolean) => void;
   removeDossier: (id: string) => void;
   getDossier: (id: string) => Dossier | undefined;
   transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string) => void;
@@ -451,6 +457,18 @@ export const useStore = create<SLTTState>()(
         if (existing) {
           get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`);
         }
+      },
+      updateDossierChecklist: (dossierId, docId, checked) => {
+        set((s) => ({
+          dossiers: s.dossiers.map((d) =>
+            d.id !== dossierId ? d : {
+              ...d,
+              checklistDocs: checked
+                ? [...(d.checklistDocs ?? []), docId]
+                : (d.checklistDocs ?? []).filter((x) => x !== docId),
+            }
+          ),
+        }));
       },
       removeDossier: (id) => {
         const dossier = get().dossiers.find((d) => d.id === id);

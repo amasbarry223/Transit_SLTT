@@ -47,8 +47,25 @@ export interface Dossier {
   montantPaye: number;
   statut: DossierStatut;
   date: string;
+  /** Date limite de dédouanement / livraison. Dépassée = surestaries. */
+  dateEcheance?: string;
+  /** Date réelle de dédouanement (remplie quand statut → Dédouané). */
+  dateDedouanement?: string;
+  /** IDs des documents de la checklist reçus. */
+  checklistDocs?: string[];
   notes?: string;
 }
+
+/** Documents standards d'un dossier de transit. */
+export const CHECKLIST_DOCS = [
+  { id: "bl",                  label: "Connaissement (BL)",         obligatoire: true  },
+  { id: "dau",                 label: "Déclaration en douane (DAU)", obligatoire: true  },
+  { id: "bad",                 label: "Bon à délivrer (BAD)",        obligatoire: true  },
+  { id: "facture-commerciale", label: "Facture commerciale",         obligatoire: true  },
+  { id: "colisage",            label: "Liste de colisage",           obligatoire: true  },
+  { id: "certif-origine",      label: "Certificat d'origine",        obligatoire: false },
+  { id: "assurance",           label: "Attestation d'assurance",     obligatoire: false },
+] as const;
 
 export interface Ecriture {
   id: string;
@@ -249,6 +266,8 @@ export const dossiers: Dossier[] = [
     montantPaye: 1_800_000,
     statut: "En cours",
     date: "2026-01-08",
+    dateEcheance: "2026-01-12",
+    checklistDocs: ["bl", "facture-commerciale"],
     notes: "Conteneur 40 pieds, dédouanement en cours.",
   },
   {
@@ -266,6 +285,9 @@ export const dossiers: Dossier[] = [
     montantPaye: 1_900_000,
     statut: "Soldé",
     date: "2026-01-05",
+    dateEcheance: "2026-01-10",
+    dateDedouanement: "2026-01-08",
+    checklistDocs: ["bl", "dau", "bad", "facture-commerciale", "colisage", "certif-origine", "assurance"],
   },
   {
     id: "D-0040",
@@ -282,6 +304,9 @@ export const dossiers: Dossier[] = [
     montantPaye: 2_200_000,
     statut: "Dédouané",
     date: "2026-01-03",
+    dateEcheance: "2026-01-11",
+    dateDedouanement: "2026-01-10",
+    checklistDocs: ["bl", "dau", "bad", "facture-commerciale", "colisage"],
   },
   {
     id: "D-0039",
@@ -298,6 +323,9 @@ export const dossiers: Dossier[] = [
     montantPaye: 800_000,
     statut: "Livré",
     date: "2026-01-02",
+    dateEcheance: "2026-01-09",
+    dateDedouanement: "2026-01-06",
+    checklistDocs: ["bl", "dau", "bad", "facture-commerciale", "colisage"],
   },
   {
     id: "D-0038",
