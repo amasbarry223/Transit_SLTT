@@ -19,6 +19,8 @@ export type ViewKey =
   | "devis-detail"
   | "calendrier"
   | "transporteurs"
+  | "factures"
+  | "facture-detail"
   | "parametres";
 
 /** TTL session sans "Rester connecté" : 8 heures */

@@ -76,11 +76,57 @@ export type AuditModule =
   | "Authentification"
   | "Dossiers"
   | "Comptabilité"
+  | "Factures"
   | "Stock"
   | "Bons"
   | "Clients"
   | "Transporteurs"
   | "Utilisateurs";
+
+/* ------------------------------------------------------------------ */
+/* FACTURES                                                            */
+/* ------------------------------------------------------------------ */
+
+export type FactureStatut = "Brouillon" | "Envoyée" | "Partielle" | "Soldée" | "Annulée";
+
+export interface FactureLigne {
+  id: string;
+  description: string;
+  quantite: number;
+  prixUnitaire: number;
+  montantHT: number;
+}
+
+export interface Facture {
+  id: string;
+  numero: string;
+  dossierId: string | null;
+  clientId: string;
+  clientNom: string;
+  date: string;
+  dateEcheance: string;
+  statut: FactureStatut;
+  lignes: FactureLigne[];
+  tauxTVA: number;
+  montantHT: number;
+  montantTVA: number;
+  montantTTC: number;
+  montantPaye: number;
+  notes: string;
+  creePar: string;
+  creeLe: string;
+}
+
+export interface FactureInput {
+  dossierId?: string | null;
+  clientId: string;
+  clientNom: string;
+  date: string;
+  dateEcheance: string;
+  lignes: Array<{ description: string; quantite: number; prixUnitaire: number }>;
+  tauxTVA: number;
+  notes: string;
+}
 
 export type AuditEntry = {
   id: string;
@@ -287,6 +333,15 @@ interface SLTTState {
   updateTransporteurStatut: (id: string, statut: TransporteurStatut) => void;
   removeTransporteur: (id: string) => void;
 
+  // ---- Factures ----
+  factures: Facture[];
+  factureSeq: number;
+  addFacture: (input: FactureInput) => Facture;
+  updateFacture: (id: string, input: FactureInput) => void;
+  removeFacture: (id: string) => void;
+  updateFactureStatut: (id: string, statut: FactureStatut) => void;
+  recordFacturePaiement: (id: string, montant: number) => void;
+
   // ---- Reset ----
   resetAll: () => void;
 }
@@ -310,6 +365,7 @@ const INITIAL_SEQUENCES = {
   devisSeq: 4,
   transporteurSeq: 6,
   commentSeq: 1,
+  factureSeq: 1,
 } as const;
 
 const initialAuditLogs: AuditEntry[] = [
@@ -336,6 +392,7 @@ export const useStore = create<SLTTState>()(
       devis: seedDevis,
       comments: seedComments,
       transporteurs: seedTransporteurs,
+      factures: [],
       auditLogs: initialAuditLogs,
       ...INITIAL_SEQUENCES,
 
@@ -926,6 +983,92 @@ export const useStore = create<SLTTState>()(
         if (t) get().addAuditLog("Transporteurs", "Suppression", `Transporteur ${t.nom} supprimé`);
       },
 
+      // ---- Factures ----
+      addFacture: (input) => {
+        const seq = get().factureSeq;
+        const year = new Date().getFullYear();
+        const id = `FACT-${pad(seq, 4)}`;
+        const numero = `SLTT-FACT-${year}-${pad(seq, 4)}`;
+        const lignes: FactureLigne[] = input.lignes.map((l, i) => ({
+          id: `${id}-L${i + 1}`,
+          description: l.description,
+          quantite: l.quantite,
+          prixUnitaire: l.prixUnitaire,
+          montantHT: Math.round(l.quantite * l.prixUnitaire),
+        }));
+        const montantHT = lignes.reduce((s, l) => s + l.montantHT, 0);
+        const montantTVA = Math.round(montantHT * (input.tauxTVA / 100));
+        const montantTTC = montantHT + montantTVA;
+        const newFacture: Facture = {
+          id,
+          numero,
+          dossierId: input.dossierId ?? null,
+          clientId: input.clientId,
+          clientNom: input.clientNom,
+          date: input.date,
+          dateEcheance: input.dateEcheance,
+          statut: "Brouillon",
+          lignes,
+          tauxTVA: input.tauxTVA,
+          montantHT,
+          montantTVA,
+          montantTTC,
+          montantPaye: 0,
+          notes: input.notes,
+          creePar: getConnectedUserName(),
+          creeLe: new Date().toISOString(),
+        };
+        set((s) => ({ factures: [newFacture, ...s.factures], factureSeq: seq + 1 }));
+        get().addAuditLog("Factures", "Création", `Facture ${numero} créée — ${input.clientNom}`);
+        return newFacture;
+      },
+
+      updateFacture: (id, input) => {
+        const lignes: FactureLigne[] = input.lignes.map((l, i) => ({
+          id: `${id}-L${i + 1}`,
+          description: l.description,
+          quantite: l.quantite,
+          prixUnitaire: l.prixUnitaire,
+          montantHT: Math.round(l.quantite * l.prixUnitaire),
+        }));
+        const montantHT = lignes.reduce((s, l) => s + l.montantHT, 0);
+        const montantTVA = Math.round(montantHT * (input.tauxTVA / 100));
+        const montantTTC = montantHT + montantTVA;
+        set((s) => ({
+          factures: s.factures.map((f) =>
+            f.id === id ? { ...f, ...input, dossierId: input.dossierId ?? null, lignes, montantHT, montantTVA, montantTTC } : f
+          ),
+        }));
+        get().addAuditLog("Factures", "Modification", `Facture ${id} modifiée`);
+      },
+
+      removeFacture: (id) => {
+        const f = get().factures.find((x) => x.id === id);
+        set((s) => ({ factures: s.factures.filter((x) => x.id !== id) }));
+        if (f) get().addAuditLog("Factures", "Suppression", `Facture ${f.numero} supprimée`);
+      },
+
+      updateFactureStatut: (id, statut) => {
+        const f = get().factures.find((x) => x.id === id);
+        set((s) => ({
+          factures: s.factures.map((x) => x.id === id ? { ...x, statut } : x),
+        }));
+        if (f) get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`);
+      },
+
+      recordFacturePaiement: (id, montant) => {
+        const f = get().factures.find((x) => x.id === id);
+        if (!f) return;
+        const newPaye = Math.min(f.montantTTC, f.montantPaye + montant);
+        const newStatut: FactureStatut = newPaye >= f.montantTTC ? "Soldée" : "Partielle";
+        set((s) => ({
+          factures: s.factures.map((x) =>
+            x.id === id ? { ...x, montantPaye: newPaye, statut: newStatut } : x
+          ),
+        }));
+        if (f) get().addAuditLog("Factures", "Paiement", `${montant.toLocaleString("fr-FR")} FCFA — Facture ${f.numero}`);
+      },
+
       // ---- Reset ----
       resetAll: () => {
         set({
@@ -942,12 +1085,13 @@ export const useStore = create<SLTTState>()(
           comments: seedComments,
           auditLogs: initialAuditLogs,
           transporteurs: seedTransporteurs,
+          factures: [],
           ...INITIAL_SEQUENCES,
         });
       },
     }),
     {
-      name: "sltt-data-v5",
+      name: "sltt-data-v6",
       // SEC-05: custom storage wrapper to catch QuotaExceededError
       storage: createJSONStorage(() => ({
         getItem: (name) => {
@@ -998,6 +1142,8 @@ export const useStore = create<SLTTState>()(
         commentSeq: s.commentSeq,
         transporteurs: s.transporteurs,
         transporteurSeq: s.transporteurSeq,
+        factures: s.factures,
+        factureSeq: s.factureSeq,
       }),
     },
   ),

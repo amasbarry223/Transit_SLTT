@@ -1,0 +1,534 @@
+"use client";
+
+import * as React from "react";
+import {
+  Plus, Search, Receipt, TrendingUp, Clock, CheckCircle2,
+  ArrowRight, Trash2, Eye, Send, X, ChevronDown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/sltt/page-header";
+import { useStore, type Facture, type FactureStatut, type FactureInput } from "@/lib/store";
+import { useNav } from "@/lib/nav-store";
+import { formatFCFA, formatDateShort } from "@/lib/format";
+
+/* ------------------------------------------------------------------ */
+/* STATUT BADGE                                                        */
+/* ------------------------------------------------------------------ */
+
+const STATUT_STYLES: Record<FactureStatut, string> = {
+  Brouillon:  "bg-slate-100 text-slate-600 border-slate-200",
+  Envoyée:    "bg-blue-50 text-blue-700 border-blue-200",
+  Partielle:  "bg-amber-50 text-amber-700 border-amber-200",
+  Soldée:     "bg-emerald-50 text-emerald-700 border-emerald-200",
+  Annulée:    "bg-red-50 text-red-500 border-red-200",
+};
+
+function FactureStatutBadge({ statut }: { statut: FactureStatut }) {
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUT_STYLES[statut]}`}>
+      {statut}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* FORM — nouvelle facture                                             */
+/* ------------------------------------------------------------------ */
+
+interface LigneForm { description: string; quantite: string; prixUnitaire: string; }
+
+const EMPTY_LIGNE: LigneForm = { description: "", quantite: "1", prixUnitaire: "" };
+
+function FactureFormModal({
+  open,
+  onClose,
+  prefill,
+}: {
+  open: boolean;
+  onClose: () => void;
+  prefill?: Partial<FactureInput>;
+}) {
+  const clients    = useStore((s) => s.clients);
+  const dossiers   = useStore((s) => s.dossiers);
+  const addFacture = useStore((s) => s.addFacture);
+  const go         = useNav((s) => s.go);
+
+  const today    = new Date().toISOString().slice(0, 10);
+  const in30days = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+
+  const [clientId,     setClientId]     = React.useState(prefill?.clientId ?? "");
+  const [clientNom,    setClientNom]    = React.useState(prefill?.clientNom ?? "");
+  const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
+  const [date,         setDate]         = React.useState(prefill?.date ?? today);
+  const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? in30days);
+  const [tauxTVA,      setTauxTVA]      = React.useState(String(prefill?.tauxTVA ?? 18));
+  const [notes,        setNotes]        = React.useState(prefill?.notes ?? "");
+  const [lignes,       setLignes]       = React.useState<LigneForm[]>(
+    prefill?.lignes?.map((l) => ({
+      description: l.description,
+      quantite: String(l.quantite),
+      prixUnitaire: String(l.prixUnitaire),
+    })) ?? [{ ...EMPTY_LIGNE }]
+  );
+
+  if (!open) return null;
+
+  const montantHT = lignes.reduce((s, l) => {
+    const q = parseFloat(l.quantite) || 0;
+    const p = parseFloat(l.prixUnitaire) || 0;
+    return s + q * p;
+  }, 0);
+  const tva = parseFloat(tauxTVA) || 0;
+  const montantTVA = Math.round(montantHT * (tva / 100));
+  const montantTTC = montantHT + montantTVA;
+
+  function handleClientChange(id: string) {
+    const c = clients.find((x) => x.id === id);
+    setClientId(id);
+    setClientNom(c?.nom ?? "");
+  }
+
+  function handleDossierChange(id: string) {
+    setDossierId(id);
+    if (id) {
+      const d = dossiers.find((x) => x.id === id);
+      if (d) {
+        handleClientChange(d.clientId);
+        setLignes([
+          { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: "1", prixUnitaire: String(d.fraisPrestation) },
+          { description: `Droits de douane`, quantite: "1", prixUnitaire: String(d.droitDouane) },
+          { description: `Frais de circuit`, quantite: "1", prixUnitaire: String(d.fraisCircuit) },
+        ]);
+      }
+    }
+  }
+
+  function addLigne() {
+    setLignes((l) => [...l, { ...EMPTY_LIGNE }]);
+  }
+
+  function removeLigne(i: number) {
+    setLignes((l) => l.filter((_, idx) => idx !== i));
+  }
+
+  function updateLigne(i: number, field: keyof LigneForm, value: string) {
+    setLignes((l) => l.map((row, idx) => idx === i ? { ...row, [field]: value } : row));
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!clientId || lignes.every((l) => !l.description)) return;
+    const f = addFacture({
+      dossierId: dossierId || null,
+      clientId,
+      clientNom,
+      date,
+      dateEcheance,
+      lignes: lignes
+        .filter((l) => l.description.trim())
+        .map((l) => ({
+          description: l.description,
+          quantite: parseFloat(l.quantite) || 1,
+          prixUnitaire: parseFloat(l.prixUnitaire) || 0,
+        })),
+      tauxTVA: parseFloat(tauxTVA) || 0,
+      notes,
+    });
+    onClose();
+    go("facture-detail", { id: f.id });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-10 backdrop-blur-sm">
+      <div className="w-full max-w-2xl rounded-2xl border border-border bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Receipt className="size-4 text-blue-600" />
+            <h2 className="text-base font-semibold text-slate-900">Nouvelle facture</h2>
+          </div>
+          <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="divide-y divide-border/40">
+          {/* Section 1 : client + dossier */}
+          <div className="grid grid-cols-2 gap-4 px-6 py-5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">Dossier lié (optionnel)</Label>
+              <div className="relative">
+                <select
+                  value={dossierId}
+                  onChange={(e) => handleDossierChange(e.target.value)}
+                  className="w-full appearance-none rounded-lg border border-border bg-white px-3 py-2 pr-8 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">— Aucun dossier —</option>
+                  {dossiers.map((d) => (
+                    <option key={d.id} value={d.id}>{d.reference} · {d.clientNom}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">Client *</Label>
+              <div className="relative">
+                <select
+                  value={clientId}
+                  onChange={(e) => handleClientChange(e.target.value)}
+                  required
+                  className="w-full appearance-none rounded-lg border border-border bg-white px-3 py-2 pr-8 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">Sélectionner un client</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nom}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">Date de facture *</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="h-9 text-sm" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">Date d&apos;échéance *</Label>
+              <Input type="date" value={dateEcheance} onChange={(e) => setDateEcheance(e.target.value)} required className="h-9 text-sm" />
+            </div>
+          </div>
+
+          {/* Section 2 : lignes */}
+          <div className="px-6 py-5">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Lignes de facturation</span>
+              <button
+                type="button"
+                onClick={addLigne}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-blue-600 hover:bg-blue-50"
+              >
+                <Plus className="size-3" /> Ajouter
+              </button>
+            </div>
+
+            {/* En-têtes colonnes */}
+            <div className="mb-1.5 grid grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              <span>Description</span>
+              <span className="text-center">Qté</span>
+              <span className="text-right">Prix unitaire</span>
+              <span />
+            </div>
+
+            <div className="space-y-2">
+              {lignes.map((l, i) => (
+                <div key={i} className="grid grid-cols-[1fr_60px_100px_24px] items-center gap-2">
+                  <Input
+                    value={l.description}
+                    onChange={(e) => updateLigne(i, "description", e.target.value)}
+                    placeholder="ex. Frais de dédouanement"
+                    className="h-8 text-xs"
+                  />
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={l.quantite}
+                    onChange={(e) => updateLigne(i, "quantite", e.target.value)}
+                    className="h-8 text-center text-xs"
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    value={l.prixUnitaire}
+                    onChange={(e) => updateLigne(i, "prixUnitaire", e.target.value)}
+                    placeholder="0"
+                    className="h-8 text-right text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeLigne(i)}
+                    disabled={lignes.length === 1}
+                    className="flex size-6 items-center justify-center rounded text-slate-300 hover:bg-red-50 hover:text-red-500 disabled:pointer-events-none"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 3 : TVA + totaux + notes */}
+          <div className="grid grid-cols-2 gap-6 px-6 py-5">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">Taux TVA (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={tauxTVA}
+                  onChange={(e) => setTauxTVA(e.target.value)}
+                  className="h-9 w-28 text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">Notes</Label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Conditions de paiement, références…"
+                  className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-end">
+              <div className="rounded-xl border border-border/60 bg-slate-50/60 p-4 text-sm">
+                <div className="flex justify-between text-slate-600">
+                  <span>Sous-total HT</span>
+                  <span className="tabular-nums">{formatFCFA(montantHT)}</span>
+                </div>
+                <div className="mt-1.5 flex justify-between text-slate-600">
+                  <span>TVA {tva}%</span>
+                  <span className="tabular-nums">{formatFCFA(montantTVA)}</span>
+                </div>
+                <div className="mt-3 flex justify-between border-t border-border/60 pt-3 font-semibold text-slate-900">
+                  <span>Total TTC</span>
+                  <span className="text-base tabular-nums text-blue-700">{formatFCFA(montantTTC)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
+            <Button type="submit" disabled={!clientId}>
+              <Receipt className="mr-1.5 size-3.5" /> Créer la facture
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* SCREEN                                                              */
+/* ------------------------------------------------------------------ */
+
+const TABS: Array<{ key: FactureStatut | "Tous"; label: string }> = [
+  { key: "Tous",      label: "Toutes" },
+  { key: "Brouillon", label: "Brouillon" },
+  { key: "Envoyée",   label: "Envoyées" },
+  { key: "Partielle", label: "Partielles" },
+  { key: "Soldée",    label: "Soldées" },
+  { key: "Annulée",   label: "Annulées" },
+];
+
+export function FacturesScreen() {
+  const factures          = useStore((s) => s.factures);
+  const removeFacture     = useStore((s) => s.removeFacture);
+  const updateFactureStatut = useStore((s) => s.updateFactureStatut);
+  const go                = useNav((s) => s.go);
+
+  const [search,     setSearch]     = React.useState("");
+  const [activeTab,  setActiveTab]  = React.useState<FactureStatut | "Tous">("Tous");
+  const [showForm,   setShowForm]   = React.useState(false);
+
+  const filtered = React.useMemo(() => {
+    return factures.filter((f) => {
+      const matchTab    = activeTab === "Tous" || f.statut === activeTab;
+      const matchSearch = !search ||
+        f.numero.toLowerCase().includes(search.toLowerCase()) ||
+        f.clientNom.toLowerCase().includes(search.toLowerCase());
+      return matchTab && matchSearch;
+    });
+  }, [factures, activeTab, search]);
+
+  // KPIs
+  const kpi = React.useMemo(() => {
+    const actives  = factures.filter((f) => f.statut !== "Annulée");
+    const totalTTC = actives.reduce((s, f) => s + f.montantTTC, 0);
+    const totalPaye = actives.reduce((s, f) => s + f.montantPaye, 0);
+    const nonSoldees = actives.filter((f) => f.statut !== "Soldée").length;
+    const tauxRecouvrement = totalTTC > 0 ? Math.round((totalPaye / totalTTC) * 100) : 0;
+    return { total: actives.length, totalTTC, totalPaye, nonSoldees, tauxRecouvrement };
+  }, [factures]);
+
+  function handleDelete(f: Facture) {
+    if (confirm(`Supprimer la facture ${f.numero} ?`)) removeFacture(f.id);
+  }
+
+  return (
+    <div className="space-y-5">
+      <FactureFormModal open={showForm} onClose={() => setShowForm(false)} />
+
+      <PageHeader title="Factures" description="Gestion et suivi de la facturation client">
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="mr-1.5 size-3.5" /> Nouvelle facture
+        </Button>
+      </PageHeader>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Factures actives",   value: String(kpi.total),              icon: Receipt,       color: "text-blue-600",    bg: "bg-blue-50"    },
+          { label: "Montant total TTC",  value: formatFCFA(kpi.totalTTC),       icon: TrendingUp,    color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Recouvré",           value: formatFCFA(kpi.totalPaye),      icon: CheckCircle2,  color: "text-violet-600",  bg: "bg-violet-50"  },
+          { label: "Non soldées",        value: String(kpi.nonSoldees),         icon: Clock,         color: "text-amber-600",   bg: "bg-amber-50"   },
+        ].map((k) => (
+          <div key={k.label} className="flex items-center gap-3 rounded-xl border border-border/80 bg-white p-4 shadow-sm">
+            <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${k.bg}`}>
+              <k.icon className={`size-4 ${k.color}`} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[11px] text-slate-500">{k.label}</p>
+              <p className="truncate text-sm font-bold tabular-nums text-slate-900">{k.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Taux de recouvrement bar */}
+      {kpi.total > 0 && (
+        <div className="rounded-xl border border-border/80 bg-white px-5 py-3.5 shadow-sm">
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="font-medium text-slate-700">Taux de recouvrement</span>
+            <span className="font-bold tabular-nums text-slate-900">{kpi.tauxRecouvrement}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{ width: `${kpi.tauxRecouvrement}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Filtres + recherche */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-1 overflow-x-auto">
+          {TABS.map((tab) => {
+            const count = tab.key === "Tous"
+              ? factures.length
+              : factures.filter((f) => f.statut === tab.key).length;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {tab.label}
+                <span className={`rounded-full px-1.5 py-px text-[10px] font-bold ${activeTab === tab.key ? "bg-white/20 text-white" : "bg-white text-slate-500"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative w-full sm:w-56">
+          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Rechercher…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm">
+        {/* Labels */}
+        <div className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] gap-x-3 border-b border-border/50 bg-slate-50/70 px-5 py-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+          <span>N° Facture</span>
+          <span>Client</span>
+          <span>Date</span>
+          <span>Échéance</span>
+          <span className="text-right">Montant TTC</span>
+          <span className="text-right">Payé</span>
+          <span>Statut</span>
+          <span />
+        </div>
+
+        <div className="divide-y divide-border/40">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Receipt className="size-10 text-slate-200" />
+              <p className="mt-3 text-sm font-medium text-slate-500">
+                {factures.length === 0 ? "Aucune facture créée" : "Aucun résultat"}
+              </p>
+              {factures.length === 0 && (
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowForm(true)}>
+                  <Plus className="mr-1.5 size-3.5" /> Créer la première facture
+                </Button>
+              )}
+            </div>
+          ) : (
+            filtered.map((f) => {
+              const isEchue = f.statut !== "Soldée" && f.statut !== "Annulée" && f.dateEcheance < new Date().toISOString().slice(0, 10);
+              return (
+                <div
+                  key={f.id}
+                  className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] items-center gap-x-3 px-5 py-3 transition-colors hover:bg-slate-50/60"
+                >
+                  <button
+                    onClick={() => go("facture-detail", { id: f.id })}
+                    className="flex items-center gap-1.5 font-mono text-[12px] font-semibold text-blue-700 hover:underline"
+                  >
+                    {f.numero}
+                  </button>
+                  <p className="truncate text-xs text-slate-700">{f.clientNom}</p>
+                  <p className="text-xs tabular-nums text-slate-500">{formatDateShort(f.date)}</p>
+                  <p className={`text-xs tabular-nums ${isEchue ? "font-semibold text-red-600" : "text-slate-500"}`}>
+                    {formatDateShort(f.dateEcheance)}
+                  </p>
+                  <p className="text-right text-xs font-semibold tabular-nums text-slate-900">{formatFCFA(f.montantTTC)}</p>
+                  <p className="text-right text-xs tabular-nums text-emerald-700">{formatFCFA(f.montantPaye)}</p>
+                  <FactureStatutBadge statut={f.statut} />
+                  <div className="flex items-center gap-1">
+                    <button
+                      title="Voir / Imprimer"
+                      onClick={() => go("facture-detail", { id: f.id })}
+                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <Eye className="size-3.5" />
+                    </button>
+                    {f.statut === "Brouillon" && (
+                      <button
+                        title="Marquer comme envoyée"
+                        onClick={() => updateFactureStatut(f.id, "Envoyée")}
+                        className="rounded p-1 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <Send className="size-3.5" />
+                      </button>
+                    )}
+                    <button
+                      title="Supprimer"
+                      onClick={() => handleDelete(f)}
+                      className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -10,6 +10,7 @@ import {
   ClipboardList,
   CalendarDays,
   Truck,
+  Receipt,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ViewKey } from "@/lib/nav-store";
@@ -26,6 +27,7 @@ export const navItems: NavItem[] = [
   { key: "dashboard",    label: "Tableau de bord",      icon: LayoutDashboard },
   { key: "dossiers",     label: "Dossiers de transit",  icon: FolderKanban,  roles: ["Administrateur", "Agent de transit", "Comptable"] },
   { key: "devis",        label: "Devis",                icon: ClipboardList, roles: ["Administrateur", "Agent de transit", "Commercial"] },
+  { key: "factures",    label: "Factures",             icon: Receipt,       roles: ["Administrateur", "Comptable", "Agent de transit"] },
   { key: "calendrier",   label: "Calendrier",           icon: CalendarDays },
   { key: "comptabilite", label: "Comptabilité",         icon: Wallet,        roles: ["Administrateur", "Comptable"] },
   { key: "entreposage",  label: "Entreposage",          icon: Warehouse,     roles: ["Administrateur", "Magasinier"] },
