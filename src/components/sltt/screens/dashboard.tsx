@@ -25,25 +25,14 @@ import {
   FolderKanban,
   Warehouse,
   AlertTriangle,
-  AlertCircle,
   ArrowRight,
-  TrendingUp,
   Package,
-  Users,
   ClipboardList,
   CheckCircle2,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
 
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -689,115 +678,109 @@ export function DashboardScreen() {
       </div>
 
       {/* 4. BLOCKS ROW */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left: Derniers dossiers (lg:col-span-2) */}
-        <Card className="shadow-sm border-border/80 rounded-xl lg:col-span-2">
-          <div className="flex items-center justify-between gap-3 border-b border-border/80 p-5 pb-4">
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">
-                Derniers dossiers
-              </h2>
-              <p className="text-xs text-slate-500">
-                {derniersDossiers.length} dossiers les plus récents
-              </p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+
+        {/* ── Derniers dossiers ── */}
+        <Card className="overflow-hidden rounded-xl border-border/80 shadow-sm lg:col-span-2">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-slate-50/70 px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="size-3.5 text-slate-400" />
+              <span className="text-[13px] font-semibold text-slate-800">Derniers dossiers</span>
+              <span className="rounded-full bg-slate-200/80 px-1.5 py-px text-[10px] font-bold tabular-nums text-slate-500">
+                {derniersDossiers.length}
+              </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
+            <button
               onClick={() => go("dossiers")}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             >
-              Voir tout
-              <ArrowRight className="size-3.5" />
-            </Button>
+              Voir tout <ArrowRight className="size-3" />
+            </button>
           </div>
 
-          <div className="p-2 sm:p-3">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border bg-slate-50/60 hover:bg-slate-50/60">
-                  <TableHead className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Référence
-                  </TableHead>
-                  <TableHead className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Client
-                  </TableHead>
-                  <TableHead className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    N° BL
-                  </TableHead>
-                  <TableHead className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Statut
-                  </TableHead>
-                  <TableHead className="text-right text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Montant
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {derniersDossiers.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-10 text-center text-sm text-slate-500"
-                    >
-                      Aucun dossier enregistré.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  derniersDossiers.map((d) => (
-                    <TableRow
-                      key={d.id}
-                      className="border-b border-border hover:bg-slate-50/60"
-                    >
-                      <TableCell className="font-medium text-slate-900">
-                        {d.reference}
-                      </TableCell>
-                      <TableCell className="max-w-[220px] truncate text-slate-700">
-                        {d.clientNom}
-                      </TableCell>
-                      <TableCell className="tabular-nums text-slate-700">
-                        {d.bl}
-                      </TableCell>
-                      <TableCell>
-                        <DossierStatutBadge statut={d.statut} />
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums font-medium text-slate-900">
-                        {formatFCFA(d.montantInvesti)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          {/* Colonnes fantômes */}
+          <div className="grid grid-cols-[1fr_1.4fr_auto_auto] border-b border-border/40 bg-slate-50/40 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            <span>Référence</span>
+            <span>Client</span>
+            <span>Statut</span>
+            <span className="text-right">Montant</span>
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-border/40">
+            {derniersDossiers.length === 0 ? (
+              <div className="py-10 text-center text-sm text-slate-400">Aucun dossier enregistré.</div>
+            ) : (
+              derniersDossiers.map((d) => {
+                const dotColor =
+                  d.statut === "En cours"  ? "bg-blue-500"    :
+                  d.statut === "Dédouané"  ? "bg-violet-500"  :
+                  d.statut === "Livré"     ? "bg-emerald-500" :
+                  "bg-slate-300";
+                return (
+                  <div
+                    key={d.id}
+                    className="grid cursor-pointer grid-cols-[1fr_1.4fr_auto_auto] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-blue-50/40"
+                    onClick={() => go("dossier-detail", { id: d.id })}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && go("dossier-detail", { id: d.id })}
+                  >
+                    {/* Référence + BL */}
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span className={`size-1.5 shrink-0 rounded-full ${dotColor}`} />
+                      <div className="min-w-0">
+                        <p className="truncate font-mono text-[11px] font-semibold text-slate-800 leading-tight">
+                          {d.reference.replace("SLTT-TR-", "")}
+                        </p>
+                        <p className="text-[10px] text-slate-400 leading-tight">{d.bl}</p>
+                      </div>
+                    </div>
+                    {/* Client */}
+                    <p className="truncate text-[12px] text-slate-600">{d.clientNom}</p>
+                    {/* Statut */}
+                    <DossierStatutBadge statut={d.statut} />
+                    {/* Montant */}
+                    <p className="text-right font-mono text-[12px] font-semibold tabular-nums text-slate-900">
+                      {formatFCFACompact(d.montantInvesti)}
+                    </p>
+                  </div>
+                );
+              })
+            )}
           </div>
         </Card>
 
-        {/* Right column: Donut statut + Alertes */}
-        <div className="flex flex-col gap-6 lg:col-span-1">
+        {/* ── Colonne droite ── */}
+        <div className="flex flex-col gap-4 lg:col-span-1">
 
-          {/* Donut — Répartition par statut */}
-          <Card className="shadow-sm border-border/80 rounded-xl p-5">
-            <div className="mb-3">
-              <h2 className="text-base font-semibold text-slate-900">Répartition par statut</h2>
-              <p className="text-xs text-slate-500">{totalDossiers} dossier{totalDossiers !== 1 ? "s" : ""} au total</p>
+          {/* Répartition par statut — compact */}
+          <Card className="rounded-xl border-border/80 p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-slate-800">Par statut</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-500">
+                {totalDossiers} dossiers
+              </span>
             </div>
 
             {totalDossiers === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <FolderKanban className="size-8 text-slate-300" />
-                <p className="mt-2 text-sm text-slate-400">Aucun dossier</p>
+              <div className="flex flex-col items-center justify-center py-6">
+                <FolderKanban className="size-7 text-slate-200" />
+                <p className="mt-2 text-[11px] text-slate-400">Aucun dossier</p>
               </div>
             ) : (
-              <>
-                <div className="relative h-44">
+              <div className="flex items-center gap-3">
+                {/* Donut compact */}
+                <div className="relative h-[88px] w-[88px] shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={statutDonutData}
                         dataKey="value"
                         nameKey="name"
-                        innerRadius={50}
-                        outerRadius={76}
+                        innerRadius={28}
+                        outerRadius={42}
                         paddingAngle={2}
                         stroke="none"
                       >
@@ -805,93 +788,78 @@ export function DashboardScreen() {
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const p = payload[0] as { name: string; value: number; payload: { color: string } };
-                          return (
-                            <div className="rounded-lg border border-border bg-white p-2.5 text-xs shadow-md">
-                              <div className="flex items-center gap-2">
-                                <span className="size-2 rounded-full" style={{ background: p.payload.color }} />
-                                <span className="text-slate-700">{p.name}</span>
-                                <span className="ml-2 font-semibold tabular-nums text-slate-900">{p.value}</span>
-                              </div>
-                            </div>
-                          );
-                        }}
-                      />
                     </PieChart>
                   </ResponsiveContainer>
-                  {/* Centre label */}
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold tabular-nums text-slate-900">{totalDossiers}</span>
-                    <span className="text-xs text-slate-400">dossiers</span>
+                    <span className="text-lg font-bold tabular-nums leading-none text-slate-900">{totalDossiers}</span>
+                    <span className="text-[9px] text-slate-400">total</span>
                   </div>
                 </div>
 
-                {/* Légende */}
-                <div className="mt-3 space-y-1.5">
-                  {statutDonutData.map((entry) => (
-                    <div key={entry.name} className="flex items-center gap-2 text-xs">
-                      <span className="size-2.5 shrink-0 rounded-full" style={{ background: entry.color }} />
-                      <span className="text-slate-600">{entry.name}</span>
-                      <span className="ml-auto font-semibold tabular-nums text-slate-900">{entry.value}</span>
-                      <span className="w-8 text-right tabular-nums text-slate-400">
-                        {Math.round((entry.value / totalDossiers) * 100)}%
-                      </span>
-                    </div>
-                  ))}
+                {/* Légende avec barres */}
+                <div className="flex-1 space-y-1.5">
+                  {statutDonutData.map((entry) => {
+                    const pct = Math.round((entry.value / totalDossiers) * 100);
+                    return (
+                      <div key={entry.name}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="size-1.5 shrink-0 rounded-full" style={{ background: entry.color }} />
+                          <span className="flex-1 truncate text-[11px] text-slate-600">{entry.name}</span>
+                          <span className="text-[11px] font-bold tabular-nums text-slate-800">{entry.value}</span>
+                          <span className="w-6 text-right text-[10px] tabular-nums text-slate-400">{pct}%</span>
+                        </div>
+                        <div className="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${pct}%`, background: entry.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </>
+              </div>
             )}
           </Card>
 
-          {/* Alertes */}
-          <Card className="shadow-sm border-border/80 rounded-xl">
-            <div className="flex items-center justify-between gap-3 border-b border-border/80 p-5 pb-4">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">Alertes</h2>
-                <p className="text-xs text-slate-500">
-                  {alertes.length} alerte{alertes.length > 1 ? "s" : ""} active{alertes.length > 1 ? "s" : ""}
-                </p>
-              </div>
-              <span className="inline-flex size-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                <AlertTriangle className="size-4" />
-              </span>
+          {/* Alertes — compact */}
+          <Card className="flex flex-col overflow-hidden rounded-xl border-border/80 shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border/60 bg-slate-50/70 px-4 py-2.5">
+              <AlertTriangle className="size-3.5 text-amber-500" />
+              <span className="text-[13px] font-semibold text-slate-800">Alertes</span>
+              {alertes.length > 0 && (
+                <span className="ml-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                  {alertes.length}
+                </span>
+              )}
             </div>
 
-            <div className="max-h-[280px] overflow-y-auto sltt-scroll divide-y divide-border">
+            <div className="max-h-[220px] overflow-y-auto divide-y divide-border/40">
               {alertes.length === 0 ? (
-                <div className="p-6 text-center text-sm text-slate-500">
-                  Aucune alerte active.
+                <div className="flex flex-col items-center justify-center py-8">
+                  <CheckCircle2 className="size-7 text-emerald-300" />
+                  <p className="mt-2 text-[11px] text-slate-400">Aucune alerte</p>
                 </div>
               ) : (
                 alertes.map((alert) => {
                   const isDanger = alert.niveau === "danger";
-                  const Icon = isDanger ? AlertTriangle : AlertCircle;
-                  const iconWrapClass = isDanger
-                    ? "bg-red-50 text-red-600"
-                    : "bg-amber-50 text-amber-600";
                   return (
                     <div
                       key={alert.id}
-                      className="flex cursor-pointer items-start gap-3 p-4 transition-colors hover:bg-slate-50/80"
-                      onClick={() => go(alert.niveau === "danger" ? "entreposage" : "comptabilite")}
+                      className="flex cursor-pointer items-start gap-2.5 py-2.5 pr-3 pl-0 transition-colors hover:bg-slate-50/80"
+                      style={{ borderLeft: `3px solid ${isDanger ? "#EF4444" : "#F59E0B"}` }}
+                      onClick={() => go(isDanger ? "entreposage" : "comptabilite")}
                       role="button"
                       tabIndex={0}
-                      onKeyDown={(e) => e.key === "Enter" && go(alert.niveau === "danger" ? "entreposage" : "comptabilite")}
+                      onKeyDown={(e) => e.key === "Enter" && go(isDanger ? "entreposage" : "comptabilite")}
                     >
-                      <span
-                        className={
-                          "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg " +
-                          iconWrapClass
-                        }
-                      >
-                        <Icon className="size-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900">{alert.message}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{alert.detail}</p>
+                      <div className="min-w-0 pl-3">
+                        <p className="truncate text-[11px] font-semibold leading-snug text-slate-800">
+                          {alert.message}
+                        </p>
+                        <p className="mt-0.5 truncate text-[10px] leading-snug text-slate-400">
+                          {alert.detail}
+                        </p>
                       </div>
                     </div>
                   );
