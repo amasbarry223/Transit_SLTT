@@ -14,10 +14,19 @@ export function usePermission(perm: string): boolean {
   return user.permissions.includes(perm);
 }
 
-/** Retourne true si le rôle courant correspond à l'un des rôles fournis. */
+/**
+ * Retourne true si l'utilisateur connecté (vérifié dans store.users) possède l'un des rôles fournis.
+ * On re-dérive le rôle depuis store.users pour ne pas faire confiance uniquement au currentRole
+ * de nav-store (qui est stocké dans localStorage et potentiellement manipulable).
+ * Si currentUserId est null ou si l'utilisateur est introuvable/inactif, retourne false.
+ */
 export function useHasRole(...roles: UserRole[]): boolean {
-  const currentRole = useNav((s) => s.currentRole);
-  return (roles as string[]).includes(currentRole);
+  const currentUserId = useNav((s) => s.currentUserId);
+  const users = useStore((s) => s.users);
+  if (!currentUserId) return false;
+  const user = users.find((u) => u.id === currentUserId);
+  if (!user || !user.actif) return false;
+  return (roles as string[]).includes(user.role);
 }
 
 /** Retourne l'objet User de l'utilisateur connecté, ou null. */

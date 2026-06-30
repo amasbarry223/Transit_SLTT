@@ -24,9 +24,11 @@ export function formatFCFACompact(amount: number): string {
   return new Intl.NumberFormat("fr-FR").format(amount);
 }
 
-/** Format a date as "12/01/2026" */
+/** Format a date as "12/01/2026"
+ * DX-03: For string dates, parse as noon UTC to avoid timezone off-by-one.
+ */
 export function formatDateShort(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? new Date(date + "T12:00:00") : date;
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
     month: "2-digit",
@@ -34,8 +36,11 @@ export function formatDateShort(date: Date | string): string {
   }).format(d);
 }
 
-/** Parse a user-typed number string (allow spaces) into a number */
+/** Parse a user-typed number string (allow spaces) into a number.
+ * DX-04: Returns 0 for negative values to reject invalid input.
+ */
 export function parseAmount(value: string): number {
   const cleaned = value.replace(/[^\d.,-]/g, "").replace(/\s/g, "");
-  return Number.parseFloat(cleaned.replace(",", ".")) || 0;
+  const result = Number.parseFloat(cleaned.replace(",", ".")) || 0;
+  return Math.max(0, result);
 }

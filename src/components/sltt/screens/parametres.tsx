@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
+import { useCurrentUser } from "@/hooks/use-permission";
+import { hashPassword } from "@/lib/crypto";
 import type { UserInput, UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
@@ -127,9 +129,11 @@ const modulesList = [
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const randomBytes = new Uint8Array(6);
+  crypto.getRandomValues(randomBytes);
   let code = "";
   for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[randomBytes[i] % chars.length];
   }
   return code;
 }
@@ -662,11 +666,47 @@ function ProfileTab() {
 
 function SecurityTab() {
   const { toast } = useToast();
+  const currentUser = useCurrentUser();
+  const updateUser = useStore((s) => s.updateUser);
   const [autoLogout, setAutoLogout] = useState(true);
   const [twoFA, setTwoFA] = useState(false);
   const [curPwd, setCurPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confPwd, setConfPwd] = useState("");
+  const [savingPwd, setSavingPwd] = useState(false);
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newPwd) {
+      toast({ title: "Veuillez saisir un nouveau mot de passe", variant: "destructive" });
+      return;
+    }
+    if (newPwd !== confPwd) {
+      toast({ title: "Les mots de passe ne correspondent pas", variant: "destructive" });
+      return;
+    }
+    if (!currentUser) {
+      toast({ title: "Utilisateur introuvable", variant: "destructive" });
+      return;
+    }
+    setSavingPwd(true);
+    try {
+      const hashed = await hashPassword(newPwd);
+      updateUser(currentUser.id, {
+        nom: currentUser.nom,
+        email: currentUser.email,
+        role: currentUser.role,
+        permissions: currentUser.permissions,
+        motDePasse: hashed,
+      });
+      toast({ title: "Mot de passe mis à jour" });
+      setCurPwd("");
+      setNewPwd("");
+      setConfPwd("");
+    } finally {
+      setSavingPwd(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -681,27 +721,7 @@ function SecurityTab() {
           <h3 className="text-sm font-semibold text-slate-900">Mot de passe</h3>
         </div>
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!newPwd) {
-              toast({
-                title: "Veuillez saisir un nouveau mot de passe",
-                variant: "destructive",
-              });
-              return;
-            }
-            if (newPwd !== confPwd) {
-              toast({
-                title: "Les mots de passe ne correspondent pas",
-                variant: "destructive",
-              });
-              return;
-            }
-            toast({ title: "Mot de passe mis à jour" });
-            setCurPwd("");
-            setNewPwd("");
-            setConfPwd("");
-          }}
+          onSubmit={handlePasswordSubmit}
           className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
         >
           <div className="space-y-2">
@@ -741,7 +761,9 @@ function SecurityTab() {
             />
           </div>
           <div className="sm:col-span-3 flex justify-end">
-            <Button type="submit">Mettre à jour</Button>
+            <Button type="submit" disabled={savingPwd}>
+              {savingPwd ? "Enregistrement…" : "Mettre à jour"}
+            </Button>
           </div>
         </form>
       </Card>

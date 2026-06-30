@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { useNav } from "@/lib/nav-store";
 import {
   clients as seedClients,
@@ -79,6 +79,7 @@ export type AuditModule =
   | "Stock"
   | "Bons"
   | "Clients"
+  | "Transporteurs"
   | "Utilisateurs";
 
 export type AuditEntry = {
@@ -273,6 +274,8 @@ interface SLTTState {
   addDevis: (input: DevisInput) => Devis;
   updateDevis: (id: string, input: DevisInput) => void;
   updateDevisStatut: (id: string, statut: DevisStatut) => void;
+  /** LM-06: Met à jour en store les devis dont la date de validité est dépassée et le statut non terminal. */
+  expireDevisObsoletes: () => void;
   convertDevisToDossier: (id: string) => Dossier | null;
   removeDevis: (id: string) => void;
 
@@ -291,6 +294,23 @@ interface SLTTState {
 function pad(n: number, len: number): string {
   return String(n).padStart(len, "0");
 }
+
+/** Séquences initiales partagées entre l'initialisation et resetAll (ARCH-04). */
+const INITIAL_SEQUENCES = {
+  dossierSeq: 43,
+  bonSeq: 52,
+  auditSeq: 7,
+  ecritureSeq: 1010,
+  clientSeq: 8,
+  stockSeq: 8,
+  userSeq: 6,
+  mouvementSeq: 22,
+  subDossierSeq: 1,
+  fichierSeq: 1,
+  devisSeq: 4,
+  transporteurSeq: 6,
+  commentSeq: 1,
+} as const;
 
 const initialAuditLogs: AuditEntry[] = [
   { id: "A-001", date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", module: "Dossiers", action: "Création", detail: "Dossier DOS-2026-0142 créé — Client SEDIM SA", ip: "154.66.12.7" },
@@ -314,22 +334,10 @@ export const useStore = create<SLTTState>()(
       subDossiers: seedSubDossiers,
       fichiers: seedFichiers,
       devis: seedDevis,
-      devisSeq: 4,
       comments: seedComments,
-      commentSeq: 1,
       transporteurs: seedTransporteurs,
-      transporteurSeq: 6,
-      mouvementSeq: 22,
-      subDossierSeq: 1,
-      fichierSeq: 1,
       auditLogs: initialAuditLogs,
-      dossierSeq: 43,
-      bonSeq: 52,
-      auditSeq: 7,
-      ecritureSeq: 1010,
-      clientSeq: 8,
-      stockSeq: 8,
-      userSeq: 6,
+      ...INITIAL_SEQUENCES,
 
       // ---- Audit ----
       addAuditLog: (module, action, detail) => {
@@ -401,7 +409,11 @@ export const useStore = create<SLTTState>()(
           };
         });
         if (dossier) {
-          get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé — Client ${dossier.clientNom}`);
+          // LM-04 Option B: BonSortie n'a pas de champ dossierId — pas de nettoyage possible.
+          // On logue les bons orphelins potentiels pour traçabilité.
+          const orphanBons = get().bons.filter((b) => b.reference.includes(dossier.reference));
+          const orphanNote = orphanBons.length > 0 ? ` — ${orphanBons.length} bon(s) potentiellement orphelin(s) à vérifier` : "";
+          get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé — Client ${dossier.clientNom}${orphanNote}`);
         }
       },
       getDossier: (id) => get().dossiers.find((d) => d.id === id),
@@ -625,7 +637,8 @@ export const useStore = create<SLTTState>()(
         const id = `B-${pad(seq, 4)}`;
         const year = new Date().getFullYear();
         const reference = `BS-${year}-${pad(seq, 4)}`;
-        const isBrouillon = input.statut === "Brouillon";
+        // LM-07: si statut est undefined, traiter comme brouillon (sécurité)
+        const isBrouillon = input.statut !== "Validé";
         const newBon: BonSortie = {
           id,
           reference,
@@ -834,6 +847,22 @@ export const useStore = create<SLTTState>()(
           devis: s.devis.map((d) => d.id === id ? { ...d, statut } : d),
         }));
       },
+      expireDevisObsoletes: () => {
+        const today = new Date().toISOString().slice(0, 10);
+        set((s) => ({
+          devis: s.devis.map((d) => {
+            if (
+              d.dateValidite < today &&
+              d.statut !== "Accepté" &&
+              d.statut !== "Refusé" &&
+              d.statut !== "Expiré"
+            ) {
+              return { ...d, statut: "Expiré" as DevisStatut };
+            }
+            return d;
+          }),
+        }));
+      },
       convertDevisToDossier: (id) => {
         const dv = get().devis.find((d) => d.id === id);
         if (!dv) return null;
@@ -873,14 +902,14 @@ export const useStore = create<SLTTState>()(
           dateCreation: new Date().toISOString().slice(0, 10),
         };
         set((s) => ({ transporteurs: [t, ...s.transporteurs], transporteurSeq: seq + 1 }));
-        get().addAuditLog("Clients", "Création", `Transporteur ${t.nom} ajouté`);
+        get().addAuditLog("Transporteurs", "Création", `Transporteur ${t.nom} ajouté`);
         return t;
       },
       updateTransporteur: (id, input) => {
         set((s) => ({
           transporteurs: s.transporteurs.map((t) => t.id === id ? { ...t, ...input } : t),
         }));
-        get().addAuditLog("Clients", "Modification", `Transporteur ${id} mis à jour`);
+        get().addAuditLog("Transporteurs", "Modification", `Transporteur ${id} mis à jour`);
       },
       updateTransporteurStatut: (id, statut) => {
         set((s) => ({
@@ -890,7 +919,7 @@ export const useStore = create<SLTTState>()(
       removeTransporteur: (id) => {
         const t = get().transporteurs.find((x) => x.id === id);
         set((s) => ({ transporteurs: s.transporteurs.filter((x) => x.id !== id) }));
-        if (t) get().addAuditLog("Clients", "Suppression", `Transporteur ${t.nom} supprimé`);
+        if (t) get().addAuditLog("Transporteurs", "Suppression", `Transporteur ${t.nom} supprimé`);
       },
 
       // ---- Reset ----
@@ -907,26 +936,36 @@ export const useStore = create<SLTTState>()(
           fichiers: seedFichiers,
           devis: seedDevis,
           comments: seedComments,
-          commentSeq: 1,
           auditLogs: initialAuditLogs,
-          auditSeq: 7,
-          dossierSeq: 43,
-          bonSeq: 52,
-          ecritureSeq: 1010,
-          clientSeq: 8,
-          stockSeq: 8,
-          userSeq: 6,
-          mouvementSeq: 22,
-          subDossierSeq: 1,
-          fichierSeq: 1,
-          devisSeq: 4,
           transporteurs: seedTransporteurs,
-          transporteurSeq: 6,
+          ...INITIAL_SEQUENCES,
         });
       },
     }),
     {
       name: "sltt-data-v4",
+      // SEC-05: custom storage wrapper to catch QuotaExceededError
+      storage: createJSONStorage(() => ({
+        getItem: (name) => {
+          try { return localStorage.getItem(name); } catch { return null; }
+        },
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, value);
+          } catch (e) {
+            if (e instanceof DOMException && e.name === "QuotaExceededError") {
+              console.warn("[SLTT] localStorage quota dépassé — certaines données ne seront pas persistées.");
+            }
+          }
+        },
+        removeItem: (name) => {
+          try { localStorage.removeItem(name); } catch {}
+        },
+      })),
+      // DX-01: log rehydration errors
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) console.error("[SLTT] Erreur réhydratation store:", error);
+      },
       // Only persist data, not the methods (methods are recreated by the store)
       partialize: (s) => ({
         clients: s.clients,

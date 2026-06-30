@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import { hashPassword } from "@/lib/crypto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -102,19 +103,18 @@ export function LoginScreen() {
   const lockoutRemainingSec = lockedUntil ? Math.max(0, Math.ceil((lockedUntil - now) / 1000)) : 0;
   const lockoutRemainingMin = Math.ceil(lockoutRemainingSec / 60);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isLocked || loading) return;
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-
+    try {
+      const hashedInput = await hashPassword(password);
       const user = users.find(
         (u) =>
           u.email.toLowerCase() === email.toLowerCase().trim() &&
-          u.motDePasse === password,
+          u.motDePasse === hashedInput,
       );
 
       if (!user) {
@@ -149,7 +149,9 @@ export function LoginScreen() {
       setLockedUntil(null);
       updateLastLogin(user.id);
       loginNav(user.role, user.nom, user.id, rememberMe);
-    }, 600);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
