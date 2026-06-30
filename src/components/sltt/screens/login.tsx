@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 
 const DEMO_ACCOUNTS = [
@@ -82,6 +83,7 @@ export function LoginScreen() {
   const updateLastLogin = useStore((s) => s.updateLastLogin);
 
   const [showPwd, setShowPwd] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -201,32 +203,39 @@ export function LoginScreen() {
               </p>
             </div>
 
-            {/* Connexion rapide démo */}
-            <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
-              <div className="mb-2 flex items-center gap-1.5">
-                <Zap className="size-3.5 text-blue-500" />
-                <span className="text-xs font-semibold text-blue-700">Connexion rapide · Démo</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => handleDemoLogin(acc)}
-                    disabled={loading || isLocked}
-                    className="flex flex-col items-start rounded-lg border border-blue-100 bg-white px-3 py-2 text-left transition hover:border-blue-300 hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    <span className="text-xs font-medium text-slate-800 leading-tight">{acc.nom}</span>
-                    <span className="text-[11px] text-blue-500 mt-0.5">{acc.role}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Connexion rapide démo — masquée par défaut */}
+            <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/60">
+              <button
+                type="button"
+                onClick={() => setShowDemo((v) => !v)}
+                className="flex w-full items-center justify-between px-3 py-2.5 text-left"
+                aria-expanded={showDemo}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Zap className="size-3.5 text-blue-500" />
+                  <span className="text-xs font-semibold text-blue-700">Connexion rapide · Démo</span>
+                </div>
+                <ChevronDown
+                  className={`size-3.5 text-blue-400 transition-transform duration-200 ${showDemo ? "rotate-180" : ""}`}
+                />
+              </button>
 
-            <div className="mb-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs text-slate-400">ou saisir manuellement</span>
-              <div className="h-px flex-1 bg-slate-200" />
+              {showDemo && (
+                <div className="grid grid-cols-2 gap-1.5 px-3 pb-3">
+                  {DEMO_ACCOUNTS.map((acc) => (
+                    <button
+                      key={acc.email}
+                      type="button"
+                      onClick={() => handleDemoLogin(acc)}
+                      disabled={loading || isLocked}
+                      className="flex flex-col items-start rounded-lg border border-blue-100 bg-white px-3 py-2 text-left transition hover:border-blue-300 hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <span className="text-xs font-medium text-slate-800 leading-tight">{acc.nom}</span>
+                      <span className="text-[11px] text-blue-500 mt-0.5">{acc.role}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
