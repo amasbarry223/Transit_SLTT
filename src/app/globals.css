@@ -136,3 +136,9 @@
   background-color: #94a3b8;
   background-clip: content-box;
 }
+
+/* ---- Impression factures ---- */
+@media print {
+  body > * { display: none !important; }
+  #sltt-print-zone { display: block !important; }
+}

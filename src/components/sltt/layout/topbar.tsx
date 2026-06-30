@@ -50,8 +50,10 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   devis: { title: "Devis", sub: "Estimations avant ouverture de dossier" },
   "devis-detail": { title: "Fiche devis", sub: "Détail et modification du devis" },
   calendrier: { title: "Calendrier", sub: "Vue mensuelle des activités" },
-  transporteurs: { title: "Transporteurs", sub: "Annuaire des transporteurs et chauffeurs partenaires" },
-  parametres: { title: "Paramètres", sub: "Utilisateurs, rôles et sécurité" },
+  transporteurs:    { title: "Transporteurs",   sub: "Annuaire des transporteurs et chauffeurs partenaires" },
+  factures:         { title: "Factures",         sub: "Gestion et suivi de la facturation client" },
+  "facture-detail": { title: "Détail facture",   sub: "Visualiser, modifier et imprimer la facture" },
+  parametres:       { title: "Paramètres",       sub: "Utilisateurs, rôles et sécurité" },
 };
 
 
