@@ -1,11 +1,30 @@
 "use client";
 
+/** SEC-06: Escape HTML special characters to prevent injection in generated documents. */
+function htmlEscape(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function csvEscape(value: unknown): string {
   const s = value == null ? "" : String(value);
   if (/[",\n;]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
+}
+
+/** BUG-03: fmtFCFA and fmtDate declared before first use (printDevis) */
+function fmtFCFA(n: number): string {
+  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(n)) + " FCFA";
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 interface Column<T> {
@@ -212,9 +231,9 @@ table { width: 100%; border-collapse: collapse; }
     </div>
     <div class="doc-meta">
       <div class="doc-type">Devis / Estimation</div>
-      <div class="doc-ref">${data.reference}</div>
+      <div class="doc-ref">${htmlEscape(data.reference)}</div>
       <div class="doc-date">Émis le ${fmtD(data.dateCreation)}</div>
-      <div><span class="statut-badge">${data.statut ?? "Devis"}</span></div>
+      <div><span class="statut-badge">${htmlEscape(data.statut ?? "Devis")}</span></div>
     </div>
   </div>
 
@@ -229,8 +248,8 @@ table { width: 100%; border-collapse: collapse; }
       </div>
       <div class="party">
         <div class="party-lbl">Client</div>
-        <div class="party-name">${data.clientNom}</div>
-        <div class="party-detail">${[data.clientAdresse, data.clientTelephone, data.clientEmail].filter(Boolean).join("<br>") || "—"}</div>
+        <div class="party-name">${htmlEscape(data.clientNom)}</div>
+        <div class="party-detail">${[data.clientAdresse, data.clientTelephone, data.clientEmail].filter(Boolean).map(htmlEscape).join("<br>") || "—"}</div>
       </div>
     </div>
 
@@ -239,7 +258,7 @@ table { width: 100%; border-collapse: collapse; }
       <div class="nature-icon">📦</div>
       <div>
         <div class="nature-lbl">Nature de la marchandise</div>
-        <div class="nature-val">${data.nature}</div>
+        <div class="nature-val">${htmlEscape(data.nature)}</div>
       </div>
       <div style="margin-left:auto;text-align:right">
         <div class="nature-lbl">Validité</div>
@@ -278,7 +297,7 @@ table { width: 100%; border-collapse: collapse; }
     ${data.notes ? `
     <div class="notes-block">
       <div class="notes-lbl">Notes &amp; conditions</div>
-      <div class="notes-text">${data.notes}</div>
+      <div class="notes-text">${htmlEscape(data.notes)}</div>
     </div>` : ""}
 
     <!-- Signatures -->
@@ -328,14 +347,6 @@ export interface InvoiceData {
   montantInvesti: number;
   montantPaye: number;
   modePaiement?: string;
-}
-
-function fmtFCFA(n: number): string {
-  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(n)) + " FCFA";
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 export function printInvoice(data: InvoiceData, invoiceNum: string): void {
@@ -472,7 +483,7 @@ table { width: 100%; border-collapse: collapse; }
     <div class="doc-meta">
       <div class="doc-type">Facture de transit</div>
       <div class="doc-ref">FACTURE</div>
-      <div class="doc-dossier">${invoiceNum}</div>
+      <div class="doc-dossier">${htmlEscape(invoiceNum)}</div>
       <div class="doc-date">Émise le ${today}</div>
       <div><span class="statut-badge ${soldé ? "statut-solde" : "statut-partiel"}">${soldé ? "✓ SOLDÉ" : "PAIEMENT PARTIEL"}</span></div>
     </div>
@@ -489,8 +500,8 @@ table { width: 100%; border-collapse: collapse; }
       </div>
       <div class="party">
         <div class="party-lbl">Client</div>
-        <div class="party-name">${data.clientNom}</div>
-        <div class="party-detail">${[data.clientAdresse, data.clientTelephone, data.clientEmail].filter(Boolean).join("<br>") || "—"}</div>
+        <div class="party-name">${htmlEscape(data.clientNom)}</div>
+        <div class="party-detail">${[data.clientAdresse, data.clientTelephone, data.clientEmail].filter(Boolean).map(htmlEscape).join("<br>") || "—"}</div>
       </div>
     </div>
 
@@ -498,13 +509,13 @@ table { width: 100%; border-collapse: collapse; }
     <div class="ref-block">
       <div class="ref-item">
         <div class="ref-lbl">Dossier de transit</div>
-        <div class="ref-val">${data.reference}</div>
+        <div class="ref-val">${htmlEscape(data.reference)}</div>
       </div>
       <div class="ref-item">
         <div class="ref-lbl">Nature de la marchandise</div>
-        <div class="ref-val">${data.nature}</div>
+        <div class="ref-val">${htmlEscape(data.nature)}</div>
       </div>
-      ${data.bl ? `<div class="ref-item"><div class="ref-lbl">Connaissement (BL)</div><div class="ref-val">${data.bl}</div></div>` : ""}
+      ${data.bl ? `<div class="ref-item"><div class="ref-lbl">Connaissement (BL)</div><div class="ref-val">${htmlEscape(data.bl)}</div></div>` : ""}
       ${data.date ? `<div class="ref-item"><div class="ref-lbl">Date du dossier</div><div class="ref-val">${fmtDate(data.date)}</div></div>` : ""}
     </div>
 
@@ -529,7 +540,7 @@ table { width: 100%; border-collapse: collapse; }
         <span class="amt">${fmtFCFA(data.montantInvesti)}</span>
       </div>
       <div class="total-line total-paye">
-        <span class="lbl">Montant reçu${data.modePaiement ? ` — ${data.modePaiement}` : ""}</span>
+        <span class="lbl">Montant reçu${data.modePaiement ? ` — ${htmlEscape(data.modePaiement)}` : ""}</span>
         <span class="amt">${fmtFCFA(data.montantPaye)}</span>
       </div>
       <div class="total-line total-reste">

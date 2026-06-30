@@ -225,6 +225,14 @@ export function ComptabiliteScreen() {
       });
       return;
     }
+    // UX-03: avertir si paye > investi (la valeur sera plafonnée)
+    if (paye > investi) {
+      toast({
+        title: "Montant payé plafonné",
+        description: `Le montant payé (${formatFCFA(paye)}) dépasse le montant investi (${formatFCFA(investi)}). Il a été ramené à ${formatFCFA(investi)}.`,
+        variant: "destructive",
+      });
+    }
     addEcriture({
       date: neDate,
       clientId: neClientId,

@@ -274,6 +274,7 @@ export function DevisDetailScreen() {
   const [isEditing,      setIsEditing]      = useState(devisEditMode);
   const [confirmDelete,  setConfirmDelete]  = useState(false);
   const [confirmConvert, setConfirmConvert] = useState(false);
+  const [isConverting,   setIsConverting]   = useState(false); // UX-05
 
   /* Edit form */
   const [fClientId,        setFClientId]        = useState("");
@@ -377,11 +378,14 @@ export function DevisDetailScreen() {
   };
 
   const handleConvert = () => {
-    if (!devis) return;
+    if (!devis || isConverting) return; // UX-05: guard against double-click
+    setIsConverting(true);
     const dossier = convertDevisToDossier(devis.id);
     if (dossier) {
       toast({ title: "Dossier créé", description: `${dossier.reference} ouvert depuis ${devis.reference}` });
       openDossierDetail(dossier.id);
+    } else {
+      setIsConverting(false);
     }
   };
 
@@ -712,8 +716,8 @@ export function DevisDetailScreen() {
                 Cette opération est irréversible.
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white gap-2" onClick={handleConvert}>
-                  <CheckCircle2 className="size-4" /> Confirmer la conversion
+                <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white gap-2" onClick={handleConvert} disabled={isConverting}>
+                  <CheckCircle2 className="size-4" /> {isConverting ? "Conversion…" : "Confirmer la conversion"}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setConfirmConvert(false)}>Annuler</Button>
               </div>

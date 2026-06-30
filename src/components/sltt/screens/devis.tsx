@@ -305,6 +305,7 @@ export function DevisScreen() {
   const addDevis = useStore((s) => s.addDevis);
   const updateDevis = useStore((s) => s.updateDevis);
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
+  const expireDevisObsoletes = useStore((s) => s.expireDevisObsoletes);
   const convertDevisToDossier = useStore((s) => s.convertDevisToDossier);
   const removeDevis = useStore((s) => s.removeDevis);
 
@@ -313,6 +314,11 @@ export function DevisScreen() {
     const t = setTimeout(() => setIsLoaded(true), 300);
     return () => clearTimeout(t);
   }, []);
+
+  // LM-06: expirer les devis obsolètes au montage du composant
+  useEffect(() => {
+    expireDevisObsoletes();
+  }, [expireDevisObsoletes]);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState("all");

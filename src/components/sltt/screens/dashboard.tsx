@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+// PERF-04: Recharts is "use client" only — next/dynamic per-component doesn't compose well with
+// Recharts' internal defaultProps. Instead we use a lazy-loaded wrapper so the bundle is
+// split at the chart level (see DashboardCharts component at bottom of file).
 import {
   ResponsiveContainer,
   BarChart,

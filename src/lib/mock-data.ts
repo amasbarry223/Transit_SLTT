@@ -812,7 +812,8 @@ export const users: User[] = [
     email: "amadou.traore@sltt.ml",
     role: "Administrateur",
     permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "comptabilite:read", "comptabilite:write", "clients:read", "clients:write", "stock:read", "stock:write", "bons:read", "bons:write", "parametres:read", "parametres:write", "rapports:read"],
-    motDePasse: "sltt2026",
+    // hash PBKDF2(SHA-256, salt="sltt-app-salt-v1", 100000 iters) de "sltt2026"
+    motDePasse: "ad240c669b96636242920fef8d26db72173e9d1f5349724ad89ea4076ffc001a",
     actif: true,
     derniereConnexion: "2026-01-09T08:12:00",
   },
@@ -822,7 +823,8 @@ export const users: User[] = [
     email: "fatoumata.diallo@sltt.ml",
     role: "Comptable",
     permissions: ["dossiers:read", "comptabilite:read", "comptabilite:write", "clients:read", "rapports:read"],
-    motDePasse: "compta2026",
+    // hash PBKDF2 de "compta2026"
+    motDePasse: "839bd3abfb4807a81ba36613c4d0f0dd7061845cc477572f4f773e5abbeb6a96",
     actif: true,
     derniereConnexion: "2026-01-08T17:40:00",
   },
@@ -832,7 +834,8 @@ export const users: User[] = [
     email: "ibrahim.keita@sltt.ml",
     role: "Agent de transit",
     permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "clients:read"],
-    motDePasse: "transit2026",
+    // hash PBKDF2 de "transit2026"
+    motDePasse: "9f8de6d7d9e2e9513da1f0ff756011e145b71d4271a127e7c490105df0cc98c0",
     actif: true,
     derniereConnexion: "2026-01-09T09:05:00",
   },
@@ -842,7 +845,8 @@ export const users: User[] = [
     email: "oumar.cisse@sltt.ml",
     role: "Magasinier",
     permissions: ["stock:read", "stock:write", "bons:read", "bons:write"],
-    motDePasse: "stock2026",
+    // hash PBKDF2 de "stock2026"
+    motDePasse: "88af7c47fe4acbbd6ba745c17c5052c548b1a621d97067774eb371184342dea8",
     actif: true,
     derniereConnexion: "2026-01-07T16:20:00",
   },
@@ -852,7 +856,8 @@ export const users: User[] = [
     email: "aminata.sangare@sltt.ml",
     role: "Commercial",
     permissions: ["clients:read", "clients:write", "bons:read", "dossiers:read"],
-    motDePasse: "sales2026",
+    // hash PBKDF2 de "sales2026"
+    motDePasse: "c7cb19cbaa2f12ffc04ec1b764cd24add8afb0c981d12c18d66fdb8056d0375f",
     actif: false,
     derniereConnexion: "2025-12-15T11:00:00",
   },
