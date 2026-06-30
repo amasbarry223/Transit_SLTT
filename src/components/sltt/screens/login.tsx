@@ -17,7 +17,15 @@ import {
   Mail,
   ShieldCheck,
   AlertTriangle,
+  Zap,
 } from "lucide-react";
+
+const DEMO_ACCOUNTS = [
+  { email: "amadou.traore@sltt.ml",    password: "sltt2026",    nom: "Amadou Traoré",    role: "Admin" },
+  { email: "fatoumata.diallo@sltt.ml", password: "compta2026",  nom: "Fatoumata Diallo", role: "Comptable" },
+  { email: "ibrahim.keita@sltt.ml",    password: "transit2026", nom: "Ibrahim Keïta",    role: "Agent" },
+  { email: "oumar.cisse@sltt.ml",      password: "stock2026",   nom: "Oumar Cissé",      role: "Magasinier" },
+] as const;
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -103,17 +111,16 @@ export function LoginScreen() {
   const lockoutRemainingSec = lockedUntil ? Math.max(0, Math.ceil((lockedUntil - now) / 1000)) : 0;
   const lockoutRemainingMin = Math.ceil(lockoutRemainingSec / 60);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function doLogin(userEmail: string, userPassword: string) {
     if (isLocked || loading) return;
     setError("");
     setLoading(true);
 
     try {
-      const hashedInput = await hashPassword(password);
+      const hashedInput = await hashPassword(userPassword);
       const user = users.find(
         (u) =>
-          u.email.toLowerCase() === email.toLowerCase().trim() &&
+          u.email.toLowerCase() === userEmail.toLowerCase().trim() &&
           u.motDePasse === hashedInput,
       );
 
@@ -154,6 +161,17 @@ export function LoginScreen() {
     }
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await doLogin(email, password);
+  }
+
+  async function handleDemoLogin(acc: typeof DEMO_ACCOUNTS[number]) {
+    setEmail(acc.email);
+    setPassword(acc.password);
+    await doLogin(acc.email, acc.password);
+  }
+
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4 sm:p-6">
       <LoginBackground />
@@ -181,6 +199,34 @@ export function LoginScreen() {
               <p className="mt-1 text-sm text-slate-500">
                 Saisissez vos identifiants pour accéder à la plateforme.
               </p>
+            </div>
+
+            {/* Connexion rapide démo */}
+            <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+              <div className="mb-2 flex items-center gap-1.5">
+                <Zap className="size-3.5 text-blue-500" />
+                <span className="text-xs font-semibold text-blue-700">Connexion rapide · Démo</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {DEMO_ACCOUNTS.map((acc) => (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => handleDemoLogin(acc)}
+                    disabled={loading || isLocked}
+                    className="flex flex-col items-start rounded-lg border border-blue-100 bg-white px-3 py-2 text-left transition hover:border-blue-300 hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    <span className="text-xs font-medium text-slate-800 leading-tight">{acc.nom}</span>
+                    <span className="text-[11px] text-blue-500 mt-0.5">{acc.role}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs text-slate-400">ou saisir manuellement</span>
+              <div className="h-px flex-1 bg-slate-200" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
