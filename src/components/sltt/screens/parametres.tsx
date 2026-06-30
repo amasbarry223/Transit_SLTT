@@ -127,6 +127,15 @@ const modulesList = [
   "Rapports",
 ];
 
+const PERM_KEY_MAP: Record<string, string> = {
+  "Dossiers": "dossiers",
+  "Comptabilité": "comptabilite",
+  "Stock": "stock",
+  "Bons de sortie": "bons",
+  "Clients": "clients",
+  "Rapports": "rapports",
+};
+
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const randomBytes = new Uint8Array(6);
@@ -144,6 +153,7 @@ function generateCode(): string {
 
 function UsersTab() {
   const { toast } = useToast();
+  const currentUser = useCurrentUser();
   const users = useStore((s) => s.users);
   const addUser = useStore((s) => s.addUser);
   const updateUser = useStore((s) => s.updateUser);
@@ -192,7 +202,12 @@ function UsersTab() {
     setEditEmail(u.email);
     setEditRole(u.role);
     setEditPerms(
-      Object.fromEntries(modulesList.map((m) => [m, u.permissions.includes(m)])) as Record<string, boolean>
+      Object.fromEntries(
+        modulesList.map((m) => [
+          m,
+          u.permissions.some((p) => p === m || p.startsWith(PERM_KEY_MAP[m])),
+        ])
+      ) as Record<string, boolean>
     );
     setEditOpen(true);
   }
@@ -230,21 +245,26 @@ function UsersTab() {
     setAccessCode(generateCode());
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!nom.trim() || !email.trim()) return;
+    if (users.some((u) => u.email.toLowerCase() === email.trim().toLowerCase())) {
+      toast({ title: "E-mail déjà utilisé", description: "Un compte avec cet e-mail existe déjà.", variant: "destructive" });
+      return;
+    }
     const permissions = Object.entries(perms)
       .filter(([, v]) => v)
       .map(([k]) => k);
+    const hashedCode = await hashPassword(accessCode);
     const input: UserInput = {
       nom: nom.trim(),
       email: email.trim(),
       role,
       permissions,
-      motDePasse: accessCode,
+      motDePasse: hashedCode,
     };
     addUser(input);
-    toast({ title: "Utilisateur créé avec succès" });
+    toast({ title: "Utilisateur créé avec succès", description: `Code d'accès : ${accessCode}` });
     setCreateOpen(false);
     resetForm();
   }
@@ -287,7 +307,13 @@ function UsersTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((u) => (
+            {users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-16 text-center text-sm text-slate-500">
+                  Aucun utilisateur — cliquez sur « Ajouter un utilisateur » pour commencer.
+                </TableCell>
+              </TableRow>
+            ) : users.map((u) => (
               <TableRow
                 key={u.id}
                 className="hover:bg-slate-50/60 border-b border-border"
@@ -317,7 +343,9 @@ function UsersTab() {
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={u.actif}
+                        disabled={u.id === currentUser?.id}
                         onCheckedChange={() => {
+                          if (u.id === currentUser?.id) return;
                           toggleUserActive(u.id);
                           toast({
                             title: "Statut mis à jour",
@@ -340,9 +368,10 @@ function UsersTab() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-slate-500 hover:text-destructive"
+                      className="size-8 text-slate-500 hover:text-destructive disabled:opacity-30"
                       aria-label={`Supprimer ${u.nom}`}
-                      title="Supprimer l'utilisateur"
+                      title={u.id === currentUser?.id ? "Impossible de supprimer votre propre compte" : "Supprimer l'utilisateur"}
+                      disabled={u.id === currentUser?.id}
                       onClick={() => setDeleteId(u.id)}
                     >
                       <Trash2 className="size-4" />

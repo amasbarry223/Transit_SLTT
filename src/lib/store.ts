@@ -728,18 +728,22 @@ export const useStore = create<SLTTState>()(
         return newUser;
       },
       toggleUserActive: (id) => {
+        const u = get().users.find((x) => x.id === id);
         set((s) => ({
-          users: s.users.map((u) =>
-            u.id === id ? { ...u, actif: !u.actif } : u,
+          users: s.users.map((x) =>
+            x.id === id ? { ...x, actif: !x.actif } : x,
           ),
         }));
+        if (u) get().addAuditLog("Utilisateurs", "Modification", `${u.nom} marqué ${u.actif ? "inactif" : "actif"}`);
       },
       updateUser: (id, input) => {
+        const existing = get().users.find((u) => u.id === id);
         set((s) => ({
           users: s.users.map((u) =>
             u.id === id ? { ...u, ...input } : u,
           ),
         }));
+        if (existing) get().addAuditLog("Utilisateurs", "Modification", `Utilisateur ${existing.nom} modifié — rôle : ${input.role}`);
       },
       removeUser: (id) => {
         const u = get().users.find((x) => x.id === id);
