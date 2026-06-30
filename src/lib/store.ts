@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useNav } from "@/lib/nav-store";
 import {
   clients as seedClients,
   dossiers as seedDossiers,
@@ -118,6 +119,7 @@ export interface BonInput {
   date: string;
   clientId: string;
   clientNom: string;
+  stockId?: string;
   marchandise: string;
   quantite: number;
   unite: string;
@@ -160,6 +162,12 @@ export interface UserInput {
   motDePasse?: string;
 }
 
+/** Retrouve l'article de stock lié à un bon : par id si disponible (fiable), sinon par nom (bons historiques). */
+function findStockForBon(stock: StockItem[], ref: { stockId?: string; marchandise: string }): StockItem | undefined {
+  if (ref.stockId) return stock.find((s) => s.id === ref.stockId);
+  return stock.find((s) => s.marchandise === ref.marchandise);
+}
+
 function syncClientStats(dossiers: Dossier[], clients: Client[]): Client[] {
   return clients.map((c) => {
     const cd = dossiers.filter((d) => d.clientId === c.id);
@@ -173,16 +181,7 @@ function syncClientStats(dossiers: Dossier[], clients: Client[]): Client[] {
 }
 
 function getConnectedUserName(): string {
-  try {
-    if (typeof window !== "undefined") {
-      const raw = localStorage.getItem("sltt-auth");
-      if (raw) {
-        const parsed = JSON.parse(raw) as { state?: { currentUserName?: string } };
-        return parsed?.state?.currentUserName ?? "Système";
-      }
-    }
-  } catch { /* ignore */ }
-  return "Système";
+  return useNav.getState().currentUserName || "Système";
 }
 
 interface SLTTState {
@@ -242,7 +241,8 @@ interface SLTTState {
 
   // ---- Bons de sortie ----
   addBon: (input: BonInput) => BonSortie;
-  validateBon: (id: string) => void;
+  /** Valide un bon brouillon et décrémente le stock. Retourne false si le stock disponible était insuffisant (quantité ramenée à 0). */
+  validateBon: (id: string) => boolean;
 
   // ---- Users ----
   addUser: (input: UserInput) => User;
@@ -292,6 +292,15 @@ function pad(n: number, len: number): string {
   return String(n).padStart(len, "0");
 }
 
+const initialAuditLogs: AuditEntry[] = [
+  { id: "A-001", date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", module: "Dossiers", action: "Création", detail: "Dossier DOS-2026-0142 créé — Client SEDIM SA", ip: "154.66.12.7" },
+  { id: "A-002", date: "2026-01-09T08:45:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Paiement", detail: "Paiement 850 000 FCFA — Écriture EC-2026-0089", ip: "41.202.18.50" },
+  { id: "A-003", date: "2026-01-09T08:12:00", user: "Amadou Traoré", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Chrome · Windows", ip: "41.202.18.45" },
+  { id: "A-004", date: "2026-01-08T17:40:00", user: "Fatoumata Diallo", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Firefox · macOS", ip: "41.202.18.50" },
+  { id: "A-005", date: "2026-01-08T16:22:00", user: "Oumar Cissé", module: "Stock", action: "Modification", detail: "Sortie 120 sacs — Riz parfumé (entrepôt A)", ip: "41.202.18.61" },
+  { id: "A-006", date: "2026-01-08T14:10:00", user: "Amadou Traoré", module: "Bons", action: "Validation", detail: "Bon BS-2026-0048 validé — Vente", ip: "41.202.18.45" },
+];
+
 export const useStore = create<SLTTState>()(
   persist(
     (set, get) => ({
@@ -313,14 +322,7 @@ export const useStore = create<SLTTState>()(
       mouvementSeq: 22,
       subDossierSeq: 1,
       fichierSeq: 1,
-      auditLogs: [
-        { id: "A-001", date: "2026-01-09T09:05:00", user: "Ibrahim Keïta", module: "Dossiers", action: "Création", detail: "Dossier DOS-2026-0142 créé — Client SEDIM SA", ip: "154.66.12.7" },
-        { id: "A-002", date: "2026-01-09T08:45:00", user: "Fatoumata Diallo", module: "Comptabilité", action: "Paiement", detail: "Paiement 850 000 FCFA — Écriture EC-2026-0089", ip: "41.202.18.50" },
-        { id: "A-003", date: "2026-01-09T08:12:00", user: "Amadou Traoré", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Chrome · Windows", ip: "41.202.18.45" },
-        { id: "A-004", date: "2026-01-08T17:40:00", user: "Fatoumata Diallo", module: "Authentification", action: "Connexion", detail: "Connexion réussie depuis Firefox · macOS", ip: "41.202.18.50" },
-        { id: "A-005", date: "2026-01-08T16:22:00", user: "Oumar Cissé", module: "Stock", action: "Modification", detail: "Sortie 120 sacs — Riz parfumé (entrepôt A)", ip: "41.202.18.61" },
-        { id: "A-006", date: "2026-01-08T14:10:00", user: "Amadou Traoré", module: "Bons", action: "Validation", detail: "Bon BS-2026-0048 validé — Vente", ip: "41.202.18.45" },
-      ],
+      auditLogs: initialAuditLogs,
       dossierSeq: 43,
       bonSeq: 52,
       auditSeq: 7,
@@ -395,6 +397,7 @@ export const useStore = create<SLTTState>()(
             ecritures: s.ecritures.filter((e) => e.dossierId !== id),
             fichiers: s.fichiers.filter((f) => f.dossierId !== id),
             subDossiers: s.subDossiers.filter((sd) => sd.dossierId !== id),
+            comments: s.comments.filter((c) => c.dossierId !== id),
           };
         });
         if (dossier) {
@@ -418,6 +421,7 @@ export const useStore = create<SLTTState>()(
           );
 
           let updatedEcritures = s.ecritures;
+          let nextEcritureSeq = s.ecritureSeq;
           if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
             const today = new Date().toISOString().slice(0, 10);
             const existingIdx = s.ecritures.findIndex((e) => e.dossierId === id);
@@ -435,7 +439,7 @@ export const useStore = create<SLTTState>()(
                   : e,
               );
             } else {
-              const seq = get().ecritureSeq;
+              const seq = s.ecritureSeq;
               const autoEcriture: Ecriture = {
                 id: `E-${seq}`,
                 date: today,
@@ -449,12 +453,14 @@ export const useStore = create<SLTTState>()(
                 note: transitionNote || `Solde dossier ${dossier.reference}`,
               };
               updatedEcritures = [autoEcriture, ...s.ecritures];
+              nextEcritureSeq = seq + 1;
             }
           }
 
           return {
             dossiers: updatedDossiers,
             ecritures: updatedEcritures,
+            ecritureSeq: nextEcritureSeq,
             clients: syncClientStats(updatedDossiers, s.clients),
           };
         });
@@ -626,9 +632,7 @@ export const useStore = create<SLTTState>()(
           ...input,
           statut: isBrouillon ? "Brouillon" : "Validé",
         };
-        const item = !isBrouillon
-          ? get().stock.find((s) => s.marchandise === input.marchandise)
-          : undefined;
+        const item = !isBrouillon ? findStockForBon(get().stock, input) : undefined;
         set((s) => ({
           bons: [newBon, ...s.bons],
           bonSeq: seq + 1,
@@ -660,8 +664,9 @@ export const useStore = create<SLTTState>()(
       },
       validateBon: (id) => {
         const bon = get().bons.find((b) => b.id === id);
-        if (!bon || bon.statut !== "Brouillon") return;
-        const item = get().stock.find((s) => s.marchandise === bon.marchandise);
+        if (!bon || bon.statut !== "Brouillon") return false;
+        const item = findStockForBon(get().stock, bon);
+        const stockSuffisant = item === undefined || item.quantite >= bon.quantite;
         set((s) => ({
           bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" } : b)),
           stock: item
@@ -688,6 +693,7 @@ export const useStore = create<SLTTState>()(
             : s.mouvements,
           mouvementSeq: item ? s.mouvementSeq + 1 : s.mouvementSeq,
         }));
+        return stockSuffisant;
       },
 
       // ---- Users ----
@@ -902,9 +908,10 @@ export const useStore = create<SLTTState>()(
           devis: seedDevis,
           comments: seedComments,
           commentSeq: 1,
+          auditLogs: initialAuditLogs,
+          auditSeq: 7,
           dossierSeq: 43,
           bonSeq: 52,
-          auditSeq: 7,
           ecritureSeq: 1010,
           clientSeq: 8,
           stockSeq: 8,

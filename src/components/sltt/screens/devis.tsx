@@ -8,8 +8,6 @@ import {
   FileSpreadsheet,
   Pencil,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   CheckCircle2,
   Clock,
   XCircle,
@@ -81,6 +79,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "@/components/sltt/table-pagination";
 
 /* ------------------------------------------------------------------ */
 /* Constants & types                                                   */
@@ -157,33 +156,6 @@ function DevisTableSkeleton() {
 /* Pagination                                                          */
 /* ------------------------------------------------------------------ */
 
-function TablePagination({
-  startIdx, endIdx, totalItems, itemLabel, page, totalPages, onPageChange,
-}: {
-  startIdx: number; endIdx: number; totalItems: number; itemLabel: string;
-  page: number; totalPages: number; onPageChange: (p: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs tabular-nums text-slate-500">
-        {startIdx}–{endIdx} sur {totalItems} {itemLabel}
-      </p>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="h-9" disabled={page <= 1}
-          onClick={() => onPageChange(Math.max(1, page - 1))}>
-          <ChevronLeft className="size-4" />
-        </Button>
-        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
-          {page} / {totalPages}
-        </span>
-        <Button variant="outline" size="sm" className="h-9" disabled={page >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}>
-          <ChevronRight className="size-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Form dialog                                                         */
@@ -208,8 +180,13 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
   const [notes, setNotes] = useState(devis?.notes ?? "");
   const isEdit = devis !== null;
 
-  useEffect(() => {
-    if (open) {
+  // Réinitialise le formulaire quand le dialog s'ouvre ou que le devis cible change.
+  // Pattern "adjust state during rendering" (pas d'effet) pour éviter un rendu en cascade.
+  const openKey = open ? (devis?.id ?? "new") : null;
+  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    if (openKey !== null) {
       setClientId(devis?.clientId ?? "");
       setClientNom(devis?.clientNom ?? "");
       setNature(devis?.nature ?? "");
@@ -219,7 +196,7 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
       setDateValidite(devis?.dateValidite ?? "");
       setNotes(devis?.notes ?? "");
     }
-  }, [open, devis]);
+  }
 
   const dd = parseAmount(droitDouane);
   const fc = parseAmount(fraisCircuit);

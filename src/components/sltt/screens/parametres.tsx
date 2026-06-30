@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import {
   UserPlus,
   Pencil,
@@ -68,7 +68,7 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/sltt/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 
 type ParamTab = "users" | "profile" | "security" | "audit" | "preferences";
 
@@ -124,17 +124,6 @@ const modulesList = [
   "Clients",
   "Rapports",
 ];
-
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
-  }
-  return "?";
-}
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1182,15 +1171,17 @@ export function ParametresScreen() {
   const isAdmin = currentRole === "Administrateur";
   const [active, setActive] = useState<ParamTab>("profile");
 
-  // Corrige le tab actif après hydratation Zustand (currentRole peut arriver après le premier render)
-  useEffect(() => {
+  // Corrige le tab actif lors du premier render post-hydratation (currentRole arrive en retard depuis Zustand).
+  // Pattern "adjust state during rendering" pour éviter un rendu en cascade lié à useEffect.
+  const [prevIsAdmin, setPrevIsAdmin] = useState(isAdmin);
+  if (isAdmin !== prevIsAdmin) {
+    setPrevIsAdmin(isAdmin);
     if (isAdmin) {
       setActive((prev) => (prev === "profile" ? "users" : prev));
     } else {
-      // Non-admin : s'assurer qu'on n'est jamais sur "users" ou "audit"
       setActive((prev) => (prev === "users" || prev === "audit" ? "profile" : prev));
     }
-  }, [isAdmin]);
+  }
 
   return (
     <div className="space-y-6">

@@ -10,8 +10,6 @@ import {
   Building2,
   User,
   Wallet,
-  ChevronLeft,
-  ChevronRight,
   Mail,
   Phone,
   FolderKanban,
@@ -55,23 +53,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
+import { TablePagination } from "@/components/sltt/table-pagination";
 
 const clientTypes: ClientType[] = ["Entreprise", "Particulier"];
 
 type TypeFilter = "all" | ClientType;
 type SortKey = "nom" | "totalDu" | "nbDossiers";
-
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
-  }
-  return "?";
-}
 
 function avatarGradient(type: ClientType): string {
   return type === "Entreprise"
@@ -529,38 +517,15 @@ export function ClientsScreen() {
               </Table>
             </div>
 
-            {/* Pagination */}
-            <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-500 tabular-nums">
-                {startIdx}–{endIdx} sur {filtered.length} client
-                {filtered.length !== 1 ? "s" : ""}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8"
-                  disabled={safePage <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  aria-label="Page précédente"
-                >
-                  <ChevronLeft className="size-4" />
-                </Button>
-                <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
-                  {safePage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8"
-                  disabled={safePage >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  aria-label="Page suivante"
-                >
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
-            </div>
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={filtered.length}
+              itemLabel="clients"
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
           </>
         )}
       </Card>

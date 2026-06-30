@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import {
   Plus,
   Search,
@@ -8,8 +8,6 @@ import {
   FileSpreadsheet,
   Eye,
   Pencil,
-  ChevronLeft,
-  ChevronRight,
   FolderKanban,
   Clock,
   CheckCircle2,
@@ -36,7 +34,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -54,6 +51,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type { Dossier } from "@/lib/mock-data";
+import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 8;
 
@@ -86,85 +84,13 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "ecart-desc", label: "Écart (décroissant)" },
 ];
 
-function TablePagination({
-  startIdx,
-  endIdx,
-  totalItems,
-  itemLabel,
-  page,
-  totalPages,
-  onPageChange,
-}: {
-  startIdx: number;
-  endIdx: number;
-  totalItems: number;
-  itemLabel: string;
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs tabular-nums text-slate-500">
-        {startIdx}–{endIdx} sur {totalItems} {itemLabel}
-      </p>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          disabled={page <= 1}
-          onClick={() => onPageChange(Math.max(1, page - 1))}
-          aria-label="Page précédente"
-        >
-          <ChevronLeft className="size-4" />
-        </Button>
-        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
-          {page} / {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-          aria-label="Page suivante"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
-function DossiersTableSkeleton() {
-  return (
-    <div className="divide-y divide-border">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3.5">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="hidden h-4 w-24 md:block" />
-          <Skeleton className="hidden h-4 w-20 lg:block" />
-          <Skeleton className="ml-auto h-5 w-16 rounded-full" />
-          <Skeleton className="h-7 w-16" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export function DossiersListScreen() {
   const { openDossier, openDossierDetail } = useNav();
   const { toast } = useToast();
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoaded(true), 300);
-    return () => clearTimeout(t);
-  }, []);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
@@ -518,25 +444,25 @@ export function DossiersListScreen() {
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="outline"
-              size="icon"
-              className="size-9 shrink-0"
+              size="sm"
+              className="h-10 shrink-0"
               onClick={handleExportPDF}
               disabled={filtered.length === 0}
-              aria-label="Exporter PDF"
-              title="Exporter PDF"
+              aria-label="Exporter en PDF"
             >
               <FileText className="size-4" />
+              <span className="hidden sm:inline">PDF</span>
             </Button>
             <Button
               variant="outline"
-              size="icon"
-              className="size-9 shrink-0"
+              size="sm"
+              className="h-10 shrink-0"
               onClick={handleExportExcel}
               disabled={filtered.length === 0}
-              aria-label="Exporter Excel"
-              title="Exporter Excel"
+              aria-label="Exporter en Excel"
             >
               <FileSpreadsheet className="size-4" />
+              <span className="hidden sm:inline">Excel</span>
             </Button>
           </div>
         </div>
@@ -554,9 +480,7 @@ export function DossiersListScreen() {
           </span>
         </div>
 
-        {!isLoaded ? (
-          <DossiersTableSkeleton />
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
             <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
               <FolderKanban className="size-7" />
@@ -591,13 +515,16 @@ export function DossiersListScreen() {
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
                       Client
                     </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      Date
+                    </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
                       N° BL
                     </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
                       Camion
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 xl:table-cell">
                       Nature
                     </TableHead>
                     <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
@@ -621,18 +548,23 @@ export function DossiersListScreen() {
                     return (
                       <TableRow
                         key={d.id}
+                        role="button"
+                        tabIndex={0}
                         className={cn(
-                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80",
+                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                           enCours && "bg-blue-50/30",
                         )}
                         onClick={() => openDossierDetail(d.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openDossierDetail(d.id);
+                          }
+                        }}
                       >
                         <TableCell className="px-4 py-3.5">
                           <p className="font-medium text-slate-900">
                             {d.reference}
-                          </p>
-                          <p className="mt-0.5 text-xs tabular-nums text-slate-500 sm:hidden">
-                            {formatDateShort(d.date)}
                           </p>
                         </TableCell>
                         <TableCell className="max-w-[180px] px-4 py-3.5">
@@ -640,13 +572,16 @@ export function DossiersListScreen() {
                             {d.clientNom}
                           </p>
                         </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 tabular-nums text-sm text-slate-600 sm:table-cell">
+                          {formatDateShort(d.date)}
+                        </TableCell>
                         <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 md:table-cell">
                           {d.bl}
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 lg:table-cell">
                           {d.camion}
                         </TableCell>
-                        <TableCell className="hidden max-w-[160px] px-4 py-3.5 sm:table-cell">
+                        <TableCell className="hidden max-w-[160px] px-4 py-3.5 xl:table-cell">
                           <span className="line-clamp-1 text-slate-600">
                             {d.nature}
                           </span>

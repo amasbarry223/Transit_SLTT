@@ -14,8 +14,6 @@ import {
   Truck,
   TrendingUp,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   Building2,
   User,
   BellRing,
@@ -70,7 +68,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
+import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 6;
 
@@ -86,17 +85,6 @@ const tabs: {
   { key: "paiements", label: "Paiements", shortLabel: "Paiements", icon: Wallet },
   { key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: Truck },
 ];
-
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
-  }
-  return "?";
-}
 
 function avatarGradient(type: Client["type"]): string {
   return type === "Entreprise"
@@ -118,55 +106,6 @@ function bonStatutTone(statut: "Validé" | "Brouillon"): "emerald" | "amber" {
   return statut === "Validé" ? "emerald" : "amber";
 }
 
-function TablePagination({
-  startIdx,
-  endIdx,
-  totalItems,
-  page,
-  totalPages,
-  onPageChange,
-}: {
-  startIdx: number;
-  endIdx: number;
-  totalItems: number;
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  if (totalItems === 0) return null;
-  return (
-    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs tabular-nums text-slate-500">
-        {startIdx}–{endIdx} sur {totalItems}
-      </p>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8"
-          disabled={page <= 1}
-          onClick={() => onPageChange(Math.max(1, page - 1))}
-          aria-label="Page précédente"
-        >
-          <ChevronLeft className="size-4" />
-        </Button>
-        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
-          {page} / {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-          aria-label="Page suivante"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 function EmptyState({
   label,

@@ -92,6 +92,8 @@ export interface BonSortie {
   date: string;
   clientId: string;
   clientNom: string;
+  /** Référence vers l'article de stock concerné, pour un décrément fiable (les bons plus anciens peuvent ne pas l'avoir). */
+  stockId?: string;
   marchandise: string;
   quantite: number;
   unite: string;

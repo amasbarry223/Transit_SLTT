@@ -1,69 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 import { useNav, type ViewKey } from "@/lib/nav-store";
-import type { UserRole } from "@/lib/mock-data";
-import {
-  LayoutDashboard,
-  FolderKanban,
-  Wallet,
-  Warehouse,
-  FileOutput,
-  Users,
-  BarChart3,
-  Settings,
-  ClipboardList,
-  CalendarDays,
-  Truck,
-} from "lucide-react";
-
-interface NavItem {
-  key: ViewKey;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles?: UserRole[];
-}
-
-const navItems: NavItem[] = [
-  { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { key: "dossiers", label: "Dossiers de transit", icon: FolderKanban, roles: ["Administrateur", "Agent de transit", "Comptable"] },
-  { key: "devis", label: "Devis", icon: ClipboardList, roles: ["Administrateur", "Agent de transit", "Commercial"] },
-  { key: "calendrier", label: "Calendrier", icon: CalendarDays },
-  { key: "comptabilite", label: "Comptabilité", icon: Wallet, roles: ["Administrateur", "Comptable"] },
-  { key: "entreposage", label: "Entreposage", icon: Warehouse, roles: ["Administrateur", "Magasinier"] },
-  { key: "bons", label: "Bons de sortie", icon: FileOutput, roles: ["Administrateur", "Magasinier", "Commercial"] },
-  { key: "clients", label: "Clients", icon: Users, roles: ["Administrateur", "Agent de transit", "Commercial"] },
-  { key: "transporteurs", label: "Transporteurs", icon: Truck, roles: ["Administrateur", "Agent de transit"] },
-  { key: "bilans", label: "Bilans & rapports", icon: BarChart3, roles: ["Administrateur", "Comptable"] },
-  { key: "parametres", label: "Paramètres", icon: Settings, roles: ["Administrateur"] },
-];
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+import { navItems } from "@/lib/nav-items";
+import { cn, getInitials, isNavActive } from "@/lib/utils";
 
 export function Sidebar() {
   const view = useNav((s) => s.view);
   const go = useNav((s) => s.go);
   const currentRole = useNav((s) => s.currentRole);
   const currentUserName = useNav((s) => s.currentUserName);
-
-  const isActive = (key: ViewKey) => {
-    if (
-      key === "dossiers" &&
-      (view === "dossier-form" || view === "dossier-detail")
-    ) {
-      return true;
-    }
-    if (key === "clients" && view === "client-fiche") return true;
-    return view === key;
-  };
+  const canSeeParametres = currentRole === "Administrateur";
 
   const visibleItems = navItems.filter(
     (item) => !item.roles || item.roles.includes(currentRole),
@@ -71,7 +18,7 @@ export function Sidebar() {
 
   return (
     <aside className="hidden lg:flex w-[250px] shrink-0 flex-col border-r border-border bg-sidebar h-screen sticky top-0">
-      {/* Logo — centré, h-16 aligné avec la Topbar */}
+      {/* Logo */}
       <div className="flex h-16 w-full border-b border-border">
         <Image
           src="/logo.png"
@@ -87,7 +34,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto sltt-scroll px-3 py-4">
         <ul className="space-y-1">
           {visibleItems.map((item) => {
-            const active = isActive(item.key);
+            const active = isNavActive(view, item.key);
             const Icon = item.icon;
             return (
               <li key={item.key}>
@@ -109,9 +56,6 @@ export function Sidebar() {
                     )}
                   />
                   <span className="truncate">{item.label}</span>
-                  {active && (
-                    <span className="ml-auto size-1.5 rounded-full bg-primary" />
-                  )}
                 </button>
               </li>
             );
@@ -121,38 +65,32 @@ export function Sidebar() {
 
       {/* User profile */}
       <div className="border-t border-border p-3">
-        <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-slate-50 transition-colors cursor-pointer">
-          <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-sm font-semibold shrink-0">
+        <button
+          className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onClick={() => canSeeParametres && go("parametres")}
+          title={canSeeParametres ? "Accéder aux paramètres" : undefined}
+          aria-label={`Connecté en tant que ${currentUserName} — ${currentRole}`}
+        >
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-sm font-semibold text-white">
             {getInitials(currentUserName)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-900 truncate">
+            <p className="truncate text-sm font-semibold text-slate-900">
               {currentUserName.split(" ").map((w, i) => i === 0 ? w : w[0] + ".").join(" ")}
             </p>
-            <p className="text-xs text-slate-500 truncate">{currentRole}</p>
+            <p className="truncate text-xs text-slate-500">{currentRole}</p>
           </div>
-        </div>
+        </button>
       </div>
     </aside>
   );
 }
 
-/** Compact top navigation for mobile (below lg breakpoint) */
+/** Nav horizontale scrollable pour mobile (< lg) */
 export function MobileNav() {
   const view = useNav((s) => s.view);
   const go = useNav((s) => s.go);
   const currentRole = useNav((s) => s.currentRole);
-
-  const isActive = (key: ViewKey) => {
-    if (
-      key === "dossiers" &&
-      (view === "dossier-form" || view === "dossier-detail")
-    ) {
-      return true;
-    }
-    if (key === "clients" && view === "client-fiche") return true;
-    return view === key;
-  };
 
   const visibleItems = navItems.filter(
     (item) => !item.roles || item.roles.includes(currentRole),
@@ -174,7 +112,7 @@ export function MobileNav() {
           </div>
         </div>
         {visibleItems.map((item) => {
-          const active = isActive(item.key);
+          const active = isNavActive(view, item.key);
           const Icon = item.icon;
           return (
             <button

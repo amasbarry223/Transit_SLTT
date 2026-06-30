@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -80,10 +80,27 @@ export function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(true);
   const [attempts, setAttempts] = useState(() => getLockoutState().attempts);
   const [lockedUntil, setLockedUntil] = useState<number | null>(() => getLockoutState().lockedUntil);
+  const [now, setNow] = useState(() => Date.now());
 
-  const now = Date.now();
-  const isLocked = (lockedUntil !== null && now < lockedUntil) || attempts >= MAX_ATTEMPTS;
-  const lockoutRemainingMin = lockedUntil ? Math.ceil((lockedUntil - now) / 60000) : 0;
+  // Met à jour `now` chaque seconde tant que le compte est bloqué, pour que le décompte s'affiche en temps réel
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const interval = setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= lockedUntil) {
+        setLockedUntil(null);
+        setAttempts(0);
+        clearLockout();
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil !== null && now < lockedUntil;
+  const lockoutRemainingSec = lockedUntil ? Math.max(0, Math.ceil((lockedUntil - now) / 1000)) : 0;
+  const lockoutRemainingMin = Math.ceil(lockoutRemainingSec / 60);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -258,7 +275,11 @@ export function LoginScreen() {
                 className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/20"
                 disabled={loading || isLocked}
               >
-                {loading ? "Vérification…" : isLocked ? `Bloqué${lockoutRemainingMin > 0 ? ` (${lockoutRemainingMin} min)` : ""}` : "Se connecter"}
+                {loading
+                  ? "Vérification…"
+                  : isLocked
+                    ? `Bloqué — ${lockoutRemainingSec < 60 ? `${lockoutRemainingSec}s` : `${lockoutRemainingMin} min`}`
+                    : "Se connecter"}
               </Button>
             </form>
 

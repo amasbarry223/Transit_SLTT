@@ -111,7 +111,7 @@ function DossierFormInner() {
 
   const reference =
     existing?.reference ??
-    `SLTT-TR-2026-${String(dossierSeq).padStart(4, "0")}`;
+    `SLTT-TR-${new Date().getFullYear()}-${String(dossierSeq).padStart(4, "0")}`;
 
   // Detect unsaved changes
   const isDirty = useMemo(() => {
@@ -176,6 +176,20 @@ function DossierFormInner() {
         </Button>
       </div>
     );
+  }
+
+  function validateField(field: keyof typeof errors, value: string) {
+    const msg: Record<string, string> = {
+      clientId: "Le client est obligatoire.",
+      bl: "Le numéro de BL est obligatoire.",
+      camion: "Le numéro de camion est obligatoire.",
+      nature: "La nature de la marchandise est obligatoire.",
+      date: "La date est obligatoire.",
+    };
+    setErrors((prev) => ({
+      ...prev,
+      [field]: value.trim() ? undefined : msg[field],
+    }));
   }
 
   function validate(): boolean {
@@ -372,8 +386,9 @@ function DossierFormInner() {
                   value={nature}
                   onChange={(e) => {
                     setNature(e.target.value);
-                    setErrors((p) => ({ ...p, nature: undefined }));
+                    if (errors.nature) setErrors((p) => ({ ...p, nature: undefined }));
                   }}
+                  onBlur={(e) => validateField("nature", e.target.value)}
                   placeholder="Ex. Matériel électronique"
                 />
               </Field>
@@ -384,8 +399,9 @@ function DossierFormInner() {
                   value={bl}
                   onChange={(e) => {
                     setBl(e.target.value);
-                    setErrors((p) => ({ ...p, bl: undefined }));
+                    if (errors.bl) setErrors((p) => ({ ...p, bl: undefined }));
                   }}
+                  onBlur={(e) => validateField("bl", e.target.value)}
                   placeholder="BL-0000"
                 />
               </Field>
@@ -396,8 +412,9 @@ function DossierFormInner() {
                   value={camion}
                   onChange={(e) => {
                     setCamion(e.target.value);
-                    setErrors((p) => ({ ...p, camion: undefined }));
+                    if (errors.camion) setErrors((p) => ({ ...p, camion: undefined }));
                   }}
+                  onBlur={(e) => validateField("camion", e.target.value)}
                   placeholder="Ex. RJ 4521 KM"
                 />
               </Field>
@@ -409,8 +426,9 @@ function DossierFormInner() {
                   value={date}
                   onChange={(e) => {
                     setDate(e.target.value);
-                    setErrors((p) => ({ ...p, date: undefined }));
+                    if (errors.date) setErrors((p) => ({ ...p, date: undefined }));
                   }}
+                  onBlur={(e) => validateField("date", e.target.value)}
                 />
               </Field>
             </div>

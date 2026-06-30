@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import {
   Plus, Search, FileText, FileSpreadsheet, Pencil, Trash2,
-  ChevronLeft, ChevronRight, Truck, FolderKanban, Package,
+  Truck, FolderKanban, Package,
   Phone, Mail, MapPin, ArrowUpDown, MoreHorizontal, PowerOff,
   Power, X, Save, AlertTriangle, CheckCircle2, ArrowLeft,
 } from "lucide-react";
@@ -35,6 +35,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "@/components/sltt/table-pagination";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -96,31 +97,6 @@ function TransporteursTableSkeleton() {
 /* Pagination                                                           */
 /* ------------------------------------------------------------------ */
 
-function TablePagination({ startIdx, endIdx, totalItems, itemLabel, page, totalPages, onPageChange }: {
-  startIdx: number; endIdx: number; totalItems: number; itemLabel: string;
-  page: number; totalPages: number; onPageChange: (p: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs tabular-nums text-slate-500">
-        {startIdx}–{endIdx} sur {totalItems} {itemLabel}
-      </p>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="h-9" disabled={page <= 1}
-          onClick={() => onPageChange(Math.max(1, page - 1))}>
-          <ChevronLeft className="size-4" />
-        </Button>
-        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
-          {page} / {totalPages}
-        </span>
-        <Button variant="outline" size="sm" className="h-9" disabled={page >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}>
-          <ChevronRight className="size-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Inline form (replaces the Dialog modal)                              */
@@ -131,6 +107,20 @@ const EMPTY_FORM: TransporteurInput = {
   vehicule: "Camion", immatriculation: "", trajet: "",
   capacite: 10, statut: "Actif", notes: "",
 };
+
+function FormField({ id, label, req, error, children }: {
+  id?: string; label: string; req?: boolean; error?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label} {req && <span className="text-red-500 normal-case">*</span>}
+      </Label>
+      {children}
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
 
 function InlineTransporteurForm({
   mode, target, onClose,
@@ -143,20 +133,15 @@ function InlineTransporteurForm({
   const updateTransporteur = useStore((s) => s.updateTransporteur);
   const { toast }          = useToast();
 
-  const [form, setForm]     = useState<TransporteurInput>(EMPTY_FORM);
+  const [form, setForm] = useState<TransporteurInput>(() => target ? {
+    nom: target.nom, contact: target.contact,
+    telephone: target.telephone, email: target.email ?? "",
+    vehicule: target.vehicule, immatriculation: target.immatriculation,
+    trajet: target.trajet, capacite: target.capacite,
+    statut: target.statut, notes: target.notes ?? "",
+  } : EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isEdit = mode === "edit";
-
-  useEffect(() => {
-    setErrors({});
-    setForm(target ? {
-      nom: target.nom, contact: target.contact,
-      telephone: target.telephone, email: target.email ?? "",
-      vehicule: target.vehicule, immatriculation: target.immatriculation,
-      trajet: target.trajet, capacite: target.capacite,
-      statut: target.statut, notes: target.notes ?? "",
-    } : EMPTY_FORM);
-  }, [mode, target]);
 
   const setField = (field: keyof TransporteurInput, value: string | number | TransporteurStatut | TypeVehicule) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -186,18 +171,6 @@ function InlineTransporteurForm({
     }
     onClose();
   };
-
-  const F = ({ id, label, req, error, children }: {
-    id?: string; label: string; req?: boolean; error?: string; children: React.ReactNode;
-  }) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label} {req && <span className="text-red-500 normal-case">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
-    </div>
-  );
 
   return (
     <Card className="border-blue-200 shadow-md overflow-hidden">
@@ -232,18 +205,18 @@ function InlineTransporteurForm({
         <div>
           <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Identité</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <F id="nom" label="Société / Nom" req error={errors.nom}>
+            <FormField id="nom" label="Société / Nom" req error={errors.nom}>
               <Input id="nom" value={form.nom}
                 onChange={(e) => setField("nom", e.target.value)}
                 placeholder="Konaté Transport SARL"
                 className={cn("h-10", errors.nom && "border-red-400")} />
-            </F>
-            <F id="contact" label="Nom du contact" req error={errors.contact}>
+            </FormField>
+            <FormField id="contact" label="Nom du contact" req error={errors.contact}>
               <Input id="contact" value={form.contact}
                 onChange={(e) => setField("contact", e.target.value)}
                 placeholder="Mamadou Konaté"
                 className={cn("h-10", errors.contact && "border-red-400")} />
-            </F>
+            </FormField>
           </div>
         </div>
 
@@ -251,17 +224,17 @@ function InlineTransporteurForm({
         <div>
           <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Coordonnées</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <F id="tel" label="Téléphone" req error={errors.telephone}>
+            <FormField id="tel" label="Téléphone" req error={errors.telephone}>
               <Input id="tel" value={form.telephone}
                 onChange={(e) => setField("telephone", e.target.value)}
                 placeholder="+223 76 00 00 00"
                 className={cn("h-10", errors.telephone && "border-red-400")} />
-            </F>
-            <F id="email" label="Email">
+            </FormField>
+            <FormField id="email" label="Email">
               <Input id="email" type="email" value={form.email}
                 onChange={(e) => setField("email", e.target.value)}
                 placeholder="transport@mail.ml" className="h-10" />
-            </F>
+            </FormField>
           </div>
         </div>
 
@@ -269,31 +242,31 @@ function InlineTransporteurForm({
         <div>
           <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Véhicule & capacité</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <F label="Type de véhicule" req>
+            <FormField label="Type de véhicule" req>
               <Select value={form.vehicule} onValueChange={(v) => setField("vehicule", v as TypeVehicule)}>
                 <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {VEHICULES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </F>
-            <F id="immat" label="Immatriculation" req error={errors.immatriculation}>
+            </FormField>
+            <FormField id="immat" label="Immatriculation" req error={errors.immatriculation}>
               <Input id="immat" value={form.immatriculation}
                 onChange={(e) => setField("immatriculation", e.target.value.toUpperCase())}
                 placeholder="BK-0001-ML"
                 className={cn("h-10 font-mono", errors.immatriculation && "border-red-400")} />
-            </F>
-            <F id="trajet" label="Trajet habituel" req error={errors.trajet}>
+            </FormField>
+            <FormField id="trajet" label="Trajet habituel" req error={errors.trajet}>
               <Input id="trajet" value={form.trajet}
                 onChange={(e) => setField("trajet", e.target.value)}
                 placeholder="Bamako – Dakar"
                 className={cn("h-10", errors.trajet && "border-red-400")} />
-            </F>
-            <F id="capacite" label="Capacité (t)" req error={errors.capacite}>
+            </FormField>
+            <FormField id="capacite" label="Capacité (t)" req error={errors.capacite}>
               <Input id="capacite" type="number" min={1} value={form.capacite}
                 onChange={(e) => setField("capacite", Number(e.target.value))}
                 className={cn("h-10", errors.capacite && "border-red-400")} />
-            </F>
+            </FormField>
           </div>
         </div>
 
@@ -309,12 +282,12 @@ function InlineTransporteurForm({
               onCheckedChange={(v) => setField("statut", v ? "Actif" : "Inactif")}
             />
           </div>
-          <F id="notes" label="Notes">
+          <FormField id="notes" label="Notes">
             <Textarea id="notes" value={form.notes}
               onChange={(e) => setField("notes", e.target.value)}
               placeholder="Informations complémentaires..."
               rows={2} className="resize-none" />
-          </F>
+          </FormField>
         </div>
       </div>
 
@@ -496,6 +469,7 @@ export function TransporteursScreen() {
       {/* ── Inline form (replaces filter+table when open) ── */}
       {inlineForm ? (
         <InlineTransporteurForm
+          key={inlineForm.target?.id ?? "new"}
           mode={inlineForm.mode}
           target={inlineForm.target}
           onClose={() => setInlineForm(null)}

@@ -8,8 +8,6 @@ import {
   Check,
   Search,
   Truck,
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
   CheckCircle2,
   FilePen,
@@ -55,6 +53,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 8;
 
@@ -71,56 +70,6 @@ const statutTone: Record<"Validé" | "Brouillon", "emerald" | "slate"> = {
 
 const motifs: BonMotif[] = ["Vente", "Livraison", "Transfert"];
 
-function TablePagination({
-  startIdx,
-  endIdx,
-  totalItems,
-  itemLabel,
-  page,
-  totalPages,
-  onPageChange,
-}: {
-  startIdx: number;
-  endIdx: number;
-  totalItems: number;
-  itemLabel: string;
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs tabular-nums text-slate-500">
-        {startIdx}–{endIdx} sur {totalItems} {itemLabel}
-      </p>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8"
-          disabled={page <= 1}
-          onClick={() => onPageChange(Math.max(1, page - 1))}
-          aria-label="Page précédente"
-        >
-          <ChevronLeft className="size-4" />
-        </Button>
-        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
-          {page} / {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-          aria-label="Page suivante"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export function BonsScreen() {
   const { toast } = useToast();
@@ -235,6 +184,7 @@ export function BonsScreen() {
       date: formDate,
       clientId: formClientId,
       clientNom: selectedClient.nom,
+      stockId: selectedStock.id,
       marchandise: selectedStock.marchandise,
       quantite: quantiteNum,
       unite: selectedStock.unite,
@@ -256,6 +206,7 @@ export function BonsScreen() {
       date: formDate,
       clientId: formClientId,
       clientNom: selectedClient.nom,
+      stockId: selectedStock.id,
       marchandise: selectedStock.marchandise,
       quantite: quantiteNum,
       unite: selectedStock.unite,
@@ -272,11 +223,19 @@ export function BonsScreen() {
   }
 
   function handleValidateBon(id: string, ref: string) {
-    validateBon(id);
-    toast({
-      title: "Bon validé",
-      description: `${ref} — stock décrémenté.`,
-    });
+    const stockSuffisant = validateBon(id);
+    if (stockSuffisant) {
+      toast({
+        title: "Bon validé",
+        description: `${ref} — stock décrémenté.`,
+      });
+    } else {
+      toast({
+        title: "Bon validé — stock insuffisant",
+        description: `${ref} — la quantité dépassait le stock disponible, il a été ramené à 0.`,
+        variant: "destructive",
+      });
+    }
   }
 
   function buildBonHTML(b: {
