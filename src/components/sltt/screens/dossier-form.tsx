@@ -96,6 +96,9 @@ function DossierFormInner() {
     date?: string;
   }>({});
 
+  // UX-06: track which fields have been touched for on-change validation
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
   // Unsaved changes guard
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
 
@@ -347,7 +350,8 @@ function DossierFormInner() {
                     value={clientId}
                     onValueChange={(v) => {
                       setClientId(v);
-                      setErrors((p) => ({ ...p, clientId: undefined }));
+                      setTouched((p) => ({ ...p, clientId: true }));
+                      validateField("clientId", v);
                     }}
                   >
                     <SelectTrigger
@@ -370,7 +374,8 @@ function DossierFormInner() {
                   <QuickClientButton
                     onCreated={(id) => {
                       setClientId(id);
-                      setErrors((p) => ({ ...p, clientId: undefined }));
+                      setTouched((p) => ({ ...p, clientId: true }));
+                      validateField("clientId", id);
                     }}
                   />
                 </div>
@@ -386,9 +391,12 @@ function DossierFormInner() {
                   value={nature}
                   onChange={(e) => {
                     setNature(e.target.value);
-                    if (errors.nature) setErrors((p) => ({ ...p, nature: undefined }));
+                    if (touched["nature"]) validateField("nature", e.target.value);
                   }}
-                  onBlur={(e) => validateField("nature", e.target.value)}
+                  onBlur={() => {
+                    setTouched((p) => ({ ...p, nature: true }));
+                    validateField("nature", nature);
+                  }}
                   placeholder="Ex. Matériel électronique"
                 />
               </Field>
@@ -399,9 +407,12 @@ function DossierFormInner() {
                   value={bl}
                   onChange={(e) => {
                     setBl(e.target.value);
-                    if (errors.bl) setErrors((p) => ({ ...p, bl: undefined }));
+                    if (touched["bl"]) validateField("bl", e.target.value);
                   }}
-                  onBlur={(e) => validateField("bl", e.target.value)}
+                  onBlur={() => {
+                    setTouched((p) => ({ ...p, bl: true }));
+                    validateField("bl", bl);
+                  }}
                   placeholder="BL-0000"
                 />
               </Field>
@@ -412,9 +423,12 @@ function DossierFormInner() {
                   value={camion}
                   onChange={(e) => {
                     setCamion(e.target.value);
-                    if (errors.camion) setErrors((p) => ({ ...p, camion: undefined }));
+                    if (touched["camion"]) validateField("camion", e.target.value);
                   }}
-                  onBlur={(e) => validateField("camion", e.target.value)}
+                  onBlur={() => {
+                    setTouched((p) => ({ ...p, camion: true }));
+                    validateField("camion", camion);
+                  }}
                   placeholder="Ex. RJ 4521 KM"
                 />
               </Field>
@@ -426,9 +440,12 @@ function DossierFormInner() {
                   value={date}
                   onChange={(e) => {
                     setDate(e.target.value);
-                    if (errors.date) setErrors((p) => ({ ...p, date: undefined }));
+                    if (touched["date"]) validateField("date", e.target.value);
                   }}
-                  onBlur={(e) => validateField("date", e.target.value)}
+                  onBlur={() => {
+                    setTouched((p) => ({ ...p, date: true }));
+                    validateField("date", date);
+                  }}
                 />
               </Field>
             </div>

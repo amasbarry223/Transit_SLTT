@@ -350,7 +350,10 @@ export function ClientsScreen() {
 
           <Select
             value={sortBy}
-            onValueChange={(v) => setSortBy(v as SortKey)}
+            onValueChange={(v) => {
+              setSortBy(v as SortKey);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="h-10 w-full sm:w-48" aria-label="Trier les clients">
               <SelectValue placeholder="Trier par" />
@@ -386,7 +389,7 @@ export function ClientsScreen() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <Table>
+              <Table aria-label="Liste des clients">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -573,6 +576,7 @@ export function ClientsScreen() {
                     <button
                       key={t}
                       type="button"
+                      aria-pressed={formType === t}
                       onClick={() => setFormType(t)}
                       className={cn(
                         "flex flex-col items-center gap-2 rounded-lg border-2 px-3 py-3 text-sm font-medium transition-colors",

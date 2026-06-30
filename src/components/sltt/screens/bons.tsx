@@ -483,7 +483,7 @@ export function BonsScreen() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <Table>
+              <Table aria-label="Liste des bons de sortie">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">

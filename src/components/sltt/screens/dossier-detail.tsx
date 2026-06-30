@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   ArrowLeft,
   Pencil,
@@ -117,7 +118,7 @@ function getFileIconComponent(mimeType: string) {
 function DossierStepper({ statut }: { statut: DossierStatut }) {
   const currentIdx = STATUTS_ORDERED.indexOf(statut);
   return (
-    <div className="flex items-start">
+    <div role="list" aria-label="Progression du dossier" className="flex items-start">
       {STATUTS_ORDERED.map((s, i) => {
         const done = currentIdx > i;
         const active = currentIdx === i;
@@ -125,6 +126,9 @@ function DossierStepper({ statut }: { statut: DossierStatut }) {
         return (
           <div
             key={s}
+            role="listitem"
+            aria-current={active ? "step" : undefined}
+            aria-label={done ? `${s} — complété` : undefined}
             className={cn("flex flex-col items-center", !isLast && "flex-1")}
           >
             <div className="flex w-full items-center">
@@ -302,6 +306,9 @@ function FileDropZone({
   return (
     <div className="space-y-3">
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Cliquer ou déposer des fichiers ici pour les joindre au dossier"
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
           dragging
@@ -315,6 +322,12 @@ function FileDropZone({
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
       >
         <Upload
           className={cn(
@@ -366,6 +379,7 @@ function FileDropZone({
                     size="icon"
                     className="size-7 text-slate-400 hover:text-primary"
                     title="Télécharger"
+                    aria-label={`Télécharger ${f.nom}`}
                     onClick={() => handleDownload(f)}
                   >
                     <Download className="size-3.5" />
@@ -375,6 +389,7 @@ function FileDropZone({
                     size="icon"
                     className="size-7 text-slate-400 hover:text-destructive"
                     title="Supprimer"
+                    aria-label={`Supprimer le fichier ${f.nom}`}
                     onClick={() => onDelete(f.id)}
                   >
                     <Trash2 className="size-3.5" />
@@ -450,6 +465,7 @@ function SubDossierCard({
             size="icon"
             className="size-7 text-slate-400 hover:text-primary"
             title="Renommer"
+            aria-label={`Renommer le sous-dossier ${sd.nom}`}
             onClick={onEdit}
           >
             <Pencil className="size-3.5" />
@@ -459,6 +475,7 @@ function SubDossierCard({
             size="icon"
             className="size-7 text-slate-400 hover:text-destructive"
             title="Supprimer"
+            aria-label={`Supprimer le sous-dossier ${sd.nom}`}
             onClick={onDelete}
           >
             <Trash2 className="size-3.5" />
@@ -501,19 +518,21 @@ export function DossierDetailScreen() {
 
   const dossier = useStore((s) => s.dossiers.find((d) => d.id === selectedId));
   const client = useStore((s) => s.clients.find((c) => c.id === dossier?.clientId));
-  const allSubDossiers = useStore((s) => s.subDossiers);
-  const allComments = useStore((s) => s.comments);
   const addComment = useStore((s) => s.addComment);
   const deleteComment = useStore((s) => s.deleteComment);
   const currentUserName = useNav((s) => s.currentUserName);
-  const allFichiers = useStore((s) => s.fichiers);
   const addSubDossier = useStore((s) => s.addSubDossier);
   const updateSubDossier = useStore((s) => s.updateSubDossier);
   const deleteSubDossier = useStore((s) => s.deleteSubDossier);
   const addFichier = useStore((s) => s.addFichier);
   const deleteFichier = useStore((s) => s.deleteFichier);
-  const allEcritures = useStore((s) => s.ecritures);
-  const auditLogs = useStore((s) => s.auditLogs);
+  // PERF-01: subscribe only to relevant slice for this dossier
+  const dossierId = selectedId ?? "";
+  const allSubDossiers = useStore(useShallow((s) => s.subDossiers.filter((sd) => sd.dossierId === dossierId)));
+  const allComments = useStore(useShallow((s) => s.comments.filter((c) => c.dossierId === dossierId)));
+  const allFichiers = useStore(useShallow((s) => s.fichiers.filter((f) => f.dossierId === dossierId)));
+  const allEcritures = useStore(useShallow((s) => s.ecritures.filter((e) => e.dossierId === dossierId)));
+  const auditLogs = useStore(useShallow((s) => s.auditLogs));
 
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -527,43 +546,39 @@ export function DossierDetailScreen() {
   // Sub-dossier delete confirmation
   const [sdDeleteId, setSdDeleteId] = useState<string | null>(null);
 
-  const dossierId = dossier?.id ?? "";
-
-  const subDossiers = useMemo(
-    () => allSubDossiers.filter((sd) => sd.dossierId === dossierId),
-    [allSubDossiers, dossierId],
-  );
+  // allSubDossiers, allFichiers, allComments, allEcritures are already filtered by dossierId (PERF-01)
+  const subDossiers = allSubDossiers;
 
   const dossierFichiers = useMemo(
-    () =>
-      allFichiers.filter(
-        (f) => f.dossierId === dossierId && !f.sousDossierId,
-      ),
-    [allFichiers, dossierId],
+    () => allFichiers.filter((f) => !f.sousDossierId),
+    [allFichiers],
   );
 
-  const subFichiersOf = (sdId: string) =>
-    allFichiers.filter((f) => f.sousDossierId === sdId);
+  // BUG-04: build a Map once instead of calling subFichiersOf(sdId) per render
+  const fichiersBySubDossier = useMemo(() => {
+    const map = new Map<string, typeof allFichiers>();
+    allFichiers.forEach((f) => {
+      if (f.sousDossierId) {
+        if (!map.has(f.sousDossierId)) map.set(f.sousDossierId, []);
+        map.get(f.sousDossierId)!.push(f);
+      }
+    });
+    return map;
+  }, [allFichiers]);
 
-  const totalFichiers = useMemo(
-    () => allFichiers.filter((f) => f.dossierId === dossierId).length,
-    [allFichiers, dossierId],
-  );
+  const totalFichiers = allFichiers.length;
 
-  const dossierEcritures = useMemo(
-    () => allEcritures.filter((e) => e.dossierId === dossierId),
-    [allEcritures, dossierId],
-  );
+  const dossierEcritures = allEcritures;
 
-  const dossierComments = useMemo(
-    () => allComments.filter((c) => c.dossierId === dossierId),
-    [allComments, dossierId],
-  );
+  const dossierComments = allComments;
 
+  // PERF-03: use regex with word boundary to avoid false positives
   const dossierAuditLogs = useMemo(() => {
     if (!dossier) return [];
-    return auditLogs.filter((a) => a.detail.includes(dossier.reference));
-  }, [auditLogs, dossier]);
+    const refEscaped = dossier.reference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const refRegex = new RegExp(`\\b${refEscaped}\\b`);
+    return auditLogs.filter((a) => refRegex.test(a.detail));
+  }, [auditLogs, dossier?.reference]);
 
   if (!dossier) {
     return (
@@ -715,7 +730,7 @@ export function DossierDetailScreen() {
         onClick={() => go("dossiers")}
       >
         <ArrowLeft className="size-4" />
-        Retour à la liste
+        ← Liste
       </Button>
 
       {/* Header */}
@@ -1028,7 +1043,7 @@ export function DossierDetailScreen() {
               <SubDossierCard
                 key={sd.id}
                 sd={sd}
-                fichiers={subFichiersOf(sd.id)}
+                fichiers={fichiersBySubDossier.get(sd.id) ?? []}
                 onEdit={() => openEditSubDossier(sd)}
                 onDelete={() => setSdDeleteId(sd.id)}
                 addFichier={addFichier}
@@ -1067,7 +1082,7 @@ export function DossierDetailScreen() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                <Table aria-label="Historique des écritures du dossier">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
                       <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -1177,7 +1192,7 @@ export function DossierDetailScreen() {
                       {isOwn && (
                         <button
                           onClick={() => deleteComment(c.id)}
-                          className="shrink-0 p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                          className="shrink-0 p-1 text-slate-300 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-500 transition-all"
                           title="Supprimer"
                         >
                           <Trash2 className="size-3.5" />
@@ -1196,7 +1211,9 @@ export function DossierDetailScreen() {
                   {currentUserName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
                 <div className="relative flex-1">
+                  <Label htmlFor="comment-input" className="sr-only">Nouveau commentaire</Label>
                   <textarea
+                    id="comment-input"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     onKeyDown={(e) => {
