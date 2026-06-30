@@ -678,16 +678,17 @@ export function DashboardScreen() {
       </div>
 
       {/* 4. BLOCKS ROW */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
 
         {/* ── Derniers dossiers ── */}
-        <Card className="overflow-hidden rounded-xl border-border/80 shadow-sm lg:col-span-2">
+        <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm lg:col-span-2">
+
           {/* Header */}
-          <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-slate-50/70 px-4 py-2.5">
+          <div className="flex items-center justify-between gap-2 border-b border-border/50 bg-slate-50/60 px-4 py-2.5">
             <div className="flex items-center gap-2">
               <ClipboardList className="size-3.5 text-slate-400" />
               <span className="text-[13px] font-semibold text-slate-800">Derniers dossiers</span>
-              <span className="rounded-full bg-slate-200/80 px-1.5 py-px text-[10px] font-bold tabular-nums text-slate-500">
+              <span className="rounded-full bg-slate-200/90 px-1.5 py-px text-[10px] font-bold tabular-nums text-slate-500">
                 {derniersDossiers.length}
               </span>
             </div>
@@ -699,50 +700,46 @@ export function DashboardScreen() {
             </button>
           </div>
 
-          {/* Colonnes fantômes */}
-          <div className="grid grid-cols-[1fr_1.4fr_auto_auto] border-b border-border/40 bg-slate-50/40 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+          {/* Labels colonnes */}
+          <div className="grid grid-cols-[1fr_1.5fr_auto_auto] gap-x-3 border-b border-border/40 bg-slate-50/40 px-4 py-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
             <span>Référence</span>
             <span>Client</span>
             <span>Statut</span>
             <span className="text-right">Montant</span>
           </div>
 
-          {/* Rows */}
+          {/* Lignes */}
           <div className="divide-y divide-border/40">
             {derniersDossiers.length === 0 ? (
-              <div className="py-10 text-center text-sm text-slate-400">Aucun dossier enregistré.</div>
+              <div className="py-8 text-center text-xs text-slate-400">Aucun dossier enregistré.</div>
             ) : (
               derniersDossiers.map((d) => {
                 const dotColor =
-                  d.statut === "En cours"  ? "bg-blue-500"    :
-                  d.statut === "Dédouané"  ? "bg-violet-500"  :
-                  d.statut === "Livré"     ? "bg-emerald-500" :
-                  "bg-slate-300";
+                  d.statut === "En cours" ? "bg-blue-500"
+                  : d.statut === "Dédouané" ? "bg-violet-500"
+                  : d.statut === "Livré"    ? "bg-emerald-500"
+                  : "bg-slate-300";
                 return (
                   <div
                     key={d.id}
-                    className="grid cursor-pointer grid-cols-[1fr_1.4fr_auto_auto] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-blue-50/40"
-                    onClick={() => go("dossier-detail", { id: d.id })}
                     role="button"
                     tabIndex={0}
+                    className="grid cursor-pointer grid-cols-[1fr_1.5fr_auto_auto] items-center gap-x-3 px-4 py-2 transition-colors hover:bg-blue-50/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    onClick={() => go("dossier-detail", { id: d.id })}
                     onKeyDown={(e) => e.key === "Enter" && go("dossier-detail", { id: d.id })}
                   >
-                    {/* Référence + BL */}
-                    <div className="min-w-0 flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span className={`size-1.5 shrink-0 rounded-full ${dotColor}`} />
                       <div className="min-w-0">
-                        <p className="truncate font-mono text-[11px] font-semibold text-slate-800 leading-tight">
+                        <p className="truncate font-mono text-[11px] font-semibold leading-tight text-slate-800">
                           {d.reference.replace("SLTT-TR-", "")}
                         </p>
-                        <p className="text-[10px] text-slate-400 leading-tight">{d.bl}</p>
+                        <p className="text-[10px] leading-tight text-slate-400">{d.bl}</p>
                       </div>
                     </div>
-                    {/* Client */}
-                    <p className="truncate text-[12px] text-slate-600">{d.clientNom}</p>
-                    {/* Statut */}
+                    <p className="truncate text-xs text-slate-600">{d.clientNom}</p>
                     <DossierStatutBadge statut={d.statut} />
-                    {/* Montant */}
-                    <p className="text-right font-mono text-[12px] font-semibold tabular-nums text-slate-900">
+                    <p className="text-right font-mono text-xs font-semibold tabular-nums text-slate-900">
                       {formatFCFACompact(d.montantInvesti)}
                     </p>
                   </div>
@@ -750,13 +747,13 @@ export function DashboardScreen() {
               })
             )}
           </div>
-        </Card>
+        </div>
 
         {/* ── Colonne droite ── */}
-        <div className="flex flex-col gap-4 lg:col-span-1">
+        <div className="flex flex-col gap-3 lg:col-span-1">
 
-          {/* Répartition par statut — compact */}
-          <Card className="rounded-xl border-border/80 p-4 shadow-sm">
+          {/* Répartition par statut */}
+          <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[13px] font-semibold text-slate-800">Par statut</span>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-500">
@@ -765,22 +762,21 @@ export function DashboardScreen() {
             </div>
 
             {totalDossiers === 0 ? (
-              <div className="flex flex-col items-center justify-center py-6">
-                <FolderKanban className="size-7 text-slate-200" />
-                <p className="mt-2 text-[11px] text-slate-400">Aucun dossier</p>
+              <div className="flex flex-col items-center justify-center py-4">
+                <FolderKanban className="size-6 text-slate-200" />
+                <p className="mt-1.5 text-[10px] text-slate-400">Aucun dossier</p>
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                {/* Donut compact */}
-                <div className="relative h-[88px] w-[88px] shrink-0">
+                <div className="relative h-[84px] w-[84px] shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={statutDonutData}
                         dataKey="value"
                         nameKey="name"
-                        innerRadius={28}
-                        outerRadius={42}
+                        innerRadius={26}
+                        outerRadius={40}
                         paddingAngle={2}
                         stroke="none"
                       >
@@ -796,7 +792,6 @@ export function DashboardScreen() {
                   </div>
                 </div>
 
-                {/* Légende avec barres */}
                 <div className="flex-1 space-y-1.5">
                   {statutDonutData.map((entry) => {
                     const pct = Math.round((entry.value / totalDossiers) * 100);
@@ -809,10 +804,7 @@ export function DashboardScreen() {
                           <span className="w-6 text-right text-[10px] tabular-nums text-slate-400">{pct}%</span>
                         </div>
                         <div className="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${pct}%`, background: entry.color }}
-                          />
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: entry.color }} />
                         </div>
                       </div>
                     );
@@ -820,11 +812,11 @@ export function DashboardScreen() {
                 </div>
               </div>
             )}
-          </Card>
+          </div>
 
-          {/* Alertes — compact */}
-          <Card className="flex flex-col overflow-hidden rounded-xl border-border/80 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-border/60 bg-slate-50/70 px-4 py-2.5">
+          {/* Alertes */}
+          <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border/50 bg-slate-50/60 px-4 py-2.5">
               <AlertTriangle className="size-3.5 text-amber-500" />
               <span className="text-[13px] font-semibold text-slate-800">Alertes</span>
               {alertes.length > 0 && (
@@ -834,11 +826,11 @@ export function DashboardScreen() {
               )}
             </div>
 
-            <div className="max-h-[220px] overflow-y-auto divide-y divide-border/40">
+            <div className="max-h-52 divide-y divide-border/40 overflow-y-auto">
               {alertes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <CheckCircle2 className="size-7 text-emerald-300" />
-                  <p className="mt-2 text-[11px] text-slate-400">Aucune alerte</p>
+                <div className="flex flex-col items-center justify-center py-6">
+                  <CheckCircle2 className="size-6 text-emerald-300" />
+                  <p className="mt-1.5 text-[10px] text-slate-400">Aucune alerte</p>
                 </div>
               ) : (
                 alertes.map((alert) => {
@@ -846,11 +838,11 @@ export function DashboardScreen() {
                   return (
                     <div
                       key={alert.id}
-                      className="flex cursor-pointer items-start gap-2.5 py-2.5 pr-3 pl-0 transition-colors hover:bg-slate-50/80"
-                      style={{ borderLeft: `3px solid ${isDanger ? "#EF4444" : "#F59E0B"}` }}
-                      onClick={() => go(isDanger ? "entreposage" : "comptabilite")}
                       role="button"
                       tabIndex={0}
+                      className="flex cursor-pointer items-start py-2 pr-3 transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      style={{ borderLeft: `3px solid ${isDanger ? "#EF4444" : "#F59E0B"}` }}
+                      onClick={() => go(isDanger ? "entreposage" : "comptabilite")}
                       onKeyDown={(e) => e.key === "Enter" && go(isDanger ? "entreposage" : "comptabilite")}
                     >
                       <div className="min-w-0 pl-3">
@@ -866,7 +858,8 @@ export function DashboardScreen() {
                 })
               )}
             </div>
-          </Card>
+          </div>
+
         </div>
       </div>
     </div>
