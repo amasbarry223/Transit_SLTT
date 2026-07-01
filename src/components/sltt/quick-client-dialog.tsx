@@ -46,7 +46,7 @@ export function QuickClientButton({ onCreated }: Props) {
     setEmail("");
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     const trimmed = nom.trim();
     if (!trimmed) return;
     const input: ClientInput = {
@@ -56,11 +56,19 @@ export function QuickClientButton({ onCreated }: Props) {
       email: email.trim(),
       adresse: "",
     };
-    const newClient = addClient(input);
-    toast({ title: "Client créé", description: trimmed });
-    onCreated(newClient.id);
-    setOpen(false);
-    reset();
+    try {
+      const newClient = await addClient(input);
+      toast({ title: "Client créé", description: trimmed });
+      onCreated(newClient.id);
+      setOpen(false);
+      reset();
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e.message || "Impossible de créer le client",
+        variant: "destructive",
+      });
+    }
   }
 
   return (

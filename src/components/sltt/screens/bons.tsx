@@ -222,8 +222,8 @@ export function BonsScreen() {
     resetForm();
   }
 
-  function handleValidateBon(id: string, ref: string) {
-    const stockSuffisant = validateBon(id);
+  async function handleValidateBon(id: string, ref: string) {
+    const stockSuffisant = await validateBon(id);
     if (stockSuffisant) {
       toast({
         title: "Bon validé",

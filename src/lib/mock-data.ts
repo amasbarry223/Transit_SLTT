@@ -984,6 +984,26 @@ export const users: User[] = [
     actif: false,
     derniereConnexion: "2025-12-15T11:00:00",
   },
+  {
+    id: "U-06",
+    nom: "Mody Barry",
+    email: "modybarry50@gmail.com",
+    role: "Administrateur",
+    permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "comptabilite:read", "comptabilite:write", "clients:read", "clients:write", "stock:read", "stock:write", "bons:read", "bons:write", "parametres:read", "parametres:write", "rapports:read"],
+    motDePasse: "2480e9698e06e086e74f2ba4df489848ddca9748ff136bf23d09a4038d3aaa1f",
+    actif: true,
+    derniereConnexion: "2026-01-09T08:12:00",
+  },
+  {
+    id: "U-07",
+    nom: "Mohammed Traoré",
+    email: "mohammedtraore301@gmail.com",
+    role: "Administrateur",
+    permissions: ["dossiers:read", "dossiers:write", "dossiers:transition", "comptabilite:read", "comptabilite:write", "clients:read", "clients:write", "stock:read", "stock:write", "bons:read", "bons:write", "parametres:read", "parametres:write", "rapports:read"],
+    motDePasse: "2480e9698e06e086e74f2ba4df489848ddca9748ff136bf23d09a4038d3aaa1f",
+    actif: true,
+    derniereConnexion: "2026-01-09T08:12:00",
+  },
 ];
 
 /* ------------------------------------------------------------------ */

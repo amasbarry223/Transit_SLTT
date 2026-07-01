@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/sltt/page-header";
 import { useStore, type Facture, type FactureStatut, type FactureInput } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
+import { useToast } from "@/hooks/use-toast";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
@@ -54,6 +55,7 @@ function FactureFormModal({
   const dossiers   = useStore((s) => s.dossiers);
   const addFacture = useStore((s) => s.addFacture);
   const go         = useNav((s) => s.go);
+  const { toast }  = useToast();
 
   const today    = new Date().toISOString().slice(0, 10);
   const in30days = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
@@ -117,27 +119,35 @@ function FactureFormModal({
     setLignes((l) => l.map((row, idx) => idx === i ? { ...row, [field]: value } : row));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!clientId || lignes.every((l) => !l.description)) return;
-    const f = addFacture({
-      dossierId: dossierId || null,
-      clientId,
-      clientNom,
-      date,
-      dateEcheance,
-      lignes: lignes
-        .filter((l) => l.description.trim())
-        .map((l) => ({
-          description: l.description,
-          quantite: parseFloat(l.quantite) || 1,
-          prixUnitaire: parseFloat(l.prixUnitaire) || 0,
-        })),
-      tauxTVA: parseFloat(tauxTVA) || 0,
-      notes,
-    });
-    onClose();
-    go("facture-detail", { id: f.id });
+    try {
+      const f = await addFacture({
+        dossierId: dossierId || null,
+        clientId,
+        clientNom,
+        date,
+        dateEcheance,
+        lignes: lignes
+          .filter((l) => l.description.trim())
+          .map((l) => ({
+            description: l.description,
+            quantite: parseFloat(l.quantite) || 1,
+            prixUnitaire: parseFloat(l.prixUnitaire) || 0,
+          })),
+        tauxTVA: parseFloat(tauxTVA) || 0,
+        notes,
+      });
+      onClose();
+      go("facture-detail", { id: f.id });
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err.message || "Impossible de créer la facture",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -338,6 +348,7 @@ export function FacturesScreen() {
   const removeFacture       = useStore((s) => s.removeFacture);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
   const go                  = useNav((s) => s.go);
+  const { toast }           = useToast();
   const selectedId          = useNav((s) => s.selectedId);
 
   const [search,     setSearch]     = React.useState("");
@@ -375,8 +386,19 @@ export function FacturesScreen() {
     return { total: actives.length, totalTTC, totalPaye, nonSoldees, tauxRecouvrement };
   }, [factures]);
 
-  function handleDelete(f: Facture) {
-    if (confirm(`Supprimer la facture ${f.numero} ?`)) removeFacture(f.id);
+  async function handleDelete(f: Facture) {
+    if (confirm(`Supprimer la facture ${f.numero} ?`)) {
+      try {
+        await removeFacture(f.id);
+        toast({ title: "Facture supprimée", description: f.numero });
+      } catch (err: any) {
+        toast({
+          title: "Erreur",
+          description: err.message || "Impossible de supprimer la facture",
+          variant: "destructive",
+        });
+      }
+    }
   }
 
   return (

@@ -376,21 +376,30 @@ export function DevisDetailScreen() {
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!devis) return;
-    removeDevis(devis.id);
-    toast({ title: "Devis supprimé", description: devis.reference });
-    go("devis");
+    try {
+      await removeDevis(devis.id);
+      toast({ title: "Devis supprimé", description: devis.reference });
+      go("devis");
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de supprimer le devis", variant: "destructive" });
+    }
   };
 
-  const handleConvert = () => {
+  const handleConvert = async () => {
     if (!devis || isConverting) return; // UX-05: guard against double-click
     setIsConverting(true);
-    const dossier = convertDevisToDossier(devis.id);
-    if (dossier) {
-      toast({ title: "Dossier créé", description: `${dossier.reference} ouvert depuis ${devis.reference}` });
-      openDossierDetail(dossier.id);
-    } else {
+    try {
+      const dossier = await convertDevisToDossier(devis.id);
+      if (dossier) {
+        toast({ title: "Dossier créé", description: `${dossier.reference} ouvert depuis ${devis.reference}` });
+        openDossierDetail(dossier.id);
+      } else {
+        setIsConverting(false);
+      }
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de convertir le devis en dossier", variant: "destructive" });
       setIsConverting(false);
     }
   };

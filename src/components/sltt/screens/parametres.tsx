@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   UserPlus,
   Pencil,
@@ -627,11 +627,25 @@ function UsersTab() {
 function ProfileTab() {
   const { toast } = useToast();
   const users = useStore((s) => s.users);
-  const adminUser = users.find((u) => u.role === "Administrateur");
-  const [pNom, setPNom] = useState(adminUser?.nom ?? "Amadou Traoré");
-  const [pEmail, setPEmail] = useState(adminUser?.email ?? "amadou.traore@sltt.ml");
+  const currentUserId = useNav((s) => s.currentUserId);
+  const currentUserName = useNav((s) => s.currentUserName);
+  const currentRole = useNav((s) => s.currentRole);
+
+  const currentUser = users.find((u) => u.id === currentUserId);
+
+  const [pNom, setPNom] = useState(currentUserName);
+  const [pEmail, setPEmail] = useState("");
   const [pTel, setPTel] = useState("+223 76 12 34 56");
-  const [pPoste, setPPoste] = useState("Directeur des opérations");
+  const [pPoste, setPPoste] = useState<string>(currentRole);
+
+  useEffect(() => {
+    if (currentUser) {
+      setPNom(currentUser.nom);
+      setPEmail(currentUser.email);
+      setPPoste(currentUser.role);
+    }
+  }, [currentUser]);
+
   return (
     <div className="space-y-5">
       <p className="text-sm text-slate-500">
@@ -647,11 +661,11 @@ function ProfileTab() {
         >
           <div className="flex items-center gap-4">
             <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-bold">
-              {getInitials(pNom || "Amadou Traoré")}
+              {getInitials(pNom || currentUserName)}
             </div>
             <div>
-              <p className="font-semibold text-slate-900">{pNom || "Amadou Traoré"}</p>
-              <p className="text-sm text-slate-500">Administrateur</p>
+              <p className="font-semibold text-slate-900">{pNom || currentUserName}</p>
+              <p className="text-sm text-slate-500">{currentUser?.role || currentRole}</p>
             </div>
           </div>
 

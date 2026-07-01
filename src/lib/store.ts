@@ -1,8 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { useNav } from "@/lib/nav-store";
+import { supabase } from "@/lib/supabase";
 import {
   clients as seedClients,
   dossiers as seedDossiers,
@@ -59,9 +60,6 @@ export type {
   FournisseurStatut,
   DossierFournisseur,
   DossierFournisseurInput,
-};
-
-export type {
   Client,
   Dossier,
   DossierStatut,
@@ -103,11 +101,8 @@ export type AuditModule =
   | "Bons"
   | "Clients"
   | "Transporteurs"
+  | "Fournisseurs"
   | "Utilisateurs";
-
-/* ------------------------------------------------------------------ */
-/* FACTURES                                                            */
-/* ------------------------------------------------------------------ */
 
 export type FactureStatut = "Brouillon" | "Envoyée" | "Partielle" | "Soldée" | "Annulée";
 
@@ -160,7 +155,6 @@ export type AuditEntry = {
   ip: string;
 };
 
-/** Input for creating/editing a dossier (without generated id/reference). */
 export interface DossierInput {
   clientId: string;
   clientNom: string;
@@ -237,7 +231,268 @@ export interface UserInput {
   motDePasse?: string;
 }
 
-/** Retrouve l'article de stock lié à un bon : par id si disponible (fiable), sinon par nom (bons historiques). */
+/* ------------------------------------------------------------------ */
+/* SUPABASE MAPPING HELPERS                                            */
+/* ------------------------------------------------------------------ */
+
+function mapClientFromDb(x: any): Client {
+  return {
+    id: x.id,
+    nom: x.nom,
+    type: x.type,
+    telephone: x.telephone,
+    email: x.email,
+    adresse: x.adresse,
+    nbDossiers: 0,
+    totalDu: 0,
+    totalPaye: 0,
+  };
+}
+
+function mapDossierFromDb(x: any): Dossier {
+  return {
+    id: x.id,
+    reference: x.reference,
+    clientId: x.client_id,
+    clientNom: x.clients?.nom || "—",
+    bl: x.bl,
+    camion: x.camion,
+    nature: x.nature,
+    droitDouane: Number(x.droit_douane),
+    fraisCircuit: Number(x.frais_circuit),
+    fraisPrestation: Number(x.frais_prestation),
+    montantInvesti: Number(x.montant_investi),
+    montantPaye: Number(x.montant_paye),
+    statut: x.statut,
+    date: x.date,
+    dateEcheance: x.date_echeance,
+    dateDedouanement: x.date_dedouanement,
+    checklistDocs: x.checklist_docs || [],
+    modeTransport: x.mode_transport,
+    noConteneur: x.no_conteneur,
+    portEntree: x.port_entree,
+    poidsTotal: x.poids_total ? Number(x.poids_total) : undefined,
+    notes: x.notes,
+  };
+}
+
+function mapFournisseurFromDb(x: any): Fournisseur {
+  return {
+    id: x.id,
+    nom: x.nom,
+    type: x.type,
+    contact: x.contact,
+    telephone: x.telephone,
+    email: x.email || "",
+    adresse: x.adresse || "",
+    tarifContractuel: x.tarif_contractuel ? Number(x.tarif_contractuel) : undefined,
+    nbDossiers: 0,
+    montantTotal: 0,
+    statut: x.statut,
+  };
+}
+
+function mapDossierFournisseurFromDb(x: any): DossierFournisseur {
+  return {
+    id: x.id,
+    dossierId: x.dossier_id,
+    dossierRef: x.dossiers?.reference || undefined,
+    fournisseurId: x.fournisseur_id,
+    fournisseurNom: x.fournisseurs?.nom || "",
+    type: x.fournisseurs?.type || "Transport",
+    description: x.description,
+    montantBudgete: Number(x.montant_budgete),
+    montantReel: Number(x.montant_reel),
+    statut: x.statut,
+    date: x.date || new Date().toISOString().slice(0, 10),
+  };
+}
+
+function mapEcritureFromDb(x: any): Ecriture {
+  return {
+    id: x.id,
+    date: x.date,
+    datePaiement: x.date_paiement || undefined,
+    clientId: x.client_id,
+    clientNom: x.clients?.nom || "",
+    dossierId: x.dossier_id || undefined,
+    montantInvesti: Number(x.montant_investi || 0),
+    montantPaye: Number(x.montant_paye || 0),
+    modePaiement: x.mode_paiement || "Virement",
+    note: x.note || undefined,
+  };
+}
+
+function mapStockItemFromDb(x: any): StockItem {
+  return {
+    id: x.id,
+    marchandise: x.marchandise,
+    quantite: Number(x.quantite),
+    unite: x.unite,
+    seuil: Number(x.seuil),
+    depositaire: x.depositaire,
+    commercial: x.commercial,
+    sommePayee: Number(x.somme_payee),
+    resteAPayer: Number(x.reste_a_payer),
+  };
+}
+
+function mapMouvementFromDb(x: any): Mouvement {
+  return {
+    id: x.id,
+    date: x.date,
+    type: x.type,
+    marchandise: x.marchandise || "",
+    quantite: Number(x.quantite),
+    unite: x.unite || "",
+    responsable: x.responsable || "",
+    bonRef: x.bon_ref || undefined,
+  };
+}
+
+function mapBonFromDb(x: any): BonSortie {
+  return {
+    id: x.id,
+    reference: x.numero,
+    date: x.date,
+    clientId: x.client_id,
+    clientNom: x.client_nom,
+    stockId: x.stock_id || undefined,
+    marchandise: x.marchandise,
+    quantite: Number(x.quantite),
+    unite: x.unite,
+    motif: x.motif,
+    montant: Number(x.montant),
+    statut: x.statut,
+  };
+}
+
+function mapSubDossierFromDb(x: any): SubDossier {
+  return {
+    id: x.id,
+    dossierId: x.dossier_id,
+    nom: x.nom,
+    description: x.description,
+    dateCreation: x.date_creation || new Date().toISOString(),
+  };
+}
+
+function mapFichierFromDb(x: any): DossierFichier {
+  return {
+    id: x.id,
+    dossierId: x.dossier_id,
+    sousDossierId: x.sub_dossier_id,
+    nom: x.nom,
+    taille: Number(x.taille),
+    type: x.type,
+    dateUpload: x.date_upload || new Date().toISOString(),
+    dataUrl: x.data_url,
+  };
+}
+
+function mapCommentFromDb(x: any): DossierComment {
+  return {
+    id: x.id,
+    dossierId: x.dossier_id,
+    texte: x.texte,
+    userName: x.user_nom || "",
+    date: x.created_at || new Date().toISOString(),
+  };
+}
+
+function mapDevisFromDb(x: any): Devis {
+  return {
+    id: x.id,
+    reference: x.reference,
+    clientId: x.client_id,
+    clientNom: x.clients?.nom || "—",
+    nature: x.nature,
+    droitDouane: Number(x.droit_douane),
+    fraisCircuit: Number(x.frais_circuit),
+    fraisPrestation: Number(x.frais_prestation),
+    total: Number(x.total),
+    statut: x.statut,
+    dateCreation: x.date_creation,
+    dateValidite: x.date_validite,
+    notes: x.notes || undefined,
+  };
+}
+
+function mapTransporteurFromDb(x: any): Transporteur {
+  return {
+    id: x.id,
+    nom: x.nom,
+    contact: x.contact || "",
+    telephone: x.telephone,
+    email: x.email || undefined,
+    vehicule: x.vehicule,
+    immatriculation: x.immatriculation,
+    trajet: x.trajet || "",
+    capacite: x.capacite ? Number(x.capacite) : 0,
+    statut: x.statut,
+    nbDossiers: 0,
+    dateCreation: x.date_creation || new Date().toISOString().slice(0, 10),
+    notes: x.notes || undefined,
+  };
+}
+
+function mapFactureFromDb(x: any): Facture {
+  return {
+    id: x.id,
+    numero: x.numero,
+    dossierId: x.dossier_id,
+    clientId: x.client_id,
+    clientNom: x.client_nom,
+    date: x.date,
+    dateEcheance: x.date_echeance,
+    statut: x.statut,
+    tauxTVA: Number(x.taux_tva),
+    montantHT: Number(x.montant_ht),
+    montantTVA: Number(x.montant_tva),
+    montantTTC: Number(x.montant_ttc),
+    montantPaye: Number(x.montant_paye),
+    notes: x.notes,
+    creePar: x.cree_par,
+    creeLe: x.created_at,
+    lignes: (x.facture_lignes || []).map((l: any) => ({
+      id: l.id,
+      description: l.description,
+      quantite: Number(l.quantite),
+      prixUnitaire: Number(l.prix_unitaire),
+      montantHT: Number(l.montant_ht),
+    })),
+  };
+}
+
+function mapProfileFromDb(x: any): User {
+  return {
+    id: x.id,
+    nom: x.nom,
+    email: x.email,
+    role: x.role,
+    permissions: x.permissions || [],
+    actif: x.actif,
+    derniereConnexion: x.derniere_connexion || "",
+    motDePasse: "",
+  };
+}
+
+function mapAuditLogFromDb(x: any): AuditEntry {
+  return {
+    id: x.id,
+    date: x.created_at,
+    user: x.user_nom,
+    module: x.module,
+    action: x.action,
+    detail: x.detail,
+    ip: x.ip,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* HELPERS                                                             */
+/* ------------------------------------------------------------------ */
+
 function findStockForBon(stock: StockItem[], ref: { stockId?: string; marchandise: string }): StockItem | undefined {
   if (ref.stockId) return stock.find((s) => s.id === ref.stockId);
   return stock.find((s) => s.marchandise === ref.marchandise);
@@ -251,6 +506,17 @@ function syncClientStats(dossiers: Dossier[], clients: Client[]): Client[] {
       nbDossiers: cd.length,
       totalPaye: cd.reduce((s, d) => s + d.montantPaye, 0),
       totalDu: cd.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0),
+    };
+  });
+}
+
+function syncFournisseurStats(df: DossierFournisseur[], providers: Fournisseur[]): Fournisseur[] {
+  return providers.map((p) => {
+    const pdf = df.filter((x) => x.fournisseurId === p.id);
+    return {
+      ...p,
+      nbDossiers: pdf.length,
+      montantTotal: pdf.reduce((sum, item) => sum + item.montantReel, 0),
     };
   });
 }
@@ -271,8 +537,14 @@ interface SLTTState {
   subDossiers: SubDossier[];
   fichiers: DossierFichier[];
   auditLogs: AuditEntry[];
+  comments: DossierComment[];
+  devis: Devis[];
+  transporteurs: Transporteur[];
+  factures: Facture[];
+  fournisseurs: Fournisseur[];
+  dossierFournisseurs: DossierFournisseur[];
 
-  // Counters for reference generation
+  // Counters for local reference fallback
   dossierSeq: number;
   bonSeq: number;
   auditSeq: number;
@@ -283,21 +555,30 @@ interface SLTTState {
   mouvementSeq: number;
   subDossierSeq: number;
   fichierSeq: number;
+  devisSeq: number;
+  transporteurSeq: number;
+  commentSeq: number;
+  factureSeq: number;
+  fournisseurSeq: number;
+  dossierFournisseurSeq: number;
+
+  // Supabase sync
+  fetchData: () => Promise<void>;
 
   // ---- Audit ----
-  addAuditLog: (module: AuditModule, action: AuditAction, detail: string) => void;
+  addAuditLog: (module: AuditModule, action: AuditAction, detail: string) => Promise<void>;
 
   // ---- Dossiers ----
-  addDossier: (input: DossierInput) => Dossier;
-  updateDossier: (id: string, input: DossierInput) => void;
-  updateDossierChecklist: (dossierId: string, docId: string, checked: boolean) => void;
-  removeDossier: (id: string) => void;
+  addDossier: (input: DossierInput) => Promise<Dossier>;
+  updateDossier: (id: string, input: DossierInput) => Promise<void>;
+  updateDossierChecklist: (dossierId: string, docId: string, checked: boolean) => Promise<void>;
+  removeDossier: (id: string) => Promise<void>;
   getDossier: (id: string) => Dossier | undefined;
-  transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string) => void;
+  transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string) => Promise<void>;
 
   // ---- Clients ----
-  addClient: (input: ClientInput) => Client;
-  updateClient: (id: string, input: ClientInput) => void;
+  addClient: (input: ClientInput) => Promise<Client>;
+  updateClient: (id: string, input: ClientInput) => Promise<void>;
   getClient: (id: string) => Client | undefined;
 
   // ---- Comptabilité ----
@@ -307,83 +588,68 @@ interface SLTTState {
     mode: PaiementMode,
     date: string,
     note: string,
-  ) => void;
-  addEcriture: (e: Omit<Ecriture, "id">) => Ecriture;
+  ) => Promise<void>;
+  addEcriture: (e: Omit<Ecriture, "id">) => Promise<Ecriture>;
 
   // ---- Stock ----
-  addStockItem: (input: StockItemInput) => StockItem;
-  addStockEntry: (stockId: string, quantite: number, responsable: string) => void;
-  addStockExit: (stockId: string, quantite: number, responsable: string, bonRef?: string) => void;
+  addStockItem: (input: StockItemInput) => Promise<StockItem>;
+  addStockEntry: (stockId: string, quantite: number, responsable: string) => Promise<void>;
+  addStockExit: (stockId: string, quantite: number, responsable: string, bonRef?: string) => Promise<void>;
 
   // ---- Bons de sortie ----
-  addBon: (input: BonInput) => BonSortie;
-  /** Valide un bon brouillon et décrémente le stock. Retourne false si le stock disponible était insuffisant (quantité ramenée à 0). */
-  validateBon: (id: string) => boolean;
+  addBon: (input: BonInput) => Promise<BonSortie>;
+  validateBon: (id: string) => Promise<boolean>;
 
   // ---- Users ----
-  addUser: (input: UserInput) => User;
-  updateUser: (id: string, input: UserInput) => void;
-  toggleUserActive: (id: string) => void;
-  removeUser: (id: string) => void;
-  updateLastLogin: (id: string) => void;
+  addUser: (input: UserInput) => Promise<User>;
+  updateUser: (id: string, input: UserInput) => Promise<void>;
+  toggleUserActive: (id: string) => Promise<void>;
+  removeUser: (id: string) => Promise<void>;
+  updateLastLogin: (id: string) => Promise<void>;
 
   // ---- Sous-dossiers ----
-  addSubDossier: (input: SubDossierInput) => SubDossier;
-  updateSubDossier: (id: string, nom: string, description?: string) => void;
-  deleteSubDossier: (id: string) => void;
+  addSubDossier: (input: SubDossierInput) => Promise<SubDossier>;
+  updateSubDossier: (id: string, nom: string, description?: string) => Promise<void>;
+  deleteSubDossier: (id: string) => Promise<void>;
 
   // ---- Fichiers ----
-  addFichier: (input: FichierInput) => DossierFichier;
-  deleteFichier: (id: string) => void;
-  deleteFichiersByDossier: (dossierId: string) => void;
+  addFichier: (input: FichierInput) => Promise<DossierFichier>;
+  deleteFichier: (id: string) => Promise<void>;
+  deleteFichiersByDossier: (dossierId: string) => Promise<void>;
 
   // ---- Commentaires dossiers ----
-  comments: DossierComment[];
-  commentSeq: number;
-  addComment: (dossierId: string, texte: string) => DossierComment;
-  deleteComment: (id: string) => void;
+  addComment: (dossierId: string, texte: string) => Promise<DossierComment>;
+  deleteComment: (id: string) => Promise<void>;
 
   // ---- Devis ----
-  devis: Devis[];
-  devisSeq: number;
-  addDevis: (input: DevisInput) => Devis;
-  updateDevis: (id: string, input: DevisInput) => void;
-  updateDevisStatut: (id: string, statut: DevisStatut) => void;
-  /** LM-06: Met à jour en store les devis dont la date de validité est dépassée et le statut non terminal. */
-  expireDevisObsoletes: () => void;
-  convertDevisToDossier: (id: string) => Dossier | null;
-  removeDevis: (id: string) => void;
+  addDevis: (input: DevisInput) => Promise<Devis>;
+  updateDevis: (id: string, input: DevisInput) => Promise<void>;
+  updateDevisStatut: (id: string, statut: DevisStatut) => Promise<void>;
+  expireDevisObsoletes: () => Promise<void>;
+  convertDevisToDossier: (id: string) => Promise<Dossier | null>;
+  removeDevis: (id: string) => Promise<void>;
 
   // ---- Transporteurs ----
-  transporteurs: Transporteur[];
-  transporteurSeq: number;
-  addTransporteur: (input: TransporteurInput) => Transporteur;
-  updateTransporteur: (id: string, input: TransporteurInput) => void;
-  updateTransporteurStatut: (id: string, statut: TransporteurStatut) => void;
-  removeTransporteur: (id: string) => void;
+  addTransporteur: (input: TransporteurInput) => Promise<Transporteur>;
+  updateTransporteur: (id: string, input: TransporteurInput) => Promise<void>;
+  updateTransporteurStatut: (id: string, statut: TransporteurStatut) => Promise<void>;
+  removeTransporteur: (id: string) => Promise<void>;
 
   // ---- Factures ----
-  factures: Facture[];
-  factureSeq: number;
-  addFacture: (input: FactureInput) => Facture;
-  updateFacture: (id: string, input: FactureInput) => void;
-  removeFacture: (id: string) => void;
-  updateFactureStatut: (id: string, statut: FactureStatut) => void;
-  recordFacturePaiement: (id: string, montant: number) => void;
+  addFacture: (input: FactureInput) => Promise<Facture>;
+  updateFacture: (id: string, input: FactureInput) => Promise<void>;
+  removeFacture: (id: string) => Promise<void>;
+  updateFactureStatut: (id: string, statut: FactureStatut) => Promise<void>;
+  recordFacturePaiement: (id: string, montant: number) => Promise<void>;
 
   // ---- Fournisseurs ----
-  fournisseurs: Fournisseur[];
-  dossierFournisseurs: DossierFournisseur[];
-  fournisseurSeq: number;
-  dossierFournisseurSeq: number;
-  addFournisseur: (input: FournisseurInput) => Fournisseur;
-  updateFournisseur: (id: string, input: FournisseurInput) => void;
-  removeFournisseur: (id: string) => void;
-  addDossierFournisseur: (input: DossierFournisseurInput) => DossierFournisseur;
-  updateDossierFournisseur: (id: string, input: Partial<DossierFournisseurInput>) => void;
-  removeDossierFournisseur: (id: string) => void;
+  addFournisseur: (input: FournisseurInput) => Promise<Fournisseur>;
+  updateFournisseur: (id: string, input: FournisseurInput) => Promise<void>;
+  removeFournisseur: (id: string) => Promise<void>;
+  addDossierFournisseur: (input: DossierFournisseurInput) => Promise<DossierFournisseur>;
+  updateDossierFournisseur: (id: string, input: Partial<DossierFournisseurInput>) => Promise<void>;
+  removeDossierFournisseur: (id: string) => Promise<void>;
 
-  // ---- Reset ----
   resetAll: () => void;
 }
 
@@ -391,7 +657,6 @@ function pad(n: number, len: number): string {
   return String(n).padStart(len, "0");
 }
 
-/** Séquences initiales partagées entre l'initialisation et resetAll (ARCH-04). */
 const INITIAL_SEQUENCES = {
   dossierSeq: 43,
   bonSeq: 52,
@@ -423,37 +688,119 @@ const initialAuditLogs: AuditEntry[] = [
 export const useStore = create<SLTTState>()(
   persist(
     (set, get) => ({
-      clients: seedClients,
-      dossiers: seedDossiers,
-      ecritures: seedEcritures,
-      stock: seedStock,
-      mouvements: seedMouvements,
-      bons: seedBons,
-      users: seedUsers,
-      subDossiers: seedSubDossiers,
-      fichiers: seedFichiers,
-      devis: seedDevis,
-      comments: seedComments,
-      transporteurs: seedTransporteurs,
+      clients: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedClients,
+      dossiers: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedDossiers,
+      ecritures: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedEcritures,
+      stock: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedStock,
+      mouvements: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedMouvements,
+      bons: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedBons,
+      users: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedUsers,
+      subDossiers: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedSubDossiers,
+      fichiers: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedFichiers,
+      devis: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedDevis,
+      comments: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedComments,
+      transporteurs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedTransporteurs,
       factures: [],
-      fournisseurs: seedFournisseurs,
-      dossierFournisseurs: seedDossierFournisseurs,
-      auditLogs: initialAuditLogs,
+      fournisseurs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedFournisseurs,
+      dossierFournisseurs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedDossierFournisseurs,
+      auditLogs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : initialAuditLogs,
       ...INITIAL_SEQUENCES,
 
+      fetchData: async () => {
+        if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
+        try {
+          const [
+            { data: clients },
+            { data: dossiers },
+            { data: ecritures },
+            { data: stock },
+            { data: mouvements },
+            { data: bons },
+            { data: subDossiers },
+            { data: fichiers },
+            { data: comments },
+            { data: devis },
+            { data: transporteurs },
+            { data: factures },
+            { data: fournisseurs },
+            { data: dossierFournisseurs },
+            { data: profiles },
+            { data: auditLogs },
+          ] = await Promise.all([
+            supabase.from("clients").select("*"),
+            supabase.from("dossiers").select("*, clients(nom)"),
+            supabase.from("ecritures").select("*, clients(nom)"),
+            supabase.from("stock_items").select("*"),
+            supabase.from("mouvements").select("*"),
+            supabase.from("bons_sortie").select("*"),
+            supabase.from("sub_dossiers").select("*"),
+            supabase.from("dossier_fichiers").select("*"),
+            supabase.from("dossier_comments").select("*"),
+            supabase.from("devis").select("*"),
+            supabase.from("transporteurs").select("*"),
+            supabase.from("factures").select("*, facture_lignes(*)"),
+            supabase.from("fournisseurs").select("*"),
+            supabase.from("dossier_fournisseurs").select("*, fournisseurs(nom, type), dossiers(reference)"),
+            supabase.from("profiles").select("*"),
+            supabase.from("audit_logs").select("*").order("created_at", { ascending: false }),
+          ]);
+
+          const mappedClients = (clients || []).map(mapClientFromDb);
+          const mappedDossiers = (dossiers || []).map(mapDossierFromDb);
+          const mappedFournisseurs = (fournisseurs || []).map(mapFournisseurFromDb);
+          const mappedDossierFournisseurs = (dossierFournisseurs || []).map(mapDossierFournisseurFromDb);
+
+          set({
+            clients: syncClientStats(mappedDossiers, mappedClients),
+            dossiers: mappedDossiers,
+            ecritures: (ecritures || []).map(mapEcritureFromDb),
+            stock: (stock || []).map(mapStockItemFromDb),
+            mouvements: (mouvements || []).map(mapMouvementFromDb),
+            bons: (bons || []).map(mapBonFromDb),
+            subDossiers: (subDossiers || []).map(mapSubDossierFromDb),
+            fichiers: (fichiers || []).map(mapFichierFromDb),
+            comments: (comments || []).map(mapCommentFromDb),
+            devis: (devis || []).map(mapDevisFromDb),
+            transporteurs: (transporteurs || []).map(mapTransporteurFromDb),
+            factures: (factures || []).map(mapFactureFromDb),
+            fournisseurs: syncFournisseurStats(mappedDossierFournisseurs, mappedFournisseurs),
+            dossierFournisseurs: mappedDossierFournisseurs,
+            users: (profiles || []).map(mapProfileFromDb),
+            auditLogs: (auditLogs || []).map(mapAuditLogFromDb),
+          });
+        } catch (e) {
+          console.error("[SLTT] Erreur de chargement Supabase:", e);
+        }
+      },
+
       // ---- Audit ----
-      addAuditLog: (module, action, detail) => {
+      addAuditLog: async (module, action, detail) => {
         const seq = get().auditSeq;
         const id = `A-${pad(seq, 3)}`;
+        const dateStr = new Date().toISOString();
+        const userStr = getConnectedUserName();
         const newLog: AuditEntry = {
           id,
-          date: new Date().toISOString(),
-          user: getConnectedUserName(),
+          date: dateStr,
+          user: userStr,
           module,
           action,
           detail,
           ip: "N/A",
         };
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          try {
+            await supabase.from("audit_logs").insert({
+              user_nom: userStr,
+              module,
+              action,
+              detail,
+              ip: "N/A",
+            });
+          } catch { /* ignore */ }
+        }
+
         set((s) => ({
           auditLogs: [newLog, ...s.auditLogs],
           auditSeq: seq + 1,
@@ -461,31 +808,101 @@ export const useStore = create<SLTTState>()(
       },
 
       // ---- Dossiers ----
-      addDossier: (input) => {
+      addDossier: async (input) => {
         const seq = get().dossierSeq;
-        const id = `D-${pad(seq, 4)}`;
         const year = new Date().getFullYear();
         const reference = `SLTT-TR-${year}-${pad(seq, 4)}`;
-        const newDossier: Dossier = {
-          id,
-          reference,
-          ...input,
-          montantPaye: 0,
-          notes: input.notes ?? "",
-        };
-        set((s) => {
-          const updatedDossiers = [newDossier, ...s.dossiers];
-          return {
-            dossiers: updatedDossiers,
-            dossierSeq: seq + 1,
-            clients: syncClientStats(updatedDossiers, s.clients),
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("dossiers")
+            .insert({
+              reference,
+              client_id: input.clientId,
+              bl: input.bl,
+              camion: input.camion,
+              nature: input.nature,
+              droit_douane: input.droitDouane,
+              frais_circuit: input.fraisCircuit,
+              frais_prestation: input.fraisPrestation,
+              montant_investi: input.montantInvesti,
+              montant_paye: 0,
+              statut: input.statut,
+              date: input.date,
+              date_echeance: input.dateEcheance,
+              date_dedouanement: input.dateDedouanement,
+              checklist_docs: [],
+              mode_transport: input.modeTransport,
+              no_conteneur: input.noConteneur,
+              port_entree: input.portEntree,
+              poids_total: input.poidsTotal,
+              notes: input.notes,
+            })
+            .select("*, clients(nom)")
+            .single();
+
+          if (error) throw error;
+          const newDossier = mapDossierFromDb(data);
+          set((s) => {
+            const updatedDossiers = [newDossier, ...s.dossiers];
+            return {
+              dossiers: updatedDossiers,
+              dossierSeq: seq + 1,
+              clients: syncClientStats(updatedDossiers, s.clients),
+            };
+          });
+          await get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
+          return newDossier;
+        } else {
+          const id = `D-${pad(seq, 4)}`;
+          const newDossier: Dossier = {
+            id,
+            reference,
+            ...input,
+            montantPaye: 0,
+            notes: input.notes ?? "",
           };
-        });
-        get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
-        return newDossier;
+          set((s) => {
+            const updatedDossiers = [newDossier, ...s.dossiers];
+            return {
+              dossiers: updatedDossiers,
+              dossierSeq: seq + 1,
+              clients: syncClientStats(updatedDossiers, s.clients),
+            };
+          });
+          await get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
+          return newDossier;
+        }
       },
-      updateDossier: (id, input) => {
+
+      updateDossier: async (id, input) => {
         const existing = get().dossiers.find((d) => d.id === id);
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("dossiers")
+            .update({
+              client_id: input.clientId,
+              bl: input.bl,
+              camion: input.camion,
+              nature: input.nature,
+              droit_douane: input.droitDouane,
+              frais_circuit: input.fraisCircuit,
+              frais_prestation: input.fraisPrestation,
+              montant_investi: input.montantInvesti,
+              statut: input.statut,
+              date: input.date,
+              date_echeance: input.dateEcheance,
+              date_dedouanement: input.dateDedouanement,
+              mode_transport: input.modeTransport,
+              no_conteneur: input.noConteneur,
+              port_entree: input.portEntree,
+              poids_total: input.poidsTotal,
+              notes: input.notes,
+            })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => {
           const updatedDossiers = s.dossiers.map((d) => d.id === id ? { ...d, ...input } : d);
           return {
@@ -493,24 +910,42 @@ export const useStore = create<SLTTState>()(
             clients: syncClientStats(updatedDossiers, s.clients),
           };
         });
+
         if (existing) {
-          get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`);
+          await get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`);
         }
       },
-      updateDossierChecklist: (dossierId, docId, checked) => {
+
+      updateDossierChecklist: async (dossierId, docId, checked) => {
+        const dossier = get().dossiers.find((d) => d.id === dossierId);
+        if (!dossier) return;
+
+        const updatedDocs = checked
+          ? [...(dossier.checklistDocs ?? []), docId]
+          : (dossier.checklistDocs ?? []).filter((x) => x !== docId);
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("dossiers")
+            .update({ checklist_docs: updatedDocs })
+            .eq("id", dossierId);
+          if (error) throw error;
+        }
+
         set((s) => ({
           dossiers: s.dossiers.map((d) =>
-            d.id !== dossierId ? d : {
-              ...d,
-              checklistDocs: checked
-                ? [...(d.checklistDocs ?? []), docId]
-                : (d.checklistDocs ?? []).filter((x) => x !== docId),
-            }
+            d.id !== dossierId ? d : { ...d, checklistDocs: updatedDocs }
           ),
         }));
       },
-      removeDossier: (id) => {
+
+      removeDossier: async (id) => {
         const dossier = get().dossiers.find((d) => d.id === id);
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("dossiers").delete().eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => {
           const updatedDossiers = s.dossiers.filter((d) => d.id !== id);
           return {
@@ -522,22 +957,59 @@ export const useStore = create<SLTTState>()(
             comments: s.comments.filter((c) => c.dossierId !== id),
           };
         });
+
         if (dossier) {
-          // LM-04 Option B: BonSortie n'a pas de champ dossierId — pas de nettoyage possible.
-          // On logue les bons orphelins potentiels pour traçabilité.
-          const orphanBons = get().bons.filter((b) => b.reference.includes(dossier.reference));
-          const orphanNote = orphanBons.length > 0 ? ` — ${orphanBons.length} bon(s) potentiellement orphelin(s) à vérifier` : "";
-          get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé — Client ${dossier.clientNom}${orphanNote}`);
+          const orphanBons = get().bons.filter((b) => b.marchandise.includes(dossier.reference));
+          const orphanNote = orphanBons.length > 0 ? ` — ${orphanBons.length} bon(s) potentiellement orphelin(s)` : "";
+          await get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé${orphanNote}`);
         }
       },
+
       getDossier: (id) => get().dossiers.find((d) => d.id === id),
-      transitionDossier: (id, newStatut, montantRecu, modePaiement, transitionNote) => {
+
+      transitionDossier: async (id, newStatut, montantRecu, modePaiement, transitionNote) => {
         const dossier = get().dossiers.find((d) => d.id === id);
         if (!dossier) return;
+
         const updatedMontantPaye =
           montantRecu !== undefined
             ? Math.min(dossier.montantInvesti, dossier.montantPaye + montantRecu)
             : dossier.montantPaye;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("dossiers")
+            .update({ statut: newStatut, montant_paye: updatedMontantPaye })
+            .eq("id", id);
+          if (error) throw error;
+
+          if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
+            const today = new Date().toISOString().slice(0, 10);
+            const existing = get().ecritures.find((e) => e.dossierId === id);
+            if (existing) {
+              await supabase
+                .from("ecritures")
+                .update({
+                  montant_paye: updatedMontantPaye,
+                  mode_paiement: modePaiement ?? existing.modePaiement,
+                  date_paiement: today,
+                  note: transitionNote || existing.note || `Solde dossier ${dossier.reference}`,
+                })
+                .eq("dossier_id", id);
+            } else {
+              await supabase.from("ecritures").insert({
+                date: today,
+                date_paiement: today,
+                client_id: dossier.clientId,
+                dossier_id: dossier.id,
+                montant_investi: dossier.montantInvesti,
+                montant_paye: updatedMontantPaye,
+                mode_paiement: modePaiement ?? "Virement",
+                note: transitionNote || `Solde dossier ${dossier.reference}`,
+              });
+            }
+          }
+        }
 
         set((s) => {
           const updatedDossiers = s.dossiers.map((d) =>
@@ -552,7 +1024,6 @@ export const useStore = create<SLTTState>()(
             const today = new Date().toISOString().slice(0, 10);
             const existingIdx = s.ecritures.findIndex((e) => e.dossierId === id);
             if (existingIdx >= 0) {
-              // Met à jour l'écriture existante plutôt que d'en créer une nouvelle
               updatedEcritures = s.ecritures.map((e) =>
                 e.dossierId === id
                   ? {
@@ -590,7 +1061,8 @@ export const useStore = create<SLTTState>()(
             clients: syncClientStats(updatedDossiers, s.clients),
           };
         });
-        get().addAuditLog(
+
+        await get().addAuditLog(
           "Dossiers",
           "Validation",
           `Dossier ${dossier.reference} → ${newStatut}${montantRecu ? ` — ${montantRecu.toLocaleString("fr-FR")} FCFA reçus` : ""}`,
@@ -598,300 +1070,512 @@ export const useStore = create<SLTTState>()(
       },
 
       // ---- Clients ----
-      addClient: (input) => {
+      addClient: async (input) => {
         const seq = get().clientSeq;
-        const id = `C-${pad(seq, 3)}`;
-        const newClient: Client = {
-          id,
-          ...input,
-          nbDossiers: 0,
-          totalDu: 0,
-          totalPaye: 0,
-        };
-        set((s) => ({ clients: [newClient, ...s.clients], clientSeq: seq + 1 }));
-        get().addAuditLog("Clients", "Création", `Client « ${input.nom} » ajouté`);
-        return newClient;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("clients")
+            .insert({
+              nom: input.nom,
+              type: input.type,
+              telephone: input.telephone,
+              email: input.email,
+              adresse: input.adresse,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newClient = mapClientFromDb(data);
+          set((s) => ({
+            clients: [newClient, ...s.clients],
+            clientSeq: seq + 1,
+          }));
+          await get().addAuditLog("Clients", "Création", `Client ${input.nom} créé`);
+          return newClient;
+        } else {
+          const id = `C-${pad(seq, 3)}`;
+          const newClient: Client = {
+            id,
+            nom: input.nom,
+            type: input.type,
+            telephone: input.telephone,
+            email: input.email,
+            adresse: input.adresse,
+            nbDossiers: 0,
+            totalPaye: 0,
+            totalDu: 0,
+          };
+          set((s) => ({
+            clients: [newClient, ...s.clients],
+            clientSeq: seq + 1,
+          }));
+          await get().addAuditLog("Clients", "Création", `Client ${input.nom} créé`);
+          return newClient;
+        }
       },
-      updateClient: (id, input) => {
-        set((s) => {
-          const updatedClients = s.clients.map((c) => c.id === id ? { ...c, ...input } : c);
-          // Cascade du nom sur les dossiers et écritures existants
-          const updatedDossiers = s.dossiers.map((d) =>
-            d.clientId === id ? { ...d, clientNom: input.nom } : d,
-          );
-          const updatedEcritures = s.ecritures.map((e) =>
-            e.clientId === id ? { ...e, clientNom: input.nom } : e,
-          );
-          return { clients: updatedClients, dossiers: updatedDossiers, ecritures: updatedEcritures };
-        });
+
+      updateClient: async (id, input) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("clients")
+            .update({
+              nom: input.nom,
+              type: input.type,
+              telephone: input.telephone,
+              email: input.email,
+              adresse: input.adresse,
+            })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          clients: s.clients.map((c) => (c.id === id ? { ...c, ...input } : c)),
+        }));
+        await get().addAuditLog("Clients", "Modification", `Client ${input.nom} mis à jour`);
       },
+
       getClient: (id) => get().clients.find((c) => c.id === id),
 
       // ---- Comptabilité ----
-      recordPayment: (ecritureId, montant, mode, date, note) => {
-        const ecriture = get().ecritures.find((e) => e.id === ecritureId);
-        if (!ecriture) return;
-        set((s) => {
-          const updatedEcritures = s.ecritures.map((e) =>
-            e.id === ecritureId
-              ? {
-                  ...e,
-                  montantPaye: Math.min(e.montantInvesti, e.montantPaye + montant),
-                  modePaiement: mode,
-                  datePaiement: date,
-                  note: note || e.note,
-                }
-              : e,
-          );
-          if (!ecriture.dossierId) return { ecritures: updatedEcritures };
-          const totalPaye = updatedEcritures
-            .filter((e) => e.dossierId === ecriture.dossierId)
-            .reduce((sum, e) => sum + e.montantPaye, 0);
-          const updatedDossiers = s.dossiers.map((d) =>
-            d.id === ecriture.dossierId
-              ? { ...d, montantPaye: Math.min(d.montantInvesti, totalPaye) }
-              : d,
-          );
-          return {
-            ecritures: updatedEcritures,
-            dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
-          };
-        });
-        get().addAuditLog(
-          "Comptabilité",
-          "Paiement",
-          `Paiement ${montant.toLocaleString("fr-FR")} FCFA — Écriture ${ecritureId}`,
-        );
+      recordPayment: async (ecritureId, montant, mode, date, note) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("ecritures")
+            .update({
+              montant_paye: montant,
+              mode_paiement: mode,
+              date_paiement: date,
+              note: note,
+            })
+            .eq("id", ecritureId);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          ecritures: s.ecritures.map((e) =>
+            e.id !== ecritureId ? e : { ...e, montantPaye: montant, modePaiement: mode, datePaiement: date, note }
+          ),
+        }));
+        await get().addAuditLog("Comptabilité", "Paiement", `Paiement enregistré sur écriture ${ecritureId}`);
       },
-      addEcriture: (e) => {
+
+      addEcriture: async (e) => {
         const seq = get().ecritureSeq;
-        const id = `E-${seq}`;
-        const newEcriture: Ecriture = { id, ...e };
-        set((s) => {
-          const updatedEcritures = [newEcriture, ...s.ecritures];
-          if (!e.dossierId) return { ecritures: updatedEcritures, ecritureSeq: seq + 1 };
-          const totalPaye = updatedEcritures
-            .filter((ec) => ec.dossierId === e.dossierId)
-            .reduce((sum, ec) => sum + ec.montantPaye, 0);
-          const updatedDossiers = s.dossiers.map((d) =>
-            d.id === e.dossierId
-              ? { ...d, montantPaye: Math.min(d.montantInvesti, totalPaye) }
-              : d,
-          );
-          return {
-            ecritures: updatedEcritures,
+        const dossier = get().dossiers.find((d) => d.id === e.dossierId);
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("ecritures")
+            .insert({
+              date: e.date,
+              date_paiement: e.datePaiement || null,
+              client_id: e.clientId,
+              dossier_id: e.dossierId || null,
+              montant_investi: e.montantInvesti,
+              montant_paye: e.montantPaye,
+              mode_paiement: e.modePaiement,
+              note: e.note || null,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newEcriture = mapEcritureFromDb(data);
+          set((s) => ({
+            ecritures: [newEcriture, ...s.ecritures],
             ecritureSeq: seq + 1,
-            dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
+          }));
+          await get().addAuditLog("Comptabilité", "Création", `Écriture créée pour ${e.clientNom}`);
+          return newEcriture;
+        } else {
+          const id = `E-${seq}`;
+          const newEcriture: Ecriture = {
+            id,
+            ...e,
           };
-        });
-        return newEcriture;
+          set((s) => ({
+            ecritures: [newEcriture, ...s.ecritures],
+            ecritureSeq: seq + 1,
+          }));
+          await get().addAuditLog("Comptabilité", "Création", `Écriture créée pour ${e.clientNom}`);
+          return newEcriture;
+        }
       },
 
       // ---- Stock ----
-      addStockItem: (input) => {
+      addStockItem: async (input) => {
         const seq = get().stockSeq;
-        const id = `S-${pad(seq, 2)}`;
-        const newItem: StockItem = { id, ...input };
-        set((s) => ({ stock: [...s.stock, newItem], stockSeq: seq + 1 }));
-        return newItem;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("stock_items")
+            .insert({
+              marchandise: input.marchandise,
+              quantite: input.quantite,
+              unite: input.unite,
+              seuil: input.seuil,
+              depositaire: input.depositaire,
+              commercial: input.commercial,
+              somme_payee: input.sommePayee,
+              reste_a_payer: input.resteAPayer,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newItem = mapStockItemFromDb(data);
+          set((s) => ({
+            stock: [newItem, ...s.stock],
+            stockSeq: seq + 1,
+          }));
+          await get().addAuditLog("Stock", "Création", `Article de stock créé : ${input.marchandise}`);
+          return newItem;
+        } else {
+          const id = `S-${pad(seq, 3)}`;
+          const newItem: StockItem = {
+            id,
+            ...input,
+          };
+          set((s) => ({
+            stock: [newItem, ...s.stock],
+            stockSeq: seq + 1,
+          }));
+          await get().addAuditLog("Stock", "Création", `Article de stock créé : ${input.marchandise}`);
+          return newItem;
+        }
       },
-      addStockEntry: (stockId, quantite, responsable) => {
-        const now = new Date();
+
+      addStockEntry: async (stockId, quantite, responsable) => {
+        const stockItem = get().stock.find((s) => s.id === stockId);
+        if (!stockItem) return;
+
+        const newQty = stockItem.quantite + quantite;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
+          await supabase.from("mouvements").insert({
+            stock_id: stockId,
+            type: "Entrée",
+            quantite,
+            date: new Date().toISOString(),
+            responsable,
+            marchandise: stockItem.marchandise,
+            unite: stockItem.unite,
+            bon_ref: null,
+          });
+        }
+
         const seq = get().mouvementSeq;
-        const mvt: Mouvement = {
-          id: `M-${pad(seq, 3)}`,
-          date: now.toISOString().slice(0, 10),
+        const newMouvement: Mouvement = {
+          id: `M-${seq}`,
+          date: new Date().toISOString(),
           type: "Entrée",
-          marchandise: get().stock.find((s) => s.id === stockId)?.marchandise ?? "",
+          marchandise: stockItem.marchandise,
           quantite,
-          unite: get().stock.find((s) => s.id === stockId)?.unite ?? "",
+          unite: stockItem.unite,
           responsable,
-          bonRef: "—",
         };
+
         set((s) => ({
-          stock: s.stock.map((it) =>
-            it.id === stockId
-              ? { ...it, quantite: it.quantite + quantite }
-              : it,
-          ),
-          mouvements: [mvt, ...s.mouvements],
+          stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
+          mouvements: [newMouvement, ...s.mouvements],
           mouvementSeq: seq + 1,
         }));
+        await get().addAuditLog("Stock", "Modification", `Entrée de stock : +${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`);
       },
-      addStockExit: (stockId, quantite, responsable, bonRef) => {
-        const now = new Date();
+
+      addStockExit: async (stockId, quantite, responsable, bonRef) => {
+        const stockItem = get().stock.find((s) => s.id === stockId);
+        if (!stockItem) return;
+
+        const newQty = Math.max(0, stockItem.quantite - quantite);
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
+          await supabase.from("mouvements").insert({
+            stock_id: stockId,
+            type: "Sortie",
+            quantite,
+            date: new Date().toISOString(),
+            responsable,
+            marchandise: stockItem.marchandise,
+            unite: stockItem.unite,
+            bon_ref: bonRef || null,
+          });
+        }
+
         const seq = get().mouvementSeq;
-        const item = get().stock.find((s) => s.id === stockId);
-        const mvt: Mouvement = {
-          id: `M-${pad(seq, 3)}`,
-          date: now.toISOString().slice(0, 10),
+        const newMouvement: Mouvement = {
+          id: `M-${seq}`,
+          date: new Date().toISOString(),
           type: "Sortie",
-          marchandise: item?.marchandise ?? "",
+          marchandise: stockItem.marchandise,
           quantite,
-          unite: item?.unite ?? "",
+          unite: stockItem.unite,
           responsable,
-          bonRef: bonRef ?? "—",
+          bonRef,
         };
+
         set((s) => ({
-          stock: s.stock.map((it) =>
-            it.id === stockId
-              ? { ...it, quantite: Math.max(0, it.quantite - quantite) }
-              : it,
-          ),
-          mouvements: [mvt, ...s.mouvements],
+          stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
+          mouvements: [newMouvement, ...s.mouvements],
           mouvementSeq: seq + 1,
         }));
+        await get().addAuditLog("Stock", "Modification", `Sortie de stock : -${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`);
       },
 
       // ---- Bons de sortie ----
-      addBon: (input) => {
+      addBon: async (input) => {
         const seq = get().bonSeq;
-        const id = `B-${pad(seq, 4)}`;
         const year = new Date().getFullYear();
-        const reference = `BS-${year}-${pad(seq, 4)}`;
-        // LM-07: si statut est undefined, traiter comme brouillon (sécurité)
-        const isBrouillon = input.statut !== "Validé";
-        const newBon: BonSortie = {
-          id,
-          reference,
-          ...input,
-          statut: isBrouillon ? "Brouillon" : "Validé",
-        };
-        const item = !isBrouillon ? findStockForBon(get().stock, input) : undefined;
-        set((s) => ({
-          bons: [newBon, ...s.bons],
-          bonSeq: seq + 1,
-          stock: item
-            ? s.stock.map((it) =>
-                it.id === item.id
-                  ? { ...it, quantite: Math.max(0, it.quantite - input.quantite) }
-                  : it,
-              )
-            : s.stock,
-          mouvements: item
-            ? [
-                {
-                  id: `M-${pad(s.mouvementSeq, 3)}`,
-                  date: input.date,
-                  type: "Sortie" as const,
-                  marchandise: input.marchandise,
-                  quantite: input.quantite,
-                  unite: input.unite,
-                  responsable: getConnectedUserName(),
-                  bonRef: reference,
-                },
-                ...s.mouvements,
-              ]
-            : s.mouvements,
-          mouvementSeq: item ? s.mouvementSeq + 1 : s.mouvementSeq,
-        }));
-        return newBon;
+        const numero = `BS-${year}-${pad(seq, 4)}`;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("bons_sortie")
+            .insert({
+              numero,
+              date: input.date,
+              client_id: input.clientId,
+              client_nom: input.clientNom,
+              stock_id: input.stockId,
+              marchandise: input.marchandise,
+              quantite: input.quantite,
+              unite: input.unite,
+              motif: input.motif,
+              montant: input.montant,
+              statut: input.statut || "Brouillon",
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newBon = mapBonFromDb(data);
+          set((s) => ({
+            bons: [newBon, ...s.bons],
+            bonSeq: seq + 1,
+          }));
+          await get().addAuditLog("Bons", "Création", `Bon ${numero} créé`);
+          return newBon;
+        } else {
+          const id = `BS-${pad(seq, 3)}`;
+          const newBon: BonSortie = {
+            id,
+            reference: numero,
+            ...input,
+            statut: input.statut || "Brouillon",
+          };
+          set((s) => ({
+            bons: [newBon, ...s.bons],
+            bonSeq: seq + 1,
+          }));
+          await get().addAuditLog("Bons", "Création", `Bon ${numero} créé`);
+          return newBon;
+        }
       },
-      validateBon: (id) => {
+
+      validateBon: async (id) => {
         const bon = get().bons.find((b) => b.id === id);
-        if (!bon || bon.statut !== "Brouillon") return false;
-        const item = findStockForBon(get().stock, bon);
-        const stockSuffisant = item === undefined || item.quantite >= bon.quantite;
+        if (!bon || bon.statut === "Validé") return false;
+
+        const stockItem = findStockForBon(get().stock, bon);
+        if (!stockItem || stockItem.quantite < bon.quantite) {
+          return false;
+        }
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          await supabase.from("bons_sortie").update({ statut: "Validé" }).eq("id", id);
+        }
+
+        await get().addStockExit(stockItem.id, bon.quantite, getConnectedUserName(), bon.reference);
+
         set((s) => ({
           bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" } : b)),
-          stock: item
-            ? s.stock.map((it) =>
-                it.id === item.id
-                  ? { ...it, quantite: Math.max(0, it.quantite - bon.quantite) }
-                  : it,
-              )
-            : s.stock,
-          mouvements: item
-            ? [
-                {
-                  id: `M-${pad(s.mouvementSeq, 3)}`,
-                  date: bon.date,
-                  type: "Sortie" as const,
-                  marchandise: bon.marchandise,
-                  quantite: bon.quantite,
-                  unite: bon.unite,
-                  responsable: getConnectedUserName(),
-                  bonRef: bon.reference,
-                },
-                ...s.mouvements,
-              ]
-            : s.mouvements,
-          mouvementSeq: item ? s.mouvementSeq + 1 : s.mouvementSeq,
         }));
-        return stockSuffisant;
+        await get().addAuditLog("Bons", "Validation", `Bon de sortie ${bon.reference} validé`);
+        return true;
       },
 
       // ---- Users ----
-      addUser: (input) => {
+      addUser: async (input) => {
         const seq = get().userSeq;
-        const id = `U-${pad(seq, 2)}`;
-        const newUser: User = {
-          id,
-          nom: input.nom,
-          email: input.email,
-          role: input.role,
-          permissions: input.permissions,
-          motDePasse: input.motDePasse ?? "sltt2026",
-          actif: true,
-          derniereConnexion: new Date().toISOString(),
-        };
-        set((s) => ({ users: [...s.users, newUser], userSeq: seq + 1 }));
-        get().addAuditLog("Utilisateurs", "Création", `Utilisateur ${input.nom} (${input.role}) ajouté`);
-        return newUser;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("profiles")
+            .insert({
+              nom: input.nom,
+              email: input.email,
+              role: input.role,
+              permissions: input.permissions,
+              actif: true,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newUser = mapProfileFromDb(data);
+          set((s) => ({
+            users: [newUser, ...s.users],
+            userSeq: seq + 1,
+          }));
+          await get().addAuditLog("Utilisateurs", "Création", `Utilisateur ${input.nom} créé`);
+          return newUser;
+        } else {
+          const id = `U-${pad(seq, 2)}`;
+          const newUser: User = {
+            id,
+            nom: input.nom,
+            email: input.email,
+            role: input.role,
+            permissions: input.permissions,
+            actif: true,
+            motDePasse: input.motDePasse || "",
+            derniereConnexion: "",
+          };
+          set((s) => ({
+            users: [newUser, ...s.users],
+            userSeq: seq + 1,
+          }));
+          await get().addAuditLog("Utilisateurs", "Création", `Utilisateur ${input.nom} créé`);
+          return newUser;
+        }
       },
-      toggleUserActive: (id) => {
-        const u = get().users.find((x) => x.id === id);
+
+      updateUser: async (id, input) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("profiles")
+            .update({
+              nom: input.nom,
+              email: input.email,
+              role: input.role,
+              permissions: input.permissions,
+            })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
-          users: s.users.map((x) =>
-            x.id === id ? { ...x, actif: !x.actif } : x,
-          ),
+          users: s.users.map((u) => (u.id === id ? { ...u, ...input } : u)),
         }));
-        if (u) get().addAuditLog("Utilisateurs", "Modification", `${u.nom} marqué ${u.actif ? "inactif" : "actif"}`);
+        await get().addAuditLog("Utilisateurs", "Modification", `Utilisateur ${input.nom} mis à jour`);
       },
-      updateUser: (id, input) => {
-        const existing = get().users.find((u) => u.id === id);
+
+      toggleUserActive: async (id) => {
+        const user = get().users.find((u) => u.id === id);
+        if (!user) return;
+
+        const newStatus = !user.actif;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("profiles")
+            .update({ actif: newStatus })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          users: s.users.map((u) => (u.id === id ? { ...u, actif: newStatus } : u)),
+        }));
+        await get().addAuditLog("Utilisateurs", "Modification", `Statut actif de l'utilisateur ${user.nom} basculé à ${newStatus}`);
+      },
+
+      removeUser: async (id) => {
+        const user = get().users.find((u) => u.id === id);
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("profiles").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          users: s.users.filter((u) => u.id !== id),
+        }));
+
+        if (user) {
+          await get().addAuditLog("Utilisateurs", "Suppression", `Utilisateur ${user.nom} supprimé`);
+        }
+      },
+
+      updateLastLogin: async (id) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          await supabase
+            .from("profiles")
+            .update({ derniere_connexion: new Date().toISOString() })
+            .eq("id", id);
+        }
         set((s) => ({
           users: s.users.map((u) =>
-            u.id === id ? { ...u, ...input } : u,
-          ),
-        }));
-        if (existing) get().addAuditLog("Utilisateurs", "Modification", `Utilisateur ${existing.nom} modifié — rôle : ${input.role}`);
-      },
-      removeUser: (id) => {
-        const u = get().users.find((x) => x.id === id);
-        set((s) => ({ users: s.users.filter((u) => u.id !== id) }));
-        if (u) get().addAuditLog("Utilisateurs", "Suppression", `Utilisateur ${u.nom} supprimé`);
-      },
-      updateLastLogin: (id) => {
-        set((s) => ({
-          users: s.users.map((u) =>
-            u.id === id ? { ...u, derniereConnexion: new Date().toISOString() } : u,
+            u.id === id ? { ...u, derniereConnexion: new Date().toISOString() } : u
           ),
         }));
       },
 
       // ---- Sous-dossiers ----
-      addSubDossier: (input) => {
+      addSubDossier: async (input) => {
         const seq = get().subDossierSeq;
-        const id = `SD-${pad(seq, 4)}`;
-        const newSD: SubDossier = {
-          id,
-          ...input,
-          dateCreation: new Date().toISOString().slice(0, 10),
-        };
-        set((s) => ({ subDossiers: [newSD, ...s.subDossiers], subDossierSeq: seq + 1 }));
-        return newSD;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("sub_dossiers")
+            .insert({
+              dossier_id: input.dossierId,
+              nom: input.nom,
+              description: input.description,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newSd = mapSubDossierFromDb(data);
+          set((s) => ({
+            subDossiers: [newSd, ...s.subDossiers],
+            subDossierSeq: seq + 1,
+          }));
+          return newSd;
+        } else {
+          const id = `SD-${pad(seq, 3)}`;
+          const newSd: SubDossier = {
+            id,
+            dossierId: input.dossierId,
+            nom: input.nom,
+            description: input.description,
+            dateCreation: new Date().toISOString(),
+          };
+          set((s) => ({
+            subDossiers: [newSd, ...s.subDossiers],
+            subDossierSeq: seq + 1,
+          }));
+          return newSd;
+        }
       },
-      updateSubDossier: (id, nom, description) => {
+
+      updateSubDossier: async (id, nom, description) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("sub_dossiers")
+            .update({ nom, description })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
           subDossiers: s.subDossiers.map((sd) =>
-            sd.id === id ? { ...sd, nom, description } : sd,
+            sd.id === id ? { ...sd, nom, description } : sd
           ),
         }));
       },
-      deleteSubDossier: (id) => {
+
+      deleteSubDossier: async (id) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("sub_dossiers").delete().eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
           subDossiers: s.subDossiers.filter((sd) => sd.id !== id),
           fichiers: s.fichiers.filter((f) => f.sousDossierId !== id),
@@ -899,270 +1583,774 @@ export const useStore = create<SLTTState>()(
       },
 
       // ---- Fichiers ----
-      addFichier: (input) => {
+      addFichier: async (input) => {
         const seq = get().fichierSeq;
-        const id = `F-${pad(seq, 4)}`;
-        const newF: DossierFichier = {
-          id,
-          ...input,
-          dateUpload: new Date().toISOString().slice(0, 10),
-        };
-        set((s) => ({ fichiers: [newF, ...s.fichiers], fichierSeq: seq + 1 }));
-        return newF;
-      },
-      deleteFichier: (id) => {
-        set((s) => ({ fichiers: s.fichiers.filter((f) => f.id !== id) }));
-      },
-      deleteFichiersByDossier: (dossierId) => {
-        set((s) => ({ fichiers: s.fichiers.filter((f) => f.dossierId !== dossierId) }));
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("dossier_fichiers")
+            .insert({
+              dossier_id: input.dossierId,
+              sub_dossier_id: input.sousDossierId,
+              nom: input.nom,
+              taille: input.taille,
+              type: input.type,
+              data_url: input.dataUrl,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newFile = mapFichierFromDb(data);
+          set((s) => ({
+            fichiers: [newFile, ...s.fichiers],
+            fichierSeq: seq + 1,
+          }));
+          return newFile;
+        } else {
+          const id = `F-${pad(seq, 4)}`;
+          const newFile: DossierFichier = {
+            id,
+            dossierId: input.dossierId,
+            sousDossierId: input.sousDossierId,
+            nom: input.nom,
+            taille: input.taille,
+            type: input.type,
+            dateUpload: new Date().toISOString(),
+            dataUrl: input.dataUrl,
+          };
+          set((s) => ({
+            fichiers: [newFile, ...s.fichiers],
+            fichierSeq: seq + 1,
+          }));
+          return newFile;
+        }
       },
 
-      // ---- Commentaires ----
-      addComment: (dossierId, texte) => {
-        const seq = get().commentSeq;
-        const id = `CMT-${pad(seq, 4)}`;
-        const newComment: DossierComment = {
-          id,
-          dossierId,
-          userName: getConnectedUserName(),
-          texte,
-          date: new Date().toISOString(),
-        };
-        set((s) => ({ comments: [...s.comments, newComment], commentSeq: seq + 1 }));
-        return newComment;
+      deleteFichier: async (id) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("dossier_fichiers").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          fichiers: s.fichiers.filter((f) => f.id !== id),
+        }));
       },
-      deleteComment: (id) => {
-        set((s) => ({ comments: s.comments.filter((c) => c.id !== id) }));
+
+      deleteFichiersByDossier: async (dossierId) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("dossier_fichiers").delete().eq("dossier_id", dossierId);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          fichiers: s.fichiers.filter((f) => f.dossierId !== dossierId),
+        }));
+      },
+
+      // ---- Commentaires dossiers ----
+      addComment: async (dossierId, texte) => {
+        const seq = get().commentSeq;
+        const userNom = getConnectedUserName();
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("dossier_comments")
+            .insert({
+              dossier_id: dossierId,
+              texte,
+              user_nom: userNom,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newComment = mapCommentFromDb(data);
+          set((s) => ({
+            comments: [newComment, ...s.comments],
+            commentSeq: seq + 1,
+          }));
+          return newComment;
+        } else {
+          const id = `COM-${pad(seq, 4)}`;
+          const newComment: DossierComment = {
+            id,
+            dossierId,
+            texte,
+            userName: userNom,
+            date: new Date().toISOString(),
+          };
+          set((s) => ({
+            comments: [newComment, ...s.comments],
+            commentSeq: seq + 1,
+          }));
+          return newComment;
+        }
+      },
+
+      deleteComment: async (id) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("dossier_comments").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          comments: s.comments.filter((c) => c.id !== id),
+        }));
       },
 
       // ---- Devis ----
-      addDevis: (input) => {
+      addDevis: async (input) => {
         const seq = get().devisSeq;
         const year = new Date().getFullYear();
-        const id = `DV-${pad(seq, 3)}`;
         const reference = `DEVIS-${year}-${pad(seq, 4)}`;
-        const total = input.droitDouane + input.fraisCircuit + input.fraisPrestation;
-        const newDevis: Devis = {
-          id,
-          reference,
-          ...input,
-          total,
-          statut: "Brouillon",
-          dateCreation: new Date().toISOString().slice(0, 10),
-        };
-        set((s) => ({ devis: [newDevis, ...s.devis], devisSeq: seq + 1 }));
-        get().addAuditLog("Dossiers", "Création", `Devis ${reference} créé — ${input.clientNom}`);
-        return newDevis;
+
+        const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("devis")
+            .insert({
+              reference,
+              client_id: input.clientId,
+              nature: input.nature,
+              droit_douane: input.droitDouane,
+              frais_circuit: input.fraisCircuit,
+              frais_prestation: input.fraisPrestation,
+              total,
+              statut: "Brouillon",
+              date_validite: input.dateValidite,
+              notes: input.notes,
+            })
+            .select("*, clients(nom)")
+            .single();
+
+          if (error) throw error;
+          const newDevis = mapDevisFromDb(data);
+          set((s) => ({
+            devis: [newDevis, ...s.devis],
+            devisSeq: seq + 1,
+          }));
+          return newDevis;
+        } else {
+          const id = `DV-${pad(seq, 3)}`;
+          const newDevis: Devis = {
+            id,
+            reference,
+            ...input,
+            statut: "Brouillon",
+            total,
+            dateCreation: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({
+            devis: [newDevis, ...s.devis],
+            devisSeq: seq + 1,
+          }));
+          return newDevis;
+        }
       },
-      updateDevis: (id, input) => {
-        const total = input.droitDouane + input.fraisCircuit + input.fraisPrestation;
+
+      updateDevis: async (id, input) => {
+        const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("devis")
+            .update({
+              client_id: input.clientId,
+              nature: input.nature,
+              droit_douane: input.droitDouane,
+              frais_circuit: input.fraisCircuit,
+              frais_prestation: input.fraisPrestation,
+              total,
+              date_validite: input.dateValidite,
+              notes: input.notes,
+            })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
-          devis: s.devis.map((d) => d.id === id ? { ...d, ...input, total } : d),
+          devis: s.devis.map((d) =>
+            d.id === id
+              ? {
+                  ...d,
+                  ...input,
+                  total,
+                }
+              : d
+          ),
         }));
       },
-      updateDevisStatut: (id, statut) => {
+
+      updateDevisStatut: async (id, statut) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("devis")
+            .update({ statut })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
-          devis: s.devis.map((d) => d.id === id ? { ...d, statut } : d),
+          devis: s.devis.map((d) => (d.id === id ? { ...d, statut } : d)),
         }));
       },
-      expireDevisObsoletes: () => {
+
+      expireDevisObsoletes: async () => {
         const today = new Date().toISOString().slice(0, 10);
+        const obsoletes = get().devis.filter(
+          (d) => d.dateValidite < today && d.statut !== "Accepté" && d.statut !== "Refusé" && d.statut !== "Expiré"
+        );
+
+        if (obsoletes.length === 0) return;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          await supabase
+            .from("devis")
+            .update({ statut: "Expiré" })
+            .in("id", obsoletes.map((o) => o.id));
+        }
+
         set((s) => ({
-          devis: s.devis.map((d) => {
-            if (
-              d.dateValidite < today &&
-              d.statut !== "Accepté" &&
-              d.statut !== "Refusé" &&
-              d.statut !== "Expiré"
-            ) {
-              return { ...d, statut: "Expiré" as DevisStatut };
-            }
-            return d;
-          }),
+          devis: s.devis.map((d) =>
+            d.dateValidite < today && d.statut !== "Accepté" && d.statut !== "Refusé"
+              ? { ...d, statut: "Expiré" as DevisStatut }
+              : d
+          ),
         }));
       },
-      convertDevisToDossier: (id) => {
-        const dv = get().devis.find((d) => d.id === id);
-        if (!dv) return null;
-        const newDossier = get().addDossier({
-          clientId: dv.clientId,
-          clientNom: dv.clientNom,
-          nature: dv.nature,
-          bl: "",
-          camion: "",
+
+      convertDevisToDossier: async (id) => {
+        const dev = get().devis.find((d) => d.id === id);
+        if (!dev) return null;
+
+        await get().updateDevisStatut(id, "Accepté");
+
+        const inputDossier: DossierInput = {
+          clientId: dev.clientId,
+          clientNom: dev.clientNom,
+          nature: `Devis ${dev.reference} : ${dev.notes || "transit"}`,
+          bl: "BL-A-DEFINIR",
+          camion: "NON-DEFINI",
           date: new Date().toISOString().slice(0, 10),
-          droitDouane: dv.droitDouane,
-          fraisCircuit: dv.fraisCircuit,
-          fraisPrestation: dv.fraisPrestation,
-          montantInvesti: dv.total,
+          droitDouane: dev.droitDouane,
+          fraisCircuit: dev.fraisCircuit,
+          fraisPrestation: dev.fraisPrestation,
+          montantInvesti: dev.total,
           statut: "En cours",
-          notes: dv.notes,
-        });
-        set((s) => ({
-          devis: s.devis.map((d) => d.id === id ? { ...d, statut: "Accepté" } : d),
-        }));
+        };
+
+        const newDossier = await get().addDossier(inputDossier);
         return newDossier;
       },
-      removeDevis: (id) => {
-        const dv = get().devis.find((d) => d.id === id);
-        set((s) => ({ devis: s.devis.filter((d) => d.id !== id) }));
-        if (dv) get().addAuditLog("Dossiers", "Suppression", `Devis ${dv.reference} supprimé`);
+
+      removeDevis: async (id) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("devis").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          devis: s.devis.filter((d) => d.id !== id),
+        }));
       },
 
       // ---- Transporteurs ----
-      addTransporteur: (input) => {
+      addTransporteur: async (input) => {
         const seq = get().transporteurSeq;
-        const id = `TRP-${pad(seq, 3)}`;
-        const t: Transporteur = {
-          ...input,
-          id,
-          nbDossiers: 0,
-          dateCreation: new Date().toISOString().slice(0, 10),
-        };
-        set((s) => ({ transporteurs: [t, ...s.transporteurs], transporteurSeq: seq + 1 }));
-        get().addAuditLog("Transporteurs", "Création", `Transporteur ${t.nom} ajouté`);
-        return t;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("transporteurs")
+            .insert({
+              nom: input.nom,
+              contact: input.contact,
+              telephone: input.telephone,
+              email: input.email,
+              vehicule: input.vehicule,
+              immatriculation: input.immatriculation,
+              trajet: input.trajet,
+              capacite: input.capacite,
+              statut: input.statut,
+              notes: input.notes,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newTr = mapTransporteurFromDb(data);
+          set((s) => ({
+            transporteurs: [newTr, ...s.transporteurs],
+            transporteurSeq: seq + 1,
+          }));
+          await get().addAuditLog("Transporteurs", "Création", `Transporteur ${input.nom} ajouté`);
+          return newTr;
+        } else {
+          const id = `T-${pad(seq, 3)}`;
+          const newTr: Transporteur = {
+            id,
+            ...input,
+            nbDossiers: 0,
+            dateCreation: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({
+            transporteurs: [newTr, ...s.transporteurs],
+            transporteurSeq: seq + 1,
+          }));
+          await get().addAuditLog("Transporteurs", "Création", `Transporteur ${input.nom} ajouté`);
+          return newTr;
+        }
       },
-      updateTransporteur: (id, input) => {
+
+      updateTransporteur: async (id, input) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("transporteurs")
+            .update({
+              nom: input.nom,
+              contact: input.contact,
+              telephone: input.telephone,
+              email: input.email,
+              vehicule: input.vehicule,
+              immatriculation: input.immatriculation,
+              trajet: input.trajet,
+              capacite: input.capacite,
+              statut: input.statut,
+              notes: input.notes,
+            })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
-          transporteurs: s.transporteurs.map((t) => t.id === id ? { ...t, ...input } : t),
+          transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, ...input } : t)),
         }));
-        get().addAuditLog("Transporteurs", "Modification", `Transporteur ${id} mis à jour`);
+        await get().addAuditLog("Transporteurs", "Modification", `Transporteur ${input.nom} mis à jour`);
       },
-      updateTransporteurStatut: (id, statut) => {
+
+      updateTransporteurStatut: async (id, statut) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("transporteurs")
+            .update({ statut })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
-          transporteurs: s.transporteurs.map((t) => t.id === id ? { ...t, statut } : t),
+          transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, statut } : t)),
         }));
       },
-      removeTransporteur: (id) => {
-        const t = get().transporteurs.find((x) => x.id === id);
-        set((s) => ({ transporteurs: s.transporteurs.filter((x) => x.id !== id) }));
-        if (t) get().addAuditLog("Transporteurs", "Suppression", `Transporteur ${t.nom} supprimé`);
+
+      removeTransporteur: async (id) => {
+        const trans = get().transporteurs.find((t) => t.id === id);
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("transporteurs").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          transporteurs: s.transporteurs.filter((t) => t.id !== id),
+        }));
+
+        if (trans) {
+          await get().addAuditLog("Transporteurs", "Suppression", `Transporteur ${trans.nom} supprimé`);
+        }
       },
 
       // ---- Factures ----
-      addFacture: (input) => {
+      addFacture: async (input) => {
         const seq = get().factureSeq;
         const year = new Date().getFullYear();
-        const id = `FACT-${pad(seq, 4)}`;
-        const numero = `SLTT-FACT-${year}-${pad(seq, 4)}`;
-        const lignes: FactureLigne[] = input.lignes.map((l, i) => ({
-          id: `${id}-L${i + 1}`,
-          description: l.description,
-          quantite: l.quantite,
-          prixUnitaire: l.prixUnitaire,
-          montantHT: Math.round(l.quantite * l.prixUnitaire),
-        }));
-        const montantHT = lignes.reduce((s, l) => s + l.montantHT, 0);
-        const montantTVA = Math.round(montantHT * (input.tauxTVA / 100));
-        const montantTTC = montantHT + montantTVA;
-        const newFacture: Facture = {
-          id,
-          numero,
-          dossierId: input.dossierId ?? null,
-          clientId: input.clientId,
-          clientNom: input.clientNom,
-          date: input.date,
-          dateEcheance: input.dateEcheance,
-          statut: "Brouillon",
-          lignes,
-          tauxTVA: input.tauxTVA,
-          montantHT,
-          montantTVA,
-          montantTTC,
-          montantPaye: 0,
-          notes: input.notes,
-          creePar: getConnectedUserName(),
-          creeLe: new Date().toISOString(),
-        };
-        set((s) => ({ factures: [newFacture, ...s.factures], factureSeq: seq + 1 }));
-        get().addAuditLog("Factures", "Création", `Facture ${numero} créée — ${input.clientNom}`);
-        return newFacture;
+        const numero = `FACT-${year}-${pad(seq, 4)}`;
+
+        const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
+        const TVA = Math.round(HT * input.tauxTVA);
+        const TTC = HT + TVA;
+        const creePar = getConnectedUserName();
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data: dbFact, error: errFact } = await supabase
+            .from("factures")
+            .insert({
+              numero,
+              dossier_id: input.dossierId,
+              client_id: input.clientId,
+              client_nom: input.clientNom,
+              date: input.date,
+              date_echeance: input.dateEcheance,
+              statut: "Brouillon",
+              taux_tva: input.tauxTVA,
+              montant_ht: HT,
+              montant_tva: TVA,
+              montant_ttc: TTC,
+              montant_paye: 0,
+              notes: input.notes,
+              cree_par: creePar,
+            })
+            .select()
+            .single();
+
+          if (errFact) throw errFact;
+
+          if (input.lignes.length > 0) {
+            const { error: errLignes } = await supabase
+              .from("facture_lignes")
+              .insert(
+                input.lignes.map((l) => ({
+                  facture_id: dbFact.id,
+                  description: l.description,
+                  quantite: l.quantite,
+                  prix_unitaire: l.prixUnitaire,
+                  montant_ht: l.quantite * l.prixUnitaire,
+                }))
+              );
+            if (errLignes) throw errLignes;
+          }
+
+          const { data: fullFact, error: errFetch } = await supabase
+            .from("factures")
+            .select("*, facture_lignes(*)")
+            .eq("id", dbFact.id)
+            .single();
+
+          if (errFetch) throw errFetch;
+
+          const newFacture = mapFactureFromDb(fullFact);
+          set((s) => ({
+            factures: [newFacture, ...s.factures],
+            factureSeq: seq + 1,
+          }));
+          await get().addAuditLog("Factures", "Création", `Facture ${numero} créée`);
+          return newFacture;
+        } else {
+          const id = `F-${pad(seq, 3)}`;
+          const lignes: FactureLigne[] = input.lignes.map((l, idx) => ({
+            id: `FL-${pad(idx + 1, 3)}`,
+            description: l.description,
+            quantite: l.quantite,
+            prixUnitaire: l.prixUnitaire,
+            montantHT: l.quantite * l.prixUnitaire,
+          }));
+
+          const newFacture: Facture = {
+            id,
+            numero,
+            dossierId: input.dossierId || null,
+            clientId: input.clientId,
+            clientNom: input.clientNom,
+            date: input.date,
+            dateEcheance: input.dateEcheance,
+            statut: "Brouillon",
+            lignes,
+            tauxTVA: input.tauxTVA,
+            montantHT: HT,
+            montantTVA: TVA,
+            montantTTC: TTC,
+            montantPaye: 0,
+            notes: input.notes,
+            creePar,
+            creeLe: new Date().toISOString(),
+          };
+
+          set((s) => ({
+            factures: [newFacture, ...s.factures],
+            factureSeq: seq + 1,
+          }));
+          await get().addAuditLog("Factures", "Création", `Facture ${numero} créée`);
+          return newFacture;
+        }
       },
 
-      updateFacture: (id, input) => {
-        const lignes: FactureLigne[] = input.lignes.map((l, i) => ({
-          id: `${id}-L${i + 1}`,
-          description: l.description,
-          quantite: l.quantite,
-          prixUnitaire: l.prixUnitaire,
-          montantHT: Math.round(l.quantite * l.prixUnitaire),
+      updateFacture: async (id, input) => {
+        const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
+        const TVA = Math.round(HT * input.tauxTVA);
+        const TTC = HT + TVA;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error: errFact } = await supabase
+            .from("factures")
+            .update({
+              dossier_id: input.dossierId,
+              client_id: input.clientId,
+              client_nom: input.clientNom,
+              date: input.date,
+              date_echeance: input.dateEcheance,
+              taux_tva: input.tauxTVA,
+              montant_ht: HT,
+              montant_tva: TVA,
+              montant_ttc: TTC,
+              notes: input.notes,
+            })
+            .eq("id", id);
+
+          if (errFact) throw errFact;
+
+          await supabase.from("facture_lignes").delete().eq("facture_id", id);
+          if (input.lignes.length > 0) {
+            await supabase.from("facture_lignes").insert(
+              input.lignes.map((l) => ({
+                facture_id: id,
+                description: l.description,
+                quantite: l.quantite,
+                prix_unitaire: l.prixUnitaire,
+                montant_ht: l.quantite * l.prixUnitaire,
+              }))
+            );
+          }
+        }
+
+        set((s) => ({
+          factures: s.factures.map((fact) => {
+            if (fact.id !== id) return fact;
+            const updatedLignes: FactureLigne[] = input.lignes.map((l, idx) => ({
+              id: `FL-${idx + 1}`,
+              description: l.description,
+              quantite: l.quantite,
+              prixUnitaire: l.prixUnitaire,
+              montantHT: l.quantite * l.prixUnitaire,
+            }));
+            return {
+              ...fact,
+              ...input,
+              montantHT: HT,
+              montantTVA: TVA,
+              montantTTC: TTC,
+              lignes: updatedLignes,
+            };
+          }),
         }));
-        const montantHT = lignes.reduce((s, l) => s + l.montantHT, 0);
-        const montantTVA = Math.round(montantHT * (input.tauxTVA / 100));
-        const montantTTC = montantHT + montantTVA;
+      },
+
+      removeFacture: async (id) => {
+        const fact = get().factures.find((f) => f.id === id);
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("factures").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          factures: s.factures.filter((f) => f.id !== id),
+        }));
+
+        if (fact) {
+          await get().addAuditLog("Factures", "Suppression", `Facture ${fact.numero} supprimée`);
+        }
+      },
+
+      updateFactureStatut: async (id, statut) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("factures")
+            .update({ statut })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          factures: s.factures.map((f) => (f.id === id ? { ...f, statut } : f)),
+        }));
+      },
+
+      recordFacturePaiement: async (id, montant) => {
+        const fact = get().factures.find((f) => f.id === id);
+        if (!fact) return;
+
+        const newPaye = Math.min(fact.montantTTC, fact.montantPaye + montant);
+        const newStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("factures")
+            .update({ montant_paye: newPaye, statut: newStatut })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
           factures: s.factures.map((f) =>
-            f.id === id ? { ...f, ...input, dossierId: input.dossierId ?? null, lignes, montantHT, montantTVA, montantTTC } : f
+            f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f
           ),
         }));
-        get().addAuditLog("Factures", "Modification", `Facture ${id} modifiée`);
-      },
-
-      removeFacture: (id) => {
-        const f = get().factures.find((x) => x.id === id);
-        set((s) => ({ factures: s.factures.filter((x) => x.id !== id) }));
-        if (f) get().addAuditLog("Factures", "Suppression", `Facture ${f.numero} supprimée`);
-      },
-
-      updateFactureStatut: (id, statut) => {
-        const f = get().factures.find((x) => x.id === id);
-        set((s) => ({
-          factures: s.factures.map((x) => x.id === id ? { ...x, statut } : x),
-        }));
-        if (f) get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`);
-      },
-
-      recordFacturePaiement: (id, montant) => {
-        const f = get().factures.find((x) => x.id === id);
-        if (!f) return;
-        const newPaye = Math.min(f.montantTTC, f.montantPaye + montant);
-        const newStatut: FactureStatut = newPaye >= f.montantTTC ? "Soldée" : "Partielle";
-        set((s) => ({
-          factures: s.factures.map((x) =>
-            x.id === id ? { ...x, montantPaye: newPaye, statut: newStatut } : x
-          ),
-        }));
-        if (f) get().addAuditLog("Factures", "Paiement", `${montant.toLocaleString("fr-FR")} FCFA — Facture ${f.numero}`);
+        await get().addAuditLog("Factures", "Paiement", `Encaissement de ${montant.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`);
       },
 
       // ---- Fournisseurs ----
-      addFournisseur: (input) => {
+      addFournisseur: async (input) => {
         const seq = get().fournisseurSeq;
-        const f: Fournisseur = { id: `F-${pad(seq, 3)}`, ...input, nbDossiers: 0, montantTotal: 0 };
-        set((s) => ({ fournisseurs: [f, ...s.fournisseurs], fournisseurSeq: seq + 1 }));
-        return f;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("fournisseurs")
+            .insert({
+              nom: input.nom,
+              type: input.type,
+              contact: input.contact,
+              telephone: input.telephone,
+              email: input.email,
+              adresse: input.adresse,
+              tarif_contractuel: input.tarifContractuel,
+              statut: input.statut || "Actif",
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          const newFourn = mapFournisseurFromDb(data);
+          set((s) => ({
+            fournisseurs: [newFourn, ...s.fournisseurs],
+            fournisseurSeq: seq + 1,
+          }));
+          await get().addAuditLog("Fournisseurs", "Création", `Fournisseur ${input.nom} créé`);
+          return newFourn;
+        } else {
+          const id = `F-${pad(seq, 3)}`;
+          const newFourn: Fournisseur = {
+            id,
+            ...input,
+            statut: input.statut || "Actif",
+            nbDossiers: 0,
+            montantTotal: 0,
+          };
+          set((s) => ({
+            fournisseurs: [newFourn, ...s.fournisseurs],
+            fournisseurSeq: seq + 1,
+          }));
+          await get().addAuditLog("Fournisseurs", "Création", `Fournisseur ${input.nom} créé`);
+          return newFourn;
+        }
       },
-      updateFournisseur: (id, input) => {
-        set((s) => ({ fournisseurs: s.fournisseurs.map((f) => f.id === id ? { ...f, ...input } : f) }));
-      },
-      removeFournisseur: (id) => {
-        set((s) => ({ fournisseurs: s.fournisseurs.filter((f) => f.id !== id) }));
-      },
-      addDossierFournisseur: (input) => {
-        const seq = get().dossierFournisseurSeq;
-        const df: DossierFournisseur = { id: `DF-${pad(seq, 3)}`, ...input };
-        set((s) => {
-          const fournisseurs = s.fournisseurs.map((f) =>
-            f.id !== input.fournisseurId ? f : {
-              ...f,
-              nbDossiers: f.nbDossiers + 1,
-              montantTotal: f.montantTotal + input.montantReel,
-            }
-          );
-          return { dossierFournisseurs: [df, ...s.dossierFournisseurs], dossierFournisseurSeq: seq + 1, fournisseurs };
-        });
-        return df;
-      },
-      updateDossierFournisseur: (id, input) => {
+
+      updateFournisseur: async (id, input) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("fournisseurs")
+            .update({
+              nom: input.nom,
+              type: input.type,
+              contact: input.contact,
+              telephone: input.telephone,
+              email: input.email,
+              adresse: input.adresse,
+              tarif_contractuel: input.tarifContractuel,
+              statut: input.statut,
+            })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
         set((s) => ({
-          dossierFournisseurs: s.dossierFournisseurs.map((df) =>
-            df.id === id ? { ...df, ...input } : df
-          ),
+          fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
         }));
+        await get().addAuditLog("Fournisseurs", "Modification", `Fournisseur ${input.nom} mis à jour`);
       },
-      removeDossierFournisseur: (id) => {
-        set((s) => ({ dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.id !== id) }));
+
+      removeFournisseur: async (id) => {
+        const fourn = get().fournisseurs.find((f) => f.id === id);
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("fournisseurs").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          fournisseurs: s.fournisseurs.filter((f) => f.id !== id),
+          dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.fournisseurId !== id),
+        }));
+
+        if (fourn) {
+          await get().addAuditLog("Fournisseurs", "Suppression", `Fournisseur ${fourn.nom} supprimé`);
+        }
+      },
+
+      addDossierFournisseur: async (input) => {
+        const seq = get().dossierFournisseurSeq;
+
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { data, error } = await supabase
+            .from("dossier_fournisseurs")
+            .insert({
+              dossier_id: input.dossierId,
+              fournisseur_id: input.fournisseurId,
+              description: input.description,
+              montant_budgete: input.montantBudgete,
+              montant_reel: input.montantReel,
+              statut: input.statut || "En attente",
+              date: input.date,
+            })
+            .select("*, fournisseurs(nom, type), dossiers(reference)")
+            .single();
+
+          if (error) throw error;
+          const newDf = mapDossierFournisseurFromDb(data);
+          set((s) => {
+            const updatedDf = [newDf, ...s.dossierFournisseurs];
+            return {
+              dossierFournisseurs: updatedDf,
+              dossierFournisseurSeq: seq + 1,
+              fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
+            };
+          });
+          return newDf;
+        } else {
+          const id = `DF-${pad(seq, 3)}`;
+          const newDf: DossierFournisseur = {
+            id,
+            ...input,
+            statut: input.statut || "En attente",
+          };
+          set((s) => {
+            const updatedDf = [newDf, ...s.dossierFournisseurs];
+            return {
+              dossierFournisseurs: updatedDf,
+              dossierFournisseurSeq: seq + 1,
+              fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
+            };
+          });
+          return newDf;
+        }
+      },
+
+      updateDossierFournisseur: async (id, input) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("dossier_fournisseurs")
+            .update({
+              dossier_id: input.dossierId,
+              fournisseur_id: input.fournisseurId,
+              description: input.description,
+              montant_budgete: input.montantBudgete,
+              montant_reel: input.montantReel,
+              statut: input.statut,
+              date: input.date,
+            })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => {
+          const updatedDf = s.dossierFournisseurs.map((df) => (df.id === id ? { ...df, ...input } : df));
+          return {
+            dossierFournisseurs: updatedDf,
+            fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
+          };
+        });
+      },
+
+      removeDossierFournisseur: async (id) => {
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase.from("dossier_fournisseurs").delete().eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => {
+          const updatedDf = s.dossierFournisseurs.filter((df) => df.id !== id);
+          return {
+            dossierFournisseurs: updatedDf,
+            fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
+          };
+        });
       },
 
       // ---- Reset ----
@@ -1179,40 +2367,17 @@ export const useStore = create<SLTTState>()(
           fichiers: seedFichiers,
           devis: seedDevis,
           comments: seedComments,
-          auditLogs: initialAuditLogs,
           transporteurs: seedTransporteurs,
           factures: [],
           fournisseurs: seedFournisseurs,
           dossierFournisseurs: seedDossierFournisseurs,
+          auditLogs: initialAuditLogs,
           ...INITIAL_SEQUENCES,
         });
       },
     }),
     {
-      name: "sltt-data-v7",
-      // SEC-05: custom storage wrapper to catch QuotaExceededError
-      storage: createJSONStorage(() => ({
-        getItem: (name) => {
-          try { return localStorage.getItem(name); } catch { return null; }
-        },
-        setItem: (name, value) => {
-          try {
-            localStorage.setItem(name, value);
-          } catch (e) {
-            if (e instanceof DOMException && e.name === "QuotaExceededError") {
-              console.warn("[SLTT] localStorage quota dépassé — certaines données ne seront pas persistées.");
-            }
-          }
-        },
-        removeItem: (name) => {
-          try { localStorage.removeItem(name); } catch {}
-        },
-      })),
-      // DX-01: log rehydration errors
-      onRehydrateStorage: () => (_state, error) => {
-        if (error) console.error("[SLTT] Erreur réhydratation store:", error);
-      },
-      // Only persist data, not the methods (methods are recreated by the store)
+      name: "sltt-storage",
       partialize: (s) => ({
         clients: s.clients,
         dossiers: s.dossiers,

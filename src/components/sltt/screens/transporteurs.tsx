@@ -160,16 +160,24 @@ function InlineTransporteurForm({
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    if (isEdit && target) {
-      updateTransporteur(target.id, form);
-      toast({ title: "Transporteur modifié", description: form.nom });
-    } else {
-      const t = addTransporteur(form);
-      toast({ title: "Transporteur créé", description: t.nom });
+    try {
+      if (isEdit && target) {
+        await updateTransporteur(target.id, form);
+        toast({ title: "Transporteur modifié", description: form.nom });
+      } else {
+        const t = await addTransporteur(form);
+        toast({ title: "Transporteur créé", description: t.nom });
+      }
+      onClose();
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e.message || "Impossible d'enregistrer le transporteur",
+        variant: "destructive",
+      });
     }
-    onClose();
   };
 
   return (
@@ -378,16 +386,24 @@ export function TransporteursScreen() {
     setSortBy("date-desc"); setPage(1);
   };
 
-  const handleToggleStatut = (t: Transporteur) => {
+  const handleToggleStatut = async (t: Transporteur) => {
     const next: TransporteurStatut = t.statut === "Actif" ? "Inactif" : "Actif";
-    updateTransporteurStatut(t.id, next);
-    toast({ title: `Transporteur ${next === "Actif" ? "activé" : "désactivé"}`, description: t.nom });
+    try {
+      await updateTransporteurStatut(t.id, next);
+      toast({ title: `Transporteur ${next === "Actif" ? "activé" : "désactivé"}`, description: t.nom });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de modifier le statut", variant: "destructive" });
+    }
   };
 
-  const handleDelete = (t: Transporteur) => {
-    removeTransporteur(t.id);
-    toast({ title: "Transporteur supprimé", description: t.nom });
-    setDeleteTarget(null);
+  const handleDelete = async (t: Transporteur) => {
+    try {
+      await removeTransporteur(t.id);
+      toast({ title: "Transporteur supprimé", description: t.nom });
+      setDeleteTarget(null);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de supprimer le transporteur", variant: "destructive" });
+    }
   };
 
   const handleExportCSV = () => {

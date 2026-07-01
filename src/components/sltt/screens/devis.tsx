@@ -389,38 +389,54 @@ export function DevisScreen() {
   }
 
   /* ---- Actions ---- */
-  function handleSaveForm(input: DevisInput) {
-    if (editDevis) {
-      updateDevis(editDevis.id, input);
-      toast({ title: "Devis modifié", description: editDevis.reference });
-    } else {
-      const d = addDevis(input);
-      toast({ title: "Devis créé", description: d.reference });
+  async function handleSaveForm(input: DevisInput) {
+    try {
+      if (editDevis) {
+        await updateDevis(editDevis.id, input);
+        toast({ title: "Devis modifié", description: editDevis.reference });
+      } else {
+        const d = await addDevis(input);
+        toast({ title: "Devis créé", description: d.reference });
+      }
+      setFormOpen(false);
+      setEditDevis(null);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de sauvegarder le devis", variant: "destructive" });
     }
-    setFormOpen(false);
-    setEditDevis(null);
   }
 
-  function handleQuickStatut(d: Devis, toStatut: DevisStatut) {
-    updateDevisStatut(d.id, toStatut);
-    toast({ title: "Statut mis à jour", description: `${d.reference} → ${toStatut}` });
+  async function handleQuickStatut(d: Devis, toStatut: DevisStatut) {
+    try {
+      await updateDevisStatut(d.id, toStatut);
+      toast({ title: "Statut mis à jour", description: `${d.reference} → ${toStatut}` });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de mettre à jour le statut", variant: "destructive" });
+    }
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     const d = devisList.find((x) => x.id === deleteId);
     if (!d) return;
-    removeDevis(d.id);
-    toast({ title: "Devis supprimé", description: d.reference });
-    setDeleteId(null);
+    try {
+      await removeDevis(d.id);
+      toast({ title: "Devis supprimé", description: d.reference });
+      setDeleteId(null);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de supprimer le devis", variant: "destructive" });
+    }
   }
 
-  function handleConvert() {
+  async function handleConvert() {
     const d = devisList.find((x) => x.id === convertId);
     if (!d) return;
-    const dossier = convertDevisToDossier(d.id);
-    if (dossier) {
-      toast({ title: "Dossier créé", description: `${dossier.reference} ouvert depuis ${d.reference}` });
-      openDossierDetail(dossier.id);
+    try {
+      const dossier = await convertDevisToDossier(d.id);
+      if (dossier) {
+        toast({ title: "Dossier créé", description: `${dossier.reference} ouvert depuis ${d.reference}` });
+        openDossierDetail(dossier.id);
+      }
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message || "Impossible de convertir le devis", variant: "destructive" });
     }
     setConvertId(null);
   }

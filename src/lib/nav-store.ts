@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/lib/mock-data";
 
 export type ViewKey =
@@ -46,7 +47,7 @@ interface NavState {
   openDevisDetail: (id: string, edit?: boolean) => void;
   openClient: (id: string | null) => void;
   login: (role: UserRole, name: string, userId: string, remember: boolean) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const LOGGED_OUT = {
@@ -87,13 +88,19 @@ export const useNav = create<NavState>()(
           rememberMe: remember,
         }),
 
-      logout: () =>
+      logout: async () => {
+        try {
+          if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+            await supabase.auth.signOut();
+          }
+        } catch { /* ignore */ }
         set({
           ...LOGGED_OUT,
           view: "dashboard",
           selectedId: null,
           dossierFormMode: "create",
-        }),
+        });
+      },
     }),
     {
       name: "sltt-auth",
