@@ -29,6 +29,8 @@ export const SESSION_TTL_SHORT = 8 * 60 * 60 * 1000;
 /** TTL session avec "Rester connecté" : 7 jours */
 export const SESSION_TTL_LONG = 7 * 24 * 60 * 60 * 1000;
 
+export type Theme = "light" | "dark";
+
 interface NavState {
   view: ViewKey;
   selectedId: string | null;
@@ -40,6 +42,7 @@ interface NavState {
   currentUserId: string | null;
   loginAt: number | null;
   rememberMe: boolean;
+  theme: Theme;
   go: (view: ViewKey, opts?: { id?: string | null }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
   openDossierDetail: (id: string) => void;
@@ -47,6 +50,8 @@ interface NavState {
   openClient: (id: string | null) => void;
   login: (role: UserRole, name: string, userId: string, remember: boolean) => void;
   logout: () => void;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 }
 
 const LOGGED_OUT = {
@@ -65,6 +70,7 @@ export const useNav = create<NavState>()(
       selectedId: null,
       dossierFormMode: "create",
       devisEditMode: false,
+      theme: "light",
       ...LOGGED_OUT,
 
       go: (view, opts) => set({ view, selectedId: opts?.id ?? null }),
@@ -94,9 +100,12 @@ export const useNav = create<NavState>()(
           selectedId: null,
           dossierFormMode: "create",
         }),
+
+      setTheme: (theme) => set({ theme }),
+      toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
     }),
     {
-      name: "sltt-auth",
+      name: "sltt-auth-v2",
       partialize: (s) => ({
         isAuthenticated: s.isAuthenticated,
         currentRole: s.currentRole,
@@ -104,6 +113,7 @@ export const useNav = create<NavState>()(
         currentUserId: s.currentUserId,
         loginAt: s.loginAt,
         rememberMe: s.rememberMe,
+        theme: s.theme,
       }),
     },
   ),

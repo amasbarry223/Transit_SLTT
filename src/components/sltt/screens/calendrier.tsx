@@ -13,7 +13,7 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { DossierStatutBadge } from "@/components/sltt/status-badge";
+import { DossierStatutBadge, DOSSIER_STATUT_DOT } from "@/components/sltt/status-badge";
 import { PageHeader } from "@/components/sltt/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,17 +38,10 @@ interface CalEvent {
 /* Colors                                                              */
 /* ------------------------------------------------------------------ */
 
-const STATUT_DOT: Record<string, string> = {
-  "En cours":  "bg-blue-500",
-  "Dédouané":  "bg-violet-500",
-  "Livré":     "bg-emerald-500",
-  "Soldé":     "bg-slate-400",
-};
-
 const TYPE_PILL: Record<EventType, string> = {
-  dossier:  "bg-blue-50 border-blue-200 text-blue-700",
-  bon:      "bg-emerald-50 border-emerald-200 text-emerald-700",
-  paiement: "bg-amber-50 border-amber-200 text-amber-700",
+  dossier:  "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-400",
+  bon:      "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400",
+  paiement: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400",
 };
 
 const TYPE_ICON: Record<EventType, React.ComponentType<{ className?: string }>> = {
@@ -107,17 +100,17 @@ function DayPanel({
   return (
     <Card className="border-border/80 shadow-md">
       <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-        <p className="text-sm font-semibold capitalize text-slate-900">{label}</p>
+        <p className="text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">{label}</p>
         <button
           onClick={onClose}
-          className="flex size-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          className="flex size-7 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
         >
           <X className="size-4" />
         </button>
       </div>
 
       {events.length === 0 ? (
-        <div className="py-10 text-center text-sm text-slate-400">Aucun événement ce jour.</div>
+        <div className="py-10 text-center text-sm text-slate-400 dark:text-slate-500">Aucun événement ce jour.</div>
       ) : (
         <div className="divide-y divide-border">
           {events.map((ev) => {
@@ -125,7 +118,7 @@ function DayPanel({
             return (
               <div
                 key={ev.id}
-                className="flex cursor-pointer items-start gap-3 px-5 py-3.5 hover:bg-slate-50/70 transition-colors"
+                className="flex cursor-pointer items-start gap-3 px-5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors"
                 onClick={() => {
                   if (ev.type === "dossier") onOpenDossier(ev.payload.id as string);
                   if (ev.type === "bon") onOpenBon();
@@ -135,8 +128,8 @@ function DayPanel({
                   <Icon className="size-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900">{ev.label}</p>
-                  <p className="mt-0.5 truncate text-xs text-slate-500">{ev.sub}</p>
+                  <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{ev.label}</p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{ev.sub}</p>
                 </div>
                 {ev.type === "dossier" && (
                   <DossierStatutBadge statut={ev.payload.statut as Parameters<typeof DossierStatutBadge>[0]["statut"]} />
@@ -276,28 +269,28 @@ export function CalendrierScreen() {
           <Button variant="outline" size="icon" className="size-9" onClick={prevMonth}>
             <ChevronLeft className="size-4" />
           </Button>
-          <h2 className="min-w-[180px] text-center text-base font-semibold text-slate-900">
+          <h2 className="min-w-[180px] text-center text-base font-semibold text-slate-900 dark:text-slate-100">
             {FR_MONTHS[month]} {year}
           </h2>
           <Button variant="outline" size="icon" className="size-9" onClick={nextMonth}>
             <ChevronRight className="size-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="ml-2 text-slate-500" onClick={goToday}>
+          <Button variant="ghost" size="sm" className="ml-2 text-slate-500 dark:text-slate-400" onClick={goToday}>
             Aujourd&apos;hui
           </Button>
         </div>
 
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-3 text-xs">
-          <span className="flex items-center gap-1.5 text-slate-500">
+          <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
             <span className="size-2 rounded-full bg-blue-500" />
             Dossiers ({monthEvents.dossier})
           </span>
-          <span className="flex items-center gap-1.5 text-slate-500">
+          <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
             <span className="size-2 rounded-full bg-emerald-500" />
             Bons ({monthEvents.bon})
           </span>
-          <span className="flex items-center gap-1.5 text-slate-500">
+          <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
             <span className="size-2 rounded-full bg-amber-500" />
             Paiements ({monthEvents.paiement})
           </span>
@@ -307,9 +300,9 @@ export function CalendrierScreen() {
       {/* Calendar grid */}
       <Card className="overflow-hidden border-border/80 shadow-sm">
         {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-border bg-slate-50/70">
+        <div className="grid grid-cols-7 border-b border-border bg-slate-50/70 dark:bg-slate-800/70">
           {FR_DAYS.map((d) => (
-            <div key={d} className="py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div key={d} className="py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               {d}
             </div>
           ))}
@@ -319,7 +312,7 @@ export function CalendrierScreen() {
         <div className="grid grid-cols-7 divide-x divide-y divide-border">
           {cells.map((day, idx) => {
             if (day === null) {
-              return <div key={`empty-${idx}`} className="min-h-[96px] bg-slate-50/40" />;
+              return <div key={`empty-${idx}`} className="min-h-[96px] bg-slate-50/40 dark:bg-slate-800/40" />;
             }
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const events = eventsByDate[dateStr] ?? [];
@@ -337,10 +330,10 @@ export function CalendrierScreen() {
                 className={cn(
                   "min-h-[96px] cursor-pointer p-2 transition-colors",
                   isSelected
-                    ? "bg-blue-50/80"
+                    ? "bg-blue-50/80 dark:bg-blue-950/40"
                     : events.length > 0
-                    ? "hover:bg-slate-50/80"
-                    : "hover:bg-slate-50/40",
+                    ? "hover:bg-slate-50/80 dark:hover:bg-slate-800/80"
+                    : "hover:bg-slate-50/40 dark:hover:bg-slate-800/40",
                 )}
               >
                 {/* Day number */}
@@ -350,13 +343,13 @@ export function CalendrierScreen() {
                       "flex size-6 items-center justify-center rounded-full text-xs font-semibold",
                       isToday
                         ? "bg-primary text-white"
-                        : "text-slate-700",
+                        : "text-slate-700 dark:text-slate-300",
                     )}
                   >
                     {day}
                   </span>
                   {events.length > 3 && (
-                    <span className="text-[10px] text-slate-400">+{events.length - 3}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">+{events.length - 3}</span>
                   )}
                 </div>
 
@@ -368,18 +361,18 @@ export function CalendrierScreen() {
                       className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5"
                       style={{ background: "#EFF6FF" }}
                     >
-                      <span className={cn("size-1.5 shrink-0 rounded-full", STATUT_DOT[(ev.payload.statut as string) ?? ""] ?? "bg-blue-400")} />
+                      <span className={cn("size-1.5 shrink-0 rounded-full", DOSSIER_STATUT_DOT[ev.payload.statut as keyof typeof DOSSIER_STATUT_DOT] ?? "bg-blue-400")} />
                       <span className="truncate text-[10px] font-medium text-blue-700">{ev.label}</span>
                     </div>
                   ))}
                   {bonDots.slice(0, 1).map((ev) => (
-                    <div key={ev.id} className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 bg-emerald-50">
+                    <div key={ev.id} className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40">
                       <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
                       <span className="truncate text-[10px] font-medium text-emerald-700">{ev.label}</span>
                     </div>
                   ))}
                   {payDots.slice(0, 1).map((ev) => (
-                    <div key={ev.id} className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 bg-amber-50">
+                    <div key={ev.id} className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/40">
                       <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
                       <span className="truncate text-[10px] font-medium text-amber-700">{ev.sub}</span>
                     </div>

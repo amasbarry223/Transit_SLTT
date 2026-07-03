@@ -90,6 +90,49 @@
   --sidebar-ring: #1e40af;
 }
 
+/* Palette sombre — même identité navy que l'écran de login (LoginBackground),
+   pas un gris générique. Primaire/destructive éclaircis d'un cran (500 au
+   lieu de 700) pour rester lisibles sur fond sombre. */
+.dark {
+  --background: #0b1220;
+  --foreground: #e2e8f0;
+  --card: #111a2e;
+  --card-foreground: #e2e8f0;
+  --popover: #111a2e;
+  --popover-foreground: #e2e8f0;
+
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1c2740;
+  --secondary-foreground: #e2e8f0;
+  --muted: #1c2740;
+  --muted-foreground: #94a3b8;
+  --accent: #1e3a8a;
+  --accent-foreground: #dbeafe;
+
+  --destructive: #f87171;
+
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
+
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #818cf8;
+  --chart-5: #f87171;
+
+  --sidebar: #0b1220;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #16213a;
+  --sidebar-accent-foreground: #93c5fd;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #3b82f6;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -135,6 +178,15 @@
 .sltt-scroll::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
   background-clip: content-box;
+}
+.dark .sltt-scroll {
+  scrollbar-color: #334155 transparent;
+}
+.dark .sltt-scroll::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+.dark .sltt-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #475569;
 }
 
 /* ---- Impression factures ---- */

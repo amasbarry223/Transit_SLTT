@@ -865,6 +865,8 @@ export interface Devis {
   dateCreation: string;
   dateValidite: string;
   notes?: string;
+  /** Renseigné une fois converti — empêche une double conversion et permet de retrouver le dossier issu de ce devis. */
+  dossierId?: string | null;
 }
 
 export interface DevisInput {

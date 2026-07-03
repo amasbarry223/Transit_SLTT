@@ -17,18 +17,7 @@ import {
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-
-/* ------------------------------------------------------------------ */
-/* STATUT badge                                                        */
-/* ------------------------------------------------------------------ */
-
-const STATUT_STYLES: Record<FactureStatut, string> = {
-  Brouillon: "bg-slate-100 text-slate-600 border-slate-200",
-  Envoyée:   "bg-blue-50 text-blue-700 border-blue-200",
-  Partielle: "bg-amber-50 text-amber-700 border-amber-200",
-  Soldée:    "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Annulée:   "bg-red-50 text-red-500 border-red-200",
-};
+import { FactureStatutBadge } from "@/components/sltt/status-badge";
 
 /* ------------------------------------------------------------------ */
 /* ENREGISTRER UN PAIEMENT                                             */
@@ -55,35 +44,35 @@ function PaiementModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-white shadow-2xl">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-white dark:bg-slate-900 shadow-2xl">
         <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
           <div className="flex items-center gap-2">
-            <CreditCard className="size-4 text-emerald-600" />
-            <h2 className="text-sm font-semibold text-slate-900">Enregistrer un paiement</h2>
+            <CreditCard className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Enregistrer un paiement</h2>
           </div>
-          <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
+          <button onClick={onClose} className="rounded-md p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
             <X className="size-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="rounded-lg bg-slate-50 p-3 text-sm">
-            <div className="flex justify-between text-slate-600">
+          <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-3 text-sm">
+            <div className="flex justify-between text-slate-600 dark:text-slate-300">
               <span>Montant TTC</span>
               <span className="tabular-nums font-medium">{formatFCFA(facture.montantTTC)}</span>
             </div>
-            <div className="mt-1 flex justify-between text-slate-600">
+            <div className="mt-1 flex justify-between text-slate-600 dark:text-slate-300">
               <span>Déjà payé</span>
-              <span className="tabular-nums font-medium text-emerald-700">{formatFCFA(facture.montantPaye)}</span>
+              <span className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(facture.montantPaye)}</span>
             </div>
-            <div className="mt-2 flex justify-between border-t border-border/50 pt-2 font-semibold text-slate-900">
+            <div className="mt-2 flex justify-between border-t border-border/50 pt-2 font-semibold text-slate-900 dark:text-slate-100">
               <span>Reste à payer</span>
-              <span className="tabular-nums text-amber-700">{formatFCFA(reste)}</span>
+              <span className="tabular-nums text-amber-700 dark:text-amber-400">{formatFCFA(reste)}</span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-600">Montant reçu (FCFA) *</Label>
+            <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Montant reçu (FCFA) *</Label>
             <Input
               type="number"
               min="1"
@@ -253,7 +242,7 @@ export function FactureDetailScreen() {
   if (!facture) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-slate-500">Facture introuvable.</p>
+        <p className="text-slate-500 dark:text-slate-400">Facture introuvable.</p>
         <Button variant="outline" className="mt-4" onClick={() => go("factures")}>
           <ArrowLeft className="mr-1.5 size-3.5" /> Retour
         </Button>
@@ -308,9 +297,7 @@ export function FactureDetailScreen() {
         >
           <div className="flex items-center gap-2">
             {/* Statut badge */}
-            <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${STATUT_STYLES[facture.statut]}`}>
-              {facture.statut}
-            </span>
+            <FactureStatutBadge statut={facture.statut} />
 
             {/* Actions contextuelles */}
             {facture.statut === "Brouillon" && (
@@ -324,7 +311,7 @@ export function FactureDetailScreen() {
               </Button>
             )}
             {facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
-              <Button size="sm" variant="outline" onClick={() => updateFactureStatut(facture.id, "Annulée")} className="text-red-600 border-red-200 hover:bg-red-50">
+              <Button size="sm" variant="outline" onClick={() => updateFactureStatut(facture.id, "Annulée")} className="text-red-600 dark:text-red-400 border-red-200 hover:bg-red-50 dark:bg-red-950/40">
                 <XCircle className="mr-1.5 size-3.5" /> Annuler
               </Button>
             )}
@@ -359,9 +346,9 @@ export function FactureDetailScreen() {
           <div className="space-y-4 lg:col-span-2">
 
             {/* Infos facture */}
-            <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm">
-              <div className="border-b border-border/50 bg-slate-50/60 px-5 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Informations</span>
+            <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
+              <div className="border-b border-border/50 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Informations</span>
               </div>
               <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
                 {[
@@ -375,9 +362,9 @@ export function FactureDetailScreen() {
                   { label: "Créé le",     value: formatDateShort(facture.creeLe) },
                 ].map((item) => (
                   <div key={item.label}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{item.label}</p>
                     {item.edit ?? (
-                      <p className={`mt-0.5 text-sm font-medium ${item.warn ? "text-red-600" : "text-slate-800"}`}>
+                      <p className={`mt-0.5 text-sm font-medium ${item.warn ? "text-red-600 dark:text-red-400" : "text-slate-800 dark:text-slate-200"}`}>
                         {item.value}
                       </p>
                     )}
@@ -387,13 +374,13 @@ export function FactureDetailScreen() {
             </div>
 
             {/* Lignes de facturation */}
-            <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-border/50 bg-slate-50/60 px-5 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Lignes de facturation</span>
+            <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
+              <div className="flex items-center justify-between border-b border-border/50 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lignes de facturation</span>
                 {editMode && (
                   <button
                     onClick={() => setEditLignes((l) => [...l, { description: "", quantite: "1", prixUnitaire: "" }])}
-                    className="flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:underline"
+                    className="flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     <Plus className="size-3" /> Ajouter
                   </button>
@@ -401,7 +388,7 @@ export function FactureDetailScreen() {
               </div>
 
               {/* Header colonnes */}
-              <div className="grid grid-cols-[1fr_56px_120px_120px] gap-x-3 border-b border-border/40 bg-slate-50/30 px-5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              <div className="grid grid-cols-[1fr_56px_120px_120px] gap-x-3 border-b border-border/40 bg-slate-50/30 px-5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 <span>Description</span>
                 <span className="text-center">Qté</span>
                 <span className="text-right">P.U. HT</span>
@@ -431,12 +418,12 @@ export function FactureDetailScreen() {
                           className="h-7 text-right text-xs"
                         />
                         <div className="flex items-center justify-end gap-1">
-                          <span className="text-xs tabular-nums text-slate-500">
+                          <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                             {formatFCFA((parseFloat((l as {quantite:string}).quantite)||0)*(parseFloat((l as {prixUnitaire:string}).prixUnitaire)||0))}
                           </span>
                           <button
                             onClick={() => setEditLignes((ls) => ls.filter((_, idx) => idx !== i))}
-                            className="ml-1 rounded p-0.5 text-slate-300 hover:text-red-500"
+                            className="ml-1 rounded p-0.5 text-slate-300 dark:text-slate-600 hover:text-red-500"
                           >
                             <X className="size-3" />
                           </button>
@@ -444,10 +431,10 @@ export function FactureDetailScreen() {
                       </>
                     ) : (
                       <>
-                        <p className="text-sm text-slate-700">{(l as { description: string }).description}</p>
-                        <p className="text-center text-sm tabular-nums text-slate-500">{(l as { quantite: number }).quantite}</p>
-                        <p className="text-right text-sm tabular-nums text-slate-600">{formatFCFA((l as { prixUnitaire: number }).prixUnitaire)}</p>
-                        <p className="text-right text-sm font-semibold tabular-nums text-slate-900">{formatFCFA((l as { montantHT: number }).montantHT)}</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-300">{(l as { description: string }).description}</p>
+                        <p className="text-center text-sm tabular-nums text-slate-500 dark:text-slate-400">{(l as { quantite: number }).quantite}</p>
+                        <p className="text-right text-sm tabular-nums text-slate-600 dark:text-slate-300">{formatFCFA((l as { prixUnitaire: number }).prixUnitaire)}</p>
+                        <p className="text-right text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA((l as { montantHT: number }).montantHT)}</p>
                       </>
                     )}
                   </div>
@@ -455,17 +442,17 @@ export function FactureDetailScreen() {
               </div>
 
               {/* Totaux */}
-              <div className="flex justify-end border-t border-border/50 bg-slate-50/40 px-5 py-4">
+              <div className="flex justify-end border-t border-border/50 bg-slate-50/40 dark:bg-slate-800/40 px-5 py-4">
                 <div className="w-64 space-y-1.5 text-sm">
-                  <div className="flex justify-between text-slate-600">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
                     <span>Sous-total HT</span>
                     <span className="tabular-nums font-medium">{formatFCFA(editMode ? editMontantHT : facture.montantHT)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-600">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
                     <span>TVA {editMode ? editTVA : facture.tauxTVA}%</span>
                     <span className="tabular-nums font-medium">{formatFCFA(editMode ? Math.round(editMontantHT * editTVA / 100) : facture.montantTVA)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-border/60 pt-2 font-bold text-slate-900">
+                  <div className="flex justify-between border-t border-border/60 pt-2 font-bold text-slate-900 dark:text-slate-100">
                     <span>Total TTC</span>
                     <span className="tabular-nums text-blue-700 text-base">{formatFCFA(editMode ? editTTC : facture.montantTTC)}</span>
                   </div>
@@ -475,17 +462,17 @@ export function FactureDetailScreen() {
 
             {/* Notes */}
             {(facture.notes || editMode) && (
-              <div className="rounded-xl border border-border/80 bg-white p-5 shadow-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Notes</p>
+              <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</p>
                 {editMode ? (
                   <textarea
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
                     rows={3}
-                    className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                   />
                 ) : (
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{facture.notes}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{facture.notes}</p>
                 )}
               </div>
             )}
@@ -495,30 +482,30 @@ export function FactureDetailScreen() {
           <div className="space-y-4">
 
             {/* Suivi paiement */}
-            <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm">
-              <div className="border-b border-border/50 bg-slate-50/60 px-4 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Suivi paiement</span>
+            <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
+              <div className="border-b border-border/50 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Suivi paiement</span>
               </div>
               <div className="p-4 space-y-3">
-                <div className="flex justify-between text-xs text-slate-600">
+                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300">
                   <span>Montant TTC</span>
                   <span className="font-semibold tabular-nums">{formatFCFA(facture.montantTTC)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-emerald-700">
+                <div className="flex justify-between text-xs text-emerald-700 dark:text-emerald-400">
                   <span>Payé</span>
                   <span className="font-semibold tabular-nums">{formatFCFA(facture.montantPaye)}</span>
                 </div>
                 {/* Barre de progression */}
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pctPaye}%` }} />
                 </div>
-                <div className="flex justify-between text-xs text-amber-700">
+                <div className="flex justify-between text-xs text-amber-700 dark:text-amber-400">
                   <span>Reste à payer</span>
                   <span className="font-bold tabular-nums">{formatFCFA(reste)}</span>
                 </div>
 
                 {isEchue && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-medium text-red-700">
+                  <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-[11px] font-medium text-red-700">
                     ⚠ Échéance dépassée depuis le {formatDateShort(facture.dateEcheance)}
                   </div>
                 )}
@@ -533,24 +520,24 @@ export function FactureDetailScreen() {
 
             {/* Dossier lié */}
             {dossier && (
-              <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Dossier lié</p>
+              <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Dossier lié</p>
                 <button
                   onClick={() => go("dossier-detail", { id: dossier.id })}
-                  className="flex w-full items-center justify-between rounded-lg border border-border/60 p-3 text-left hover:bg-slate-50 transition-colors"
+                  className="flex w-full items-center justify-between rounded-lg border border-border/60 p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   <div>
-                    <p className="text-xs font-semibold text-slate-800">{dossier.reference}</p>
-                    <p className="text-[10px] text-slate-500">{dossier.nature} · {dossier.statut}</p>
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{dossier.reference}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{dossier.nature} · {dossier.statut}</p>
                   </div>
-                  <ChevronDown className="size-3.5 -rotate-90 text-slate-400" />
+                  <ChevronDown className="size-3.5 -rotate-90 text-slate-400 dark:text-slate-500" />
                 </button>
               </div>
             )}
 
             {/* Actions rapides statut */}
-            <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Changer le statut</p>
+            <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Changer le statut</p>
               <div className="space-y-1.5">
                 {(["Brouillon", "Envoyée", "Partielle", "Soldée", "Annulée"] as FactureStatut[]).map((s) => (
                   <button
@@ -559,8 +546,8 @@ export function FactureDetailScreen() {
                     onClick={() => updateFactureStatut(facture.id, s)}
                     className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors ${
                       facture.statut === s
-                        ? "bg-blue-50 font-semibold text-blue-700"
-                        : "text-slate-600 hover:bg-slate-50 disabled:cursor-default"
+                        ? "bg-blue-50 dark:bg-blue-950/40 font-semibold text-blue-700"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-default"
                     }`}
                   >
                     <span className={`size-1.5 shrink-0 rounded-full ${

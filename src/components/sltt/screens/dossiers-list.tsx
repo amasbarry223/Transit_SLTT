@@ -293,8 +293,8 @@ export function DossiersListScreen() {
       </div>
 
       {stats.enCours > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 bg-blue-50/60 px-4 py-3">
-          <Truck className="mt-0.5 size-5 shrink-0 text-blue-600" />
+        <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/30 px-4 py-3">
+          <Truck className="mt-0.5 size-5 shrink-0 text-blue-600 dark:text-blue-400" />
           <div>
             <p className="text-sm font-medium text-blue-900">
               {stats.enCours} dossier{stats.enCours > 1 ? "s" : ""} en cours
@@ -311,7 +311,7 @@ export function DossiersListScreen() {
       <Card className="border-border/80 p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <Input
               className="h-10 pl-9"
               placeholder="Rechercher par réf., client, BL…"
@@ -417,7 +417,7 @@ export function DossiersListScreen() {
             }}
           >
             <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Trier par">
-              <ArrowUpDown className="size-3.5 shrink-0 text-slate-400" />
+              <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
               <SelectValue placeholder="Trier par…" />
             </SelectTrigger>
             <SelectContent>
@@ -431,11 +431,11 @@ export function DossiersListScreen() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 gap-1.5 text-slate-500"
+              className="h-10 gap-1.5 text-slate-500 dark:text-slate-400"
               onClick={clearFilters}
             >
               Réinitialiser
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                 {activeFiltersCount}
               </span>
             </Button>
@@ -471,24 +471,24 @@ export function DossiersListScreen() {
       {/* Table */}
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <FolderKanban className="size-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-900">
+          <FolderKanban className="size-4 text-slate-400 dark:text-slate-500" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
             Liste des dossiers
           </h2>
-          <span className="ml-auto text-xs tabular-nums text-slate-500">
+          <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
             {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
 
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
               <FolderKanban className="size-7" />
             </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
               Aucun dossier trouvé
             </h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500">
+            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
               {hasActiveFilters
                 ? "Modifiez vos filtres ou créez un nouveau dossier."
                 : "Commencez par enregistrer votre premier dossier de transit."}
@@ -508,35 +508,35 @@ export function DossiersListScreen() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Référence
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Date
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       N° BL
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
                       Camion
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 xl:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 xl:table-cell">
                       Nature
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Prestation
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Écart
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -551,8 +551,8 @@ export function DossiersListScreen() {
                         role="button"
                         tabIndex={0}
                         className={cn(
-                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
-                          enCours && "bg-blue-50/30",
+                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+                          enCours && "bg-blue-50/30 dark:bg-blue-950/20",
                         )}
                         onClick={() => openDossierDetail(d.id)}
                         onKeyDown={(e) => {
@@ -563,30 +563,30 @@ export function DossiersListScreen() {
                         }}
                       >
                         <TableCell className="px-4 py-3.5">
-                          <p className="font-medium text-slate-900">
+                          <p className="font-medium text-slate-900 dark:text-slate-100">
                             {d.reference}
                           </p>
                         </TableCell>
                         <TableCell className="max-w-[180px] px-4 py-3.5">
-                          <p className="truncate font-medium text-slate-700">
+                          <p className="truncate font-medium text-slate-700 dark:text-slate-300">
                             {d.clientNom}
                           </p>
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 tabular-nums text-sm text-slate-600 sm:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 tabular-nums text-sm text-slate-600 dark:text-slate-300 sm:table-cell">
                           {formatDateShort(d.date)}
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 md:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300 md:table-cell">
                           {d.bl}
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 lg:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300 lg:table-cell">
                           {d.camion}
                         </TableCell>
                         <TableCell className="hidden max-w-[160px] px-4 py-3.5 xl:table-cell">
-                          <span className="line-clamp-1 text-slate-600">
+                          <span className="line-clamp-1 text-slate-600 dark:text-slate-300">
                             {d.nature}
                           </span>
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 md:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 md:table-cell">
                           {formatFCFA(d.fraisPrestation)}
                         </TableCell>
                         <TableCell className="px-4 py-3.5 text-right tabular-nums">
@@ -621,7 +621,7 @@ export function DossiersListScreen() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-8 text-slate-500 hover:text-primary"
+                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                               aria-label={`Voir ${d.reference}`}
                               title="Voir la fiche"
                               onClick={() => openDossierDetail(d.id)}
@@ -631,7 +631,7 @@ export function DossiersListScreen() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-8 text-slate-500 hover:text-primary"
+                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                               aria-label={`Modifier ${d.reference}`}
                               title="Modifier"
                               onClick={() => openDossier(d.id, "edit")}

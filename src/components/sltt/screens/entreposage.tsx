@@ -127,14 +127,14 @@ function StockTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Consultez les quantités, valeurs et statuts de chaque référence en stock.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="h-9 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+            className="h-9 text-emerald-600 dark:text-emerald-400 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
             onClick={() => onEntry(null)}
           >
             <PackagePlus className="size-4" />
@@ -143,7 +143,7 @@ function StockTab({
           <Button
             variant="outline"
             size="sm"
-            className="h-9 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+            className="h-9 text-amber-600 dark:text-amber-400 border-amber-200 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
             onClick={() => onExit(null)}
           >
             <PackageMinus className="size-4" />
@@ -162,7 +162,7 @@ function StockTab({
 
       <Card className="p-4 shadow-sm border-border/80">
         <div className="relative w-full sm:max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <Input
             value={query}
             onChange={(e) => {
@@ -178,7 +178,7 @@ function StockTab({
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500">
+          <div className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
             Aucun article ne correspond à votre recherche.
           </div>
         ) : (
@@ -186,29 +186,29 @@ function StockTab({
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Quantité
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Dépositaire
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
                       Commercial
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Payé
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Reste dû
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -259,35 +259,35 @@ function StockRow({
   return (
     <TableRow
       className={cn(
-        "border-b border-border hover:bg-slate-50/60",
-        faible && "bg-red-50/40",
+        "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+        faible && "bg-red-50/40 dark:bg-red-950/20",
       )}
     >
       <TableCell className="px-4 py-3.5">
-        <span className="flex items-center gap-1.5 font-medium text-slate-900">
+        <span className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-slate-100">
           {faible && (
             <AlertTriangle className="size-3.5 shrink-0 text-red-500" />
           )}
           {item.marchandise}
         </span>
-        <p className="mt-0.5 text-xs text-slate-500 md:hidden">
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 md:hidden">
           {item.depositaire}
         </p>
       </TableCell>
       <TableCell className="px-4 py-3.5 text-right tabular-nums">
-        <span className="font-semibold text-slate-900">{item.quantite}</span>
-        <span className="ml-1 text-xs text-slate-500">{item.unite}</span>
+        <span className="font-semibold text-slate-900 dark:text-slate-100">{item.quantite}</span>
+        <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">{item.unite}</span>
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 text-slate-600 md:table-cell">
+      <TableCell className="hidden px-4 py-3.5 text-slate-600 dark:text-slate-300 md:table-cell">
         {item.depositaire}
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 text-slate-600 lg:table-cell">
+      <TableCell className="hidden px-4 py-3.5 text-slate-600 dark:text-slate-300 lg:table-cell">
         {item.commercial}
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 sm:table-cell">
+      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
         {formatFCFA(item.sommePayee)}
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-amber-600 sm:table-cell">
+      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-amber-600 dark:text-amber-400 sm:table-cell">
         {formatFCFA(item.resteAPayer)}
       </TableCell>
       <TableCell className="px-4 py-3.5">
@@ -298,7 +298,7 @@ function StockRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+            className="size-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
             aria-label="Entrée de marchandise"
             title="Entrée"
             onClick={() => onEntry(item.id)}
@@ -308,7 +308,7 @@ function StockRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+            className="size-8 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
             aria-label="Sortie de marchandise"
             title="Sortie"
             onClick={() => onExit(item.id)}
@@ -318,7 +318,7 @@ function StockRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            className="size-8 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
             aria-label="Historique"
             title="Historique"
             onClick={() => onHistory(item.marchandise)}
@@ -381,7 +381,7 @@ function MouvementsTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Suivez toutes les entrées et sorties de marchandises enregistrées.
         </p>
         {marchandiseFilter && (
@@ -409,7 +409,7 @@ function MouvementsTab({
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <Input
               value={query}
               onChange={(e) => {
@@ -437,7 +437,7 @@ function MouvementsTab({
               <SelectItem value="Sortie">Sorties</SelectItem>
             </SelectContent>
           </Select>
-          <p className="ml-auto text-xs tabular-nums text-slate-500">
+          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
             {filtered.length} mouvement{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -445,7 +445,7 @@ function MouvementsTab({
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500">
+          <div className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
             Aucun mouvement ne correspond aux filtres sélectionnés.
           </div>
         ) : (
@@ -453,23 +453,23 @@ function MouvementsTab({
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Date
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Type
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Quantité
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Responsable
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Bon lié
                     </TableHead>
                   </TableRow>
@@ -481,9 +481,9 @@ function MouvementsTab({
                     return (
                       <TableRow
                         key={m.id}
-                        className="border-b border-border hover:bg-slate-50/60"
+                        className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                       >
-                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
                           {formatDateShort(m.date)}
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
@@ -500,13 +500,13 @@ function MouvementsTab({
                             {m.type}
                           </ToneBadge>
                         </TableCell>
-                        <TableCell className="px-4 py-3.5 font-medium text-slate-900">
+                        <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
                           {m.marchandise}
                         </TableCell>
-                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
                           {m.quantite} {m.unite}
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 text-slate-600 sm:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 text-slate-600 dark:text-slate-300 sm:table-cell">
                           {m.responsable}
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 md:table-cell">
@@ -515,7 +515,7 @@ function MouvementsTab({
                               {m.bonRef}
                             </span>
                           ) : (
-                            <span className="text-slate-400">—</span>
+                            <span className="text-slate-400 dark:text-slate-500">—</span>
                           )}
                         </TableCell>
                       </TableRow>
@@ -871,8 +871,8 @@ export function EntreposageScreen() {
       </PageHeader>
 
       {alertesStockFaible > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200/80 bg-red-50/60 px-4 py-3">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-600" />
+        <div className="flex items-start gap-3 rounded-xl border border-red-200/80 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/30 px-4 py-3">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-600 dark:text-red-400" />
           <div>
             <p className="text-sm font-medium text-red-900">
               {alertesStockFaible} article{alertesStockFaible > 1 ? "s" : ""} en
@@ -938,17 +938,17 @@ export function EntreposageScreen() {
                   value={t.key}
                   className={cn(
                     "relative shrink-0 rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3",
-                    "text-sm font-medium text-slate-500 shadow-none transition-colors",
-                    "hover:text-slate-900 data-[state=active]:border-primary data-[state=active]:bg-transparent",
+                    "text-sm font-medium text-slate-500 dark:text-slate-400 shadow-none transition-colors",
+                    "hover:text-slate-900 dark:hover:text-slate-100 data-[state=active]:border-primary data-[state=active]:bg-transparent",
                     "data-[state=active]:text-primary data-[state=active]:shadow-none",
                     "focus-visible:ring-0 focus-visible:ring-offset-0",
                     "[&[data-state=active]_svg]:text-primary",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-slate-400" />
+                  <Icon className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
                   <span className="hidden sm:inline">{t.label}</span>
                   <span className="sm:hidden">{t.shortLabel}</span>
-                  <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600">
+                  <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
                     {count}
                   </span>
                 </TabsTrigger>
@@ -991,7 +991,7 @@ export function EntreposageScreen() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="entry-marchandise" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="entry-marchandise" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Marchandise
               </Label>
               <Select value={entryStockId} onValueChange={setEntryStockId}>
@@ -1009,7 +1009,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="entry-qty" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="entry-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Quantité à entrer
               </Label>
               <Input
@@ -1023,7 +1023,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="entry-resp" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="entry-resp" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Responsable
               </Label>
               <Input
@@ -1058,7 +1058,7 @@ export function EntreposageScreen() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="exit-marchandise" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="exit-marchandise" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Marchandise
               </Label>
               <Select value={exitStockId} onValueChange={setExitStockId}>
@@ -1076,7 +1076,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exit-qty" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="exit-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Quantité à sortir
               </Label>
               <Input
@@ -1089,7 +1089,7 @@ export function EntreposageScreen() {
                 aria-invalid={exitOverflow}
               />
               {exitOverflow && (
-                <p className="text-xs text-red-600">
+                <p className="text-xs text-red-600 dark:text-red-400">
                   La quantité dépasse le stock disponible ({exitStock?.quantite}{" "}
                   {exitStock?.unite}).
                 </p>
@@ -1097,7 +1097,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exit-resp" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="exit-resp" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Responsable
               </Label>
               <Input
@@ -1109,7 +1109,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exit-motif" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="exit-motif" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Motif
               </Label>
               <Select
@@ -1153,7 +1153,7 @@ export function EntreposageScreen() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="ni-marchandise" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-marchandise" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Marchandise <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -1166,7 +1166,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ni-unite" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-unite" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Unité <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -1179,7 +1179,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ni-quantite" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-quantite" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Quantité initiale
               </Label>
               <Input
@@ -1193,7 +1193,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ni-seuil" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-seuil" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Seuil d&apos;alerte
               </Label>
               <Input
@@ -1207,7 +1207,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ni-depositaire" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-depositaire" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Dépositaire
               </Label>
               <Input
@@ -1220,7 +1220,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ni-commercial" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-commercial" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Commercial
               </Label>
               <Input
@@ -1233,7 +1233,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ni-payee" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-payee" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Somme payée (FCFA)
               </Label>
               <Input
@@ -1247,7 +1247,7 @@ export function EntreposageScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ni-reste" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ni-reste" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Reste à payer (FCFA)
               </Label>
               <Input

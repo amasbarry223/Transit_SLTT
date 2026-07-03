@@ -32,15 +32,31 @@ import {
   AlertTriangle,
   ShieldCheck,
   SquareCheckBig,
+  Truck,
+  Receipt as ReceiptIcon,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore, CHECKLIST_DOCS } from "@/lib/store";
-import type { SubDossierInput, FichierInput, SubDossier, DossierFichier, DossierComment } from "@/lib/store";
+import type {
+  SubDossierInput,
+  FichierInput,
+  SubDossier,
+  DossierFichier,
+  DossierComment,
+  FournisseurType,
+  DossierFournisseurInput,
+} from "@/lib/store";
 import { calculerEcart } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
-import { DossierStatutBadge, EcartValue, EcritureStatutBadge } from "@/components/sltt/status-badge";
+import {
+  DossierStatutBadge,
+  EcartValue,
+  EcritureStatutBadge,
+  DossierFournisseurStatutBadge,
+  FactureStatutBadge,
+} from "@/components/sltt/status-badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +71,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -144,7 +167,7 @@ function DossierStepper({ statut }: { statut: DossierStatut }) {
                     ? "bg-primary text-white"
                     : active
                     ? "bg-primary text-white ring-4 ring-primary/20"
-                    : "bg-slate-100 text-slate-400",
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500",
                 )}
               >
                 {done ? <Check className="size-3.5" /> : i + 1}
@@ -153,7 +176,7 @@ function DossierStepper({ statut }: { statut: DossierStatut }) {
                 <div
                   className={cn(
                     "h-0.5 flex-1 transition-colors",
-                    done ? "bg-primary" : "bg-slate-200",
+                    done ? "bg-primary" : "bg-slate-200 dark:bg-slate-700",
                   )}
                 />
               )}
@@ -165,8 +188,8 @@ function DossierStepper({ statut }: { statut: DossierStatut }) {
                 active
                   ? "font-semibold text-primary"
                   : done
-                  ? "text-slate-600"
-                  : "text-slate-400",
+                  ? "text-slate-600 dark:text-slate-300"
+                  : "text-slate-400 dark:text-slate-500",
               )}
             >
               {s}
@@ -185,8 +208,8 @@ function DossierStepper({ statut }: { statut: DossierStatut }) {
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-border py-2.5 last:border-0">
-      <span className="shrink-0 text-sm text-slate-500">{label}</span>
-      <span className="text-right text-sm font-medium text-slate-900">
+      <span className="shrink-0 text-sm text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-right text-sm font-medium text-slate-900 dark:text-slate-100">
         {value || "—"}
       </span>
     </div>
@@ -209,11 +232,11 @@ function AmountRow({
       <span
         className={cn(
           "shrink-0 text-sm",
-          tone ? "font-medium" : "text-slate-500",
-          tone === "emerald" && "text-emerald-700",
+          tone ? "font-medium" : "text-slate-500 dark:text-slate-400",
+          tone === "emerald" && "text-emerald-700 dark:text-emerald-400",
           tone === "amber" && "text-amber-700",
-          tone === "red" && "text-red-600",
-          !tone && "text-slate-500",
+          tone === "red" && "text-red-600 dark:text-red-400",
+          !tone && "text-slate-500 dark:text-slate-400",
         )}
       >
         {label}
@@ -223,12 +246,12 @@ function AmountRow({
           "font-semibold tabular-nums",
           size === "lg" ? "text-xl" : "text-sm",
           tone === "emerald"
-            ? "text-emerald-700"
+            ? "text-emerald-700 dark:text-emerald-400"
             : tone === "amber"
             ? "text-amber-700"
             : tone === "red"
-            ? "text-red-600"
-            : "text-slate-900",
+            ? "text-red-600 dark:text-red-400"
+            : "text-slate-900 dark:text-slate-100",
         )}
       >
         {formatFCFA(value)}
@@ -318,7 +341,7 @@ function FileDropZone({
           "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
           dragging
             ? "border-primary bg-primary/5"
-            : "border-border hover:border-primary/40 hover:bg-slate-50/50",
+            : "border-border hover:border-primary/40 hover:bg-slate-50/50 dark:hover:bg-slate-800/60",
         )}
         onDragOver={(e) => {
           e.preventDefault();
@@ -337,14 +360,14 @@ function FileDropZone({
         <Upload
           className={cn(
             "size-7 transition-colors",
-            dragging ? "text-primary" : "text-slate-300",
+            dragging ? "text-primary" : "text-slate-300 dark:text-slate-700",
           )}
         />
         <div>
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Déposer des fichiers ici
           </p>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
             ou cliquer pour sélectionner · Max 2 Mo par fichier
           </p>
         </div>
@@ -364,16 +387,16 @@ function FileDropZone({
             return (
               <div
                 key={f.id}
-                className="flex items-center gap-3 rounded-lg border border-border bg-white px-3 py-2.5 hover:bg-slate-50/60"
+                className="flex items-center gap-3 rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                   <Icon className="size-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900">
+                  <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
                     {f.nom}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {formatFileSize(f.taille)} ·{" "}
                     {formatDateShort(f.dateUpload)}
                   </p>
@@ -382,7 +405,7 @@ function FileDropZone({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-7 text-slate-400 hover:text-primary"
+                    className="size-7 text-slate-400 dark:text-slate-500 hover:text-primary"
                     title="Télécharger"
                     aria-label={`Télécharger ${f.nom}`}
                     onClick={() => handleDownload(f)}
@@ -392,7 +415,7 @@ function FileDropZone({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-7 text-slate-400 hover:text-destructive"
+                    className="size-7 text-slate-400 dark:text-slate-500 hover:text-destructive"
                     title="Supprimer"
                     aria-label={`Supprimer le fichier ${f.nom}`}
                     onClick={() => onDelete(f.id)}
@@ -407,7 +430,7 @@ function FileDropZone({
       )}
 
       {fichiers.length === 0 && (
-        <p className="text-center text-xs text-slate-400">Aucun fichier</p>
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500">Aucun fichier</p>
       )}
     </div>
   );
@@ -435,12 +458,12 @@ function SubDossierCard({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-border bg-white dark:bg-slate-900 shadow-sm">
       <div
-        className="flex cursor-pointer items-center gap-3 px-4 py-3.5 hover:bg-slate-50/60"
+        className="flex cursor-pointer items-center gap-3 px-4 py-3.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
         onClick={() => setExpanded((v) => !v)}
       >
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-primary">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-primary">
           {expanded ? (
             <FolderOpen className="size-4" />
           ) : (
@@ -448,8 +471,8 @@ function SubDossierCard({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-slate-900">{sd.nom}</p>
-          <p className="text-xs text-slate-500">
+          <p className="truncate font-medium text-slate-900 dark:text-slate-100">{sd.nom}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Créé le {formatDateShort(sd.dateCreation)} ·{" "}
             <span className="font-medium">
               {fichiers.length} fichier{fichiers.length !== 1 ? "s" : ""}
@@ -457,7 +480,7 @@ function SubDossierCard({
           </p>
         </div>
         {sd.description && (
-          <p className="hidden max-w-[180px] truncate text-xs text-slate-400 sm:block">
+          <p className="hidden max-w-[180px] truncate text-xs text-slate-400 dark:text-slate-500 sm:block">
             {sd.description}
           </p>
         )}
@@ -468,7 +491,7 @@ function SubDossierCard({
           <Button
             variant="ghost"
             size="icon"
-            className="size-7 text-slate-400 hover:text-primary"
+            className="size-7 text-slate-400 dark:text-slate-500 hover:text-primary"
             title="Renommer"
             aria-label={`Renommer le sous-dossier ${sd.nom}`}
             onClick={onEdit}
@@ -478,7 +501,7 @@ function SubDossierCard({
           <Button
             variant="ghost"
             size="icon"
-            className="size-7 text-slate-400 hover:text-destructive"
+            className="size-7 text-slate-400 dark:text-slate-500 hover:text-destructive"
             title="Supprimer"
             aria-label={`Supprimer le sous-dossier ${sd.nom}`}
             onClick={onDelete}
@@ -487,16 +510,16 @@ function SubDossierCard({
           </Button>
         </div>
         {expanded ? (
-          <ChevronUp className="size-4 shrink-0 text-slate-400" />
+          <ChevronUp className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
         ) : (
-          <ChevronDown className="size-4 shrink-0 text-slate-400" />
+          <ChevronDown className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
         )}
       </div>
 
       {expanded && (
         <div className="border-t border-border px-4 pb-4 pt-3">
           {sd.description && (
-            <p className="mb-3 text-sm text-slate-600 sm:hidden">
+            <p className="mb-3 text-sm text-slate-600 dark:text-slate-300 sm:hidden">
               {sd.description}
             </p>
           )}
@@ -532,8 +555,11 @@ export function DossierDetailScreen() {
   const addFichier = useStore((s) => s.addFichier);
   const deleteFichier = useStore((s) => s.deleteFichier);
   const updateDossierChecklist = useStore((s) => s.updateDossierChecklist);
+  const fournisseurs = useStore(useShallow((s) => s.fournisseurs));
+  const addDossierFournisseur = useStore((s) => s.addDossierFournisseur);
   // PERF-01: subscribe only to relevant slice for this dossier
   const dossierId = selectedId ?? "";
+  const dossierFournisseurs = useStore(useShallow((s) => s.dossierFournisseurs.filter((df) => df.dossierId === dossierId)));
   const allSubDossiers = useStore(useShallow((s) => s.subDossiers.filter((sd) => sd.dossierId === dossierId)));
   const allComments = useStore(useShallow((s) => s.comments.filter((c) => c.dossierId === dossierId)));
   const allFichiers = useStore(useShallow((s) => s.fichiers.filter((f) => f.dossierId === dossierId)));
@@ -552,6 +578,15 @@ export function DossierDetailScreen() {
 
   // Sub-dossier delete confirmation
   const [sdDeleteId, setSdDeleteId] = useState<string | null>(null);
+
+  // Dossier ↔ Fournisseur link dialog
+  const [dfDialogOpen, setDfDialogOpen] = useState(false);
+  const [dfFournisseurId, setDfFournisseurId] = useState("");
+  const [dfDescription, setDfDescription] = useState("");
+  const [dfMontantBudgete, setDfMontantBudgete] = useState("");
+  const [dfMontantReel, setDfMontantReel] = useState("");
+  const [dfStatut, setDfStatut] = useState<"En attente" | "Payé" | "Litige">("En attente");
+  const [dfDate, setDfDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   // allSubDossiers, allFichiers, allComments, allEcritures are already filtered by dossierId (PERF-01)
   const subDossiers = allSubDossiers;
@@ -590,14 +625,14 @@ export function DossierDetailScreen() {
   if (!dossier) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+        <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
           <Info className="size-7" />
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             Dossier introuvable
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Ce dossier n&apos;existe pas ou a été supprimé.
           </p>
         </div>
@@ -665,6 +700,37 @@ export function DossierDetailScreen() {
     });
   }
 
+  function openAddFournisseur() {
+    setDfFournisseurId("");
+    setDfDescription("");
+    setDfMontantBudgete("");
+    setDfMontantReel("");
+    setDfStatut("En attente");
+    setDfDate(new Date().toISOString().slice(0, 10));
+    setDfDialogOpen(true);
+  }
+
+  function handleSaveDossierFournisseur() {
+    if (!dossier || !dfFournisseurId) return;
+    const f = fournisseurs.find((x) => x.id === dfFournisseurId);
+    if (!f) return;
+    const input: DossierFournisseurInput = {
+      dossierId: dossier.id,
+      dossierRef: dossier.reference,
+      fournisseurId: f.id,
+      fournisseurNom: f.nom,
+      type: f.type as FournisseurType,
+      description: dfDescription.trim(),
+      montantBudgete: dfMontantBudgete ? parseFloat(dfMontantBudgete) : 0,
+      montantReel: dfMontantReel ? parseFloat(dfMontantReel) : 0,
+      statut: dfStatut,
+      date: dfDate,
+    };
+    addDossierFournisseur(input);
+    setDfDialogOpen(false);
+    toast({ title: "Prestataire lié au dossier", description: f.nom });
+  }
+
   function handleInvoice() {
     if (!dossier) return;
     // Naviguer vers le module Factures avec le dossier pré-rempli
@@ -722,7 +788,7 @@ export function DossierDetailScreen() {
       {/* Back */}
       <Button
         variant="ghost"
-        className="-ml-2 text-slate-500 hover:text-slate-900"
+        className="-ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
         onClick={() => go("dossiers")}
       >
         <ArrowLeft className="size-4" />
@@ -732,10 +798,10 @@ export function DossierDetailScreen() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             {dossier.reference}
           </h1>
-          <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-500">
+          <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1 font-mono text-xs text-slate-500 dark:text-slate-400">
             {dossier.clientNom}
           </span>
           <DossierStatutBadge statut={dossier.statut} />
@@ -758,7 +824,7 @@ export function DossierDetailScreen() {
 
       {/* Stepper */}
       <Card className="border-border/80 p-5 shadow-sm">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
           Progression du dossier
         </p>
         <DossierStepper statut={dossier.statut} />
@@ -773,7 +839,7 @@ export function DossierDetailScreen() {
             <span className={cn(
               "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
               checklistDone === checklistTotal
-                ? "bg-emerald-100 text-emerald-700"
+                ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
                 : "bg-primary/10 text-primary"
             )}>
               {checklistDone}/{checklistTotal}
@@ -795,6 +861,22 @@ export function DossierDetailScreen() {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="factures">
+            Factures
+            {dossierFactures.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                {dossierFactures.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="fournisseurs">
+            Fournisseurs
+            {dossierFournisseurs.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                {dossierFournisseurs.length}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="discussion">
             Discussion
             {dossierComments.length > 0 && (
@@ -812,18 +894,18 @@ export function DossierDetailScreen() {
             <div className="space-y-6 lg:col-span-2">
               {/* General info */}
               <Card className="border-border/80 p-5 shadow-sm">
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                   Informations générales
                 </h2>
                 <InfoRow label="Client" value={dossier.clientNom} />
                 <InfoRow label="Nature de la marchandise" value={dossier.nature} />
                 <InfoRow
                   label="N° de BL"
-                  value={<span className="font-mono text-slate-700">{dossier.bl}</span>}
+                  value={<span className="font-mono text-slate-700 dark:text-slate-300">{dossier.bl}</span>}
                 />
                 <InfoRow
                   label="N° du camion"
-                  value={<span className="font-mono text-slate-700">{dossier.camion}</span>}
+                  value={<span className="font-mono text-slate-700 dark:text-slate-300">{dossier.camion}</span>}
                 />
                 {dossier.modeTransport && (
                   <InfoRow label="Mode de transport" value={dossier.modeTransport} />
@@ -832,7 +914,7 @@ export function DossierDetailScreen() {
                   <InfoRow label="Port / Frontière d'entrée" value={dossier.portEntree} />
                 )}
                 {dossier.noConteneur && (
-                  <InfoRow label="N° conteneur" value={<span className="font-mono text-slate-700">{dossier.noConteneur}</span>} />
+                  <InfoRow label="N° conteneur" value={<span className="font-mono text-slate-700 dark:text-slate-300">{dossier.noConteneur}</span>} />
                 )}
                 {dossier.poidsTotal && (
                   <InfoRow label="Poids total" value={`${dossier.poidsTotal.toLocaleString("fr-FR")} kg`} />
@@ -847,7 +929,7 @@ export function DossierDetailScreen() {
                     value={
                       <span className={cn(
                         "flex items-center gap-1.5 font-medium",
-                        echeanceDepassee ? "text-red-600" : echeanceImminente ? "text-amber-600" : "text-slate-700"
+                        echeanceDepassee ? "text-red-600 dark:text-red-400" : echeanceImminente ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"
                       )}>
                         {echeanceDepassee ? <AlertTriangle className="size-3.5" /> : <CalendarClock className="size-3.5" />}
                         {formatDateShort(dossier.dateEcheance)}
@@ -861,7 +943,7 @@ export function DossierDetailScreen() {
                   <InfoRow
                     label="Date de dédouanement"
                     value={
-                      <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                      <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-medium">
                         <CalendarCheck2 className="size-3.5" />
                         {formatDateShort(dossier.dateDedouanement)}
                       </span>
@@ -872,12 +954,12 @@ export function DossierDetailScreen() {
 
               {/* Alerte échéance dépassée */}
               {echeanceDepassee && (
-                <Card className="border-l-4 border-l-red-500 border-border/80 p-4 shadow-sm bg-red-50/60">
+                <Card className="border-l-4 border-l-red-500 border-border/80 p-4 shadow-sm bg-red-50/60 dark:bg-red-950/30">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="size-5 shrink-0 text-red-600 mt-0.5" />
+                    <AlertTriangle className="size-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
                     <div>
                       <p className="text-sm font-semibold text-red-800">Échéance dépassée</p>
-                      <p className="text-xs text-red-600 mt-0.5">
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
                         La date limite du {formatDateShort(dossier.dateEcheance!)} est dépassée de {Math.abs(joursRestants!)} jour{Math.abs(joursRestants!) > 1 ? "s" : ""}. Des surestaries peuvent s'appliquer.
                       </p>
                     </div>
@@ -885,12 +967,12 @@ export function DossierDetailScreen() {
                 </Card>
               )}
               {echeanceImminente && !echeanceDepassee && (
-                <Card className="border-l-4 border-l-amber-500 border-border/80 p-4 shadow-sm bg-amber-50/60">
+                <Card className="border-l-4 border-l-amber-500 border-border/80 p-4 shadow-sm bg-amber-50/60 dark:bg-amber-950/30">
                   <div className="flex items-start gap-3">
-                    <CalendarClock className="size-5 shrink-0 text-amber-600 mt-0.5" />
+                    <CalendarClock className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                     <div>
                       <p className="text-sm font-semibold text-amber-800">Échéance imminente</p>
-                      <p className="text-xs text-amber-600 mt-0.5">
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                         Il reste {joursRestants} jour{joursRestants! > 1 ? "s" : ""} avant la date limite du {formatDateShort(dossier.dateEcheance!)}.
                       </p>
                     </div>
@@ -901,10 +983,10 @@ export function DossierDetailScreen() {
               {/* Notes */}
               {dossier.notes && (
                 <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Notes
                   </h2>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                     {dossier.notes}
                   </p>
                 </Card>
@@ -934,10 +1016,10 @@ export function DossierDetailScreen() {
                             <Icon className="size-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-slate-900">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                               Action suivante
                             </p>
-                            <p className="mt-0.5 text-sm text-slate-600">
+                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
                               {meta.actionDescription}
                             </p>
                           </div>
@@ -955,14 +1037,14 @@ export function DossierDetailScreen() {
               ) : (
                 <Card className="border-border/80 border-l-4 border-l-emerald-500 p-5 shadow-sm">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
                       <CheckCircle2 className="size-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                         Dossier clôturé
                       </p>
-                      <p className="mt-0.5 text-sm text-slate-600">
+                      <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
                         Ce dossier est soldé. Tous les paiements ont été enregistrés.
                       </p>
                     </div>
@@ -975,7 +1057,7 @@ export function DossierDetailScreen() {
             <div className="lg:col-span-1">
               <div className="space-y-4 lg:sticky lg:top-24">
                 <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Récapitulatif financier
                   </h2>
                   <AmountRow label="Droit de douane" value={dossier.droitDouane} />
@@ -991,10 +1073,10 @@ export function DossierDetailScreen() {
                   />
                   <div className="mt-4 border-t border-border pt-4">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-sm text-slate-500">Écart calculé</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">Écart calculé</span>
                       <EcartValue value={ecart} />
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
                       Prestation − (Douane + Circuit)
                     </p>
                   </div>
@@ -1013,7 +1095,7 @@ export function DossierDetailScreen() {
 
                 {/* Rentabilité */}
                 <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Rentabilité</h2>
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Rentabilité</h2>
                   {(() => {
                     const recettes = dossier.fraisPrestation;
                     const charges  = dossier.droitDouane + dossier.fraisCircuit;
@@ -1024,23 +1106,23 @@ export function DossierDetailScreen() {
                       <>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Recettes (prestation)</span>
+                            <span className="text-slate-500 dark:text-slate-400">Recettes (prestation)</span>
                             <span className="font-semibold tabular-nums">{formatFCFA(recettes)}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Charges (douane + circuit)</span>
-                            <span className="font-semibold tabular-nums text-red-600">−{formatFCFA(charges)}</span>
+                            <span className="text-slate-500 dark:text-slate-400">Charges (douane + circuit)</span>
+                            <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">−{formatFCFA(charges)}</span>
                           </div>
                           <Separator className="my-1" />
                           <div className="flex justify-between text-sm font-semibold">
                             <span>Marge brute</span>
-                            <span className={marge >= 0 ? "text-emerald-600" : "text-red-600"}>
+                            <span className={marge >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
                               {marge >= 0 ? "+" : ""}{formatFCFA(marge)}
                             </span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Taux de marge</span>
-                            <span className={cn("font-semibold tabular-nums", marge >= 0 ? "text-emerald-600" : "text-red-600")}>
+                            <span className="text-slate-500 dark:text-slate-400">Taux de marge</span>
+                            <span className={cn("font-semibold tabular-nums", marge >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                               {tauxMarge}%
                             </span>
                           </div>
@@ -1048,10 +1130,10 @@ export function DossierDetailScreen() {
                         <Separator className="my-3" />
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Recouvrement</span>
+                            <span className="text-slate-500 dark:text-slate-400">Recouvrement</span>
                             <span className="font-semibold tabular-nums">{tauxRec}%</span>
                           </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <div
                               className={cn("h-full rounded-full transition-all", tauxRec >= 100 ? "bg-emerald-500" : "bg-blue-500")}
                               style={{ width: `${Math.min(100, tauxRec)}%` }}
@@ -1065,23 +1147,23 @@ export function DossierDetailScreen() {
 
                 {/* Quick stats */}
                 <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Contenu du dossier
                   </h2>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-slate-500">
+                      <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                         <Folder className="size-3.5" />
                         Sous-dossiers
                       </span>
-                      <span className="font-semibold text-slate-900">{subDossiers.length}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{subDossiers.length}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-slate-500">
+                      <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                         <File className="size-3.5" />
                         Fichiers joints
                       </span>
-                      <span className="font-semibold text-slate-900">{totalFichiers}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{totalFichiers}</span>
                     </div>
                   </div>
                 </Card>
@@ -1097,21 +1179,21 @@ export function DossierDetailScreen() {
             <Card className="border-border/80 p-5 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
                     <ShieldCheck className="size-4" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-slate-900">Checklist documentaire</h2>
-                    <p className="text-xs text-slate-500">Documents standards d'un dossier de transit</p>
+                    <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Checklist documentaire</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Documents standards d'un dossier de transit</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-900">{checklistDone}/{checklistTotal}</p>
-                  <p className="text-xs text-slate-400">reçus</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{checklistDone}/{checklistTotal}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">reçus</p>
                 </div>
               </div>
               {/* Barre de progression */}
-              <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
@@ -1130,13 +1212,13 @@ export function DossierDetailScreen() {
                       className={cn(
                         "flex items-center gap-3 rounded-lg border p-3 text-left transition-all",
                         isChecked
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                          : "border-border bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                          ? "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800"
+                          : "border-border bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50"
                       )}
                     >
                       <div className={cn(
                         "flex size-5 shrink-0 items-center justify-center rounded",
-                        isChecked ? "bg-emerald-500 text-white" : "border border-slate-300 bg-white"
+                        isChecked ? "bg-emerald-500 text-white" : "border border-slate-300 bg-white dark:bg-slate-900"
                       )}>
                         {isChecked && <Check className="size-3" />}
                       </div>
@@ -1152,7 +1234,7 @@ export function DossierDetailScreen() {
                 })}
               </div>
               {checklistDone === checklistTotal && (
-                <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700">
+                <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-3 text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 className="size-4 shrink-0" />
                   <p className="text-sm font-medium">Tous les documents ont été reçus.</p>
                 </div>
@@ -1166,10 +1248,10 @@ export function DossierDetailScreen() {
                   <FileText className="size-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     Fichiers joints
                   </h2>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Déposez les documents numérisés liés à ce dossier
                   </p>
                 </div>
@@ -1190,10 +1272,10 @@ export function DossierDetailScreen() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Sous-dossiers ({subDossiers.length})
                 </h2>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   Organisez vos documents par catégorie ou par étape
                 </p>
               </div>
@@ -1207,13 +1289,13 @@ export function DossierDetailScreen() {
             {subDossiers.length === 0 && (
               <Card className="border-border/80 shadow-sm">
                 <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-                  <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                  <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
                     <FolderOpen className="size-7" />
                   </div>
-                  <h3 className="text-sm font-semibold text-slate-900">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     Aucun sous-dossier
                   </h3>
-                  <p className="max-w-xs text-sm text-slate-500">
+                  <p className="max-w-xs text-sm text-slate-500 dark:text-slate-400">
                     Créez des sous-dossiers pour organiser vos documents : BL, douane,
                     livraison…
                   </p>
@@ -1244,14 +1326,14 @@ export function DossierDetailScreen() {
         <TabsContent value="paiements">
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
                 <Wallet className="size-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Paiements liés à ce dossier
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Écritures comptables enregistrées pour {dossier.reference}
                 </p>
               </div>
@@ -1259,11 +1341,11 @@ export function DossierDetailScreen() {
 
             {dossierEcritures.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Wallet className="size-10 text-slate-200" />
-                <p className="mt-3 text-sm text-slate-500">
+                <Wallet className="size-10 text-slate-200 dark:text-slate-700" />
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                   Aucun paiement enregistré pour ce dossier.
                 </p>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   Les paiements apparaissent ici lors du passage en statut Soldé ou via la comptabilité.
                 </p>
               </div>
@@ -1271,23 +1353,23 @@ export function DossierDetailScreen() {
               <div className="overflow-x-auto">
                 <Table aria-label="Historique des écritures du dossier">
                   <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Date
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Investi
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Payé
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Reste dû
                       </TableHead>
-                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                         Mode
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Statut
                       </TableHead>
                     </TableRow>
@@ -1299,27 +1381,27 @@ export function DossierDetailScreen() {
                       return (
                         <TableRow
                           key={e.id}
-                          className="border-b border-border hover:bg-slate-50/60"
+                          className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                         >
-                          <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                          <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
                             {formatDateShort(e.date)}
                           </TableCell>
-                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
                             {formatFCFA(e.montantInvesti)}
                           </TableCell>
-                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700">
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
                             {formatFCFA(e.montantPaye)}
                           </TableCell>
                           <TableCell className="px-4 py-3.5 text-right tabular-nums">
                             {resteE > 0 ? (
-                              <span className="font-semibold text-amber-600">
+                              <span className="font-semibold text-amber-600 dark:text-amber-400">
                                 {formatFCFA(resteE)}
                               </span>
                             ) : (
-                              <span className="text-sm text-emerald-600">Soldé</span>
+                              <span className="text-sm text-emerald-600 dark:text-emerald-400">Soldé</span>
                             )}
                           </TableCell>
-                          <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 sm:table-cell">
+                          <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300 sm:table-cell">
                             {e.modePaiement}
                           </TableCell>
                           <TableCell className="px-4 py-3.5">
@@ -1335,16 +1417,182 @@ export function DossierDetailScreen() {
           </Card>
         </TabsContent>
 
+        {/* ---- TAB: Factures ---- */}
+        <TabsContent value="factures">
+          <Card className="border-border/80 p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                  <ReceiptIcon className="size-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Factures liées à ce dossier
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Émises séparément dans le module Factures — indépendant des écritures ci-dessus
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleInvoice}>
+                <ReceiptIcon className="size-4" />
+                Nouvelle facture
+              </Button>
+            </div>
+
+            {dossierFactures.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <ReceiptIcon className="size-10 text-slate-200 dark:text-slate-700" />
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  Aucune facture émise pour ce dossier.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table aria-label="Factures du dossier">
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Numéro
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Date
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Montant TTC
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Payé
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Statut
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dossierFactures.map((f) => (
+                      <TableRow
+                        key={f.id}
+                        className="cursor-pointer border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                        onClick={() => go("facture-detail", { id: f.id })}
+                      >
+                        <TableCell className="px-4 py-3.5 font-mono text-xs font-semibold text-blue-700">
+                          {f.numero}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+                          {formatDateShort(f.date)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                          {formatFCFA(f.montantTTC)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
+                          {formatFCFA(f.montantPaye)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <FactureStatutBadge statut={f.statut} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* ---- TAB: Fournisseurs ---- */}
+        <TabsContent value="fournisseurs">
+          <Card className="border-border/80 p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                  <Truck className="size-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Fournisseurs & sous-traitants
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Coûts de sous-traitance imputés à {dossier.reference}
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" onClick={openAddFournisseur}>
+                <Plus className="size-4" />
+                Ajouter un prestataire
+              </Button>
+            </div>
+
+            {dossierFournisseurs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Truck className="size-10 text-slate-200 dark:text-slate-700" />
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  Aucun fournisseur lié à ce dossier.
+                </p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                  Ajoutez un transporteur, un commissionnaire ou un manutentionnaire et son coût réel.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table aria-label="Fournisseurs liés au dossier">
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Prestataire
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Description
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Budgété
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Réel
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Statut
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dossierFournisseurs.map((df) => (
+                      <TableRow key={df.id} className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
+                        <TableCell className="px-4 py-3.5 text-sm font-medium text-slate-800 dark:text-slate-200">
+                          {df.fournisseurNom}
+                          <p className="text-xs font-normal text-slate-400 dark:text-slate-500">{df.type}</p>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300">
+                          {df.description || "—"}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                          {formatFCFA(df.montantBudgete)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-800 dark:text-slate-200">
+                          {formatFCFA(df.montantReel)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <DossierFournisseurStatutBadge statut={df.statut} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
         {/* ---- TAB: Discussion ---- */}
         <TabsContent value="discussion">
           <Card className="border-border/80 shadow-sm">
             <div className="p-5 border-b border-border flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
                 <MessageSquare className="size-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Discussion interne</h2>
-                <p className="text-xs text-slate-500">Notes et échanges entre membres de l&apos;équipe</p>
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Discussion interne</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Notes et échanges entre membres de l&apos;équipe</p>
               </div>
             </div>
 
@@ -1352,9 +1600,9 @@ export function DossierDetailScreen() {
             <div className="min-h-[200px] divide-y divide-border">
               {dossierComments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-14 text-center">
-                  <MessageSquare className="size-10 text-slate-200" />
-                  <p className="mt-3 text-sm text-slate-500">Aucun message pour ce dossier.</p>
-                  <p className="text-xs text-slate-400">Soyez le premier à laisser une note.</p>
+                  <MessageSquare className="size-10 text-slate-200 dark:text-slate-700" />
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucun message pour ce dossier.</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Soyez le premier à laisser une note.</p>
                 </div>
               ) : (
                 [...dossierComments].reverse().map((c) => {
@@ -1369,17 +1617,17 @@ export function DossierDetailScreen() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-semibold text-slate-900">{c.userName}</span>
-                          <span className="text-xs text-slate-400">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{c.userName}</span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500">
                             {new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>
-                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{c.texte}</p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{c.texte}</p>
                       </div>
                       {isOwn && (
                         <button
                           onClick={() => deleteComment(c.id)}
-                          className="shrink-0 p-1 text-slate-300 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-500 transition-all"
+                          className="shrink-0 p-1 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-500 transition-all"
                           title="Supprimer"
                         >
                           <Trash2 className="size-3.5" />
@@ -1415,7 +1663,7 @@ export function DossierDetailScreen() {
                     }}
                     placeholder="Écrire un message... (Entrée pour envoyer, Maj+Entrée pour sauter une ligne)"
                     rows={2}
-                    className="w-full resize-none rounded-xl border border-border bg-slate-50/60 px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full resize-none rounded-xl border border-border bg-slate-50/60 dark:bg-slate-800/60 px-3 py-2.5 pr-10 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   <button
                     onClick={() => {
@@ -1440,14 +1688,14 @@ export function DossierDetailScreen() {
         <TabsContent value="historique">
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                 <History className="size-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Historique du dossier
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Toutes les actions enregistrées sur {dossier.reference}
                 </p>
               </div>
@@ -1455,8 +1703,8 @@ export function DossierDetailScreen() {
 
             {dossierAuditLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <History className="size-10 text-slate-200" />
-                <p className="mt-3 text-sm text-slate-500">
+                <History className="size-10 text-slate-200 dark:text-slate-700" />
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                   Aucune action enregistrée pour ce dossier.
                 </p>
               </div>
@@ -1464,18 +1712,18 @@ export function DossierDetailScreen() {
               <div className="divide-y divide-border">
                 {dossierAuditLogs.map((a) => (
                   <div key={a.id} className="flex items-start gap-3 py-3.5">
-                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                       <Clock className="size-3.5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-900">{a.action}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{a.detail}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{a.action}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{a.detail}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-xs tabular-nums text-slate-500">
+                      <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                         {formatDateShort(a.date.slice(0, 10))}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-400">{a.user}</p>
+                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{a.user}</p>
                     </div>
                   </div>
                 ))}
@@ -1510,7 +1758,7 @@ export function DossierDetailScreen() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="sd-nom" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="sd-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nom <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -1526,7 +1774,7 @@ export function DossierDetailScreen() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sd-desc" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="sd-desc" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Description (optionnel)
               </Label>
               <Input
@@ -1588,6 +1836,107 @@ export function DossierDetailScreen() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dossier ↔ Fournisseur link dialog */}
+      <Dialog open={dfDialogOpen} onOpenChange={setDfDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajouter un prestataire</DialogTitle>
+            <DialogDescription>
+              Rattachez un fournisseur ou transporteur et son coût à ce dossier.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Fournisseur <span className="text-red-500">*</span>
+              </Label>
+              <Select value={dfFournisseurId} onValueChange={setDfFournisseurId}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Sélectionner un fournisseur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fournisseurs.length === 0 ? (
+                    <div className="px-2 py-1.5 text-xs text-slate-400 dark:text-slate-500">
+                      Aucun fournisseur — créez-en un dans le module Fournisseurs.
+                    </div>
+                  ) : (
+                    fournisseurs.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.nom} · {f.type}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Description</Label>
+              <Input
+                value={dfDescription}
+                onChange={(e) => setDfDescription(e.target.value)}
+                placeholder="ex. Transport Dakar → Bamako"
+                className="h-10"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Montant budgété (FCFA)</Label>
+                <Input
+                  type="number"
+                  value={dfMontantBudgete}
+                  onChange={(e) => setDfMontantBudgete(e.target.value)}
+                  placeholder="0"
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Montant réel (FCFA)</Label>
+                <Input
+                  type="number"
+                  value={dfMontantReel}
+                  onChange={(e) => setDfMontantReel(e.target.value)}
+                  placeholder="0"
+                  className="h-10"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Date</Label>
+                <Input
+                  type="date"
+                  value={dfDate}
+                  onChange={(e) => setDfDate(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Statut</Label>
+                <Select value={dfStatut} onValueChange={(v) => setDfStatut(v as typeof dfStatut)}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="En attente">En attente</SelectItem>
+                    <SelectItem value="Payé">Payé</SelectItem>
+                    <SelectItem value="Litige">Litige</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDfDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveDossierFournisseur} disabled={!dfFournisseurId}>
+              <Check className="size-4" />
+              Ajouter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

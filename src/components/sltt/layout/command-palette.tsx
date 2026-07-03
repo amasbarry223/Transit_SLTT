@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useNav, type ViewKey } from "@/lib/nav-store";
+import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import { navItems } from "@/lib/nav-items";
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,42 +14,31 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import {
-  LayoutDashboard,
-  FolderKanban,
-  Wallet,
-  Warehouse,
-  FileOutput,
-  Users,
-  BarChart3,
-  Settings,
   Search,
   User as UserIcon,
   FileText,
+  ClipboardList,
+  Receipt,
 } from "lucide-react";
-
-const navItems: {
-  key: ViewKey;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}[] = [
-  { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { key: "dossiers", label: "Dossiers de transit", icon: FolderKanban },
-  { key: "comptabilite", label: "Comptabilité", icon: Wallet },
-  { key: "entreposage", label: "Entreposage", icon: Warehouse },
-  { key: "bons", label: "Bons de sortie", icon: FileOutput },
-  { key: "clients", label: "Clients", icon: Users },
-  { key: "bilans", label: "Bilans & rapports", icon: BarChart3 },
-  { key: "parametres", label: "Paramètres", icon: Settings },
-];
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const go = useNav((s) => s.go);
   const openDossier = useNav((s) => s.openDossier);
+  const openDevisDetail = useNav((s) => s.openDevisDetail);
   const openClient = useNav((s) => s.openClient);
+  const currentRole = useNav((s) => s.currentRole);
 
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
+  const devisList = useStore((s) => s.devis);
+  const factures = useStore((s) => s.factures);
+
+  // Même filtrage par rôle que la sidebar — ⌘K ne doit pas proposer des
+  // écrans qui n'apparaissent nulle part ailleurs pour ce rôle.
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || item.roles.includes(currentRole),
+  );
 
   // Cmd+K / Ctrl+K to open
   useEffect(() => {
@@ -71,17 +61,17 @@ export function CommandPalette() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-2 h-9 w-64 lg:w-80 rounded-md border border-input bg-slate-50 px-3 text-sm text-slate-400 hover:bg-slate-100 transition-colors"
+        className="hidden md:flex items-center gap-2 h-9 w-64 lg:w-80 rounded-md border border-input bg-slate-50 dark:bg-slate-800 px-3 text-sm text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
       >
         <Search className="size-4" />
         <span>Rechercher un dossier, un client…</span>
-        <kbd className="ml-auto pointer-events-none select-none rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-500">
+        <kbd className="ml-auto pointer-events-none select-none rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400">
           ⌘K
         </kbd>
       </button>
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden inline-flex items-center justify-center size-9 rounded-md text-slate-500 hover:bg-slate-100"
+        className="md:hidden inline-flex items-center justify-center size-9 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:text-slate-400 dark:hover:bg-slate-800"
         aria-label="Rechercher"
       >
         <Search className="size-5" />
@@ -93,7 +83,7 @@ export function CommandPalette() {
           <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
 
           <CommandGroup heading="Navigation">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <CommandItem
@@ -101,7 +91,7 @@ export function CommandPalette() {
                   value={`page ${item.label}`}
                   onSelect={() => run(() => go(item.key))}
                 >
-                  <Icon className="size-4 text-slate-400" />
+                  <Icon className="size-4 text-slate-400 dark:text-slate-500" />
                   <span>{item.label}</span>
                 </CommandItem>
               );
@@ -120,8 +110,50 @@ export function CommandPalette() {
                   >
                     <FileText className="size-4 text-blue-500" />
                     <span className="font-mono text-xs">{d.reference}</span>
-                    <span className="text-slate-500 truncate">
+                    <span className="text-slate-500 dark:text-slate-400 truncate">
                       {d.clientNom}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
+          )}
+
+          {devisList.length > 0 && (
+            <>
+              <CommandSeparator />
+              <CommandGroup heading="Devis">
+                {devisList.slice(0, 8).map((d) => (
+                  <CommandItem
+                    key={d.id}
+                    value={`devis ${d.reference} ${d.clientNom} ${d.nature}`}
+                    onSelect={() => run(() => openDevisDetail(d.id))}
+                  >
+                    <ClipboardList className="size-4 text-indigo-500" />
+                    <span className="font-mono text-xs">{d.reference}</span>
+                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                      {d.clientNom}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
+          )}
+
+          {factures.length > 0 && (
+            <>
+              <CommandSeparator />
+              <CommandGroup heading="Factures">
+                {factures.slice(0, 8).map((f) => (
+                  <CommandItem
+                    key={f.id}
+                    value={`facture ${f.numero} ${f.clientNom}`}
+                    onSelect={() => run(() => go("facture-detail", { id: f.id }))}
+                  >
+                    <Receipt className="size-4 text-blue-500" />
+                    <span className="font-mono text-xs">{f.numero}</span>
+                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                      {f.clientNom}
                     </span>
                   </CommandItem>
                 ))}
@@ -141,7 +173,7 @@ export function CommandPalette() {
                   >
                     <UserIcon className="size-4 text-emerald-500" />
                     <span>{c.nom}</span>
-                    <span className="ml-auto text-xs text-slate-400">
+                    <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">
                       {c.type}
                     </span>
                   </CommandItem>

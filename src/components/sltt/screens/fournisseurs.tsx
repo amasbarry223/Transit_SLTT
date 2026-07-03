@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   Plus, Search, Building2, Truck, Package, UserCheck,
-  Wrench, MoreHorizontal, Pencil, Trash2, X, Check,
+  Wrench, MoreHorizontal, Pencil, Trash2, Check,
   TrendingDown, TrendingUp, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useStore, type Fournisseur, type FournisseurInput, type FournisseurType, type FournisseurStatut, type DossierFournisseur } from "@/lib/store";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useStore, type Fournisseur, type FournisseurInput, type FournisseurType, type FournisseurStatut } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { DossierFournisseurStatutBadge } from "@/components/sltt/status-badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -37,11 +39,11 @@ const TYPES: FournisseurType[] = [
 ];
 
 const TYPE_META: Record<FournisseurType, { icon: React.ElementType; color: string; bg: string }> = {
-  "Transporteur":             { icon: Truck,       color: "text-blue-600",    bg: "bg-blue-50" },
-  "Manutentionnaire":         { icon: Package,     color: "text-amber-600",   bg: "bg-amber-50" },
-  "Commissionnaire en douane":{ icon: UserCheck,   color: "text-emerald-600", bg: "bg-emerald-50" },
-  "Loueur":                   { icon: Wrench,      color: "text-indigo-600",  bg: "bg-indigo-50" },
-  "Autre":                    { icon: MoreHorizontal,color: "text-slate-500", bg: "bg-slate-100" },
+  "Transporteur":             { icon: Truck,       color: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-950/40" },
+  "Manutentionnaire":         { icon: Package,     color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-950/40" },
+  "Commissionnaire en douane":{ icon: UserCheck,   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
+  "Loueur":                   { icon: Wrench,      color: "text-indigo-600 dark:text-indigo-400",  bg: "bg-indigo-50 dark:bg-indigo-950/40" },
+  "Autre":                    { icon: MoreHorizontal,color: "text-slate-500 dark:text-slate-400", bg: "bg-slate-100 dark:bg-slate-800" },
 };
 
 function TypeBadge({ type }: { type: FournisseurType }) {
@@ -59,21 +61,8 @@ function StatutBadge({ statut }: { statut: FournisseurStatut }) {
   return (
     <span className={cn(
       "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
-      statut === "Actif" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+      statut === "Actif" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
     )}>
-      {statut}
-    </span>
-  );
-}
-
-function DFStatutBadge({ statut }: { statut: DossierFournisseur["statut"] }) {
-  const s: Record<string, string> = {
-    "En attente": "bg-amber-50 text-amber-700",
-    "Payé":       "bg-emerald-50 text-emerald-700",
-    "Litige":     "bg-red-50 text-red-600",
-  };
-  return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold", s[statut])}>
       {statut}
     </span>
   );
@@ -105,8 +94,6 @@ function FournisseurModal({
   const [tarif, setTarif] = React.useState(editing?.tarifContractuel ? String(editing.tarifContractuel) : "");
   const [statut, setStatut] = React.useState<FournisseurStatut>(editing?.statut ?? "Actif");
 
-  if (!open) return null;
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!nom.trim()) return;
@@ -131,18 +118,13 @@ function FournisseurModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-10 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Building2 className="size-4 text-blue-600" />
-            <h2 className="text-base font-semibold text-slate-900">
-              {editing ? "Modifier le fournisseur" : "Nouveau fournisseur"}
-            </h2>
-          </div>
-          <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
-            <X className="size-4" />
-          </button>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-lg gap-0 p-0">
+        <div className="flex items-center gap-2 border-b border-border/60 px-6 py-4">
+          <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            {editing ? "Modifier le fournisseur" : "Nouveau fournisseur"}
+          </h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
           <div className="grid grid-cols-2 gap-4">
@@ -196,8 +178,8 @@ function FournisseurModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -261,8 +243,8 @@ export function FournisseursScreen() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Fournisseurs & sous-traitants</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Prestataires externes, tarifs contractuels et suivi des coûts</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Fournisseurs & sous-traitants</h1>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Prestataires externes, tarifs contractuels et suivi des coûts</p>
         </div>
         <Button onClick={() => { setEditing(undefined); setShowForm(true); }}>
           <Plus className="size-4" />
@@ -273,19 +255,19 @@ export function FournisseursScreen() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Fournisseurs actifs", value: actifs, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Total sous-traité", value: formatFCFA(totalMontant), icon: TrendingDown, color: "text-red-600", bg: "bg-red-50" },
-          { label: "Budget alloué", value: formatFCFA(totalBudgete), icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
-          { label: "Paiements en attente", value: enAttente, icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Fournisseurs actifs", value: actifs, icon: Building2, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/40" },
+          { label: "Total sous-traité", value: formatFCFA(totalMontant), icon: TrendingDown, color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/40" },
+          { label: "Budget alloué", value: formatFCFA(totalBudgete), icon: TrendingUp, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950/40" },
+          { label: "Paiements en attente", value: enAttente, icon: AlertCircle, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/40" },
         ].map((k) => {
           const Icon = k.icon;
           return (
-            <div key={k.label} className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
+            <div key={k.label} className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
               <div className={cn("mb-2 flex size-8 items-center justify-center rounded-lg", k.bg)}>
                 <Icon className={cn("size-4", k.color)} />
               </div>
-              <p className="text-xs text-slate-500">{k.label}</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{k.value}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{k.label}</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{k.value}</p>
             </div>
           );
         })}
@@ -294,7 +276,7 @@ export function FournisseursScreen() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -309,7 +291,7 @@ export function FournisseursScreen() {
               onClick={() => setTypeFilter(t as FournisseurType | "Tous")}
               className={cn(
                 "rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
-                typeFilter === t ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                typeFilter === t ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
               )}
             >
               {t}
@@ -319,8 +301,8 @@ export function FournisseursScreen() {
       </div>
 
       {/* Fournisseurs list */}
-      <div className="rounded-xl border border-border/80 bg-white shadow-sm overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+      <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 bg-slate-50 dark:bg-slate-800 px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
           <span>Type</span>
           <span>Prestataire</span>
           <span className="text-right hidden sm:block">Tarif contractuel</span>
@@ -329,24 +311,24 @@ export function FournisseursScreen() {
           <span />
         </div>
         {filtered.length === 0 && (
-          <div className="py-12 text-center text-sm text-slate-400">Aucun fournisseur trouvé.</div>
+          <div className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">Aucun fournisseur trouvé.</div>
         )}
         {filtered.map((f) => {
           const m = TYPE_META[f.type];
           const Icon = m.icon;
           return (
-            <div key={f.id} className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 border-t border-border/60 px-5 py-3 hover:bg-slate-50/60">
+            <div key={f.id} className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 border-t border-border/60 px-5 py-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
               <div className={cn("flex size-8 items-center justify-center rounded-lg", m.bg)}>
                 <Icon className={cn("size-4", m.color)} />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">{f.nom}</p>
-                <p className="truncate text-xs text-slate-400">{f.contact} · {f.telephone}</p>
+                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{f.nom}</p>
+                <p className="truncate text-xs text-slate-400 dark:text-slate-500">{f.contact} · {f.telephone}</p>
               </div>
-              <p className="hidden text-right text-sm tabular-nums text-slate-500 sm:block">
+              <p className="hidden text-right text-sm tabular-nums text-slate-500 dark:text-slate-400 sm:block">
                 {f.tarifContractuel ? formatFCFA(f.tarifContractuel) : "—"}
               </p>
-              <p className="hidden text-right text-sm font-semibold tabular-nums text-slate-800 sm:block">
+              <p className="hidden text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200 sm:block">
                 {formatFCFA(f.montantTotal)}
               </p>
               <StatutBadge statut={f.statut} />
@@ -354,7 +336,7 @@ export function FournisseursScreen() {
                 <Button size="icon" variant="ghost" className="size-8" onClick={() => handleEdit(f)}>
                   <Pencil className="size-3.5" />
                 </Button>
-                <Button size="icon" variant="ghost" className="size-8 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => setDeleteId(f.id)}>
+                <Button size="icon" variant="ghost" className="size-8 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" onClick={() => setDeleteId(f.id)}>
                   <Trash2 className="size-3.5" />
                 </Button>
               </div>
@@ -364,12 +346,12 @@ export function FournisseursScreen() {
       </div>
 
       {/* Dernières liaisons dossiers */}
-      <div className="rounded-xl border border-border/80 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
-          <h2 className="text-sm font-semibold text-slate-800">Dernières liaisons dossiers</h2>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Dernières liaisons dossiers</h2>
           <Badge variant="secondary" className="text-[10px]">{dossierFournisseurs.length} prestation(s)</Badge>
         </div>
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 bg-slate-50 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 bg-slate-50 dark:bg-slate-800 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
           <span>Prestataire / Dossier</span>
           <span className="hidden sm:block">Description</span>
           <span className="text-right">Budgété</span>
@@ -378,28 +360,28 @@ export function FournisseursScreen() {
           <span>Statut</span>
         </div>
         {liaisonsEnrichies.length === 0 && (
-          <div className="py-10 text-center text-sm text-slate-400">Aucune liaison dossier enregistrée.</div>
+          <div className="py-10 text-center text-sm text-slate-400 dark:text-slate-500">Aucune liaison dossier enregistrée.</div>
         )}
         {liaisonsEnrichies.map((df) => {
           const ecart = df.montantReel - df.montantBudgete;
           return (
-            <div key={df.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 border-t border-border/60 px-5 py-3 hover:bg-slate-50/60">
+            <div key={df.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 border-t border-border/60 px-5 py-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-800">{df.fournisseurNom}</p>
+                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{df.fournisseurNom}</p>
                 <button
                   onClick={() => go("dossier-detail", { id: df.dossierId })}
-                  className="truncate text-xs text-blue-600 hover:underline"
+                  className="truncate text-xs text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   {df.dossierRef ?? df.dossierId} · {formatDateShort(df.date)}
                 </button>
               </div>
-              <p className="hidden max-w-[160px] truncate text-xs text-slate-500 sm:block">{df.description}</p>
-              <p className="text-right text-sm tabular-nums text-slate-500">{formatFCFA(df.montantBudgete)}</p>
-              <p className="text-right text-sm font-semibold tabular-nums text-slate-800">{formatFCFA(df.montantReel)}</p>
-              <p className={cn("text-sm font-semibold tabular-nums", ecart > 0 ? "text-red-600" : ecart < 0 ? "text-emerald-600" : "text-slate-400")}>
+              <p className="hidden max-w-[160px] truncate text-xs text-slate-500 dark:text-slate-400 sm:block">{df.description}</p>
+              <p className="text-right text-sm tabular-nums text-slate-500 dark:text-slate-400">{formatFCFA(df.montantBudgete)}</p>
+              <p className="text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">{formatFCFA(df.montantReel)}</p>
+              <p className={cn("text-sm font-semibold tabular-nums", ecart > 0 ? "text-red-600 dark:text-red-400" : ecart < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500")}>
                 {ecart > 0 ? "+" : ""}{formatFCFA(ecart)}
               </p>
-              <DFStatutBadge statut={df.statut} />
+              <DossierFournisseurStatutBadge statut={df.statut} />
             </div>
           );
         })}

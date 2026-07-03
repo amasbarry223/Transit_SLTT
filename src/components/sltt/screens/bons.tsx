@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Eye,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { useStore, type BonMotif, type StockItem } from "@/lib/store";
+import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML } from "@/lib/export";
@@ -73,6 +74,8 @@ const motifs: BonMotif[] = ["Vente", "Livraison", "Transfert"];
 
 export function BonsScreen() {
   const { toast } = useToast();
+  const go = useNav((s) => s.go);
+  const selectedId = useNav((s) => s.selectedId);
 
   const bons = useStore((s) => s.bons);
   const addBon = useStore((s) => s.addBon);
@@ -99,6 +102,15 @@ export function BonsScreen() {
   const [formMontant, setFormMontant] = useState<string>("");
 
   const nextRef = `BS-2026-${String(bonSeq).padStart(4, "0")}`;
+
+  // Ouverture directe du formulaire depuis un raccourci externe (CTA dashboard).
+  useEffect(() => {
+    if (selectedId === "new") {
+      setOpen(true);
+      go("bons");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   const stats = useMemo(() => {
     let valides = 0;
@@ -338,8 +350,8 @@ export function BonsScreen() {
       </div>
 
       {stats.brouillons > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
-          <FilePen className="mt-0.5 size-5 shrink-0 text-amber-600" />
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 px-4 py-3">
+          <FilePen className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
             <p className="text-sm font-medium text-amber-900">
               {stats.brouillons} bon{stats.brouillons > 1 ? "s" : ""} en brouillon
@@ -354,7 +366,7 @@ export function BonsScreen() {
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <Input
               placeholder="Référence, client, marchandise…"
               value={search}
@@ -439,14 +451,14 @@ export function BonsScreen() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500"
+              className="h-10 text-slate-500 dark:text-slate-400"
               onClick={clearFilters}
             >
               Réinitialiser
             </Button>
           )}
 
-          <p className="ml-auto text-xs tabular-nums text-slate-500">
+          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
             {filtered.length} bon{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -454,21 +466,21 @@ export function BonsScreen() {
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <Truck className="size-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-900">
+          <Truck className="size-4 text-slate-400 dark:text-slate-500" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
             Liste des bons de sortie
           </h2>
         </div>
 
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
               <ClipboardList className="size-7" />
             </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
               Aucun bon trouvé
             </h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500">
+            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
               {hasActiveFilters
                 ? "Modifiez vos filtres ou créez un nouveau bon de sortie."
                 : "Enregistrez votre premier bon pour tracer une sortie de marchandise."}
@@ -485,32 +497,32 @@ export function BonsScreen() {
             <div className="overflow-x-auto">
               <Table aria-label="Liste des bons de sortie">
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Référence
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Date
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Motif
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Qté
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Montant
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -522,40 +534,40 @@ export function BonsScreen() {
                       <TableRow
                         key={b.id}
                         className={cn(
-                          "border-b border-border hover:bg-slate-50/60",
-                          isBrouillon && "bg-amber-50/25",
+                          "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+                          isBrouillon && "bg-amber-50/25 dark:bg-amber-950/20",
                         )}
                       >
                         <TableCell className="px-4 py-3.5">
-                          <p className="font-mono text-xs font-medium text-slate-900">
+                          <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
                             {b.reference}
                           </p>
-                          <p className="mt-0.5 text-xs tabular-nums text-slate-500 sm:hidden">
+                          <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400 sm:hidden">
                             {formatDateShort(b.date)}
                           </p>
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 sm:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300 sm:table-cell">
                           {formatDateShort(b.date)}
                         </TableCell>
                         <TableCell className="max-w-[160px] px-4 py-3.5">
-                          <p className="truncate font-medium text-slate-700">
+                          <p className="truncate font-medium text-slate-700 dark:text-slate-300">
                             {b.clientNom}
                           </p>
                         </TableCell>
                         <TableCell className="hidden max-w-[140px] px-4 py-3.5 md:table-cell">
-                          <span className="flex items-center gap-1.5 text-sm text-slate-600">
-                            <Package className="size-3.5 shrink-0 text-slate-400" />
+                          <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                            <Package className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                             <span className="truncate">{b.marchandise}</span>
                           </span>
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
                           <ToneBadge tone={motifTone[b.motif]}>{b.motif}</ToneBadge>
                         </TableCell>
-                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
                           {b.quantite}{" "}
-                          <span className="text-xs text-slate-500">{b.unite}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">{b.unite}</span>
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 sm:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 sm:table-cell">
                           {formatFCFA(b.montant)}
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
@@ -567,7 +579,7 @@ export function BonsScreen() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-8 text-amber-600 hover:text-emerald-600"
+                                className="size-8 text-amber-600 dark:text-amber-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                                 aria-label={`Valider ${b.reference}`}
                                 title="Valider le bon"
                                 onClick={() => handleValidateBon(b.id, b.reference)}
@@ -578,7 +590,7 @@ export function BonsScreen() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-8 text-slate-500 hover:text-primary"
+                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                               aria-label={`Visualiser ${b.reference}`}
                               title="Visualiser"
                               onClick={() => handleView(b.reference)}
@@ -588,7 +600,7 @@ export function BonsScreen() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-8 text-slate-500 hover:text-primary"
+                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                               aria-label={`Imprimer ${b.reference}`}
                               title="PDF / Imprimer"
                               onClick={() => handlePrint(b.reference)}
@@ -624,7 +636,7 @@ export function BonsScreen() {
               <DialogTitle>Nouveau bon de sortie</DialogTitle>
               <Badge
                 variant="outline"
-                className="border-slate-200 bg-slate-50 font-mono text-xs text-slate-500"
+                className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-slate-500 dark:text-slate-400"
               >
                 {nextRef}
               </Badge>
@@ -637,7 +649,7 @@ export function BonsScreen() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="bs-date" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="bs-date" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Date
                 </Label>
                 <Input
@@ -650,7 +662,7 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-client" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="bs-client" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Client <span className="text-red-500">*</span>
                 </Label>
                 <div className="flex gap-2">
@@ -671,7 +683,7 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-stock" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="bs-stock" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Marchandise <span className="text-red-500">*</span>
                 </Label>
                 <Select value={formStockId} onValueChange={setFormStockId}>
@@ -689,7 +701,7 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-quantite" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="bs-quantite" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Quantité à sortir <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -703,7 +715,7 @@ export function BonsScreen() {
                   className="h-10"
                 />
                 {depasseStock && selectedStock && (
-                  <p className="text-xs text-red-600">
+                  <p className="text-xs text-red-600 dark:text-red-400">
                     La quantité dépasse le stock disponible ({stockDisponible}{" "}
                     {selectedStock.unite}).
                   </p>
@@ -711,7 +723,7 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-motif" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="bs-motif" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Motif <span className="text-red-500">*</span>
                 </Label>
                 <Select
@@ -732,7 +744,7 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-montant" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="bs-montant" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Montant
                 </Label>
                 <div className="relative">
@@ -745,7 +757,7 @@ export function BonsScreen() {
                     placeholder="0"
                     className="h-10 pr-16"
                   />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 dark:text-slate-500">
                     FCFA
                   </span>
                 </div>
@@ -824,12 +836,12 @@ function BonPreview({
     },
     {
       label: "Client",
-      value: client || <span className="text-slate-400">À renseigner</span>,
+      value: client || <span className="text-slate-400 dark:text-slate-500">À renseigner</span>,
     },
     {
       label: "Marchandise",
       value:
-        marchandise || <span className="text-slate-400">À renseigner</span>,
+        marchandise || <span className="text-slate-400 dark:text-slate-500">À renseigner</span>,
     },
     {
       label: "Quantité",
@@ -837,7 +849,7 @@ function BonPreview({
     },
     {
       label: "Motif",
-      value: motif || <span className="text-slate-400">À renseigner</span>,
+      value: motif || <span className="text-slate-400 dark:text-slate-500">À renseigner</span>,
     },
     {
       label: "Montant",
@@ -846,14 +858,14 @@ function BonPreview({
   ];
 
   return (
-    <div className="rounded-lg border-2 border-dashed border-slate-200 bg-white p-6 font-[var(--font-heading)]">
-      <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+    <div className="rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 font-[var(--font-heading)]">
+      <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
         <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Truck className="size-5" />
         </div>
         <div>
-          <p className="font-bold leading-tight text-slate-900">SLTT</p>
-          <p className="text-[11px] leading-tight text-slate-500">
+          <p className="font-bold leading-tight text-slate-900 dark:text-slate-100">SLTT</p>
+          <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400">
             Société Traoré de Logistique,
             <br />
             Transit et Transport
@@ -862,27 +874,27 @@ function BonPreview({
       </div>
 
       <div className="my-5 text-center">
-        <p className="text-lg font-bold tracking-tight text-slate-900">
+        <p className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
           BON DE SORTIE
         </p>
-        <p className="mt-1 font-mono text-xs text-slate-500">{reference}</p>
+        <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">{reference}</p>
       </div>
 
-      <div className="overflow-hidden rounded-md border border-slate-200">
+      <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
         <table className="w-full text-sm">
           <tbody>
             {rows.map((r, i) => (
               <tr
                 key={r.label}
                 className={cn(
-                  "border-b border-slate-100 last:border-0",
-                  i % 2 === 0 && "bg-slate-50/50",
+                  "border-b border-slate-100 dark:border-slate-800 last:border-0",
+                  i % 2 === 0 && "bg-slate-50/50 dark:bg-slate-800/50",
                 )}
               >
-                <td className="w-1/3 px-3 py-1.5 text-xs font-medium uppercase text-slate-500">
+                <td className="w-1/3 px-3 py-1.5 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
                   {r.label}
                 </td>
-                <td className="px-3 py-1.5 tabular-nums text-slate-800">
+                <td className="px-3 py-1.5 tabular-nums text-slate-800 dark:text-slate-200">
                   {r.value}
                 </td>
               </tr>
@@ -892,8 +904,8 @@ function BonPreview({
       </div>
 
       <div className="mt-8 flex items-end justify-between">
-        <div className="text-xs text-slate-500">Signature du responsable</div>
-        <div className="text-xs text-slate-400">__________</div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">Signature du responsable</div>
+        <div className="text-xs text-slate-400 dark:text-slate-500">__________</div>
       </div>
     </div>
   );

@@ -8,30 +8,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/sltt/page-header";
 import { useStore, type Facture, type FactureStatut, type FactureInput } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-
-/* ------------------------------------------------------------------ */
-/* STATUT BADGE                                                        */
-/* ------------------------------------------------------------------ */
-
-const STATUT_STYLES: Record<FactureStatut, string> = {
-  Brouillon:  "bg-slate-100 text-slate-600 border-slate-200",
-  Envoyée:    "bg-blue-50 text-blue-700 border-blue-200",
-  Partielle:  "bg-amber-50 text-amber-700 border-amber-200",
-  Soldée:     "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Annulée:    "bg-red-50 text-red-500 border-red-200",
-};
-
-function FactureStatutBadge({ statut }: { statut: FactureStatut }) {
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUT_STYLES[statut]}`}>
-      {statut}
-    </span>
-  );
-}
+import { FactureStatutBadge } from "@/components/sltt/status-badge";
 
 /* ------------------------------------------------------------------ */
 /* FORM — nouvelle facture                                             */
@@ -72,8 +54,6 @@ function FactureFormModal({
       prixUnitaire: String(l.prixUnitaire),
     })) ?? [{ ...EMPTY_LIGNE }]
   );
-
-  if (!open) return null;
 
   const montantHT = lignes.reduce((s, l) => {
     const q = parseFloat(l.quantite) || 0;
@@ -141,64 +121,59 @@ function FactureFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-10 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-white shadow-2xl">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Receipt className="size-4 text-blue-600" />
-            <h2 className="text-base font-semibold text-slate-900">Nouvelle facture</h2>
-          </div>
-          <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <X className="size-4" />
-          </button>
+        <div className="flex items-center gap-2 border-b border-border/60 px-6 py-4">
+          <Receipt className="size-4 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Nouvelle facture</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="divide-y divide-border/40">
           {/* Section 1 : client + dossier */}
           <div className="grid grid-cols-2 gap-4 px-6 py-5">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600">Dossier lié (optionnel)</Label>
+              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Dossier lié (optionnel)</Label>
               <div className="relative">
                 <select
                   value={dossierId}
                   onChange={(e) => handleDossierChange(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-border bg-white px-3 py-2 pr-8 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 >
                   <option value="">— Aucun dossier —</option>
                   {dossiers.map((d) => (
                     <option key={d.id} value={d.id}>{d.reference} · {d.clientNom}</option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600">Client *</Label>
+              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Client *</Label>
               <div className="relative">
                 <select
                   value={clientId}
                   onChange={(e) => handleClientChange(e.target.value)}
                   required
-                  className="w-full appearance-none rounded-lg border border-border bg-white px-3 py-2 pr-8 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 >
                   <option value="">Sélectionner un client</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>{c.nom}</option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600">Date de facture *</Label>
+              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Date de facture *</Label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="h-9 text-sm" />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600">Date d&apos;échéance *</Label>
+              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Date d&apos;échéance *</Label>
               <Input type="date" value={dateEcheance} onChange={(e) => setDateEcheance(e.target.value)} required className="h-9 text-sm" />
             </div>
           </div>
@@ -206,18 +181,18 @@ function FactureFormModal({
           {/* Section 2 : lignes */}
           <div className="px-6 py-5">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Lignes de facturation</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lignes de facturation</span>
               <button
                 type="button"
                 onClick={addLigne}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-blue-600 hover:bg-blue-50"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:bg-blue-950/40"
               >
                 <Plus className="size-3" /> Ajouter
               </button>
             </div>
 
             {/* En-têtes colonnes */}
-            <div className="mb-1.5 grid grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            <div className="mb-1.5 grid grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
               <span>Description</span>
               <span className="text-center">Qté</span>
               <span className="text-right">Prix unitaire</span>
@@ -253,7 +228,7 @@ function FactureFormModal({
                     type="button"
                     onClick={() => removeLigne(i)}
                     disabled={lignes.length === 1}
-                    className="flex size-6 items-center justify-center rounded text-slate-300 hover:bg-red-50 hover:text-red-500 disabled:pointer-events-none"
+                    className="flex size-6 items-center justify-center rounded text-slate-300 dark:text-slate-600 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500 disabled:pointer-events-none"
                   >
                     <X className="size-3" />
                   </button>
@@ -266,7 +241,7 @@ function FactureFormModal({
           <div className="grid grid-cols-2 gap-6 px-6 py-5">
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600">Taux TVA (%)</Label>
+                <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Taux TVA (%)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -277,28 +252,28 @@ function FactureFormModal({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600">Notes</Label>
+                <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Notes</Label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   placeholder="Conditions de paiement, références…"
-                  className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 dark:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 />
               </div>
             </div>
 
             <div className="flex flex-col justify-end">
-              <div className="rounded-xl border border-border/60 bg-slate-50/60 p-4 text-sm">
-                <div className="flex justify-between text-slate-600">
+              <div className="rounded-xl border border-border/60 bg-slate-50/60 dark:bg-slate-800/60 p-4 text-sm">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Sous-total HT</span>
                   <span className="tabular-nums">{formatFCFA(montantHT)}</span>
                 </div>
-                <div className="mt-1.5 flex justify-between text-slate-600">
+                <div className="mt-1.5 flex justify-between text-slate-600 dark:text-slate-300">
                   <span>TVA {tva}%</span>
                   <span className="tabular-nums">{formatFCFA(montantTVA)}</span>
                 </div>
-                <div className="mt-3 flex justify-between border-t border-border/60 pt-3 font-semibold text-slate-900">
+                <div className="mt-3 flex justify-between border-t border-border/60 pt-3 font-semibold text-slate-900 dark:text-slate-100">
                   <span>Total TTC</span>
                   <span className="text-base tabular-nums text-blue-700">{formatFCFA(montantTTC)}</span>
                 </div>
@@ -314,8 +289,8 @@ function FactureFormModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -409,18 +384,18 @@ export function FacturesScreen() {
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Factures actives",   value: String(kpi.total),              icon: Receipt,       color: "text-blue-600",    bg: "bg-blue-50"    },
-          { label: "Montant total TTC",  value: formatFCFA(kpi.totalTTC),       icon: TrendingUp,    color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Factures actives",   value: String(kpi.total),              icon: Receipt,       color: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-950/40"    },
+          { label: "Montant total TTC",  value: formatFCFA(kpi.totalTTC),       icon: TrendingUp,    color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
           { label: "Recouvré",           value: formatFCFA(kpi.totalPaye),      icon: CheckCircle2,  color: "text-violet-600",  bg: "bg-violet-50"  },
-          { label: "Non soldées",        value: String(kpi.nonSoldees),         icon: Clock,         color: "text-amber-600",   bg: "bg-amber-50"   },
+          { label: "Non soldées",        value: String(kpi.nonSoldees),         icon: Clock,         color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-950/40"   },
         ].map((k) => (
-          <div key={k.label} className="flex items-center gap-3 rounded-xl border border-border/80 bg-white p-4 shadow-sm">
+          <div key={k.label} className="flex items-center gap-3 rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
             <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${k.bg}`}>
               <k.icon className={`size-4 ${k.color}`} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[11px] text-slate-500">{k.label}</p>
-              <p className="truncate text-sm font-bold tabular-nums text-slate-900">{k.value}</p>
+              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{k.label}</p>
+              <p className="truncate text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">{k.value}</p>
             </div>
           </div>
         ))}
@@ -428,12 +403,12 @@ export function FacturesScreen() {
 
       {/* Taux de recouvrement bar */}
       {kpi.total > 0 && (
-        <div className="rounded-xl border border-border/80 bg-white px-5 py-3.5 shadow-sm">
+        <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 px-5 py-3.5 shadow-sm">
           <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-medium text-slate-700">Taux de recouvrement</span>
-            <span className="font-bold tabular-nums text-slate-900">{kpi.tauxRecouvrement}%</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">Taux de recouvrement</span>
+            <span className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{kpi.tauxRecouvrement}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div
               className="h-full rounded-full bg-emerald-500 transition-all"
               style={{ width: `${kpi.tauxRecouvrement}%` }}
@@ -456,11 +431,11 @@ export function FacturesScreen() {
                 className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   activeTab === tab.key
                     ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
                 }`}
               >
                 {tab.label}
-                <span className={`rounded-full px-1.5 py-px text-[10px] font-bold ${activeTab === tab.key ? "bg-white/20 text-white" : "bg-white text-slate-500"}`}>
+                <span className={`rounded-full px-1.5 py-px text-[10px] font-bold ${activeTab === tab.key ? "bg-white/20 text-white" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}>
                   {count}
                 </span>
               </button>
@@ -469,7 +444,7 @@ export function FacturesScreen() {
         </div>
 
         <div className="relative w-full sm:w-56">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <Input
             placeholder="Rechercher…"
             value={search}
@@ -480,9 +455,9 @@ export function FacturesScreen() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
         {/* Labels */}
-        <div className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] gap-x-3 border-b border-border/50 bg-slate-50/70 px-5 py-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        <div className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] gap-x-3 border-b border-border/50 bg-slate-50/70 px-5 py-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
           <span>N° Facture</span>
           <span>Client</span>
           <span>Date</span>
@@ -496,8 +471,8 @@ export function FacturesScreen() {
         <div className="divide-y divide-border/40">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Receipt className="size-10 text-slate-200" />
-              <p className="mt-3 text-sm font-medium text-slate-500">
+              <Receipt className="size-10 text-slate-200 dark:text-slate-700" />
+              <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
                 {factures.length === 0 ? "Aucune facture créée" : "Aucun résultat"}
               </p>
               {factures.length === 0 && (
@@ -512,7 +487,7 @@ export function FacturesScreen() {
               return (
                 <div
                   key={f.id}
-                  className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] items-center gap-x-3 px-5 py-3 transition-colors hover:bg-slate-50/60"
+                  className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] items-center gap-x-3 px-5 py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                 >
                   <button
                     onClick={() => go("facture-detail", { id: f.id })}
@@ -520,19 +495,19 @@ export function FacturesScreen() {
                   >
                     {f.numero}
                   </button>
-                  <p className="truncate text-xs text-slate-700">{f.clientNom}</p>
-                  <p className="text-xs tabular-nums text-slate-500">{formatDateShort(f.date)}</p>
-                  <p className={`text-xs tabular-nums ${isEchue ? "font-semibold text-red-600" : "text-slate-500"}`}>
+                  <p className="truncate text-xs text-slate-700 dark:text-slate-300">{f.clientNom}</p>
+                  <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(f.date)}</p>
+                  <p className={`text-xs tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
                     {formatDateShort(f.dateEcheance)}
                   </p>
-                  <p className="text-right text-xs font-semibold tabular-nums text-slate-900">{formatFCFA(f.montantTTC)}</p>
+                  <p className="text-right text-xs font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(f.montantTTC)}</p>
                   <p className="text-right text-xs tabular-nums text-emerald-700">{formatFCFA(f.montantPaye)}</p>
                   <FactureStatutBadge statut={f.statut} />
                   <div className="flex items-center gap-1">
                     <button
                       title="Voir / Imprimer"
                       onClick={() => go("facture-detail", { id: f.id })}
-                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
                     >
                       <Eye className="size-3.5" />
                     </button>
@@ -540,7 +515,7 @@ export function FacturesScreen() {
                       <button
                         title="Marquer comme envoyée"
                         onClick={() => updateFactureStatut(f.id, "Envoyée")}
-                        className="rounded p-1 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                        className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
                       >
                         <Send className="size-3.5" />
                       </button>
@@ -548,7 +523,7 @@ export function FacturesScreen() {
                     <button
                       title="Supprimer"
                       onClick={() => handleDelete(f)}
-                      className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                      className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
                     >
                       <Trash2 className="size-3.5" />
                     </button>

@@ -150,6 +150,103 @@ export interface FactureInput {
   notes: string;
 }
 
+// LOGIC-12 (audit) : seul module sans aucune donnée de démo — un compte neuf
+// affichait un écran vide qu'on pouvait confondre avec un bug. 3 factures
+// liées à des dossiers seed réels (D-0041/D-0042/D-0040) + 1 facture hors
+// dossier, sur les 4 statuts non-brouillon/annulé possibles.
+const seedFactures: Facture[] = [
+  {
+    id: "FACT-0001",
+    numero: "SLTT-FACT-2026-0001",
+    dossierId: "D-0041",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta Distribution",
+    date: "2026-01-09",
+    dateEcheance: "2026-02-08",
+    statut: "Soldée",
+    lignes: [
+      { id: "FACT-0001-L1", description: "Frais de prestation — SLTT-TR-2026-0041 (Sacs de ciment)", quantite: 1, prixUnitaire: 600_000, montantHT: 600_000 },
+      { id: "FACT-0001-L2", description: "Droits de douane", quantite: 1, prixUnitaire: 980_000, montantHT: 980_000 },
+      { id: "FACT-0001-L3", description: "Frais de circuit", quantite: 1, prixUnitaire: 320_000, montantHT: 320_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 1_900_000,
+    montantTVA: 342_000,
+    montantTTC: 2_242_000,
+    montantPaye: 2_242_000,
+    notes: "",
+    creePar: "Fatoumata Diallo",
+    creeLe: "2026-01-09T09:30:00.000Z",
+  },
+  {
+    id: "FACT-0002",
+    numero: "SLTT-FACT-2026-0002",
+    dossierId: "D-0042",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    date: "2026-01-10",
+    dateEcheance: "2026-02-09",
+    statut: "Partielle",
+    lignes: [
+      { id: "FACT-0002-L1", description: "Frais de prestation — SLTT-TR-2026-0042 (Matériel électronique)", quantite: 1, prixUnitaire: 850_000, montantHT: 850_000 },
+      { id: "FACT-0002-L2", description: "Droits de douane", quantite: 1, prixUnitaire: 1_200_000, montantHT: 1_200_000 },
+      { id: "FACT-0002-L3", description: "Frais de circuit", quantite: 1, prixUnitaire: 450_000, montantHT: 450_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 2_500_000,
+    montantTVA: 450_000,
+    montantTTC: 2_950_000,
+    montantPaye: 1_500_000,
+    notes: "",
+    creePar: "Fatoumata Diallo",
+    creeLe: "2026-01-10T10:15:00.000Z",
+  },
+  {
+    id: "FACT-0003",
+    numero: "SLTT-FACT-2026-0003",
+    dossierId: "D-0040",
+    clientId: "C-002",
+    clientNom: "Traoré & Frères Commerce",
+    date: "2026-01-11",
+    dateEcheance: "2026-02-10",
+    statut: "Envoyée",
+    lignes: [
+      { id: "FACT-0003-L1", description: "Frais de prestation — SLTT-TR-2026-0040 (Pièces automobiles)", quantite: 1, prixUnitaire: 900_000, montantHT: 900_000 },
+      { id: "FACT-0003-L2", description: "Droits de douane", quantite: 1, prixUnitaire: 1_500_000, montantHT: 1_500_000 },
+      { id: "FACT-0003-L3", description: "Frais de circuit", quantite: 1, prixUnitaire: 500_000, montantHT: 500_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 2_900_000,
+    montantTVA: 522_000,
+    montantTTC: 3_422_000,
+    montantPaye: 0,
+    notes: "",
+    creePar: "Amadou Traoré",
+    creeLe: "2026-01-11T14:00:00.000Z",
+  },
+  {
+    id: "FACT-0004",
+    numero: "SLTT-FACT-2026-0004",
+    dossierId: null,
+    clientId: "C-005",
+    clientNom: "Boutique Cissé Import",
+    date: "2026-01-12",
+    dateEcheance: "2026-02-11",
+    statut: "Brouillon",
+    lignes: [
+      { id: "FACT-0004-L1", description: "Prestation de courtage — hors dossier", quantite: 1, prixUnitaire: 180_000, montantHT: 180_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 180_000,
+    montantTVA: 32_400,
+    montantTTC: 212_400,
+    montantPaye: 0,
+    notes: "",
+    creePar: "Amadou Traoré",
+    creeLe: "2026-01-12T08:45:00.000Z",
+  },
+];
+
 export type AuditEntry = {
   id: string;
   date: string;
@@ -243,14 +340,39 @@ function findStockForBon(stock: StockItem[], ref: { stockId?: string; marchandis
   return stock.find((s) => s.marchandise === ref.marchandise);
 }
 
-function syncClientStats(dossiers: Dossier[], clients: Client[]): Client[] {
+// LOGIC-05 (audit) : totalPaye doit refléter Écritures ET Factures — ce sont
+// deux canaux de paiement indépendants (payer une facture ne touche jamais
+// une écriture, cf. recordFacturePaiement) donc additifs, pas redondants.
+// Sans les Factures ici, ce champ dénormalisé divergeait silencieusement du
+// total "réconcilié" affiché sur la fiche client (client-fiche.tsx).
+function syncClientStats(dossiers: Dossier[], factures: Facture[], clients: Client[]): Client[] {
   return clients.map((c) => {
     const cd = dossiers.filter((d) => d.clientId === c.id);
+    const cf = factures.filter((f) => f.clientId === c.id);
     return {
       ...c,
       nbDossiers: cd.length,
-      totalPaye: cd.reduce((s, d) => s + d.montantPaye, 0),
+      totalPaye: cd.reduce((s, d) => s + d.montantPaye, 0) + cf.reduce((s, f) => s + f.montantPaye, 0),
       totalDu: cd.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0),
+    };
+  });
+}
+
+/** Retire l'apport d'une liste de DossierFournisseur des agrégats du Fournisseur parent (LOGIC-04). */
+function decrementFournisseurAgg(fournisseurs: Fournisseur[], removed: DossierFournisseur[]): Fournisseur[] {
+  if (removed.length === 0) return fournisseurs;
+  const deltaByFournisseur = new Map<string, { count: number; montant: number }>();
+  for (const df of removed) {
+    const prev = deltaByFournisseur.get(df.fournisseurId) ?? { count: 0, montant: 0 };
+    deltaByFournisseur.set(df.fournisseurId, { count: prev.count + 1, montant: prev.montant + df.montantReel });
+  }
+  return fournisseurs.map((f) => {
+    const delta = deltaByFournisseur.get(f.id);
+    if (!delta) return f;
+    return {
+      ...f,
+      nbDossiers: Math.max(0, f.nbDossiers - delta.count),
+      montantTotal: Math.max(0, f.montantTotal - delta.montant),
     };
   });
 }
@@ -406,7 +528,7 @@ const INITIAL_SEQUENCES = {
   devisSeq: 4,
   transporteurSeq: 6,
   commentSeq: 1,
-  factureSeq: 1,
+  factureSeq: 5,
   fournisseurSeq: 6,
   dossierFournisseurSeq: 5,
 } as const;
@@ -435,7 +557,7 @@ export const useStore = create<SLTTState>()(
       devis: seedDevis,
       comments: seedComments,
       transporteurs: seedTransporteurs,
-      factures: [],
+      factures: seedFactures,
       fournisseurs: seedFournisseurs,
       dossierFournisseurs: seedDossierFournisseurs,
       auditLogs: initialAuditLogs,
@@ -478,7 +600,7 @@ export const useStore = create<SLTTState>()(
           return {
             dossiers: updatedDossiers,
             dossierSeq: seq + 1,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
           };
         });
         get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
@@ -490,7 +612,7 @@ export const useStore = create<SLTTState>()(
           const updatedDossiers = s.dossiers.map((d) => d.id === id ? { ...d, ...input } : d);
           return {
             dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
           };
         });
         if (existing) {
@@ -513,13 +635,28 @@ export const useStore = create<SLTTState>()(
         const dossier = get().dossiers.find((d) => d.id === id);
         set((s) => {
           const updatedDossiers = s.dossiers.filter((d) => d.id !== id);
+          // LOGIC-01/02 (audit) : la suppression d'un dossier laissait des
+          // références orphelines — Facture.dossierId, DossierFournisseur.dossierId
+          // et Devis.dossierId pointaient vers un dossier disparu. Un Devis
+          // orphelin restait en particulier bloqué à jamais (dossierId non-null
+          // empêche toute reconversion).
+          const removedDF = s.dossierFournisseurs.filter((df) => df.dossierId === id);
           return {
             dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
             ecritures: s.ecritures.filter((e) => e.dossierId !== id),
             fichiers: s.fichiers.filter((f) => f.dossierId !== id),
             subDossiers: s.subDossiers.filter((sd) => sd.dossierId !== id),
             comments: s.comments.filter((c) => c.dossierId !== id),
+            // Une facture est un document comptable à conserver : on la détache
+            // du dossier plutôt que de la supprimer.
+            factures: s.factures.map((f) => (f.dossierId === id ? { ...f, dossierId: null } : f)),
+            // Un coût fournisseur perd son sens sans le dossier qu'il chiffrait —
+            // suppression en cascade, avec réajustement de l'agrégat Fournisseur.
+            dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.dossierId !== id),
+            fournisseurs: decrementFournisseurAgg(s.fournisseurs, removedDF),
+            // Le devis d'origine redevient reconvertible.
+            devis: s.devis.map((d) => (d.dossierId === id ? { ...d, dossierId: null } : d)),
           };
         });
         if (dossier) {
@@ -534,9 +671,14 @@ export const useStore = create<SLTTState>()(
       transitionDossier: (id, newStatut, montantRecu, modePaiement, transitionNote) => {
         const dossier = get().dossiers.find((d) => d.id === id);
         if (!dossier) return;
+        // LOGIC-06 (audit) : un montantRecu ne doit compter que lorsqu'on solde
+        // réellement le dossier — sinon on créerait de l'argent sur
+        // dossier.montantPaye sans écriture correspondante (elle n'est créée
+        // que pour newStatut === "Soldé" ci-dessous), désynchronisant les deux.
+        const montantApplicable = newStatut === "Soldé" ? montantRecu : undefined;
         const updatedMontantPaye =
-          montantRecu !== undefined
-            ? Math.min(dossier.montantInvesti, dossier.montantPaye + montantRecu)
+          montantApplicable !== undefined
+            ? Math.min(dossier.montantInvesti, Math.max(0, dossier.montantPaye + montantApplicable))
             : dossier.montantPaye;
 
         set((s) => {
@@ -587,7 +729,7 @@ export const useStore = create<SLTTState>()(
             dossiers: updatedDossiers,
             ecritures: updatedEcritures,
             ecritureSeq: nextEcritureSeq,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
           };
         });
         get().addAuditLog(
@@ -636,7 +778,9 @@ export const useStore = create<SLTTState>()(
             e.id === ecritureId
               ? {
                   ...e,
-                  montantPaye: Math.min(e.montantInvesti, e.montantPaye + montant),
+                  // LOGIC-11 (audit) : plancher à 0 — rien n'empêchait un montant
+                  // négatif de faire redescendre montantPaye sous 0 côté store.
+                  montantPaye: Math.min(e.montantInvesti, Math.max(0, e.montantPaye + montant)),
                   modePaiement: mode,
                   datePaiement: date,
                   note: note || e.note,
@@ -655,7 +799,7 @@ export const useStore = create<SLTTState>()(
           return {
             ecritures: updatedEcritures,
             dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
           };
         });
         get().addAuditLog(
@@ -667,7 +811,8 @@ export const useStore = create<SLTTState>()(
       addEcriture: (e) => {
         const seq = get().ecritureSeq;
         const id = `E-${seq}`;
-        const newEcriture: Ecriture = { id, ...e };
+        // LOGIC-11 : plancher à 0 dès la création de l'écriture.
+        const newEcriture: Ecriture = { id, ...e, montantPaye: Math.max(0, e.montantPaye) };
         set((s) => {
           const updatedEcritures = [newEcriture, ...s.ecritures];
           if (!e.dossierId) return { ecritures: updatedEcritures, ecritureSeq: seq + 1 };
@@ -676,14 +821,14 @@ export const useStore = create<SLTTState>()(
             .reduce((sum, ec) => sum + ec.montantPaye, 0);
           const updatedDossiers = s.dossiers.map((d) =>
             d.id === e.dossierId
-              ? { ...d, montantPaye: Math.min(d.montantInvesti, totalPaye) }
+              ? { ...d, montantPaye: Math.min(d.montantInvesti, Math.max(0, totalPaye)) }
               : d,
           );
           return {
             ecritures: updatedEcritures,
             ecritureSeq: seq + 1,
             dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
           };
         });
         return newEcriture;
@@ -983,7 +1128,7 @@ export const useStore = create<SLTTState>()(
       },
       convertDevisToDossier: (id) => {
         const dv = get().devis.find((d) => d.id === id);
-        if (!dv) return null;
+        if (!dv || dv.dossierId) return null; // déjà converti — pas de doublon
         const newDossier = get().addDossier({
           clientId: dv.clientId,
           clientNom: dv.clientNom,
@@ -999,7 +1144,7 @@ export const useStore = create<SLTTState>()(
           notes: dv.notes,
         });
         set((s) => ({
-          devis: s.devis.map((d) => d.id === id ? { ...d, statut: "Accepté" } : d),
+          devis: s.devis.map((d) => d.id === id ? { ...d, statut: "Accepté", dossierId: newDossier.id } : d),
         }));
         return newDossier;
       },
@@ -1101,29 +1246,53 @@ export const useStore = create<SLTTState>()(
 
       removeFacture: (id) => {
         const f = get().factures.find((x) => x.id === id);
-        set((s) => ({ factures: s.factures.filter((x) => x.id !== id) }));
+        set((s) => {
+          const updatedFactures = s.factures.filter((x) => x.id !== id);
+          return {
+            factures: updatedFactures,
+            // LOGIC-05 : une facture payée contribue à Client.totalPaye — la
+            // supprimer doit reconstituer l'agrégat, pas juste retirer la ligne.
+            clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
+          };
+        });
         if (f) get().addAuditLog("Factures", "Suppression", `Facture ${f.numero} supprimée`);
       },
 
       updateFactureStatut: (id, statut) => {
         const f = get().factures.find((x) => x.id === id);
-        set((s) => ({
-          factures: s.factures.map((x) => x.id === id ? { ...x, statut } : x),
-        }));
-        if (f) get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`);
+        if (!f) return;
+        // LOGIC-09 (audit) : un changement manuel de statut ne doit pas pouvoir
+        // contredire le montant payé — marquer "Soldée" à la main aligne
+        // désormais montantPaye sur montantTTC (sinon la barre de progression
+        // de la facture restait à 0 malgré un statut "Soldée").
+        const montantPaye = statut === "Soldée" ? f.montantTTC : f.montantPaye;
+        set((s) => {
+          const updatedFactures = s.factures.map((x) =>
+            x.id === id ? { ...x, statut, montantPaye } : x
+          );
+          return {
+            factures: updatedFactures,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
+          };
+        });
+        get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`);
       },
 
       recordFacturePaiement: (id, montant) => {
         const f = get().factures.find((x) => x.id === id);
         if (!f) return;
-        const newPaye = Math.min(f.montantTTC, f.montantPaye + montant);
+        const newPaye = Math.min(f.montantTTC, f.montantPaye + Math.max(0, montant));
         const newStatut: FactureStatut = newPaye >= f.montantTTC ? "Soldée" : "Partielle";
-        set((s) => ({
-          factures: s.factures.map((x) =>
+        set((s) => {
+          const updatedFactures = s.factures.map((x) =>
             x.id === id ? { ...x, montantPaye: newPaye, statut: newStatut } : x
-          ),
-        }));
-        if (f) get().addAuditLog("Factures", "Paiement", `${montant.toLocaleString("fr-FR")} FCFA — Facture ${f.numero}`);
+          );
+          return {
+            factures: updatedFactures,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
+          };
+        });
+        get().addAuditLog("Factures", "Paiement", `${montant.toLocaleString("fr-FR")} FCFA — Facture ${f.numero}`);
       },
 
       // ---- Fournisseurs ----
@@ -1155,14 +1324,32 @@ export const useStore = create<SLTTState>()(
         return df;
       },
       updateDossierFournisseur: (id, input) => {
-        set((s) => ({
-          dossierFournisseurs: s.dossierFournisseurs.map((df) =>
+        // LOGIC-04 (audit) : Fournisseur.montantTotal n'était incrémenté qu'à
+        // la création — corriger un montant réel ici le désynchronisait
+        // silencieusement de l'agrégat affiché sur l'écran Fournisseurs.
+        set((s) => {
+          const old = s.dossierFournisseurs.find((df) => df.id === id);
+          const dossierFournisseurs = s.dossierFournisseurs.map((df) =>
             df.id === id ? { ...df, ...input } : df
-          ),
-        }));
+          );
+          if (!old || input.montantReel === undefined || input.montantReel === old.montantReel) {
+            return { dossierFournisseurs };
+          }
+          const delta = input.montantReel - old.montantReel;
+          const fournisseurs = s.fournisseurs.map((f) =>
+            f.id !== old.fournisseurId ? f : { ...f, montantTotal: Math.max(0, f.montantTotal + delta) }
+          );
+          return { dossierFournisseurs, fournisseurs };
+        });
       },
       removeDossierFournisseur: (id) => {
-        set((s) => ({ dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.id !== id) }));
+        set((s) => {
+          const removed = s.dossierFournisseurs.find((df) => df.id === id);
+          return {
+            dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.id !== id),
+            fournisseurs: decrementFournisseurAgg(s.fournisseurs, removed ? [removed] : []),
+          };
+        });
       },
 
       // ---- Reset ----
@@ -1181,7 +1368,7 @@ export const useStore = create<SLTTState>()(
           comments: seedComments,
           auditLogs: initialAuditLogs,
           transporteurs: seedTransporteurs,
-          factures: [],
+          factures: seedFactures,
           fournisseurs: seedFournisseurs,
           dossierFournisseurs: seedDossierFournisseurs,
           ...INITIAL_SEQUENCES,
@@ -1189,7 +1376,7 @@ export const useStore = create<SLTTState>()(
       },
     }),
     {
-      name: "sltt-data-v7",
+      name: "sltt-data-v9",
       // SEC-05: custom storage wrapper to catch QuotaExceededError
       storage: createJSONStorage(() => ({
         getItem: (name) => {

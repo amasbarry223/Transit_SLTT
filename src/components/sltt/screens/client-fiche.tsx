@@ -20,6 +20,7 @@ import {
   Copy,
   MessageCircle,
   Check,
+  Receipt,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore, type ClientInput } from "@/lib/store";
@@ -38,6 +39,7 @@ import {
   ToneBadge,
   DossierStatutBadge,
   EcritureStatutBadge,
+  FactureStatutBadge,
 } from "@/components/sltt/status-badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,7 +75,7 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 6;
 
-type FicheTab = "dossiers" | "paiements" | "bons";
+type FicheTab = "dossiers" | "paiements" | "factures" | "bons";
 
 const tabs: {
   key: FicheTab;
@@ -83,6 +85,7 @@ const tabs: {
 }[] = [
   { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban },
   { key: "paiements", label: "Paiements", shortLabel: "Paiements", icon: Wallet },
+  { key: "factures", label: "Factures", shortLabel: "Factures", icon: Receipt },
   { key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: Truck },
 ];
 
@@ -116,7 +119,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      <p className="text-sm text-slate-500">{label}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -152,7 +155,7 @@ function ClientProfileCard({
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {client.nom}
                 </h2>
                 <ToneBadge tone={client.type === "Entreprise" ? "blue" : "slate"}>
@@ -162,20 +165,20 @@ function ClientProfileCard({
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 {client.telephone && (
-                  <span className="inline-flex items-center gap-2 text-slate-600">
-                    <Phone className="size-3.5 shrink-0 text-slate-400" />
+                  <span className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <Phone className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                     <span className="font-mono text-xs">{client.telephone}</span>
                   </span>
                 )}
                 {client.email && (
-                  <span className="inline-flex items-center gap-2 truncate text-slate-600">
-                    <Mail className="size-3.5 shrink-0 text-slate-400" />
+                  <span className="inline-flex items-center gap-2 truncate text-slate-600 dark:text-slate-300">
+                    <Mail className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                     <span className="truncate text-xs">{client.email}</span>
                   </span>
                 )}
                 {client.adresse && (
-                  <span className="inline-flex items-start gap-2 text-slate-600 sm:col-span-2 lg:col-span-1">
-                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
+                  <span className="inline-flex items-start gap-2 text-slate-600 dark:text-slate-300 sm:col-span-2 lg:col-span-1">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                     <span className="text-xs leading-relaxed">{client.adresse}</span>
                   </span>
                 )}
@@ -187,7 +190,7 @@ function ClientProfileCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                className="h-9 border-amber-200 text-amber-700 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-800"
                 onClick={onRelance}
               >
                 <BellRing className="size-4" />
@@ -216,6 +219,7 @@ export function ClientFicheScreen() {
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
   const allBons = useStore((s) => s.bons);
+  const allFactures = useStore((s) => s.factures);
   const updateClient = useStore((s) => s.updateClient);
 
   const [activeTab, setActiveTab] = useState<FicheTab>("dossiers");
@@ -255,7 +259,15 @@ export function ClientFicheScreen() {
     () => (selectedId ? allBons.filter((b) => b.clientId === selectedId) : []),
     [allBons, selectedId],
   );
+  const factures = useMemo(
+    () =>
+      selectedId ? allFactures.filter((f) => f.clientId === selectedId) : [],
+    [allFactures, selectedId],
+  );
 
+  // LOGIC-03 (audit) : Écritures (via les dossiers) et Factures sont deux
+  // canaux de paiement indépendants — on les additionne pour que "Total payé"
+  // reflète tout ce que le client a réellement réglé, pas seulement la moitié.
   const { totalInvesti, totalPaye, totalDu } = useMemo(() => {
     let investi = 0;
     let paye = 0;
@@ -265,8 +277,11 @@ export function ClientFicheScreen() {
       paye += d.montantPaye;
       du += Math.max(0, d.montantInvesti - d.montantPaye);
     }
+    for (const f of factures) {
+      paye += f.montantPaye;
+    }
     return { totalInvesti: investi, totalPaye: paye, totalDu: du };
-  }, [dossiers]);
+  }, [dossiers, factures]);
 
   function openRelanceDialog() {
     if (!client) return;
@@ -345,13 +360,13 @@ export function ClientFicheScreen() {
   if (!client) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => go("clients")} className="text-slate-600">
+        <Button variant="ghost" onClick={() => go("clients")} className="text-slate-600 dark:text-slate-300">
           <ArrowLeft className="size-4" />
           Retour aux clients
         </Button>
         <Card className="border-border/80 p-10 text-center shadow-sm">
-          <p className="text-lg font-semibold text-slate-900">Client introuvable</p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Client introuvable</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Le client demandé n&apos;existe pas ou a été supprimé.
           </p>
         </Card>
@@ -365,7 +380,7 @@ export function ClientFicheScreen() {
         <Button
           variant="ghost"
           onClick={() => go("clients")}
-          className="-ml-2 w-fit text-slate-600 hover:text-slate-900"
+          className="-ml-2 w-fit text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
         >
           <ArrowLeft className="size-4" />
           Retour aux clients
@@ -385,8 +400,8 @@ export function ClientFicheScreen() {
       />
 
       {totalDu > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
-          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600" />
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 px-4 py-3">
+          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
             <p className="text-sm font-medium text-amber-900">
               Solde impayé : {formatFCFA(totalDu)}
@@ -442,7 +457,7 @@ export function ClientFicheScreen() {
             "supports-[backdrop-filter]:bg-background/80",
           )}
         >
-          <TabsList className="flex h-12 w-full items-stretch rounded-none bg-slate-50/80 p-0">
+          <TabsList className="flex h-12 w-full items-stretch rounded-none bg-slate-50/80 dark:bg-slate-800/80 p-0">
             {tabs.map((t) => {
               const Icon = t.icon;
               const count =
@@ -450,7 +465,9 @@ export function ClientFicheScreen() {
                   ? dossiers.length
                   : t.key === "paiements"
                     ? ecritures.length
-                    : bons.length;
+                    : t.key === "factures"
+                      ? factures.length
+                      : bons.length;
               return (
                 <TabsTrigger
                   key={t.key}
@@ -458,19 +475,19 @@ export function ClientFicheScreen() {
                   className={cn(
                     "relative flex flex-1 items-center justify-center gap-2 rounded-none",
                     "border-0 border-b-2 border-transparent bg-transparent px-2 py-0",
-                    "text-sm font-medium text-slate-500 shadow-none transition-colors",
-                    "hover:bg-white/60 hover:text-slate-900",
-                    "data-[state=active]:border-primary data-[state=active]:bg-white",
+                    "text-sm font-medium text-slate-500 dark:text-slate-400 shadow-none transition-colors",
+                    "hover:bg-white/60 hover:text-slate-900 dark:hover:text-slate-100",
+                    "data-[state=active]:border-primary data-[state=active]:bg-white dark:bg-slate-900",
                     "data-[state=active]:text-primary data-[state=active]:shadow-none",
                     "focus-visible:ring-0 focus-visible:ring-offset-0",
                     "[&[data-state=active]_svg]:text-primary",
                     "min-w-0",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-slate-400" />
+                  <Icon className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
                   <span className="hidden truncate sm:inline">{t.label}</span>
                   <span className="truncate sm:hidden">{t.shortLabel}</span>
-                  <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600">
+                  <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
                     {count}
                   </span>
                 </TabsTrigger>
@@ -497,23 +514,23 @@ export function ClientFicheScreen() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Référence
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                           Date
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                           N° BL
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Statut
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Montant
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -522,22 +539,22 @@ export function ClientFicheScreen() {
                       {pagedDossiers.map((d) => (
                         <TableRow
                           key={d.id}
-                          className="cursor-pointer border-b border-border hover:bg-slate-50/80"
+                          className="cursor-pointer border-b border-border hover:bg-slate-50/80 dark:hover:bg-slate-800/80"
                           onClick={() => openDossierDetail(d.id)}
                         >
-                          <TableCell className="px-4 py-3.5 font-medium text-slate-900">
+                          <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
                             {d.reference}
                           </TableCell>
-                          <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 sm:table-cell">
+                          <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300 sm:table-cell">
                             {formatDateShort(d.date)}
                           </TableCell>
-                          <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 md:table-cell">
+                          <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300 md:table-cell">
                             {d.bl}
                           </TableCell>
                           <TableCell className="px-4 py-3.5">
                             <DossierStatutBadge statut={d.statut} />
                           </TableCell>
-                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-900">
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100">
                             {formatFCFA(d.montantInvesti)}
                           </TableCell>
                           <TableCell className="px-4 py-3.5">
@@ -548,7 +565,7 @@ export function ClientFicheScreen() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-8 text-slate-500 hover:text-primary"
+                                className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                                 aria-label={`Voir ${d.reference}`}
                                 title="Voir le dossier"
                                 onClick={() => openDossierDetail(d.id)}
@@ -589,23 +606,23 @@ export function ClientFicheScreen() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Date
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                           Investi
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                           Payé
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Reste dû
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
                           Mode
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Statut
                         </TableHead>
                       </TableRow>
@@ -617,14 +634,14 @@ export function ClientFicheScreen() {
                           <TableRow
                             key={e.id}
                             className={cn(
-                              "border-b border-border hover:bg-slate-50/60",
-                              reste > 0 && "bg-amber-50/20",
+                              "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+                              reste > 0 && "bg-amber-50/20 dark:bg-amber-950/20",
                             )}
                           >
-                            <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                            <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
                               {formatDateShort(e.date)}
                             </TableCell>
-                            <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 sm:table-cell">
+                            <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
                               {formatFCFA(e.montantInvesti)}
                             </TableCell>
                             <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 md:table-cell">
@@ -632,14 +649,14 @@ export function ClientFicheScreen() {
                             </TableCell>
                             <TableCell className="px-4 py-3.5 text-right tabular-nums">
                               {reste > 0 ? (
-                                <span className="font-semibold text-amber-600">
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">
                                   {formatFCFA(reste)}
                                 </span>
                               ) : (
-                                <span className="text-sm text-emerald-600">Soldé</span>
+                                <span className="text-sm text-emerald-600 dark:text-emerald-400">Soldé</span>
                               )}
                             </TableCell>
-                            <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 lg:table-cell">
+                            <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300 lg:table-cell">
                               {e.modePaiement}
                             </TableCell>
                             <TableCell className="px-4 py-3.5">
@@ -668,6 +685,64 @@ export function ClientFicheScreen() {
           </Card>
         </TabsContent>
 
+        {/* Factures */}
+        <TabsContent value="factures" className="mt-6 focus-visible:outline-none">
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+            {factures.length === 0 ? (
+              <EmptyState label="Aucune facture pour ce client." />
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Numéro
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Date
+                      </TableHead>
+                      <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                        Montant TTC
+                      </TableHead>
+                      <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                        Payé
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Statut
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {factures.map((f) => (
+                      <TableRow
+                        key={f.id}
+                        className="cursor-pointer border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                        onClick={() => go("facture-detail", { id: f.id })}
+                      >
+                        <TableCell className="px-4 py-3.5 font-mono text-xs font-semibold text-blue-700">
+                          {f.numero}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+                          {formatDateShort(f.date)}
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
+                          {formatFCFA(f.montantTTC)}
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 md:table-cell">
+                          {formatFCFA(f.montantPaye)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <FactureStatutBadge statut={f.statut} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
         {/* Bons */}
         <TabsContent value="bons" className="mt-6 focus-visible:outline-none">
           <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
@@ -678,26 +753,26 @@ export function ClientFicheScreen() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Référence
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                           Date
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Marchandise
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Qté
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                           Motif
                         </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                           Montant
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Statut
                         </TableHead>
                       </TableRow>
@@ -706,27 +781,27 @@ export function ClientFicheScreen() {
                       {pagedBons.map((b) => (
                         <TableRow
                           key={b.id}
-                          className="border-b border-border hover:bg-slate-50/60"
+                          className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                         >
-                          <TableCell className="px-4 py-3.5 font-mono text-xs font-medium text-slate-900">
+                          <TableCell className="px-4 py-3.5 font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
                             {b.reference}
                           </TableCell>
-                          <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 sm:table-cell">
+                          <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300 sm:table-cell">
                             {formatDateShort(b.date)}
                           </TableCell>
                           <TableCell className="max-w-[140px] px-4 py-3.5">
-                            <span className="line-clamp-1 text-sm text-slate-600">
+                            <span className="line-clamp-1 text-sm text-slate-600 dark:text-slate-300">
                               {b.marchandise}
                             </span>
                           </TableCell>
-                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
                             {b.quantite}{" "}
-                            <span className="text-xs text-slate-500">{b.unite}</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">{b.unite}</span>
                           </TableCell>
                           <TableCell className="hidden px-4 py-3.5 md:table-cell">
                             <ToneBadge tone={bonMotifTone[b.motif]}>{b.motif}</ToneBadge>
                           </TableCell>
-                          <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 sm:table-cell">
+                          <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 sm:table-cell">
                             {formatFCFA(b.montant)}
                           </TableCell>
                           <TableCell className="px-4 py-3.5">
@@ -763,7 +838,7 @@ export function ClientFicheScreen() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nom / Raison sociale <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -774,7 +849,7 @@ export function ClientFicheScreen() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Type</Label>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type</Label>
               <Select
                 value={editType}
                 onValueChange={(v) => setEditType(v as Client["type"])}
@@ -790,7 +865,7 @@ export function ClientFicheScreen() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Téléphone</Label>
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
                 <Input
                   value={editTelephone}
                   onChange={(e) => setEditTelephone(e.target.value)}
@@ -799,7 +874,7 @@ export function ClientFicheScreen() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">E-mail</Label>
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">E-mail</Label>
                 <Input
                   type="email"
                   value={editEmail}
@@ -810,7 +885,7 @@ export function ClientFicheScreen() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Adresse</Label>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</Label>
               <Input
                 value={editAdresse}
                 onChange={(e) => setEditAdresse(e.target.value)}
@@ -836,7 +911,7 @@ export function ClientFicheScreen() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BellRing className="size-4 text-amber-600" />
+              <BellRing className="size-4 text-amber-600 dark:text-amber-400" />
               Relance client
             </DialogTitle>
             <DialogDescription>
@@ -858,7 +933,7 @@ export function ClientFicheScreen() {
               onClick={handleCopyRelance}
             >
               {copied ? (
-                <><Check className="size-4 text-emerald-600" /> Copié !</>
+                <><Check className="size-4 text-emerald-600 dark:text-emerald-400" /> Copié !</>
               ) : (
                 <><Copy className="size-4" /> Copier le texte</>
               )}

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { Bell, ChevronDown, ChevronRight, Menu } from "lucide-react";
+import { Bell, ChevronDown, ChevronRight, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -64,6 +64,8 @@ export function Topbar() {
   const logout = useNav((s) => s.logout);
   const currentRole = useNav((s) => s.currentRole);
   const currentUserName = useNav((s) => s.currentUserName);
+  const theme = useNav((s) => s.theme);
+  const toggleTheme = useNav((s) => s.toggleTheme);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [notifRead, setNotifRead] = useState(false);
@@ -108,25 +110,28 @@ export function Topbar() {
     } else if (view === "devis-detail") {
       parentKey = "devis";
       parentLabel = "Devis";
+    } else if (view === "facture-detail") {
+      parentKey = "factures";
+      parentLabel = "Factures";
     }
 
     if (parentKey) {
       return (
-        <div className="flex items-center text-sm font-medium text-slate-500">
+        <div className="flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
           <button
             onClick={() => go(parentKey!)}
-            className="hover:text-slate-900 transition-colors truncate"
+            className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors truncate"
           >
             {parentLabel}
           </button>
-          <ChevronRight className="mx-1.5 size-4 shrink-0 text-slate-400" />
-          <span className="text-slate-900 font-semibold truncate">{meta.title}</span>
+          <ChevronRight className="mx-1.5 size-4 shrink-0 text-slate-400 dark:text-slate-500" />
+          <span className="text-slate-900 dark:text-slate-100 font-semibold truncate">{meta.title}</span>
         </div>
       );
     }
 
     return (
-      <div className="flex items-center text-base font-semibold leading-tight text-slate-900 truncate">
+      <div className="flex items-center text-base font-semibold leading-tight text-slate-900 dark:text-slate-100 truncate">
         {meta.title}
       </div>
     );
@@ -140,7 +145,7 @@ export function Topbar() {
         <Button
           variant="ghost"
           size="icon"
-          className="shrink-0 text-slate-500 hover:text-slate-900 lg:hidden"
+          className="shrink-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 lg:hidden"
           onClick={() => setMobileOpen(true)}
           aria-label="Ouvrir le menu"
         >
@@ -150,7 +155,7 @@ export function Topbar() {
         {/* Titre de la page courante / Fil d'Ariane */}
         <div className="min-w-0 flex-1">
           {renderBreadcrumb()}
-          <p className="hidden truncate text-xs text-slate-500 sm:block mt-0.5">
+          <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block mt-0.5">
             {meta.sub}
           </p>
         </div>
@@ -158,13 +163,24 @@ export function Topbar() {
         {/* Global search — command palette */}
         <CommandPalette />
 
+        {/* Thème clair/sombre */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+          onClick={toggleTheme}
+          aria-label={theme === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
+        >
+          {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+        </Button>
+
         {/* Notifications */}
         <DropdownMenu onOpenChange={(open) => { if (open) setNotifRead(true); }}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="relative text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className="relative text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
               aria-label={hasUnread ? `${alertCount} notifications non lues` : "Notifications"}
             >
               <Bell className="size-5" />
@@ -195,7 +211,7 @@ export function Topbar() {
                 <span className="text-sm font-medium text-red-600">
                   Stock faible · {s.marchandise}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   {s.quantite} {s.unite} restant{s.quantite > 1 ? "s" : ""} — {s.depositaire}
                 </span>
               </DropdownMenuItem>
@@ -209,7 +225,7 @@ export function Topbar() {
                 <span className="text-sm font-medium text-amber-600">
                   Dossier non soldé · {d.reference}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   Reste : {formatFCFA(d.montantInvesti - d.montantPaye)} — {d.clientNom}
                 </span>
               </DropdownMenuItem>
@@ -218,7 +234,7 @@ export function Topbar() {
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="justify-center text-xs text-slate-500"
+                  className="justify-center text-xs text-slate-500 dark:text-slate-400"
                   onClick={() => go("comptabilite")}
                 >
                   Voir les {unpaidDossiers.length - 5} autres dossiers non soldés →
@@ -226,7 +242,7 @@ export function Topbar() {
               </>
             )}
             {alertCount === 0 && (
-              <div className="py-8 text-center text-sm text-slate-400">
+              <div className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
                 Aucune notification.
               </div>
             )}
@@ -236,21 +252,21 @@ export function Topbar() {
         {/* Avatar + menu utilisateur */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-slate-100">
+            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
               <Avatar className="size-8 border border-border">
                 <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-800 text-xs font-semibold text-white">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-semibold leading-none text-slate-900">
+                <p className="text-xs font-semibold leading-none text-slate-900 dark:text-slate-100">
                   {shortName}
                 </p>
-                <p className="mt-0.5 text-[10px] leading-none text-slate-500">
+                <p className="mt-0.5 text-[10px] leading-none text-slate-500 dark:text-slate-400">
                   {currentRole}
                 </p>
               </div>
-              <ChevronDown className="hidden size-3.5 text-slate-400 sm:block" />
+              <ChevronDown className="hidden size-3.5 text-slate-400 dark:text-slate-500 sm:block" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
@@ -262,7 +278,7 @@ export function Topbar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setLogoutConfirm(true)}
-              className="text-red-600 focus:bg-red-50 focus:text-red-700"
+              className="text-red-600 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
             >
               Se déconnecter
             </DropdownMenuItem>
@@ -295,7 +311,7 @@ export function Topbar() {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[260px] p-0">
           <SheetHeader className="flex h-16 items-center justify-start border-b border-border px-5">
-            <SheetTitle className="text-base font-bold text-slate-900">
+            <SheetTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
               SLTT
             </SheetTitle>
           </SheetHeader>
@@ -310,19 +326,19 @@ export function Topbar() {
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     active
-                      ? "bg-blue-50 text-blue-900"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                      ? "bg-blue-50 text-blue-900 dark:bg-blue-950/60 dark:text-blue-300"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100",
                   )}
                 >
                   <Icon
                     className={cn(
                       "size-[18px] shrink-0",
-                      active ? "text-blue-600" : "text-slate-400",
+                      active ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500",
                     )}
                   />
                   <span className="truncate">{item.label}</span>
                   {active && (
-                    <span className="ml-auto size-1.5 rounded-full bg-blue-600" />
+                    <span className="ml-auto size-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
                   )}
                 </button>
               );
@@ -335,8 +351,8 @@ export function Topbar() {
                 {initials}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">{shortName}</p>
-                <p className="text-xs text-slate-500">{currentRole}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{shortName}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{currentRole}</p>
               </div>
             </div>
           </div>

@@ -91,16 +91,16 @@ const STATUT_CONFIG: Record<
   DevisStatut,
   { label: string; icon: React.ComponentType<{ className?: string }>; className: string; dot: string }
 > = {
-  Brouillon: { label: "Brouillon", icon: Clock,        className: "bg-slate-100 text-slate-600 border-slate-200", dot: "bg-slate-400" },
-  Envoyé:    { label: "Envoyé",    icon: Send,         className: "bg-blue-50 text-blue-700 border-blue-200",     dot: "bg-blue-500" },
-  Accepté:   { label: "Accepté",   icon: CheckCircle2, className: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
-  Refusé:    { label: "Refusé",    icon: XCircle,      className: "bg-red-50 text-red-600 border-red-200",        dot: "bg-red-500" },
-  Expiré:    { label: "Expiré",    icon: AlertCircle,  className: "bg-amber-50 text-amber-700 border-amber-200",  dot: "bg-amber-400" },
+  Brouillon: { label: "Brouillon", icon: Clock,        className: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700", dot: "bg-slate-400" },
+  Envoyé:    { label: "Envoyé",    icon: Send,         className: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 border-blue-200",     dot: "bg-blue-500" },
+  Accepté:   { label: "Accepté",   icon: CheckCircle2, className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  Refusé:    { label: "Refusé",    icon: XCircle,      className: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200",        dot: "bg-red-500" },
+  Expiré:    { label: "Expiré",    icon: AlertCircle,  className: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 border-amber-200",  dot: "bg-amber-400" },
 };
 
 const NEXT_STATUT: Partial<Record<DevisStatut, { to: DevisStatut; label: string; colorClass: string; bgClass: string }>> = {
-  Brouillon: { to: "Envoyé",  label: "→ Envoyer",   colorClass: "text-blue-700",    bgClass: "bg-blue-50" },
-  Envoyé:    { to: "Accepté", label: "→ Accepter",  colorClass: "text-emerald-700", bgClass: "bg-emerald-50" },
+  Brouillon: { to: "Envoyé",  label: "→ Envoyer",   colorClass: "text-blue-700",    bgClass: "bg-blue-50 dark:bg-blue-950/40" },
+  Envoyé:    { to: "Accepté", label: "→ Accepter",  colorClass: "text-emerald-700", bgClass: "bg-emerald-50 dark:bg-emerald-950/40" },
 };
 
 type SortKey = "date-desc" | "date-asc" | "reference" | "client" | "montant-desc" | "montant-asc" | "validite-asc" | "statut";
@@ -261,7 +261,7 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
           </div>
 
           {total > 0 && (
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm">
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 dark:bg-blue-950/40 px-4 py-2.5 text-sm">
               <span className="font-medium text-blue-700">Total estimé</span>
               <span className="font-bold tabular-nums text-blue-900">{formatFCFA(total)}</span>
             </div>
@@ -299,6 +299,8 @@ export function DevisScreen() {
   const { toast } = useToast();
   const openDossierDetail = useNav((s) => s.openDossierDetail);
   const openDevisDetail = useNav((s) => s.openDevisDetail);
+  const go = useNav((s) => s.go);
+  const selectedId = useNav((s) => s.selectedId);
 
   const devisList = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
@@ -330,6 +332,17 @@ export function DevisScreen() {
   const [editDevis, setEditDevis] = useState<Devis | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [convertId, setConvertId] = useState<string | null>(null);
+
+  // Ouverture directe du formulaire de création depuis un raccourci externe
+  // (ex. le CTA "+ Nouveau devis" du tableau de bord).
+  useEffect(() => {
+    if (selectedId === "new") {
+      setEditDevis(null);
+      setFormOpen(true);
+      go("devis"); // vide selectedId pour ne pas rouvrir en boucle
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   function handleOpenDevis(d: Devis) {
     openDevisDetail(d.id, false);
@@ -507,14 +520,14 @@ export function DevisScreen() {
 
       {/* Banner */}
       {enAttente > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 bg-blue-50/60 px-4 py-3">
-          <Send className="mt-0.5 size-5 shrink-0 text-blue-600" />
+        <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/30 px-4 py-3">
+          <Send className="mt-0.5 size-5 shrink-0 text-blue-600 dark:text-blue-400" />
           <div>
             <p className="text-sm font-medium text-blue-900">
               {enAttente} devis{enAttente > 1 ? "" : ""} en attente de réponse client
             </p>
             <p className="mt-0.5 text-xs text-blue-800/80">
-              Relancez vos clients ou passez directement au statut Accepté pour créer le dossier.
+              Relancez vos clients, puis utilisez « Convertir en dossier » une fois le devis accepté.
             </p>
           </div>
         </div>
@@ -524,7 +537,7 @@ export function DevisScreen() {
       <Card className="border-border/80 p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <Input
               className="h-10 pl-9"
               placeholder="Référence, client, nature…"
@@ -559,7 +572,7 @@ export function DevisScreen() {
 
           <Select value={sortBy} onValueChange={(v) => { setSortBy(v as SortKey); setPage(1); }}>
             <SelectTrigger className="h-10 w-full sm:w-52">
-              <ArrowUpDown className="size-3.5 shrink-0 text-slate-400" />
+              <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
               <SelectValue placeholder="Trier par…" />
             </SelectTrigger>
             <SelectContent>
@@ -570,9 +583,9 @@ export function DevisScreen() {
           </Select>
 
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-10 gap-1.5 text-slate-500" onClick={clearFilters}>
+            <Button variant="ghost" size="sm" className="h-10 gap-1.5 text-slate-500 dark:text-slate-400" onClick={clearFilters}>
               Réinitialiser
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                 {activeFiltersCount}
               </span>
             </Button>
@@ -594,9 +607,9 @@ export function DevisScreen() {
       {/* Table */}
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <ClipboardList className="size-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-900">Liste des devis</h2>
-          <span className="ml-auto text-xs tabular-nums text-slate-500">
+          <ClipboardList className="size-4 text-slate-400 dark:text-slate-500" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des devis</h2>
+          <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
             {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -605,11 +618,11 @@ export function DevisScreen() {
           <DevisTableSkeleton />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
               <ClipboardList className="size-7" />
             </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900">Aucun devis trouvé</h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500">
+            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Aucun devis trouvé</h3>
+            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
               {hasActiveFilters
                 ? "Modifiez vos filtres ou créez un nouveau devis."
                 : "Commencez par créer votre premier devis client."}
@@ -626,26 +639,26 @@ export function DevisScreen() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Référence
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Nature marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Total estimé
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Validité
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -658,36 +671,43 @@ export function DevisScreen() {
                       <TableRow
                         key={d.id}
                         className={cn(
-                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80",
-                          isEnAttente && "bg-blue-50/30",
+                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80",
+                          isEnAttente && "bg-blue-50/30 dark:bg-blue-950/20",
                         )}
                         onClick={() => handleOpenDevis(d)}
                       >
                         <TableCell className="px-4 py-3.5">
-                          <p className="font-mono text-xs font-semibold text-slate-900">{d.reference}</p>
-                          <p className="mt-0.5 text-xs tabular-nums text-slate-400">{formatDateShort(d.dateCreation)}</p>
+                          <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">{d.reference}</p>
+                          <p className="mt-0.5 text-xs tabular-nums text-slate-400 dark:text-slate-500">{formatDateShort(d.dateCreation)}</p>
                         </TableCell>
 
                         <TableCell className="max-w-[180px] px-4 py-3.5">
-                          <p className="truncate font-medium text-slate-700">{d.clientNom}</p>
+                          <p className="truncate font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
                         </TableCell>
 
                         <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
-                          <span className="line-clamp-1 text-sm text-slate-600">{d.nature}</span>
+                          <span className="line-clamp-1 text-sm text-slate-600 dark:text-slate-300">{d.nature}</span>
                         </TableCell>
 
                         <TableCell className="px-4 py-3.5 text-right">
-                          <span className="font-semibold tabular-nums text-slate-900">{formatFCFA(d.total)}</span>
+                          <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(d.total)}</span>
                         </TableCell>
 
                         <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-                          <span className="text-sm tabular-nums text-slate-500">{formatDateShort(d.dateValidite)}</span>
+                          <span className="text-sm tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(d.dateValidite)}</span>
                         </TableCell>
 
                         <TableCell className="px-4 py-3.5">
                           <div className="flex flex-col gap-1">
                             <DevisStatutBadge statut={d.statut} />
-                            {next && (
+                            {d.dossierId ? (
+                              <button
+                                className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
+                                onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
+                              >
+                                <FolderKanban className="size-3" /> Dossier créé
+                              </button>
+                            ) : next && (
                               <button
                                 className={cn(
                                   "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80",
@@ -704,20 +724,20 @@ export function DevisScreen() {
                         <TableCell className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
-                              variant="ghost" size="icon" className="size-8 text-slate-500 hover:text-primary"
+                              variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                               title="Voir" onClick={() => handleOpenDevis(d)}
                             >
                               <Eye className="size-4" />
                             </Button>
                             <Button
-                              variant="ghost" size="icon" className="size-8 text-slate-500 hover:text-primary"
+                              variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                               title="Modifier" onClick={() => handleOpenEdit(d)}
                             >
                               <Pencil className="size-4" />
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-8 text-slate-500 hover:text-primary">
+                                <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
                                   <MoreHorizontal className="size-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -729,16 +749,20 @@ export function DevisScreen() {
                                   <FileText className="mr-2 size-3.5" /> Imprimer le devis
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                {d.statut !== "Accepté" && (
+                                {d.dossierId ? (
+                                  <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
+                                    <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
+                                  </DropdownMenuItem>
+                                ) : (
                                   <DropdownMenuItem
-                                    className="text-emerald-700 focus:bg-emerald-50 focus:text-emerald-800"
+                                    className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
                                     onClick={() => setConvertId(d.id)}
                                   >
                                     <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
-                                  className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                                  className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
                                   onClick={() => setDeleteId(d.id)}
                                 >
                                   <Trash2 className="mr-2 size-3.5" /> Supprimer
