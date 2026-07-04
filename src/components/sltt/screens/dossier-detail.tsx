@@ -48,7 +48,7 @@ import type {
 } from "@/lib/store";
 import { calculerEcart } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printHTML } from "@/lib/export";
+import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import {
   DossierStatutBadge,
@@ -744,13 +744,13 @@ export function DossierDetailScreen() {
       `Dossier ${d.reference}`,
       `
       <h1>Dossier de transit</h1>
-      <div class="subtitle">Référence : <strong>${d.reference}</strong> · Statut : ${d.statut}</div>
+      <div class="subtitle">Référence : <strong>${htmlEscape(d.reference)}</strong> · Statut : ${htmlEscape(d.statut)}</div>
       <table>
         <tbody>
-          <tr><th style="width:35%">Client</th><td>${d.clientNom}</td></tr>
-          <tr><th>Nature de la marchandise</th><td>${d.nature || "—"}</td></tr>
-          <tr><th>N° de BL</th><td>${d.bl || "—"}</td></tr>
-          <tr><th>N° du camion</th><td>${d.camion || "—"}</td></tr>
+          <tr><th style="width:35%">Client</th><td>${htmlEscape(d.clientNom)}</td></tr>
+          <tr><th>Nature de la marchandise</th><td>${htmlEscape(d.nature) || "—"}</td></tr>
+          <tr><th>N° de BL</th><td>${htmlEscape(d.bl) || "—"}</td></tr>
+          <tr><th>N° du camion</th><td>${htmlEscape(d.camion) || "—"}</td></tr>
           <tr><th>Date</th><td>${d.date ? formatDateShort(d.date) : "—"}</td></tr>
         </tbody>
       </table>
@@ -771,8 +771,8 @@ export function DossierDetailScreen() {
           </tr>
         </tbody>
       </table>
-      ${d.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${d.notes}</p>` : ""}
-      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#475569">${subDossiers.map((sd) => `<li>${sd.nom}${sd.description ? ` — ${sd.description}` : ""}</li>`).join("")}</ul>` : ""}
+      ${d.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${htmlEscape(d.notes)}</p>` : ""}
+      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#475569">${subDossiers.map((sd) => `<li>${htmlEscape(sd.nom)}${sd.description ? ` — ${htmlEscape(sd.description)}` : ""}</li>`).join("")}</ul>` : ""}
     `,
     );
     toast({

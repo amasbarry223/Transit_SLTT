@@ -358,23 +358,22 @@ export function CalendrierScreen() {
                   {dosDots.slice(0, 2).map((ev) => (
                     <div
                       key={ev.id}
-                      className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5"
-                      style={{ background: "#EFF6FF" }}
+                      className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/40"
                     >
                       <span className={cn("size-1.5 shrink-0 rounded-full", DOSSIER_STATUT_DOT[ev.payload.statut as keyof typeof DOSSIER_STATUT_DOT] ?? "bg-blue-400")} />
-                      <span className="truncate text-[10px] font-medium text-blue-700">{ev.label}</span>
+                      <span className="truncate text-[10px] font-medium text-blue-700 dark:text-blue-400">{ev.label}</span>
                     </div>
                   ))}
                   {bonDots.slice(0, 1).map((ev) => (
                     <div key={ev.id} className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40">
                       <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
-                      <span className="truncate text-[10px] font-medium text-emerald-700">{ev.label}</span>
+                      <span className="truncate text-[10px] font-medium text-emerald-700 dark:text-emerald-400">{ev.label}</span>
                     </div>
                   ))}
                   {payDots.slice(0, 1).map((ev) => (
                     <div key={ev.id} className="flex items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/40">
                       <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
-                      <span className="truncate text-[10px] font-medium text-amber-700">{ev.sub}</span>
+                      <span className="truncate text-[10px] font-medium text-amber-700 dark:text-amber-400">{ev.sub}</span>
                     </div>
                   ))}
                 </div>

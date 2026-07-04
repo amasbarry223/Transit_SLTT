@@ -19,7 +19,7 @@ import { useStore, type BonMotif, type StockItem } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printHTML } from "@/lib/export";
+import { printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
@@ -268,14 +268,14 @@ export function BonsScreen() {
     };
     return `
       <h1>Bon de sortie</h1>
-      <div class="subtitle">Référence : <strong>${b.reference}</strong> · <span class="badge" style="${motifColors[b.motif] ?? ""}">${b.motif}</span></div>
+      <div class="subtitle">Référence : <strong>${htmlEscape(b.reference)}</strong> · <span class="badge" style="${motifColors[b.motif] ?? ""}">${htmlEscape(b.motif)}</span></div>
       <table>
         <tbody>
           <tr><th style="width:40%">Date</th><td>${formatDateShort(b.date)}</td></tr>
-          <tr><th>Client</th><td>${b.clientNom}</td></tr>
-          <tr><th>Marchandise</th><td>${b.marchandise}</td></tr>
-          <tr><th>Quantité sortie</th><td>${b.quantite} ${b.unite}</td></tr>
-          <tr><th>Motif de sortie</th><td>${b.motif}</td></tr>
+          <tr><th>Client</th><td>${htmlEscape(b.clientNom)}</td></tr>
+          <tr><th>Marchandise</th><td>${htmlEscape(b.marchandise)}</td></tr>
+          <tr><th>Quantité sortie</th><td>${b.quantite} ${htmlEscape(b.unite)}</td></tr>
+          <tr><th>Motif de sortie</th><td>${htmlEscape(b.motif)}</td></tr>
           <tr class="total-row"><th>Montant</th><td class="num">${formatFCFA(b.montant)}</td></tr>
         </tbody>
       </table>

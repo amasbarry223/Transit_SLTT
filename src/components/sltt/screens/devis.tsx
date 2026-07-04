@@ -26,7 +26,7 @@ import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
-import { exportToCSV, printHTML, printInvoice } from "@/lib/export";
+import { exportToCSV, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -479,12 +479,12 @@ export function DevisScreen() {
   function handleExportPDF() {
     const rowsHTML = filtered.map((d) => `
       <tr>
-        <td>${d.reference}</td>
-        <td>${d.clientNom}</td>
-        <td>${d.nature}</td>
+        <td>${htmlEscape(d.reference)}</td>
+        <td>${htmlEscape(d.clientNom)}</td>
+        <td>${htmlEscape(d.nature)}</td>
         <td class="num">${formatFCFA(d.total, false)}</td>
         <td>${formatDateShort(d.dateValidite)}</td>
-        <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${d.statut}</span></td>
+        <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${htmlEscape(d.statut)}</span></td>
       </tr>`).join("");
     printHTML("Liste des devis", `
       <h1>Devis SLTT</h1>

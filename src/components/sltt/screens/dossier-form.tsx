@@ -12,13 +12,14 @@ import {
   AlertTriangle,
   Truck,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
 import { useStore, type DossierStatut } from "@/lib/store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
-import { printHTML } from "@/lib/export";
+import { printHTML, htmlEscape } from "@/lib/export";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -283,13 +284,13 @@ function DossierFormInner() {
       `Dossier ${reference}`,
       `
       <h1>Dossier de transit</h1>
-      <div class="subtitle">Référence : <strong>${reference}</strong> · Statut : ${statut}</div>
+      <div class="subtitle">Référence : <strong>${htmlEscape(reference)}</strong> · Statut : ${htmlEscape(statut)}</div>
       <table>
         <tbody>
-          <tr><th style="width:35%">Client</th><td>${clientNom}</td></tr>
-          <tr><th>Nature de la marchandise</th><td>${nature || "—"}</td></tr>
-          <tr><th>N° de BL</th><td>${bl || "—"}</td></tr>
-          <tr><th>N° du camion</th><td>${camion || "—"}</td></tr>
+          <tr><th style="width:35%">Client</th><td>${htmlEscape(clientNom)}</td></tr>
+          <tr><th>Nature de la marchandise</th><td>${htmlEscape(nature) || "—"}</td></tr>
+          <tr><th>N° de BL</th><td>${htmlEscape(bl) || "—"}</td></tr>
+          <tr><th>N° du camion</th><td>${htmlEscape(camion) || "—"}</td></tr>
           <tr><th>Date</th><td>${date ? formatDateShort(date) : "—"}</td></tr>
         </tbody>
       </table>
@@ -310,7 +311,7 @@ function DossierFormInner() {
           </tr>
         </tbody>
       </table>
-      ${notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${notes}</p>` : ""}
+      ${notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${htmlEscape(notes)}</p>` : ""}
     `,
     );
     toast({
@@ -481,13 +482,14 @@ function DossierFormInner() {
           </Card>
 
           {/* Transport & Logistique */}
-          <Card className="border-border/80 p-5 shadow-sm">
-            <SectionTitle
-              icon={<Truck className="size-4" />}
-              tone="indigo"
-              title="Transport & Logistique"
-              description="Mode de transport, conteneur et point d'entrée"
-            />
+          <CollapsibleSection
+            icon={<Truck className="size-4" />}
+            tone="indigo"
+            title="Transport & Logistique"
+            description="Mode de transport, conteneur et point d'entrée"
+            defaultOpen={isEdit}
+            badge={isEdit ? undefined : "Optionnel"}
+          >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Mode de transport">
                 <Select value={modeTransport} onValueChange={setModeTransport}>
@@ -513,7 +515,7 @@ function DossierFormInner() {
                 <Input type="number" className="h-10" value={poidsTotal} onChange={(e) => setPoidsTotal(e.target.value)} placeholder="0" />
               </Field>
             </div>
-          </Card>
+          </CollapsibleSection>
 
           {/* Montants */}
           <Card className="border-border/80 p-5 shadow-sm">
@@ -574,13 +576,14 @@ function DossierFormInner() {
           </Card>
 
           {/* Suivi */}
-          <Card className="border-border/80 p-5 shadow-sm">
-            <SectionTitle
-              icon={<ListChecks className="size-4" />}
-              tone="indigo"
-              title="Suivi"
-              description="Statut du dossier et observations internes"
-            />
+          <CollapsibleSection
+            icon={<ListChecks className="size-4" />}
+            tone="indigo"
+            title="Suivi"
+            description="Statut du dossier et observations internes"
+            defaultOpen={isEdit}
+            badge={isEdit ? undefined : "Optionnel"}
+          >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Statut">
                 {isEdit ? (
@@ -661,7 +664,7 @@ function DossierFormInner() {
                 </Field>
               </div>
             </div>
-          </Card>
+          </CollapsibleSection>
         </div>
 
         {/* Right summary column */}
@@ -798,6 +801,66 @@ function SectionTitle({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Section repliable — sert la divulgation progressive : à la création d'un
+ * dossier, les sections hors cahier des charges (Transport, Suivi) sont
+ * repliées par défaut pour que le formulaire "premier jour" ne montre que les
+ * champs essentiels. En édition, tout est déplié.
+ */
+function CollapsibleSection({
+  icon,
+  title,
+  description,
+  tone,
+  defaultOpen,
+  badge,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  tone: "blue" | "emerald" | "amber" | "indigo";
+  defaultOpen: boolean;
+  badge?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card className="border-border/80 p-5 shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-start gap-2.5 text-left"
+      >
+        <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-md", toneMap[tone])}>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+            {badge && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {badge}
+              </span>
+            )}
+          </div>
+          {description && (
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+          )}
+        </div>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-slate-400 transition-transform dark:text-slate-500",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && <div className="mt-4">{children}</div>}
+    </Card>
   );
 }
 

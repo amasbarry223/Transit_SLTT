@@ -20,7 +20,7 @@ import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { calculerEcart, type DossierStatut } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML } from "@/lib/export";
+import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
@@ -222,14 +222,14 @@ export function DossiersListScreen() {
     const rowsHTML = filtered
       .map(
         (d) => `<tr>
-          <td>${d.reference}</td>
-          <td>${d.clientNom}</td>
-          <td>${d.bl}</td>
-          <td>${d.camion}</td>
-          <td>${d.nature}</td>
+          <td>${htmlEscape(d.reference)}</td>
+          <td>${htmlEscape(d.clientNom)}</td>
+          <td>${htmlEscape(d.bl)}</td>
+          <td>${htmlEscape(d.camion)}</td>
+          <td>${htmlEscape(d.nature)}</td>
           <td class="num">${formatFCFA(d.fraisPrestation, false)}</td>
           <td class="num">${calculerEcart(d).toLocaleString("fr-FR")}</td>
-          <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${d.statut}</span></td>
+          <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${htmlEscape(d.statut)}</span></td>
         </tr>`,
       )
       .join("");

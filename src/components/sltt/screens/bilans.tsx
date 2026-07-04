@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact, formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML } from "@/lib/export";
+import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -324,7 +324,7 @@ export function BilansScreen() {
     const rowsHTML = recapParClient
       .map(
         (r) => `<tr>
-          <td>${r.client}</td>
+          <td>${htmlEscape(r.client)}</td>
           <td class="num">${formatFCFA(r.investi, false)}</td>
           <td class="num">${formatFCFA(r.encaisse, false)}</td>
           <td class="num">${formatFCFA(r.reste, false)}</td>

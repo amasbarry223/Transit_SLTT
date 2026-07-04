@@ -11,7 +11,7 @@ import {
 import { useStore } from "@/lib/store";
 import type { Transporteur, TransporteurInput, TransporteurStatut, TypeVehicule } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML } from "@/lib/export";
+import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -410,13 +410,13 @@ export function TransporteursScreen() {
   const handleExportPDF = () => {
     const rowsHTML = filtered.map((t) => `
       <tr>
-        <td>${t.nom}</td>
-        <td>${t.contact}<br><small>${t.telephone}</small></td>
-        <td>${t.vehicule}<br><small style="font-family:monospace">${t.immatriculation}</small></td>
-        <td>${t.trajet}</td>
+        <td>${htmlEscape(t.nom)}</td>
+        <td>${htmlEscape(t.contact)}<br><small>${htmlEscape(t.telephone)}</small></td>
+        <td>${htmlEscape(t.vehicule)}<br><small style="font-family:monospace">${htmlEscape(t.immatriculation)}</small></td>
+        <td>${htmlEscape(t.trajet)}</td>
         <td class="num">${t.capacite} t</td>
         <td class="num">${t.nbDossiers}</td>
-        <td><span class="badge" style="${t.statut === "Actif" ? "background:#d1fae5;color:#065f46" : "background:#f1f5f9;color:#64748b"}">${t.statut}</span></td>
+        <td><span class="badge" style="${t.statut === "Actif" ? "background:#d1fae5;color:#065f46" : "background:#f1f5f9;color:#64748b"}">${htmlEscape(t.statut)}</span></td>
       </tr>`).join("");
     printHTML("Liste des transporteurs", `
       <h1>Transporteurs partenaires</h1>

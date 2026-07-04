@@ -34,6 +34,8 @@ import {
   Plus,
   FileOutput,
   Users,
+  Compass,
+  X,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -429,6 +431,87 @@ interface LiveAlert {
 }
 
 /* ------------------------------------------------------------------ */
+/* GUIDE DE DÉMARRAGE (prise en main)                                  */
+/* ------------------------------------------------------------------ */
+
+const GUIDE_DISMISS_KEY = "sltt-guide-dismissed-v1";
+
+/** Les 4 gestes du cahier des charges, dans l'ordre où on les fait. */
+const GUIDE_STEPS: {
+  label: string;
+  sub: string;
+  view: "clients" | "dossiers" | "comptabilite" | "bilans" | "entreposage" | "bons";
+  roles?: string[];
+}[] = [
+  { label: "Ajoutez vos clients", sub: "Annuaire et fiches clients", view: "clients", roles: ["Administrateur", "Agent de transit", "Commercial", "Comptable"] },
+  { label: "Archivez un dossier", sub: "Client, camion, BL, montants", view: "dossiers", roles: ["Administrateur", "Agent de transit", "Comptable"] },
+  { label: "Enregistrez les paiements", sub: "Écritures comptables", view: "comptabilite", roles: ["Administrateur", "Comptable"] },
+  { label: "Consultez vos bilans", sub: "Mensuel, trimestriel, annuel", view: "bilans", roles: ["Administrateur", "Comptable"] },
+  { label: "Gérez le stock", sub: "Entrées, sorties, dépositaires", view: "entreposage", roles: ["Administrateur", "Magasinier"] },
+  { label: "Émettez des bons de sortie", sub: "Date, client, motif, montant", view: "bons", roles: ["Administrateur", "Magasinier", "Commercial"] },
+];
+
+function GuideDemarrage({
+  role,
+  go,
+}: {
+  role: string;
+  go: (view: GuideTypeView) => void;
+}) {
+  const [dismissed, setDismissed] = React.useState<boolean>(() => {
+    try { return localStorage.getItem(GUIDE_DISMISS_KEY) === "1"; } catch { return false; }
+  });
+
+  if (dismissed) return null;
+
+  const steps = GUIDE_STEPS.filter((s) => !s.roles || s.roles.includes(role)).slice(0, 4);
+  if (steps.length === 0) return null;
+
+  function dismiss() {
+    setDismissed(true);
+    try { localStorage.setItem(GUIDE_DISMISS_KEY, "1"); } catch { /* ignore */ }
+  }
+
+  return (
+    <Card className="gap-0 border-blue-200/70 bg-blue-50/40 p-0 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+      <div className="flex items-center justify-between gap-2 px-5 pt-4">
+        <div className="flex items-center gap-2">
+          <Compass className="size-4 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Par où commencer ?</h2>
+        </div>
+        <button
+          onClick={dismiss}
+          aria-label="Masquer le guide de démarrage"
+          className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100/60 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-blue-900/40 dark:hover:text-slate-200"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 xl:grid-cols-4">
+        {steps.map((s, i) => (
+          <button
+            key={s.view}
+            onClick={() => go(s.view)}
+            className="group flex items-center gap-3 rounded-lg border border-border/60 bg-white p-3 text-left transition-colors hover:border-blue-300 dark:bg-slate-900 dark:hover:border-blue-700"
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+              {i + 1}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">{s.label}</span>
+              <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{s.sub}</span>
+            </span>
+            <ArrowRight className="size-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-blue-500 dark:text-slate-600" />
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+type GuideTypeView = (typeof GUIDE_STEPS)[number]["view"];
+
+/* ------------------------------------------------------------------ */
 /* SCREEN                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -650,6 +733,9 @@ export function DashboardScreen() {
           <span className="font-medium text-slate-900 dark:text-slate-100">{periodeLabel}</span>
         </div>
       </PageHeader>
+
+      {/* 1b. GUIDE DE DÉMARRAGE — les 4 gestes du cahier des charges */}
+      <GuideDemarrage role={currentRole} go={(v) => go(v)} />
 
       {/* 2. KPI ROW */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

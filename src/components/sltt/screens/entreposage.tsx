@@ -21,7 +21,7 @@ import { useStore } from "@/lib/store";
 import type { StockItem, StockItemInput } from "@/lib/store";
 import type { Mouvement } from "@/lib/mock-data";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML } from "@/lib/export";
+import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge, StockStatutBadge } from "@/components/sltt/status-badge";
@@ -680,13 +680,13 @@ export function EntreposageScreen() {
           return `<tr class="${faible ? "row-faible" : ""}">
             <td class="col-num">${i + 1}</td>
             <td>
-              <strong class="${faible ? "name-warn" : ""}">${faible ? "⚠ " : ""}${s.marchandise}</strong>
+              <strong class="${faible ? "name-warn" : ""}">${faible ? "⚠ " : ""}${htmlEscape(s.marchandise)}</strong>
             </td>
             <td class="num">${s.quantite}</td>
             <td class="num col-seuil">${s.seuil}</td>
-            <td class="col-unit">${s.unite}</td>
-            <td>${s.depositaire}</td>
-            <td>${s.commercial}</td>
+            <td class="col-unit">${htmlEscape(s.unite)}</td>
+            <td>${htmlEscape(s.depositaire)}</td>
+            <td>${htmlEscape(s.commercial)}</td>
             <td class="num col-payee">${formatFCFA(s.sommePayee, false)}</td>
             <td class="num col-reste">${s.resteAPayer > 0 ? formatFCFA(s.resteAPayer, false) : "—"}</td>
             <td>${faible
