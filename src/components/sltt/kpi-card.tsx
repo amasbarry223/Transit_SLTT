@@ -7,11 +7,11 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 type KpiTone = "blue" | "emerald" | "amber" | "red" | "indigo";
 
 const iconWrap: Record<KpiTone, string> = {
-  blue: "bg-blue-50 text-blue-600",
-  emerald: "bg-emerald-50 text-emerald-600",
-  amber: "bg-amber-50 text-amber-600",
-  red: "bg-red-50 text-red-600",
-  indigo: "bg-indigo-50 text-indigo-600",
+  blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
+  emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+  amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+  red: "bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400",
+  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400",
 };
 
 export function KpiCard({
@@ -35,10 +35,10 @@ export function KpiCard({
     <Card className="p-5 gap-0 shadow-sm border-border/80">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-slate-500 font-medium truncate">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium truncate">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">
             {value}
           </p>
         </div>
@@ -58,8 +58,8 @@ export function KpiCard({
               className={cn(
                 "inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-md",
                 variation >= 0
-                  ? "text-emerald-700 bg-emerald-50"
-                  : "text-red-700 bg-red-50",
+                  ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/50"
+                  : "text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-950/50",
               )}
             >
               {variation >= 0 ? (
@@ -72,10 +72,10 @@ export function KpiCard({
             </span>
           )}
           {variationLabel && (
-            <span className="text-slate-400">{variationLabel}</span>
+            <span className="text-slate-400 dark:text-slate-500">{variationLabel}</span>
           )}
           {!variationLabel && sublabel && (
-            <span className="text-slate-400">{sublabel}</span>
+            <span className="text-slate-400 dark:text-slate-500">{sublabel}</span>
           )}
         </div>
       )}

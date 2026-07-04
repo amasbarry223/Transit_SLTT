@@ -46,32 +46,32 @@ type StatutCfg = {
 const STATUT_CONFIG: Record<DevisStatut, StatutCfg> = {
   Brouillon: {
     label: "Brouillon",  icon: Clock,
-    badge: "bg-slate-100 text-slate-600 border-slate-200",
-    dot: "bg-slate-400",   text: "text-slate-700",
+    badge: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+    dot: "bg-slate-400",   text: "text-slate-700 dark:text-slate-300",
     desc: "Ce devis est en cours de rédaction.",
   },
   Envoyé: {
     label: "Envoyé",    icon: Send,
-    badge: "bg-blue-50 text-blue-700 border-blue-200",
-    dot: "bg-blue-500",    text: "text-blue-700",
+    badge: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900",
+    dot: "bg-blue-500",    text: "text-blue-700 dark:text-blue-400",
     desc: "En attente du retour du client.",
   },
   Accepté: {
     label: "Accepté",   icon: CheckCircle2,
-    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    dot: "bg-emerald-500", text: "text-emerald-700",
+    badge: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900",
+    dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400",
     desc: "Le client a accepté l'estimation.",
   },
   Refusé: {
     label: "Refusé",    icon: XCircle,
-    badge: "bg-red-50 text-red-600 border-red-200",
-    dot: "bg-red-500",     text: "text-red-600",
+    badge: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900",
+    dot: "bg-red-500",     text: "text-red-600 dark:text-red-400",
     desc: "Le client a décliné l'estimation.",
   },
   Expiré: {
     label: "Expiré",    icon: AlertCircle,
-    badge: "bg-amber-50 text-amber-700 border-amber-200",
-    dot: "bg-amber-400",   text: "text-amber-700",
+    badge: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900",
+    dot: "bg-amber-400",   text: "text-amber-700 dark:text-amber-400",
     desc: "La date de validité est dépassée.",
   },
 };
@@ -121,7 +121,7 @@ function VerticalStepper({
     return (
       <div className={cn(
         "flex items-center gap-2.5 rounded-xl p-3",
-        statut === "Refusé" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700",
+        statut === "Refusé" ? "bg-red-50 dark:bg-red-950/40 text-red-700" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700",
       )}>
         <Icon className="size-5 shrink-0" />
         <div>
@@ -153,8 +153,8 @@ function VerticalStepper({
                 className={cn(
                   "flex size-8 items-center justify-center rounded-full border-2 transition-all shrink-0",
                   done    ? "border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600" :
-                  current ? "border-blue-600 bg-blue-600 text-white cursor-default ring-4 ring-blue-100" :
-                            "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:bg-slate-50",
+                  current ? "border-blue-600 bg-blue-600 text-white cursor-default ring-4 ring-blue-100 dark:ring-blue-950" :
+                            "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800",
                 )}
               >
                 {done
@@ -164,7 +164,7 @@ function VerticalStepper({
               {!isLast && (
                 <div className={cn(
                   "w-0.5 flex-1 min-h-[28px]",
-                  done ? "bg-emerald-200" : "bg-slate-100",
+                  done ? "bg-emerald-200" : "bg-slate-100 dark:bg-slate-800",
                 )} />
               )}
             </div>
@@ -173,7 +173,7 @@ function VerticalStepper({
             <div className={cn("pt-1.5", !isLast && "pb-5")}>
               <p className={cn(
                 "text-sm font-semibold leading-tight",
-                current ? "text-blue-700" : done ? "text-emerald-700" : "text-slate-400",
+                current ? "text-blue-700" : done ? "text-emerald-700" : "text-slate-400 dark:text-slate-500",
               )}>
                 {s}
                 {current && (
@@ -184,7 +184,7 @@ function VerticalStepper({
               </p>
               <p className={cn(
                 "mt-0.5 text-xs leading-relaxed",
-                current ? "text-blue-500" : done ? "text-emerald-500" : "text-slate-300",
+                current ? "text-blue-500" : done ? "text-emerald-500" : "text-slate-300 dark:text-slate-600",
               )}>
                 {cfg.desc}
               </p>
@@ -208,10 +208,10 @@ function InfoRow({ icon: Icon, label, value, mono }: {
 }) {
   return (
     <div className="flex items-start gap-3 py-3.5 border-b border-border/40 last:border-0">
-      <Icon className="mt-0.5 size-4 shrink-0 text-slate-400" />
+      <Icon className="mt-0.5 size-4 shrink-0 text-slate-400 dark:text-slate-500" />
       <div className="min-w-0 flex-1">
-        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-        <p className={cn("mt-0.5 text-sm font-semibold text-slate-900", mono && "font-mono")}>{value || "—"}</p>
+        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</p>
+        <p className={cn("mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100", mono && "font-mono")}>{value || "—"}</p>
       </div>
     </div>
   );
@@ -223,7 +223,7 @@ function InfoRow({ icon: Icon, label, value, mono }: {
 
 function FinancialBreakdown({ devis }: { devis: Devis }) {
   const items = [
-    { label: "Droits de douane",  value: devis.droitDouane,    bar: "bg-blue-500",   text: "text-blue-600" },
+    { label: "Droits de douane",  value: devis.droitDouane,    bar: "bg-blue-500",   text: "text-blue-600 dark:text-blue-400" },
     { label: "Frais de circuit",  value: devis.fraisCircuit,   bar: "bg-violet-500", text: "text-violet-600" },
     { label: "Prestation SLTT",   value: devis.fraisPrestation, bar: "bg-orange-400", text: "text-orange-600" },
   ];
@@ -234,10 +234,10 @@ function FinancialBreakdown({ devis }: { devis: Devis }) {
         return (
           <div key={item.label}>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-slate-500">{item.label}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">{item.label}</span>
               <span className={cn("text-xs font-bold tabular-nums", item.text)}>{formatFCFA(item.value)}</span>
             </div>
-            <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
               <div className={cn("h-full rounded-full", item.bar)} style={{ width: `${pct}%` }} />
             </div>
           </div>
@@ -308,8 +308,8 @@ export function DevisDetailScreen() {
   if (!devis) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-center">
-        <FolderKanban className="size-14 text-slate-200" />
-        <p className="mt-4 text-sm font-semibold text-slate-500">Devis introuvable</p>
+        <FolderKanban className="size-14 text-slate-200 dark:text-slate-700" />
+        <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Devis introuvable</p>
         <Button variant="outline" className="mt-5" onClick={() => go("devis")}>
           <ArrowLeft className="mr-2 size-4" /> Retour aux devis
         </Button>
@@ -412,7 +412,7 @@ export function DevisDetailScreen() {
       {/* ── Back link ── */}
       <button
         onClick={() => go("devis")}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors group"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors group"
       >
         <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
         Retour aux devis
@@ -428,22 +428,30 @@ export function DevisDetailScreen() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{devis.reference}</h1>
+                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">{devis.reference}</h1>
                   <StatutBadge statut={devis.statut} />
+                  {devis.dossierId && (
+                    <button
+                      onClick={() => openDossierDetail(devis.dossierId!)}
+                      className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                    >
+                      <FileCheck2 className="size-3" /> Dossier créé
+                    </button>
+                  )}
                 </div>
-                <p className="mt-1.5 text-base font-semibold text-slate-700">{devis.clientNom}</p>
-                <p className="mt-0.5 text-sm text-slate-500">{devis.nature}</p>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1.5 text-base font-semibold text-slate-700 dark:text-slate-300">{devis.clientNom}</p>
+                <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{devis.nature}</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   Créé le {formatDateShort(devis.dateCreation)}
                   &nbsp;·&nbsp; Valide jusqu'au {formatDateShort(devis.dateValidite)}
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Total estimé</p>
+                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total estimé</p>
                 <p className="mt-0.5 text-3xl font-extrabold tabular-nums text-blue-700 leading-tight">
                   {new Intl.NumberFormat("fr-FR").format(devis.total)}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">FCFA</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">FCFA</p>
               </div>
             </div>
 
@@ -464,16 +472,22 @@ export function DevisDetailScreen() {
                       <ChevronRight className="size-4" /> {nextStatut.label}
                     </Button>
                   )}
-                  {devis.statut !== "Accepté" && (
+                  {devis.dossierId ? (
                     <Button size="sm" variant="outline"
-                      className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                      className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+                      onClick={() => openDossierDetail(devis.dossierId!)}>
+                      <FileCheck2 className="size-4" /> Voir le dossier
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline"
+                      className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                       onClick={() => { setConfirmConvert(true); setConfirmDelete(false); }}>
                       <FileCheck2 className="size-4" /> Convertir en dossier
                     </Button>
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button size="sm" variant="ghost" className="ml-auto text-slate-400">
+                      <Button size="sm" variant="ghost" className="ml-auto text-slate-400 dark:text-slate-500">
                         <MoreHorizontal className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -489,13 +503,13 @@ export function DevisDetailScreen() {
                           >
                             <SIcon className="mr-2 size-3.5" />
                             {s}
-                            {s === devis.statut && <span className="ml-auto text-[10px] text-slate-400">actuel</span>}
+                            {s === devis.statut && <span className="ml-auto text-[10px] text-slate-400 dark:text-slate-500">actuel</span>}
                           </DropdownMenuItem>
                         );
                       })}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                        className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
                         onClick={() => { setConfirmDelete(true); setConfirmConvert(false); }}
                       >
                         <Trash2 className="mr-2 size-3.5" /> Supprimer
@@ -530,8 +544,8 @@ export function DevisDetailScreen() {
           <div className="space-y-5 lg:col-span-3">
 
             <Card className="border-border/80 shadow-sm">
-              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Informations</h2>
+              <div className="border-b border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Informations</h2>
               </div>
               <div className="px-5">
                 <InfoRow icon={User}         label="Client"                   value={devis.clientNom} />
@@ -544,10 +558,10 @@ export function DevisDetailScreen() {
 
             {devis.notes && (
               <Card className="border-border/80 shadow-sm">
-                <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3">
-                  <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Notes & conditions</h2>
+                <div className="border-b border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Notes & conditions</h2>
                 </div>
-                <p className="px-5 py-4 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{devis.notes}</p>
+                <p className="px-5 py-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{devis.notes}</p>
               </Card>
             )}
           </div>
@@ -557,9 +571,9 @@ export function DevisDetailScreen() {
 
             {/* Statut card avec stepper vertical */}
             <Card className="border-border/80 shadow-sm overflow-hidden">
-              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Pipeline</h2>
-                <span className="text-[10px] text-slate-400">Cliquez pour changer</span>
+              <div className="border-b border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3 flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Pipeline</h2>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">Cliquez pour changer</span>
               </div>
               <div className="p-5">
                 <VerticalStepper statut={devis.statut} onSelect={handleStatutChange} />
@@ -568,7 +582,7 @@ export function DevisDetailScreen() {
                   <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-border/40">
                     <button
                       onClick={() => handleStatutChange("Brouillon")}
-                      className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                      className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 transition-colors"
                     >
                       ↩ Remettre en brouillon
                     </button>
@@ -579,36 +593,42 @@ export function DevisDetailScreen() {
 
             {/* Financial breakdown */}
             <Card className="border-border/80 shadow-sm overflow-hidden">
-              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Estimation financière</h2>
+              <div className="border-b border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Estimation financière</h2>
               </div>
               <FinancialBreakdown devis={devis} />
             </Card>
 
             {/* Actions */}
             <Card className="border-border/80 shadow-sm">
-              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Actions</h2>
+              <div className="border-b border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Actions</h2>
               </div>
               <div className="p-4 space-y-2">
                 <Button variant="outline" className="w-full justify-start gap-2.5 font-medium" onClick={handlePrint}>
-                  <Printer className="size-4 text-slate-400" /> Télécharger PDF
+                  <Printer className="size-4 text-slate-400 dark:text-slate-500" /> Télécharger PDF
                 </Button>
                 <Button variant="outline"
                   className="w-full justify-start gap-2.5 font-medium"
                   onClick={() => { setIsEditing(true); setConfirmDelete(false); setConfirmConvert(false); }}>
-                  <Pencil className="size-4 text-slate-400" /> Modifier le devis
+                  <Pencil className="size-4 text-slate-400 dark:text-slate-500" /> Modifier le devis
                 </Button>
-                {devis.statut !== "Accepté" && (
+                {devis.dossierId ? (
                   <Button variant="outline"
-                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+                    onClick={() => openDossierDetail(devis.dossierId!)}>
+                    <FileCheck2 className="size-4" /> Voir le dossier
+                  </Button>
+                ) : (
+                  <Button variant="outline"
+                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                     onClick={() => { setConfirmConvert(true); setConfirmDelete(false); }}>
                     <FileCheck2 className="size-4" /> Convertir en dossier
                   </Button>
                 )}
                 <Separator />
                 <Button variant="outline"
-                  className="w-full justify-start gap-2.5 font-medium text-red-600 border-red-200 hover:bg-red-50"
+                  className="w-full justify-start gap-2.5 font-medium text-red-600 dark:text-red-400 border-red-200 hover:bg-red-50 dark:bg-red-950/40"
                   onClick={() => { setConfirmDelete(true); setConfirmConvert(false); }}>
                   <Trash2 className="size-4" /> Supprimer
                 </Button>
@@ -623,7 +643,7 @@ export function DevisDetailScreen() {
       ════════════════════════════════════════════════════════════ */}
       {isEditing && (
         <Card className="border-blue-200 shadow-md overflow-hidden">
-          <div className="border-b border-blue-100 bg-blue-50/80 px-5 py-4">
+          <div className="border-b border-blue-100 dark:border-blue-900 bg-blue-50/80 dark:bg-blue-950/30 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex size-8 items-center justify-center rounded-lg bg-blue-700">
                 <Pencil className="size-3.5 text-white" />
@@ -636,7 +656,7 @@ export function DevisDetailScreen() {
             {/* Client + Nature */}
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Client <span className="text-red-500 normal-case">*</span>
                 </Label>
                 <Select value={fClientId} onValueChange={handleClientChange}>
@@ -651,7 +671,7 @@ export function DevisDetailScreen() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Nature de la marchandise <span className="text-red-500 normal-case">*</span>
                 </Label>
                 <Input value={fNature} onChange={(e) => setFNature(e.target.value)}
@@ -661,7 +681,7 @@ export function DevisDetailScreen() {
 
             {/* Montants */}
             <div className="space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Estimation financière</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Estimation financière</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
                   { label: "Droits de douane (FCFA)", val: fDroitDouane, set: setFDroitDouane },
@@ -669,14 +689,14 @@ export function DevisDetailScreen() {
                   { label: "Prestation SLTT (FCFA)",   val: fFraisPrestation, set: setFFraisPrestation },
                 ].map((f) => (
                   <div key={f.label} className="space-y-2">
-                    <Label className="text-xs text-slate-500">{f.label}</Label>
+                    <Label className="text-xs text-slate-500 dark:text-slate-400">{f.label}</Label>
                     <Input value={f.val} onChange={(e) => f.set(e.target.value)}
                       placeholder="0" className="h-10 text-right tabular-nums" />
                   </div>
                 ))}
               </div>
               {editTotal > 0 && (
-                <div className="flex items-center justify-between rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+                <div className="flex items-center justify-between rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 px-4 py-3">
                   <span className="text-sm font-bold text-blue-800">Total estimé</span>
                   <span className="text-lg font-extrabold tabular-nums text-blue-900">{formatFCFA(editTotal)}</span>
                 </div>
@@ -686,14 +706,14 @@ export function DevisDetailScreen() {
             {/* Date + Notes */}
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Date de validité <span className="text-red-500 normal-case">*</span>
                 </Label>
                 <Input type="date" value={fDateValidite}
                   onChange={(e) => setFDateValidite(e.target.value)} className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Notes</Label>
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</Label>
                 <Textarea value={fNotes} onChange={(e) => setFNotes(e.target.value)}
                   placeholder="Conditions, remarques..." rows={3} className="resize-none" />
               </div>
@@ -701,7 +721,7 @@ export function DevisDetailScreen() {
 
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-border pt-5">
-              <Button variant="ghost" size="sm" className="text-slate-500" onClick={handleCancelEdit}>
+              <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400" onClick={handleCancelEdit}>
                 <X className="mr-2 size-4" /> Annuler
               </Button>
               <Button className="gap-2 bg-blue-700 hover:bg-blue-800"
@@ -718,7 +738,7 @@ export function DevisDetailScreen() {
           Conversion — confirmation inline
       ════════════════════════════════════════════════════════════ */}
       {confirmConvert && !isEditing && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6 shadow-sm">
+        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/30 p-6 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 border border-emerald-200">
               <FileCheck2 className="size-6 text-emerald-700" />
@@ -745,7 +765,7 @@ export function DevisDetailScreen() {
           Suppression — zone danger inline
       ════════════════════════════════════════════════════════════ */}
       {confirmDelete && !isEditing && (
-        <div className="rounded-2xl border border-red-200 bg-red-50/60 p-6 shadow-sm">
+        <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50/60 dark:bg-red-950/30 p-6 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 border border-red-200">
               <AlertTriangle className="size-6 text-red-700" />

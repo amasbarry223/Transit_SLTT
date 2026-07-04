@@ -163,7 +163,7 @@ export function LoginScreen() {
       <LoginBackground />
 
       <div className="relative z-10 w-full max-w-[420px]">
-        <div className="overflow-hidden rounded-2xl border border-white/25 bg-white shadow-[0_24px_80px_-12px_rgba(15,23,42,0.45)]">
+        <div className="overflow-hidden rounded-2xl border border-white/25 bg-white dark:bg-slate-900 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.45)]">
           <div className="flex flex-col items-center px-8 pb-5 pt-8">
             <Image
               src="/logo-login.png"
@@ -175,20 +175,20 @@ export function LoginScreen() {
             />
           </div>
 
-          <Separator className="bg-slate-200" />
+          <Separator className="bg-slate-200 dark:bg-slate-800" />
 
           <div className="px-8 py-7">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 Connexion à votre espace
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Saisissez vos identifiants pour accéder à la plateforme.
               </p>
             </div>
 
             {/* Connexion rapide démo — masquée par défaut */}
-            <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/60">
+            <div className="mb-5 rounded-xl border border-blue-100 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30">
               <button
                 type="button"
                 onClick={() => setShowDemo((v) => !v)}
@@ -211,116 +211,116 @@ export function LoginScreen() {
                       key={acc.email}
                       type="button"
                       onClick={() => handleDemoLogin(acc)}
-                    disabled={loading}
-                    className="flex flex-col items-start rounded-lg border border-blue-100 bg-white px-3 py-2 text-left transition hover:border-blue-300 hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    <span className="text-xs font-medium text-slate-800 leading-tight">{acc.nom}</span>
-                    <span className="text-[11px] text-blue-500 mt-0.5">{acc.role}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-slate-700"
-              >
-                Adresse e-mail
-              </Label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setError("");
-                  }}
-                  placeholder="vous@sltt.ml"
-                  className="h-11 border-slate-200 bg-slate-50/50 pl-10 focus:bg-white"
-                  required
-                  disabled={loading}
-                  autoComplete="email"
-                />
-              </div>
+                      disabled={loading}
+                      className="flex flex-col items-start rounded-lg border border-blue-100 bg-white dark:bg-slate-900 px-3 py-2 text-left transition hover:border-blue-300 hover:bg-blue-50 dark:bg-blue-950/40 disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <span className="text-xs font-medium text-slate-800 dark:text-slate-200 leading-tight">{acc.nom}</span>
+                      <span className="text-[11px] text-blue-500 mt-0.5">{acc.role}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
                 <Label
-                  htmlFor="password"
-                  className="text-sm font-medium text-slate-700"
+                  htmlFor="email"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
-                  Mot de passe
+                  Adresse e-mail
+                </Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
+                    }}
+                    placeholder="vous@sltt.ml"
+                    className="h-11 border-slate-200 dark:border-slate-700 bg-slate-50/50 pl-10 focus:bg-white dark:focus:bg-slate-900"
+                    required
+                    disabled={loading}
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                  >
+                    Mot de passe
+                  </Label>
+                </div>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <Input
+                    id="password"
+                    type={showPwd ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError("");
+                    }}
+                    placeholder="••••••••"
+                    className="h-11 border-slate-200 dark:border-slate-700 bg-slate-50/50 pl-10 pr-10 focus:bg-white dark:focus:bg-slate-900"
+                    required
+                    disabled={loading}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                    aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                    tabIndex={-1}
+                  >
+                    {showPwd ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(v) => setRememberMe(v === true)}
+                />
+                <Label
+                  htmlFor="remember"
+                  className="cursor-pointer text-sm text-slate-600 dark:text-slate-300"
+                >
+                  Rester connecté (7 jours)
                 </Label>
               </div>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  id="password"
-                  type={showPwd ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError("");
-                  }}
-                  placeholder="••••••••"
-                  className="h-11 border-slate-200 bg-slate-50/50 pl-10 pr-10 focus:bg-white"
-                  required
-                  disabled={loading}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                  tabIndex={-1}
-                >
-                  {showPwd ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
-                </button>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="remember"
-                checked={rememberMe}
-                onCheckedChange={(v) => setRememberMe(v === true)}
-              />
-              <Label
-                htmlFor="remember"
-                className="cursor-pointer text-sm text-slate-600"
+              {error && (
+                <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/40 px-3 py-2.5 text-sm text-red-700">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/20"
+                disabled={loading}
               >
-                Rester connecté (7 jours)
-              </Label>
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/20"
-              disabled={loading}
-            >
-              {loading ? "Vérification…" : "Se connecter"}
-            </Button>
+                {loading ? "Vérification…" : "Se connecter"}
+              </Button>
           </form>
 
-            <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400">
+            <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
               <ShieldCheck className="size-3.5" />
               Accès sécurisé · SLTT © 2026
             </div>

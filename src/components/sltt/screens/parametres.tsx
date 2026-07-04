@@ -272,7 +272,7 @@ function UsersTab() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Gérez les comptes, rôles et permissions de l&apos;équipe.
         </p>
         <Button onClick={() => setCreateOpen(true)} className="shrink-0">
@@ -285,23 +285,23 @@ function UsersTab() {
       <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-border">
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
+            <TableRow className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-border">
+              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
                 Nom
               </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
+              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
                 E-mail
               </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
+              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
                 Rôle
               </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
+              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
                 Statut
               </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500">
+              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
                 Dernière connexion
               </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500 text-right">
+              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400 text-right">
                 Actions
               </TableHead>
             </TableRow>
@@ -309,24 +309,24 @@ function UsersTab() {
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-16 text-center text-sm text-slate-500">
+                <TableCell colSpan={6} className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
                   Aucun utilisateur — cliquez sur « Ajouter un utilisateur » pour commencer.
                 </TableCell>
               </TableRow>
             ) : users.map((u) => (
               <TableRow
                 key={u.id}
-                className="hover:bg-slate-50/60 border-b border-border"
+                className="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 border-b border-border"
               >
                 <TableCell className="py-3">
                   <div className="flex items-center gap-3">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xs font-bold">
                       {getInitials(u.nom)}
                     </div>
-                    <span className="font-medium text-slate-900">{u.nom}</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">{u.nom}</span>
                   </div>
                 </TableCell>
-                <TableCell className="py-3 text-slate-600">{u.email}</TableCell>
+                <TableCell className="py-3 text-slate-600 dark:text-slate-300">{u.email}</TableCell>
                 <TableCell className="py-3">
                   <ToneBadge tone={roleTone[u.role]}>{u.role}</ToneBadge>
                 </TableCell>
@@ -335,7 +335,7 @@ function UsersTab() {
                     {u.actif ? "Actif" : "Inactif"}
                   </ToneBadge>
                 </TableCell>
-                <TableCell className="py-3 text-slate-500 tabular-nums">
+                <TableCell className="py-3 text-slate-500 dark:text-slate-400 tabular-nums">
                   {formatDateShort(u.derniereConnexion)}
                 </TableCell>
                 <TableCell className="py-3">
@@ -358,7 +358,7 @@ function UsersTab() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-slate-500 hover:text-primary"
+                      className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                       aria-label={`Modifier ${u.nom}`}
                       title="Modifier"
                       onClick={() => openEditUser(u.id)}
@@ -368,7 +368,7 @@ function UsersTab() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-slate-500 hover:text-destructive disabled:opacity-30"
+                      className="size-8 text-slate-500 dark:text-slate-400 hover:text-destructive disabled:opacity-30"
                       aria-label={`Supprimer ${u.nom}`}
                       title={u.id === currentUser?.id ? "Impossible de supprimer votre propre compte" : "Supprimer l'utilisateur"}
                       disabled={u.id === currentUser?.id}
@@ -424,7 +424,7 @@ function UsersTab() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="u-nom" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="u-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nom complet
               </Label>
               <Input
@@ -437,7 +437,7 @@ function UsersTab() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="u-email" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="u-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 E-mail
               </Label>
               <Input
@@ -451,7 +451,7 @@ function UsersTab() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Rôle</Label>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Rôle</Label>
               <Select
                 value={role}
                 onValueChange={(v) => setRole(v as UserRole)}
@@ -470,14 +470,14 @@ function UsersTab() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Code d&apos;accès
               </Label>
               <div className="flex items-center gap-2">
                 <Input
                   value={accessCode}
                   readOnly
-                  className="font-mono tracking-[0.3em] text-center font-semibold text-slate-900"
+                  className="font-mono tracking-[0.3em] text-center font-semibold text-slate-900 dark:text-slate-100"
                 />
                 <Button
                   type="button"
@@ -490,20 +490,20 @@ function UsersTab() {
                   <RefreshCw className="size-4" />
                 </Button>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Code à 6 caractères, communiquez-le à l&apos;utilisateur.
               </p>
             </div>
 
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Permissions
               </Label>
-              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 p-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 dark:bg-slate-800/50 p-3 sm:grid-cols-2">
                 {modulesList.map((m) => (
                   <label
                     key={m}
-                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 hover:bg-white"
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900"
                   >
                     <Checkbox
                       checked={perms[m]}
@@ -542,7 +542,7 @@ function UsersTab() {
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="e-nom" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="e-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nom complet
               </Label>
               <Input
@@ -554,7 +554,7 @@ function UsersTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="e-email" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="e-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 E-mail
               </Label>
               <Input
@@ -567,7 +567,7 @@ function UsersTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Rôle</Label>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Rôle</Label>
               <Select
                 value={editRole}
                 onValueChange={(v) => setEditRole(v as UserRole)}
@@ -585,14 +585,14 @@ function UsersTab() {
               </Select>
             </div>
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Permissions
               </Label>
-              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 p-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 dark:bg-slate-800/50 p-3 sm:grid-cols-2">
                 {modulesList.map((m) => (
                   <label
                     key={m}
-                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 hover:bg-white"
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900"
                   >
                     <Checkbox
                       checked={editPerms[m]}
@@ -648,7 +648,7 @@ function ProfileTab() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         Vos informations personnelles et professionnelles.
       </p>
       <Card className="p-6 shadow-sm border-border/80">
@@ -664,14 +664,14 @@ function ProfileTab() {
               {getInitials(pNom || currentUserName)}
             </div>
             <div>
-              <p className="font-semibold text-slate-900">{pNom || currentUserName}</p>
-              <p className="text-sm text-slate-500">{currentUser?.role || currentRole}</p>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">{pNom || currentUserName}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{currentUser?.role || currentRole}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="p-nom" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="p-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nom complet
               </Label>
               <Input
@@ -681,7 +681,7 @@ function ProfileTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="p-email" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="p-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 E-mail
               </Label>
               <Input
@@ -692,7 +692,7 @@ function ProfileTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="p-tel" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="p-tel" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Téléphone
               </Label>
               <Input
@@ -702,7 +702,7 @@ function ProfileTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="p-poste" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="p-poste" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Poste
               </Label>
               <Input
@@ -768,22 +768,22 @@ function SecurityTab() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         Mot de passe, authentification et options de sécurité du compte.
       </p>
 
       {/* Mot de passe */}
       <Card className="p-6 shadow-sm border-border/80">
         <div className="flex items-center gap-2">
-          <Lock className="size-4 text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-900">Mot de passe</h3>
+          <Lock className="size-4 text-slate-500 dark:text-slate-400" />
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Mot de passe</h3>
         </div>
         <form
           onSubmit={handlePasswordSubmit}
           className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
         >
           <div className="space-y-2">
-            <Label htmlFor="cur-pwd" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="cur-pwd" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Mot de passe actuel
             </Label>
             <Input
@@ -795,7 +795,7 @@ function SecurityTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-pwd" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="new-pwd" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Nouveau mot de passe
             </Label>
             <Input
@@ -807,7 +807,7 @@ function SecurityTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="conf-pwd" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="conf-pwd" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Confirmer
             </Label>
             <Input
@@ -829,18 +829,18 @@ function SecurityTab() {
       {/* Préférences de sécurité */}
       <Card className="p-6 shadow-sm border-border/80">
         <div className="flex items-center gap-2">
-          <Shield className="size-4 text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-900">
+          <Shield className="size-4 text-slate-500 dark:text-slate-400" />
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
             Préférences de sécurité
           </h3>
         </div>
         <div className="mt-4 space-y-4">
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
             <div>
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                 Déconnexion automatique après 30 min d'inactivité
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Protège votre session en cas d'absence prolongée.
               </p>
             </div>
@@ -848,10 +848,10 @@ function SecurityTab() {
           </div>
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
             <div>
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                 Authentification à deux facteurs
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Renforcez la sécurité avec un code temporaire à la connexion.
               </p>
             </div>
@@ -906,7 +906,7 @@ function AuditTab() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         Journal des actions utilisateurs — connexions, modifications et opérations
         sensibles.
       </p>
@@ -914,7 +914,7 @@ function AuditTab() {
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <Input
               value={query}
               onChange={(e) => {
@@ -971,7 +971,7 @@ function AuditTab() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500"
+              className="h-10 text-slate-500 dark:text-slate-400"
               onClick={() => {
                 setQuery("");
                 setModuleFilter("all");
@@ -983,7 +983,7 @@ function AuditTab() {
             </Button>
           )}
 
-          <p className="ml-auto text-xs tabular-nums text-slate-500">
+          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
             {filtered.length} entrée{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -991,14 +991,14 @@ function AuditTab() {
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <ScrollText className="size-4 text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-900">
+          <ScrollText className="size-4 text-slate-400 dark:text-slate-500" />
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
             Journal d&apos;audit
           </h3>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500">
+          <div className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
             Aucune entrée ne correspond aux filtres sélectionnés.
           </div>
         ) : (
@@ -1006,23 +1006,23 @@ function AuditTab() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Date / Heure
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Utilisateur
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Module
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Action
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Détail
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       IP
                     </TableHead>
                   </TableRow>
@@ -1031,12 +1031,12 @@ function AuditTab() {
                   {paged.map((row) => (
                     <TableRow
                       key={row.id}
-                      className="border-b border-border hover:bg-slate-50/60"
+                      className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                     >
-                      <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                      <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
                         {formatDateShort(row.date)}
                       </TableCell>
-                      <TableCell className="px-4 py-3.5 font-medium text-slate-900">
+                      <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
                         {row.user}
                       </TableCell>
                       <TableCell className="hidden px-4 py-3.5 sm:table-cell">
@@ -1045,12 +1045,12 @@ function AuditTab() {
                       <TableCell className="px-4 py-3.5">
                         <ToneBadge tone={actionTone[row.action]}>{row.action}</ToneBadge>
                       </TableCell>
-                      <TableCell className="max-w-[280px] px-4 py-3.5 text-sm text-slate-600">
+                      <TableCell className="max-w-[280px] px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300">
                         <span className="line-clamp-2" title={row.detail}>
                           {row.detail}
                         </span>
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-500 md:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-500 dark:text-slate-400 md:table-cell">
                         {row.ip}
                       </TableCell>
                     </TableRow>
@@ -1060,7 +1060,7 @@ function AuditTab() {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs tabular-nums text-slate-500">
+              <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                 {startIdx}–{endIdx} sur {filtered.length} entrée
                 {filtered.length !== 1 ? "s" : ""}
               </p>
@@ -1075,7 +1075,7 @@ function AuditTab() {
                 >
                   <ChevronLeft className="size-4" />
                 </Button>
-                <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600">
+                <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600 dark:text-slate-300">
                   {safePage} / {totalPages}
                 </span>
                 <Button
@@ -1104,7 +1104,7 @@ function PreferencesTab() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         Personnalisez la langue, les formats et les notifications.
       </p>
       <Card className="p-6 shadow-sm border-border/80">
@@ -1117,9 +1117,9 @@ function PreferencesTab() {
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="lang" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="lang" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 <span className="inline-flex items-center gap-1.5">
-                  <Globe className="size-3.5 text-slate-400" />
+                  <Globe className="size-3.5 text-slate-400 dark:text-slate-500" />
                   Langue
                 </span>
               </Label>
@@ -1136,9 +1136,9 @@ function PreferencesTab() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dfmt" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="dfmt" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 <span className="inline-flex items-center gap-1.5">
-                  <Calendar className="size-3.5 text-slate-400" />
+                  <Calendar className="size-3.5 text-slate-400 dark:text-slate-500" />
                   Format de date
                 </span>
               </Label>
@@ -1155,9 +1155,9 @@ function PreferencesTab() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cur" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="cur" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 <span className="inline-flex items-center gap-1.5">
-                  <Coins className="size-3.5 text-slate-400" />
+                  <Coins className="size-3.5 text-slate-400 dark:text-slate-500" />
                   Devise
                 </span>
               </Label>
@@ -1176,11 +1176,11 @@ function PreferencesTab() {
 
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
             <div>
-              <p className="text-sm font-medium text-slate-900 inline-flex items-center gap-1.5">
-                <Bell className="size-4 text-slate-400" />
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 inline-flex items-center gap-1.5">
+                <Bell className="size-4 text-slate-400 dark:text-slate-500" />
                 Notifications par e-mail
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Recevez un message à chaque dossier en attente ou alerte de stock.
               </p>
             </div>
@@ -1195,14 +1195,14 @@ function PreferencesTab() {
 
       <Card className="p-6 shadow-sm border-border/80 border-red-200/60">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400">
             <AlertTriangle className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-slate-900">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               Réinitialiser les données
             </h3>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Restaure toutes les données (dossiers, clients, écritures, stock, bons, utilisateurs)
               à leur état initial. Cette action est irréversible.
             </p>
@@ -1240,7 +1240,7 @@ function PreferencesTab() {
 function UsersTabBadge() {
   const count = useStore((s) => s.users.length);
   return (
-    <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600">
+    <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
       {count}
     </span>
   );
@@ -1284,7 +1284,7 @@ export function ParametresScreen() {
         >
           <TabsList
             className={cn(
-              "flex h-12 w-full items-stretch rounded-none bg-slate-50/80 p-0",
+              "flex h-12 w-full items-stretch rounded-none bg-slate-50/80 dark:bg-slate-800/80 p-0",
               "dark:bg-muted/30",
             )}
           >
@@ -1297,16 +1297,16 @@ export function ParametresScreen() {
                   className={cn(
                     "relative flex flex-1 items-center justify-center gap-2 rounded-none",
                     "border-0 border-b-2 border-transparent bg-transparent px-2 py-0",
-                    "text-sm font-medium text-slate-500 shadow-none transition-colors",
-                    "hover:bg-white/60 hover:text-slate-900",
-                    "data-[state=active]:border-primary data-[state=active]:bg-white",
+                    "text-sm font-medium text-slate-500 dark:text-slate-400 shadow-none transition-colors",
+                    "hover:bg-white/60 hover:text-slate-900 dark:hover:text-slate-100",
+                    "data-[state=active]:border-primary data-[state=active]:bg-white dark:bg-slate-900",
                     "data-[state=active]:text-primary data-[state=active]:shadow-none",
                     "focus-visible:ring-0 focus-visible:ring-offset-0",
                     "[&[data-state=active]_svg]:text-primary",
                     "min-w-0",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-slate-400" />
+                  <Icon className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
                   <span className="hidden truncate sm:inline">{t.label}</span>
                   <span className="truncate sm:hidden">{t.shortLabel}</span>
                   {t.key === "users" && <UsersTabBadge />}

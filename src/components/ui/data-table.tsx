@@ -69,7 +69,7 @@ export function DataTableColumnHeader<TData, TValue>({
   className?: string;
 }) {
   if (!column.getCanSort()) {
-    return <div className={cn("text-xs font-semibold uppercase tracking-wide text-slate-500", className)}>{title}</div>;
+    return <div className={cn("text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400", className)}>{title}</div>;
   }
 
   const sorted = column.getIsSorted();
@@ -78,7 +78,7 @@ export function DataTableColumnHeader<TData, TValue>({
     <button
       onClick={() => column.toggleSorting(sorted === "asc")}
       className={cn(
-        "group flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-900 transition-colors",
+        "group flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors",
         className,
       )}
     >
@@ -127,7 +127,7 @@ export function DataTableToolbar<TData>({
             {(table.getColumn(searchColumn)?.getFilterValue() as string) && (
               <button
                 onClick={() => table.getColumn(searchColumn)?.setFilterValue("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               >
                 <X className="size-3.5" />
               </button>
@@ -138,7 +138,7 @@ export function DataTableToolbar<TData>({
           <Button
             variant="ghost"
             size="sm"
-            className="h-9 px-2 text-slate-500"
+            className="h-9 px-2 text-slate-500 dark:text-slate-400"
             onClick={() => table.resetColumnFilters()}
           >
             Réinitialiser
@@ -187,16 +187,16 @@ export function DataTablePagination<TData>({ table }: { table: TanTable<TData> }
   return (
     <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           {table.getFilteredSelectedRowModel().rows.length > 0 && (
-            <span className="font-medium text-slate-700">
+            <span className="font-medium text-slate-700 dark:text-slate-300">
               {table.getFilteredSelectedRowModel().rows.length} sélectionné(s) ·{" "}
             </span>
           )}
           {table.getFilteredRowModel().rows.length} ligne{table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
         </p>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-slate-500">Par page</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Par page</span>
           <Select
             value={String(table.getState().pagination.pageSize)}
             onValueChange={(v) => table.setPageSize(Number(v))}
@@ -216,7 +216,7 @@ export function DataTablePagination<TData>({ table }: { table: TanTable<TData> }
       </div>
 
       <div className="flex items-center gap-1.5">
-        <p className="text-xs tabular-nums text-slate-500">
+        <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
           Page {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
         </p>
         <div className="flex items-center gap-1">
@@ -310,11 +310,11 @@ export function DataTable<TData, TValue>({
         {toolbar}
       </DataTableToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border bg-white dark:bg-slate-900 shadow-sm">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id} className="bg-slate-50/70 hover:bg-slate-50/70 border-b border-border">
+              <TableRow key={hg.id} className="bg-slate-50/70 dark:bg-slate-800/70 hover:bg-slate-50/70 dark:hover:bg-slate-800/70 border-b border-border">
                 {hg.headers.map((h) => (
                   <TableHead key={h.id} className="px-4 py-3">
                     {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
@@ -330,7 +330,7 @@ export function DataTable<TData, TValue>({
                   key={row.id}
                   className={cn(
                     "border-b border-border/60 transition-colors",
-                    onRowClick && "cursor-pointer hover:bg-slate-50/70",
+                    onRowClick && "cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/70",
                   )}
                   onClick={() => onRowClick?.(row.original)}
                 >
@@ -343,7 +343,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="py-16 text-center text-sm text-slate-400">
+                <TableCell colSpan={columns.length} className="py-16 text-center text-sm text-slate-400 dark:text-slate-500">
                   {emptyMessage}
                 </TableCell>
               </TableRow>

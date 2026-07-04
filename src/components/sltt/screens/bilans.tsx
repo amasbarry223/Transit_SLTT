@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact, formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML } from "@/lib/export";
+import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -103,14 +103,14 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-md">
-      <p className="mb-1.5 font-semibold text-slate-900">{label}</p>
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm shadow-md">
+      <p className="mb-1.5 font-semibold text-slate-900 dark:text-slate-100">{label}</p>
       <div className="space-y-1">
         {payload.map((p) => (
-          <div key={p.dataKey} className="flex items-center gap-2 text-slate-600">
+          <div key={p.dataKey} className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
             <span className="size-2 rounded-full" style={{ background: p.color }} />
             <span>{p.name}</span>
-            <span className="ml-auto font-medium tabular-nums text-slate-900">
+            <span className="ml-auto font-medium tabular-nums text-slate-900 dark:text-slate-100">
               {formatFCFA(p.value)}
             </span>
           </div>
@@ -136,11 +136,11 @@ function PieTooltip({
   if (!active || !payload?.length) return null;
   const p = payload[0];
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-md">
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm shadow-md">
       <div className="flex items-center gap-2">
         <span className="size-2 rounded-full" style={{ background: p.payload.color }} />
-        <span className="text-slate-600">{p.name}</span>
-        <span className="ml-auto font-medium tabular-nums text-slate-900">
+        <span className="text-slate-600 dark:text-slate-300">{p.name}</span>
+        <span className="ml-auto font-medium tabular-nums text-slate-900 dark:text-slate-100">
           {formatFCFA(p.value)}
         </span>
       </div>
@@ -172,8 +172,8 @@ function SortableHead({
   return (
     <TableHead
       className={cn(
-        "cursor-pointer select-none bg-slate-50 text-xs font-medium uppercase hover:text-slate-900",
-        align === "right" ? "text-right text-slate-500" : "text-slate-500",
+        "cursor-pointer select-none bg-slate-50 text-xs font-medium uppercase hover:text-slate-900 dark:hover:text-slate-100",
+        align === "right" ? "text-right text-slate-500 dark:text-slate-400" : "text-slate-500 dark:text-slate-400",
         active && "text-primary",
       )}
       onClick={() => onSort(col)}
@@ -310,7 +310,7 @@ export function BilansScreen() {
         { header: "Investi (FCFA)", accessor: (r) => r.investi },
         { header: "Encaissé (FCFA)", accessor: (r) => r.encaisse },
         { header: "Reste à payer (FCFA)", accessor: (r) => r.reste },
-        { header: "Écart (FCFA)", accessor: (r) => r.ecart },
+        { header: "Écart de règlement (FCFA)", accessor: (r) => r.ecart },
       ],
       recapParClient,
     );
@@ -324,7 +324,7 @@ export function BilansScreen() {
     const rowsHTML = recapParClient
       .map(
         (r) => `<tr>
-          <td>${r.client}</td>
+          <td>${htmlEscape(r.client)}</td>
           <td class="num">${formatFCFA(r.investi, false)}</td>
           <td class="num">${formatFCFA(r.encaisse, false)}</td>
           <td class="num">${formatFCFA(r.reste, false)}</td>
@@ -338,7 +338,7 @@ export function BilansScreen() {
       <table>
         <thead><tr>
           <th>Client</th><th class="num">Investi</th><th class="num">Encaissé</th>
-          <th class="num">Reste à payer</th><th class="num">Écart</th>
+          <th class="num">Reste à payer</th><th class="num">Écart de règlement</th>
         </tr></thead>
         <tbody>${rowsHTML}</tbody>
         <tfoot><tr class="total-row">
@@ -356,7 +356,7 @@ export function BilansScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Bilans périodiques"
-        description="Analyse financière par période"
+        description="Analyse financière par période, basée sur les écritures comptables (hors module Factures)"
       >
         <Button variant="outline" onClick={handleExportPDF} disabled={!hasData}>
           <FileText className="size-4" />
@@ -381,7 +381,7 @@ export function BilansScreen() {
             </TabsList>
           </Tabs>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">Mois de référence :</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Mois de référence :</span>
             <Input
               type="month"
               value={mois}
@@ -438,10 +438,10 @@ export function BilansScreen() {
       {/* Bar chart — full year overview */}
       <Card className="p-5 shadow-sm border-border/80 gap-4">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
             Évolution des encaissements
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Investi vs encaissé — mois par mois —{" "}
             {(mois || "2026-01").split("-")[0]}
           </p>
@@ -502,10 +502,10 @@ export function BilansScreen() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-5 shadow-sm border-border/80 lg:col-span-2 gap-4">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Récapitulatif par client
             </h2>
-            <span className="text-xs tabular-nums text-slate-500">
+            <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
               {recapParClient.length} client{recapParClient.length !== 1 ? "s" : ""} · {periodeLabel}
             </span>
           </div>
@@ -543,7 +543,7 @@ export function BilansScreen() {
                 />
                 <SortableHead
                   col="ecart"
-                  label="Écart"
+                  label="Écart de règlement"
                   sortKey={sortKey}
                   sortDir={sortDir}
                   onSort={toggleSort}
@@ -555,7 +555,7 @@ export function BilansScreen() {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="py-12 text-center text-sm text-slate-500"
+                    className="py-12 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
                     Aucune écriture pour cette période.
                   </TableCell>
@@ -564,18 +564,18 @@ export function BilansScreen() {
                 sortedRecap.map((r) => (
                   <TableRow
                     key={r.client}
-                    className="border-b border-border hover:bg-slate-50/60"
+                    className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                   >
-                    <TableCell className="font-medium text-slate-700">
+                    <TableCell className="font-medium text-slate-700 dark:text-slate-300">
                       {r.client}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-slate-700">
+                    <TableCell className="text-right tabular-nums text-slate-700 dark:text-slate-300">
                       {formatFCFA(r.investi)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-emerald-600">
+                    <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
                       {formatFCFA(r.encaisse)}
                     </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums text-amber-600">
+                    <TableCell className="text-right font-medium tabular-nums text-amber-600 dark:text-amber-400">
                       {formatFCFA(r.reste)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -587,20 +587,20 @@ export function BilansScreen() {
             </TableBody>
             {hasData && (
               <TableFooter>
-                <TableRow className="border-0 bg-slate-50 hover:bg-slate-50">
-                  <TableCell className="font-bold text-slate-900">
+                <TableRow className="border-0 bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <TableCell className="font-bold text-slate-900 dark:text-slate-100">
                     Total
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900">
+                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
                     {formatFCFA(recapTotaux.investi)}
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900">
+                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
                     {formatFCFA(recapTotaux.encaisse)}
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900">
+                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
                     {formatFCFA(recapTotaux.reste)}
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900">
+                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
                     {formatFCFA(recapTotaux.ecart)}
                   </TableCell>
                 </TableRow>
@@ -610,13 +610,13 @@ export function BilansScreen() {
         </Card>
 
         <Card className="p-5 shadow-sm border-border/80 lg:col-span-1 gap-4">
-          <h2 className="text-base font-semibold text-slate-900">Répartition</h2>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Répartition</h2>
           {pieTotal === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
                 <Percent className="size-6" />
               </div>
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                 Aucune donnée pour cette période.
               </p>
             </div>
@@ -642,8 +642,8 @@ export function BilansScreen() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xs text-slate-500">Total</span>
-                  <span className="text-sm font-bold tabular-nums text-slate-900">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
+                  <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
                     {formatFCFA(pieTotal)}
                   </span>
                 </div>
@@ -661,26 +661,26 @@ export function BilansScreen() {
                         className="size-2.5 shrink-0 rounded-full"
                         style={{ background: d.color }}
                       />
-                      <span className="text-slate-600">{d.name}</span>
-                      <span className="ml-auto font-medium tabular-nums text-slate-900">
+                      <span className="text-slate-600 dark:text-slate-300">{d.name}</span>
+                      <span className="ml-auto font-medium tabular-nums text-slate-900 dark:text-slate-100">
                         {formatFCFA(d.value)}
                       </span>
-                      <span className="w-10 text-right text-xs tabular-nums text-slate-400">
+                      <span className="w-10 text-right text-xs tabular-nums text-slate-400 dark:text-slate-500">
                         {pct.toFixed(0)}%
                       </span>
                     </div>
                   );
                 })}
-                <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2.5 text-center">
-                  <p className="text-xs text-slate-500">Taux de recouvrement</p>
+                <div className="mt-2 rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-center">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Taux de recouvrement</p>
                   <p
                     className={cn(
                       "mt-0.5 text-xl font-bold tabular-nums",
                       tauxRecouvrement >= 80
-                        ? "text-emerald-600"
+                        ? "text-emerald-600 dark:text-emerald-400"
                         : tauxRecouvrement >= 50
-                        ? "text-amber-600"
-                        : "text-red-600",
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-red-600 dark:text-red-400",
                     )}
                   >
                     {tauxRecouvrement} %

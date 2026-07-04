@@ -76,13 +76,13 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+      <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
         <Users className="size-7" />
       </div>
-      <h3 className="mt-4 text-sm font-semibold text-slate-900">
+      <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
         {hasQuery ? "Aucun résultat" : "Aucun client enregistré"}
       </h3>
-      <p className="mt-1 max-w-sm text-sm text-slate-500">
+      <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
         {hasQuery
           ? "Essayez un autre terme de recherche ou modifiez les filtres."
           : "Commencez par ajouter votre premier client à l'annuaire."}
@@ -315,7 +315,7 @@ export function ClientsScreen() {
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <Input
               value={query}
               onChange={(e) => {
@@ -369,14 +369,14 @@ export function ClientsScreen() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500"
+              className="h-10 text-slate-500 dark:text-slate-400"
               onClick={clearFilters}
             >
               Réinitialiser
             </Button>
           )}
 
-          <p className="ml-auto text-xs text-slate-500 tabular-nums">
+          <p className="ml-auto text-xs text-slate-500 dark:text-slate-400 tabular-nums">
             {filtered.length} client{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -391,23 +391,23 @@ export function ClientsScreen() {
             <div className="overflow-x-auto">
               <Table aria-label="Liste des clients">
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Coordonnées
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
                       Adresse
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-center text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Dossiers
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Total dû
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -416,7 +416,7 @@ export function ClientsScreen() {
                   {paged.map((c) => (
                     <TableRow
                       key={c.id}
-                      className="cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80"
+                      className="cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80"
                       onClick={() => openClient(c.id)}
                     >
                       <TableCell className="px-4 py-3.5">
@@ -430,7 +430,7 @@ export function ClientsScreen() {
                             {getInitials(c.nom)}
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate font-medium text-slate-900">
+                            <p className="truncate font-medium text-slate-900 dark:text-slate-100">
                               {c.nom}
                             </p>
                             <div className="mt-0.5 flex items-center gap-2">
@@ -444,16 +444,16 @@ export function ClientsScreen() {
                       <TableCell className="hidden px-4 py-3.5 md:table-cell">
                         <div className="space-y-1 text-sm">
                           {c.telephone ? (
-                            <p className="flex items-center gap-1.5 text-slate-600">
-                              <Phone className="size-3.5 shrink-0 text-slate-400" />
+                            <p className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                              <Phone className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                               <span className="font-mono text-xs">{c.telephone}</span>
                             </p>
                           ) : (
-                            <p className="text-slate-400">—</p>
+                            <p className="text-slate-400 dark:text-slate-500">—</p>
                           )}
                           {c.email && (
-                            <p className="flex items-center gap-1.5 text-slate-500">
-                              <Mail className="size-3.5 shrink-0 text-slate-400" />
+                            <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                              <Mail className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                               <span className="truncate text-xs">{c.email}</span>
                             </p>
                           )}
@@ -462,29 +462,29 @@ export function ClientsScreen() {
                       <TableCell className="hidden max-w-[200px] px-4 py-3.5 lg:table-cell">
                         {c.adresse ? (
                           <p
-                            className="flex items-start gap-1.5 text-sm text-slate-600"
+                            className="flex items-start gap-1.5 text-sm text-slate-600 dark:text-slate-300"
                             title={c.adresse}
                           >
-                            <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
+                            <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                             <span className="line-clamp-2">{c.adresse}</span>
                           </p>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-slate-400 dark:text-slate-500">—</span>
                         )}
                       </TableCell>
                       <TableCell className="px-4 py-3.5 text-center">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-sm font-medium tabular-nums text-slate-700">
-                          <FolderKanban className="size-3.5 text-slate-400" />
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-sm font-medium tabular-nums text-slate-700 dark:text-slate-300">
+                          <FolderKanban className="size-3.5 text-slate-400 dark:text-slate-500" />
                           {clientStats.get(c.id)?.nbDossiers ?? 0}
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3.5 text-right tabular-nums">
                         {(clientStats.get(c.id)?.totalDu ?? 0) > 0 ? (
-                          <span className="font-semibold text-amber-600">
+                          <span className="font-semibold text-amber-600 dark:text-amber-400">
                             {formatFCFA(clientStats.get(c.id)!.totalDu)}
                           </span>
                         ) : (
-                          <span className="text-sm text-emerald-600">Soldé</span>
+                          <span className="text-sm text-emerald-600 dark:text-emerald-400">Soldé</span>
                         )}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">
@@ -495,7 +495,7 @@ export function ClientsScreen() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-8 text-slate-500 hover:text-primary"
+                            className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                             onClick={() => openClient(c.id)}
                             aria-label={`Voir la fiche de ${c.nom}`}
                             title="Voir la fiche"
@@ -505,7 +505,7 @@ export function ClientsScreen() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-8 text-slate-500 hover:text-primary"
+                            className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                             onClick={(e) => openEditDialog(c.id, e)}
                             aria-label={`Modifier ${c.nom}`}
                             title="Modifier"
@@ -553,7 +553,7 @@ export function ClientsScreen() {
 
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="cl-nom" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="cl-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nom / Raison sociale <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -567,7 +567,7 @@ export function ClientsScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Type de client</Label>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type de client</Label>
               <div className="grid grid-cols-2 gap-2">
                 {clientTypes.map((t) => {
                   const Icon = t === "Entreprise" ? Building2 : User;
@@ -582,7 +582,7 @@ export function ClientsScreen() {
                         "flex flex-col items-center gap-2 rounded-lg border-2 px-3 py-3 text-sm font-medium transition-colors",
                         selected
                           ? "border-primary bg-primary/5 text-primary"
-                          : "border-border bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                          : "border-border bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50",
                       )}
                     >
                       <Icon className="size-5" />
@@ -595,7 +595,7 @@ export function ClientsScreen() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="cl-tel" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="cl-tel" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Téléphone
                 </Label>
                 <Input
@@ -607,7 +607,7 @@ export function ClientsScreen() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cl-email" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="cl-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   E-mail
                 </Label>
                 <Input
@@ -622,7 +622,7 @@ export function ClientsScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cl-adresse" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="cl-adresse" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Adresse
               </Label>
               <Input

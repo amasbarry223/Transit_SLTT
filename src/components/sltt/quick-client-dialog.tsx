@@ -95,7 +95,7 @@ export function QuickClientButton({ onCreated }: Props) {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Nom / Raison sociale <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -109,7 +109,7 @@ export function QuickClientButton({ onCreated }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Type</Label>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type</Label>
               <Select value={type} onValueChange={(v) => setType(v as ClientType)}>
                 <SelectTrigger className="h-10 w-full">
                   <SelectValue />
@@ -124,7 +124,7 @@ export function QuickClientButton({ onCreated }: Props) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Téléphone</Label>
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
                 <Input
                   value={telephone}
                   onChange={(e) => setTelephone(e.target.value)}
@@ -133,7 +133,7 @@ export function QuickClientButton({ onCreated }: Props) {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">E-mail</Label>
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">E-mail</Label>
                 <Input
                   type="email"
                   value={email}

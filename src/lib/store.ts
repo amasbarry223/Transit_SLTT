@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { useNav } from "@/lib/nav-store";
 import { supabase } from "@/lib/supabase";
 import {
@@ -144,6 +144,103 @@ export interface FactureInput {
   tauxTVA: number;
   notes: string;
 }
+
+// LOGIC-12 (audit) : seul module sans aucune donnée de démo — un compte neuf
+// affichait un écran vide qu'on pouvait confondre avec un bug. 3 factures
+// liées à des dossiers seed réels (D-0041/D-0042/D-0040) + 1 facture hors
+// dossier, sur les 4 statuts non-brouillon/annulé possibles.
+const seedFactures: Facture[] = [
+  {
+    id: "FACT-0001",
+    numero: "SLTT-FACT-2026-0001",
+    dossierId: "D-0041",
+    clientId: "C-004",
+    clientNom: "Groupe Keïta Distribution",
+    date: "2026-01-09",
+    dateEcheance: "2026-02-08",
+    statut: "Soldée",
+    lignes: [
+      { id: "FACT-0001-L1", description: "Frais de prestation — SLTT-TR-2026-0041 (Sacs de ciment)", quantite: 1, prixUnitaire: 600_000, montantHT: 600_000 },
+      { id: "FACT-0001-L2", description: "Droits de douane", quantite: 1, prixUnitaire: 980_000, montantHT: 980_000 },
+      { id: "FACT-0001-L3", description: "Frais de circuit", quantite: 1, prixUnitaire: 320_000, montantHT: 320_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 1_900_000,
+    montantTVA: 342_000,
+    montantTTC: 2_242_000,
+    montantPaye: 2_242_000,
+    notes: "",
+    creePar: "Fatoumata Diallo",
+    creeLe: "2026-01-09T09:30:00.000Z",
+  },
+  {
+    id: "FACT-0002",
+    numero: "SLTT-FACT-2026-0002",
+    dossierId: "D-0042",
+    clientId: "C-001",
+    clientNom: "Société des Établissements Diallo",
+    date: "2026-01-10",
+    dateEcheance: "2026-02-09",
+    statut: "Partielle",
+    lignes: [
+      { id: "FACT-0002-L1", description: "Frais de prestation — SLTT-TR-2026-0042 (Matériel électronique)", quantite: 1, prixUnitaire: 850_000, montantHT: 850_000 },
+      { id: "FACT-0002-L2", description: "Droits de douane", quantite: 1, prixUnitaire: 1_200_000, montantHT: 1_200_000 },
+      { id: "FACT-0002-L3", description: "Frais de circuit", quantite: 1, prixUnitaire: 450_000, montantHT: 450_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 2_500_000,
+    montantTVA: 450_000,
+    montantTTC: 2_950_000,
+    montantPaye: 1_500_000,
+    notes: "",
+    creePar: "Fatoumata Diallo",
+    creeLe: "2026-01-10T10:15:00.000Z",
+  },
+  {
+    id: "FACT-0003",
+    numero: "SLTT-FACT-2026-0003",
+    dossierId: "D-0040",
+    clientId: "C-002",
+    clientNom: "Traoré & Frères Commerce",
+    date: "2026-01-11",
+    dateEcheance: "2026-02-10",
+    statut: "Envoyée",
+    lignes: [
+      { id: "FACT-0003-L1", description: "Frais de prestation — SLTT-TR-2026-0040 (Pièces automobiles)", quantite: 1, prixUnitaire: 900_000, montantHT: 900_000 },
+      { id: "FACT-0003-L2", description: "Droits de douane", quantite: 1, prixUnitaire: 1_500_000, montantHT: 1_500_000 },
+      { id: "FACT-0003-L3", description: "Frais de circuit", quantite: 1, prixUnitaire: 500_000, montantHT: 500_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 2_900_000,
+    montantTVA: 522_000,
+    montantTTC: 3_422_000,
+    montantPaye: 0,
+    notes: "",
+    creePar: "Amadou Traoré",
+    creeLe: "2026-01-11T14:00:00.000Z",
+  },
+  {
+    id: "FACT-0004",
+    numero: "SLTT-FACT-2026-0004",
+    dossierId: null,
+    clientId: "C-005",
+    clientNom: "Boutique Cissé Import",
+    date: "2026-01-12",
+    dateEcheance: "2026-02-11",
+    statut: "Brouillon",
+    lignes: [
+      { id: "FACT-0004-L1", description: "Prestation de courtage — hors dossier", quantite: 1, prixUnitaire: 180_000, montantHT: 180_000 },
+    ],
+    tauxTVA: 18,
+    montantHT: 180_000,
+    montantTVA: 32_400,
+    montantTTC: 212_400,
+    montantPaye: 0,
+    notes: "",
+    creePar: "Amadou Traoré",
+    creeLe: "2026-01-12T08:45:00.000Z",
+  },
+];
 
 export type AuditEntry = {
   id: string;
@@ -498,14 +595,39 @@ function findStockForBon(stock: StockItem[], ref: { stockId?: string; marchandis
   return stock.find((s) => s.marchandise === ref.marchandise);
 }
 
-function syncClientStats(dossiers: Dossier[], clients: Client[]): Client[] {
+// LOGIC-05 (audit) : totalPaye doit refléter Écritures ET Factures — ce sont
+// deux canaux de paiement indépendants (payer une facture ne touche jamais
+// une écriture, cf. recordFacturePaiement) donc additifs, pas redondants.
+// Sans les Factures ici, ce champ dénormalisé divergeait silencieusement du
+// total "réconcilié" affiché sur la fiche client (client-fiche.tsx).
+function syncClientStats(dossiers: Dossier[], factures: Facture[], clients: Client[]): Client[] {
   return clients.map((c) => {
     const cd = dossiers.filter((d) => d.clientId === c.id);
+    const cf = factures.filter((f) => f.clientId === c.id);
     return {
       ...c,
       nbDossiers: cd.length,
-      totalPaye: cd.reduce((s, d) => s + d.montantPaye, 0),
+      totalPaye: cd.reduce((s, d) => s + d.montantPaye, 0) + cf.reduce((s, f) => s + f.montantPaye, 0),
       totalDu: cd.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0),
+    };
+  });
+}
+
+/** Retire l'apport d'une liste de DossierFournisseur des agrégats du Fournisseur parent (LOGIC-04). */
+function decrementFournisseurAgg(fournisseurs: Fournisseur[], removed: DossierFournisseur[]): Fournisseur[] {
+  if (removed.length === 0) return fournisseurs;
+  const deltaByFournisseur = new Map<string, { count: number; montant: number }>();
+  for (const df of removed) {
+    const prev = deltaByFournisseur.get(df.fournisseurId) ?? { count: 0, montant: 0 };
+    deltaByFournisseur.set(df.fournisseurId, { count: prev.count + 1, montant: prev.montant + df.montantReel });
+  }
+  return fournisseurs.map((f) => {
+    const delta = deltaByFournisseur.get(f.id);
+    if (!delta) return f;
+    return {
+      ...f,
+      nbDossiers: Math.max(0, f.nbDossiers - delta.count),
+      montantTotal: Math.max(0, f.montantTotal - delta.montant),
     };
   });
 }
@@ -671,7 +793,7 @@ const INITIAL_SEQUENCES = {
   devisSeq: 4,
   transporteurSeq: 6,
   commentSeq: 1,
-  factureSeq: 1,
+  factureSeq: 5,
   fournisseurSeq: 6,
   dossierFournisseurSeq: 5,
 } as const;
@@ -700,7 +822,7 @@ export const useStore = create<SLTTState>()(
       devis: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedDevis,
       comments: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedComments,
       transporteurs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedTransporteurs,
-      factures: [],
+      factures: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedFactures,
       fournisseurs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedFournisseurs,
       dossierFournisseurs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : seedDossierFournisseurs,
       auditLogs: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? [] : initialAuditLogs,
@@ -747,11 +869,12 @@ export const useStore = create<SLTTState>()(
 
           const mappedClients = (clients || []).map(mapClientFromDb);
           const mappedDossiers = (dossiers || []).map(mapDossierFromDb);
+          const mappedFactures = (factures || []).map(mapFactureFromDb);
           const mappedFournisseurs = (fournisseurs || []).map(mapFournisseurFromDb);
           const mappedDossierFournisseurs = (dossierFournisseurs || []).map(mapDossierFournisseurFromDb);
 
           set({
-            clients: syncClientStats(mappedDossiers, mappedClients),
+            clients: syncClientStats(mappedDossiers, mappedFactures, mappedClients),
             dossiers: mappedDossiers,
             ecritures: (ecritures || []).map(mapEcritureFromDb),
             stock: (stock || []).map(mapStockItemFromDb),
@@ -762,7 +885,7 @@ export const useStore = create<SLTTState>()(
             comments: (comments || []).map(mapCommentFromDb),
             devis: (devis || []).map(mapDevisFromDb),
             transporteurs: (transporteurs || []).map(mapTransporteurFromDb),
-            factures: (factures || []).map(mapFactureFromDb),
+            factures: mappedFactures,
             fournisseurs: syncFournisseurStats(mappedDossierFournisseurs, mappedFournisseurs),
             dossierFournisseurs: mappedDossierFournisseurs,
             users: (profiles || []).map(mapProfileFromDb),
@@ -848,7 +971,7 @@ export const useStore = create<SLTTState>()(
             return {
               dossiers: updatedDossiers,
               dossierSeq: seq + 1,
-              clients: syncClientStats(updatedDossiers, s.clients),
+              clients: syncClientStats(updatedDossiers, s.factures, s.clients),
             };
           });
           await get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
@@ -867,7 +990,7 @@ export const useStore = create<SLTTState>()(
             return {
               dossiers: updatedDossiers,
               dossierSeq: seq + 1,
-              clients: syncClientStats(updatedDossiers, s.clients),
+              clients: syncClientStats(updatedDossiers, s.factures, s.clients),
             };
           });
           await get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
@@ -907,7 +1030,7 @@ export const useStore = create<SLTTState>()(
           const updatedDossiers = s.dossiers.map((d) => d.id === id ? { ...d, ...input } : d);
           return {
             dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
           };
         });
 
@@ -948,13 +1071,21 @@ export const useStore = create<SLTTState>()(
 
         set((s) => {
           const updatedDossiers = s.dossiers.filter((d) => d.id !== id);
+          const removedDF = s.dossierFournisseurs.filter((df) => df.dossierId === id);
           return {
             dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
             ecritures: s.ecritures.filter((e) => e.dossierId !== id),
             fichiers: s.fichiers.filter((f) => f.dossierId !== id),
             subDossiers: s.subDossiers.filter((sd) => sd.dossierId !== id),
             comments: s.comments.filter((c) => c.dossierId !== id),
+            factures: s.factures.map((f) => (f.dossierId === id ? { ...f, dossierId: null } : f)),
+            dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.dossierId !== id),
+            fournisseurs: syncFournisseurStats(
+              s.dossierFournisseurs.filter((df) => df.dossierId !== id),
+              s.fournisseurs
+            ),
+            devis: s.devis.map((d) => (d.dossierId === id ? { ...d, dossierId: null } : d)),
           };
         });
 
@@ -970,10 +1101,10 @@ export const useStore = create<SLTTState>()(
       transitionDossier: async (id, newStatut, montantRecu, modePaiement, transitionNote) => {
         const dossier = get().dossiers.find((d) => d.id === id);
         if (!dossier) return;
-
+        const montantApplicable = newStatut === "Soldé" ? montantRecu : undefined;
         const updatedMontantPaye =
-          montantRecu !== undefined
-            ? Math.min(dossier.montantInvesti, dossier.montantPaye + montantRecu)
+          montantApplicable !== undefined
+            ? Math.min(dossier.montantInvesti, Math.max(0, dossier.montantPaye + montantApplicable))
             : dossier.montantPaye;
 
         if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -1058,7 +1189,7 @@ export const useStore = create<SLTTState>()(
             dossiers: updatedDossiers,
             ecritures: updatedEcritures,
             ecritureSeq: nextEcritureSeq,
-            clients: syncClientStats(updatedDossiers, s.clients),
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
           };
         });
 
@@ -1141,30 +1272,74 @@ export const useStore = create<SLTTState>()(
 
       // ---- Comptabilité ----
       recordPayment: async (ecritureId, montant, mode, date, note) => {
+        const ecriture = get().ecritures.find((e) => e.id === ecritureId);
+        if (!ecriture) return;
+        const newMontantPaye = Math.min(ecriture.montantInvesti, Math.max(0, ecriture.montantPaye + montant));
+
         if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          const { error } = await supabase
+          const { error: ecritureError } = await supabase
             .from("ecritures")
             .update({
-              montant_paye: montant,
+              montant_paye: newMontantPaye,
               mode_paiement: mode,
               date_paiement: date,
               note: note,
             })
             .eq("id", ecritureId);
-          if (error) throw error;
+          if (ecritureError) throw ecritureError;
+
+          if (ecriture.dossierId) {
+            const relatedEcritures = get().ecritures.map((e) =>
+              e.id === ecritureId ? { ...e, montantPaye: newMontantPaye } : e
+            ).filter((e) => e.dossierId === ecriture.dossierId);
+            const totalPaye = relatedEcritures.reduce((sum, e) => sum + e.montantPaye, 0);
+
+            const { error: dossierError } = await supabase
+              .from("dossiers")
+              .update({ montant_paye: totalPaye })
+              .eq("id", ecriture.dossierId);
+            if (dossierError) throw dossierError;
+          }
         }
 
-        set((s) => ({
-          ecritures: s.ecritures.map((e) =>
-            e.id !== ecritureId ? e : { ...e, montantPaye: montant, modePaiement: mode, datePaiement: date, note }
-          ),
-        }));
-        await get().addAuditLog("Comptabilité", "Paiement", `Paiement enregistré sur écriture ${ecritureId}`);
+        set((s) => {
+          const updatedEcritures = s.ecritures.map((e) =>
+            e.id === ecritureId
+              ? {
+                  ...e,
+                  montantPaye: newMontantPaye,
+                  modePaiement: mode,
+                  datePaiement: date,
+                  note: note || e.note,
+                }
+              : e
+          );
+          if (!ecriture.dossierId) return { ecritures: updatedEcritures };
+          const totalPaye = updatedEcritures
+            .filter((e) => e.dossierId === ecriture.dossierId)
+            .reduce((sum, e) => sum + e.montantPaye, 0);
+          const updatedDossiers = s.dossiers.map((d) =>
+            d.id === ecriture.dossierId
+              ? { ...d, montantPaye: Math.min(d.montantInvesti, totalPaye) }
+              : d
+          );
+          return {
+            ecritures: updatedEcritures,
+            dossiers: updatedDossiers,
+            clients: syncClientStats(updatedDossiers, s.factures, s.clients),
+          };
+        });
+
+        await get().addAuditLog(
+          "Comptabilité",
+          "Paiement",
+          `Paiement ${montant.toLocaleString("fr-FR")} FCFA — Écriture ${ecritureId}`
+        );
       },
 
       addEcriture: async (e) => {
         const seq = get().ecritureSeq;
-        const dossier = get().dossiers.find((d) => d.id === e.dossierId);
+        const validatedPaye = Math.max(0, e.montantPaye);
 
         if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           const { data, error } = await supabase
@@ -1175,7 +1350,7 @@ export const useStore = create<SLTTState>()(
               client_id: e.clientId,
               dossier_id: e.dossierId || null,
               montant_investi: e.montantInvesti,
-              montant_paye: e.montantPaye,
+              montant_paye: validatedPaye,
               mode_paiement: e.modePaiement,
               note: e.note || null,
             })
@@ -1184,22 +1359,60 @@ export const useStore = create<SLTTState>()(
 
           if (error) throw error;
           const newEcriture = mapEcritureFromDb(data);
-          set((s) => ({
-            ecritures: [newEcriture, ...s.ecritures],
-            ecritureSeq: seq + 1,
-          }));
+
+          if (e.dossierId) {
+            const relatedEcritures = [newEcriture, ...get().ecritures].filter((ec) => ec.dossierId === e.dossierId);
+            const totalPaye = relatedEcritures.reduce((sum, ec) => sum + ec.montantPaye, 0);
+
+            const { error: dossierError } = await supabase
+              .from("dossiers")
+              .update({ montant_paye: totalPaye })
+              .eq("id", e.dossierId);
+            if (dossierError) throw dossierError;
+          }
+
+          set((s) => {
+            const updatedEcritures = [newEcriture, ...s.ecritures];
+            if (!e.dossierId) return { ecritures: updatedEcritures, ecritureSeq: seq + 1 };
+            const totalPaye = updatedEcritures
+              .filter((ec) => ec.dossierId === e.dossierId)
+              .reduce((sum, ec) => sum + ec.montantPaye, 0);
+            const updatedDossiers = s.dossiers.map((d) =>
+              d.id === e.dossierId
+                ? { ...d, montantPaye: Math.min(d.montantInvesti, Math.max(0, totalPaye)) }
+                : d
+            );
+            return {
+              ecritures: updatedEcritures,
+              ecritureSeq: seq + 1,
+              dossiers: updatedDossiers,
+              clients: syncClientStats(updatedDossiers, s.factures, s.clients),
+            };
+          });
+
           await get().addAuditLog("Comptabilité", "Création", `Écriture créée pour ${e.clientNom}`);
           return newEcriture;
         } else {
           const id = `E-${seq}`;
-          const newEcriture: Ecriture = {
-            id,
-            ...e,
-          };
-          set((s) => ({
-            ecritures: [newEcriture, ...s.ecritures],
-            ecritureSeq: seq + 1,
-          }));
+          const newEcriture: Ecriture = { id, ...e, montantPaye: validatedPaye };
+          set((s) => {
+            const updatedEcritures = [newEcriture, ...s.ecritures];
+            if (!e.dossierId) return { ecritures: updatedEcritures, ecritureSeq: seq + 1 };
+            const totalPaye = updatedEcritures
+              .filter((ec) => ec.dossierId === e.dossierId)
+              .reduce((sum, ec) => sum + ec.montantPaye, 0);
+            const updatedDossiers = s.dossiers.map((d) =>
+              d.id === e.dossierId
+                ? { ...d, montantPaye: Math.min(d.montantInvesti, Math.max(0, totalPaye)) }
+                : d
+            );
+            return {
+              ecritures: updatedEcritures,
+              ecritureSeq: seq + 1,
+              dossiers: updatedDossiers,
+              clients: syncClientStats(updatedDossiers, s.factures, s.clients),
+            };
+          });
           await get().addAuditLog("Comptabilité", "Création", `Écriture créée pour ${e.clientNom}`);
           return newEcriture;
         }
@@ -1821,17 +2034,14 @@ export const useStore = create<SLTTState>()(
           ),
         }));
       },
-
       convertDevisToDossier: async (id) => {
         const dev = get().devis.find((d) => d.id === id);
-        if (!dev) return null;
-
-        await get().updateDevisStatut(id, "Accepté");
+        if (!dev || dev.dossierId) return null; // déjà converti — pas de doublon
 
         const inputDossier: DossierInput = {
           clientId: dev.clientId,
           clientNom: dev.clientNom,
-          nature: `Devis ${dev.reference} : ${dev.notes || "transit"}`,
+          nature: dev.nature || `Devis ${dev.reference} : ${dev.notes || "transit"}`,
           bl: "BL-A-DEFINIR",
           camion: "NON-DEFINI",
           date: new Date().toISOString().slice(0, 10),
@@ -1840,9 +2050,26 @@ export const useStore = create<SLTTState>()(
           fraisPrestation: dev.fraisPrestation,
           montantInvesti: dev.total,
           statut: "En cours",
+          notes: dev.notes,
         };
 
         const newDossier = await get().addDossier(inputDossier);
+
+        // Update the devis status and link it to the new dossier
+        if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const { error } = await supabase
+            .from("devis")
+            .update({ statut: "Accepté", dossier_id: newDossier.id })
+            .eq("id", id);
+          if (error) throw error;
+        }
+
+        set((s) => ({
+          devis: s.devis.map((d) =>
+            d.id === id ? { ...d, statut: "Accepté", dossierId: newDossier.id } : d
+          ),
+        }));
+
         return newDossier;
       },
 
@@ -2131,9 +2358,13 @@ export const useStore = create<SLTTState>()(
           if (error) throw error;
         }
 
-        set((s) => ({
-          factures: s.factures.filter((f) => f.id !== id),
-        }));
+        set((s) => {
+          const updatedFactures = s.factures.filter((f) => f.id !== id);
+          return {
+            factures: updatedFactures,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
+          };
+        });
 
         if (fact) {
           await get().addAuditLog("Factures", "Suppression", `Facture ${fact.numero} supprimée`);
@@ -2141,17 +2372,29 @@ export const useStore = create<SLTTState>()(
       },
 
       updateFactureStatut: async (id, statut) => {
+        const f = get().factures.find((x) => x.id === id);
+        if (!f) return;
+        const montantPaye = statut === "Soldée" ? f.montantTTC : f.montantPaye;
+
         if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           const { error } = await supabase
             .from("factures")
-            .update({ statut })
+            .update({ statut, montant_paye: montantPaye })
             .eq("id", id);
           if (error) throw error;
         }
 
-        set((s) => ({
-          factures: s.factures.map((f) => (f.id === id ? { ...f, statut } : f)),
-        }));
+        set((s) => {
+          const updatedFactures = s.factures.map((x) =>
+            x.id === id ? { ...x, statut, montantPaye } : x
+          );
+          return {
+            factures: updatedFactures,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
+          };
+        });
+        
+        await get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`);
       },
 
       recordFacturePaiement: async (id, montant) => {
@@ -2159,7 +2402,7 @@ export const useStore = create<SLTTState>()(
         if (!fact) return;
 
         const newPaye = Math.min(fact.montantTTC, fact.montantPaye + montant);
-        const newStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
+        const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
 
         if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           const { error } = await supabase
@@ -2169,12 +2412,21 @@ export const useStore = create<SLTTState>()(
           if (error) throw error;
         }
 
-        set((s) => ({
-          factures: s.factures.map((f) =>
+        set((s) => {
+          const updatedFactures = s.factures.map((f) =>
             f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f
-          ),
-        }));
-        await get().addAuditLog("Factures", "Paiement", `Encaissement de ${montant.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`);
+          );
+          return {
+            factures: updatedFactures,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
+          };
+        });
+
+        await get().addAuditLog(
+          "Factures",
+          "Paiement",
+          `Encaissement de ${montant.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`
+        );
       },
 
       // ---- Fournisseurs ----
@@ -2222,7 +2474,6 @@ export const useStore = create<SLTTState>()(
           return newFourn;
         }
       },
-
       updateFournisseur: async (id, input) => {
         if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           const { error } = await supabase
@@ -2368,7 +2619,7 @@ export const useStore = create<SLTTState>()(
           devis: seedDevis,
           comments: seedComments,
           transporteurs: seedTransporteurs,
-          factures: [],
+          factures: seedFactures,
           fournisseurs: seedFournisseurs,
           dossierFournisseurs: seedDossierFournisseurs,
           auditLogs: initialAuditLogs,
@@ -2377,7 +2628,29 @@ export const useStore = create<SLTTState>()(
       },
     }),
     {
-      name: "sltt-storage",
+      name: "sltt-data-v9",
+      // SEC-05: custom storage wrapper to catch QuotaExceededError
+      storage: createJSONStorage(() => ({
+        getItem: (name) => {
+          try { return localStorage.getItem(name); } catch { return null; }
+        },
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, value);
+          } catch (e) {
+            if (e instanceof DOMException && e.name === "QuotaExceededError") {
+              console.warn("[SLTT] localStorage quota dépassé — certaines données ne seront pas persistées.");
+            }
+          }
+        },
+        removeItem: (name) => {
+          try { localStorage.removeItem(name); } catch {}
+        },
+      })),
+      // DX-01: log rehydration errors
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) console.error("[SLTT] Erreur réhydratation store:", error);
+      },
       partialize: (s) => ({
         clients: s.clients,
         dossiers: s.dossiers,

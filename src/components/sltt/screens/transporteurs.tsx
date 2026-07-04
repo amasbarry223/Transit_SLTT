@@ -11,7 +11,7 @@ import {
 import { useStore } from "@/lib/store";
 import type { Transporteur, TransporteurInput, TransporteurStatut, TypeVehicule } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML } from "@/lib/export";
+import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -63,11 +63,11 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 function StatutBadge({ statut }: { statut: TransporteurStatut }) {
   return statut === "Actif" ? (
-    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
       <span className="size-1.5 rounded-full bg-emerald-500" /> Actif
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
       <span className="size-1.5 rounded-full bg-slate-400" /> Inactif
     </span>
   );
@@ -113,7 +113,7 @@ function FormField({ id, label, req, error, children }: {
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {label} {req && <span className="text-red-500 normal-case">*</span>}
       </Label>
       {children}
@@ -211,7 +211,7 @@ function InlineTransporteurForm({
       <div className="p-6 space-y-6">
         {/* Section identité */}
         <div>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Identité</p>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Identité</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField id="nom" label="Société / Nom" req error={errors.nom}>
               <Input id="nom" value={form.nom}
@@ -230,7 +230,7 @@ function InlineTransporteurForm({
 
         {/* Section coordonnées */}
         <div>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Coordonnées</p>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Coordonnées</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField id="tel" label="Téléphone" req error={errors.telephone}>
               <Input id="tel" value={form.telephone}
@@ -248,7 +248,7 @@ function InlineTransporteurForm({
 
         {/* Section véhicule */}
         <div>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Véhicule & capacité</p>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Véhicule & capacité</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <FormField label="Type de véhicule" req>
               <Select value={form.vehicule} onValueChange={(v) => setField("vehicule", v as TypeVehicule)}>
@@ -280,10 +280,10 @@ function InlineTransporteurForm({
 
         {/* Statut + Notes */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex items-center justify-between rounded-xl border border-border bg-slate-50 px-4 py-3.5">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-slate-50 dark:bg-slate-800 px-4 py-3.5">
             <div>
-              <p className="text-sm font-semibold text-slate-900">Transporteur actif</p>
-              <p className="text-xs text-slate-500 mt-0.5">Disponible pour recevoir des missions</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Transporteur actif</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Disponible pour recevoir des missions</p>
             </div>
             <Switch
               checked={form.statut === "Actif"}
@@ -300,8 +300,8 @@ function InlineTransporteurForm({
       </div>
 
       {/* Form footer */}
-      <div className="flex items-center justify-between border-t border-border bg-slate-50/60 px-6 py-4">
-        <Button variant="ghost" size="sm" className="text-slate-500" onClick={onClose}>
+      <div className="flex items-center justify-between border-t border-border bg-slate-50/60 dark:bg-slate-800/60 px-6 py-4">
+        <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400" onClick={onClose}>
           <ArrowLeft className="mr-2 size-4" /> Retour à la liste
         </Button>
         <Button onClick={handleSubmit} className="gap-2 bg-blue-700 hover:bg-blue-800">
@@ -426,13 +426,13 @@ export function TransporteursScreen() {
   const handleExportPDF = () => {
     const rowsHTML = filtered.map((t) => `
       <tr>
-        <td>${t.nom}</td>
-        <td>${t.contact}<br><small>${t.telephone}</small></td>
-        <td>${t.vehicule}<br><small style="font-family:monospace">${t.immatriculation}</small></td>
-        <td>${t.trajet}</td>
+        <td>${htmlEscape(t.nom)}</td>
+        <td>${htmlEscape(t.contact)}<br><small>${htmlEscape(t.telephone)}</small></td>
+        <td>${htmlEscape(t.vehicule)}<br><small style="font-family:monospace">${htmlEscape(t.immatriculation)}</small></td>
+        <td>${htmlEscape(t.trajet)}</td>
         <td class="num">${t.capacite} t</td>
         <td class="num">${t.nbDossiers}</td>
-        <td><span class="badge" style="${t.statut === "Actif" ? "background:#d1fae5;color:#065f46" : "background:#f1f5f9;color:#64748b"}">${t.statut}</span></td>
+        <td><span class="badge" style="${t.statut === "Actif" ? "background:#d1fae5;color:#065f46" : "background:#f1f5f9;color:#64748b"}">${htmlEscape(t.statut)}</span></td>
       </tr>`).join("");
     printHTML("Liste des transporteurs", `
       <h1>Transporteurs partenaires</h1>
@@ -469,8 +469,8 @@ export function TransporteursScreen() {
 
       {/* Banner inactifs */}
       {inactifs > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
-          <Truck className="mt-0.5 size-5 shrink-0 text-amber-600" />
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 px-4 py-3">
+          <Truck className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
             <p className="text-sm font-medium text-amber-900">
               {inactifs} transporteur{inactifs > 1 ? "s" : ""} inactif{inactifs > 1 ? "s" : ""}
@@ -496,7 +496,7 @@ export function TransporteursScreen() {
           <Card className="border-border/80 p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative w-full sm:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <Input className="h-10 pl-9" placeholder="Société, contact, trajet, immat…"
                   value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
               </div>
@@ -522,7 +522,7 @@ export function TransporteursScreen() {
 
               <Select value={sortBy} onValueChange={(v) => { setSortBy(v as SortKey); setPage(1); }}>
                 <SelectTrigger className="h-10 w-full sm:w-52">
-                  <ArrowUpDown className="size-3.5 shrink-0 text-slate-400" />
+                  <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                   <SelectValue placeholder="Trier par…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -531,9 +531,9 @@ export function TransporteursScreen() {
               </Select>
 
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" className="h-10 gap-1.5 text-slate-500" onClick={clearFilters}>
+                <Button variant="ghost" size="sm" className="h-10 gap-1.5 text-slate-500 dark:text-slate-400" onClick={clearFilters}>
                   Réinitialiser
-                  <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+                  <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                     {activeFiltersCount}
                   </span>
                 </Button>
@@ -555,9 +555,9 @@ export function TransporteursScreen() {
           {/* Table */}
           <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <Truck className="size-4 text-slate-400" />
-              <h2 className="text-sm font-semibold text-slate-900">Liste des transporteurs</h2>
-              <span className="ml-auto text-xs tabular-nums text-slate-500">
+              <Truck className="size-4 text-slate-400 dark:text-slate-500" />
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des transporteurs</h2>
+              <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
                 {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
               </span>
             </div>
@@ -566,11 +566,11 @@ export function TransporteursScreen() {
               <TransporteursTableSkeleton />
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
                   <Truck className="size-7" />
                 </div>
-                <h3 className="mt-4 text-sm font-semibold text-slate-900">Aucun transporteur trouvé</h3>
-                <p className="mt-1 max-w-sm text-sm text-slate-500">
+                <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Aucun transporteur trouvé</h3>
+                <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
                   {hasActiveFilters
                     ? "Modifiez vos filtres ou ajoutez un nouveau partenaire."
                     : "Commencez par enregistrer votre premier transporteur partenaire."}
@@ -586,15 +586,15 @@ export function TransporteursScreen() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">Société / Contact</TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">Coordonnées</TableHead>
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">Véhicule</TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">Trajet</TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">Capacité</TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">Dossiers</TableHead>
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">Statut</TableHead>
-                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Actions</TableHead>
+                      <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Société / Contact</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">Coordonnées</TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Véhicule</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">Trajet</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">Capacité</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">Dossiers</TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -604,40 +604,40 @@ export function TransporteursScreen() {
                           <TableRow
                             key={t.id}
                             className={cn(
-                              "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80",
-                              isInactif && "bg-slate-50/40 opacity-80",
+                              "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80",
+                              isInactif && "bg-slate-50/40 dark:bg-slate-800/40 opacity-80",
                             )}
                             onClick={() => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); }}
                           >
                             <TableCell className="px-4 py-3.5">
-                              <p className="font-semibold text-slate-900">{t.nom}</p>
-                              <p className="mt-0.5 text-xs text-slate-500">{t.contact}</p>
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{t.nom}</p>
+                              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{t.contact}</p>
                             </TableCell>
                             <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-                              <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                                <Phone className="size-3 shrink-0 text-slate-400" /> {t.telephone}
+                              <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                                <Phone className="size-3 shrink-0 text-slate-400 dark:text-slate-500" /> {t.telephone}
                               </div>
                               {t.email && (
-                                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
+                                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
                                   <Mail className="size-3 shrink-0" /> {t.email}
                                 </div>
                               )}
                             </TableCell>
                             <TableCell className="px-4 py-3.5">
-                              <p className="text-sm font-medium text-slate-700">{t.vehicule}</p>
-                              <p className="mt-0.5 font-mono text-xs text-slate-500">{t.immatriculation}</p>
+                              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.vehicule}</p>
+                              <p className="mt-0.5 font-mono text-xs text-slate-500 dark:text-slate-400">{t.immatriculation}</p>
                             </TableCell>
                             <TableCell className="hidden px-4 py-3.5 md:table-cell">
-                              <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                                <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                              <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                                <MapPin className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                                 <span className="line-clamp-1">{t.trajet}</span>
                               </div>
                             </TableCell>
                             <TableCell className="hidden px-4 py-3.5 text-right tabular-nums lg:table-cell">
-                              <span className="font-medium text-slate-700">{t.capacite} t</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">{t.capacite} t</span>
                             </TableCell>
                             <TableCell className="hidden px-4 py-3.5 text-right tabular-nums lg:table-cell">
-                              <span className="font-semibold text-slate-700">{t.nbDossiers}</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">{t.nbDossiers}</span>
                             </TableCell>
                             <TableCell className="px-4 py-3.5">
                               <div className="flex flex-col gap-1">
@@ -645,7 +645,7 @@ export function TransporteursScreen() {
                                 <button
                                   className={cn(
                                     "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80",
-                                    t.statut === "Actif" ? "bg-slate-100 text-slate-600" : "bg-emerald-50 text-emerald-700",
+                                    t.statut === "Actif" ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700",
                                   )}
                                   onClick={(e) => { e.stopPropagation(); handleToggleStatut(t); }}
                                 >
@@ -655,14 +655,14 @@ export function TransporteursScreen() {
                             </TableCell>
                             <TableCell className="px-4 py-3.5">
                               <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="size-8 text-slate-500 hover:text-primary"
+                                <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                                   title="Modifier"
                                   onClick={() => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); }}>
                                   <Pencil className="size-4" />
                                 </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="size-8 text-slate-500 hover:text-primary">
+                                    <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
                                       <MoreHorizontal className="size-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
@@ -670,11 +670,11 @@ export function TransporteursScreen() {
                                     <DropdownMenuItem onClick={() => handleToggleStatut(t)}>
                                       {t.statut === "Actif"
                                         ? <><PowerOff className="mr-2 size-3.5" /> Désactiver</>
-                                        : <><Power className="mr-2 size-3.5 text-emerald-600" /> Activer</>}
+                                        : <><Power className="mr-2 size-3.5 text-emerald-600 dark:text-emerald-400" /> Activer</>}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                                      className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
                                       onClick={() => { setDeleteTarget(t); setInlineForm(null); }}
                                     >
                                       <Trash2 className="mr-2 size-3.5" /> Supprimer

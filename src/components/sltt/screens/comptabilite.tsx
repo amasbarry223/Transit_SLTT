@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Wallet,
@@ -16,6 +16,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
+import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -82,6 +83,8 @@ function deriveStatut(e: Ecriture): "Soldé" | "En attente" {
 
 export function ComptabiliteScreen() {
   const { toast } = useToast();
+  const go = useNav((s) => s.go);
+  const selectedId = useNav((s) => s.selectedId);
   const ecritures = useStore((s) => s.ecritures);
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
@@ -204,6 +207,16 @@ export function ComptabiliteScreen() {
     setNeNote("");
   }
 
+  // Ouverture directe du formulaire depuis un raccourci externe (CTA dashboard).
+  useEffect(() => {
+    if (selectedId === "new") {
+      resetNewEcriture();
+      setNewOpen(true);
+      go("comptabilite");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   function handleCreateEcriture() {
     if (!neClientId) {
       toast({
@@ -255,7 +268,7 @@ export function ComptabiliteScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Comptabilité"
-        description="Suivi des écritures et des paiements"
+        description="Suivi des écritures et des paiements — indépendant du module Factures"
       >
         <Button
           onClick={() => {
@@ -293,8 +306,8 @@ export function ComptabiliteScreen() {
       </div>
 
       {enAttenteCount > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
-          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600" />
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 px-4 py-3">
+          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
             <p className="text-sm font-medium text-amber-900">
               {enAttenteCount} écriture{enAttenteCount > 1 ? "s" : ""} en attente
@@ -310,7 +323,7 @@ export function ComptabiliteScreen() {
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <Input
               value={query}
               onChange={(e) => {
@@ -364,14 +377,14 @@ export function ComptabiliteScreen() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500"
+              className="h-10 text-slate-500 dark:text-slate-400"
               onClick={clearFilters}
             >
               Réinitialiser
             </Button>
           )}
 
-          <p className="ml-auto text-xs tabular-nums text-slate-500">
+          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
             {filtered.length} écriture{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -379,21 +392,21 @@ export function ComptabiliteScreen() {
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <Receipt className="size-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-900">
+          <Receipt className="size-4 text-slate-400 dark:text-slate-500" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
             Écritures comptables
           </h2>
         </div>
 
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
               <Receipt className="size-7" />
             </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
               Aucune écriture trouvée
             </h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500">
+            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
               {hasActiveFilters
                 ? "Modifiez vos filtres ou créez une nouvelle écriture."
                 : "Commencez par enregistrer votre première écriture comptable."}
@@ -416,32 +429,32 @@ export function ComptabiliteScreen() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Date
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Investi
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Payé
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Reste dû
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 lg:table-cell">
-                      Écart
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                      Écart de règlement
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Mode
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -458,32 +471,32 @@ export function ComptabiliteScreen() {
                       <TableRow
                         key={e.id}
                         className={cn(
-                          "border-b border-border hover:bg-slate-50/60",
-                          !solde && "bg-amber-50/20",
+                          "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+                          !solde && "bg-amber-50/20 dark:bg-amber-950/20",
                         )}
                       >
-                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600">
+                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
                           {formatDateShort(e.date)}
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
-                          <p className="font-medium text-slate-900">{e.clientNom}</p>
-                          <p className="mt-0.5 font-mono text-xs text-slate-400 sm:hidden">
+                          <p className="font-medium text-slate-900 dark:text-slate-100">{e.clientNom}</p>
+                          <p className="mt-0.5 font-mono text-xs text-slate-400 dark:text-slate-500 sm:hidden">
                             {e.id}
                           </p>
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 sm:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
                           {formatFCFA(e.montantInvesti)}
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-emerald-600 md:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400 md:table-cell">
                           {formatFCFA(e.montantPaye)}
                         </TableCell>
                         <TableCell className="px-4 py-3.5 text-right tabular-nums">
                           {solde ? (
-                            <span className="text-sm font-medium text-emerald-600">
+                            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                               Soldé
                             </span>
                           ) : (
-                            <span className="font-semibold text-amber-600">
+                            <span className="font-semibold text-amber-600 dark:text-amber-400">
                               {formatFCFA(reste)}
                             </span>
                           )}
@@ -493,10 +506,10 @@ export function ComptabiliteScreen() {
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 md:table-cell">
                           <span
-                            className="inline-flex items-center gap-1.5 text-slate-600"
+                            className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300"
                             title={e.modePaiement}
                           >
-                            <ModeIcon className="size-3.5 shrink-0 text-slate-400" />
+                            <ModeIcon className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                             <span className="text-sm">{e.modePaiement}</span>
                           </span>
                         </TableCell>
@@ -560,22 +573,22 @@ export function ComptabiliteScreen() {
 
           <div className="space-y-4">
             {selected && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Montant investi</span>
-                  <span className="font-medium tabular-nums text-slate-700">
+                  <span className="text-slate-500 dark:text-slate-400">Montant investi</span>
+                  <span className="font-medium tabular-nums text-slate-700 dark:text-slate-300">
                     {formatFCFA(selected.montantInvesti)}
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-slate-500">Déjà payé</span>
-                  <span className="font-medium tabular-nums text-emerald-600">
+                  <span className="text-slate-500 dark:text-slate-400">Déjà payé</span>
+                  <span className="font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
                     {formatFCFA(selected.montantPaye)}
                   </span>
                 </div>
-                <div className="mt-1.5 flex items-center justify-between border-t border-slate-200 pt-1.5">
-                  <span className="text-slate-500">Reste à payer</span>
-                  <span className="font-semibold tabular-nums text-amber-600">
+                <div className="mt-1.5 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-1.5">
+                  <span className="text-slate-500 dark:text-slate-400">Reste à payer</span>
+                  <span className="font-semibold tabular-nums text-amber-600 dark:text-amber-400">
                     {formatFCFA(
                       Math.max(
                         0,
@@ -588,7 +601,7 @@ export function ComptabiliteScreen() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="montant" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="montant" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Montant
               </Label>
               <div className="relative">
@@ -599,14 +612,14 @@ export function ComptabiliteScreen() {
                   onChange={(e) => setMontant(e.target.value)}
                   className="h-10 pr-16 tabular-nums"
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 dark:text-slate-500">
                   FCFA
                 </span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Mode de paiement
               </Label>
               <Select
@@ -627,7 +640,7 @@ export function ComptabiliteScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="date" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Date
               </Label>
               <Input
@@ -640,7 +653,7 @@ export function ComptabiliteScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="note" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="note" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Note
               </Label>
               <Textarea
@@ -676,7 +689,7 @@ export function ComptabiliteScreen() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="ne-client" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ne-client" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Client <span className="text-red-500">*</span>
               </Label>
               <div className="flex gap-2">
@@ -709,10 +722,21 @@ export function ComptabiliteScreen() {
 
             {clientDossiers.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="ne-dossier" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="ne-dossier" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Dossier lié (optionnel)
                 </Label>
-                <Select value={neDossierId} onValueChange={setNeDossierId}>
+                <Select
+                  value={neDossierId}
+                  onValueChange={(v) => {
+                    setNeDossierId(v);
+                    // LOGIC-10 (audit) : verrouiller le montant investi sur celui
+                    // du dossier lié — sinon l'écriture et le dossier peuvent
+                    // afficher deux "montants investis" différents pour la même
+                    // opération.
+                    const linked = clientDossiers.find((d) => d.id === v);
+                    if (linked) setNeInvesti(String(linked.montantInvesti));
+                  }}
+                >
                   <SelectTrigger id="ne-dossier" className="h-10 w-full">
                     <SelectValue placeholder="Aucun dossier lié" />
                   </SelectTrigger>
@@ -729,7 +753,7 @@ export function ComptabiliteScreen() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="ne-investi" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="ne-investi" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Montant investi (FCFA) <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -739,10 +763,16 @@ export function ComptabiliteScreen() {
                   onChange={(e) => setNeInvesti(e.target.value)}
                   placeholder="0"
                   className="h-10"
+                  disabled={!!neDossierId}
                 />
+                {neDossierId && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Verrouillé sur le montant investi du dossier lié.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ne-paye" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="ne-paye" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Montant payé (FCFA)
                 </Label>
                 <Input
@@ -758,7 +788,7 @@ export function ComptabiliteScreen() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="ne-mode" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="ne-mode" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Mode de paiement
                 </Label>
                 <Select
@@ -778,7 +808,7 @@ export function ComptabiliteScreen() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ne-date" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="ne-date" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Date
                 </Label>
                 <Input
@@ -792,7 +822,7 @@ export function ComptabiliteScreen() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ne-note" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="ne-note" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Note
               </Label>
               <Textarea

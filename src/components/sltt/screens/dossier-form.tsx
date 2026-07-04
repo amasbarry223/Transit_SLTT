@@ -11,15 +11,22 @@ import {
   ListChecks,
   AlertTriangle,
   Truck,
+  ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
 import { useStore, type DossierStatut } from "@/lib/store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
-import { printHTML } from "@/lib/export";
+import { printHTML, htmlEscape } from "@/lib/export";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
+import {
+  TransitionDialog,
+  getNextTransition,
+  TRANSITION_META,
+} from "@/components/sltt/dossier-transition-dialog";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,7 +92,17 @@ function DossierFormInner() {
   const [droitDouane, setDroitDouane] = useState<string>(numStr(existing?.droitDouane));
   const [fraisCircuit, setFraisCircuit] = useState<string>(numStr(existing?.fraisCircuit));
   const [fraisPrestation, setFraisPrestation] = useState<string>(numStr(existing?.fraisPrestation));
-  const [statut, setStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
+  const [draftStatut, setDraftStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
+  const [transitionOpen, setTransitionOpen] = useState(false);
+
+  // En édition, le statut ne se change plus qu'en passant par la transition
+  // guidée (TransitionDialog) — elle seule crée l'écriture de paiement
+  // correspondante — donc on reflète toujours le statut live du store plutôt
+  // qu'une copie locale modifiable.
+  const statut = isEdit && existing ? existing.statut : draftStatut;
+  const setStatut = setDraftStatut;
+
+  const nextTransition = existing ? getNextTransition(existing.statut) : null;
   const [dateEcheance, setDateEcheance] = useState<string>(existing?.dateEcheance ?? "");
   const [dateDedouanement, setDateDedouanement] = useState<string>(existing?.dateDedouanement ?? "");
   const [modeTransport, setModeTransport] = useState<string>(existing?.modeTransport ?? "");
@@ -169,14 +186,14 @@ function DossierFormInner() {
   if (isEdit && selectedId && !existing) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+        <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
           <Info className="size-7" />
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             Dossier introuvable
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Le dossier demandé n&apos;existe pas ou a été supprimé.
           </p>
         </div>
@@ -267,13 +284,13 @@ function DossierFormInner() {
       `Dossier ${reference}`,
       `
       <h1>Dossier de transit</h1>
-      <div class="subtitle">Référence : <strong>${reference}</strong> · Statut : ${statut}</div>
+      <div class="subtitle">Référence : <strong>${htmlEscape(reference)}</strong> · Statut : ${htmlEscape(statut)}</div>
       <table>
         <tbody>
-          <tr><th style="width:35%">Client</th><td>${clientNom}</td></tr>
-          <tr><th>Nature de la marchandise</th><td>${nature || "—"}</td></tr>
-          <tr><th>N° de BL</th><td>${bl || "—"}</td></tr>
-          <tr><th>N° du camion</th><td>${camion || "—"}</td></tr>
+          <tr><th style="width:35%">Client</th><td>${htmlEscape(clientNom)}</td></tr>
+          <tr><th>Nature de la marchandise</th><td>${htmlEscape(nature) || "—"}</td></tr>
+          <tr><th>N° de BL</th><td>${htmlEscape(bl) || "—"}</td></tr>
+          <tr><th>N° du camion</th><td>${htmlEscape(camion) || "—"}</td></tr>
           <tr><th>Date</th><td>${date ? formatDateShort(date) : "—"}</td></tr>
         </tbody>
       </table>
@@ -294,7 +311,7 @@ function DossierFormInner() {
           </tr>
         </tbody>
       </table>
-      ${notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${notes}</p>` : ""}
+      ${notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${htmlEscape(notes)}</p>` : ""}
     `,
     );
     toast({
@@ -308,7 +325,7 @@ function DossierFormInner() {
       {/* Back */}
       <Button
         variant="ghost"
-        className="-ml-2 text-slate-500 hover:text-slate-900"
+        className="-ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
         onClick={handleBack}
       >
         <ArrowLeft className="size-4" />
@@ -318,10 +335,10 @@ function DossierFormInner() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             {isEdit ? `Dossier ${reference}` : "Nouveau dossier de transit"}
           </h1>
-          <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-500">
+          <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1 font-mono text-xs text-slate-500 dark:text-slate-400">
             {reference}
           </span>
           <DossierStatutBadge statut={statut} />
@@ -339,7 +356,7 @@ function DossierFormInner() {
 
       {/* Dirty warning banner */}
       {isDirty && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 px-4 py-2.5 text-sm text-amber-800">
           <AlertTriangle className="size-4 shrink-0 text-amber-500" />
           Modifications non enregistrées — pensez à sauvegarder.
         </div>
@@ -465,13 +482,14 @@ function DossierFormInner() {
           </Card>
 
           {/* Transport & Logistique */}
-          <Card className="border-border/80 p-5 shadow-sm">
-            <SectionTitle
-              icon={<Truck className="size-4" />}
-              tone="indigo"
-              title="Transport & Logistique"
-              description="Mode de transport, conteneur et point d'entrée"
-            />
+          <CollapsibleSection
+            icon={<Truck className="size-4" />}
+            tone="indigo"
+            title="Transport & Logistique"
+            description="Mode de transport, conteneur et point d'entrée"
+            defaultOpen={isEdit}
+            badge={isEdit ? undefined : "Optionnel"}
+          >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Mode de transport">
                 <Select value={modeTransport} onValueChange={setModeTransport}>
@@ -497,7 +515,7 @@ function DossierFormInner() {
                 <Input type="number" className="h-10" value={poidsTotal} onChange={(e) => setPoidsTotal(e.target.value)} placeholder="0" />
               </Field>
             </div>
-          </Card>
+          </CollapsibleSection>
 
           {/* Montants */}
           <Card className="border-border/80 p-5 shadow-sm">
@@ -524,11 +542,11 @@ function DossierFormInner() {
                 onChange={setFraisPrestation}
               />
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-700">Montant investi (calculé)</label>
-                <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-100 px-3 tabular-nums text-sm font-semibold text-slate-800">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Montant investi (calculé)</label>
+                <div className="flex h-10 items-center rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 tabular-nums text-sm font-semibold text-slate-800 dark:text-slate-200">
                   {formatFCFA(iN)}
                 </div>
-                <p className="text-[11px] text-slate-400">Droit de douane + Frais de circuit + Frais de prestation</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">Droit de douane + Frais de circuit + Frais de prestation</p>
               </div>
 
               <div className="sm:col-span-2">
@@ -536,8 +554,8 @@ function DossierFormInner() {
                   className={cn(
                     "flex items-center justify-between gap-4 rounded-lg border px-4 py-3",
                     ecart >= 0
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-red-200 bg-red-50 text-red-700",
+                      ? "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700"
+                      : "border-red-200 bg-red-50 dark:bg-red-950/40 text-red-700",
                   )}
                 >
                   <div className="min-w-0">
@@ -558,42 +576,61 @@ function DossierFormInner() {
           </Card>
 
           {/* Suivi */}
-          <Card className="border-border/80 p-5 shadow-sm">
-            <SectionTitle
-              icon={<ListChecks className="size-4" />}
-              tone="indigo"
-              title="Suivi"
-              description="Statut du dossier et observations internes"
-            />
+          <CollapsibleSection
+            icon={<ListChecks className="size-4" />}
+            tone="indigo"
+            title="Suivi"
+            description="Statut du dossier et observations internes"
+            defaultOpen={isEdit}
+            badge={isEdit ? undefined : "Optionnel"}
+          >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Statut">
-                <Select
-                  value={statut}
-                  onValueChange={(v) => setStatut(v as DossierStatut)}
-                >
-                  <SelectTrigger
-                    className="h-10 w-full"
-                    aria-label="Sélectionner un statut"
+                {isEdit ? (
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <DossierStatutBadge statut={statut} />
+                    {nextTransition ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTransitionOpen(true)}
+                      >
+                        <ArrowRight className="size-3.5" />
+                        {TRANSITION_META[nextTransition].actionLabel}
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-slate-400 dark:text-slate-500">Statut final — aucune transition possible</span>
+                    )}
+                  </div>
+                ) : (
+                  <Select
+                    value={statut}
+                    onValueChange={(v) => setStatut(v as DossierStatut)}
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUTS.map((s) => {
-                      const blocked = s === "Soldé" && reste > 0;
-                      return (
-                        <SelectItem key={s} value={s} disabled={blocked}>
-                          <span className={blocked ? "text-slate-400" : undefined}>
-                            {s}
-                            {blocked && " (reste à payer non soldé)"}
-                          </span>
+                    <SelectTrigger
+                      className="h-10 w-full"
+                      aria-label="Sélectionner un statut"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUTS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
                         </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                {statut !== "Soldé" && reste > 0 && (
-                  <p className="text-xs text-amber-600">
-                    Reste à payer : {formatFCFA(reste)} — soldez via la transition de dossier.
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {isEdit && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Le statut se fait uniquement avancer via une transition guidée, qui enregistre le paiement associé.
+                  </p>
+                )}
+                {!isEdit && statut === "Soldé" && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Un dossier créé directement « Soldé » n&apos;aura pas d&apos;écriture de paiement associée.
                   </p>
                 )}
               </Field>
@@ -627,7 +664,7 @@ function DossierFormInner() {
                 </Field>
               </div>
             </div>
-          </Card>
+          </CollapsibleSection>
         </div>
 
         {/* Right summary column */}
@@ -652,17 +689,17 @@ function DossierFormInner() {
               </div>
 
               <div className="mt-4 border-t border-border pt-4">
-                <div className="text-xs text-slate-500">Écart</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Écart</div>
                 <div
                   className={cn(
                     "mt-1 text-2xl font-bold tabular-nums",
-                    ecart >= 0 ? "text-emerald-600" : "text-red-600",
+                    ecart >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
                   )}
                 >
                   {ecart >= 0 ? "+" : ""}
                   {formatFCFA(ecart)}
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {ecart >= 0
                     ? "Marge positive sur ce dossier."
                     : "Marge négative — à surveiller."}
@@ -711,6 +748,16 @@ function DossierFormInner() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Transition guidée du statut (édition uniquement) */}
+      {isEdit && existing && nextTransition && (
+        <TransitionDialog
+          dossier={existing}
+          transition={nextTransition}
+          open={transitionOpen}
+          onOpenChange={setTransitionOpen}
+        />
+      )}
     </div>
   );
 }
@@ -720,10 +767,10 @@ function DossierFormInner() {
 /* ------------------------------------------------------------------ */
 
 const toneMap: Record<"blue" | "emerald" | "amber" | "indigo", string> = {
-  blue: "bg-blue-50 text-blue-600",
-  emerald: "bg-emerald-50 text-emerald-600",
-  amber: "bg-amber-50 text-amber-600",
-  indigo: "bg-indigo-50 text-indigo-600",
+  blue: "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400",
+  emerald: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400",
+  amber: "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400",
+  indigo: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400",
 };
 
 function SectionTitle({
@@ -748,12 +795,72 @@ function SectionTitle({
         {icon}
       </span>
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
         {description && (
-          <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Section repliable — sert la divulgation progressive : à la création d'un
+ * dossier, les sections hors cahier des charges (Transport, Suivi) sont
+ * repliées par défaut pour que le formulaire "premier jour" ne montre que les
+ * champs essentiels. En édition, tout est déplié.
+ */
+function CollapsibleSection({
+  icon,
+  title,
+  description,
+  tone,
+  defaultOpen,
+  badge,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  tone: "blue" | "emerald" | "amber" | "indigo";
+  defaultOpen: boolean;
+  badge?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card className="border-border/80 p-5 shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-start gap-2.5 text-left"
+      >
+        <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-md", toneMap[tone])}>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+            {badge && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {badge}
+              </span>
+            )}
+          </div>
+          {description && (
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+          )}
+        </div>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-slate-400 transition-transform dark:text-slate-500",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && <div className="mt-4">{children}</div>}
+    </Card>
   );
 }
 
@@ -770,7 +877,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-sm font-medium text-slate-700">
+      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}
       </Label>
@@ -791,7 +898,7 @@ function AmountField({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-sm font-medium text-slate-700">{label}</Label>
+      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</Label>
       <div className="relative">
         <Input
           type="number"
@@ -802,7 +909,7 @@ function AmountField({
           onChange={(e) => onChange(e.target.value)}
           placeholder="0"
         />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500">
           FCFA
         </span>
       </div>
@@ -831,8 +938,8 @@ function SummaryRow({
   }
   return (
     <div className="flex items-center justify-between py-3 first:pt-0">
-      <span className="text-sm text-slate-600">{label}</span>
-      <span className="text-sm font-semibold tabular-nums text-slate-900">
+      <span className="text-sm text-slate-600 dark:text-slate-300">{label}</span>
+      <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">
         {value}
       </span>
     </div>
