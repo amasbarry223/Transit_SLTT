@@ -303,6 +303,14 @@ export function BilansScreen() {
   }
 
   function handleExportExcel() {
+    if (recapParClient.length === 0) {
+      toast({
+        title: "Rien à exporter",
+        description: "Aucune écriture pour la période sélectionnée.",
+        variant: "destructive",
+      });
+      return;
+    }
     exportToCSV(
       `bilans-${periode}-${mois}`,
       [
@@ -313,6 +321,7 @@ export function BilansScreen() {
         { header: "Écart de règlement (FCFA)", accessor: (r) => r.ecart },
       ],
       recapParClient,
+      { module: "Comptabilité" },
     );
     toast({
       title: "Export Excel généré",

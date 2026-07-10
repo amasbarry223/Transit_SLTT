@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { navItems } from "@/lib/nav-items";
+import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import {
   CommandDialog,
   CommandEmpty,
@@ -19,7 +19,11 @@ import {
   FileText,
   ClipboardList,
   Receipt,
+  Plus,
+  Wallet,
+  FolderKanban,
 } from "lucide-react";
+import { usePermission } from "@/hooks/use-permission";
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -27,18 +31,37 @@ export function CommandPalette() {
   const openDossier = useNav((s) => s.openDossier);
   const openDevisDetail = useNav((s) => s.openDevisDetail);
   const openClient = useNav((s) => s.openClient);
-  const currentRole = useNav((s) => s.currentRole);
 
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
   const devisList = useStore((s) => s.devis);
   const factures = useStore((s) => s.factures);
 
-  // Même filtrage par rôle que la sidebar — ⌘K ne doit pas proposer des
-  // écrans qui n'apparaissent nulle part ailleurs pour ce rôle.
-  const visibleNavItems = navItems.filter(
-    (item) => !item.roles || item.roles.includes(currentRole),
-  );
+  const visibleNavItems = useVisibleNavItems();
+  const canDossiers = usePermission("dossiers:write");
+  const canCompta = usePermission("comptabilite:write");
+  const canClients = usePermission("clients:write");
+
+  const quickActions = [
+    canDossiers && {
+      label: "Nouveau dossier",
+      value: "action nouveau dossier",
+      icon: FolderKanban,
+      run: () => openDossier(null, "create"),
+    },
+    canCompta && {
+      label: "Ouvrir la comptabilité",
+      value: "action comptabilite paiement",
+      icon: Wallet,
+      run: () => go("comptabilite"),
+    },
+    canClients && {
+      label: "Voir les clients",
+      value: "action liste clients",
+      icon: UserIcon,
+      run: () => go("clients"),
+    },
+  ].filter(Boolean) as { label: string; value: string; icon: typeof Plus; run: () => void }[];
 
   // Cmd+K / Ctrl+K to open
   useEffect(() => {
@@ -81,6 +104,26 @@ export function CommandPalette() {
         <CommandInput placeholder="Rechercher un écran, un dossier, un client…" />
         <CommandList>
           <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
+
+          {quickActions.length > 0 && (
+            <CommandGroup heading="Actions rapides">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <CommandItem
+                    key={action.value}
+                    value={action.value}
+                    onSelect={() => run(action.run)}
+                  >
+                    <Icon className="size-4 text-primary" />
+                    <span>{action.label}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
+
+          <CommandSeparator />
 
           <CommandGroup heading="Navigation">
             {visibleNavItems.map((item) => {

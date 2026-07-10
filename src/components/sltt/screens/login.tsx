@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useNav } from "@/lib/nav-store";
-import { useStore } from "@/lib/store";
-import { hashPassword } from "@/lib/crypto";
 import { supabase } from "@/lib/supabase";
+import { insertAuditLog } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,8 +52,6 @@ function LoginBackground() {
 
 export function LoginScreen() {
   const loginNav = useNav((s) => s.login);
-  const users = useStore((s) => s.users);
-  const updateLastLogin = useStore((s) => s.updateLastLogin);
 
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -69,33 +66,6 @@ export function LoginScreen() {
     setLoading(true);
 
     try {
-      // Si les clés Supabase ne sont pas configurées, on utilise la simulation locale (DX / Fallback)
-      if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        const hashedInput = await hashPassword(userPassword);
-        const user = users.find(
-          (u) =>
-            u.email.toLowerCase() === userEmail.toLowerCase().trim() &&
-            u.motDePasse === hashedInput,
-        );
-
-        if (!user) {
-          setError("Identifiants incorrects.");
-          return;
-        }
-
-        if (!user.actif) {
-          setError(
-            "Votre compte est désactivé. Veuillez contacter votre administrateur.",
-          );
-          return;
-        }
-
-        updateLastLogin(user.id);
-        loginNav(user.role, user.nom, user.id, rememberMe);
-        return;
-      }
-
-      // Connexion avec Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: userEmail.toLowerCase().trim(),
         password: userPassword,
@@ -130,6 +100,13 @@ export function LoginScreen() {
         .from("profiles")
         .update({ derniere_connexion: new Date().toISOString() })
         .eq("id", profile.id);
+
+      void insertAuditLog({
+        module: "Authentification",
+        action: "Connexion",
+        detail: `Connexion réussie — ${profile.email ?? userEmail.toLowerCase().trim()}`,
+        userName: profile.nom,
+      });
 
       loginNav(profile.role, profile.nom, profile.id, rememberMe);
     } catch (e: any) {

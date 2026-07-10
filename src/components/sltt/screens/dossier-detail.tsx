@@ -46,7 +46,7 @@ import type {
   FournisseurType,
   DossierFournisseurInput,
 } from "@/lib/store";
-import { calculerEcart } from "@/lib/mock-data";
+import { calculerEcart } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
@@ -764,7 +764,7 @@ export function DossierDetailScreen() {
           <tr><th>Montant payé</th><td class="num">${formatFCFA(d.montantPaye, false)}</td></tr>
           <tr><th>Reste à payer</th><td class="num">${formatFCFA(reste, false)}</td></tr>
           <tr class="total-row">
-            <th>Écart calculé</th>
+            <th>Marge calculée</th>
             <td class="num" style="color:${ecart >= 0 ? "#059669" : "#dc2626"}">
               ${ecart >= 0 ? "+" : ""}${ecart.toLocaleString("fr-FR")}
             </td>
@@ -831,9 +831,9 @@ export function DossierDetailScreen() {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="informations">
-        <TabsList className="mb-4 h-10">
-          <TabsTrigger value="informations">Informations</TabsTrigger>
+      <Tabs defaultValue="resume">
+        <TabsList className="mb-4 h-10 flex-wrap">
+          <TabsTrigger value="resume">Résumé</TabsTrigger>
           <TabsTrigger value="documents">
             Documents
             <span className={cn(
@@ -844,52 +844,40 @@ export function DossierDetailScreen() {
             )}>
               {checklistDone}/{checklistTotal}
             </span>
-          </TabsTrigger>
-          <TabsTrigger value="sous-dossiers">
-            Sous-dossiers
             {subDossiers.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {subDossiers.length}
+              <span className="ml-1 rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                +{subDossiers.length} sous-doss.
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="paiements">
-            Paiements
-            {dossierEcritures.length > 0 && (
+          <TabsTrigger value="finance">
+            Finance
+            {(dossierEcritures.length > 0 || dossierFactures.length > 0) && (
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {dossierEcritures.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="factures">
-            Factures
-            {dossierFactures.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {dossierFactures.length}
+                {dossierEcritures.length + dossierFactures.length}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="fournisseurs">
-            Fournisseurs
+            Partenaires
             {dossierFournisseurs.length > 0 && (
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                 {dossierFournisseurs.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="discussion">
-            Discussion
-            {dossierComments.length > 0 && (
+          <TabsTrigger value="activite">
+            Activité
+            {(dossierComments.length > 0 || dossierAuditLogs.length > 0) && (
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {dossierComments.length}
+                {dossierComments.length + dossierAuditLogs.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="historique">Historique</TabsTrigger>
         </TabsList>
 
         {/* ---- TAB: Informations ---- */}
-        <TabsContent value="informations">
+        <TabsContent value="resume">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
               {/* General info */}
@@ -1073,7 +1061,7 @@ export function DossierDetailScreen() {
                   />
                   <div className="mt-4 border-t border-border pt-4">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-sm text-slate-500 dark:text-slate-400">Écart calculé</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">Marge calculée</span>
                       <EcartValue value={ecart} />
                     </div>
                     <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
@@ -1173,7 +1161,7 @@ export function DossierDetailScreen() {
         </TabsContent>
 
         {/* ---- TAB: Documents ---- */}
-        <TabsContent value="documents">
+        <TabsContent value="documents" className="space-y-6">
           <div className="space-y-4">
             {/* Checklist documentaire */}
             <Card className="border-border/80 p-5 shadow-sm">
@@ -1267,7 +1255,7 @@ export function DossierDetailScreen() {
         </TabsContent>
 
         {/* ---- TAB: Sous-dossiers ---- */}
-        <TabsContent value="sous-dossiers">
+        <TabsContent value="documents" className="space-y-6 mt-0">
           <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -1322,8 +1310,8 @@ export function DossierDetailScreen() {
           </div>
         </TabsContent>
 
-        {/* ---- TAB: Paiements ---- */}
-        <TabsContent value="paiements">
+        {/* ---- TAB: Finance (paiements) ---- */}
+        <TabsContent value="finance" className="space-y-6">
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
@@ -1417,8 +1405,8 @@ export function DossierDetailScreen() {
           </Card>
         </TabsContent>
 
-        {/* ---- TAB: Factures ---- */}
-        <TabsContent value="factures">
+        {/* ---- TAB: Finance (factures) ---- */}
+        <TabsContent value="finance" className="space-y-6 mt-0">
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -1583,8 +1571,8 @@ export function DossierDetailScreen() {
           </Card>
         </TabsContent>
 
-        {/* ---- TAB: Discussion ---- */}
-        <TabsContent value="discussion">
+        {/* ---- TAB: Activité (discussion) ---- */}
+        <TabsContent value="activite" className="space-y-6">
           <Card className="border-border/80 shadow-sm">
             <div className="p-5 border-b border-border flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
@@ -1684,8 +1672,8 @@ export function DossierDetailScreen() {
           </Card>
         </TabsContent>
 
-        {/* ---- TAB: Historique ---- */}
-        <TabsContent value="historique">
+        {/* ---- TAB: Activité (historique) ---- */}
+        <TabsContent value="activite" className="space-y-6 mt-0">
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">

@@ -1,8 +1,11 @@
 "use client";
 
 import { useNav } from "@/lib/nav-store";
-import { Sidebar, MobileNav } from "./sidebar";
+import { useStore } from "@/lib/store";
+import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 import { DashboardScreen } from "@/components/sltt/screens/dashboard";
 import { DossiersListScreen } from "@/components/sltt/screens/dossiers-list";
@@ -25,13 +28,38 @@ import { FournisseursScreen } from "@/components/sltt/screens/fournisseurs";
 
 export function AppShell() {
   const view = useNav((s) => s.view);
+  const dataLoading = useStore((s) => s.dataLoading);
+  const loadError = useStore((s) => s.loadError);
+  const fetchData = useStore((s) => s.fetchData);
+  const clearLoadError = useStore((s) => s.clearLoadError);
 
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <MobileNav />
+        {dataLoading && (
+          <div className="flex items-center gap-2 border-b border-border/60 bg-slate-50 px-4 py-2 text-sm text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
+            <Loader2 className="size-4 animate-spin" />
+            Chargement des données…
+          </div>
+        )}
+        {loadError && !dataLoading && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-red-200 bg-red-50 px-4 py-2.5 dark:border-red-900/60 dark:bg-red-950/40">
+            <div className="flex items-start gap-2 text-sm text-red-800 dark:text-red-200">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>Impossible de charger les données : {loadError}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => { clearLoadError(); fetchData(); }}>
+                Réessayer
+              </Button>
+              <Button size="sm" variant="ghost" onClick={clearLoadError}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        )}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="w-full">
             {view === "dashboard" && <DashboardScreen />}

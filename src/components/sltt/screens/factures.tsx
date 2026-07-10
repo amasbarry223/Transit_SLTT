@@ -3,16 +3,19 @@
 import * as React from "react";
 import {
   Plus, Search, Receipt, TrendingUp, Clock, CheckCircle2,
-  ArrowRight, Trash2, Eye, Send, X, ChevronDown,
+  ArrowRight, Trash2, Eye, Send, X, ChevronDown, Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/sltt/page-header";
+import { KpiCard } from "@/components/sltt/kpi-card";
+import { InfoCallout } from "@/components/sltt/info-callout";
 import { useStore, type Facture, type FactureStatut, type FactureInput } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 
@@ -318,6 +321,7 @@ const TABS: Array<{ key: FactureStatut | "Tous"; label: string }> = [
 ];
 
 export function FacturesScreen() {
+  const canWrite = usePermission("factures:write");
   const factures            = useStore((s) => s.factures);
   const dossiers            = useStore((s) => s.dossiers);
   const removeFacture       = useStore((s) => s.removeFacture);
@@ -331,15 +335,18 @@ export function FacturesScreen() {
   const [showForm,   setShowForm]   = React.useState(false);
   const [prefillDossierId, setPrefillDossierId] = React.useState<string | undefined>();
 
-  // Auto-open form when navigating from dossier-detail
-  React.useEffect(() => {
-    if (selectedId && selectedId.startsWith("D-")) {
+  const [prevSelectedId, setPrevSelectedId] = React.useState(selectedId);
+  if (selectedId !== prevSelectedId) {
+    setPrevSelectedId(selectedId);
+    if (selectedId?.startsWith("D-")) {
       setPrefillDossierId(selectedId);
       setShowForm(true);
-      go("factures"); // clear selectedId
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }
+
+  React.useEffect(() => {
+    if (selectedId?.startsWith("D-")) go("factures");
+  }, [selectedId, go]);
 
   const filtered = React.useMemo(() => {
     return factures.filter((f) => {
@@ -398,29 +405,27 @@ export function FacturesScreen() {
       />
 
       <PageHeader title="Factures" description="Gestion et suivi de la facturation client">
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-1.5 size-3.5" /> Nouvelle facture
-        </Button>
+        {canWrite && (
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-1.5 size-3.5" /> Nouvelle facture
+          </Button>
+        )}
       </PageHeader>
 
-      {/* KPIs */}
+      <InfoCallout>
+        Ce module émet des documents facturables au client (avec TVA). Pour un suivi interne de
+        paiement sans facture, utilisez{" "}
+        <button onClick={() => go("comptabilite")} className="font-semibold underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-100">
+          le module Comptabilité
+        </button>
+        . Les deux totaux sont indépendants et ne se recoupent pas automatiquement.
+      </InfoCallout>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Factures actives",   value: String(kpi.total),              icon: Receipt,       color: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-950/40"    },
-          { label: "Montant total TTC",  value: formatFCFA(kpi.totalTTC),       icon: TrendingUp,    color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
-          { label: "Recouvré",           value: formatFCFA(kpi.totalPaye),      icon: CheckCircle2,  color: "text-violet-600",  bg: "bg-violet-50"  },
-          { label: "Non soldées",        value: String(kpi.nonSoldees),         icon: Clock,         color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-950/40"   },
-        ].map((k) => (
-          <div key={k.label} className="flex items-center gap-3 rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
-            <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${k.bg}`}>
-              <k.icon className={`size-4 ${k.color}`} />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{k.label}</p>
-              <p className="truncate text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">{k.value}</p>
-            </div>
-          </div>
-        ))}
+        <KpiCard compact label="Factures actives" value={String(kpi.total)} icon={Receipt} tone="blue" />
+        <KpiCard compact label="Montant total TTC" value={formatFCFA(kpi.totalTTC)} icon={TrendingUp} tone="emerald" />
+        <KpiCard compact label="Recouvré" value={formatFCFA(kpi.totalPaye)} icon={CheckCircle2} tone="violet" />
+        <KpiCard compact label="Non soldées" value={String(kpi.nonSoldees)} icon={Clock} tone="amber" />
       </div>
 
       {/* Taux de recouvrement bar */}
@@ -497,7 +502,7 @@ export function FacturesScreen() {
               <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
                 {factures.length === 0 ? "Aucune facture créée" : "Aucun résultat"}
               </p>
-              {factures.length === 0 && (
+              {factures.length === 0 && canWrite && (
                 <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowForm(true)}>
                   <Plus className="mr-1.5 size-3.5" /> Créer la première facture
                 </Button>

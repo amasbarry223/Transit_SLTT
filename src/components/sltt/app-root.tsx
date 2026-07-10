@@ -3,18 +3,27 @@
 import { useEffect, useRef } from "react";
 import { useNav, SESSION_TTL_SHORT, SESSION_TTL_LONG } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { LoginScreen } from "@/components/sltt/screens/login";
+import { SupabaseRequiredScreen } from "@/components/sltt/screens/supabase-required";
 import { AppShell } from "@/components/sltt/layout/app-shell";
+import { useSupabaseRealtime } from "@/lib/use-supabase-realtime";
 
 export function AppRoot() {
+  if (!isSupabaseConfigured) {
+    return <SupabaseRequiredScreen />;
+  }
+
+  return <AppRootInner />;
+}
+
+function AppRootInner() {
   const isAuthenticated = useNav((s) => s.isAuthenticated);
   const loginAt = useNav((s) => s.loginAt);
   const rememberMe = useNav((s) => s.rememberMe);
   const logout = useNav((s) => s.logout);
   const fetchData = useStore((s) => s.fetchData);
 
-  // PERF-05: Stabilize logout in a ref to avoid adding it to useEffect deps,
-  // preventing the timer from being reset on every render where logout identity changes.
   const logoutRef = useRef(logout);
   useEffect(() => { logoutRef.current = logout; }, [logout]);
 
@@ -27,7 +36,6 @@ export function AppRoot() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Session sans loginAt = ancien format (avant refonte auth) → déconnexion forcée
     if (loginAt === null) {
       logoutRef.current();
       return;
@@ -45,6 +53,8 @@ export function AppRoot() {
     const timer = setTimeout(() => logoutRef.current(), remaining);
     return () => clearTimeout(timer);
   }, [isAuthenticated, loginAt, rememberMe]);
+
+  useSupabaseRealtime(isAuthenticated);
 
   return isAuthenticated ? <AppShell /> : <LoginScreen />;
 }

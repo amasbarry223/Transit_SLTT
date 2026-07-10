@@ -19,13 +19,15 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { ClientInput } from "@/lib/store";
-import type { ClientType } from "@/lib/mock-data";
+import type { ClientType } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
 import { printClients } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
+import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,9 +72,11 @@ function avatarGradient(type: ClientType): string {
 function EmptyState({
   hasQuery,
   onCreate,
+  canCreate = true,
 }: {
   hasQuery: boolean;
   onCreate: () => void;
+  canCreate?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
@@ -87,10 +91,10 @@ function EmptyState({
           ? "Essayez un autre terme de recherche ou modifiez les filtres."
           : "Commencez par ajouter votre premier client à l'annuaire."}
       </p>
-      {!hasQuery && (
+      {!hasQuery && canCreate && (
         <Button className="mt-5" onClick={onCreate}>
           <UserPlus className="size-4" />
-          Nouveau client
+          Créer votre premier client
         </Button>
       )}
     </div>
@@ -99,6 +103,7 @@ function EmptyState({
 
 export function ClientsScreen() {
   const { toast } = useToast();
+  const canWrite = usePermission("clients:write");
   const openClient = useNav((s) => s.openClient);
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
@@ -113,11 +118,7 @@ export function ClientsScreen() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formNom, setFormNom] = useState("");
-  const [formType, setFormType] = useState<ClientType>("Entreprise");
-  const [formTelephone, setFormTelephone] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formAdresse, setFormAdresse] = useState("");
+  const [formValues, setFormValues] = useState<ClientInput>(emptyClientForm());
 
   const isEdit = editingId !== null;
 
@@ -180,11 +181,7 @@ export function ClientsScreen() {
   const hasActiveFilters = query.trim() !== "" || typeFilter !== "all";
 
   function resetForm() {
-    setFormNom("");
-    setFormType("Entreprise");
-    setFormTelephone("");
-    setFormEmail("");
-    setFormAdresse("");
+    setFormValues(emptyClientForm());
     setEditingId(null);
   }
 
@@ -198,17 +195,19 @@ export function ClientsScreen() {
     const c = clients.find((cl) => cl.id === id);
     if (!c) return;
     setEditingId(id);
-    setFormNom(c.nom);
-    setFormType(c.type);
-    setFormTelephone(c.telephone);
-    setFormEmail(c.email);
-    setFormAdresse(c.adresse);
+    setFormValues({
+      nom: c.nom,
+      type: c.type,
+      telephone: c.telephone,
+      email: c.email,
+      adresse: c.adresse,
+    });
     setDialogOpen(true);
   }
 
-  function handleSave(e?: React.FormEvent) {
+  async function handleSave(e?: React.FormEvent) {
     e?.preventDefault();
-    const trimmedNom = formNom.trim();
+    const trimmedNom = formValues.nom.trim();
     if (!trimmedNom) {
       toast({
         title: "Champ requis",
@@ -219,26 +218,34 @@ export function ClientsScreen() {
     }
     const input: ClientInput = {
       nom: trimmedNom,
-      type: formType,
-      telephone: formTelephone.trim(),
-      email: formEmail.trim(),
-      adresse: formAdresse.trim(),
+      type: formValues.type,
+      telephone: formValues.telephone.trim(),
+      email: formValues.email.trim(),
+      adresse: formValues.adresse.trim(),
     };
-    if (isEdit && editingId) {
-      updateClient(editingId, input);
+    try {
+      if (isEdit && editingId) {
+        await updateClient(editingId, input);
+        toast({
+          title: "Client mis à jour",
+          description: `${input.nom} a été modifié.`,
+        });
+      } else {
+        await addClient(input);
+        toast({
+          title: "Client créé avec succès",
+          description: `${input.nom} a été ajouté à l'annuaire clients.`,
+        });
+      }
+      setDialogOpen(false);
+      resetForm();
+    } catch (err: unknown) {
       toast({
-        title: "Client mis à jour",
-        description: `${input.nom} a été modifié.`,
-      });
-    } else {
-      addClient(input);
-      toast({
-        title: "Client créé avec succès",
-        description: `${input.nom} a été ajouté à l'annuaire clients.`,
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible d'enregistrer le client.",
+        variant: "destructive",
       });
     }
-    setDialogOpen(false);
-    resetForm();
   }
 
   function clearFilters() {
@@ -273,7 +280,7 @@ export function ClientsScreen() {
           <Printer className="size-4" />
           Imprimer la liste
         </Button>
-        <Button onClick={openCreateDialog}>
+        <Button onClick={openCreateDialog} disabled={!canWrite}>
           <UserPlus className="size-4" />
           Nouveau client
         </Button>
@@ -385,7 +392,7 @@ export function ClientsScreen() {
       {/* Tableau */}
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         {filtered.length === 0 ? (
-          <EmptyState hasQuery={hasActiveFilters} onCreate={openCreateDialog} />
+          <EmptyState hasQuery={hasActiveFilters} onCreate={openCreateDialog} canCreate={canWrite} />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -502,16 +509,18 @@ export function ClientsScreen() {
                           >
                             <Eye className="size-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
-                            onClick={(e) => openEditDialog(c.id, e)}
-                            aria-label={`Modifier ${c.nom}`}
-                            title="Modifier"
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
+                          {canWrite && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                              onClick={(e) => openEditDialog(c.id, e)}
+                              aria-label={`Modifier ${c.nom}`}
+                              title="Modifier"
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -552,87 +561,11 @@ export function ClientsScreen() {
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="cl-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Nom / Raison sociale <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="cl-nom"
-                value={formNom}
-                onChange={(e) => setFormNom(e.target.value)}
-                placeholder="Ex. Société des Établissements Diallo"
-                className="h-10"
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type de client</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {clientTypes.map((t) => {
-                  const Icon = t === "Entreprise" ? Building2 : User;
-                  const selected = formType === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      aria-pressed={formType === t}
-                      onClick={() => setFormType(t)}
-                      className={cn(
-                        "flex flex-col items-center gap-2 rounded-lg border-2 px-3 py-3 text-sm font-medium transition-colors",
-                        selected
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-border bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50",
-                      )}
-                    >
-                      <Icon className="size-5" />
-                      {t}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="cl-tel" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Téléphone
-                </Label>
-                <Input
-                  id="cl-tel"
-                  value={formTelephone}
-                  onChange={(e) => setFormTelephone(e.target.value)}
-                  placeholder="+223 76 00 00 00"
-                  className="h-10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cl-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  E-mail
-                </Label>
-                <Input
-                  id="cl-email"
-                  type="email"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  placeholder="contact@exemple.ml"
-                  className="h-10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cl-adresse" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Adresse
-              </Label>
-              <Input
-                id="cl-adresse"
-                value={formAdresse}
-                onChange={(e) => setFormAdresse(e.target.value)}
-                placeholder="Quartier, ville"
-                className="h-10"
-              />
-            </div>
+            <ClientFormFields
+              values={formValues}
+              onChange={(patch) => setFormValues((v) => ({ ...v, ...patch }))}
+              autoFocusNom
+            />
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button
@@ -642,7 +575,7 @@ export function ClientsScreen() {
               >
                 Annuler
               </Button>
-              <Button type="submit" disabled={!formNom.trim()}>
+              <Button type="submit" disabled={!formValues.nom.trim()}>
                 {isEdit ? "Enregistrer" : "Créer le client"}
               </Button>
             </DialogFooter>

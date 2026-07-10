@@ -36,6 +36,7 @@ import {
   Users,
   Compass,
   X,
+  Check,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -45,9 +46,20 @@ import { KpiCard } from "@/components/sltt/kpi-card";
 import { PageHeader } from "@/components/sltt/page-header";
 import { DossierStatutBadge, DOSSIER_STATUT_DOT, DOSSIER_STATUT_HEX } from "@/components/sltt/status-badge";
 
-import { useNav } from "@/lib/nav-store";
+import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact } from "@/lib/format";
+import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
+import { getDashboardSections, kpiGridClass, type DashboardSection } from "@/lib/dashboard-config";
+import {
+  GUIDE_DISMISS_KEY,
+  GUIDE_RESET_EVENT,
+  getGuideProgress,
+  emitGuideReset,
+  type GuideStepView,
+} from "@/lib/guide-progress";
+import { useCurrentUser } from "@/hooks/use-permission";
+import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /* CHART COLORS                                                        */
@@ -431,45 +443,99 @@ interface LiveAlert {
 }
 
 /* ------------------------------------------------------------------ */
-/* GUIDE DE DÉMARRAGE (prise en main)                                  */
+/* GUIDE DE DÉMARRAGE (progression dynamique)                          */
 /* ------------------------------------------------------------------ */
-
-const GUIDE_DISMISS_KEY = "sltt-guide-dismissed-v1";
-
-/** Les 4 gestes du cahier des charges, dans l'ordre où on les fait. */
-const GUIDE_STEPS: {
-  label: string;
-  sub: string;
-  view: "clients" | "dossiers" | "comptabilite" | "bilans" | "entreposage" | "bons";
-  roles?: string[];
-}[] = [
-  { label: "Ajoutez vos clients", sub: "Annuaire et fiches clients", view: "clients", roles: ["Administrateur", "Agent de transit", "Commercial", "Comptable"] },
-  { label: "Archivez un dossier", sub: "Client, camion, BL, montants", view: "dossiers", roles: ["Administrateur", "Agent de transit", "Comptable"] },
-  { label: "Enregistrez les paiements", sub: "Écritures comptables", view: "comptabilite", roles: ["Administrateur", "Comptable"] },
-  { label: "Consultez vos bilans", sub: "Mensuel, trimestriel, annuel", view: "bilans", roles: ["Administrateur", "Comptable"] },
-  { label: "Gérez le stock", sub: "Entrées, sorties, dépositaires", view: "entreposage", roles: ["Administrateur", "Magasinier"] },
-  { label: "Émettez des bons de sortie", sub: "Date, client, motif, montant", view: "bons", roles: ["Administrateur", "Magasinier", "Commercial"] },
-];
 
 function GuideDemarrage({
   role,
   go,
 }: {
   role: string;
-  go: (view: GuideTypeView) => void;
+  go: (view: GuideStepView) => void;
 }) {
+  const clients = useStore((s) => s.clients);
+  const dossiers = useStore((s) => s.dossiers);
+  const ecritures = useStore((s) => s.ecritures);
+  const stock = useStore((s) => s.stock);
+  const bons = useStore((s) => s.bons);
+
+  const guideData = React.useMemo(
+    () => ({
+      clientsCount: clients.length,
+      dossiersCount: dossiers.length,
+      ecrituresCount: ecritures.length,
+      dossiersSoldesCount: dossiers.filter((d) => d.statut === "Soldé").length,
+      stockCount: stock.length,
+      bonsCount: bons.length,
+    }),
+    [clients.length, dossiers, ecritures.length, stock.length, bons.length],
+  );
+
+  const progress = React.useMemo(
+    () => getGuideProgress(role as import("@/lib/domain-types").UserRole, guideData),
+    [role, guideData],
+  );
+
   const [dismissed, setDismissed] = React.useState<boolean>(() => {
-    try { return localStorage.getItem(GUIDE_DISMISS_KEY) === "1"; } catch { return false; }
+    try {
+      return localStorage.getItem(GUIDE_DISMISS_KEY) === "1";
+    } catch {
+      return false;
+    }
   });
+  const [forceShow, setForceShow] = React.useState(false);
 
-  if (dismissed) return null;
+  React.useEffect(() => {
+    const handler = () => {
+      setDismissed(false);
+      setForceShow(true);
+    };
+    window.addEventListener(GUIDE_RESET_EVENT, handler);
+    return () => window.removeEventListener(GUIDE_RESET_EVENT, handler);
+  }, []);
 
-  const steps = GUIDE_STEPS.filter((s) => !s.roles || s.roles.includes(role)).slice(0, 4);
-  if (steps.length === 0) return null;
+  React.useEffect(() => {
+    if (progress.allComplete && !dismissed) {
+      try {
+        localStorage.setItem(GUIDE_DISMISS_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [progress.allComplete, dismissed]);
+
+  if (progress.total === 0) return null;
+  if ((dismissed && !forceShow) || progress.allComplete) return null;
+
+  function isStepDone(stepId: string): boolean {
+    switch (stepId) {
+      case "clients":
+        return guideData.clientsCount > 0;
+      case "dossiers":
+        return guideData.dossiersCount > 0;
+      case "paiements":
+        return guideData.ecrituresCount > 0;
+      case "bilans":
+        return guideData.dossiersSoldesCount > 0;
+      case "stock":
+        return guideData.stockCount > 0;
+      case "bons":
+        return guideData.bonsCount > 0;
+      default:
+        return false;
+    }
+  }
+
+  const firstPending = progress.steps.find((s) => !isStepDone(s.id));
 
   function dismiss() {
     setDismissed(true);
-    try { localStorage.setItem(GUIDE_DISMISS_KEY, "1"); } catch { /* ignore */ }
+    setForceShow(false);
+    try {
+      localStorage.setItem(GUIDE_DISMISS_KEY, "1");
+    } catch {
+      /* ignore */
+    }
   }
 
   return (
@@ -477,7 +543,12 @@ function GuideDemarrage({
       <div className="flex items-center justify-between gap-2 px-5 pt-4">
         <div className="flex items-center gap-2">
           <Compass className="size-4 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Par où commencer ?</h2>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Par où commencer ?
+          </h2>
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+            {progress.completed}/{progress.total}
+          </span>
         </div>
         <button
           onClick={dismiss}
@@ -487,29 +558,175 @@ function GuideDemarrage({
           <X className="size-4" />
         </button>
       </div>
-      <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 xl:grid-cols-4">
-        {steps.map((s, i) => (
-          <button
-            key={s.view}
-            onClick={() => go(s.view)}
-            className="group flex items-center gap-3 rounded-lg border border-border/60 bg-white p-3 text-left transition-colors hover:border-blue-300 dark:bg-slate-900 dark:hover:border-blue-700"
-          >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-              {i + 1}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">{s.label}</span>
-              <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{s.sub}</span>
-            </span>
-            <ArrowRight className="size-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-blue-500 dark:text-slate-600" />
-          </button>
-        ))}
+      <div className="mx-4 mb-2 mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/50">
+        <div
+          className="h-full rounded-full bg-blue-600 transition-all dark:bg-blue-500"
+          style={{ width: `${progress.total ? (progress.completed / progress.total) * 100 : 0}%` }}
+        />
       </div>
+      <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 xl:grid-cols-4">
+        {progress.steps.map((s, i) => {
+          const done = isStepDone(s.id);
+          const isNext = firstPending?.id === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => go(s.view)}
+              className={cn(
+                "group flex items-center gap-3 rounded-lg border p-3 text-left transition-colors",
+                done
+                  ? "border-emerald-200/80 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                  : isNext
+                    ? "border-blue-300 bg-white dark:border-blue-700 dark:bg-slate-900"
+                    : "border-border/60 bg-white dark:bg-slate-900",
+                !done && "hover:border-blue-300 dark:hover:border-blue-700",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                  done
+                    ? "bg-emerald-500 text-white"
+                    : "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
+                )}
+              >
+                {done ? <Check className="size-3.5" /> : i + 1}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {s.label}
+                </span>
+                <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                  {done ? "Terminé" : s.sub}
+                </span>
+              </span>
+              {!done && (
+                <ArrowRight className="size-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-blue-500 dark:text-slate-600" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {firstPending && progress.completed < progress.total && (
+        <div className="border-t border-blue-200/50 px-5 py-3 dark:border-blue-900/40">
+          <Button size="sm" variant="outline" className="h-8" onClick={() => go(firstPending.view)}>
+            Continuer : {firstPending.label}
+            <ArrowRight className="size-3.5" />
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }
 
-type GuideTypeView = (typeof GUIDE_STEPS)[number]["view"];
+function AdminPanel({
+  go,
+  users,
+  alertes,
+  openDossierDetail,
+  dossiersCount,
+  clientsCount,
+}: {
+  go: (v: ViewKey) => void;
+  users: { id: string; nom: string; role: string; derniereConnexion?: string }[];
+  alertes: LiveAlert[];
+  openDossierDetail: (id: string) => void;
+  dossiersCount: number;
+  clientsCount: number;
+}) {
+  const critical = alertes.filter((a) => a.niveau === "danger").slice(0, 4);
+  const recentUsers = [...users]
+    .sort((a, b) => (b.derniereConnexion ?? "").localeCompare(a.derniereConnexion ?? ""))
+    .slice(0, 4);
+
+  return (
+    <Card className="border-border/80 p-5 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            Vue administrateur
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Synthèse cross-modules et alertes critiques
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => go("parametres")}>
+            <Users className="size-3.5" />
+            Utilisateurs
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => go("dossiers")}>
+            <FolderKanban className="size-3.5" />
+            Tous les dossiers
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-border bg-slate-50/80 p-4 dark:bg-slate-900/50">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Dossiers actifs</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{dossiersCount}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-slate-50/80 p-4 dark:bg-slate-900/50">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Clients</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{clientsCount}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-slate-50/80 p-4 dark:bg-slate-900/50">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Alertes critiques</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-red-600">{critical.length}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Alertes prioritaires</p>
+          {critical.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Aucune alerte critique.</p>
+          ) : (
+            <ul className="space-y-2">
+              {critical.map((a) => (
+                <li key={a.id}>
+                  <button
+                    type="button"
+                    className="w-full rounded-lg border border-red-200/80 bg-red-50/50 px-3 py-2 text-left text-sm hover:bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
+                    onClick={() => {
+                      if (a.target.view === "dossier-detail" && a.target.id) {
+                        openDossierDetail(a.target.id);
+                      } else {
+                        go(a.target.view);
+                      }
+                    }}
+                  >
+                    <span className="font-medium text-red-800 dark:text-red-300">{a.message}</span>
+                    <span className="mt-0.5 block text-xs text-red-700/80 dark:text-red-400/80">{a.detail}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Utilisateurs récents</p>
+          {recentUsers.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Aucun utilisateur enregistré.</p>
+          ) : (
+            <ul className="space-y-2">
+              {recentUsers.map((u) => (
+                <li
+                  key={u.id}
+                  className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
+                >
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{u.nom}</span>
+                  <span className="text-xs text-slate-500">{u.role}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* SCREEN                                                              */
@@ -518,6 +735,7 @@ type GuideTypeView = (typeof GUIDE_STEPS)[number]["view"];
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
   const openDossier = useNav((s) => s.openDossier);
+  const openDossierDetail = useNav((s) => s.openDossierDetail);
   const currentRole = useNav((s) => s.currentRole);
   const currentUserName = useNav((s) => s.currentUserName);
   const theme = useNav((s) => s.theme);
@@ -533,24 +751,34 @@ export function DashboardScreen() {
   const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
   const stock = useStore((s) => s.stock);
+  const users = useStore((s) => s.users);
+  const clients = useStore((s) => s.clients);
+  const lastSyncedAt = useStore((s) => s.lastSyncedAt);
+  const currentUser = useCurrentUser();
+
+  const sections = React.useMemo(
+    () => getDashboardSections(currentUser),
+    [currentUser],
+  );
+  const hasSection = (section: DashboardSection) => sections.has(section);
 
   const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
-  // Ancrage temporel : date la plus récente dans les données (évite le décalage
-  // entre la date système et la date des données mock/importées)
-  const refDate = React.useMemo(() => {
-    const all = [
-      ...ecritures.map((e) => e.date),
-      ...dossiers.map((d) => d.date),
-      ...factures.map((f) => f.date),
-    ];
-    if (all.length === 0) return new Date();
-    return new Date(all.reduce((a, b) => (a > b ? a : b)));
-  }, [ecritures, dossiers, factures]);
+  // Ancrage calendaire : date du jour (pas la date max des données)
+  const anchorDate = getDashboardAnchorDate();
 
-  // Libellé de période basé sur la date de référence (pas la date système)
-  const periodeLabel = refDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+  const periodeLabel = anchorDate
+    .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
     .replace(/^\w/, (c) => c.toUpperCase());
+
+  const syncLabel = React.useMemo(() => {
+    if (!lastSyncedAt) return null;
+    const mins = Math.floor((Date.now() - lastSyncedAt) / 60000);
+    if (mins < 1) return "Sync · à l'instant";
+    if (mins < 60) return `Sync · il y a ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    return `Sync · il y a ${hours}h`;
+  }, [lastSyncedAt]);
 
   // ---- Live KPI computations ----
   // LOGIC-03 (audit) : Écritures et Factures sont deux canaux de paiement
@@ -558,8 +786,8 @@ export function DashboardScreen() {
   // inversement. Ils sont donc additionnés (pas dédoublonnés) pour donner
   // un seul chiffre "encaissé" fiable au lieu de deux chiffres partiels.
   const { chiffreEncaisse, variationEncaisse } = React.useMemo(() => {
-    const curM = refDate.getMonth();
-    const curY = refDate.getFullYear();
+    const curM = anchorDate.getMonth();
+    const curY = anchorDate.getFullYear();
     const prevM = curM === 0 ? 11 : curM - 1;
     const prevY = curM === 0 ? curY - 1 : curY;
 
@@ -580,7 +808,7 @@ export function DashboardScreen() {
 
     const variation = prev === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - prev) / prev) * 100);
     return { chiffreEncaisse: current, variationEncaisse: variation };
-  }, [ecritures, factures, refDate]);
+  }, [ecritures, factures, anchorDate]);
 
   // Restes à payer et dossiers non soldés → source : dossiers (pas les écritures)
   const { totalRestesAPayer, nbDossiersNonSoldes } = React.useMemo(() => {
@@ -615,7 +843,7 @@ export function DashboardScreen() {
   // ---- Chart: encaissements des 6 derniers mois (source : ecritures) ----
   const encaissementsParMois = React.useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(refDate.getFullYear(), refDate.getMonth() - (5 - i), 1);
+      const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - (5 - i), 1);
       const m = d.getMonth();
       const y = d.getFullYear();
       const valeur = ecritures
@@ -623,12 +851,12 @@ export function DashboardScreen() {
         .reduce((sum, e) => sum + e.montantPaye, 0);
       return { mois: MONTHS[m], valeur };
     });
-  }, [ecritures, refDate]);
+  }, [ecritures, anchorDate]);
 
   // ---- Chart: marge brute des 6 derniers mois (source : dossiers) ----
   const ecartsParPeriode = React.useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(refDate.getFullYear(), refDate.getMonth() - (5 - i), 1);
+      const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - (5 - i), 1);
       const m = d.getMonth();
       const y = d.getFullYear();
       const ecart = dossiers
@@ -636,7 +864,7 @@ export function DashboardScreen() {
         .reduce((sum, dos) => sum + (dos.fraisPrestation - dos.droitDouane - dos.fraisCircuit), 0);
       return { periode: MONTHS[m], ecart };
     });
-  }, [dossiers, refDate]);
+  }, [dossiers, anchorDate]);
 
   // ---- Derniers dossiers (sorted by date desc, first 6) ----
   const derniersDossiers = React.useMemo(
@@ -719,6 +947,32 @@ export function DashboardScreen() {
     return [...lowStockAlerts, ...echeanceAlerts, ...unpaid];
   }, [stock, dossiers]);
 
+  const filteredAlertes = React.useMemo(() => {
+    const items: LiveAlert[] = [];
+    if (hasSection("alertes_stock")) {
+      items.push(...alertes.filter((a) => a.id.startsWith("stock-")));
+    }
+    if (hasSection("alertes_dossiers")) {
+      items.push(...alertes.filter((a) => !a.id.startsWith("stock-")));
+    }
+    return items;
+  }, [alertes, sections]);
+
+  const visibleKpiCount = [
+    hasSection("kpi_encaisse"),
+    hasSection("kpi_restes"),
+    hasSection("kpi_dossiers"),
+    hasSection("kpi_stock"),
+  ].filter(Boolean).length;
+
+  const showChartsRow =
+    hasSection("chart_encaissements") || hasSection("chart_marges");
+  const showBlocksRow =
+    hasSection("derniers_dossiers") ||
+    hasSection("chart_statuts") ||
+    hasSection("alertes_stock") ||
+    hasSection("alertes_dossiers");
+
   const firstName = currentUserName.split(" ")[0];
 
   return (
@@ -728,9 +982,17 @@ export function DashboardScreen() {
         title="Tableau de bord"
         description={`Bonjour ${firstName} — Vue d'ensemble de votre activité ce mois-ci`}
       >
-        <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm shadow-sm">
-          <span className="text-slate-500 dark:text-slate-400">Période :</span>
-          <span className="font-medium text-slate-900 dark:text-slate-100">{periodeLabel}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm shadow-sm">
+            <span className="text-slate-500 dark:text-slate-400">Période :</span>
+            <span className="font-medium text-slate-900 dark:text-slate-100">{periodeLabel}</span>
+          </div>
+          {syncLabel && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-500 shadow-sm dark:text-slate-400">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              {syncLabel}
+            </div>
+          )}
         </div>
       </PageHeader>
 
@@ -738,7 +1000,9 @@ export function DashboardScreen() {
       <GuideDemarrage role={currentRole} go={(v) => go(v)} />
 
       {/* 2. KPI ROW */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {visibleKpiCount > 0 && (
+      <div className={cn("grid gap-4", kpiGridClass(visibleKpiCount))}>
+        {hasSection("kpi_encaisse") && (
         <KpiCard
           label="Chiffre encaissé (ce mois)"
           value={formatFCFA(chiffreEncaisse)}
@@ -747,7 +1011,10 @@ export function DashboardScreen() {
           variation={variationEncaisse}
           variationLabel="vs mois dernier"
           sublabel="Écritures + paiements de factures"
+          tooltip="Somme des encaissements du mois : paiements enregistrés via les écritures comptables et les factures. Les paiements dossier passent par les écritures liées ; les deux canaux sont additionnés, pas dédoublonnés."
         />
+        )}
+        {hasSection("kpi_restes") && (
         <KpiCard
           label="Total restes à payer"
           value={formatFCFA(totalRestesAPayer)}
@@ -755,6 +1022,8 @@ export function DashboardScreen() {
           tone="amber"
           sublabel={`Sur ${nbDossiersNonSoldes} dossier${nbDossiersNonSoldes > 1 ? "s" : ""}`}
         />
+        )}
+        {hasSection("kpi_dossiers") && (
         <KpiCard
           label="Dossiers en cours"
           value={String(dossiersEnCours)}
@@ -762,6 +1031,8 @@ export function DashboardScreen() {
           tone="blue"
           sublabel={dossiersALivrer > 0 ? `${dossiersALivrer} dédouané${dossiersALivrer > 1 ? "s" : ""} à livrer` : "Aucun en attente de livraison"}
         />
+        )}
+        {hasSection("kpi_stock") && (
         <KpiCard
           label="Valeur du stock"
           value={formatFCFA(valeurStock)}
@@ -769,9 +1040,21 @@ export function DashboardScreen() {
           tone="indigo"
           sublabel={`${stock.length} article${stock.length > 1 ? "s" : ""}`}
         />
+        )}
       </div>
+      )}
 
       {/* 2b. ROLE PANEL */}
+      {currentRole === "Administrateur" && (
+        <AdminPanel
+          go={go}
+          users={users}
+          alertes={alertes}
+          openDossierDetail={openDossierDetail}
+          dossiersCount={dossiers.length}
+          clientsCount={clients.length}
+        />
+      )}
       {currentRole === "Agent de transit" && (
         <AgentPanel
           go={go as (v: "dossiers" | "devis", opts?: { id?: string | null }) => void}
@@ -789,8 +1072,9 @@ export function DashboardScreen() {
       )}
 
       {/* 3. CHARTS ROW */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Left: Bar chart — Encaissements par mois (CDC §6.6 : "barres") */}
+      {showChartsRow && (
+      <div className={cn("grid grid-cols-1 gap-6", hasSection("chart_encaissements") && hasSection("chart_marges") && "lg:grid-cols-2")}>
+        {hasSection("chart_encaissements") && (
         <Card className="p-5 shadow-sm border-border/80 rounded-xl">
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
@@ -837,8 +1121,9 @@ export function DashboardScreen() {
             </ResponsiveContainer>
           </div>
         </Card>
+        )}
 
-        {/* Right: Line chart — Écarts par période (CDC §6.6 : "courbe") */}
+        {hasSection("chart_marges") && (
         <Card className="p-5 shadow-sm border-border/80 rounded-xl">
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
@@ -912,13 +1197,21 @@ export function DashboardScreen() {
             </ResponsiveContainer>
           </div>
         </Card>
+        )}
       </div>
+      )}
 
       {/* 4. BLOCKS ROW */}
+      {showBlocksRow && (
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
 
-        {/* ── Derniers dossiers ── */}
-        <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80 rounded-xl lg:col-span-2">
+        {hasSection("derniers_dossiers") && (
+        <Card className={cn(
+          "gap-0 overflow-hidden p-0 shadow-sm border-border/80 rounded-xl",
+          (hasSection("chart_statuts") || hasSection("alertes_stock") || hasSection("alertes_dossiers"))
+            ? "lg:col-span-2"
+            : "lg:col-span-3",
+        )}>
 
           {/* Header — même rythme que les cards de graphiques ci-dessus (px-5, titre text-sm) */}
           <div className="flex items-center justify-between gap-2 border-b border-border/60 px-5 py-3.5">
@@ -981,11 +1274,15 @@ export function DashboardScreen() {
             )}
           </div>
         </Card>
+        )}
 
-        {/* ── Colonne droite ── */}
-        <div className="flex flex-col gap-6 lg:col-span-1">
+        {(hasSection("chart_statuts") || hasSection("alertes_stock") || hasSection("alertes_dossiers")) && (
+        <div className={cn(
+          "flex flex-col gap-6",
+          hasSection("derniers_dossiers") ? "lg:col-span-1" : "lg:col-span-3",
+        )}>
 
-          {/* Répartition par statut */}
+          {hasSection("chart_statuts") && (
           <Card className="gap-0 p-0 shadow-sm border-border/80 rounded-xl">
             <div className="flex items-center justify-between gap-2 border-b border-border/60 px-5 py-3.5">
               <div className="flex items-center gap-2">
@@ -1049,27 +1346,28 @@ export function DashboardScreen() {
               </div>
             )}
           </Card>
+          )}
 
-          {/* Alertes */}
+          {(hasSection("alertes_stock") || hasSection("alertes_dossiers")) && (
           <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80 rounded-xl">
             <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3.5">
               <AlertTriangle className="size-4 text-amber-500" />
               <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Alertes</h2>
-              {alertes.length > 0 && (
+              {filteredAlertes.length > 0 && (
                 <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold leading-none text-white">
-                  {alertes.length}
+                  {filteredAlertes.length}
                 </span>
               )}
             </div>
 
             <div className="max-h-64 divide-y divide-border/60 overflow-y-auto">
-              {alertes.length === 0 ? (
+              {filteredAlertes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <CheckCircle2 className="size-7 text-emerald-300" />
                   <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">Aucune alerte</p>
                 </div>
               ) : (
-                alertes.map((alert) => {
+                filteredAlertes.map((alert) => {
                   const isDanger = alert.niveau === "danger";
                   const AlertIcon = isDanger ? AlertTriangle : AlertCircle;
                   return (
@@ -1102,9 +1400,12 @@ export function DashboardScreen() {
               )}
             </div>
           </Card>
+          )}
 
         </div>
+        )}
       </div>
+      )}
     </div>
   );
 }

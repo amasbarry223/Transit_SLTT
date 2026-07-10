@@ -99,7 +99,8 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.devis (id, reference, client_id, nature, droit_douane, frais_circuit, frais_prestation, total, statut, date_creation, date_validite, notes)
 VALUES 
   ('e0000000-0000-0000-0000-000000000001', 'DEVIS-2026-0001', 'c0000000-0000-0000-0000-000000000001', 'Matériaux de construction (acier, ciment)', 1200000, 450000, 320000, 1970000, 'Envoyé', '2026-01-05', '2026-02-05', 'Lot de 20 conteneurs — port de Dakar via Bamako'),
-  ('e0000000-0000-0000-0000-000000000002', 'DEVIS-2026-0002', 'c0000000-0000-0000-0000-000000000004', 'Équipements agricoles', 850000, 310000, 1950000, 1355000, 'Accepté', '2025-12-20', '2026-01-20', NULL)
+  ('e0000000-0000-0000-0000-000000000002', 'DEVIS-2026-0002', 'c0000000-0000-0000-0000-000000000004', 'Équipements agricoles', 850000, 310000, 195000, 1355000, 'Accepté', '2025-12-20', '2026-01-20', NULL),
+  ('e0000000-0000-0000-0000-000000000003', 'DEVIS-2026-0003', 'c0000000-0000-0000-0000-000000000002', 'Produits alimentaires (riz, sucre)', 620000, 230000, 145000, 995000, 'Brouillon', '2026-01-08', '2026-02-08', NULL)
 ON CONFLICT (id) DO NOTHING;
 
 
@@ -172,6 +173,44 @@ VALUES
   ('77000000-0000-0000-0000-000000000003', 'Trans-Sahel SARL', 'Aliou Coulibaly', '+223 79 55 22 11', 'transahel@sltt.ml', 'Remorque', 'BK-3301-ML', 'Bamako – Conakry', 25, 'Actif', '2025-07-20', NULL),
   ('77000000-0000-0000-0000-000000000004', 'Touré Express Fret', 'Kadiatou Touré', '+223 65 40 33 99', NULL, 'Fourgon', 'BK-1155-ML', 'Local Bamako', 5, 'Actif', '2024-11-10', 'Spécialisé livraisons urbaines'),
   ('77000000-0000-0000-0000-000000000005', 'Sidibé Camions Lourds', 'Boubacar Sidibé', '+223 72 88 66 00', NULL, 'Benne', 'BK-0092-ML', 'Bamako – Niamey', 35, 'Inactif', '2025-01-08', 'Véhicule en maintenance')
+ON CONFLICT (id) DO NOTHING;
+
+
+-- 12. INSERTION DES FACTURES
+INSERT INTO public.factures (id, numero, dossier_id, client_id, date, date_echeance, statut, taux_tva, montant_ht, montant_tva, montant_ttc, montant_paye, notes, cree_par, cree_le)
+VALUES
+  ('f1000000-0000-0000-0000-000000000001', 'SLTT-FACT-2026-0001', 'd0000000-0000-0000-0000-000000000041', 'c0000000-0000-0000-0000-000000000004', '2026-01-09', '2026-02-08', 'Soldée', 18, 1900000, 342000, 2242000, 2242000, '', 'Fatoumata Diallo', '2026-01-09 09:30:00+00'),
+  ('f1000000-0000-0000-0000-000000000002', 'SLTT-FACT-2026-0002', 'd0000000-0000-0000-0000-000000000042', 'c0000000-0000-0000-0000-000000000001', '2026-01-10', '2026-02-09', 'Partielle', 18, 2500000, 450000, 2950000, 1500000, '', 'Fatoumata Diallo', '2026-01-10 10:15:00+00'),
+  ('f1000000-0000-0000-0000-000000000003', 'SLTT-FACT-2026-0003', 'd0000000-0000-0000-0000-000000000040', 'c0000000-0000-0000-0000-000000000002', '2026-01-11', '2026-02-10', 'Envoyée', 18, 2900000, 522000, 3422000, 0, '', 'Amadou Traoré', '2026-01-11 14:00:00+00'),
+  ('f1000000-0000-0000-0000-000000000004', 'SLTT-FACT-2026-0004', NULL, 'c0000000-0000-0000-0000-000000000005', '2026-01-12', '2026-02-11', 'Brouillon', 18, 180000, 32400, 212400, 0, '', 'Amadou Traoré', '2026-01-12 08:45:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+
+-- 13. INSERTION DES LIGNES DE FACTURES
+INSERT INTO public.facture_lignes (id, facture_id, description, quantite, prix_unitaire, montant_ht)
+VALUES
+  ('b1000000-0000-0000-0000-000000000001', 'f1000000-0000-0000-0000-000000000001', 'Frais de prestation — SLTT-TR-2026-0041 (Sacs de ciment)', 1, 600000, 600000),
+  ('b1000000-0000-0000-0000-000000000002', 'f1000000-0000-0000-0000-000000000001', 'Droits de douane', 1, 980000, 980000),
+  ('b1000000-0000-0000-0000-000000000003', 'f1000000-0000-0000-0000-000000000001', 'Frais de circuit', 1, 320000, 320000),
+  ('b1000000-0000-0000-0000-000000000004', 'f1000000-0000-0000-0000-000000000002', 'Frais de prestation — SLTT-TR-2026-0042 (Matériel électronique)', 1, 850000, 850000),
+  ('b1000000-0000-0000-0000-000000000005', 'f1000000-0000-0000-0000-000000000002', 'Droits de douane', 1, 1200000, 1200000),
+  ('b1000000-0000-0000-0000-000000000006', 'f1000000-0000-0000-0000-000000000002', 'Frais de circuit', 1, 450000, 450000),
+  ('b1000000-0000-0000-0000-000000000007', 'f1000000-0000-0000-0000-000000000003', 'Frais de prestation — SLTT-TR-2026-0040 (Pièces automobiles)', 1, 900000, 900000),
+  ('b1000000-0000-0000-0000-000000000008', 'f1000000-0000-0000-0000-000000000003', 'Droits de douane', 1, 1500000, 1500000),
+  ('b1000000-0000-0000-0000-000000000009', 'f1000000-0000-0000-0000-000000000003', 'Frais de circuit', 1, 500000, 500000),
+  ('b1000000-0000-0000-0000-000000000010', 'f1000000-0000-0000-0000-000000000004', 'Prestation de courtage — hors dossier', 1, 180000, 180000)
+ON CONFLICT (id) DO NOTHING;
+
+
+-- 14. INSERTION DES JOURNAUX D'AUDIT
+INSERT INTO public.audit_logs (id, date, user_name, module, action, detail, ip)
+VALUES
+  ('a1000000-0000-0000-0000-000000000001', '2026-01-09 09:05:00+00', 'Ibrahim Keïta', 'Dossiers', 'Création', 'Dossier DOS-2026-0142 créé — Client SEDIM SA', '154.66.12.7'),
+  ('a1000000-0000-0000-0000-000000000002', '2026-01-09 08:45:00+00', 'Fatoumata Diallo', 'Comptabilité', 'Paiement', 'Paiement 850 000 FCFA — Écriture EC-2026-0089', '41.202.18.50'),
+  ('a1000000-0000-0000-0000-000000000003', '2026-01-09 08:12:00+00', 'Amadou Traoré', 'Authentification', 'Connexion', 'Connexion réussie depuis Chrome · Windows', '41.202.18.45'),
+  ('a1000000-0000-0000-0000-000000000004', '2026-01-08 17:40:00+00', 'Fatoumata Diallo', 'Authentification', 'Connexion', 'Connexion réussie depuis Firefox · macOS', '41.202.18.50'),
+  ('a1000000-0000-0000-0000-000000000005', '2026-01-08 16:22:00+00', 'Oumar Cissé', 'Stock', 'Modification', 'Sortie 120 sacs — Riz parfumé (entrepôt A)', '41.202.18.61'),
+  ('a1000000-0000-0000-0000-000000000006', '2026-01-08 14:10:00+00', 'Amadou Traoré', 'Bons', 'Validation', 'Bon BS-2026-0048 validé — Vente', '41.202.18.45')
 ON CONFLICT (id) DO NOTHING;
 
 -- Enregistrement final des données

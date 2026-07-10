@@ -1,6 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://qhpmegadoumarppmdbfn.supabase.co";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJhbm9uIn0.dummy";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabasePublicKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  "";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+/** True when URL and public key are both configured. */
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublicKey);
+
+export const supabase = createClient(
+  supabaseUrl || "https://placeholder.supabase.co",
+  supabasePublicKey || "placeholder-key",
+);

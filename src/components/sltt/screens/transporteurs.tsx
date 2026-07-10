@@ -5,25 +5,46 @@ import {
   Plus, Search, FileText, FileSpreadsheet, Pencil, Trash2,
   Truck, FolderKanban, Package,
   Phone, Mail, MapPin, ArrowUpDown, MoreHorizontal, PowerOff,
-  Power, X, Save, AlertTriangle, CheckCircle2, ArrowLeft,
+  Power, Loader2, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 import { useStore } from "@/lib/store";
-import type { Transporteur, TransporteurInput, TransporteurStatut, TypeVehicule } from "@/lib/store";
+import type { Transporteur, TransporteurInput, TransporteurStatut } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import {
+  TransporteurFormFields,
+  TransporteurFormStepper,
+  VEHICULES,
+  TRANSPORTEUR_FORM_STEPS,
+  emptyTransporteurForm,
+  isTransporteurFormValid,
+  isTransporteurStepValid,
+  maxReachableStep,
+  validateTransporteurForm,
+  validateTransporteurStep,
+  firstInvalidTransporteurStep,
+} from "@/components/sltt/transporteur-form-fields";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -42,7 +63,6 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 /* ------------------------------------------------------------------ */
 
 const PAGE_SIZE = 8;
-const VEHICULES: TypeVehicule[] = ["Camion", "Remorque", "Semi-remorque", "Benne", "Fourgon"];
 
 type SortKey = "date-desc" | "date-asc" | "nom" | "trajet" | "capacite-desc" | "capacite-asc" | "dossiers-desc" | "statut";
 
@@ -99,32 +119,13 @@ function TransporteursTableSkeleton() {
 
 
 /* ------------------------------------------------------------------ */
-/* Inline form (replaces the Dialog modal)                              */
+/* Form modal                                                           */
 /* ------------------------------------------------------------------ */
 
-const EMPTY_FORM: TransporteurInput = {
-  nom: "", contact: "", telephone: "", email: "",
-  vehicule: "Camion", immatriculation: "", trajet: "",
-  capacite: 10, statut: "Actif", notes: "",
-};
-
-function FormField({ id, label, req, error, children }: {
-  id?: string; label: string; req?: boolean; error?: string; children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        {label} {req && <span className="text-red-500 normal-case">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
-    </div>
-  );
-}
-
-function InlineTransporteurForm({
-  mode, target, onClose,
+function TransporteurFormModal({
+  open, mode, target, onClose,
 }: {
+  open: boolean;
   mode: "add" | "edit";
   target?: Transporteur;
   onClose: () => void;
@@ -133,35 +134,78 @@ function InlineTransporteurForm({
   const updateTransporteur = useStore((s) => s.updateTransporteur);
   const { toast }          = useToast();
 
-  const [form, setForm] = useState<TransporteurInput>(() => target ? {
-    nom: target.nom, contact: target.contact,
-    telephone: target.telephone, email: target.email ?? "",
-    vehicule: target.vehicule, immatriculation: target.immatriculation,
-    trajet: target.trajet, capacite: target.capacite,
-    statut: target.statut, notes: target.notes ?? "",
-  } : EMPTY_FORM);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const isEdit = mode === "edit";
+  const openKey = open ? (target?.id ?? "new") : null;
+  const lastStep = TRANSPORTEUR_FORM_STEPS.length - 1;
 
-  const setField = (field: keyof TransporteurInput, value: string | number | TransporteurStatut | TypeVehicule) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => { const e = { ...prev }; delete e[field]; return e; });
+  const [form, setForm] = useState<TransporteurInput>(emptyTransporteurForm);
+  const [errors, setErrors] = useState<Partial<Record<keyof TransporteurInput, string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
+  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
+
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    if (openKey !== null) {
+      setForm(target ? {
+        nom: target.nom,
+        contact: target.contact,
+        telephone: target.telephone,
+        email: target.email ?? "",
+        vehicule: target.vehicule,
+        immatriculation: target.immatriculation,
+        trajet: target.trajet,
+        capacite: target.capacite,
+        statut: target.statut,
+        notes: target.notes ?? "",
+      } : emptyTransporteurForm());
+      setErrors({});
+      setSaving(false);
+      setStep(0);
+    }
+  }
+
+  const valid = isTransporteurFormValid(form);
+  const stepValid = isTransporteurStepValid(step, form);
+  const completedThrough = maxReachableStep(form);
+  const isLastStep = step === lastStep;
+
+  const handleChange = (patch: Partial<TransporteurInput>) => {
+    setForm((prev) => ({ ...prev, ...patch }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(patch) as (keyof TransporteurInput)[]) {
+        delete next[key];
+      }
+      return next;
+    });
   };
 
-  const validate = (): boolean => {
-    const e: Record<string, string> = {};
-    if (!form.nom.trim())             e.nom = "Nom requis";
-    if (!form.contact.trim())         e.contact = "Contact requis";
-    if (!form.telephone.trim())       e.telephone = "Téléphone requis";
-    if (!form.immatriculation.trim()) e.immatriculation = "Immatriculation requise";
-    if (!form.trajet.trim())          e.trajet = "Trajet requis";
-    if (!form.capacite || form.capacite <= 0) e.capacite = "Capacité invalide";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  const goToStep = (next: number) => {
+    setStep(Math.max(0, Math.min(lastStep, next)));
+    setErrors({});
   };
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
+  const handleNext = () => {
+    const stepErrors = validateTransporteurStep(step, form);
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      return;
+    }
+    goToStep(step + 1);
+  };
+
+  const handleBack = () => goToStep(step - 1);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const nextErrors = validateTransporteurForm(form);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      setStep(firstInvalidTransporteurStep(form));
+      return;
+    }
+    setSaving(true);
     try {
       if (isEdit && target) {
         await updateTransporteur(target.id, form);
@@ -171,145 +215,108 @@ function InlineTransporteurForm({
         toast({ title: "Transporteur créé", description: t.nom });
       }
       onClose();
-    } catch (e: any) {
-      toast({
-        title: "Erreur",
-        description: e.message || "Impossible d'enregistrer le transporteur",
-        variant: "destructive",
-      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Impossible d'enregistrer le transporteur";
+      toast({ title: "Erreur", description: message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <Card className="border-blue-200 shadow-md overflow-hidden">
-      {/* Form header */}
-      <div className="border-b border-blue-100 bg-gradient-to-r from-blue-50 to-blue-100/50 px-5 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-700">
-              <Truck className="size-4 text-white" />
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="flex max-h-[92vh] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="space-y-0 border-b border-border/60 px-6 py-5 text-left">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+              <Truck className="size-5" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-blue-900">
+            <div className="min-w-0 flex-1 pr-6">
+              <DialogTitle className="text-lg">
                 {isEdit ? "Modifier le transporteur" : "Nouveau transporteur"}
-              </h2>
-              <p className="text-xs text-blue-700/70">
-                {isEdit ? target?.nom : "Enregistrez un nouveau partenaire logistique"}
-              </p>
+              </DialogTitle>
+              <DialogDescription className="mt-1">
+                {isEdit
+                  ? `Mettez à jour les informations de ${target?.nom ?? "ce partenaire"}.`
+                  : "Ajoutez un transporteur ou chauffeur partenaire à l'annuaire SLTT."}
+              </DialogDescription>
+              {isEdit && target && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    {target.vehicule}
+                  </span>
+                  <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{target.immatriculation}</span>
+                  {target.nbDossiers > 0 && (
+                    <span className="text-xs text-slate-400 dark:text-slate-500">
+                      · {target.nbDossiers} dossier{target.nbDossiers > 1 ? "s" : ""} traité{target.nbDossiers > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-lg text-blue-400 hover:bg-blue-200/50 hover:text-blue-700 transition-colors"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-      </div>
 
-      {/* Form fields */}
-      <div className="p-6 space-y-6">
-        {/* Section identité */}
-        <div>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Identité</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField id="nom" label="Société / Nom" req error={errors.nom}>
-              <Input id="nom" value={form.nom}
-                onChange={(e) => setField("nom", e.target.value)}
-                placeholder="Konaté Transport SARL"
-                className={cn("h-10", errors.nom && "border-red-400")} />
-            </FormField>
-            <FormField id="contact" label="Nom du contact" req error={errors.contact}>
-              <Input id="contact" value={form.contact}
-                onChange={(e) => setField("contact", e.target.value)}
-                placeholder="Mamadou Konaté"
-                className={cn("h-10", errors.contact && "border-red-400")} />
-            </FormField>
-          </div>
-        </div>
-
-        {/* Section coordonnées */}
-        <div>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Coordonnées</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField id="tel" label="Téléphone" req error={errors.telephone}>
-              <Input id="tel" value={form.telephone}
-                onChange={(e) => setField("telephone", e.target.value)}
-                placeholder="+223 76 00 00 00"
-                className={cn("h-10", errors.telephone && "border-red-400")} />
-            </FormField>
-            <FormField id="email" label="Email">
-              <Input id="email" type="email" value={form.email}
-                onChange={(e) => setField("email", e.target.value)}
-                placeholder="transport@mail.ml" className="h-10" />
-            </FormField>
-          </div>
-        </div>
-
-        {/* Section véhicule */}
-        <div>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Véhicule & capacité</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <FormField label="Type de véhicule" req>
-              <Select value={form.vehicule} onValueChange={(v) => setField("vehicule", v as TypeVehicule)}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {VEHICULES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </FormField>
-            <FormField id="immat" label="Immatriculation" req error={errors.immatriculation}>
-              <Input id="immat" value={form.immatriculation}
-                onChange={(e) => setField("immatriculation", e.target.value.toUpperCase())}
-                placeholder="BK-0001-ML"
-                className={cn("h-10 font-mono", errors.immatriculation && "border-red-400")} />
-            </FormField>
-            <FormField id="trajet" label="Trajet habituel" req error={errors.trajet}>
-              <Input id="trajet" value={form.trajet}
-                onChange={(e) => setField("trajet", e.target.value)}
-                placeholder="Bamako – Dakar"
-                className={cn("h-10", errors.trajet && "border-red-400")} />
-            </FormField>
-            <FormField id="capacite" label="Capacité (t)" req error={errors.capacite}>
-              <Input id="capacite" type="number" min={1} value={form.capacite}
-                onChange={(e) => setField("capacite", Number(e.target.value))}
-                className={cn("h-10", errors.capacite && "border-red-400")} />
-            </FormField>
-          </div>
-        </div>
-
-        {/* Statut + Notes */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex items-center justify-between rounded-xl border border-border bg-slate-50 dark:bg-slate-800 px-4 py-3.5">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Transporteur actif</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Disponible pour recevoir des missions</p>
-            </div>
-            <Switch
-              checked={form.statut === "Actif"}
-              onCheckedChange={(v) => setField("statut", v ? "Actif" : "Inactif")}
+          <div className="mt-5">
+            <TransporteurFormStepper
+              currentStep={step}
+              completedThrough={completedThrough}
+              onStepClick={goToStep}
             />
           </div>
-          <FormField id="notes" label="Notes">
-            <Textarea id="notes" value={form.notes}
-              onChange={(e) => setField("notes", e.target.value)}
-              placeholder="Informations complémentaires..."
-              rows={2} className="resize-none" />
-          </FormField>
-        </div>
-      </div>
+        </DialogHeader>
 
-      {/* Form footer */}
-      <div className="flex items-center justify-between border-t border-border bg-slate-50/60 dark:bg-slate-800/60 px-6 py-4">
-        <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400" onClick={onClose}>
-          <ArrowLeft className="mr-2 size-4" /> Retour à la liste
-        </Button>
-        <Button onClick={handleSubmit} className="gap-2 bg-blue-700 hover:bg-blue-800">
-          <Save className="size-4" />
-          {isEdit ? "Enregistrer les modifications" : "Créer le transporteur"}
-        </Button>
-      </div>
-    </Card>
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-[320px] overflow-y-auto px-6 py-5">
+            <TransporteurFormFields
+              values={form}
+              onChange={handleChange}
+              errors={errors}
+              step={step}
+              autoFocusNom={!isEdit && step === 0}
+            />
+          </div>
+
+          <DialogFooter className="flex-col gap-3 border-t border-border/60 bg-slate-50/60 px-6 py-4 dark:bg-slate-800/40 sm:flex-row sm:justify-between">
+            <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+              <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-slate-500">
+                Annuler
+              </Button>
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                {step + 1}/{TRANSPORTEUR_FORM_STEPS.length}
+              </span>
+            </div>
+
+            <div className="flex w-full gap-2 sm:w-auto sm:justify-end">
+              {step > 0 && (
+                <Button type="button" variant="outline" onClick={handleBack} disabled={saving}>
+                  <ChevronLeft className="size-4" />
+                  Précédent
+                </Button>
+              )}
+              {!isLastStep ? (
+                <Button type="button" onClick={handleNext} disabled={!stepValid || saving}>
+                  Suivant
+                  <ChevronRight className="size-4" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={!valid || saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Enregistrement…
+                    </>
+                  ) : isEdit ? (
+                    "Enregistrer les modifications"
+                  ) : (
+                    "Créer le transporteur"
+                  )}
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -407,6 +414,14 @@ export function TransporteursScreen() {
   };
 
   const handleExportCSV = () => {
+    if (filtered.length === 0) {
+      toast({
+        title: "Rien à exporter",
+        description: "Aucun transporteur ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
     exportToCSV(`transporteurs-sltt-${new Date().toISOString().slice(0, 10)}`, [
       { header: "Société",         accessor: (t: Transporteur) => t.nom },
       { header: "Contact",         accessor: (t: Transporteur) => t.contact },
@@ -419,8 +434,8 @@ export function TransporteursScreen() {
       { header: "Dossiers",        accessor: (t: Transporteur) => t.nbDossiers },
       { header: "Statut",          accessor: (t: Transporteur) => t.statut },
       { header: "Date ajout",      accessor: (t: Transporteur) => formatDateShort(t.dateCreation) },
-    ], filtered);
-    toast({ title: "Export CSV généré", description: `${filtered.length} transporteurs exportés.` });
+    ], filtered, { module: "Transporteurs" });
+    toast({ title: "Export Excel généré", description: `${filtered.length} transporteur${filtered.length !== 1 ? "s" : ""} exporté${filtered.length !== 1 ? "s" : ""}.` });
   };
 
   const handleExportPDF = () => {
@@ -452,11 +467,9 @@ export function TransporteursScreen() {
     <div className="space-y-6 pb-10">
       {/* Header */}
       <PageHeader title="Transporteurs" description="Annuaire des transporteurs et chauffeurs partenaires">
-        {!inlineForm && (
-          <Button onClick={() => { setInlineForm({ mode: "add" }); setDeleteTarget(null); }}>
-            <Plus className="size-4" /> Nouveau transporteur
-          </Button>
-        )}
+        <Button onClick={() => { setInlineForm({ mode: "add" }); setDeleteTarget(null); }}>
+          <Plus className="size-4" /> Nouveau transporteur
+        </Button>
       </PageHeader>
 
       {/* KPIs */}
@@ -482,18 +495,8 @@ export function TransporteursScreen() {
         </div>
       )}
 
-      {/* ── Inline form (replaces filter+table when open) ── */}
-      {inlineForm ? (
-        <InlineTransporteurForm
-          key={inlineForm.target?.id ?? "new"}
-          mode={inlineForm.mode}
-          target={inlineForm.target}
-          onClose={() => setInlineForm(null)}
-        />
-      ) : (
-        <>
-          {/* Filters */}
-          <Card className="border-border/80 p-4 shadow-sm">
+      {/* Filters */}
+      <Card className="border-border/80 p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative w-full sm:w-64">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
@@ -545,7 +548,7 @@ export function TransporteursScreen() {
                   <FileText className="size-4" />
                 </Button>
                 <Button variant="outline" size="icon" className="size-9 shrink-0"
-                  onClick={handleExportCSV} disabled={filtered.length === 0} title="Exporter CSV">
+                  onClick={handleExportCSV} disabled={filtered.length === 0} title="Exporter Excel">
                   <FileSpreadsheet className="size-4" />
                 </Button>
               </div>
@@ -697,35 +700,40 @@ export function TransporteursScreen() {
               </>
             )}
           </Card>
-        </>
+
+      {/* Form modal */}
+      {inlineForm && (
+        <TransporteurFormModal
+          key={inlineForm.target?.id ?? "new"}
+          open
+          mode={inlineForm.mode}
+          target={inlineForm.target}
+          onClose={() => setInlineForm(null)}
+        />
       )}
 
-      {/* ── Delete confirmation — inline (no AlertDialog) ── */}
-      {deleteTarget && !inlineForm && (
-        <div className="rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-red-100/60 p-6 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 border border-red-200">
-              <AlertTriangle className="size-6 text-red-700" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-red-900">Supprimer ce transporteur ?</h3>
-              <p className="mt-1 text-sm text-red-800/80 leading-relaxed">
-                <strong>{deleteTarget.nom}</strong> ({deleteTarget.vehicule} · {deleteTarget.trajet}) sera définitivement retiré de l'annuaire.
-                Les dossiers associés ne seront pas affectés. Cette action est irréversible.
-              </p>
-              <div className="mt-4 flex items-center gap-3 flex-wrap">
-                <Button size="sm" variant="destructive" className="gap-2"
-                  onClick={() => handleDelete(deleteTarget)}>
-                  <Trash2 className="size-4" /> Confirmer la suppression
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)}>
-                  Annuler
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce transporteur ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deleteTarget?.nom}</strong>
+              {deleteTarget && ` (${deleteTarget.vehicule} · ${deleteTarget.trajet})`} sera
+              définitivement retiré de l'annuaire. Les dossiers associés ne seront pas affectés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && handleDelete(deleteTarget)}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

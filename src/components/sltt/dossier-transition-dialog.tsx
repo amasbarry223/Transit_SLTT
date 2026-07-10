@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, Truck, Banknote } from "lucide-react";
 import { useStore, type DossierStatut } from "@/lib/store";
-import type { Dossier, PaiementMode } from "@/lib/mock-data";
+import type { Dossier, PaiementMode } from "@/lib/domain-types";
 import { formatFCFA, parseAmount } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -145,7 +145,7 @@ export function TransitionDialog({
     date?: string;
   }>({});
 
-  function handleConfirm() {
+  async function handleConfirm() {
     const errs: { montantRecu?: string; date?: string } = {};
 
     if (transition === "solder" && reste > 0) {
@@ -167,13 +167,22 @@ export function TransitionDialog({
     const montantRecu_n =
       transition === "solder" && reste > 0 ? parseAmount(montantRecu) : undefined;
 
-    transitionDossierFn(
-      dossier.id,
-      meta.nextStatut,
-      montantRecu_n,
-      transition === "solder" ? mode : undefined,
-      note || undefined,
-    );
+    try {
+      await transitionDossierFn(
+        dossier.id,
+        meta.nextStatut,
+        montantRecu_n,
+        transition === "solder" ? mode : undefined,
+        note || undefined,
+      );
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e.message || "Impossible de faire évoluer le statut du dossier.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     toast({
       title: meta.confirmLabel,

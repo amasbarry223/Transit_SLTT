@@ -1,5 +1,7 @@
 "use client";
 
+import type { AuditModule } from "@/lib/audit";
+import { useStore } from "@/lib/store";
 /**
  * SEC-06: Escape HTML special characters to prevent injection in generated documents.
  * Exported so that screen-level printHTML templates escape user-entered data
@@ -14,12 +16,55 @@ export function htmlEscape(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
-function csvEscape(value: unknown): string {
-  const s = value == null ? "" : String(value);
-  if (/[",\n;]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
+
+function getLogoUrl(): string {
+  return typeof window !== "undefined" ? `${window.location.origin}/logo.png` : "/logo.png";
+}
+
+/** Attend le chargement des images avant d'ouvrir la boîte d'impression. */
+function triggerPrint(win: Window, delayMs = 400): void {
+  const doPrint = () => {
+    win.focus();
+    win.print();
+  };
+  const imgs = Array.from(win.document.images);
+  const pending = imgs.filter((img) => !img.complete);
+  if (pending.length === 0) {
+    setTimeout(doPrint, delayMs);
+    return;
   }
-  return s;
+  let loaded = 0;
+  const done = () => {
+    loaded += 1;
+    if (loaded >= pending.length) setTimeout(doPrint, 80);
+  };
+  pending.forEach((img) => {
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+  });
+  setTimeout(doPrint, 2500);
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const nav = window.navigator as Navigator & {
+    msSaveOrOpenBlob?: (b: Blob, name: string) => void;
+  };
+  if (nav.msSaveOrOpenBlob) {
+    nav.msSaveOrOpenBlob(blob, filename);
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 4000);
 }
 
 /** BUG-03: fmtFCFA and fmtDate declared before first use (printDevis) */
@@ -36,30 +81,54 @@ interface Column<T> {
   accessor: (row: T) => string | number;
 }
 
+function csvCell(value: unknown): string {
+  const s = value == null ? "" : String(value);
+  if (/[",\n;\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function encodeCsvForExcel(text: string): Blob {
+  const bytes = new TextEncoder().encode(`\uFEFF${text}`);
+  return new Blob([bytes], { type: "text/csv;charset=utf-8;" });
+}
+
+/** Construit le blob CSV (UTF-8 BOM) — exposé pour les tests unitaires. */
+export function buildCsvBlob<T>(
+  columns: Column<T>[],
+  rows: T[],
+): Blob {
+  const headerLine = columns.map((c) => csvCell(c.header)).join(";");
+  const dataLines = rows.map((row) =>
+    columns.map((c) => csvCell(c.accessor(row))).join(";"),
+  );
+  const csvText = `sep=;\r\n${[headerLine, ...dataLines].join("\r\n")}`;
+  return encodeCsvForExcel(csvText);
+}
+
 /**
- * Export an array of rows to a CSV file and trigger download.
- * Uses BOM for Excel UTF-8 compatibility.
+ * Export tabulaire compatible Excel (séparateur ;, encodage UTF-8 BOM).
+ * Ouvre correctement dans Excel Windows avec accents et colonnes séparées.
  */
 export function exportToCSV<T>(
   filename: string,
   columns: Column<T>[],
   rows: T[],
+  audit?: { module: AuditModule },
 ): void {
-  const headerLine = columns.map((c) => csvEscape(c.header)).join(";");
-  const dataLines = rows.map((row) =>
-    columns.map((c) => csvEscape(c.accessor(row))).join(";"),
-  );
-  const csv = "\uFEFF" + [headerLine, ...dataLines].join("\r\n");
+  if (rows.length === 0) return;
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename.endsWith(".csv") ? filename : `${filename}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const baseName = filename.replace(/\.(csv|xls|xlsx)$/i, "");
+  downloadBlob(buildCsvBlob(columns, rows), `${baseName}.csv`);
+
+  if (audit) {
+    void useStore.getState().addAuditLog(
+      audit.module,
+      "Export",
+      `Export ${baseName} — ${rows.length} ligne${rows.length !== 1 ? "s" : ""}`,
+    );
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -86,7 +155,7 @@ export interface DevisData {
 export function printDevis(data: DevisData): void {
   /* Logo sur fond blanc — même technique que printHTML (Bons de sortie).
      Pas de filtre, pas de gradient : le logo s'affiche correctement à l'écran ET à l'impression. */
-  const logoUrl = typeof window !== "undefined" ? `${window.location.origin}/logo.png` : "/logo.png";
+  const logoUrl = getLogoUrl();
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -330,8 +399,151 @@ table { width: 100%; border-collapse: collapse; }
 </body>
 </html>`);
   win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 500);
+  triggerPrint(win);
+}
+
+/* ------------------------------------------------------------------ */
+/* printFactureModule — facture TVA (module Factures)                  */
+/* ------------------------------------------------------------------ */
+
+export interface FactureModuleData {
+  numero: string;
+  clientNom: string;
+  date: string;
+  dateEcheance: string;
+  statut: string;
+  lignes: Array<{ description: string; quantite: number; prixUnitaire: number; montantHT: number }>;
+  tauxTVA: number;
+  montantHT: number;
+  montantTVA: number;
+  montantTTC: number;
+  montantPaye: number;
+  notes: string;
+  creePar: string;
+  creeLe: string;
+  dossierReference?: string;
+  dossierBl?: string;
+}
+
+export function printFactureModule(data: FactureModuleData): void {
+  const logoUrl = getLogoUrl();
+  const fmtD = (iso: string) =>
+    new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+
+  const lignesHTML = data.lignes.map((l, i) => `
+    <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.description)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center;font-variant-numeric:tabular-nums">${l.quantite}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${fmtFCFA(l.prixUnitaire)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${fmtFCFA(l.montantHT)}</td>
+    </tr>`).join("");
+
+  const reste = Math.max(0, data.montantTTC - data.montantPaye);
+  const paiementHTML = data.montantPaye > 0 ? `
+    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#15803d">
+      <span>Déjà payé</span><span style="font-variant-numeric:tabular-nums">- ${fmtFCFA(data.montantPaye)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:600;color:#b45309">
+      <span>Reste à payer</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(reste)}</span>
+    </div>` : "";
+
+  const win = window.open("", "_blank", "width=880,height=760");
+  if (!win) { window.print(); return; }
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Facture ${htmlEscape(data.numero)}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
+.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 40px 28px; border-bottom: 3px solid #1e40af; }
+.brand { display: flex; align-items: flex-start; gap: 14px; }
+.brand-logo { width: 64px; height: 64px; object-fit: contain; }
+.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.doc-meta { text-align: right; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
+.doc-ref { font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
+.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
+.body { padding: 32px 40px; }
+.client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; }
+.client-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 6px; }
+.client-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+.client-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; }
+.tbl-head { background: #1e3a8a; }
+.tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.totals { width: 280px; margin-left: auto; }
+.total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #475569; }
+.total-main { border-top: 2px solid #0f172a; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 15px; color: #1e40af; }
+.notes { border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px; font-size: 12px; color: #64748b; }
+.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; line-height: 1.6; }
+.no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+@media print { .no-print { display: none !important; } body { background: white; } .wrap { box-shadow: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">⬇ &nbsp;Imprimer / Enregistrer en PDF</button>
+  </div>
+  <div class="doc-header">
+    <div class="brand">
+      <img src="${logoUrl}" alt="SLTT" class="brand-logo">
+      <div>
+        <div class="brand-name">SLTT</div>
+        <div class="brand-sub">Société Traoré de Logistique, Transit et Transport<br>Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml</div>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-type">Facture</div>
+      <div class="doc-ref">${htmlEscape(data.numero)}</div>
+      <div class="doc-date">Date : ${fmtD(data.date)}</div>
+      <div class="doc-date">Échéance : ${fmtD(data.dateEcheance)}</div>
+      <div class="doc-date">Statut : ${htmlEscape(data.statut)}</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="client-box">
+      <div class="client-lbl">Facturé à</div>
+      <div class="client-name">${htmlEscape(data.clientNom)}</div>
+      ${data.dossierReference ? `<div class="client-sub">Dossier lié : ${htmlEscape(data.dossierReference)}${data.dossierBl ? ` · BL ${htmlEscape(data.dossierBl)}` : ""}</div>` : ""}
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead class="tbl-head">
+          <tr>
+            <th style="text-align:left">Description</th>
+            <th style="text-align:center;width:60px">Qté</th>
+            <th style="text-align:right;width:130px">P.U. HT</th>
+            <th style="text-align:right;width:140px">Montant HT</th>
+          </tr>
+        </thead>
+        <tbody>${lignesHTML}</tbody>
+      </table>
+    </div>
+    <div class="totals">
+      <div class="total-line"><span>Sous-total HT</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantHT)}</span></div>
+      <div class="total-line"><span>TVA ${data.tauxTVA}%</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTVA)}</span></div>
+      <div class="total-line total-main"><span>TOTAL TTC</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTTC)}</span></div>
+      ${paiementHTML}
+    </div>
+    ${data.notes ? `<div class="notes"><strong style="color:#334155">Notes</strong><p style="margin-top:6px;white-space:pre-wrap">${htmlEscape(data.notes)}</p></div>` : ""}
+  </div>
+  <div class="footer">
+    Facture générée par le système SLTT · ${htmlEscape(data.creePar)} · ${fmtD(data.creeLe)}<br>
+    Merci de votre confiance. Paiement par virement ou espèces.
+  </div>
+</div>
+</body>
+</html>`);
+  win.document.close();
+  triggerPrint(win);
 }
 
 /* ------------------------------------------------------------------ */
@@ -354,7 +566,7 @@ export interface InvoiceData {
 }
 
 export function printInvoice(data: InvoiceData, invoiceNum: string): void {
-  const logoUrl = typeof window !== "undefined" ? `${window.location.origin}/logo.png` : "/logo.png";
+  const logoUrl = getLogoUrl();
   const reste    = Math.max(0, data.montantInvesti - data.montantPaye);
   const soldé    = reste === 0;
   const today    = fmtDate(new Date().toISOString().slice(0, 10));
@@ -579,8 +791,7 @@ table { width: 100%; border-collapse: collapse; }
 </body>
 </html>`);
   win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 500);
+  triggerPrint(win);
 }
 
 /**
@@ -588,6 +799,7 @@ table { width: 100%; border-collapse: collapse; }
  * Useful for generating a clean PDF/document without the app chrome.
  */
 export function printHTML(title: string, bodyHTML: string): void {
+  const logoUrl = getLogoUrl();
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
     // Popup blocked — fallback to printing current page
@@ -645,7 +857,7 @@ export function printHTML(title: string, bodyHTML: string): void {
 <body>
   <div class="doc-header">
     <div class="brand">
-      <img class="brand-logo" src="${window.location.origin}/logo.png" alt="SLTT" />
+      <img class="brand-logo" src="${logoUrl}" alt="SLTT" />
       <div>
         <div class="brand-name">SLTT</div>
         <div class="brand-sub">Société Traoré de Logistique, Transit et Transport</div>
@@ -661,10 +873,7 @@ export function printHTML(title: string, bodyHTML: string): void {
 </body>
 </html>`);
   win.document.close();
-  win.focus();
-  setTimeout(() => {
-    win.print();
-  }, 300);
+  triggerPrint(win);
 }
 
 /* ------------------------------------------------------------------ */
@@ -685,7 +894,7 @@ export function printClients(
   rows: ClientPrintRow[],
   filterLabel?: string,
 ): void {
-  const logoUrl      = typeof window !== "undefined" ? `${window.location.origin}/logo.png` : "/logo.png";
+  const logoUrl      = getLogoUrl();
   const today        = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const totalCreance = rows.reduce((s, r) => s + r.totalDu, 0);
   const nbEntreprises  = rows.filter((r) => r.type === "Entreprise").length;
@@ -862,6 +1071,5 @@ table { width: 100%; border-collapse: collapse; }
 </body>
 </html>`);
   win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 500);
+  triggerPrint(win);
 }

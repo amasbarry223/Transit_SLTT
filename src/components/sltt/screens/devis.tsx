@@ -26,10 +26,12 @@ import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { exportToCSV, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,7 +80,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { DevisStatutBadge } from "@/components/sltt/status-badge";
 import { TablePagination } from "@/components/sltt/table-pagination";
 
 /* ------------------------------------------------------------------ */
@@ -86,17 +88,6 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 /* ------------------------------------------------------------------ */
 
 const PAGE_SIZE = 8;
-
-const STATUT_CONFIG: Record<
-  DevisStatut,
-  { label: string; icon: React.ComponentType<{ className?: string }>; className: string; dot: string }
-> = {
-  Brouillon: { label: "Brouillon", icon: Clock,        className: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700", dot: "bg-slate-400" },
-  Envoyé:    { label: "Envoyé",    icon: Send,         className: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 border-blue-200",     dot: "bg-blue-500" },
-  Accepté:   { label: "Accepté",   icon: CheckCircle2, className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
-  Refusé:    { label: "Refusé",    icon: XCircle,      className: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200",        dot: "bg-red-500" },
-  Expiré:    { label: "Expiré",    icon: AlertCircle,  className: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 border-amber-200",  dot: "bg-amber-400" },
-};
 
 const NEXT_STATUT: Partial<Record<DevisStatut, { to: DevisStatut; label: string; colorClass: string; bgClass: string }>> = {
   Brouillon: { to: "Envoyé",  label: "→ Envoyer",   colorClass: "text-blue-700",    bgClass: "bg-blue-50 dark:bg-blue-950/40" },
@@ -115,21 +106,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "validite-asc", label: "Validité (proche d'abord)" },
   { value: "statut",       label: "Statut" },
 ];
-
-/* ------------------------------------------------------------------ */
-/* Statut badge                                                        */
-/* ------------------------------------------------------------------ */
-
-function DevisStatutBadge({ statut }: { statut: DevisStatut }) {
-  const cfg = STATUT_CONFIG[statut];
-  const Icon = cfg.icon;
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium", cfg.className)}>
-      <Icon className="size-3 shrink-0" />
-      {cfg.label}
-    </span>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Skeleton                                                            */
@@ -308,7 +284,6 @@ export function DevisScreen() {
   const updateDevis = useStore((s) => s.updateDevis);
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
   const expireDevisObsoletes = useStore((s) => s.expireDevisObsoletes);
-  const convertDevisToDossier = useStore((s) => s.convertDevisToDossier);
   const removeDevis = useStore((s) => s.removeDevis);
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -331,18 +306,20 @@ export function DevisScreen() {
   const [formOpen, setFormOpen] = useState(false);
   const [editDevis, setEditDevis] = useState<Devis | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [convertId, setConvertId] = useState<string | null>(null);
+  const [convertTarget, setConvertTarget] = useState<Devis | null>(null);
 
-  // Ouverture directe du formulaire de création depuis un raccourci externe
-  // (ex. le CTA "+ Nouveau devis" du tableau de bord).
-  useEffect(() => {
+  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
+  if (selectedId !== prevSelectedId) {
+    setPrevSelectedId(selectedId);
     if (selectedId === "new") {
       setEditDevis(null);
       setFormOpen(true);
-      go("devis"); // vide selectedId pour ne pas rouvrir en boucle
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }
+
+  useEffect(() => {
+    if (selectedId === "new") go("devis");
+  }, [selectedId, go]);
 
   function handleOpenDevis(d: Devis) {
     openDevisDetail(d.id, false);
@@ -439,21 +416,6 @@ export function DevisScreen() {
     }
   }
 
-  async function handleConvert() {
-    const d = devisList.find((x) => x.id === convertId);
-    if (!d) return;
-    try {
-      const dossier = await convertDevisToDossier(d.id);
-      if (dossier) {
-        toast({ title: "Dossier créé", description: `${dossier.reference} ouvert depuis ${d.reference}` });
-        openDossierDetail(dossier.id);
-      }
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de convertir le devis", variant: "destructive" });
-    }
-    setConvertId(null);
-  }
-
   function handlePrintDevis(d: Devis) {
     const client = clients.find((c) => c.id === d.clientId);
     printInvoice({
@@ -473,6 +435,14 @@ export function DevisScreen() {
   }
 
   function handleExportCSV() {
+    if (filtered.length === 0) {
+      toast({
+        title: "Rien à exporter",
+        description: "Aucun devis ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
     exportToCSV(
       `devis-sltt-${new Date().toISOString().slice(0, 10)}`,
       [
@@ -488,6 +458,7 @@ export function DevisScreen() {
         { header: "Statut",          accessor: (d: Devis) => d.statut },
       ],
       filtered,
+      { module: "Devis" },
     );
     toast({ title: "Export CSV généré", description: `${filtered.length} devis exportés.` });
   }
@@ -772,7 +743,7 @@ export function DevisScreen() {
                                 ) : (
                                   <DropdownMenuItem
                                     className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
-                                    onClick={() => setConvertId(d.id)}
+                                    onClick={() => setConvertTarget(d)}
                                   >
                                     <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
                                   </DropdownMenuItem>
@@ -833,23 +804,12 @@ export function DevisScreen() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!convertId} onOpenChange={(o) => !o && setConvertId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Convertir en dossier de transit ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Un nouveau dossier sera créé à partir du devis {devisList.find((x) => x.id === convertId)?.reference}.
-              Le devis passera au statut <strong>Accepté</strong> et vous serez redirigé vers la fiche dossier.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConvert}>
-              Créer le dossier
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConvertDevisDialog
+        key={convertTarget?.id ?? "closed"}
+        devis={convertTarget}
+        onClose={() => setConvertTarget(null)}
+        onConverted={(dossierId) => openDossierDetail(dossierId)}
+      />
     </div>
   );
 }

@@ -6,8 +6,20 @@ import {
   DossierStatut,
   EcritureStatut,
   StockStatut,
-} from "@/lib/mock-data";
+} from "@/lib/domain-types";
 import type { FactureStatut } from "@/lib/store";
+import type { DevisStatut } from "@/lib/domain-types";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Send,
+  XCircle,
+  FileText,
+  Mail,
+  Ban,
+  type LucideIcon,
+} from "lucide-react";
 
 type Tone = "blue" | "emerald" | "amber" | "red" | "indigo" | "slate";
 
@@ -34,23 +46,30 @@ export function ToneBadge({
   children,
   className,
   dot = true,
+  icon: Icon,
+  size = "md",
 }: {
   tone: Tone;
   children: React.ReactNode;
   className?: string;
   dot?: boolean;
+  icon?: LucideIcon;
+  size?: "sm" | "md";
 }) {
   return (
     <Badge
       variant="outline"
       className={cn(
-        "rounded-full font-medium border gap-1.5 px-2.5 py-0.5",
+        "rounded-full font-medium border gap-1.5",
+        size === "sm" ? "px-2 py-0 text-[11px]" : "px-2.5 py-0.5",
         toneClasses[tone],
         className,
       )}
     >
-      {dot && (
-        <span className={cn("size-1.5 rounded-full", dotClasses[tone])} />
+      {Icon ? (
+        <Icon className={cn("shrink-0", size === "sm" ? "size-3" : "size-3.5")} />
+      ) : (
+        dot && <span className={cn("size-1.5 rounded-full", dotClasses[tone])} />
       )}
       {children}
     </Badge>
@@ -104,15 +123,51 @@ export function StockStatutBadge({ statut }: { statut: StockStatut }) {
   return <ToneBadge tone={map[statut]}>{statut}</ToneBadge>;
 }
 
-export function FactureStatutBadge({ statut }: { statut: FactureStatut }) {
-  const map: Record<FactureStatut, Tone> = {
-    Brouillon: "slate",
-    Envoyée: "blue",
-    Partielle: "amber",
-    Soldée: "emerald",
-    Annulée: "red",
+export function FactureStatutBadge({
+  statut,
+  size = "md",
+  showIcon = false,
+}: {
+  statut: FactureStatut;
+  size?: "sm" | "md";
+  showIcon?: boolean;
+}) {
+  const map: Record<FactureStatut, { tone: Tone; icon: LucideIcon }> = {
+    Brouillon: { tone: "slate", icon: FileText },
+    Envoyée: { tone: "blue", icon: Mail },
+    Partielle: { tone: "amber", icon: Clock },
+    Soldée: { tone: "emerald", icon: CheckCircle2 },
+    Annulée: { tone: "red", icon: Ban },
   };
-  return <ToneBadge tone={map[statut]}>{statut}</ToneBadge>;
+  const cfg = map[statut];
+  return (
+    <ToneBadge tone={cfg.tone} icon={showIcon ? cfg.icon : undefined} dot={!showIcon} size={size}>
+      {statut}
+    </ToneBadge>
+  );
+}
+
+const DEVIS_STATUT_TONE: Record<DevisStatut, { tone: Tone; icon: LucideIcon }> = {
+  Brouillon: { tone: "slate", icon: Clock },
+  Envoyé: { tone: "blue", icon: Send },
+  Accepté: { tone: "emerald", icon: CheckCircle2 },
+  Refusé: { tone: "red", icon: XCircle },
+  Expiré: { tone: "amber", icon: AlertCircle },
+};
+
+export function DevisStatutBadge({
+  statut,
+  size = "md",
+}: {
+  statut: DevisStatut;
+  size?: "sm" | "md";
+}) {
+  const cfg = DEVIS_STATUT_TONE[statut];
+  return (
+    <ToneBadge tone={cfg.tone} icon={cfg.icon} dot={false} size={size}>
+      {statut}
+    </ToneBadge>
+  );
 }
 
 export function DossierFournisseurStatutBadge({ statut }: { statut: "En attente" | "Payé" | "Litige" }) {
@@ -127,14 +182,14 @@ export function DossierFournisseurStatutBadge({ statut }: { statut: "En attente"
 export function EcartValue({ value }: { value: number }) {
   if (value > 0) {
     return (
-      <span className="font-medium text-emerald-600 tabular-nums">
+      <span className="font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
         +{value.toLocaleString("fr-FR")}
       </span>
     );
   }
   if (value < 0) {
     return (
-      <span className="font-medium text-red-600 tabular-nums">
+      <span className="font-medium text-red-600 dark:text-red-400 tabular-nums">
         {value.toLocaleString("fr-FR")}
       </span>
     );

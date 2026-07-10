@@ -1,0 +1,28 @@
+/** Terminologie métier unifiée — source unique pour libellés et tooltips UI. */
+
+export const GLOSSARY = {
+  margeDossier: {
+    label: "Marge dossier",
+    short: "Marge",
+    definition:
+      "Frais de prestation moins droits de douane et frais de circuit (marge opérationnelle du dossier).",
+  },
+  ecartReglement: {
+    label: "Écart de règlement",
+    short: "Écart règl.",
+    definition:
+      "Montant payé moins montant investi sur une écriture comptable (positif = trop-perçu, négatif = reste dû).",
+  },
+  resteAPayer: {
+    label: "Reste à payer",
+    short: "Reste",
+    definition: "Solde impayé sur un dossier, une facture ou une écriture.",
+  },
+  margeBrutePeriode: {
+    label: "Marge brute période",
+    short: "Marge période",
+    definition: "Somme des marges dossiers sur la période sélectionnée (tableau de bord / bilans).",
+  },
+} as const;
+
+export type GlossaryKey = keyof typeof GLOSSARY;

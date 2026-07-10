@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { supabase } from "@/lib/supabase";
-import type { UserRole } from "@/lib/mock-data";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import type { UserRole } from "@/lib/domain-types";
 
 export type ViewKey =
   | "dashboard"
@@ -51,6 +51,7 @@ interface NavState {
   openClient: (id: string | null) => void;
   login: (role: UserRole, name: string, userId: string, remember: boolean) => void;
   logout: () => Promise<void>;
+  setCurrentUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
@@ -96,7 +97,7 @@ export const useNav = create<NavState>()(
 
       logout: async () => {
         try {
-          if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          if (isSupabaseConfigured) {
             await supabase.auth.signOut();
           }
         } catch { /* ignore */ }
@@ -107,6 +108,8 @@ export const useNav = create<NavState>()(
           dossierFormMode: "create",
         });
       },
+
+      setCurrentUserName: (name) => set({ currentUserName: name }),
 
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),

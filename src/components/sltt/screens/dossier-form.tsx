@@ -126,6 +126,39 @@ function DossierFormInner() {
   // Unsaved changes guard
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
 
+  const WIZARD_STEPS = [
+    { id: 1, label: "Identité", hint: "Client, BL, camion, nature" },
+    { id: 2, label: "Montants", hint: "Droits, frais, marge" },
+    { id: 3, label: "Suivi", hint: "Dates, transport, notes" },
+  ] as const;
+  const [wizardStep, setWizardStep] = useState(1);
+  const showWizard = !isEdit;
+  const showStep = (step: number) => !showWizard || wizardStep === step;
+
+  const validateStep1 = (): boolean => {
+    const next: typeof errors = {};
+    if (!clientId) next.clientId = "Le client est obligatoire.";
+    if (!nature.trim()) next.nature = "La nature est obligatoire.";
+    if (!bl.trim()) next.bl = "Le n° de BL est obligatoire.";
+    if (!camion.trim()) next.camion = "Le n° de camion est obligatoire.";
+    if (!date) next.date = "La date est obligatoire.";
+    setErrors((p) => ({ ...p, ...next }));
+    setTouched({
+      clientId: true,
+      nature: true,
+      bl: true,
+      camion: true,
+      date: true,
+    });
+    return Object.keys(next).length === 0;
+  };
+
+  const goNextStep = () => {
+    if (wizardStep === 1 && !validateStep1()) return;
+    setWizardStep((s) => Math.min(3, s + 1));
+  };
+  const goPrevStep = () => setWizardStep((s) => Math.max(1, s - 1));
+
   // Derived values
   const dN = parseAmount(droitDouane);
   const fN = parseAmount(fraisCircuit);
@@ -304,7 +337,7 @@ function DossierFormInner() {
           <tr><th>Montant payé</th><td class="num">${formatFCFA(montantPaye, false)}</td></tr>
           <tr><th>Reste à payer</th><td class="num">${formatFCFA(reste, false)}</td></tr>
           <tr class="total-row">
-            <th>Écart calculé</th>
+            <th>Marge calculée</th>
             <td class="num" style="color:${ecart >= 0 ? "#059669" : "#dc2626"}">
               ${ecart >= 0 ? "+" : ""}${ecart.toLocaleString("fr-FR")}
             </td>
@@ -362,10 +395,36 @@ function DossierFormInner() {
         </div>
       )}
 
+      {showWizard && (
+        <Card className="border-border/80 p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span>
+              Étape {wizardStep} sur {WIZARD_STEPS.length} —{" "}
+              {WIZARD_STEPS[wizardStep - 1]?.label}
+            </span>
+            <span className="hidden sm:inline">
+              {WIZARD_STEPS[wizardStep - 1]?.hint}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {WIZARD_STEPS.map((step) => (
+              <div
+                key={step.id}
+                className={cn(
+                  "h-1.5 flex-1 rounded-full transition-colors",
+                  step.id <= wizardStep ? "bg-primary" : "bg-slate-200 dark:bg-slate-700",
+                )}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left / main column */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Informations générales */}
+          {/* Étape 1 — Informations générales */}
+          {showStep(1) && (
           <Card className="border-border/80 p-5 shadow-sm">
             <SectionTitle
               icon={<FolderKanban className="size-4" />}
@@ -480,8 +539,10 @@ function DossierFormInner() {
               </Field>
             </div>
           </Card>
+          )}
 
-          {/* Transport & Logistique */}
+          {/* Étape 3 — Transport & Logistique */}
+          {showStep(3) && (
           <CollapsibleSection
             icon={<Truck className="size-4" />}
             tone="indigo"
@@ -516,14 +577,16 @@ function DossierFormInner() {
               </Field>
             </div>
           </CollapsibleSection>
+          )}
 
-          {/* Montants */}
+          {/* Étape 2 — Montants */}
+          {showStep(2) && (
           <Card className="border-border/80 p-5 shadow-sm">
             <SectionTitle
               icon={<Wallet className="size-4" />}
               tone="emerald"
               title="Montants (FCFA)"
-              description="Saisissez les montants — l'écart est calculé automatiquement"
+              description="Saisissez les montants — la marge est calculée automatiquement"
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <AmountField
@@ -560,7 +623,7 @@ function DossierFormInner() {
                 >
                   <div className="min-w-0">
                     <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
-                      Écart calculé automatiquement
+                      Marge calculée automatiquement
                     </div>
                     <div className="mt-0.5 text-xs opacity-70">
                       Prestation − (Droit de douane + Frais de circuit)
@@ -574,8 +637,10 @@ function DossierFormInner() {
               </div>
             </div>
           </Card>
+          )}
 
-          {/* Suivi */}
+          {/* Étape 3 — Suivi */}
+          {showStep(3) && (
           <CollapsibleSection
             icon={<ListChecks className="size-4" />}
             tone="indigo"
@@ -604,33 +669,16 @@ function DossierFormInner() {
                     )}
                   </div>
                 ) : (
-                  <Select
-                    value={statut}
-                    onValueChange={(v) => setStatut(v as DossierStatut)}
-                  >
-                    <SelectTrigger
-                      className="h-10 w-full"
-                      aria-label="Sélectionner un statut"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUTS.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <DossierStatutBadge statut="En cours" />
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Tout nouveau dossier démarre à « En cours ». Les transitions se font ensuite depuis la fiche dossier.
+                    </span>
+                  </div>
                 )}
                 {isEdit && (
                   <p className="text-xs text-slate-400 dark:text-slate-500">
                     Le statut se fait uniquement avancer via une transition guidée, qui enregistre le paiement associé.
-                  </p>
-                )}
-                {!isEdit && statut === "Soldé" && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Un dossier créé directement « Soldé » n&apos;aura pas d&apos;écriture de paiement associée.
                   </p>
                 )}
               </Field>
@@ -665,6 +713,31 @@ function DossierFormInner() {
               </div>
             </div>
           </CollapsibleSection>
+          )}
+
+          {showWizard && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={goPrevStep}
+                disabled={wizardStep === 1}
+              >
+                Précédent
+              </Button>
+              {wizardStep < 3 ? (
+                <Button type="button" onClick={goNextStep}>
+                  Suivant
+                  <ArrowRight className="size-4" />
+                </Button>
+              ) : (
+                <Button type="button" onClick={handleSave}>
+                  <Save className="size-4" />
+                  Enregistrer le dossier
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right summary column */}
@@ -689,7 +762,7 @@ function DossierFormInner() {
               </div>
 
               <div className="mt-4 border-t border-border pt-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400">Écart</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Marge</div>
                 <div
                   className={cn(
                     "mt-1 text-2xl font-bold tabular-nums",

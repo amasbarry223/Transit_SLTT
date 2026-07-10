@@ -21,19 +21,21 @@ import {
   MessageCircle,
   Check,
   Receipt,
+  Warehouse,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore, type ClientInput } from "@/lib/store";
-import type { Client } from "@/lib/mock-data";
+import type { Client } from "@/lib/domain-types";
 import {
   resteAPayer,
   type Ecriture,
   type EcritureStatut,
   type BonMotif,
-} from "@/lib/mock-data";
+} from "@/lib/domain-types";
 import { useToast } from "@/hooks/use-toast";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
+import { InfoCallout } from "@/components/sltt/info-callout";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import {
   ToneBadge,
@@ -41,6 +43,7 @@ import {
   EcritureStatutBadge,
   FactureStatutBadge,
 } from "@/components/sltt/status-badge";
+import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +78,7 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 6;
 
-type FicheTab = "dossiers" | "paiements" | "factures" | "bons";
+type FicheTab = "dossiers" | "paiements" | "factures" | "bons" | "stock";
 
 const tabs: {
   key: FicheTab;
@@ -86,6 +89,7 @@ const tabs: {
   { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban },
   { key: "paiements", label: "Paiements", shortLabel: "Paiements", icon: Wallet },
   { key: "factures", label: "Factures", shortLabel: "Factures", icon: Receipt },
+  { key: "stock", label: "Stock", shortLabel: "Stock", icon: Warehouse },
   { key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: Truck },
 ];
 
@@ -220,6 +224,8 @@ export function ClientFicheScreen() {
   const allEcritures = useStore((s) => s.ecritures);
   const allBons = useStore((s) => s.bons);
   const allFactures = useStore((s) => s.factures);
+  const allStock = useStore((s) => s.stock);
+  const allMouvements = useStore((s) => s.mouvements);
   const updateClient = useStore((s) => s.updateClient);
 
   const [activeTab, setActiveTab] = useState<FicheTab>("dossiers");
@@ -234,11 +240,7 @@ export function ClientFicheScreen() {
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
-  const [editNom, setEditNom] = useState("");
-  const [editType, setEditType] = useState<Client["type"]>("Entreprise");
-  const [editTelephone, setEditTelephone] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editAdresse, setEditAdresse] = useState("");
+  const [editValues, setEditValues] = useState<ClientInput>(emptyClientForm());
 
   const client = useMemo(
     () => clients.find((c) => c.id === selectedId),
@@ -263,6 +265,24 @@ export function ClientFicheScreen() {
     () =>
       selectedId ? allFactures.filter((f) => f.clientId === selectedId) : [],
     [allFactures, selectedId],
+  );
+  const stockItems = useMemo(
+    () => (selectedId ? allStock.filter((s) => s.clientId === selectedId) : []),
+    [allStock, selectedId],
+  );
+  const stockIds = useMemo(() => new Set(stockItems.map((s) => s.id)), [stockItems]);
+  const clientMouvements = useMemo(
+    () => allMouvements.filter((m) => m.stockId && stockIds.has(m.stockId)),
+    [allMouvements, stockIds],
+  );
+
+  const payeDossiers = useMemo(
+    () => dossiers.reduce((s, d) => s + d.montantPaye, 0),
+    [dossiers],
+  );
+  const payeFactures = useMemo(
+    () => factures.reduce((s, f) => s + f.montantPaye, 0),
+    [factures],
   );
 
   // LOGIC-03 (audit) : Écritures (via les dossiers) et Factures sont deux
@@ -314,26 +334,28 @@ export function ClientFicheScreen() {
 
   function openEditDialog() {
     if (!client) return;
-    setEditNom(client.nom);
-    setEditType(client.type);
-    setEditTelephone(client.telephone ?? "");
-    setEditEmail(client.email ?? "");
-    setEditAdresse(client.adresse ?? "");
+    setEditValues({
+      nom: client.nom,
+      type: client.type,
+      telephone: client.telephone ?? "",
+      email: client.email ?? "",
+      adresse: client.adresse ?? "",
+    });
     setEditOpen(true);
   }
 
   function handleSaveEdit() {
-    if (!client || !editNom.trim()) return;
+    if (!client || !editValues.nom.trim()) return;
     const input: ClientInput = {
-      nom: editNom.trim(),
-      type: editType,
-      telephone: editTelephone.trim(),
-      email: editEmail.trim(),
-      adresse: editAdresse.trim(),
+      nom: editValues.nom.trim(),
+      type: editValues.type,
+      telephone: editValues.telephone.trim(),
+      email: editValues.email.trim(),
+      adresse: editValues.adresse.trim(),
     };
     updateClient(client.id, input);
     setEditOpen(false);
-    toast({ title: "Client mis à jour", description: editNom.trim() });
+    toast({ title: "Client mis à jour", description: input.nom });
   }
 
   const dossierPages = Math.max(1, Math.ceil(dossiers.length / PAGE_SIZE));
@@ -415,6 +437,13 @@ export function ClientFicheScreen() {
         </div>
       )}
 
+      <InfoCallout>
+        <strong>Synthèse financière :</strong> dossiers {formatFCFA(payeDossiers)} payé
+        {totalDu > 0 && <> · reste dossiers {formatFCFA(totalDu)}</>}
+        {payeFactures > 0 && <> · factures {formatFCFA(payeFactures)} encaissé</>}
+        . Les canaux dossiers et factures sont indépendants.
+      </InfoCallout>
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
           label="Dossiers"
@@ -467,7 +496,9 @@ export function ClientFicheScreen() {
                     ? ecritures.length
                     : t.key === "factures"
                       ? factures.length
-                      : bons.length;
+                      : t.key === "stock"
+                        ? stockItems.length
+                        : bons.length;
               return (
                 <TabsTrigger
                   key={t.key}
@@ -743,6 +774,65 @@ export function ClientFicheScreen() {
           </Card>
         </TabsContent>
 
+        {/* Stock / entreposage */}
+        <TabsContent value="stock" className="mt-6 focus-visible:outline-none">
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+            {stockItems.length === 0 ? (
+              <EmptyState
+                label="Aucun article de stock rattaché à ce client."
+                action={
+                  <Button size="sm" variant="outline" onClick={() => go("entreposage")}>
+                    <Warehouse className="size-4" />
+                    Ouvrir l&apos;entreposage
+                  </Button>
+                }
+              />
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">Marchandise</TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Qté</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">Dépositaire</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">Commercial</TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Payé</TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Reste</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {stockItems.map((item) => (
+                        <TableRow key={item.id} className="border-b border-border">
+                          <TableCell className="px-4 py-3.5 font-medium">{item.marchandise}</TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums">{item.quantite} {item.unite}</TableCell>
+                          <TableCell className="hidden px-4 py-3.5 sm:table-cell">{item.depositaire}</TableCell>
+                          <TableCell className="hidden px-4 py-3.5 md:table-cell">{item.commercial}</TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-emerald-700">{formatFCFA(item.sommePayee)}</TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-amber-700">{formatFCFA(item.resteAPayer)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {clientMouvements.length > 0 && (
+                  <div className="border-t border-border px-4 py-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Derniers mouvements</p>
+                    <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                      {clientMouvements.slice(0, 5).map((m) => (
+                        <li key={m.id} className="flex justify-between gap-2">
+                          <span>{m.type} — {m.marchandise}</span>
+                          <span className="tabular-nums shrink-0">{m.quantite} {m.unite}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+        </TabsContent>
+
         {/* Bons */}
         <TabsContent value="bons" className="mt-6 focus-visible:outline-none">
           <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
@@ -836,69 +926,16 @@ export function ClientFicheScreen() {
               Mettez à jour les informations du client.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Nom / Raison sociale <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                value={editNom}
-                onChange={(e) => setEditNom(e.target.value)}
-                className="h-10"
-                placeholder="Nom ou raison sociale"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type</Label>
-              <Select
-                value={editType}
-                onValueChange={(v) => setEditType(v as Client["type"])}
-              >
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Entreprise">Entreprise</SelectItem>
-                  <SelectItem value="Particulier">Particulier</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
-                <Input
-                  value={editTelephone}
-                  onChange={(e) => setEditTelephone(e.target.value)}
-                  className="h-10"
-                  placeholder="+223 76 00 00 00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">E-mail</Label>
-                <Input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  className="h-10"
-                  placeholder="contact@exemple.ml"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</Label>
-              <Input
-                value={editAdresse}
-                onChange={(e) => setEditAdresse(e.target.value)}
-                className="h-10"
-                placeholder="Adresse complète"
-              />
-            </div>
-          </div>
+          <ClientFormFields
+            values={editValues}
+            onChange={(patch) => setEditValues((v) => ({ ...v, ...patch }))}
+            idPrefix="cl-edit"
+          />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSaveEdit} disabled={!editNom.trim()}>
+            <Button onClick={handleSaveEdit} disabled={!editValues.nom.trim()}>
               <Pencil className="size-4" />
               Enregistrer
             </Button>

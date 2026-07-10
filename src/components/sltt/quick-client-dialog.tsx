@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { useStore, type ClientInput } from "@/lib/store";
-import type { ClientType } from "@/lib/mock-data";
+import type { ClientType } from "@/lib/domain-types";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,7 @@ interface Props {
 export function QuickClientButton({ onCreated }: Props) {
   const { toast } = useToast();
   const addClient = useStore((s) => s.addClient);
+  const canCreateClient = usePermission("clients:write");
   const [open, setOpen] = useState(false);
   const [nom, setNom] = useState("");
   const [type, setType] = useState<ClientType>("Entreprise");
@@ -70,6 +72,8 @@ export function QuickClientButton({ onCreated }: Props) {
       });
     }
   }
+
+  if (!canCreateClient) return null;
 
   return (
     <>

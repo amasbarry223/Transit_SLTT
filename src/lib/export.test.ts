@@ -1,0 +1,73 @@
+import { describe, expect, it } from "vitest";
+import { buildCsvBlob } from "./export";
+
+interface TransporteurRow {
+  nom: string;
+  contact: string;
+  telephone: string;
+  vehicule: string;
+  statut: string;
+}
+
+const columns = [
+  { header: "Société", accessor: (t: TransporteurRow) => t.nom },
+  { header: "Contact", accessor: (t: TransporteurRow) => t.contact },
+  { header: "Téléphone", accessor: (t: TransporteurRow) => t.telephone },
+  { header: "Véhicule", accessor: (t: TransporteurRow) => t.vehicule },
+  { header: "Statut", accessor: (t: TransporteurRow) => t.statut },
+];
+
+const sampleRows: TransporteurRow[] = [
+  {
+    nom: "Konaté Transport",
+    contact: "Mamadou Konaté",
+    telephone: "+223 76 12 34 56",
+    vehicule: "Semi-remorque",
+    statut: "Actif",
+  },
+  {
+    nom: "Golaine Tech",
+    contact: "Ibrahim Diarra",
+    telephone: "+223 66 98 77 44",
+    vehicule: "Camion",
+    statut: "Actif",
+  },
+];
+
+async function blobToBytes(blob: Blob): Promise<Uint8Array> {
+  const buffer = await blob.arrayBuffer();
+  return new Uint8Array(buffer);
+}
+
+describe("buildCsvBlob", () => {
+  it("produit un blob non vide avec BOM UTF-8", async () => {
+    const blob = buildCsvBlob(columns, sampleRows);
+    expect(blob.size).toBeGreaterThan(0);
+
+    const bytes = await blobToBytes(blob);
+    expect(bytes[0]).toBe(0xef);
+    expect(bytes[1]).toBe(0xbb);
+    expect(bytes[2]).toBe(0xbf);
+  });
+
+  it("contient sep=;, les en-têtes et les données", async () => {
+    const blob = buildCsvBlob(columns, sampleRows);
+    const text = new TextDecoder("utf-8").decode(await blob.arrayBuffer());
+
+    expect(text).toContain("sep=;");
+    expect(text).toContain("Société");
+    expect(text).toContain("Contact");
+    expect(text).toContain("Konaté Transport");
+    expect(text).toContain("Golaine Tech");
+    expect(text).toContain("Semi-remorque");
+  });
+
+  it("retourne uniquement l'en-tête si aucune ligne de données", async () => {
+    const blob = buildCsvBlob(columns, []);
+    const text = new TextDecoder("utf-8").decode(await blob.arrayBuffer());
+
+    expect(text).toContain("sep=;");
+    expect(text).toContain("Société");
+    expect(text).not.toContain("Konaté Transport");
+  });
+});

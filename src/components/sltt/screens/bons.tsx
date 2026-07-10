@@ -101,16 +101,17 @@ export function BonsScreen() {
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
   const [formMontant, setFormMontant] = useState<string>("");
 
+  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
+  if (selectedId !== prevSelectedId) {
+    setPrevSelectedId(selectedId);
+    if (selectedId === "new") setOpen(true);
+  }
+
   const nextRef = `BS-2026-${String(bonSeq).padStart(4, "0")}`;
 
-  // Ouverture directe du formulaire depuis un raccourci externe (CTA dashboard).
   useEffect(() => {
-    if (selectedId === "new") {
-      setOpen(true);
-      go("bons");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+    if (selectedId === "new") go("bons");
+  }, [selectedId, go]);
 
   const stats = useMemo(() => {
     let valides = 0;
@@ -243,8 +244,8 @@ export function BonsScreen() {
       });
     } else {
       toast({
-        title: "Bon validé — stock insuffisant",
-        description: `${ref} — la quantité dépassait le stock disponible, il a été ramené à 0.`,
+        title: "Validation impossible — stock insuffisant",
+        description: `${ref} n'a pas été validé : le stock disponible est inférieur à la quantité demandée.`,
         variant: "destructive",
       });
     }
@@ -579,7 +580,7 @@ export function BonsScreen() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-8 text-amber-600 dark:text-amber-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                                className="size-11 text-amber-600 dark:text-amber-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                                 aria-label={`Valider ${b.reference}`}
                                 title="Valider le bon"
                                 onClick={() => handleValidateBon(b.id, b.reference)}
@@ -590,7 +591,7 @@ export function BonsScreen() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                              className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
                               aria-label={`Visualiser ${b.reference}`}
                               title="Visualiser"
                               onClick={() => handleView(b.reference)}
@@ -600,7 +601,7 @@ export function BonsScreen() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                              className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
                               aria-label={`Imprimer ${b.reference}`}
                               title="PDF / Imprimer"
                               onClick={() => handlePrint(b.reference)}
@@ -764,7 +765,7 @@ export function BonsScreen() {
               </div>
             </div>
 
-            <div className="hidden md:block">
+            <div>
               <BonPreview
                 reference={nextRef}
                 date={formDate}

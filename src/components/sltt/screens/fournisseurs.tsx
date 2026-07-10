@@ -16,6 +16,9 @@ import { useStore, type Fournisseur, type FournisseurInput, type FournisseurType
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { DossierFournisseurStatutBadge } from "@/components/sltt/status-badge";
+import { PageHeader } from "@/components/sltt/page-header";
+import { KpiCard } from "@/components/sltt/kpi-card";
+import { EmptyState } from "@/components/sltt/empty-state";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -240,37 +243,18 @@ export function FournisseursScreen() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Fournisseurs & sous-traitants</h1>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Prestataires externes, tarifs contractuels et suivi des coûts</p>
-        </div>
+      <PageHeader title="Fournisseurs" description="Prestataires externes, tarifs contractuels et suivi des coûts">
         <Button onClick={() => { setEditing(undefined); setShowForm(true); }}>
           <Plus className="size-4" />
           Nouveau fournisseur
         </Button>
-      </div>
+      </PageHeader>
 
-      {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Fournisseurs actifs", value: actifs, icon: Building2, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/40" },
-          { label: "Total sous-traité", value: formatFCFA(totalMontant), icon: TrendingDown, color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/40" },
-          { label: "Budget alloué", value: formatFCFA(totalBudgete), icon: TrendingUp, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950/40" },
-          { label: "Paiements en attente", value: enAttente, icon: AlertCircle, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/40" },
-        ].map((k) => {
-          const Icon = k.icon;
-          return (
-            <div key={k.label} className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
-              <div className={cn("mb-2 flex size-8 items-center justify-center rounded-lg", k.bg)}>
-                <Icon className={cn("size-4", k.color)} />
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{k.label}</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{k.value}</p>
-            </div>
-          );
-        })}
+        <KpiCard compact label="Fournisseurs actifs" value={String(actifs)} icon={Building2} tone="blue" />
+        <KpiCard compact label="Total sous-traité" value={formatFCFA(totalMontant)} icon={TrendingDown} tone="red" />
+        <KpiCard compact label="Budget alloué" value={formatFCFA(totalBudgete)} icon={TrendingUp} tone="indigo" />
+        <KpiCard compact label="Paiements en attente" value={String(enAttente)} icon={AlertCircle} tone="amber" />
       </div>
 
       {/* Filters */}
@@ -311,7 +295,17 @@ export function FournisseursScreen() {
           <span />
         </div>
         {filtered.length === 0 && (
-          <div className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">Aucun fournisseur trouvé.</div>
+          <EmptyState
+            icon={Building2}
+            title="Aucun fournisseur trouvé"
+            description="Modifiez les filtres ou créez un nouveau prestataire."
+            action={
+              <Button size="sm" onClick={() => { setEditing(undefined); setShowForm(true); }}>
+                <Plus className="mr-1.5 size-3.5" /> Nouveau fournisseur
+              </Button>
+            }
+            className="m-4 border-0 bg-transparent"
+          />
         )}
         {filtered.map((f) => {
           const m = TYPE_META[f.type];

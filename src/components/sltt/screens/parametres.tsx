@@ -2,12 +2,8 @@
 
 import { useMemo, useState, useEffect } from "react";
 import {
-  UserPlus,
-  Pencil,
-  Trash2,
   Shield,
   Lock,
-  RefreshCw,
   Bell,
   Globe,
   Calendar,
@@ -23,12 +19,16 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
-import { useCurrentUser } from "@/hooks/use-permission";
+import { useCurrentUser, useCanManageUsers, usePermission } from "@/hooks/use-permission";
 import { hashPassword } from "@/lib/crypto";
-import type { UserInput, UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
+import { fetchWithAuth } from "@/lib/api/fetch-auth";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { UsersTab } from "@/components/sltt/screens/users-tab";
+import type { UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
+import { GUIDE_DISMISS_KEY, emitGuideReset } from "@/lib/guide-progress";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,549 +102,68 @@ const tabs: {
   { key: "preferences", label: "Préférences", shortLabel: "Préférences", icon: Globe },
 ];
 
-const roleTone: Record<UserRole, "red" | "blue" | "emerald" | "amber" | "indigo"> = {
-  Administrateur: "red",
-  "Agent de transit": "blue",
-  Comptable: "emerald",
-  Magasinier: "amber",
-  Commercial: "indigo",
-};
-
-const allRoles: UserRole[] = [
-  "Administrateur",
-  "Agent de transit",
-  "Comptable",
-  "Magasinier",
-  "Commercial",
-];
-
-const modulesList = [
-  "Dossiers",
-  "Comptabilité",
-  "Stock",
-  "Bons de sortie",
-  "Clients",
-  "Rapports",
-];
-
-const PERM_KEY_MAP: Record<string, string> = {
-  "Dossiers": "dossiers",
-  "Comptabilité": "comptabilite",
-  "Stock": "stock",
-  "Bons de sortie": "bons",
-  "Clients": "clients",
-  "Rapports": "rapports",
-};
-
-function generateCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const randomBytes = new Uint8Array(6);
-  crypto.getRandomValues(randomBytes);
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars[randomBytes[i] % chars.length];
-  }
-  return code;
-}
-
-/* ------------------------------------------------------------------ */
-/* SUB-COMPONENTS PER TAB                                              */
-/* ------------------------------------------------------------------ */
-
-function UsersTab() {
-  const { toast } = useToast();
-  const currentUser = useCurrentUser();
-  const users = useStore((s) => s.users);
-  const addUser = useStore((s) => s.addUser);
-  const updateUser = useStore((s) => s.updateUser);
-  const toggleUserActive = useStore((s) => s.toggleUserActive);
-  const removeUser = useStore((s) => s.removeUser);
-
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const userToDelete = users.find((u) => u.id === deleteId);
-
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editNom, setEditNom] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editRole, setEditRole] = useState<UserRole>("Agent de transit");
-  const [editPerms, setEditPerms] = useState<Record<string, boolean>>({
-    Dossiers: true,
-    Comptabilité: false,
-    Stock: false,
-    "Bons de sortie": false,
-    Clients: true,
-    Rapports: false,
-  });
-  const [accessCode, setAccessCode] = useState(() => generateCode());
-  const [nom, setNom] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<UserRole>("Agent de transit");
-  const [perms, setPerms] = useState<Record<string, boolean>>({
-    Dossiers: true,
-    Comptabilité: false,
-    Stock: false,
-    "Bons de sortie": false,
-    Clients: true,
-    Rapports: false,
-  });
-
-  function refreshCode() {
-    setAccessCode(generateCode());
-  }
-
-  function openEditUser(id: string) {
-    const u = users.find((x) => x.id === id);
-    if (!u) return;
-    setEditingUserId(id);
-    setEditNom(u.nom);
-    setEditEmail(u.email);
-    setEditRole(u.role);
-    setEditPerms(
-      Object.fromEntries(
-        modulesList.map((m) => [
-          m,
-          u.permissions.some((p) => p === m || p.startsWith(PERM_KEY_MAP[m])),
-        ])
-      ) as Record<string, boolean>
-    );
-    setEditOpen(true);
-  }
-
-  function handleEditSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editingUserId || !editNom.trim()) return;
-    const permissions = Object.entries(editPerms)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-    const input: UserInput = {
-      nom: editNom.trim(),
-      email: editEmail.trim(),
-      role: editRole,
-      permissions,
-    };
-    updateUser(editingUserId, input);
-    toast({ title: "Utilisateur mis à jour" });
-    setEditOpen(false);
-    setEditingUserId(null);
-  }
-
-  function resetForm() {
-    setNom("");
-    setEmail("");
-    setRole("Agent de transit");
-    setPerms({
-      Dossiers: true,
-      Comptabilité: false,
-      Stock: false,
-      "Bons de sortie": false,
-      Clients: true,
-      Rapports: false,
-    });
-    setAccessCode(generateCode());
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!nom.trim() || !email.trim()) return;
-    if (users.some((u) => u.email.toLowerCase() === email.trim().toLowerCase())) {
-      toast({ title: "E-mail déjà utilisé", description: "Un compte avec cet e-mail existe déjà.", variant: "destructive" });
-      return;
-    }
-    const permissions = Object.entries(perms)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-    const hashedCode = await hashPassword(accessCode);
-    const input: UserInput = {
-      nom: nom.trim(),
-      email: email.trim(),
-      role,
-      permissions,
-      motDePasse: hashedCode,
-    };
-    addUser(input);
-    toast({ title: "Utilisateur créé avec succès", description: `Code d'accès : ${accessCode}` });
-    setCreateOpen(false);
-    resetForm();
-  }
-
-  return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Gérez les comptes, rôles et permissions de l&apos;équipe.
-        </p>
-        <Button onClick={() => setCreateOpen(true)} className="shrink-0">
-          <UserPlus className="size-4" />
-          Ajouter un utilisateur
-        </Button>
-      </div>
-
-      {/* Users table */}
-      <Card className="p-0 shadow-sm border-border/80 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-border">
-              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
-                Nom
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
-                E-mail
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
-                Rôle
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
-                Statut
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
-                Dernière connexion
-              </TableHead>
-              <TableHead className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400 text-right">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
-                  Aucun utilisateur — cliquez sur « Ajouter un utilisateur » pour commencer.
-                </TableCell>
-              </TableRow>
-            ) : users.map((u) => (
-              <TableRow
-                key={u.id}
-                className="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 border-b border-border"
-              >
-                <TableCell className="py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xs font-bold">
-                      {getInitials(u.nom)}
-                    </div>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">{u.nom}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="py-3 text-slate-600 dark:text-slate-300">{u.email}</TableCell>
-                <TableCell className="py-3">
-                  <ToneBadge tone={roleTone[u.role]}>{u.role}</ToneBadge>
-                </TableCell>
-                <TableCell className="py-3">
-                  <ToneBadge tone={u.actif ? "emerald" : "slate"}>
-                    {u.actif ? "Actif" : "Inactif"}
-                  </ToneBadge>
-                </TableCell>
-                <TableCell className="py-3 text-slate-500 dark:text-slate-400 tabular-nums">
-                  {formatDateShort(u.derniereConnexion)}
-                </TableCell>
-                <TableCell className="py-3">
-                  <div className="flex items-center justify-end gap-2">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={u.actif}
-                        disabled={u.id === currentUser?.id}
-                        onCheckedChange={() => {
-                          if (u.id === currentUser?.id) return;
-                          toggleUserActive(u.id);
-                          toast({
-                            title: "Statut mis à jour",
-                            description: `${u.nom} est maintenant ${u.actif ? "inactif" : "actif"}.`,
-                          });
-                        }}
-                        aria-label={`Basculer le statut de ${u.nom}`}
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
-                      aria-label={`Modifier ${u.nom}`}
-                      title="Modifier"
-                      onClick={() => openEditUser(u.id)}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-slate-500 dark:text-slate-400 hover:text-destructive disabled:opacity-30"
-                      aria-label={`Supprimer ${u.nom}`}
-                      title={u.id === currentUser?.id ? "Impossible de supprimer votre propre compte" : "Supprimer l'utilisateur"}
-                      disabled={u.id === currentUser?.id}
-                      onClick={() => setDeleteId(u.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* Delete user confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(v) => { if (!v) setDeleteId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer l&apos;utilisateur ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              L&apos;utilisateur <strong>{userToDelete?.nom}</strong> sera définitivement supprimé.
-              Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deleteId) {
-                  removeUser(deleteId);
-                  toast({ title: "Utilisateur supprimé", description: `${userToDelete?.nom} a été supprimé.` });
-                  setDeleteId(null);
-                }
-              }}
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Add user dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nouvel utilisateur</DialogTitle>
-            <DialogDescription>
-              Créez un compte et définissez ses permissions.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="u-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Nom complet
-              </Label>
-              <Input
-                id="u-nom"
-                placeholder="ex. Awa Traoré"
-                required
-                value={nom}
-                onChange={(e) => setNom(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="u-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                E-mail
-              </Label>
-              <Input
-                id="u-email"
-                type="email"
-                placeholder="awa.traore@sltt.ml"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Rôle</Label>
-              <Select
-                value={role}
-                onValueChange={(v) => setRole(v as UserRole)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sélectionner un rôle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allRoles.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Code d&apos;accès
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={accessCode}
-                  readOnly
-                  className="font-mono tracking-[0.3em] text-center font-semibold text-slate-900 dark:text-slate-100"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={refreshCode}
-                  aria-label="Régénérer le code"
-                  title="Régénérer le code"
-                >
-                  <RefreshCw className="size-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Code à 6 caractères, communiquez-le à l&apos;utilisateur.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Permissions
-              </Label>
-              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 dark:bg-slate-800/50 p-3 sm:grid-cols-2">
-                {modulesList.map((m) => (
-                  <label
-                    key={m}
-                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900"
-                  >
-                    <Checkbox
-                      checked={perms[m]}
-                      onCheckedChange={(v) =>
-                        setPerms((prev) => ({ ...prev, [m]: Boolean(v) }))
-                      }
-                    />
-                    {m}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateOpen(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit">Créer le compte</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit user dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Modifier l'utilisateur</DialogTitle>
-            <DialogDescription className="sr-only">
-              Modifiez le nom, l'e-mail, le rôle et les permissions de l'utilisateur.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="e-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Nom complet
-              </Label>
-              <Input
-                id="e-nom"
-                placeholder="ex. Awa Traoré"
-                required
-                value={editNom}
-                onChange={(e) => setEditNom(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="e-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                E-mail
-              </Label>
-              <Input
-                id="e-email"
-                type="email"
-                placeholder="awa.traore@sltt.ml"
-                required
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Rôle</Label>
-              <Select
-                value={editRole}
-                onValueChange={(v) => setEditRole(v as UserRole)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sélectionner un rôle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allRoles.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Permissions
-              </Label>
-              <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-slate-50/50 dark:bg-slate-800/50 p-3 sm:grid-cols-2">
-                {modulesList.map((m) => (
-                  <label
-                    key={m}
-                    className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900"
-                  >
-                    <Checkbox
-                      checked={editPerms[m]}
-                      onCheckedChange={(v) =>
-                        setEditPerms((prev) => ({ ...prev, [m]: Boolean(v) }))
-                      }
-                    />
-                    {m}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditOpen(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={!editNom.trim()}>
-                Enregistrer
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
 function ProfileTab() {
   const { toast } = useToast();
   const users = useStore((s) => s.users);
+  const updateOwnProfile = useStore((s) => s.updateOwnProfile);
   const currentUserId = useNav((s) => s.currentUserId);
   const currentUserName = useNav((s) => s.currentUserName);
   const currentRole = useNav((s) => s.currentRole);
 
   const currentUser = users.find((u) => u.id === currentUserId);
 
-  const [pNom, setPNom] = useState(currentUserName);
-  const [pEmail, setPEmail] = useState("");
-  const [pTel, setPTel] = useState("+223 76 12 34 56");
-  const [pPoste, setPPoste] = useState<string>(currentRole);
+  return (
+    <ProfileTabForm
+      key={currentUserId ?? "anonymous"}
+      currentUser={currentUser}
+      currentUserName={currentUserName}
+      currentRole={currentRole}
+      currentUserId={currentUserId}
+      updateOwnProfile={updateOwnProfile}
+      toast={toast}
+    />
+  );
+}
 
-  useEffect(() => {
-    if (currentUser) {
-      setPNom(currentUser.nom);
-      setPEmail(currentUser.email);
-      setPPoste(currentUser.role);
+function ProfileTabForm({
+  currentUser,
+  currentUserName,
+  currentRole,
+  currentUserId,
+  updateOwnProfile,
+  toast,
+}: {
+  currentUser: ReturnType<typeof useStore.getState>["users"][number] | undefined;
+  currentUserName: string;
+  currentRole: string;
+  currentUserId: string | null;
+  updateOwnProfile: ReturnType<typeof useStore.getState>["updateOwnProfile"];
+  toast: ReturnType<typeof useToast>["toast"];
+}) {
+  const [pNom, setPNom] = useState(currentUser?.nom ?? currentUserName);
+  const [pEmail, setPEmail] = useState(currentUser?.email ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentUserId) {
+      toast({ title: "Utilisateur introuvable", variant: "destructive" });
+      return;
     }
-  }, [currentUser]);
+    setSaving(true);
+    try {
+      await updateOwnProfile(currentUserId, { nom: pNom, email: pEmail });
+      toast({ title: "Profil mis à jour avec succès" });
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible de mettre à jour le profil.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -652,13 +171,7 @@ function ProfileTab() {
         Vos informations personnelles et professionnelles.
       </p>
       <Card className="p-6 shadow-sm border-border/80">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            toast({ title: "Profil mis à jour avec succès" });
-          }}
-          className="space-y-5"
-        >
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="flex items-center gap-4">
             <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-bold">
               {getInitials(pNom || currentUserName)}
@@ -692,29 +205,23 @@ function ProfileTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="p-tel" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Téléphone
-              </Label>
-              <Input
-                id="p-tel"
-                value={pTel}
-                onChange={(e) => setPTel(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="p-poste" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Poste
               </Label>
               <Input
                 id="p-poste"
-                value={pPoste}
-                onChange={(e) => setPPoste(e.target.value)}
+                value={currentUser?.role || currentRole}
+                disabled
+                className="bg-slate-50 dark:bg-slate-800"
               />
+              <p className="text-xs text-slate-400">Le poste est géré par un administrateur.</p>
             </div>
           </div>
 
           <div className="flex justify-end pt-2">
-            <Button type="submit">Enregistrer les modifications</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Enregistrement…" : "Enregistrer les modifications"}
+            </Button>
           </div>
         </form>
       </Card>
@@ -726,8 +233,6 @@ function SecurityTab() {
   const { toast } = useToast();
   const currentUser = useCurrentUser();
   const updateUser = useStore((s) => s.updateUser);
-  const [autoLogout, setAutoLogout] = useState(true);
-  const [twoFA, setTwoFA] = useState(false);
   const [curPwd, setCurPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confPwd, setConfPwd] = useState("");
@@ -735,8 +240,12 @@ function SecurityTab() {
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!newPwd) {
-      toast({ title: "Veuillez saisir un nouveau mot de passe", variant: "destructive" });
+    if (!curPwd) {
+      toast({ title: "Mot de passe actuel requis", variant: "destructive" });
+      return;
+    }
+    if (!newPwd || newPwd.length < 8) {
+      toast({ title: "Le nouveau mot de passe doit contenir au moins 8 caractères", variant: "destructive" });
       return;
     }
     if (newPwd !== confPwd) {
@@ -749,18 +258,33 @@ function SecurityTab() {
     }
     setSavingPwd(true);
     try {
-      const hashed = await hashPassword(newPwd);
-      updateUser(currentUser.id, {
-        nom: currentUser.nom,
-        email: currentUser.email,
-        role: currentUser.role,
-        permissions: currentUser.permissions,
-        motDePasse: hashed,
-      });
+      if (isSupabaseConfigured) {
+        const res = await fetchWithAuth("/api/auth/password", {
+          method: "PATCH",
+          body: JSON.stringify({ currentPassword: curPwd, newPassword: newPwd }),
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || "Impossible de changer le mot de passe.");
+      } else {
+        const hashed = await hashPassword(newPwd);
+        await updateUser(currentUser.id, {
+          nom: currentUser.nom,
+          email: currentUser.email,
+          role: currentUser.role,
+          permissions: currentUser.permissions,
+          motDePasse: hashed,
+        });
+      }
       toast({ title: "Mot de passe mis à jour" });
       setCurPwd("");
       setNewPwd("");
       setConfPwd("");
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Changement impossible.",
+        variant: "destructive",
+      });
     } finally {
       setSavingPwd(false);
     }
@@ -826,38 +350,21 @@ function SecurityTab() {
         </form>
       </Card>
 
-      {/* Préférences de sécurité */}
-      <Card className="p-6 shadow-sm border-border/80">
+      {/* Options avancées — bientôt disponibles */}
+      <Card className="p-6 shadow-sm border-border/80 border-dashed">
         <div className="flex items-center gap-2">
           <Shield className="size-4 text-slate-500 dark:text-slate-400" />
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Préférences de sécurité
+            Options avancées
           </h3>
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+            Bientôt
+          </span>
         </div>
-        <div className="mt-4 space-y-4">
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
-            <div>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Déconnexion automatique après 30 min d'inactivité
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Protège votre session en cas d'absence prolongée.
-              </p>
-            </div>
-            <Switch checked={autoLogout} onCheckedChange={setAutoLogout} />
-          </div>
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
-            <div>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Authentification à deux facteurs
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Renforcez la sécurité avec un code temporaire à la connexion.
-              </p>
-            </div>
-            <Switch checked={twoFA} onCheckedChange={setTwoFA} />
-          </div>
-        </div>
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+          La déconnexion automatique personnalisée et l&apos;authentification à deux facteurs seront disponibles dans une prochaine version.
+          La session actuelle utilise déjà un délai de sécurité à la connexion (8 h ou 7 jours avec « Rester connecté »).
+        </p>
       </Card>
     </div>
   );
@@ -1099,22 +606,20 @@ function AuditTab() {
 
 function PreferencesTab() {
   const { toast } = useToast();
-  const resetAll = useStore((s) => s.resetAll);
-  const [emailNotif, setEmailNotif] = useState(true);
+  const refetchData = useStore((s) => s.refetchData);
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        Personnalisez la langue, les formats et les notifications.
-      </p>
-      <Card className="p-6 shadow-sm border-border/80">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            toast({ title: "Préférences enregistrées" });
-          }}
-          className="space-y-5"
-        >
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Personnalisez la langue, les formats et les notifications.
+        </p>
+        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+          Bientôt disponible
+        </span>
+      </div>
+      <Card className="p-6 shadow-sm border-border/80 border-dashed opacity-75">
+        <fieldset disabled className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="lang" className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -1184,13 +689,36 @@ function PreferencesTab() {
                 Recevez un message à chaque dossier en attente ou alerte de stock.
               </p>
             </div>
-            <Switch checked={emailNotif} onCheckedChange={setEmailNotif} />
+            <Switch checked={true} disabled />
           </div>
 
           <div className="flex justify-end pt-2">
-            <Button type="submit">Enregistrer</Button>
+            <Button type="button" disabled>Enregistrer</Button>
           </div>
-        </form>
+        </fieldset>
+      </Card>
+
+      <Card className="p-6 shadow-sm border-border/80">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Guide de démarrage</h3>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Réaffichez le guide « Par où commencer ? » sur le tableau de bord.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3"
+          onClick={() => {
+            try {
+              localStorage.removeItem(GUIDE_DISMISS_KEY);
+              emitGuideReset();
+              toast({ title: "Guide réactivé", description: "Le guide est de nouveau visible sur le tableau de bord." });
+            } catch {
+              toast({ title: "Impossible de réactiver le guide", variant: "destructive" });
+            }
+          }}
+        >
+          Réafficher le guide
+        </Button>
       </Card>
 
       <Card className="p-6 shadow-sm border-border/80 border-red-200/60">
@@ -1200,31 +728,34 @@ function PreferencesTab() {
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Réinitialiser les données
+              Synchroniser les données
             </h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Restaure toutes les données (dossiers, clients, écritures, stock, bons, utilisateurs)
-              à leur état initial. Cette action est irréversible.
+              Vide le cache local puis recharge toutes les données depuis Supabase.
             </p>
             <Button
-              variant="destructive"
+              variant="outline"
               className="mt-3 h-9"
-              onClick={() => {
-                if (
-                  confirm(
-                    "Voulez-vous vraiment réinitialiser toutes les données ? Cette action est irréversible.",
-                  )
-                ) {
-                  resetAll();
+              onClick={async () => {
+                try {
+                  localStorage.removeItem("sltt-data-v9");
+                  localStorage.removeItem("sltt-data-v10");
+                  await refetchData();
                   toast({
-                    title: "Données réinitialisées",
-                    description: "Toutes les données ont été restaurées à l'état initial.",
+                    title: "Cache vidé",
+                    description: "Les données ont été rechargées depuis Supabase.",
+                  });
+                } catch {
+                  toast({
+                    title: "Échec du rechargement",
+                    description: "Impossible de recharger les données.",
+                    variant: "destructive",
                   });
                 }
               }}
             >
               <RotateCcw className="size-4" />
-              Réinitialiser les données
+              Vider le cache et recharger
             </Button>
           </div>
         </div>
@@ -1247,19 +778,24 @@ function UsersTabBadge() {
 }
 
 export function ParametresScreen() {
-  const currentRole = useNav((s) => s.currentRole);
-  const isAdmin = currentRole === "Administrateur";
+  const canManageUsers = useCanManageUsers();
+  const canViewAudit = usePermission("parametres:read");
   const [active, setActive] = useState<ParamTab>("profile");
 
-  // Corrige le tab actif lors du premier render post-hydratation (currentRole arrive en retard depuis Zustand).
-  // Pattern "adjust state during rendering" pour éviter un rendu en cascade lié à useEffect.
-  const [prevIsAdmin, setPrevIsAdmin] = useState(isAdmin);
-  if (isAdmin !== prevIsAdmin) {
-    setPrevIsAdmin(isAdmin);
-    if (isAdmin) {
+  const [prevCanManageUsers, setPrevCanManageUsers] = useState(canManageUsers);
+  const [prevCanViewAudit, setPrevCanViewAudit] = useState(canViewAudit);
+  if (canManageUsers !== prevCanManageUsers) {
+    setPrevCanManageUsers(canManageUsers);
+    if (canManageUsers) {
       setActive((prev) => (prev === "profile" ? "users" : prev));
     } else {
-      setActive((prev) => (prev === "users" || prev === "audit" ? "profile" : prev));
+      setActive((prev) => (prev === "users" ? "profile" : prev));
+    }
+  }
+  if (canViewAudit !== prevCanViewAudit) {
+    setPrevCanViewAudit(canViewAudit);
+    if (!canViewAudit) {
+      setActive((prev) => (prev === "audit" ? "profile" : prev));
     }
   }
 
@@ -1288,7 +824,11 @@ export function ParametresScreen() {
               "dark:bg-muted/30",
             )}
           >
-            {tabs.filter((t) => (t.key !== "users" && t.key !== "audit") || isAdmin).map((t) => {
+            {tabs.filter((t) => {
+              if (t.key === "users") return canManageUsers;
+              if (t.key === "audit") return canViewAudit;
+              return true;
+            }).map((t) => {
               const Icon = t.icon;
               return (
                 <TabsTrigger
@@ -1316,7 +856,7 @@ export function ParametresScreen() {
           </TabsList>
         </div>
 
-        {isAdmin && (
+        {canManageUsers && (
           <TabsContent value="users" className="mt-6 focus-visible:outline-none">
             <UsersTab />
           </TabsContent>
@@ -1327,7 +867,7 @@ export function ParametresScreen() {
         <TabsContent value="security" className="mt-6 focus-visible:outline-none">
           <SecurityTab />
         </TabsContent>
-        {isAdmin && (
+        {canViewAudit && (
           <TabsContent value="audit" className="mt-6 focus-visible:outline-none">
             <AuditTab />
           </TabsContent>

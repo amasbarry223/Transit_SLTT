@@ -14,6 +14,7 @@ import {
   Search,
   CircleCheck,
   Receipt,
+  Info,
 } from "lucide-react";
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
@@ -23,6 +24,7 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcritureStatutBadge, EcartValue } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +85,7 @@ function deriveStatut(e: Ecriture): "Soldé" | "En attente" {
 
 export function ComptabiliteScreen() {
   const { toast } = useToast();
+  const canWrite = usePermission("comptabilite:write");
   const go = useNav((s) => s.go);
   const selectedId = useNav((s) => s.selectedId);
   const ecritures = useStore((s) => s.ecritures);
@@ -207,15 +210,18 @@ export function ComptabiliteScreen() {
     setNeNote("");
   }
 
-  // Ouverture directe du formulaire depuis un raccourci externe (CTA dashboard).
-  useEffect(() => {
+  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
+  if (selectedId !== prevSelectedId) {
+    setPrevSelectedId(selectedId);
     if (selectedId === "new") {
       resetNewEcriture();
       setNewOpen(true);
-      go("comptabilite");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }
+
+  useEffect(() => {
+    if (selectedId === "new") go("comptabilite");
+  }, [selectedId, go]);
 
   function handleCreateEcriture() {
     if (!neClientId) {
@@ -268,18 +274,32 @@ export function ComptabiliteScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Comptabilité"
-        description="Suivi des écritures et des paiements — indépendant du module Factures"
+        description="Suivi interne des paiements liés aux dossiers de transit"
       >
-        <Button
-          onClick={() => {
-            resetNewEcriture();
-            setNewOpen(true);
-          }}
-        >
-          <Plus className="size-4" />
-          Nouvelle écriture
-        </Button>
+        {canWrite && (
+          <Button
+            onClick={() => {
+              resetNewEcriture();
+              setNewOpen(true);
+            }}
+          >
+            <Plus className="size-4" />
+            Nouvelle écriture
+          </Button>
+        )}
       </PageHeader>
+
+      <div className="flex items-start gap-2.5 rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-950/30 px-4 py-3 text-xs text-blue-900 dark:text-blue-200">
+        <Info className="mt-0.5 size-4 shrink-0 text-blue-500" />
+        <p>
+          <strong>Où enregistrer un paiement ?</strong> Dossier transit → transition « Soldé » sur la fiche dossier ;
+          facture client → module{" "}
+          <button onClick={() => go("factures")} className="font-semibold underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-100">
+            Factures
+          </button>
+          ; paiement autonome sans dossier → écriture ici. Les trois canaux sont indépendants.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard
@@ -411,7 +431,7 @@ export function ComptabiliteScreen() {
                 ? "Modifiez vos filtres ou créez une nouvelle écriture."
                 : "Commencez par enregistrer votre première écriture comptable."}
             </p>
-            {!hasActiveFilters && (
+            {!hasActiveFilters && canWrite && (
               <Button
                 className="mt-5"
                 onClick={() => {

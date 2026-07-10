@@ -153,7 +153,7 @@ export function CalendrierScreen() {
   const bons = useStore((s) => s.bons);
   const ecritures = useStore((s) => s.ecritures);
 
-  // Anchor to the latest data date to stay in sync with mock data
+  // Ancrage sur la date la plus récente des données Supabase
   const anchorDate = React.useMemo(() => {
     const dates = [
       ...dossiers.map((d) => d.date),

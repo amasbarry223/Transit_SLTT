@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   Plus,
-  Search,
   FileText,
   FileSpreadsheet,
   Eye,
@@ -18,7 +17,7 @@ import {
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { calculerEcart, type DossierStatut } from "@/lib/mock-data";
+import { calculerEcart, type DossierStatut } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -30,10 +29,10 @@ import {
   TRANSITION_META,
 } from "@/components/sltt/dossier-transition-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -50,8 +49,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import type { Dossier } from "@/lib/mock-data";
+import type { Dossier } from "@/lib/domain-types";
 import { TablePagination } from "@/components/sltt/table-pagination";
+import { ListFilters } from "@/components/sltt/list-filters";
 
 const PAGE_SIZE = 8;
 
@@ -81,7 +81,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "montant-desc", label: "Montant (décroissant)" },
   { value: "montant-asc", label: "Montant (croissant)" },
   { value: "statut", label: "Statut" },
-  { value: "ecart-desc", label: "Écart (décroissant)" },
+  { value: "ecart-desc", label: "Marge (décroissante)" },
 ];
 
 
@@ -89,12 +89,14 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 export function DossiersListScreen() {
   const { openDossier, openDossierDetail } = useNav();
   const { toast } = useToast();
+  const canWrite = usePermission("dossiers:write");
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [statutFilter, setStatutFilter] = useState<string>("Tous");
+  const [nonSoldeOnly, setNonSoldeOnly] = useState(false);
   const [periode, setPeriode] = useState<string>("all");
   const [yearFilter, setYearFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortKey>("date-desc");
@@ -137,6 +139,7 @@ export function DossiersListScreen() {
       }
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
+      if (nonSoldeOnly && d.montantInvesti - d.montantPaye <= 0) return false;
       if (yearFilter !== "all" && d.date.slice(0, 4) !== yearFilter) return false;
       if (periode !== "all") {
         const dDate = new Date(d.date);
@@ -160,7 +163,7 @@ export function DossiersListScreen() {
         default: return 0;
       }
     });
-  }, [dossiers, search, clientFilter, statutFilter, periode, yearFilter, sortBy, refDate]);
+  }, [dossiers, search, clientFilter, statutFilter, nonSoldeOnly, periode, yearFilter, sortBy, refDate]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -172,6 +175,7 @@ export function DossiersListScreen() {
     search.trim() !== "",
     clientFilter !== "all",
     statutFilter !== "Tous",
+    nonSoldeOnly,
     periode !== "all",
     yearFilter !== "all",
   ].filter(Boolean).length;
@@ -182,6 +186,7 @@ export function DossiersListScreen() {
     setSearch("");
     setClientFilter("all");
     setStatutFilter("Tous");
+    setNonSoldeOnly(false);
     setPeriode("all");
     setYearFilter("all");
     setSortBy("date-desc");
@@ -189,6 +194,14 @@ export function DossiersListScreen() {
   }
 
   function handleExportExcel() {
+    if (filtered.length === 0) {
+      toast({
+        title: "Rien à exporter",
+        description: "Aucun dossier ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
     exportToCSV(
       `dossiers-transit-${new Date().toISOString().slice(0, 10)}`,
       [
@@ -206,11 +219,12 @@ export function DossiersListScreen() {
           header: "Reste à payer (FCFA)",
           accessor: (d) => Math.max(0, d.montantInvesti - d.montantPaye),
         },
-        { header: "Écart (FCFA)", accessor: (d) => calculerEcart(d) },
+        { header: "Marge (FCFA)", accessor: (d) => calculerEcart(d) },
         { header: "Statut", accessor: (d) => d.statut },
         { header: "Date", accessor: (d) => formatDateShort(d.date) },
       ],
       filtered,
+      { module: "Dossiers" },
     );
     toast({
       title: "Export Excel généré",
@@ -241,7 +255,7 @@ export function DossiersListScreen() {
       <table>
         <thead><tr>
           <th>Référence</th><th>Client</th><th>N° BL</th><th>Camion</th>
-          <th>Nature</th><th class="num">Prestation</th><th class="num">Écart</th><th>Statut</th>
+          <th>Nature</th><th class="num">Prestation</th><th class="num">Marge</th><th>Statut</th>
         </tr></thead>
         <tbody>${rowsHTML}</tbody>
       </table>
@@ -255,10 +269,12 @@ export function DossiersListScreen() {
         title="Dossiers de transit"
         description="Suivi des dossiers douaniers et de leur soldage"
       >
-        <Button onClick={() => openDossier(null, "create")}>
-          <Plus className="size-4" />
-          Nouveau dossier
-        </Button>
+        {canWrite && (
+          <Button onClick={() => openDossier(null, "create")}>
+            <Plus className="size-4" />
+            Nouveau dossier
+          </Button>
+        )}
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -284,11 +300,12 @@ export function DossiersListScreen() {
           sublabel="dossiers clôturés"
         />
         <KpiCard
-          label="Écart cumulé"
+          label="Marge cumulée"
           value={formatFCFA(stats.ecartTotal)}
           icon={TrendingUp}
           tone="indigo"
-          sublabel="prestation vs payé"
+          sublabel="marge dossier (prestation − frais)"
+          tooltip="Frais de prestation moins droits de douane et frais de circuit."
         />
       </div>
 
@@ -308,22 +325,46 @@ export function DossiersListScreen() {
       )}
 
       {/* Filters */}
-      <Card className="border-border/80 p-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-            <Input
-              className="h-10 pl-9"
-              placeholder="Rechercher par réf., client, BL…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              aria-label="Rechercher un dossier"
-            />
-          </div>
-
+      <ListFilters
+        search={search}
+        onSearchChange={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        searchPlaceholder="Rechercher par réf., client, BL…"
+        chips={[
+          {
+            id: "en-cours",
+            label: "En cours",
+            active: statutFilter === "En cours",
+            onToggle: () => {
+              setStatutFilter((s) => (s === "En cours" ? "Tous" : "En cours"));
+              setPage(1);
+            },
+          },
+          {
+            id: "non-solde",
+            label: "Non soldé",
+            active: nonSoldeOnly,
+            onToggle: () => {
+              setNonSoldeOnly((v) => !v);
+              setPage(1);
+            },
+          },
+          {
+            id: "ce-mois",
+            label: "Ce mois",
+            active: periode === "month",
+            onToggle: () => {
+              setPeriode((p) => (p === "month" ? "all" : "month"));
+              setPage(1);
+            },
+          },
+        ]}
+        activeCount={activeFiltersCount}
+        onClear={hasActiveFilters ? clearFilters : undefined}
+        advanced={
+          <>
           <Select
             value={clientFilter}
             onValueChange={(v) => {
@@ -426,22 +467,10 @@ export function DossiersListScreen() {
               ))}
             </SelectContent>
           </Select>
-
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 gap-1.5 text-slate-500 dark:text-slate-400"
-              onClick={clearFilters}
-            >
-              Réinitialiser
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
-                {activeFiltersCount}
-              </span>
-            </Button>
-          )}
-
-          <div className="ml-auto flex items-center gap-2">
+          </>
+        }
+        actions={
+          <>
             <Button
               variant="outline"
               size="sm"
@@ -464,9 +493,9 @@ export function DossiersListScreen() {
               <FileSpreadsheet className="size-4" />
               <span className="hidden sm:inline">Excel</span>
             </Button>
-          </div>
-        </div>
-      </Card>
+          </>
+        }
+      />
 
       {/* Table */}
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
@@ -493,19 +522,46 @@ export function DossiersListScreen() {
                 ? "Modifiez vos filtres ou créez un nouveau dossier."
                 : "Commencez par enregistrer votre premier dossier de transit."}
             </p>
-            {!hasActiveFilters && (
+            {!hasActiveFilters && canWrite && (
               <Button
                 className="mt-5"
                 onClick={() => openDossier(null, "create")}
               >
                 <Plus className="size-4" />
-                Nouveau dossier
+                Créer votre premier dossier
               </Button>
             )}
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((d) => (
+                <Card
+                  key={d.id}
+                  className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
+                  onClick={() => openDossierDetail(d.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">{d.reference}</p>
+                      <p className="truncate text-sm text-slate-600 dark:text-slate-300">{d.clientNom}</p>
+                    </div>
+                    <DossierStatutBadge statut={d.statut} />
+                  </div>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Date</dt>
+                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.date)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Marge</dt>
+                      <dd><EcartValue value={calculerEcart(d)} /></dd>
+                    </div>
+                  </dl>
+                </Card>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -531,7 +587,7 @@ export function DossiersListScreen() {
                       Prestation
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Écart
+                      Marge
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Statut

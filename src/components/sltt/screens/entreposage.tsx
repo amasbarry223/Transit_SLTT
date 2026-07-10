@@ -15,17 +15,20 @@ import {
   FileText,
   FileSpreadsheet,
   Search,
+  ChevronDown,
 } from "lucide-react";
 
 import { useStore } from "@/lib/store";
 import type { StockItem, StockItemInput } from "@/lib/store";
-import type { Mouvement } from "@/lib/mock-data";
+import { useNav } from "@/lib/nav-store";
+import type { Mouvement } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge, StockStatutBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentUser, usePermission } from "@/hooks/use-permission";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +61,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { TablePagination } from "@/components/sltt/table-pagination";
+import { StockMovementFields } from "@/components/sltt/stock-movement-fields";
 
 const motifs = ["Vente", "Livraison", "Transfert", "Autre"] as const;
 type SortieMotif = (typeof motifs)[number];
@@ -93,6 +97,9 @@ function StockTab({
   onHistory,
   onPrint,
   onExport,
+  canWrite = true,
+  onCreateItem,
+  onOpenClient,
 }: {
   stock: StockItem[];
   onEntry: (id: string | null) => void;
@@ -100,6 +107,9 @@ function StockTab({
   onHistory: (marchandise: string) => void;
   onPrint: () => void;
   onExport: () => void;
+  canWrite?: boolean;
+  onCreateItem?: () => void;
+  onOpenClient?: (clientId: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -131,29 +141,33 @@ function StockTab({
           Consultez les quantités, valeurs et statuts de chaque référence en stock.
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 text-emerald-600 dark:text-emerald-400 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
-            onClick={() => onEntry(null)}
-          >
-            <PackagePlus className="size-4" />
-            Entrée
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 text-amber-600 dark:text-amber-400 border-amber-200 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
-            onClick={() => onExit(null)}
-          >
-            <PackageMinus className="size-4" />
-            Sortie
-          </Button>
-          <Button variant="outline" size="sm" className="h-9" onClick={onPrint}>
+          {canWrite && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 text-emerald-600 dark:text-emerald-400 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
+                onClick={() => onEntry(null)}
+              >
+                <PackagePlus className="size-4" />
+                Entrée
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 text-amber-600 dark:text-amber-400 border-amber-200 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
+                onClick={() => onExit(null)}
+              >
+                <PackageMinus className="size-4" />
+                Sortie
+              </Button>
+            </>
+          )}
+          <Button variant="outline" size="sm" className="h-9" onClick={onPrint} disabled={stock.length === 0}>
             <FileText className="size-4" />
             Imprimer
           </Button>
-          <Button variant="outline" size="sm" className="h-9" onClick={onExport}>
+          <Button variant="outline" size="sm" className="h-9" onClick={onExport} disabled={stock.length === 0}>
             <FileSpreadsheet className="size-4" />
             Exporter
           </Button>
@@ -178,8 +192,24 @@ function StockTab({
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
-            Aucun article ne correspond à votre recherche.
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
+              <Package className="size-7" />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              {stock.length === 0 ? "Aucun article en stock" : "Aucun résultat"}
+            </h3>
+            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+              {stock.length === 0
+                ? "Commencez par enregistrer votre première marchandise en entreposage."
+                : "Modifiez votre recherche pour retrouver un article."}
+            </p>
+            {stock.length === 0 && canWrite && onCreateItem && (
+              <Button className="mt-5" onClick={onCreateItem}>
+                <Plus className="size-4" />
+                Ajouter un premier article
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -221,6 +251,7 @@ function StockTab({
                       onEntry={(id) => onEntry(id)}
                       onExit={(id) => onExit(id)}
                       onHistory={(m) => onHistory(m)}
+                      onOpenClient={onOpenClient}
                     />
                   ))}
                 </TableBody>
@@ -247,11 +278,13 @@ function StockRow({
   onEntry,
   onExit,
   onHistory,
+  onOpenClient,
 }: {
   item: StockItem;
   onEntry: (id: string) => void;
   onExit: (id: string) => void;
   onHistory: (marchandise: string) => void;
+  onOpenClient?: (clientId: string) => void;
 }) {
   const faible = item.quantite < item.seuil;
   const statut = faible ? "Stock faible" : "Disponible";
@@ -264,11 +297,25 @@ function StockRow({
       )}
     >
       <TableCell className="px-4 py-3.5">
-        <span className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-slate-100">
-          {faible && (
-            <AlertTriangle className="size-3.5 shrink-0 text-red-500" />
+        <span className="flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-slate-100">
+            {faible && (
+              <AlertTriangle className="size-3.5 shrink-0 text-red-500" />
+            )}
+            {item.marchandise}
+          </span>
+          {item.clientId && item.clientNom && onOpenClient && (
+            <button
+              type="button"
+              className="w-fit text-left text-xs text-primary hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenClient(item.clientId!);
+              }}
+            >
+              {item.clientNom}
+            </button>
           )}
-          {item.marchandise}
         </span>
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 md:hidden">
           {item.depositaire}
@@ -298,7 +345,7 @@ function StockRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
+            className="size-11 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
             aria-label="Entrée de marchandise"
             title="Entrée"
             onClick={() => onEntry(item.id)}
@@ -308,7 +355,7 @@ function StockRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
+            className="size-11 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
             aria-label="Sortie de marchandise"
             title="Sortie"
             onClick={() => onExit(item.id)}
@@ -318,7 +365,7 @@ function StockRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+            className="size-11 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
             aria-label="Historique"
             title="Historique"
             onClick={() => onHistory(item.marchandise)}
@@ -472,6 +519,9 @@ function MouvementsTab({
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Bon lié
                     </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                      Motif
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -518,6 +568,9 @@ function MouvementsTab({
                             <span className="text-slate-400 dark:text-slate-500">—</span>
                           )}
                         </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 text-slate-600 dark:text-slate-300 lg:table-cell">
+                          {m.motif ?? <span className="text-slate-400 dark:text-slate-500">—</span>}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -546,7 +599,11 @@ function MouvementsTab({
 
 export function EntreposageScreen() {
   const { toast } = useToast();
+  const openClient = useNav((s) => s.openClient);
+  const canWrite = usePermission("stock:write");
+  const currentUser = useCurrentUser();
   const stock = useStore((s) => s.stock);
+  const clients = useStore((s) => s.clients);
   const mouvements = useStore((s) => s.mouvements);
   const addStockEntry = useStore((s) => s.addStockEntry);
   const addStockExit = useStore((s) => s.addStockExit);
@@ -561,6 +618,8 @@ export function EntreposageScreen() {
   const [niCommercial, setNiCommercial] = useState("");
   const [niSommePayee, setNiSommePayee] = useState("0");
   const [niResteAPayer, setNiResteAPayer] = useState("0");
+  const [niClientId, setNiClientId] = useState<string>("");
+  const [niAdvancedOpen, setNiAdvancedOpen] = useState(false);
 
   function openNewItemDialog() {
     setNiMarchandise("");
@@ -571,6 +630,8 @@ export function EntreposageScreen() {
     setNiCommercial("");
     setNiSommePayee("0");
     setNiResteAPayer("0");
+    setNiClientId("");
+    setNiAdvancedOpen(false);
     setNewItemOpen(true);
   }
 
@@ -587,6 +648,7 @@ export function EntreposageScreen() {
       commercial: niCommercial.trim() || "—",
       sommePayee: Number(niSommePayee) || 0,
       resteAPayer: Number(niResteAPayer) || 0,
+      clientId: niClientId || undefined,
     };
     addStockItem(input);
     toast({ title: "Article ajouté", description: `${marchandise} ajouté au stock.` });
@@ -599,12 +661,12 @@ export function EntreposageScreen() {
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryStockId, setEntryStockId] = useState<string>("");
   const [entryQty, setEntryQty] = useState<string>("1");
-  const [entryResp, setEntryResp] = useState<string>("Oumar Cissé");
+  const [entryResp, setEntryResp] = useState<string>("");
 
   const [exitOpen, setExitOpen] = useState(false);
   const [exitStockId, setExitStockId] = useState<string>("");
   const [exitQty, setExitQty] = useState<string>("1");
-  const [exitResp, setExitResp] = useState<string>("Oumar Cissé");
+  const [exitResp, setExitResp] = useState<string>("");
   const [exitMotif, setExitMotif] = useState<SortieMotif>("Vente");
 
   const articlesEnStock = stock.length;
@@ -619,7 +681,7 @@ export function EntreposageScreen() {
     const id = stockId ?? stock[0]?.id ?? "";
     setEntryStockId(id);
     setEntryQty("1");
-    setEntryResp("Oumar Cissé");
+    setEntryResp(currentUser?.nom ?? "");
     setEntryOpen(true);
   }
 
@@ -627,7 +689,7 @@ export function EntreposageScreen() {
     const id = stockId ?? stock[0]?.id ?? "";
     setExitStockId(id);
     setExitQty("1");
-    setExitResp("Oumar Cissé");
+    setExitResp(currentUser?.nom ?? "");
     setExitMotif("Vente");
     setExitOpen(true);
   }
@@ -642,6 +704,14 @@ export function EntreposageScreen() {
   }
 
   function handleExportStockCSV() {
+    if (stock.length === 0) {
+      toast({
+        title: "Rien à exporter",
+        description: "Aucun article en stock pour le moment.",
+        variant: "destructive",
+      });
+      return;
+    }
     exportToCSV(
       `inventaire-stock-${new Date().toISOString().slice(0, 10)}`,
       [
@@ -659,6 +729,7 @@ export function EntreposageScreen() {
         },
       ],
       stock,
+      { module: "Stock" },
     );
     toast({
       title: "Inventaire exporté",
@@ -830,24 +901,40 @@ export function EntreposageScreen() {
     );
   }
 
-  function submitEntry() {
+  async function submitEntry() {
     if (!entryStockId) return;
     const qty = parseInt(entryQty, 10);
     if (!qty || qty <= 0) return;
-    addStockEntry(entryStockId, qty, entryResp.trim() || "Oumar Cissé");
-    toast({ title: "Entrée enregistrée — stock mis à jour" });
-    setEntryOpen(false);
+    try {
+      await addStockEntry(entryStockId, qty, entryResp.trim() || currentUser?.nom || "Système");
+      toast({ title: "Entrée enregistrée — stock mis à jour" });
+      setEntryOpen(false);
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible d'enregistrer l'entrée.",
+        variant: "destructive",
+      });
+    }
   }
 
-  function submitExit() {
+  async function submitExit() {
     if (!exitStockId) return;
     const qty = parseInt(exitQty, 10);
     if (!qty || qty <= 0) return;
     const item = stock.find((s) => s.id === exitStockId);
     if (!item || qty > item.quantite) return;
-    addStockExit(exitStockId, qty, exitResp.trim() || "Oumar Cissé");
-    toast({ title: "Sortie enregistrée — stock décrémenté" });
-    setExitOpen(false);
+    try {
+      await addStockExit(exitStockId, qty, exitResp.trim() || currentUser?.nom || "Système", undefined, exitMotif);
+      toast({ title: "Sortie enregistrée — stock décrémenté" });
+      setExitOpen(false);
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible d'enregistrer la sortie.",
+        variant: "destructive",
+      });
+    }
   }
 
   const entryQtyNum = parseInt(entryQty, 10) || 0;
@@ -864,10 +951,12 @@ export function EntreposageScreen() {
         title="Entreposage"
         description="Gestion du stock et des mouvements"
       >
-        <Button onClick={openNewItemDialog}>
-          <Plus className="size-4" />
-          Nouvel article
-        </Button>
+        {canWrite && (
+          <Button onClick={openNewItemDialog}>
+            <Plus className="size-4" />
+            Nouvel article
+          </Button>
+        )}
       </PageHeader>
 
       {alertesStockFaible > 0 && (
@@ -966,6 +1055,9 @@ export function EntreposageScreen() {
             onHistory={goToHistory}
             onPrint={handlePrintStock}
             onExport={handleExportStockCSV}
+            canWrite={canWrite}
+            onCreateItem={openNewItemDialog}
+            onOpenClient={openClient}
           />
         </TabsContent>
 
@@ -1008,31 +1100,13 @@ export function EntreposageScreen() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="entry-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Quantité à entrer
-              </Label>
-              <Input
-                id="entry-qty"
-                type="number"
-                min={1}
-                value={entryQty}
-                onChange={(e) => setEntryQty(e.target.value)}
-                className="h-10"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="entry-resp" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Responsable
-              </Label>
-              <Input
-                id="entry-resp"
-                value={entryResp}
-                onChange={(e) => setEntryResp(e.target.value)}
-                className="h-10"
-              />
-            </div>
+            <StockMovementFields
+              idPrefix="entry"
+              qty={entryQty}
+              onQtyChange={setEntryQty}
+              responsable={entryResp}
+              onResponsableChange={setEntryResp}
+            />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
@@ -1165,6 +1239,23 @@ export function EntreposageScreen() {
               />
             </div>
 
+            <div className="col-span-2 space-y-2">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Client (optionnel)
+              </Label>
+              <Select value={niClientId || "none"} onValueChange={(v) => setNiClientId(v === "none" ? "" : v)}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Lier à un client…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucun client</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="ni-unite" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Unité <span className="text-red-500">*</span>
@@ -1206,60 +1297,75 @@ export function EntreposageScreen() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ni-depositaire" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Dépositaire
-              </Label>
-              <Input
-                id="ni-depositaire"
-                value={niDepositaire}
-                onChange={(e) => setNiDepositaire(e.target.value)}
-                placeholder="Nom du dépositaire"
-                className="h-10"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ni-commercial" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Commercial
-              </Label>
-              <Input
-                id="ni-commercial"
-                value={niCommercial}
-                onChange={(e) => setNiCommercial(e.target.value)}
-                placeholder="Nom du commercial"
-                className="h-10"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ni-payee" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Somme payée (FCFA)
-              </Label>
-              <Input
-                id="ni-payee"
-                type="number"
-                min={0}
-                value={niSommePayee}
-                onChange={(e) => setNiSommePayee(e.target.value)}
-                className="h-10"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ni-reste" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Reste à payer (FCFA)
-              </Label>
-              <Input
-                id="ni-reste"
-                type="number"
-                min={0}
-                value={niResteAPayer}
-                onChange={(e) => setNiResteAPayer(e.target.value)}
-                className="h-10"
-              />
-            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setNiAdvancedOpen((v) => !v)}
+            aria-expanded={niAdvancedOpen}
+            className="flex w-full items-center justify-between gap-2 border-t border-border pt-3 text-left text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            Dépositaire, commercial et paiement (optionnel)
+            <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", niAdvancedOpen && "rotate-180")} />
+          </button>
+
+          {niAdvancedOpen && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ni-depositaire" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Dépositaire
+                </Label>
+                <Input
+                  id="ni-depositaire"
+                  value={niDepositaire}
+                  onChange={(e) => setNiDepositaire(e.target.value)}
+                  placeholder="Nom du dépositaire"
+                  className="h-10"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ni-commercial" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Commercial
+                </Label>
+                <Input
+                  id="ni-commercial"
+                  value={niCommercial}
+                  onChange={(e) => setNiCommercial(e.target.value)}
+                  placeholder="Nom du commercial"
+                  className="h-10"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ni-payee" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Somme payée (FCFA)
+                </Label>
+                <Input
+                  id="ni-payee"
+                  type="number"
+                  min={0}
+                  value={niSommePayee}
+                  onChange={(e) => setNiSommePayee(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ni-reste" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Reste à payer (FCFA)
+                </Label>
+                <Input
+                  id="ni-reste"
+                  type="number"
+                  min={0}
+                  value={niResteAPayer}
+                  onChange={(e) => setNiResteAPayer(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+            </div>
+          )}
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setNewItemOpen(false)}>

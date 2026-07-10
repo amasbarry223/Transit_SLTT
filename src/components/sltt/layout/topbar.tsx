@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { Bell, ChevronDown, ChevronRight, Menu, Moon, Sun } from "lucide-react";
+import { Bell, ChevronDown, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -33,16 +33,19 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { CommandPalette } from "./command-palette";
-import { cn, getInitials, isNavActive } from "@/lib/utils";
-import { navItems } from "@/lib/nav-items";
+import { BreadcrumbNav } from "./breadcrumb-nav";
+import { NavList } from "./nav-list";
+import { getInitials } from "@/lib/utils";
+import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
+import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
 
 const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Dossiers, paiements et alertes du jour" },
-  dossiers: { title: "Dossiers de transit", sub: "Cycle devis → dossier → dédouanement → livraison → solde" },
+  dossiers: { title: "Dossiers", sub: "Cycle devis → dossier → dédouanement → livraison → solde" },
   "dossier-form": { title: "Dossier de transit", sub: "Création et édition" },
   "dossier-detail": { title: "Dossier de transit", sub: "Statut, montants et documents du dossier" },
   comptabilite: { title: "Comptabilité", sub: "Écritures, paiements et créances des dossiers" },
-  bilans: { title: "Bilans & rapports", sub: "Analyse financière périodique" },
+  bilans: { title: "Bilans", sub: "Analyse financière périodique" },
   entreposage: { title: "Entreposage", sub: "Entrées, sorties et suivi du stock" },
   bons: { title: "Bons de sortie", sub: "Sorties de marchandises entreposées" },
   clients: { title: "Clients", sub: "Annuaire et fiches clients" },
@@ -61,6 +64,7 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
 export function Topbar() {
   const view = useNav((s) => s.view);
   const go = useNav((s) => s.go);
+  const openDossierDetail = useNav((s) => s.openDossierDetail);
   const logout = useNav((s) => s.logout);
   const currentRole = useNav((s) => s.currentRole);
   const currentUserName = useNav((s) => s.currentUserName);
@@ -93,49 +97,8 @@ export function Topbar() {
     setMobileOpen(false);
   }
 
-  const visibleMobileNavItems = navItems.filter(
-    (item) => !item.roles || item.roles.includes(currentRole),
-  );
-
-  const renderBreadcrumb = () => {
-    let parentKey: ViewKey | null = null;
-    let parentLabel = "";
-
-    if (view === "dossier-detail" || view === "dossier-form") {
-      parentKey = "dossiers";
-      parentLabel = "Dossiers de transit";
-    } else if (view === "client-fiche") {
-      parentKey = "clients";
-      parentLabel = "Clients";
-    } else if (view === "devis-detail") {
-      parentKey = "devis";
-      parentLabel = "Devis";
-    } else if (view === "facture-detail") {
-      parentKey = "factures";
-      parentLabel = "Factures";
-    }
-
-    if (parentKey) {
-      return (
-        <div className="flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
-          <button
-            onClick={() => go(parentKey!)}
-            className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors truncate"
-          >
-            {parentLabel}
-          </button>
-          <ChevronRight className="mx-1.5 size-4 shrink-0 text-slate-400 dark:text-slate-500" />
-          <span className="text-slate-900 dark:text-slate-100 font-semibold truncate">{meta.title}</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center text-base font-semibold leading-tight text-slate-900 dark:text-slate-100 truncate">
-        {meta.title}
-      </div>
-    );
-  };
+  const visibleMobileNavItems = useVisibleNavItems();
+  const roleShortcuts = ROLE_SHORTCUTS[currentRole] ?? [];
 
   return (
     <>
@@ -152,12 +115,8 @@ export function Topbar() {
           <Menu className="size-5" />
         </Button>
 
-        {/* Titre de la page courante / Fil d'Ariane */}
         <div className="min-w-0 flex-1">
-          {renderBreadcrumb()}
-          <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block mt-0.5">
-            {meta.sub}
-          </p>
+          <BreadcrumbNav title={meta.title} subtitle={meta.sub} />
         </div>
 
         {/* Global search — command palette */}
@@ -220,7 +179,7 @@ export function Topbar() {
               <DropdownMenuItem
                 key={d.id}
                 className="flex flex-col items-start gap-1 py-2.5"
-                onClick={() => go("comptabilite")}
+                onClick={() => openDossierDetail(d.id)}
               >
                 <span className="text-sm font-medium text-amber-600">
                   Dossier non soldé · {d.reference}
@@ -235,7 +194,7 @@ export function Topbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="justify-center text-xs text-slate-500 dark:text-slate-400"
-                  onClick={() => go("comptabilite")}
+                  onClick={() => go("dossiers")}
                 >
                   Voir les {unpaidDossiers.length - 5} autres dossiers non soldés →
                 </DropdownMenuItem>
@@ -315,34 +274,35 @@ export function Topbar() {
               SLTT
             </SheetTitle>
           </SheetHeader>
-          <nav className="flex flex-col gap-1 px-3 py-4">
-            {visibleMobileNavItems.map((item) => {
-              const active = isNavActive(view, item.key);
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => handleNav(item.key)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-blue-50 text-blue-900 dark:bg-blue-950/60 dark:text-blue-300"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100",
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "size-[18px] shrink-0",
-                      active ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500",
-                    )}
-                  />
-                  <span className="truncate">{item.label}</span>
-                  {active && (
-                    <span className="ml-auto size-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-                  )}
-                </button>
-              );
-            })}
+          <nav className="flex flex-col gap-4 overflow-y-auto sltt-scroll px-3 py-4 pb-24">
+            {roleShortcuts.length > 0 && (
+              <div>
+                <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Raccourcis {currentRole}
+                </p>
+                <div className="flex flex-wrap gap-2 px-1">
+                  {roleShortcuts.map((sc) => {
+                    const Icon = sc.icon;
+                    return (
+                      <button
+                        key={sc.key}
+                        type="button"
+                        onClick={() => handleNav(sc.key)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-muted dark:text-slate-200"
+                      >
+                        <Icon className="size-3.5" />
+                        {sc.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <NavList
+              items={visibleMobileNavItems}
+              currentView={view}
+              onNavigate={handleNav}
+            />
           </nav>
           {/* User info en bas du drawer */}
           <div className="absolute bottom-0 left-0 right-0 border-t border-border p-4">

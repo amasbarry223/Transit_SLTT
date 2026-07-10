@@ -2,13 +2,59 @@
 
 import * as React from "react";
 import {
-  ArrowLeft, Printer, Send, CheckCircle2, XCircle,
-  CreditCard, Edit2, Save, X, Plus, ChevronDown,
+  ArrowLeft,
+  Printer,
+  Send,
+  CheckCircle2,
+  XCircle,
+  CreditCard,
+  Pencil,
+  Save,
+  X,
+  Plus,
+  Clock,
+  AlertTriangle,
+  User,
+  CalendarDays,
+  Receipt,
+  FolderKanban,
+  Banknote,
+  FileText,
+  MoreHorizontal,
+  ChevronRight,
+  Percent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PageHeader } from "@/components/sltt/page-header";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   useStore,
   type Facture,
@@ -17,244 +63,583 @@ import {
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { printFactureModule } from "@/lib/export";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 
 /* ------------------------------------------------------------------ */
-/* ENREGISTRER UN PAIEMENT                                             */
+/* Statut config                                                        */
 /* ------------------------------------------------------------------ */
 
-function PaiementModal({
-  facture,
-  onClose,
-}: {
-  facture: Facture;
-  onClose: () => void;
-}) {
-  const recordPaiement = useStore((s) => s.recordFacturePaiement);
-  const reste = facture.montantTTC - facture.montantPaye;
-  const [montant, setMontant] = React.useState(String(reste));
+type StatutCfg = {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge: string;
+  dot: string;
+  text: string;
+  desc: string;
+};
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const m = parseFloat(montant);
-    if (!m || m <= 0) return;
-    recordPaiement(facture.id, m);
-    onClose();
+const STATUT_CONFIG: Record<FactureStatut, StatutCfg> = {
+  Brouillon: {
+    label: "Brouillon",
+    icon: Clock,
+    badge: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+    dot: "bg-slate-400",
+    text: "text-slate-700 dark:text-slate-300",
+    desc: "Facture en cours de rédaction.",
+  },
+  Envoyée: {
+    label: "Envoyée",
+    icon: Send,
+    badge: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900",
+    dot: "bg-blue-500",
+    text: "text-blue-700 dark:text-blue-400",
+    desc: "Transmise au client, en attente de règlement.",
+  },
+  Partielle: {
+    label: "Partielle",
+    icon: Banknote,
+    badge: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900",
+    dot: "bg-amber-500",
+    text: "text-amber-700 dark:text-amber-400",
+    desc: "Un paiement partiel a été enregistré.",
+  },
+  Soldée: {
+    label: "Soldée",
+    icon: CheckCircle2,
+    badge: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900",
+    dot: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-400",
+    desc: "Facture intégralement réglée.",
+  },
+  Annulée: {
+    label: "Annulée",
+    icon: XCircle,
+    badge: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900",
+    dot: "bg-red-500",
+    text: "text-red-600 dark:text-red-400",
+    desc: "Cette facture a été annulée.",
+  },
+};
+
+const STATUT_FLOW: FactureStatut[] = ["Brouillon", "Envoyée", "Partielle", "Soldée"];
+const STATUTS_ALL: FactureStatut[] = ["Brouillon", "Envoyée", "Partielle", "Soldée", "Annulée"];
+
+const NEXT_STATUT: Partial<Record<FactureStatut, { to: FactureStatut; label: string }>> = {
+  Brouillon: { to: "Envoyée", label: "Marquer comme envoyée" },
+  Envoyée: { to: "Partielle", label: "Marquer partiellement payée" },
+  Partielle: { to: "Soldée", label: "Marquer comme soldée" },
+};
+
+/* ------------------------------------------------------------------ */
+/* Sous-composants                                                      */
+/* ------------------------------------------------------------------ */
+
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  warn,
+  mono,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  warn?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3 border-b border-border/40 py-3.5 last:border-0">
+      <Icon className="mt-0.5 size-4 shrink-0 text-slate-400 dark:text-slate-500" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "mt-0.5 text-sm font-semibold",
+            warn ? "text-red-600 dark:text-red-400" : "text-slate-900 dark:text-slate-100",
+            mono && "font-mono text-xs",
+          )}
+        >
+          {value || "—"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function VerticalStepper({
+  statut,
+  onSelect,
+}: {
+  statut: FactureStatut;
+  onSelect: (s: FactureStatut) => void;
+}) {
+  if (statut === "Annulée") {
+    const cfg = STATUT_CONFIG.Annulée;
+    const Icon = cfg.icon;
+    return (
+      <div className="flex items-center gap-2.5 rounded-xl bg-red-50 p-3 text-red-700 dark:bg-red-950/40">
+        <Icon className="size-5 shrink-0" />
+        <div>
+          <p className="text-sm font-bold">Annulée</p>
+          <p className="text-xs opacity-70">{cfg.desc}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentIdx = STATUT_FLOW.indexOf(statut);
+
+  return (
+    <div>
+      {STATUT_FLOW.map((s, idx) => {
+        const done = idx < currentIdx;
+        const current = idx === currentIdx;
+        const cfg = STATUT_CONFIG[s];
+        const Icon = cfg.icon;
+        const isLast = idx === STATUT_FLOW.length - 1;
+
+        return (
+          <div key={s} className="flex items-start gap-3">
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => onSelect(s)}
+                title={`Passer à ${s}`}
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+                  done
+                    ? "border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600"
+                    : current
+                      ? "cursor-default border-blue-600 bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-950"
+                      : "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500 dark:hover:border-slate-600 dark:hover:bg-slate-800",
+                )}
+              >
+                {done ? <CheckCircle2 className="size-4" /> : <Icon className="size-3.5" />}
+              </button>
+              {!isLast && (
+                <div
+                  className={cn(
+                    "min-h-[28px] w-0.5 flex-1",
+                    done ? "bg-emerald-200" : "bg-slate-100 dark:bg-slate-800",
+                  )}
+                />
+              )}
+            </div>
+            <div className={cn("pt-1.5", !isLast && "pb-5")}>
+              <p
+                className={cn(
+                  "text-sm font-semibold leading-tight",
+                  current
+                    ? "text-blue-700"
+                    : done
+                      ? "text-emerald-700"
+                      : "text-slate-400 dark:text-slate-500",
+                )}
+              >
+                {s}
+                {current && (
+                  <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                    Actuel
+                  </span>
+                )}
+              </p>
+              <p
+                className={cn(
+                  "mt-0.5 text-xs leading-relaxed",
+                  current
+                    ? "text-blue-500"
+                    : done
+                      ? "text-emerald-500"
+                      : "text-slate-300 dark:text-slate-600",
+                )}
+              >
+                {cfg.desc}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PaymentRing({ pct, reste, isEchue }: { pct: number; reste: number; isEchue: boolean }) {
+  const r = 36;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative size-20 shrink-0">
+        <svg className="-rotate-90 size-20" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r={r} fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-100 dark:text-slate-800" />
+          <circle
+            cx="40"
+            cy="40"
+            r={r}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            className={cn(
+              "transition-all duration-500",
+              pct >= 100 ? "text-emerald-500" : isEchue ? "text-red-500" : "text-blue-600",
+            )}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-lg font-extrabold tabular-nums text-slate-900 dark:text-slate-100">{pct}%</span>
+          <span className="text-[9px] font-medium uppercase tracking-wide text-slate-400">payé</span>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Reste à payer</p>
+        <p
+          className={cn(
+            "mt-0.5 text-xl font-extrabold tabular-nums leading-tight",
+            reste === 0 ? "text-emerald-600" : isEchue ? "text-red-600" : "text-amber-700",
+          )}
+        >
+          {formatFCFA(reste)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
+  if (lignes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <FileText className="size-8 text-slate-200 dark:text-slate-700" />
+        <p className="mt-2 text-sm text-slate-400">Aucune ligne de facturation</p>
+      </div>
+    );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-white dark:bg-slate-900 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
-          <div className="flex items-center gap-2">
-            <CreditCard className="size-4 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Enregistrer un paiement</h2>
-          </div>
-          <button onClick={onClose} className="rounded-md p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <X className="size-4" />
-          </button>
-        </div>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border/60 bg-slate-50/80 dark:bg-slate-800/50">
+            <th className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Description
+            </th>
+            <th className="w-16 px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Qté
+            </th>
+            <th className="w-32 px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              P.U. HT
+            </th>
+            <th className="w-36 px-5 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Total HT
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/30">
+          {lignes.map((l, i) => (
+            <tr key={l.id} className={cn(i % 2 === 1 && "bg-slate-50/40 dark:bg-slate-800/20")}>
+              <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-200">{l.description}</td>
+              <td className="px-3 py-3 text-center tabular-nums text-slate-500">{l.quantite}</td>
+              <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                {formatFCFA(l.prixUnitaire)}
+              </td>
+              <td className="px-5 py-3 text-right font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                {formatFCFA(l.montantHT)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-3 text-sm">
-            <div className="flex justify-between text-slate-600 dark:text-slate-300">
-              <span>Montant TTC</span>
-              <span className="tabular-nums font-medium">{formatFCFA(facture.montantTTC)}</span>
+function FinancialSummary({
+  montantHT,
+  tauxTVA,
+  montantTVA,
+  montantTTC,
+  montantPaye,
+  editMode,
+  editMontantHT,
+  editTVA,
+  editTTC,
+}: {
+  montantHT: number;
+  tauxTVA: number;
+  montantTVA: number;
+  montantTTC: number;
+  montantPaye: number;
+  editMode?: boolean;
+  editMontantHT?: number;
+  editTVA?: number;
+  editTTC?: number;
+}) {
+  const ht = editMode ? (editMontantHT ?? 0) : montantHT;
+  const tva = editMode ? (editTVA ?? 0) : tauxTVA;
+  const tvaAmt = editMode ? Math.round(ht * (tva / 100)) : montantTVA;
+  const ttc = editMode ? (editTTC ?? 0) : montantTTC;
+  const reste = Math.max(0, ttc - montantPaye);
+
+  return (
+    <div className="space-y-2 p-5">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-slate-500">Sous-total HT</span>
+        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(ht)}</span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-slate-500">TVA {tva}%</span>
+        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(tvaAmt)}</span>
+      </div>
+      <div className="flex items-center justify-between rounded-xl bg-primary px-4 py-3">
+        <span className="text-sm font-bold text-white">Total TTC</span>
+        <span className="text-lg font-extrabold tabular-nums text-white">{formatFCFA(ttc)}</span>
+      </div>
+      {!editMode && montantPaye > 0 && (
+        <>
+          <div className="flex items-center justify-between text-sm text-emerald-700 dark:text-emerald-400">
+            <span>Déjà payé</span>
+            <span className="font-semibold tabular-nums">- {formatFCFA(montantPaye)}</span>
+          </div>
+          <div className="flex items-center justify-between border-t border-border/50 pt-2 text-sm font-bold">
+            <span className="text-slate-700 dark:text-slate-300">Reste à payer</span>
+            <span className={cn("tabular-nums", reste > 0 ? "text-amber-700" : "text-emerald-600")}>
+              {formatFCFA(reste)}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Dialog paiement                                                      */
+/* ------------------------------------------------------------------ */
+
+function PaiementDialog({
+  facture,
+  open,
+  onOpenChange,
+}: {
+  facture: Facture;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const recordPaiement = useStore((s) => s.recordFacturePaiement);
+  const reste = facture.montantTTC - facture.montantPaye;
+  const [montant, setMontant] = React.useState(String(reste));
+  const [saving, setSaving] = React.useState(false);
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setMontant(String(reste));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const m = parseFloat(montant);
+    if (!m || m <= 0) {
+      toast({ title: "Montant invalide", description: "Le montant doit être supérieur à 0.", variant: "destructive" });
+      return;
+    }
+    if (m > reste) {
+      toast({
+        title: "Montant trop élevé",
+        description: `Le reste à payer est de ${reste.toLocaleString("fr-FR")} FCFA.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
+    try {
+      await recordPaiement(facture.id, m);
+      toast({ title: "Paiement enregistré", description: `${m.toLocaleString("fr-FR")} FCFA encaissés.` });
+      onOpenChange(false);
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible d'enregistrer le paiement.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md" aria-labelledby="paiement-dialog-title">
+        <DialogHeader>
+          <DialogTitle id="paiement-dialog-title" className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/50">
+              <CreditCard className="size-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="mt-1 flex justify-between text-slate-600 dark:text-slate-300">
-              <span>Déjà payé</span>
-              <span className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(facture.montantPaye)}</span>
-            </div>
-            <div className="mt-2 flex justify-between border-t border-border/50 pt-2 font-semibold text-slate-900 dark:text-slate-100">
-              <span>Reste à payer</span>
-              <span className="tabular-nums text-amber-700 dark:text-amber-400">{formatFCFA(reste)}</span>
-            </div>
+            Enregistrer un paiement
+          </DialogTitle>
+          <DialogDescription>
+            Facture <span className="font-mono font-semibold">{facture.numero}</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Total TTC", value: formatFCFA(facture.montantTTC), color: "text-slate-700 dark:text-slate-300" },
+              { label: "Déjà payé", value: formatFCFA(facture.montantPaye), color: "text-emerald-700 dark:text-emerald-400" },
+              { label: "Reste", value: formatFCFA(reste), color: "text-amber-700 dark:text-amber-400" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-border/60 bg-slate-50/80 p-3 dark:bg-slate-800/50">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
+                <p className={cn("mt-1 text-sm font-bold tabular-nums", item.color)}>{item.value}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Montant reçu (FCFA) *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="paiement-montant" className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Montant reçu (FCFA)
+            </Label>
             <Input
+              id="paiement-montant"
               type="number"
               min="1"
               max={reste}
               value={montant}
               onChange={(e) => setMontant(e.target.value)}
               autoFocus
-              className="h-10 text-sm"
+              className="h-11 text-right text-base font-semibold tabular-nums"
               required
             />
+            <div className="flex gap-2">
+              {[25, 50, 100].map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => setMontant(String(Math.round((reste * pct) / 100)))}
+                  className="rounded-lg border border-border/60 px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-slate-800"
+                >
+                  {pct}%
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setMontant(String(reste))}
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/40"
+              >
+                Solde
+              </button>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
-            <Button type="submit">
-              <CheckCircle2 className="mr-1.5 size-3.5" /> Valider le paiement
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Annuler
             </Button>
-          </div>
+            <Button type="submit" disabled={saving} className="bg-emerald-700 hover:bg-emerald-800">
+              <CheckCircle2 className="mr-1.5 size-3.5" />
+              {saving ? "Enregistrement…" : "Valider le paiement"}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* VUE IMPRIMABLE                                                      */
-/* ------------------------------------------------------------------ */
-
-function PrintView({ facture }: { facture: Facture }) {
-  const dossiers = useStore((s) => s.dossiers);
-  const dossier  = facture.dossierId ? dossiers.find((d) => d.id === facture.dossierId) : null;
-
-  return (
-    <div id="sltt-print-zone" className="hidden print:block bg-white p-12 text-slate-900" style={{ fontFamily: "Georgia, serif" }}>
-      {/* En-tête */}
-      <div className="flex justify-between items-start mb-10">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Arial, sans-serif" }}>SLTT</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Société Traoré de Logistique, Transit et Transport</p>
-          <p className="text-xs text-slate-500">Bamako, Mali · contact@sltt.ml</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xl font-bold text-blue-800" style={{ fontFamily: "Arial, sans-serif" }}>FACTURE</p>
-          <p className="text-base font-semibold mt-1">{facture.numero}</p>
-          <p className="text-xs text-slate-500 mt-0.5">Date : {formatDateShort(facture.date)}</p>
-          <p className="text-xs text-slate-500">Échéance : {formatDateShort(facture.dateEcheance)}</p>
-        </div>
-      </div>
-
-      {/* Client */}
-      <div className="mb-8 p-4 border border-slate-200 rounded-lg bg-slate-50">
-        <p className="text-[10px] uppercase tracking-widest font-semibold text-slate-400 mb-1">Facturé à</p>
-        <p className="font-bold text-base">{facture.clientNom}</p>
-        {dossier && (
-          <p className="text-xs text-slate-500 mt-0.5">Dossier lié : {dossier.reference} · BL {dossier.bl}</p>
-        )}
-      </div>
-
-      {/* Tableau des lignes */}
-      <table className="w-full text-sm mb-6" style={{ borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#1E40AF", color: "white" }}>
-            <th className="text-left px-3 py-2 text-xs font-semibold">Description</th>
-            <th className="text-center px-3 py-2 text-xs font-semibold w-16">Qté</th>
-            <th className="text-right px-3 py-2 text-xs font-semibold w-32">P.U. HT</th>
-            <th className="text-right px-3 py-2 text-xs font-semibold w-36">Montant HT</th>
-          </tr>
-        </thead>
-        <tbody>
-          {facture.lignes.map((l, i) => (
-            <tr key={l.id} style={{ background: i % 2 === 0 ? "white" : "#F8FAFC" }}>
-              <td className="px-3 py-2 border-b border-slate-100">{l.description}</td>
-              <td className="px-3 py-2 border-b border-slate-100 text-center tabular-nums">{l.quantite}</td>
-              <td className="px-3 py-2 border-b border-slate-100 text-right tabular-nums">{formatFCFA(l.prixUnitaire)}</td>
-              <td className="px-3 py-2 border-b border-slate-100 text-right tabular-nums font-medium">{formatFCFA(l.montantHT)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Totaux */}
-      <div className="flex justify-end mb-8">
-        <div className="w-72">
-          <div className="flex justify-between py-1.5 text-sm text-slate-600">
-            <span>Sous-total HT</span>
-            <span className="tabular-nums font-medium">{formatFCFA(facture.montantHT)}</span>
-          </div>
-          <div className="flex justify-between py-1.5 text-sm text-slate-600">
-            <span>TVA {facture.tauxTVA}%</span>
-            <span className="tabular-nums font-medium">{formatFCFA(facture.montantTVA)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-t-2 border-slate-900 mt-1 font-bold text-base">
-            <span>TOTAL TTC</span>
-            <span className="tabular-nums text-blue-800">{formatFCFA(facture.montantTTC)}</span>
-          </div>
-          {facture.montantPaye > 0 && (
-            <>
-              <div className="flex justify-between py-1.5 text-sm text-emerald-700">
-                <span>Déjà payé</span>
-                <span className="tabular-nums">- {formatFCFA(facture.montantPaye)}</span>
-              </div>
-              <div className="flex justify-between py-1.5 font-semibold text-amber-700">
-                <span>Reste à payer</span>
-                <span className="tabular-nums">{formatFCFA(facture.montantTTC - facture.montantPaye)}</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Notes */}
-      {facture.notes && (
-        <div className="border-t border-slate-200 pt-4 text-xs text-slate-500">
-          <p className="font-semibold text-slate-700 mb-1">Notes</p>
-          <p>{facture.notes}</p>
-        </div>
-      )}
-
-      {/* Pied */}
-      <div className="mt-12 border-t border-slate-200 pt-4 text-center text-[10px] text-slate-400">
-        <p>Facture générée par le système SLTT · {facture.creePar} · {formatDateShort(facture.creeLe)}</p>
-        <p className="mt-0.5">Merci de votre confiance. Paiement par virement ou espèces.</p>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* SCREEN                                                              */
+/* Écran principal                                                      */
 /* ------------------------------------------------------------------ */
 
 export function FactureDetailScreen() {
-  const selectedId         = useNav((s) => s.selectedId);
-  const go                 = useNav((s) => s.go);
-  const factures           = useStore((s) => s.factures);
+  const selectedId = useNav((s) => s.selectedId);
+  const go = useNav((s) => s.go);
+  const openDossierDetail = useNav((s) => s.openDossierDetail);
+  const factures = useStore((s) => s.factures);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
-  const updateFacture      = useStore((s) => s.updateFacture);
-  const clients            = useStore((s) => s.clients);
-  const dossiers           = useStore((s) => s.dossiers);
+  const updateFacture = useStore((s) => s.updateFacture);
+  const dossiers = useStore((s) => s.dossiers);
+  const { toast } = useToast();
 
   const facture = factures.find((f) => f.id === selectedId);
 
   const [showPaiement, setShowPaiement] = React.useState(false);
-  const [editMode,     setEditMode]     = React.useState(false);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [confirmSolde, setConfirmSolde] = React.useState(false);
 
-  // Edition state
-  const [editDate,         setEditDate]         = React.useState("");
+  const [editDate, setEditDate] = React.useState("");
   const [editDateEcheance, setEditDateEcheance] = React.useState("");
-  const [editTauxTVA,      setEditTauxTVA]      = React.useState("");
-  const [editNotes,        setEditNotes]         = React.useState("");
-  const [editLignes,       setEditLignes]        = React.useState<Array<{ description: string; quantite: string; prixUnitaire: string }>>([]);
+  const [editTauxTVA, setEditTauxTVA] = React.useState("");
+  const [editNotes, setEditNotes] = React.useState("");
+  const [editLignes, setEditLignes] = React.useState<
+    Array<{ description: string; quantite: string; prixUnitaire: string }>
+  >([]);
 
-  React.useEffect(() => {
-    if (facture && editMode) {
+  const editKey = isEditing ? (facture?.id ?? null) : null;
+  const [prevEditKey, setPrevEditKey] = React.useState<string | null>(null);
+  if (editKey !== prevEditKey) {
+    setPrevEditKey(editKey);
+    if (editKey !== null && facture) {
       setEditDate(facture.date);
       setEditDateEcheance(facture.dateEcheance);
       setEditTauxTVA(String(facture.tauxTVA));
       setEditNotes(facture.notes);
-      setEditLignes(facture.lignes.map((l) => ({
-        description: l.description,
-        quantite: String(l.quantite),
-        prixUnitaire: String(l.prixUnitaire),
-      })));
+      setEditLignes(
+        facture.lignes.map((l) => ({
+          description: l.description,
+          quantite: String(l.quantite),
+          prixUnitaire: String(l.prixUnitaire),
+        })),
+      );
     }
-  }, [editMode, facture]);
+  }
 
   if (!facture) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-slate-500 dark:text-slate-400">Facture introuvable.</p>
-        <Button variant="outline" className="mt-4" onClick={() => go("factures")}>
-          <ArrowLeft className="mr-1.5 size-3.5" /> Retour
+      <div className="flex flex-col items-center justify-center py-28 text-center">
+        <Receipt className="size-14 text-slate-200 dark:text-slate-700" />
+        <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Facture introuvable</p>
+        <Button variant="outline" className="mt-5" onClick={() => go("factures")}>
+          <ArrowLeft className="mr-2 size-4" /> Retour aux factures
         </Button>
       </div>
     );
   }
 
   const dossier = facture.dossierId ? dossiers.find((d) => d.id === facture.dossierId) : null;
-  const reste   = facture.montantTTC - facture.montantPaye;
+  const reste = facture.montantTTC - facture.montantPaye;
   const pctPaye = facture.montantTTC > 0 ? Math.round((facture.montantPaye / facture.montantTTC) * 100) : 0;
-  const isEchue = facture.statut !== "Soldée" && facture.statut !== "Annulée" &&
-                  facture.dateEcheance < new Date().toISOString().slice(0, 10);
+  const isEchue =
+    facture.statut !== "Soldée" &&
+    facture.statut !== "Annulée" &&
+    facture.dateEcheance < new Date().toISOString().slice(0, 10);
+  const nextStatut = NEXT_STATUT[facture.statut];
+  const canEdit = facture.statut === "Brouillon" && !isEditing;
+
+  const editMontantHT = editLignes.reduce(
+    (s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
+    0,
+  );
+  const editTVA = parseFloat(editTauxTVA) || 0;
+  const editTTC = editMontantHT + Math.round(editMontantHT * (editTVA / 100));
+
+  function handleStatutClick(s: FactureStatut) {
+    if (!facture) return;
+    if (s === "Soldée" && facture.montantPaye < facture.montantTTC) {
+      setConfirmSolde(true);
+      return;
+    }
+    updateFactureStatut(facture.id, s);
+    toast({ title: "Statut mis à jour", description: `${facture.numero} → ${s}` });
+  }
 
   function handleSaveEdit() {
     if (!facture) return;
@@ -275,297 +660,517 @@ export function FactureDetailScreen() {
         })),
     };
     updateFacture(facture.id, input);
-    setEditMode(false);
+    toast({ title: "Facture mise à jour", description: facture.numero });
+    setIsEditing(false);
   }
 
-  const editMontantHT = editLignes.reduce((s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0), 0);
-  const editTVA       = parseFloat(editTauxTVA) || 0;
-  const editTTC       = editMontantHT + Math.round(editMontantHT * (editTVA / 100));
+  function handlePrint() {
+    if (!facture) return;
+    printFactureModule({
+      numero: facture.numero,
+      clientNom: facture.clientNom,
+      date: facture.date,
+      dateEcheance: facture.dateEcheance,
+      statut: facture.statut,
+      lignes: facture.lignes,
+      tauxTVA: facture.tauxTVA,
+      montantHT: facture.montantHT,
+      montantTVA: facture.montantTVA,
+      montantTTC: facture.montantTTC,
+      montantPaye: facture.montantPaye,
+      notes: facture.notes,
+      creePar: facture.creePar,
+      creeLe: facture.creeLe,
+      dossierReference: dossier?.reference,
+      dossierBl: dossier?.bl,
+    });
+  }
 
   return (
-    <>
-      <PrintView facture={facture} />
-
+    <div className="space-y-6 pb-12">
       {showPaiement && (
-        <PaiementModal facture={facture} onClose={() => setShowPaiement(false)} />
+        <PaiementDialog facture={facture} open={showPaiement} onOpenChange={setShowPaiement} />
       )}
 
-      <div className="print:hidden space-y-5">
-        <PageHeader
-          title={facture.numero}
-          description={`Client : ${facture.clientNom}${dossier ? ` · Dossier ${dossier.reference}` : ""}`}
-        >
-          <div className="flex items-center gap-2">
-            {/* Statut badge */}
-            <FactureStatutBadge statut={facture.statut} />
+      {/* Retour */}
+      <button
+        onClick={() => go("factures")}
+        className="group inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+      >
+        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+        Retour aux factures
+      </button>
 
-            {/* Actions contextuelles */}
-            {facture.statut === "Brouillon" && (
-              <Button size="sm" variant="outline" onClick={() => updateFactureStatut(facture.id, "Envoyée")}>
-                <Send className="mr-1.5 size-3.5" /> Marquer envoyée
-              </Button>
-            )}
-            {facture.statut !== "Soldée" && facture.statut !== "Annulée" && (
-              <Button size="sm" variant="outline" onClick={() => setShowPaiement(true)}>
-                <CreditCard className="mr-1.5 size-3.5" /> Paiement
-              </Button>
-            )}
-            {facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
-              <Button size="sm" variant="outline" onClick={() => updateFactureStatut(facture.id, "Annulée")} className="text-red-600 dark:text-red-400 border-red-200 hover:bg-red-50 dark:bg-red-950/40">
-                <XCircle className="mr-1.5 size-3.5" /> Annuler
-              </Button>
-            )}
-            {editMode ? (
-              <>
-                <Button size="sm" onClick={handleSaveEdit}>
-                  <Save className="mr-1.5 size-3.5" /> Enregistrer
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setEditMode(false)}>
-                  <X className="size-3.5" />
-                </Button>
-              </>
-            ) : (
-              facture.statut === "Brouillon" && (
-                <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
-                  <Edit2 className="mr-1.5 size-3.5" /> Modifier
-                </Button>
-              )
-            )}
-            <Button size="sm" onClick={() => window.print()}>
-              <Printer className="mr-1.5 size-3.5" /> Imprimer / PDF
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => go("factures")}>
-              <ArrowLeft className="mr-1.5 size-3.5" /> Retour
-            </Button>
-          </div>
-        </PageHeader>
-
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-
-          {/* Colonne principale */}
-          <div className="space-y-4 lg:col-span-2">
-
-            {/* Infos facture */}
-            <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
-              <div className="border-b border-border/50 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Informations</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
-                {[
-                  { label: "N° Facture",  value: facture.numero },
-                  { label: "Client",      value: facture.clientNom },
-                  { label: "Date",        value: editMode ? undefined : formatDateShort(facture.date), edit: editMode ? <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="h-8 text-sm" /> : undefined },
-                  { label: "Échéance",    value: editMode ? undefined : formatDateShort(facture.dateEcheance), edit: editMode ? <Input type="date" value={editDateEcheance} onChange={(e) => setEditDateEcheance(e.target.value)} className="h-8 text-sm" /> : undefined, warn: isEchue },
-                  { label: "Dossier lié", value: dossier ? dossier.reference : "—" },
-                  { label: "TVA",         value: editMode ? undefined : `${facture.tauxTVA}%`, edit: editMode ? <Input type="number" value={editTauxTVA} onChange={(e) => setEditTauxTVA(e.target.value)} className="h-8 w-20 text-sm" /> : undefined },
-                  { label: "Créé par",    value: facture.creePar },
-                  { label: "Créé le",     value: formatDateShort(facture.creeLe) },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{item.label}</p>
-                    {item.edit ?? (
-                      <p className={`mt-0.5 text-sm font-medium ${item.warn ? "text-red-600 dark:text-red-400" : "text-slate-800 dark:text-slate-200"}`}>
-                        {item.value}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Lignes de facturation */}
-            <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
-              <div className="flex items-center justify-between border-b border-border/50 bg-slate-50/60 dark:bg-slate-800/60 px-5 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lignes de facturation</span>
-                {editMode && (
-                  <button
-                    onClick={() => setEditLignes((l) => [...l, { description: "", quantite: "1", prixUnitaire: "" }])}
-                    className="flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    <Plus className="size-3" /> Ajouter
-                  </button>
-                )}
-              </div>
-
-              {/* Header colonnes */}
-              <div className="grid grid-cols-[1fr_56px_120px_120px] gap-x-3 border-b border-border/40 bg-slate-50/30 px-5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                <span>Description</span>
-                <span className="text-center">Qté</span>
-                <span className="text-right">P.U. HT</span>
-                <span className="text-right">Total HT</span>
-              </div>
-
-              <div className="divide-y divide-border/30">
-                {(editMode ? editLignes : facture.lignes).map((l, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_56px_120px_120px] items-center gap-x-3 px-5 py-2.5">
-                    {editMode ? (
-                      <>
-                        <Input
-                          value={(l as { description: string }).description}
-                          onChange={(e) => setEditLignes((ls) => ls.map((x, idx) => idx === i ? { ...x, description: e.target.value } : x))}
-                          className="h-7 text-xs"
-                        />
-                        <Input
-                          type="number" min="0.01"
-                          value={(l as { quantite: string }).quantite}
-                          onChange={(e) => setEditLignes((ls) => ls.map((x, idx) => idx === i ? { ...x, quantite: e.target.value } : x))}
-                          className="h-7 text-center text-xs"
-                        />
-                        <Input
-                          type="number" min="0"
-                          value={(l as { prixUnitaire: string }).prixUnitaire}
-                          onChange={(e) => setEditLignes((ls) => ls.map((x, idx) => idx === i ? { ...x, prixUnitaire: e.target.value } : x))}
-                          className="h-7 text-right text-xs"
-                        />
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
-                            {formatFCFA((parseFloat((l as {quantite:string}).quantite)||0)*(parseFloat((l as {prixUnitaire:string}).prixUnitaire)||0))}
-                          </span>
-                          <button
-                            onClick={() => setEditLignes((ls) => ls.filter((_, idx) => idx !== i))}
-                            className="ml-1 rounded p-0.5 text-slate-300 dark:text-slate-600 hover:text-red-500"
-                          >
-                            <X className="size-3" />
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm text-slate-700 dark:text-slate-300">{(l as { description: string }).description}</p>
-                        <p className="text-center text-sm tabular-nums text-slate-500 dark:text-slate-400">{(l as { quantite: number }).quantite}</p>
-                        <p className="text-right text-sm tabular-nums text-slate-600 dark:text-slate-300">{formatFCFA((l as { prixUnitaire: number }).prixUnitaire)}</p>
-                        <p className="text-right text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA((l as { montantHT: number }).montantHT)}</p>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Totaux */}
-              <div className="flex justify-end border-t border-border/50 bg-slate-50/40 dark:bg-slate-800/40 px-5 py-4">
-                <div className="w-64 space-y-1.5 text-sm">
-                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                    <span>Sous-total HT</span>
-                    <span className="tabular-nums font-medium">{formatFCFA(editMode ? editMontantHT : facture.montantHT)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                    <span>TVA {editMode ? editTVA : facture.tauxTVA}%</span>
-                    <span className="tabular-nums font-medium">{formatFCFA(editMode ? Math.round(editMontantHT * editTVA / 100) : facture.montantTVA)}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-border/60 pt-2 font-bold text-slate-900 dark:text-slate-100">
-                    <span>Total TTC</span>
-                    <span className="tabular-nums text-blue-700 text-base">{formatFCFA(editMode ? editTTC : facture.montantTTC)}</span>
-                  </div>
+      {/* Carte résumé */}
+      <Card className="overflow-hidden border-border/80 shadow-sm">
+        <div className="flex border-l-4 border-blue-600">
+          <div className="flex-1 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="font-mono text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                    {facture.numero}
+                  </h1>
+                  <FactureStatutBadge statut={facture.statut} showIcon size="md" />
+                  {dossier && (
+                    <button
+                      onClick={() => openDossierDetail(dossier.id)}
+                      className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-300"
+                    >
+                      <FolderKanban className="size-3" />
+                      {dossier.reference}
+                    </button>
+                  )}
                 </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            {(facture.notes || editMode) && (
-              <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</p>
-                {editMode ? (
-                  <textarea
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                    rows={3}
-                    className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                  />
-                ) : (
-                  <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{facture.notes}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Colonne latérale */}
-          <div className="space-y-4">
-
-            {/* Suivi paiement */}
-            <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
-              <div className="border-b border-border/50 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Suivi paiement</span>
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300">
-                  <span>Montant TTC</span>
-                  <span className="font-semibold tabular-nums">{formatFCFA(facture.montantTTC)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-emerald-700 dark:text-emerald-400">
-                  <span>Payé</span>
-                  <span className="font-semibold tabular-nums">{formatFCFA(facture.montantPaye)}</span>
-                </div>
-                {/* Barre de progression */}
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                  <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pctPaye}%` }} />
-                </div>
-                <div className="flex justify-between text-xs text-amber-700 dark:text-amber-400">
-                  <span>Reste à payer</span>
-                  <span className="font-bold tabular-nums">{formatFCFA(reste)}</span>
-                </div>
-
+                <p className="mt-1.5 text-base font-semibold text-slate-700 dark:text-slate-300">{facture.clientNom}</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                  Émise le {formatDateShort(facture.date)}
+                  &nbsp;·&nbsp; Échéance {formatDateShort(facture.dateEcheance)}
+                  &nbsp;·&nbsp; Créée par {facture.creePar}
+                </p>
                 {isEchue && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-[11px] font-medium text-red-700">
-                    ⚠ Échéance dépassée depuis le {formatDateShort(facture.dateEcheance)}
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+                    <AlertTriangle className="size-3.5" />
+                    Échéance dépassée depuis le {formatDateShort(facture.dateEcheance)}
                   </div>
                 )}
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Total TTC</p>
+                <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700">
+                  {new Intl.NumberFormat("fr-FR").format(facture.montantTTC)}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">FCFA</p>
+                {facture.montantPaye > 0 && facture.statut !== "Soldée" && (
+                  <p className="mt-1 text-xs font-semibold text-amber-600">
+                    Reste {formatFCFA(reste)}
+                  </p>
+                )}
+              </div>
+            </div>
 
-                {facture.statut !== "Soldée" && facture.statut !== "Annulée" && (
-                  <Button className="w-full" size="sm" onClick={() => setShowPaiement(true)}>
-                    <CreditCard className="mr-1.5 size-3.5" /> Enregistrer un paiement
+            {/* Barre d'actions */}
+            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border/50 pt-4">
+              {!isEditing ? (
+                <>
+                  <Button size="sm" variant="outline" className="gap-2" onClick={handlePrint}>
+                    <Printer className="size-4" /> Télécharger PDF
                   </Button>
-                )}
-              </div>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Pencil className="size-4" /> Modifier
+                    </Button>
+                  )}
+                  {facture.statut !== "Soldée" && facture.statut !== "Annulée" && (
+                    <Button
+                      size="sm"
+                      className="gap-2 bg-emerald-700 hover:bg-emerald-800"
+                      onClick={() => setShowPaiement(true)}
+                    >
+                      <CreditCard className="size-4" /> Enregistrer paiement
+                    </Button>
+                  )}
+                  {nextStatut && facture.statut !== "Annulée" && (
+                    <Button
+                      size="sm"
+                      className="gap-2 bg-primary hover:bg-primary/90 text-white"
+                      onClick={() => handleStatutClick(nextStatut.to)}
+                    >
+                      <ChevronRight className="size-4" /> {nextStatut.label}
+                    </Button>
+                  )}
+                  {dossier && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2 text-indigo-700 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
+                      onClick={() => openDossierDetail(dossier.id)}
+                    >
+                      <FolderKanban className="size-4" /> Voir le dossier
+                    </Button>
+                  )}
+                  {facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="ml-auto text-slate-400">
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        {STATUTS_ALL.map((s) => {
+                          const SIcon = STATUT_CONFIG[s].icon;
+                          return (
+                            <DropdownMenuItem
+                              key={s}
+                              disabled={s === facture.statut}
+                              onClick={() => handleStatutClick(s)}
+                            >
+                              <SIcon className="mr-2 size-3.5" />
+                              {s}
+                              {s === facture.statut && (
+                                <span className="ml-auto text-[10px] text-slate-400">actuel</span>
+                              )}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-950/40"
+                          onClick={() => handleStatutClick("Annulée")}
+                        >
+                          <XCircle className="mr-2 size-3.5" /> Annuler la facture
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button size="sm" variant="outline" className="gap-2" onClick={() => setIsEditing(false)}>
+                    <X className="size-4" /> Annuler
+                  </Button>
+                  <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90" onClick={handleSaveEdit}>
+                    <Save className="size-4" /> Enregistrer
+                  </Button>
+                </>
+              )}
             </div>
-
-            {/* Dossier lié */}
-            {dossier && (
-              <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Dossier lié</p>
-                <button
-                  onClick={() => go("dossier-detail", { id: dossier.id })}
-                  className="flex w-full items-center justify-between rounded-lg border border-border/60 p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
-                  <div>
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{dossier.reference}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{dossier.nature} · {dossier.statut}</p>
-                  </div>
-                  <ChevronDown className="size-3.5 -rotate-90 text-slate-400 dark:text-slate-500" />
-                </button>
-              </div>
-            )}
-
-            {/* Actions rapides statut */}
-            <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-4 shadow-sm">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Changer le statut</p>
-              <div className="space-y-1.5">
-                {(["Brouillon", "Envoyée", "Partielle", "Soldée", "Annulée"] as FactureStatut[]).map((s) => (
-                  <button
-                    key={s}
-                    disabled={facture.statut === s}
-                    onClick={() => updateFactureStatut(facture.id, s)}
-                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors ${
-                      facture.statut === s
-                        ? "bg-blue-50 dark:bg-blue-950/40 font-semibold text-blue-700"
-                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-default"
-                    }`}
-                  >
-                    <span className={`size-1.5 shrink-0 rounded-full ${
-                      s === "Soldée" ? "bg-emerald-500" :
-                      s === "Envoyée" ? "bg-blue-500" :
-                      s === "Partielle" ? "bg-amber-500" :
-                      s === "Annulée" ? "bg-red-500" : "bg-slate-400"
-                    }`} />
-                    {s}
-                    {facture.statut === s && <span className="ml-auto text-[10px] text-blue-500">● Actuel</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-
           </div>
         </div>
-      </div>
-    </>
+      </Card>
+
+      {/* Mode visualisation */}
+      {!isEditing && (
+        <div className="grid gap-5 lg:grid-cols-5">
+          {/* Colonne gauche */}
+          <div className="space-y-5 lg:col-span-3">
+            <Card className="border-border/80 shadow-sm">
+              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Informations</h2>
+              </div>
+              <div className="px-5">
+                <InfoRow icon={User} label="Client" value={facture.clientNom} />
+                <InfoRow icon={Receipt} label="N° Facture" value={facture.numero} mono />
+                <InfoRow icon={CalendarDays} label="Date d'émission" value={formatDateShort(facture.date)} />
+                <InfoRow
+                  icon={CalendarDays}
+                  label="Date d'échéance"
+                  value={formatDateShort(facture.dateEcheance)}
+                  warn={isEchue}
+                />
+                <InfoRow icon={Percent} label="Taux de TVA" value={`${facture.tauxTVA} %`} />
+                <InfoRow
+                  icon={FolderKanban}
+                  label="Dossier lié"
+                  value={dossier ? `${dossier.reference} · BL ${dossier.bl}` : "—"}
+                />
+                <InfoRow icon={Clock} label="Créée le" value={formatDateShort(facture.creeLe)} />
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden border-border/80 shadow-sm">
+              <div className="flex items-center justify-between border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                  Lignes de facturation
+                </h2>
+                <span className="text-[10px] tabular-nums text-slate-400">
+                  {facture.lignes.length} ligne{facture.lignes.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <LignesTable lignes={facture.lignes} />
+              <div className="border-t border-border/60 bg-slate-50/30 dark:bg-slate-800/30">
+                <FinancialSummary
+                  montantHT={facture.montantHT}
+                  tauxTVA={facture.tauxTVA}
+                  montantTVA={facture.montantTVA}
+                  montantTTC={facture.montantTTC}
+                  montantPaye={facture.montantPaye}
+                />
+              </div>
+            </Card>
+
+            {facture.notes && (
+              <Card className="border-border/80 shadow-sm">
+                <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Notes</h2>
+                </div>
+                <p className="px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-300">
+                  {facture.notes}
+                </p>
+              </Card>
+            )}
+          </div>
+
+          {/* Colonne droite */}
+          <div className="space-y-5 lg:col-span-2">
+            {facture.statut !== "Annulée" && (
+              <Card className="overflow-hidden border-border/80 shadow-sm">
+                <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Suivi paiement</h2>
+                </div>
+                <div className="space-y-4 p-5">
+                  <PaymentRing pct={pctPaye} reste={reste} isEchue={isEchue} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-border/60 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Encaissé</p>
+                      <p className="mt-1 text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                        {formatFCFA(facture.montantPaye)}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border/60 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Total TTC</p>
+                      <p className="mt-1 text-sm font-bold tabular-nums text-slate-800 dark:text-slate-200">
+                        {formatFCFA(facture.montantTTC)}
+                      </p>
+                    </div>
+                  </div>
+                  {facture.statut !== "Soldée" && (
+                    <Button className="w-full gap-2 bg-emerald-700 hover:bg-emerald-800" onClick={() => setShowPaiement(true)}>
+                      <CreditCard className="size-4" /> Enregistrer un paiement
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            <Card className="overflow-hidden border-border/80 shadow-sm">
+              <div className="flex items-center justify-between border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Pipeline</h2>
+                <span className="text-[10px] text-slate-400">Cliquez pour changer</span>
+              </div>
+              <div className="p-5">
+                <VerticalStepper statut={facture.statut} onSelect={handleStatutClick} />
+                {facture.statut === "Annulée" && (
+                  <button
+                    onClick={() => handleStatutClick("Brouillon")}
+                    className="mt-4 text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400"
+                  >
+                    ↩ Remettre en brouillon
+                  </button>
+                )}
+              </div>
+            </Card>
+
+            <Card className="border-border/80 shadow-sm">
+              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Actions</h2>
+              </div>
+              <div className="space-y-2 p-4">
+                <Button variant="outline" className="w-full justify-start gap-2.5 font-medium" onClick={handlePrint}>
+                  <Printer className="size-4 text-slate-400" /> Télécharger PDF
+                </Button>
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2.5 font-medium"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Pencil className="size-4 text-slate-400" /> Modifier la facture
+                  </Button>
+                )}
+                {facture.statut !== "Soldée" && facture.statut !== "Annulée" && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+                    onClick={() => setShowPaiement(true)}
+                  >
+                    <CreditCard className="size-4" /> Enregistrer un paiement
+                  </Button>
+                )}
+                {dossier && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2.5 font-medium text-indigo-700 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
+                    onClick={() => openDossierDetail(dossier.id)}
+                  >
+                    <FolderKanban className="size-4" /> Voir le dossier lié
+                  </Button>
+                )}
+                {facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
+                  <>
+                    <Separator />
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-2.5 font-medium text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:bg-red-950/40"
+                      onClick={() => handleStatutClick("Annulée")}
+                    >
+                      <XCircle className="size-4" /> Annuler la facture
+                    </Button>
+                  </>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Mode édition */}
+      {isEditing && (
+        <Card className="overflow-hidden border-blue-200 shadow-md">
+          <div className="border-b border-blue-100 bg-blue-50/80 px-5 py-4 dark:border-blue-900 dark:bg-blue-950/30">
+            <div className="flex items-center gap-3">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
+                <Pencil className="size-3.5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-blue-900 dark:text-blue-100">
+                  Modifier la facture — {facture.numero}
+                </h2>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">
+                  Seules les factures en brouillon peuvent être modifiées
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6 p-6">
+            <div className="grid gap-5 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Date d'émission</Label>
+                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Date d'échéance</Label>
+                <Input
+                  type="date"
+                  value={editDateEcheance}
+                  onChange={(e) => setEditDateEcheance(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">TVA (%)</Label>
+                <Input
+                  type="number"
+                  value={editTauxTVA}
+                  onChange={(e) => setEditTauxTVA(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Lignes de facturation</p>
+                <button
+                  onClick={() => setEditLignes((l) => [...l, { description: "", quantite: "1", prixUnitaire: "" }])}
+                  className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                >
+                  <Plus className="size-3.5" /> Ajouter une ligne
+                </button>
+              </div>
+              <div className="overflow-hidden rounded-xl border border-border/80">
+                <div className="grid grid-cols-[1fr_72px_120px_120px_36px] gap-x-2 border-b border-border/60 bg-slate-50/80 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:bg-slate-800/50">
+                  <span>Description</span>
+                  <span className="text-center">Qté</span>
+                  <span className="text-right">P.U. HT</span>
+                  <span className="text-right">Total HT</span>
+                  <span />
+                </div>
+                <div className="divide-y divide-border/30">
+                  {editLignes.map((l, i) => (
+                    <div
+                      key={i}
+                      className="grid grid-cols-[1fr_72px_120px_120px_36px] items-center gap-x-2 px-4 py-2.5"
+                    >
+                      <Input
+                        value={l.description}
+                        onChange={(e) =>
+                          setEditLignes((ls) => ls.map((x, idx) => (idx === i ? { ...x, description: e.target.value } : x)))
+                        }
+                        placeholder="Description de la prestation"
+                        className="h-9 text-sm"
+                      />
+                      <Input
+                        type="number"
+                        min="0.01"
+                        value={l.quantite}
+                        onChange={(e) =>
+                          setEditLignes((ls) => ls.map((x, idx) => (idx === i ? { ...x, quantite: e.target.value } : x)))
+                        }
+                        className="h-9 text-center text-sm tabular-nums"
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        value={l.prixUnitaire}
+                        onChange={(e) =>
+                          setEditLignes((ls) =>
+                            ls.map((x, idx) => (idx === i ? { ...x, prixUnitaire: e.target.value } : x)),
+                          )
+                        }
+                        className="h-9 text-right text-sm tabular-nums"
+                      />
+                      <p className="text-right text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+                        {formatFCFA(
+                          (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
+                        )}
+                      </p>
+                      <button
+                        onClick={() => setEditLignes((ls) => ls.filter((_, idx) => idx !== i))}
+                        className="flex size-8 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <FinancialSummary
+                montantHT={facture.montantHT}
+                tauxTVA={facture.tauxTVA}
+                montantTVA={facture.montantTVA}
+                montantTTC={facture.montantTTC}
+                montantPaye={facture.montantPaye}
+                editMode
+                editMontantHT={editMontantHT}
+                editTVA={editTVA}
+                editTTC={editTTC}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Notes</Label>
+              <Textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={3}
+                placeholder="Conditions de paiement, remarques…"
+              />
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <AlertDialog open={confirmSolde} onOpenChange={setConfirmSolde}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marquer cette facture comme soldée ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le montant payé sera fixé à <strong>{formatFCFA(facture.montantTTC)}</strong> (montant total
+              TTC), alors que <strong>{formatFCFA(facture.montantPaye)}</strong> seulement a été enregistré
+              jusqu&apos;ici. À utiliser uniquement si le client a réellement réglé la totalité par un autre
+              moyen que ce module.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                updateFactureStatut(facture.id, "Soldée");
+                setConfirmSolde(false);
+              }}
+            >
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

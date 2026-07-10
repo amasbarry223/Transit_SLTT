@@ -14,6 +14,7 @@ import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printDevis } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
+import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { DevisStatutBadge } from "@/components/sltt/status-badge";
 
 /* ------------------------------------------------------------------ */
 /* Statut config                                                        */
@@ -83,25 +85,6 @@ const NEXT_STATUT: Partial<Record<DevisStatut, { to: DevisStatut; label: string 
   Brouillon: { to: "Envoyé",  label: "Marquer comme envoyé" },
   Envoyé:    { to: "Accepté", label: "Marquer comme accepté" },
 };
-
-/* ------------------------------------------------------------------ */
-/* Statut badge                                                         */
-/* ------------------------------------------------------------------ */
-
-function StatutBadge({ statut, size = "md" }: { statut: DevisStatut; size?: "sm" | "md" }) {
-  const cfg = STATUT_CONFIG[statut];
-  const Icon = cfg.icon;
-  return (
-    <span className={cn(
-      "inline-flex items-center gap-1.5 rounded-full border font-semibold",
-      cfg.badge,
-      size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm",
-    )}>
-      <Icon className={size === "sm" ? "size-3" : "size-3.5"} />
-      {cfg.label}
-    </span>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Vertical status stepper (sidebar)                                    */
@@ -243,7 +226,7 @@ function FinancialBreakdown({ devis }: { devis: Devis }) {
           </div>
         );
       })}
-      <div className="mt-4 flex items-center justify-between rounded-xl bg-blue-700 px-4 py-3">
+      <div className="mt-4 flex items-center justify-between rounded-xl bg-primary px-4 py-3">
         <span className="text-sm font-bold text-white">Total estimé</span>
         <span className="text-lg font-extrabold tabular-nums text-white">{formatFCFA(devis.total)}</span>
       </div>
@@ -265,7 +248,6 @@ export function DevisDetailScreen() {
   const clients              = useStore((s) => s.clients);
   const updateDevis          = useStore((s) => s.updateDevis);
   const updateDevisStatut    = useStore((s) => s.updateDevisStatut);
-  const convertDevisToDossier = useStore((s) => s.convertDevisToDossier);
   const removeDevis          = useStore((s) => s.removeDevis);
   const { toast }            = useToast();
 
@@ -274,7 +256,6 @@ export function DevisDetailScreen() {
   const [isEditing,      setIsEditing]      = useState(devisEditMode);
   const [confirmDelete,  setConfirmDelete]  = useState(false);
   const [confirmConvert, setConfirmConvert] = useState(false);
-  const [isConverting,   setIsConverting]   = useState(false); // UX-05
 
   /* Edit form */
   const [fClientId,        setFClientId]        = useState("");
@@ -387,23 +368,6 @@ export function DevisDetailScreen() {
     }
   };
 
-  const handleConvert = async () => {
-    if (!devis || isConverting) return; // UX-05: guard against double-click
-    setIsConverting(true);
-    try {
-      const dossier = await convertDevisToDossier(devis.id);
-      if (dossier) {
-        toast({ title: "Dossier créé", description: `${dossier.reference} ouvert depuis ${devis.reference}` });
-        openDossierDetail(dossier.id);
-      } else {
-        setIsConverting(false);
-      }
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de convertir le devis en dossier", variant: "destructive" });
-      setIsConverting(false);
-    }
-  };
-
   /* ---------------------------------------------------------------- */
 
   return (
@@ -429,7 +393,7 @@ export function DevisDetailScreen() {
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">{devis.reference}</h1>
-                  <StatutBadge statut={devis.statut} />
+                  <DevisStatutBadge statut={devis.statut} size="md" />
                   {devis.dossierId && (
                     <button
                       onClick={() => openDossierDetail(devis.dossierId!)}
@@ -467,7 +431,7 @@ export function DevisDetailScreen() {
                     <Printer className="size-4" /> Télécharger PDF
                   </Button>
                   {nextStatut && (
-                    <Button size="sm" className="gap-2 bg-blue-700 hover:bg-blue-800 text-white"
+                    <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white"
                       onClick={() => handleStatutChange(nextStatut.to)}>
                       <ChevronRight className="size-4" /> {nextStatut.label}
                     </Button>
@@ -522,7 +486,7 @@ export function DevisDetailScreen() {
                   <Button size="sm" variant="outline" className="gap-2" onClick={handleCancelEdit}>
                     <X className="size-4" /> Annuler
                   </Button>
-                  <Button size="sm" className="gap-2 bg-blue-700 hover:bg-blue-800"
+                  <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90"
                     disabled={!fClientId || !fNature.trim() || !fDateValidite}
                     onClick={handleSave}>
                     <Save className="size-4" /> Enregistrer
@@ -645,7 +609,7 @@ export function DevisDetailScreen() {
         <Card className="border-blue-200 shadow-md overflow-hidden">
           <div className="border-b border-blue-100 dark:border-blue-900 bg-blue-50/80 dark:bg-blue-950/30 px-5 py-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-blue-700">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
                 <Pencil className="size-3.5 text-white" />
               </div>
               <h2 className="text-sm font-bold text-blue-900">Modifier le devis — {devis.reference}</h2>
@@ -724,7 +688,7 @@ export function DevisDetailScreen() {
               <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400" onClick={handleCancelEdit}>
                 <X className="mr-2 size-4" /> Annuler
               </Button>
-              <Button className="gap-2 bg-blue-700 hover:bg-blue-800"
+              <Button className="gap-2 bg-primary hover:bg-primary/90"
                 disabled={!fClientId || !fNature.trim() || !fDateValidite}
                 onClick={handleSave}>
                 <Save className="size-4" /> Enregistrer les modifications
@@ -737,29 +701,12 @@ export function DevisDetailScreen() {
       {/* ════════════════════════════════════════════════════════════
           Conversion — confirmation inline
       ════════════════════════════════════════════════════════════ */}
-      {confirmConvert && !isEditing && (
-        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/30 p-6 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 border border-emerald-200">
-              <FileCheck2 className="size-6 text-emerald-700" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-base font-bold text-emerald-900">Convertir en dossier de transit ?</h3>
-              <p className="mt-1 text-sm text-emerald-800/80 leading-relaxed">
-                Un nouveau dossier sera créé depuis <strong>{devis.reference}</strong> ({devis.clientNom}).
-                Le statut passera à <strong>Accepté</strong> et vous serez redirigé vers la fiche dossier.
-                Cette opération est irréversible.
-              </p>
-              <div className="mt-4 flex items-center gap-3">
-                <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white gap-2" onClick={handleConvert} disabled={isConverting}>
-                  <CheckCircle2 className="size-4" /> {isConverting ? "Conversion…" : "Confirmer la conversion"}
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setConfirmConvert(false)}>Annuler</Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConvertDevisDialog
+        key={confirmConvert && !isEditing ? devis.id : "closed"}
+        devis={confirmConvert && !isEditing ? devis : null}
+        onClose={() => setConfirmConvert(false)}
+        onConverted={(dossierId) => openDossierDetail(dossierId)}
+      />
 
       {/* ════════════════════════════════════════════════════════════
           Suppression — zone danger inline
