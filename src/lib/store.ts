@@ -598,7 +598,6 @@ function mapProfileFromDb(x: any): User {
         : (ROLE_DEFAULT_PERMISSIONS[role] ?? []),
     actif: x.actif,
     derniereConnexion: x.derniere_connexion || "",
-    motDePasse: "",
   };
 }
 

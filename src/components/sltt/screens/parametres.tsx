@@ -20,9 +20,7 @@ import {
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { useCurrentUser, useCanManageUsers, usePermission } from "@/hooks/use-permission";
-import { hashPassword } from "@/lib/crypto";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import { UsersTab } from "@/components/sltt/screens/users-tab";
 import type { UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
@@ -232,7 +230,6 @@ function ProfileTabForm({
 function SecurityTab() {
   const { toast } = useToast();
   const currentUser = useCurrentUser();
-  const updateUser = useStore((s) => s.updateUser);
   const [curPwd, setCurPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confPwd, setConfPwd] = useState("");
@@ -258,23 +255,12 @@ function SecurityTab() {
     }
     setSavingPwd(true);
     try {
-      if (isSupabaseConfigured) {
-        const res = await fetchWithAuth("/api/auth/password", {
-          method: "PATCH",
-          body: JSON.stringify({ currentPassword: curPwd, newPassword: newPwd }),
-        });
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || "Impossible de changer le mot de passe.");
-      } else {
-        const hashed = await hashPassword(newPwd);
-        await updateUser(currentUser.id, {
-          nom: currentUser.nom,
-          email: currentUser.email,
-          role: currentUser.role,
-          permissions: currentUser.permissions,
-          motDePasse: hashed,
-        });
-      }
+      const res = await fetchWithAuth("/api/auth/password", {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword: curPwd, newPassword: newPwd }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "Impossible de changer le mot de passe.");
       toast({ title: "Mot de passe mis à jour" });
       setCurPwd("");
       setNewPwd("");

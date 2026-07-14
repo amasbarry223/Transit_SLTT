@@ -356,7 +356,6 @@ export interface User {
   email: string;
   role: UserRole;
   permissions: string[];
-  motDePasse: string;
   actif: boolean;
   derniereConnexion: string;
 }
