@@ -70,6 +70,26 @@ describe("buildCsvBlob", () => {
     expect(text).toContain("Société");
     expect(text).not.toContain("Konaté Transport");
   });
+
+  it("neutralise l'injection de formule Excel (=, +, -, @)", async () => {
+    const rows: TransporteurRow[] = [
+      {
+        nom: "=CMD(calc)",
+        contact: "+223 00 00 00",
+        telephone: "-1+1",
+        vehicule: "@SUM(A1)",
+        statut: "Actif",
+      },
+    ];
+    const blob = buildCsvBlob(columns, rows);
+    const text = new TextDecoder("utf-8").decode(await blob.arrayBuffer());
+
+    expect(text).toContain("'=CMD(calc)");
+    expect(text).toContain("'+223 00 00 00");
+    expect(text).toContain("'-1+1");
+    expect(text).toContain("'@SUM(A1)");
+    expect(text).not.toMatch(/;=CMD/);
+  });
 });
 
 describe("shouldShowTva", () => {

@@ -82,7 +82,12 @@ interface Column<T> {
 }
 
 function csvCell(value: unknown): string {
-  const s = value == null ? "" : String(value);
+  let s = value == null ? "" : String(value);
+  // Neutralise l'injection de formule Excel/LibreOffice (OWASP CSV Injection) :
+  // préfixe d'une apostrophe toute valeur commençant par =, +, -, @, tab ou CR.
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = `'${s}`;
+  }
   if (/[",\n;\r]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
@@ -740,12 +745,12 @@ export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): voi
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
 .wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 28px 40px 20px; border-bottom: 3px solid #1e40af; }
-.brand { display: flex; align-items: flex-start; gap: 14px; }
-.brand-logo { width: 68px; height: 68px; object-fit: contain; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 28px 40px 22px; border-bottom: 3px solid #1e40af; gap: 20px; }
+.brand { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.brand-logo { width: 108px; height: 108px; object-fit: contain; flex-shrink: 0; }
 .brand-name { font-size: 17px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; line-height: 1.25; text-transform: uppercase; }
 .brand-sub { font-size: 10px; color: #64748b; line-height: 1.7; margin-top: 4px; }
-.doc-meta { text-align: right; }
+.doc-meta { text-align: right; flex-shrink: 0; }
 .doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
 .doc-ref { font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
 .doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
@@ -763,7 +768,12 @@ table { width: 100%; border-collapse: collapse; }
 .footer { padding: 12px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 9.5px; color: #94a3b8; text-align: center; }
 .no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
 .btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-@media print { .no-print { display: none !important; } body { background: white; } .wrap { box-shadow: none; } }
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .wrap { box-shadow: none; }
+  .brand-logo { width: 96px; height: 96px; }
+}
 </style>
 </head>
 <body>
