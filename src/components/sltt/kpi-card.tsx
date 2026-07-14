@@ -31,6 +31,7 @@ export function KpiCard({
   sublabel,
   tooltip,
   compact = false,
+  className,
 }: {
   label: string;
   value: string;
@@ -42,10 +43,11 @@ export function KpiCard({
   tooltip?: string;
   /** Grille dense (factures, fournisseurs) */
   compact?: boolean;
+  className?: string;
 }) {
   if (compact) {
     return (
-      <Card className="flex items-center gap-3 border-border/80 p-4 shadow-sm">
+      <Card className={cn("flex h-full items-center gap-3 border-border/80 p-4 shadow-sm", className)}>
         <div
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-lg",
@@ -63,16 +65,25 @@ export function KpiCard({
   }
 
   return (
-    <Card className="p-5 gap-0 shadow-sm border-border/80">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium truncate flex items-center gap-1">
-            {label}
+    <Card
+      className={cn(
+        "flex h-full min-h-[7.5rem] flex-col justify-between gap-0 border-border/80 p-4 shadow-sm sm:p-5",
+        className,
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-start gap-1 text-[13px] font-medium leading-snug text-slate-500 dark:text-slate-400">
+            <span className="text-pretty">{label}</span>
             {tooltip && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="inline-flex text-slate-400 hover:text-slate-600" aria-label={`Aide : ${label}`}>
+                    <button
+                      type="button"
+                      className="mt-0.5 inline-flex shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      aria-label={`Aide : ${label}`}
+                    >
                       <Info className="size-3.5" />
                     </button>
                   </TooltipTrigger>
@@ -83,28 +94,29 @@ export function KpiCard({
               </TooltipProvider>
             )}
           </p>
-          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">
+          <p className="mt-2 text-xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-slate-100 sm:text-2xl break-words">
             {value}
           </p>
         </div>
         <div
           className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-xl",
+            "flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-10",
             iconWrap[tone],
           )}
         >
-          <Icon className="size-5" />
+          <Icon className="size-4 sm:size-5" />
         </div>
       </div>
+
       {(variation !== undefined || sublabel) && (
-        <div className="mt-3 flex items-center gap-2 text-xs">
+        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           {variation !== undefined && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-md",
+                "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-semibold",
                 variation >= 0
-                  ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/50"
-                  : "text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-950/50",
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                  : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
               )}
             >
               {variation >= 0 ? (
@@ -119,8 +131,8 @@ export function KpiCard({
           {variationLabel && (
             <span className="text-slate-400 dark:text-slate-500">{variationLabel}</span>
           )}
-          {!variationLabel && sublabel && (
-            <span className="text-slate-400 dark:text-slate-500">{sublabel}</span>
+          {sublabel && (
+            <span className="text-pretty text-slate-400 dark:text-slate-500">{sublabel}</span>
           )}
         </div>
       )}

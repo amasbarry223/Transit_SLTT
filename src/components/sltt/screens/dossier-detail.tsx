@@ -1252,10 +1252,8 @@ export function DossierDetailScreen() {
               />
             </Card>
           </div>
-        </TabsContent>
 
-        {/* ---- TAB: Sous-dossiers ---- */}
-        <TabsContent value="documents" className="space-y-6 mt-0">
+          {/* ---- Sous-dossiers (même onglet Documents) ---- */}
           <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -1403,10 +1401,8 @@ export function DossierDetailScreen() {
               </div>
             )}
           </Card>
-        </TabsContent>
 
-        {/* ---- TAB: Finance (factures) ---- */}
-        <TabsContent value="finance" className="space-y-6 mt-0">
+          {/* ---- Factures liées (même onglet Finance) ---- */}
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -1670,10 +1666,8 @@ export function DossierDetailScreen() {
               </div>
             </div>
           </Card>
-        </TabsContent>
 
-        {/* ---- TAB: Activité (historique) ---- */}
-        <TabsContent value="activite" className="space-y-6 mt-0">
+          {/* ---- Historique (même onglet Activité) ---- */}
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">

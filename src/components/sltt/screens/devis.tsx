@@ -29,6 +29,7 @@ import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { exportToCSV, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
@@ -157,22 +158,19 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
   const isEdit = devis !== null;
 
   // Réinitialise le formulaire quand le dialog s'ouvre ou que le devis cible change.
-  // Pattern "adjust state during rendering" (pas d'effet) pour éviter un rendu en cascade.
   const openKey = open ? (devis?.id ?? "new") : null;
-  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
-  if (openKey !== prevOpenKey) {
-    setPrevOpenKey(openKey);
-    if (openKey !== null) {
-      setClientId(devis?.clientId ?? "");
-      setClientNom(devis?.clientNom ?? "");
-      setNature(devis?.nature ?? "");
-      setDroitDouane(devis ? String(devis.droitDouane) : "");
-      setFraisCircuit(devis ? String(devis.fraisCircuit) : "");
-      setFraisPrestation(devis ? String(devis.fraisPrestation) : "");
-      setDateValidite(devis?.dateValidite ?? "");
-      setNotes(devis?.notes ?? "");
-    }
-  }
+  useEffect(() => {
+    if (openKey === null) return;
+    setClientId(devis?.clientId ?? "");
+    setClientNom(devis?.clientNom ?? "");
+    setNature(devis?.nature ?? "");
+    setDroitDouane(devis ? String(devis.droitDouane) : "");
+    setFraisCircuit(devis ? String(devis.fraisCircuit) : "");
+    setFraisPrestation(devis ? String(devis.fraisPrestation) : "");
+    setDateValidite(devis?.dateValidite ?? "");
+    setNotes(devis?.notes ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when dialog target opens/changes
+  }, [openKey]);
 
   const dd = parseAmount(droitDouane);
   const fc = parseAmount(fraisCircuit);
@@ -243,11 +241,9 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Date de validité <span className="text-red-500">*</span></Label>
-              <Input type="date" value={dateValidite} onChange={(e) => setDateValidite(e.target.value)} />
-            </div>
+          <div className="space-y-2">
+            <Label>Date de validité <span className="text-red-500">*</span></Label>
+            <Input type="date" value={dateValidite} onChange={(e) => setDateValidite(e.target.value)} className="sm:w-1/2" />
           </div>
 
           <div className="space-y-2">
@@ -273,6 +269,7 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
 
 export function DevisScreen() {
   const { toast } = useToast();
+  const canWrite = usePermission("devis:write");
   const openDossierDetail = useNav((s) => s.openDossierDetail);
   const openDevisDetail = useNav((s) => s.openDevisDetail);
   const go = useNav((s) => s.go);
@@ -308,17 +305,12 @@ export function DevisScreen() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [convertTarget, setConvertTarget] = useState<Devis | null>(null);
 
-  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
-  if (selectedId !== prevSelectedId) {
-    setPrevSelectedId(selectedId);
+  useEffect(() => {
     if (selectedId === "new") {
       setEditDevis(null);
       setFormOpen(true);
+      go("devis");
     }
-  }
-
-  useEffect(() => {
-    if (selectedId === "new") go("devis");
   }, [selectedId, go]);
 
   function handleOpenDevis(d: Devis) {
@@ -491,10 +483,12 @@ export function DevisScreen() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader title="Devis" description="Estimations tarifaires avant ouverture de dossier">
-        <Button onClick={() => { setEditDevis(null); setFormOpen(true); }}>
-          <Plus className="size-4" />
-          Nouveau devis
-        </Button>
+        {canWrite && (
+          <Button onClick={() => { setEditDevis(null); setFormOpen(true); }}>
+            <Plus className="size-4" />
+            Nouveau devis
+          </Button>
+        )}
       </PageHeader>
 
       {/* KPIs */}
@@ -614,7 +608,7 @@ export function DevisScreen() {
                 ? "Modifiez vos filtres ou créez un nouveau devis."
                 : "Commencez par créer votre premier devis client."}
             </p>
-            {!hasActiveFilters && (
+            {!hasActiveFilters && canWrite && (
               <Button className="mt-5" onClick={() => { setEditDevis(null); setFormOpen(true); }}>
                 <Plus className="size-4" />
                 Nouveau devis
@@ -694,7 +688,7 @@ export function DevisScreen() {
                               >
                                 <FolderKanban className="size-3" /> Dossier créé
                               </button>
-                            ) : next && (
+                            ) : next && canWrite && (
                               <button
                                 className={cn(
                                   "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80",
@@ -716,12 +710,14 @@ export function DevisScreen() {
                             >
                               <Eye className="size-4" />
                             </Button>
-                            <Button
-                              variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
-                              title="Modifier" onClick={() => handleOpenEdit(d)}
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
+                            {canWrite && (
+                              <Button
+                                variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                                title="Modifier" onClick={() => handleOpenEdit(d)}
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                            )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
@@ -740,7 +736,7 @@ export function DevisScreen() {
                                   <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
                                     <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
                                   </DropdownMenuItem>
-                                ) : (
+                                ) : canWrite && (
                                   <DropdownMenuItem
                                     className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
                                     onClick={() => setConvertTarget(d)}
@@ -748,12 +744,14 @@ export function DevisScreen() {
                                     <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem
-                                  className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
-                                  onClick={() => setDeleteId(d.id)}
-                                >
-                                  <Trash2 className="mr-2 size-3.5" /> Supprimer
-                                </DropdownMenuItem>
+                                {canWrite && (
+                                  <DropdownMenuItem
+                                    className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+                                    onClick={() => setDeleteId(d.id)}
+                                  >
+                                    <Trash2 className="mr-2 size-3.5" /> Supprimer
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>

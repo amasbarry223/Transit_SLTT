@@ -23,6 +23,8 @@ export type ViewKey =
   | "factures"
   | "facture-detail"
   | "fournisseurs"
+  | "contrats"
+  | "contrat-detail"
   | "parametres";
 
 /** TTL session sans "Rester connecté" : 8 heures */
@@ -44,16 +46,31 @@ interface NavState {
   loginAt: number | null;
   rememberMe: boolean;
   theme: Theme;
+  /** Filtre société partagé et mémorisé entre écrans (F1). null = "Toutes les sociétés". */
+  selectedSocieteId: string | null;
+  /** Canal transitoire (non persisté) pour préremplir une facture depuis une prestation optionnelle F6. */
+  pendingFacturePrefill: {
+    clientId: string;
+    clientNom: string;
+    societeId?: string;
+    description: string;
+    montant: number;
+  } | null;
   go: (view: ViewKey, opts?: { id?: string | null }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
   openDossierDetail: (id: string) => void;
   openDevisDetail: (id: string, edit?: boolean) => void;
   openClient: (id: string | null) => void;
+  openContratDetail: (id: string) => void;
   login: (role: UserRole, name: string, userId: string, remember: boolean) => void;
+  /** Restaure la session sans réinitialiser la vue courante. */
+  restoreSession: (role: UserRole, name: string, userId: string) => void;
   logout: () => Promise<void>;
   setCurrentUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  setSelectedSocieteId: (id: string | null) => void;
+  setPendingFacturePrefill: (p: NavState["pendingFacturePrefill"]) => void;
 }
 
 const LOGGED_OUT = {
@@ -73,6 +90,8 @@ export const useNav = create<NavState>()(
       dossierFormMode: "create",
       devisEditMode: false,
       theme: "light",
+      selectedSocieteId: null,
+      pendingFacturePrefill: null,
       ...LOGGED_OUT,
 
       go: (view, opts) => set({ view, selectedId: opts?.id ?? null }),
@@ -83,6 +102,7 @@ export const useNav = create<NavState>()(
       openDevisDetail: (id, edit = false) =>
         set({ view: "devis-detail", selectedId: id, devisEditMode: edit }),
       openClient: (id) => set({ view: "client-fiche", selectedId: id }),
+      openContratDetail: (id) => set({ view: "contrat-detail", selectedId: id }),
 
       login: (role, name, userId, remember) =>
         set({
@@ -94,6 +114,15 @@ export const useNav = create<NavState>()(
           loginAt: Date.now(),
           rememberMe: remember,
         }),
+
+      restoreSession: (role, name, userId) =>
+        set((s) => ({
+          isAuthenticated: true,
+          currentRole: role,
+          currentUserName: name,
+          currentUserId: userId,
+          loginAt: s.loginAt ?? Date.now(),
+        })),
 
       logout: async () => {
         try {
@@ -113,6 +142,8 @@ export const useNav = create<NavState>()(
 
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
+      setSelectedSocieteId: (id) => set({ selectedSocieteId: id }),
+      setPendingFacturePrefill: (p) => set({ pendingFacturePrefill: p }),
     }),
     {
       name: "sltt-auth-v2",
@@ -124,6 +155,7 @@ export const useNav = create<NavState>()(
         loginAt: s.loginAt,
         rememberMe: s.rememberMe,
         theme: s.theme,
+        selectedSocieteId: s.selectedSocieteId,
       }),
     },
   ),

@@ -37,6 +37,7 @@ import {
   Compass,
   X,
   Check,
+  TrendingUp,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -51,6 +52,8 @@ import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact } from "@/lib/format";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { getDashboardSections, kpiGridClass, type DashboardSection } from "@/lib/dashboard-config";
+import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
+import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import {
   GUIDE_DISMISS_KEY,
   GUIDE_RESET_EVENT,
@@ -262,83 +265,6 @@ function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?: { id?:
             </div>
           ))
         )}
-      </Card>
-    </div>
-  );
-}
-
-function CommercialPanel({ go }: { go: (v: "devis" | "clients", opts?: { id?: string | null }) => void }) {
-  const clients = useStore((s) => s.clients);
-  const devis = useStore((s) => s.devis);
-  const topClients = [...clients].sort((a, b) => b.totalPaye - a.totalPaye).slice(0, 5);
-  const devisEnvoyés = devis.filter((d) => d.statut === "Envoyé").length;
-  const devisAcceptés = devis.filter((d) => d.statut === "Accepté").length;
-  const devisConvertis = devis.filter((d) => d.dossierId).length;
-  const totalDevis = devis.length;
-
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <Card className="border-border/80 p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Pipeline devis</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{totalDevis} devis au total</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => go("devis")}>
-              Devis <ArrowRight className="ml-1 size-3.5" />
-            </Button>
-            <Button size="sm" onClick={() => go("devis", { id: "new" })}>
-              <Plus className="mr-1 size-3.5" /> Nouveau devis
-            </Button>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {[
-            { label: "Envoyés (en attente)", count: devisEnvoyés, color: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-950/40", text: "text-blue-700 dark:text-blue-400" },
-            { label: "Acceptés", count: devisAcceptés, color: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/40", text: "text-emerald-700 dark:text-emerald-400" },
-            { label: "Convertis en dossier", count: devisConvertis, color: "bg-indigo-500", bg: "bg-indigo-50 dark:bg-indigo-950/40", text: "text-indigo-700 dark:text-indigo-400" },
-            { label: "Total", count: totalDevis, color: "bg-slate-400", bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-700 dark:text-slate-300" },
-          ].map((row) => (
-            <div key={row.label} className={`flex items-center justify-between rounded-lg px-4 py-3 ${row.bg}`}>
-              <div className="flex items-center gap-2">
-                <span className={`size-2 rounded-full ${row.color}`} />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{row.label}</span>
-              </div>
-              <span className={`text-lg font-bold tabular-nums ${row.text}`}>{row.count}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="border-border/80 p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Meilleurs clients</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Par chiffre encaissé</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => go("clients")}>
-            Clients <ArrowRight className="ml-1 size-3.5" />
-          </Button>
-        </div>
-        {topClients.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
-            <Users className="size-7 text-slate-200 dark:text-slate-700" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">Aucun client pour l'instant.</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Ajoutez votre premier client pour démarrer.</p>
-          </div>
-        ) : topClients.map((c, i) => (
-          <div key={c.id} className="mb-3 flex items-center gap-3 last:mb-0">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400">
-              {i + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">{c.nom}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{c.nbDossiers} dossiers</p>
-            </div>
-            <span className="text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(c.totalPaye)}</span>
-          </div>
-        ))}
       </Card>
     </div>
   );
@@ -753,8 +679,11 @@ export function DashboardScreen() {
   const stock = useStore((s) => s.stock);
   const users = useStore((s) => s.users);
   const clients = useStore((s) => s.clients);
+  const depenses = useStore((s) => s.depenses);
+  const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
   const lastSyncedAt = useStore((s) => s.lastSyncedAt);
   const currentUser = useCurrentUser();
+  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
 
   const sections = React.useMemo(
     () => getDashboardSections(currentUser),
@@ -809,6 +738,32 @@ export function DashboardScreen() {
     const variation = prev === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - prev) / prev) * 100);
     return { chiffreEncaisse: current, variationEncaisse: variation };
   }, [ecritures, factures, anchorDate]);
+
+  // F5 — Bénéfice du mois courant (entreposage), scopé au filtre société partagé.
+  const depensesAvecDate = React.useMemo(
+    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
+    [depenses],
+  );
+  // Sorties de caisse : sans société (société mère), comptées uniquement dans
+  // la vue consolidée "Toutes sociétés" (comme le transit).
+  const caisseAvecDate = React.useMemo(
+    () =>
+      bonsSortieCaisse.flatMap((b) =>
+        b.lignes.map((l) => ({ societeId: undefined as string | undefined, date: l.date, montant: l.montant })),
+      ),
+    [bonsSortieCaisse],
+  );
+  const beneficeMoisCourant = React.useMemo(() => {
+    const year = anchorDate.getFullYear();
+    const month = anchorDate.getMonth();
+    const recettes =
+      filterBySocieteAndPeriode(ecritures, selectedSocieteId, year, month).reduce((s, e) => s + e.montantPaye, 0) +
+      filterBySocieteAndPeriode(factures, selectedSocieteId, year, month).reduce((s, f) => s + f.montantPaye, 0);
+    const depensesMois =
+      filterBySocieteAndPeriode(depensesAvecDate, selectedSocieteId, year, month).reduce((s, d) => s + d.montant, 0) +
+      filterBySocieteAndPeriode(caisseAvecDate, selectedSocieteId, year, month).reduce((s, d) => s + d.montant, 0);
+    return computeBenefice(recettes, depensesMois);
+  }, [ecritures, factures, depensesAvecDate, caisseAvecDate, selectedSocieteId, anchorDate]);
 
   // Restes à payer et dossiers non soldés → source : dossiers (pas les écritures)
   const { totalRestesAPayer, nbDossiersNonSoldes } = React.useMemo(() => {
@@ -963,6 +918,7 @@ export function DashboardScreen() {
     hasSection("kpi_restes"),
     hasSection("kpi_dossiers"),
     hasSection("kpi_stock"),
+    hasSection("kpi_benefice"),
   ].filter(Boolean).length;
 
   const showChartsRow =
@@ -993,6 +949,7 @@ export function DashboardScreen() {
               {syncLabel}
             </div>
           )}
+          {hasSection("kpi_benefice") && <SocieteFilterSelect className="w-full sm:w-44" />}
         </div>
       </PageHeader>
 
@@ -1001,22 +958,21 @@ export function DashboardScreen() {
 
       {/* 2. KPI ROW */}
       {visibleKpiCount > 0 && (
-      <div className={cn("grid gap-4", kpiGridClass(visibleKpiCount))}>
+      <div className={cn("grid w-full gap-3 sm:gap-4", kpiGridClass(visibleKpiCount))}>
         {hasSection("kpi_encaisse") && (
         <KpiCard
-          label="Chiffre encaissé (ce mois)"
+          label="Encaissé ce mois"
           value={formatFCFA(chiffreEncaisse)}
           icon={Wallet}
           tone="emerald"
           variation={variationEncaisse}
           variationLabel="vs mois dernier"
-          sublabel="Écritures + paiements de factures"
           tooltip="Somme des encaissements du mois : paiements enregistrés via les écritures comptables et les factures. Les paiements dossier passent par les écritures liées ; les deux canaux sont additionnés, pas dédoublonnés."
         />
         )}
         {hasSection("kpi_restes") && (
         <KpiCard
-          label="Total restes à payer"
+          label="Restes à payer"
           value={formatFCFA(totalRestesAPayer)}
           icon={Clock}
           tone="amber"
@@ -1041,6 +997,16 @@ export function DashboardScreen() {
           sublabel={`${stock.length} article${stock.length > 1 ? "s" : ""}`}
         />
         )}
+        {hasSection("kpi_benefice") && (
+        <KpiCard
+          label="Bénéfice ce mois"
+          value={formatFCFA(beneficeMoisCourant)}
+          icon={TrendingUp}
+          tone={beneficeMoisCourant >= 0 ? "emerald" : "red"}
+          sublabel="Recettes − Dépenses"
+          tooltip="Recettes = écritures + paiements factures filtrés par société. Dépenses = dépenses de contrats filtrées par société. Voir Comptabilité pour le détail par société."
+        />
+        )}
       </div>
       )}
 
@@ -1063,9 +1029,6 @@ export function DashboardScreen() {
       )}
       {currentRole === "Magasinier" && (
         <MagasinierPanel go={go as (v: "entreposage" | "bons", opts?: { id?: string | null }) => void} />
-      )}
-      {currentRole === "Commercial" && (
-        <CommercialPanel go={go as (v: "devis" | "clients", opts?: { id?: string | null }) => void} />
       )}
       {currentRole === "Comptable" && (
         <ComptablePanel go={go as (v: "comptabilite" | "bilans" | "factures", opts?: { id?: string | null }) => void} />

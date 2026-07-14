@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useNav, type ViewKey } from "@/lib/nav-store";
 import {
   AlertDialog,
@@ -57,6 +58,8 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   factures:         { title: "Factures",         sub: "Gestion et suivi de la facturation client" },
   "facture-detail": { title: "Détail facture",   sub: "Visualiser, modifier et imprimer la facture" },
   fournisseurs:     { title: "Fournisseurs",     sub: "Prestataires, sous-traitants et coûts externes" },
+  contrats:         { title: "Contrats",         sub: "Contrats d'entreposage, dépenses et prestations optionnelles" },
+  "contrat-detail": { title: "Détail contrat",   sub: "Infos, dépenses, prestations optionnelles et documents" },
   parametres:       { title: "Paramètres",       sub: "Utilisateurs, rôles et sécurité" },
 };
 
@@ -269,10 +272,16 @@ export function Topbar() {
       {/* Mobile navigation drawer — Sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[260px] p-0">
-          <SheetHeader className="flex h-16 items-center justify-start border-b border-border px-5">
-            <SheetTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-              SLTT
-            </SheetTitle>
+          <SheetHeader className="flex h-16 flex-row items-center justify-start gap-3 border-b border-border px-5">
+            <Image
+              src="/logo.png"
+              alt="SLTT"
+              width={48}
+              height={48}
+              className="size-11 object-contain"
+              unoptimized
+            />
+            <SheetTitle className="sr-only">SLTT</SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-4 overflow-y-auto sltt-scroll px-3 py-4 pb-24">
             {roleShortcuts.length > 0 && (

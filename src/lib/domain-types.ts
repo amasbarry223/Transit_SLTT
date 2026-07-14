@@ -17,8 +17,7 @@ export type UserRole =
   | "Administrateur"
   | "Agent de transit"
   | "Comptable"
-  | "Magasinier"
-  | "Commercial";
+  | "Magasinier";
 
 export interface Client {
   id: string;
@@ -147,6 +146,9 @@ export interface Ecriture {
   clientId: string;
   clientNom: string;
   dossierId?: string;
+  /** Nullable : une écriture peut rester au niveau transit global (non affectée à une société). */
+  societeId?: string;
+  societeNom?: string;
   montantInvesti: number;
   montantPaye: number;
   modePaiement: PaiementMode;
@@ -157,6 +159,8 @@ export interface StockItem {
   id: string;
   clientId?: string;
   clientNom?: string;
+  societeId: string;
+  societeNom: string;
   marchandise: string;
   quantite: number;
   unite: string;
@@ -170,6 +174,8 @@ export interface StockItem {
 export interface Mouvement {
   id: string;
   stockId?: string;
+  societeId: string;
+  societeNom: string;
   date: string;
   type: "Entrée" | "Sortie";
   marchandise: string;
@@ -186,6 +192,8 @@ export interface BonSortie {
   date: string;
   clientId: string;
   clientNom: string;
+  societeId: string;
+  societeNom: string;
   /** Référence vers l'article de stock concerné, pour un décrément fiable (les bons plus anciens peuvent ne pas l'avoir). */
   stockId?: string;
   marchandise: string;
@@ -194,6 +202,152 @@ export interface BonSortie {
   motif: BonMotif;
   montant: number;
   statut: "Validé" | "Brouillon";
+}
+
+/* ------------------------------------------------------------------ */
+/* BONS DE SORTIE DE CAISSE (décaissement) — sans rapport avec le stock */
+/* ------------------------------------------------------------------ */
+
+export interface SortieCaisseLigne {
+  id: string;
+  date: string;
+  /** "Prénom et Nom" du bénéficiaire du paiement. */
+  beneficiaire: string;
+  motif: string;
+  montant: number;
+}
+
+export interface BonSortieCaisse {
+  id: string;
+  /** Format "N°{n}", séquence indépendante des bons de sortie stock. */
+  reference: string;
+  date: string;
+  lignes: SortieCaisseLigne[];
+  montantTotal: number;
+  creePar?: string;
+  creeLe: string;
+}
+
+export interface BonSortieCaisseInput {
+  date: string;
+  lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;
+}
+
+/* ------------------------------------------------------------------ */
+/* SOCIÉTÉS (F1)                                                       */
+/* ------------------------------------------------------------------ */
+
+export interface Societe {
+  id: string;
+  nom: string;
+  actif: boolean;
+}
+
+/* ------------------------------------------------------------------ */
+/* CONTRATS (F3) + DÉPENSES (F4) + PRESTATIONS OPTIONNELLES (F6)       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Libellé UI unique pour F6 — le client a parlé d'« intentions facultatives »,
+ * mais le terme retenu est "prestations optionnelles" (services facultatifs
+ * prévus/réalisés dans le cadre d'un contrat). Renommer ici seulement si le
+ * client demande un autre mot — ne pas dupliquer la chaîne ailleurs.
+ */
+export const PRESTATION_OPTIONNELLE_LABEL = "Prestations optionnelles";
+
+export type ContratStatut = "Actif" | "Clôturé" | "Suspendu";
+
+export interface Contrat {
+  id: string;
+  reference: string;
+  societeId: string;
+  societeNom: string;
+  clientId: string;
+  clientNom: string;
+  objet: string;
+  dateDebut: string;
+  dateFin?: string;
+  montant: number;
+  statut: ContratStatut;
+  notes?: string;
+  creePar?: string;
+  creeLe: string;
+  /** Agrégats calculés côté store (syncContratStats) — pas persistés en DB. */
+  nbPrestations: number;
+  nbPrestationsRealisees: number;
+  totalDepenses: number;
+}
+
+export interface ContratInput {
+  societeId: string;
+  clientId: string;
+  clientNom: string;
+  objet: string;
+  dateDebut: string;
+  dateFin?: string;
+  montant: number;
+  statut: ContratStatut;
+  notes?: string;
+}
+
+/**
+ * Métadonnées de scan — le bucket contrat-fichiers est privé : storagePath
+ * seul est persisté, l'URL signée s'obtient à la demande (store.getSignedContratFichierUrl).
+ */
+export interface ContratFichier {
+  id: string;
+  contratId: string;
+  nom: string;
+  taille: number;
+  type: string;
+  dateUpload: string;
+  storagePath: string;
+}
+
+export interface Depense {
+  id: string;
+  contratId: string;
+  societeId: string;
+  libelle: string;
+  montant: number;
+  dateDepense: string;
+  modePaiement: PaiementMode;
+  justificatifPath?: string;
+  note?: string;
+  creePar?: string;
+}
+
+export interface DepenseInput {
+  contratId: string;
+  libelle: string;
+  montant: number;
+  dateDepense: string;
+  modePaiement: PaiementMode;
+  note?: string;
+}
+
+export type ContratPrestationStatut = "Prévue" | "Réalisée" | "Annulée";
+
+export interface ContratPrestation {
+  id: string;
+  contratId: string;
+  libelle: string;
+  description?: string;
+  montant?: number;
+  statut: ContratPrestationStatut;
+  datePrevue?: string;
+  dateRealisation?: string;
+  creePar?: string;
+}
+
+export interface ContratPrestationInput {
+  contratId: string;
+  libelle: string;
+  description?: string;
+  montant?: number;
+  statut: ContratPrestationStatut;
+  datePrevue?: string;
+  dateRealisation?: string;
 }
 
 export interface User {

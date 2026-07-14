@@ -3,12 +3,10 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { useStore, type ClientInput } from "@/lib/store";
-import type { ClientType } from "@/lib/domain-types";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -17,15 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const clientTypes: ClientType[] = ["Entreprise", "Particulier"];
 
 interface Props {
   onCreated: (clientId: string) => void;
@@ -36,30 +25,17 @@ export function QuickClientButton({ onCreated }: Props) {
   const addClient = useStore((s) => s.addClient);
   const canCreateClient = usePermission("clients:write");
   const [open, setOpen] = useState(false);
-  const [nom, setNom] = useState("");
-  const [type, setType] = useState<ClientType>("Entreprise");
-  const [telephone, setTelephone] = useState("");
-  const [email, setEmail] = useState("");
+  const [form, setForm] = useState<ClientInput>(emptyClientForm());
 
   function reset() {
-    setNom("");
-    setType("Entreprise");
-    setTelephone("");
-    setEmail("");
+    setForm(emptyClientForm());
   }
 
   async function handleCreate() {
-    const trimmed = nom.trim();
+    const trimmed = form.nom.trim();
     if (!trimmed) return;
-    const input: ClientInput = {
-      nom: trimmed,
-      type,
-      telephone: telephone.trim(),
-      email: email.trim(),
-      adresse: "",
-    };
     try {
-      const newClient = await addClient(input);
+      const newClient = await addClient({ ...form, nom: trimmed });
       toast({ title: "Client créé", description: trimmed });
       onCreated(newClient.id);
       setOpen(false);
@@ -97,63 +73,18 @@ export function QuickClientButton({ onCreated }: Props) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Nom / Raison sociale <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                value={nom}
-                onChange={(e) => setNom(e.target.value)}
-                placeholder="Ex. Société des Établissements Diallo"
-                className="h-10"
-                autoFocus
-                onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type</Label>
-              <Select value={type} onValueChange={(v) => setType(v as ClientType)}>
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientTypes.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
-                <Input
-                  value={telephone}
-                  onChange={(e) => setTelephone(e.target.value)}
-                  placeholder="+223 76 00 00 00"
-                  className="h-10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">E-mail</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="contact@exemple.ml"
-                  className="h-10"
-                />
-              </div>
-            </div>
-          </div>
+          <ClientFormFields
+            values={form}
+            onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+            idPrefix="qc"
+            autoFocusNom
+          />
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => { setOpen(false); reset(); }}>
               Annuler
             </Button>
-            <Button onClick={handleCreate} disabled={!nom.trim()}>
+            <Button onClick={handleCreate} disabled={!form.nom.trim()}>
               <UserPlus className="size-4" />
               Créer le client
             </Button>

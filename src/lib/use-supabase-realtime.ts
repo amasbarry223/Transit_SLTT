@@ -13,6 +13,10 @@ const REALTIME_TABLES = [
   "bons_sortie",
   "devis",
   "profiles",
+  "societes",
+  "contrats",
+  "depenses",
+  "contrat_prestations",
 ] as const;
 
 const DEBOUNCE_MS = 800;

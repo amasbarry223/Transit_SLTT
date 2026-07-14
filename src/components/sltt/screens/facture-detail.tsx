@@ -23,11 +23,13 @@ import {
   MoreHorizontal,
   ChevronRight,
   Percent,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -63,7 +65,7 @@ import {
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printFactureModule } from "@/lib/export";
+import { printFactureModule, shouldShowTva } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
@@ -394,10 +396,12 @@ function FinancialSummary({
         <span className="text-slate-500">Sous-total HT</span>
         <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(ht)}</span>
       </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-slate-500">TVA {tva}%</span>
-        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(tvaAmt)}</span>
-      </div>
+      {shouldShowTva(tva) && (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-500">TVA {tva}%</span>
+          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(tvaAmt)}</span>
+        </div>
+      )}
       <div className="flex items-center justify-between rounded-xl bg-primary px-4 py-3">
         <span className="text-sm font-bold text-white">Total TTC</span>
         <span className="text-lg font-extrabold tabular-nums text-white">{formatFCFA(ttc)}</span>
@@ -438,11 +442,10 @@ function PaiementDialog({
   const reste = facture.montantTTC - facture.montantPaye;
   const [montant, setMontant] = React.useState(String(reste));
   const [saving, setSaving] = React.useState(false);
-  const [prevOpen, setPrevOpen] = React.useState(open);
-  if (open !== prevOpen) {
-    setPrevOpen(open);
+
+  React.useEffect(() => {
     if (open) setMontant(String(reste));
-  }
+  }, [open, reste]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -564,6 +567,7 @@ export function FactureDetailScreen() {
   const go = useNav((s) => s.go);
   const openDossierDetail = useNav((s) => s.openDossierDetail);
   const factures = useStore((s) => s.factures);
+  const societes = useStore((s) => s.societes);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
   const updateFacture = useStore((s) => s.updateFacture);
   const dossiers = useStore((s) => s.dossiers);
@@ -577,30 +581,30 @@ export function FactureDetailScreen() {
 
   const [editDate, setEditDate] = React.useState("");
   const [editDateEcheance, setEditDateEcheance] = React.useState("");
-  const [editTauxTVA, setEditTauxTVA] = React.useState("");
+  const [editTvaOn, setEditTvaOn] = React.useState(true);
+  const [editSocieteId, setEditSocieteId] = React.useState("");
   const [editNotes, setEditNotes] = React.useState("");
   const [editLignes, setEditLignes] = React.useState<
     Array<{ description: string; quantite: string; prixUnitaire: string }>
   >([]);
 
   const editKey = isEditing ? (facture?.id ?? null) : null;
-  const [prevEditKey, setPrevEditKey] = React.useState<string | null>(null);
-  if (editKey !== prevEditKey) {
-    setPrevEditKey(editKey);
-    if (editKey !== null && facture) {
-      setEditDate(facture.date);
-      setEditDateEcheance(facture.dateEcheance);
-      setEditTauxTVA(String(facture.tauxTVA));
-      setEditNotes(facture.notes);
-      setEditLignes(
-        facture.lignes.map((l) => ({
-          description: l.description,
-          quantite: String(l.quantite),
-          prixUnitaire: String(l.prixUnitaire),
-        })),
-      );
-    }
-  }
+  React.useEffect(() => {
+    if (editKey === null || !facture) return;
+    setEditDate(facture.date);
+    setEditDateEcheance(facture.dateEcheance);
+    setEditTvaOn(facture.tauxTVA > 0);
+    setEditSocieteId(facture.societeId ?? "");
+    setEditNotes(facture.notes);
+    setEditLignes(
+      facture.lignes.map((l) => ({
+        description: l.description,
+        quantite: String(l.quantite),
+        prixUnitaire: String(l.prixUnitaire),
+      })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when entering edit for a facture
+  }, [editKey]);
 
   if (!facture) {
     return (
@@ -628,7 +632,7 @@ export function FactureDetailScreen() {
     (s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
     0,
   );
-  const editTVA = parseFloat(editTauxTVA) || 0;
+  const editTVA = editTvaOn ? 18 : 0;
   const editTTC = editMontantHT + Math.round(editMontantHT * (editTVA / 100));
 
   function handleStatutClick(s: FactureStatut) {
@@ -647,9 +651,10 @@ export function FactureDetailScreen() {
       dossierId: facture.dossierId,
       clientId: facture.clientId,
       clientNom: facture.clientNom,
+      societeId: editSocieteId || null,
       date: editDate,
       dateEcheance: editDateEcheance,
-      tauxTVA: parseFloat(editTauxTVA) || 0,
+      tauxTVA: editTvaOn ? 18 : 0,
       notes: editNotes,
       lignes: editLignes
         .filter((l) => l.description.trim())
@@ -863,7 +868,10 @@ export function FactureDetailScreen() {
                   value={formatDateShort(facture.dateEcheance)}
                   warn={isEchue}
                 />
-                <InfoRow icon={Percent} label="Taux de TVA" value={`${facture.tauxTVA} %`} />
+                {shouldShowTva(facture.tauxTVA) && (
+                  <InfoRow icon={Percent} label="Taux de TVA" value={`${facture.tauxTVA} %`} />
+                )}
+                <InfoRow icon={Building2} label="Société" value={facture.societeNom ?? "—"} />
                 <InfoRow
                   icon={FolderKanban}
                   label="Dossier lié"
@@ -1044,14 +1052,25 @@ export function FactureDetailScreen() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">TVA (%)</Label>
-                <Input
-                  type="number"
-                  value={editTauxTVA}
-                  onChange={(e) => setEditTauxTVA(e.target.value)}
-                  className="h-10"
-                />
+                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Société</Label>
+                <select
+                  value={editSocieteId}
+                  onChange={(e) => setEditSocieteId(e.target.value)}
+                  className="h-10 w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">— Aucune (transit) —</option>
+                  {societes.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nom}</option>
+                  ))}
+                </select>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
+              <Label htmlFor="edit-tva-switch" className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Appliquer la TVA (18 %)
+              </Label>
+              <Switch id="edit-tva-switch" checked={editTvaOn} onCheckedChange={setEditTvaOn} />
             </div>
 
             <div className="space-y-3">

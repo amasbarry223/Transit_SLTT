@@ -22,6 +22,7 @@ import {
   Plus,
   Wallet,
   FolderKanban,
+  FileSignature,
 } from "lucide-react";
 import { usePermission } from "@/hooks/use-permission";
 
@@ -31,11 +32,13 @@ export function CommandPalette() {
   const openDossier = useNav((s) => s.openDossier);
   const openDevisDetail = useNav((s) => s.openDevisDetail);
   const openClient = useNav((s) => s.openClient);
+  const openContratDetail = useNav((s) => s.openContratDetail);
 
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
   const devisList = useStore((s) => s.devis);
   const factures = useStore((s) => s.factures);
+  const contrats = useStore((s) => s.contrats);
 
   const visibleNavItems = useVisibleNavItems();
   const canDossiers = usePermission("dossiers:write");
@@ -197,6 +200,27 @@ export function CommandPalette() {
                     <span className="font-mono text-xs">{f.numero}</span>
                     <span className="text-slate-500 dark:text-slate-400 truncate">
                       {f.clientNom}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
+          )}
+
+          {contrats.length > 0 && (
+            <>
+              <CommandSeparator />
+              <CommandGroup heading="Contrats">
+                {contrats.slice(0, 8).map((c) => (
+                  <CommandItem
+                    key={c.id}
+                    value={`contrat ${c.reference} ${c.clientNom} ${c.objet}`}
+                    onSelect={() => run(() => openContratDetail(c.id))}
+                  >
+                    <FileSignature className="size-4 text-violet-500" />
+                    <span className="font-mono text-xs">{c.reference}</span>
+                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                      {c.clientNom}
                     </span>
                   </CommandItem>
                 ))}

@@ -11,6 +11,7 @@ const DETAIL_PARENT: Partial<Record<ViewKey, ViewKey>> = {
   "client-fiche": "clients",
   "devis-detail": "devis",
   "facture-detail": "factures",
+  "contrat-detail": "contrats",
 };
 
 export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: string }) {
@@ -22,6 +23,7 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
   const dossiers = useStore((s) => s.dossiers);
   const devis = useStore((s) => s.devis);
   const factures = useStore((s) => s.factures);
+  const contrats = useStore((s) => s.contrats);
 
   const parentKey = DETAIL_PARENT[view];
   const parentItem = parentKey ? navItems.find((n) => n.key === parentKey) : null;
@@ -37,6 +39,8 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
       detailLabel = devis.find((d) => d.id === selectedId)?.reference ?? title;
     } else if (view === "facture-detail") {
       detailLabel = factures.find((f) => f.id === selectedId)?.numero ?? title;
+    } else if (view === "contrat-detail") {
+      detailLabel = contrats.find((c) => c.id === selectedId)?.reference ?? title;
     }
   } else if (view === "dossier-form") {
     detailLabel = "Nouveau dossier";

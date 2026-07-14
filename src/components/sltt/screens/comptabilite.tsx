@@ -23,6 +23,8 @@ import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcritureStatutBadge, EcartValue } from "@/components/sltt/status-badge";
+import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
+import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { Card } from "@/components/ui/card";
@@ -88,11 +90,66 @@ export function ComptabiliteScreen() {
   const canWrite = usePermission("comptabilite:write");
   const go = useNav((s) => s.go);
   const selectedId = useNav((s) => s.selectedId);
-  const ecritures = useStore((s) => s.ecritures);
+  const allEcritures = useStore((s) => s.ecritures);
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
+  const societes = useStore((s) => s.societes);
+  const factures = useStore((s) => s.factures);
+  const depenses = useStore((s) => s.depenses);
+  const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
   const recordPayment = useStore((s) => s.recordPayment);
   const addEcriture = useStore((s) => s.addEcriture);
+  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+
+  // F1/F5 : quand une société précise est sélectionnée, les écritures non
+  // affectées (societeId absent = transit global) sont exclues ; en vue
+  // "Toutes sociétés" elles restent incluses (activité non affectée).
+  const ecritures = useMemo(
+    () => (selectedSocieteId ? allEcritures.filter((e) => e.societeId === selectedSocieteId) : allEcritures),
+    [allEcritures, selectedSocieteId],
+  );
+
+  const now = new Date();
+  const depensesAvecDate = useMemo(
+    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
+    [depenses],
+  );
+  // Sorties de caisse : sans société (au nom de la société mère), donc uniquement
+  // comptées dans la vue consolidée "Toutes sociétés" (comme le transit).
+  const caisseAvecDate = useMemo(
+    () =>
+      bonsSortieCaisse.flatMap((b) =>
+        b.lignes.map((l) => ({ societeId: undefined as string | undefined, date: l.date, montant: l.montant })),
+      ),
+    [bonsSortieCaisse],
+  );
+  const benefice = useMemo(() => {
+    const computeFor = (societeId: string | null) => {
+      const recettes =
+        filterBySocieteAndPeriode(allEcritures, societeId, now.getFullYear(), now.getMonth()).reduce(
+          (sum, e) => sum + e.montantPaye,
+          0,
+        ) +
+        filterBySocieteAndPeriode(factures, societeId, now.getFullYear(), now.getMonth()).reduce(
+          (sum, f) => sum + f.montantPaye,
+          0,
+        );
+      const depensesMois =
+        filterBySocieteAndPeriode(depensesAvecDate, societeId, now.getFullYear(), now.getMonth()).reduce(
+          (sum, d) => sum + d.montant,
+          0,
+        ) +
+        filterBySocieteAndPeriode(caisseAvecDate, societeId, now.getFullYear(), now.getMonth()).reduce(
+          (sum, d) => sum + d.montant,
+          0,
+        );
+      return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
+    };
+    return {
+      consolide: computeFor(null),
+      parSociete: societes.map((s) => ({ societe: s, ...computeFor(s.id) })),
+    };
+  }, [allEcritures, factures, depensesAvecDate, caisseAvecDate, societes, now]);
 
   const [query, setQuery] = useState("");
   const [statutFilter, setStatutFilter] = useState<StatutFilter>("all");
@@ -116,6 +173,7 @@ export function ComptabiliteScreen() {
   const [neMode, setNeMode] = useState<PaiementMode>("Virement");
   const [neDate, setNeDate] = useState(new Date().toISOString().slice(0, 10));
   const [neNote, setNeNote] = useState("");
+  const [neSocieteId, setNeSocieteId] = useState<string>("");
 
   const clientDossiers = useMemo(
     () => (neClientId ? dossiers.filter((d) => d.clientId === neClientId) : []),
@@ -208,19 +266,15 @@ export function ComptabiliteScreen() {
     setNeMode("Virement");
     setNeDate(new Date().toISOString().slice(0, 10));
     setNeNote("");
-  }
-
-  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
-  if (selectedId !== prevSelectedId) {
-    setPrevSelectedId(selectedId);
-    if (selectedId === "new") {
-      resetNewEcriture();
-      setNewOpen(true);
-    }
+    setNeSocieteId(selectedSocieteId ?? "");
   }
 
   useEffect(() => {
-    if (selectedId === "new") go("comptabilite");
+    if (selectedId === "new") {
+      resetNewEcriture();
+      setNewOpen(true);
+      go("comptabilite");
+    }
   }, [selectedId, go]);
 
   function handleCreateEcriture() {
@@ -257,6 +311,7 @@ export function ComptabiliteScreen() {
       clientId: neClientId,
       clientNom: client.nom,
       dossierId: neDossierId || undefined,
+      societeId: neSocieteId || undefined,
       montantInvesti: investi,
       montantPaye: Math.min(paye, investi),
       modePaiement: neMode,
@@ -323,6 +378,32 @@ export function ComptabiliteScreen() {
           tone="amber"
           sublabel={`${enAttenteCount} écriture${enAttenteCount !== 1 ? "s" : ""} en attente`}
         />
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bénéfice du mois (entreposage)</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <KpiCard
+            label="Toutes sociétés"
+            value={formatFCFA(benefice.consolide.benefice)}
+            icon={TrendingUp}
+            tone={benefice.consolide.benefice >= 0 ? "emerald" : "red"}
+            sublabel="Recettes − Dépenses, consolidé"
+            tooltip="Recettes = encaissements (écritures + paiements factures) du mois. Dépenses = dépenses de contrats du mois. Consolidé = somme des deux sociétés + activité non affectée."
+          />
+          {benefice.parSociete.map(({ societe, benefice: b }) => (
+            <KpiCard
+              key={societe.id}
+              label={societe.nom}
+              value={formatFCFA(b)}
+              icon={TrendingUp}
+              tone={b >= 0 ? "emerald" : "red"}
+              sublabel="bénéfice du mois"
+            />
+          ))}
+        </div>
       </div>
 
       {enAttenteCount > 0 && (
@@ -393,6 +474,8 @@ export function ComptabiliteScreen() {
             </SelectContent>
           </Select>
 
+          <SocieteFilterSelect className="w-full sm:w-44" />
+
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -456,6 +539,9 @@ export function ComptabiliteScreen() {
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                      Société
+                    </TableHead>
                     <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Investi
                     </TableHead>
@@ -503,6 +589,9 @@ export function ComptabiliteScreen() {
                           <p className="mt-0.5 font-mono text-xs text-slate-400 dark:text-slate-500 sm:hidden">
                             {e.id}
                           </p>
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 sm:table-cell">
+                          <SocieteBadge societeNom={e.societeNom} size="sm" />
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
                           {formatFCFA(e.montantInvesti)}
@@ -839,6 +928,23 @@ export function ComptabiliteScreen() {
                   className="h-10"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Société (optionnel)
+              </Label>
+              <Select value={neSocieteId || "none"} onValueChange={(v) => setNeSocieteId(v === "none" ? "" : v)}>
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue placeholder="Aucune (transit)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucune (transit)</SelectItem>
+                  {societes.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

@@ -13,12 +13,15 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatFCFACompact, formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcartValue } from "@/components/sltt/status-badge";
+import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,8 +206,20 @@ export function BilansScreen() {
   const [sortKey, setSortKey] = useState<SortKey>("reste");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const ecritures = useStore((s) => s.ecritures);
+  const allEcritures = useStore((s) => s.ecritures);
   const clients = useStore((s) => s.clients);
+  const societes = useStore((s) => s.societes);
+  const factures = useStore((s) => s.factures);
+  const depenses = useStore((s) => s.depenses);
+  const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
+  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+
+  // F1 : quand une société précise est sélectionnée, les écritures non
+  // affectées (transit global) sont exclues des récaps/graphiques de cet écran.
+  const ecritures = useMemo(
+    () => (selectedSocieteId ? allEcritures.filter((e) => e.societeId === selectedSocieteId) : allEcritures),
+    [allEcritures, selectedSocieteId],
+  );
 
   const periodeLabel = getPeriodeLabel(periode, mois);
 
@@ -228,6 +243,40 @@ export function BilansScreen() {
       }
     });
   }, [ecritures, mois, periode]);
+
+  const depensesAvecDate = useMemo(
+    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
+    [depenses],
+  );
+  // Sorties de caisse : sans société (société mère), comptées uniquement dans
+  // la vue consolidée "Toutes sociétés" (comme le transit).
+  const caisseAvecDate = useMemo(
+    () =>
+      bonsSortieCaisse.flatMap((b) =>
+        b.lignes.map((l) => ({ societeId: undefined as string | undefined, date: l.date, montant: l.montant })),
+      ),
+    [bonsSortieCaisse],
+  );
+
+  // F5 — Bénéfice sur le mois de référence sélectionné (indépendant de la
+  // granularité "période" choisie, qui ne s'applique qu'au récap client).
+  const benefice = useMemo(() => {
+    const [year, month] = (mois || "2026-01").split("-").map(Number);
+    const m = month - 1;
+    const computeFor = (societeId: string | null) => {
+      const recettes =
+        filterBySocieteAndPeriode(allEcritures, societeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
+        filterBySocieteAndPeriode(factures, societeId, year, m).reduce((sum, f) => sum + f.montantPaye, 0);
+      const depensesMois =
+        filterBySocieteAndPeriode(depensesAvecDate, societeId, year, m).reduce((sum, d) => sum + d.montant, 0) +
+        filterBySocieteAndPeriode(caisseAvecDate, societeId, year, m).reduce((sum, d) => sum + d.montant, 0);
+      return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
+    };
+    return {
+      consolide: computeFor(null),
+      parSociete: societes.map((s) => ({ societe: s, ...computeFor(s.id) })),
+    };
+  }, [allEcritures, factures, depensesAvecDate, caisseAvecDate, societes, mois]);
 
   const chartData = useMemo(() => {
     const [year] = (mois || "2026-01").split("-").map(Number);
@@ -400,6 +449,7 @@ export function BilansScreen() {
             <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
               {periodeLabel}
             </span>
+            <SocieteFilterSelect className="w-full sm:w-44" />
           </div>
         </div>
       </Card>
@@ -442,6 +492,32 @@ export function BilansScreen() {
           }
           sublabel={periodeLabel}
         />
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          Bénéfice entreposage — {periodeLabel.split(" ").slice(0, 2).join(" ") || periodeLabel}
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <KpiCard
+            label="Toutes sociétés"
+            value={formatFCFA(benefice.consolide.benefice)}
+            icon={TrendingUp}
+            tone={benefice.consolide.benefice >= 0 ? "emerald" : "red"}
+            sublabel="Recettes − Dépenses, consolidé"
+            tooltip="Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois. Consolidé = somme des deux sociétés + activité non affectée (transit)."
+          />
+          {benefice.parSociete.map(({ societe, benefice: b }) => (
+            <KpiCard
+              key={societe.id}
+              label={societe.nom}
+              value={formatFCFA(b)}
+              icon={TrendingUp}
+              tone={b >= 0 ? "emerald" : "red"}
+              sublabel="bénéfice du mois"
+            />
+          ))}
+        </div>
       </div>
 
       {/* Bar chart — full year overview */}

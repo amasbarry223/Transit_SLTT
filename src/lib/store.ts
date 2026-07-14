@@ -6,9 +6,10 @@ import { useNav } from "@/lib/nav-store";
 import { supabase } from "@/lib/supabase";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { syncClientStats } from "@/lib/client-stats";
+import { syncContratStats } from "@/lib/contrat-stats";
 import { assertDossierTransition } from "@/lib/dossier-flow";
 import { computeIncrementalPaye, validatePaymentAmount } from "@/lib/payments";
-import { normalizePermissions } from "@/lib/permissions";
+import { normalizePermissions, ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import {
   insertAuditLog,
   mapAuditLogFromDb,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/audit";
 import {
   CHECKLIST_DOCS,
+  PRESTATION_OPTIONNELLE_LABEL,
   type Client,
   type Dossier,
   type DossierStatut,
@@ -45,10 +47,24 @@ import {
   type FournisseurStatut,
   type DossierFournisseur,
   type DossierFournisseurInput,
+  type Societe,
+  type Contrat,
+  type ContratInput,
+  type ContratStatut,
+  type ContratFichier,
+  type Depense,
+  type DepenseInput,
+  type ContratPrestation,
+  type ContratPrestationInput,
+  type ContratPrestationStatut,
+  type SortieCaisseLigne,
+  type BonSortieCaisse,
+  type BonSortieCaisseInput,
 } from "@/lib/domain-types";
 
 export {
   CHECKLIST_DOCS,
+  PRESTATION_OPTIONNELLE_LABEL,
 };
 
 export type {
@@ -79,6 +95,19 @@ export type {
   TransporteurInput,
   TransporteurStatut,
   TypeVehicule,
+  Societe,
+  Contrat,
+  ContratInput,
+  ContratStatut,
+  ContratFichier,
+  Depense,
+  DepenseInput,
+  ContratPrestation,
+  ContratPrestationInput,
+  ContratPrestationStatut,
+  SortieCaisseLigne,
+  BonSortieCaisse,
+  BonSortieCaisseInput,
 };
 
 export type { AuditAction, AuditModule, AuditEntry };
@@ -99,6 +128,8 @@ export interface Facture {
   dossierId: string | null;
   clientId: string;
   clientNom: string;
+  societeId?: string;
+  societeNom?: string;
   date: string;
   dateEcheance: string;
   statut: FactureStatut;
@@ -117,6 +148,7 @@ export interface FactureInput {
   dossierId?: string | null;
   clientId: string;
   clientNom: string;
+  societeId?: string | null;
   date: string;
   dateEcheance: string;
   lignes: Array<{ description: string; quantite: number; prixUnitaire: number }>;
@@ -157,6 +189,7 @@ export interface BonInput {
   date: string;
   clientId: string;
   clientNom: string;
+  societeId: string;
   stockId?: string;
   marchandise: string;
   quantite: number;
@@ -176,6 +209,24 @@ export interface StockItemInput {
   sommePayee: number;
   resteAPayer: number;
   clientId?: string;
+  societeId: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* CONTRATS / DÉPENSES / PRESTATIONS OPTIONNELLES — INPUT TYPES        */
+/* ------------------------------------------------------------------ */
+
+export interface AddDepenseInput extends DepenseInput {
+  justificatifDataUrl?: string;
+  justificatifNom?: string;
+}
+
+export interface AddContratFichierInput {
+  contratId: string;
+  nom: string;
+  taille: number;
+  type: string;
+  dataUrl: string;
 }
 
 export interface SubDossierInput {
@@ -286,6 +337,8 @@ function mapEcritureFromDb(x: any): Ecriture {
     clientId: x.client_id,
     clientNom: x.clients?.nom || "",
     dossierId: x.dossier_id || undefined,
+    societeId: x.societe_id || undefined,
+    societeNom: x.societes?.nom || undefined,
     montantInvesti: Number(x.montant_investi || 0),
     montantPaye: Number(x.montant_paye || 0),
     modePaiement: x.mode_paiement || "Virement",
@@ -298,6 +351,8 @@ function mapStockItemFromDb(x: any): StockItem {
     id: x.id,
     clientId: x.client_id || undefined,
     clientNom: x.clients?.nom || undefined,
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom || "—",
     marchandise: x.marchandise,
     quantite: Number(x.quantite),
     unite: x.unite,
@@ -313,6 +368,8 @@ function mapMouvementFromDb(x: any): Mouvement {
   return {
     id: x.id,
     stockId: x.stock_id || undefined,
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom || "—",
     date: x.date,
     type: x.type,
     marchandise: x.marchandise || "",
@@ -331,6 +388,8 @@ function mapBonFromDb(x: any): BonSortie {
     date: x.date,
     clientId: x.client_id,
     clientNom: x.clients?.nom || x.client_nom || "",
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom || "—",
     stockId: x.stock_id || undefined,
     marchandise: x.marchandise,
     quantite: Number(x.quantite),
@@ -338,6 +397,90 @@ function mapBonFromDb(x: any): BonSortie {
     motif: x.motif,
     montant: Number(x.montant),
     statut: x.statut,
+  };
+}
+
+function mapBonSortieCaisseFromDb(x: any): BonSortieCaisse {
+  return {
+    id: x.id,
+    reference: x.reference,
+    date: x.date,
+    montantTotal: Number(x.montant_total),
+    creePar: x.cree_par || undefined,
+    creeLe: x.created_at,
+    lignes: (x.bons_sortie_caisse_lignes || []).map((l: any) => ({
+      id: l.id,
+      date: l.date,
+      beneficiaire: l.beneficiaire,
+      motif: l.motif,
+      montant: Number(l.montant),
+    })),
+  };
+}
+
+function mapSocieteFromDb(x: any): Societe {
+  return { id: x.id, nom: x.nom, actif: x.actif };
+}
+
+function mapContratFromDb(
+  x: any,
+): Omit<Contrat, "nbPrestations" | "nbPrestationsRealisees" | "totalDepenses"> {
+  return {
+    id: x.id,
+    reference: x.reference,
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom || "—",
+    clientId: x.client_id,
+    clientNom: x.clients?.nom || "—",
+    objet: x.objet,
+    dateDebut: x.date_debut,
+    dateFin: x.date_fin || undefined,
+    montant: Number(x.montant),
+    statut: x.statut,
+    notes: x.notes || undefined,
+    creePar: x.cree_par || undefined,
+    creeLe: x.created_at,
+  };
+}
+
+function mapContratFichierFromDb(x: any): ContratFichier {
+  return {
+    id: x.id,
+    contratId: x.contrat_id,
+    nom: x.nom,
+    taille: Number(x.taille),
+    type: x.type,
+    dateUpload: x.date_upload || x.created_at,
+    storagePath: x.storage_path,
+  };
+}
+
+function mapDepenseFromDb(x: any): Depense {
+  return {
+    id: x.id,
+    contratId: x.contrat_id,
+    societeId: x.societe_id,
+    libelle: x.libelle,
+    montant: Number(x.montant),
+    dateDepense: x.date_depense,
+    modePaiement: x.mode_paiement,
+    justificatifPath: x.justificatif_path || undefined,
+    note: x.note || undefined,
+    creePar: x.cree_par || undefined,
+  };
+}
+
+function mapContratPrestationFromDb(x: any): ContratPrestation {
+  return {
+    id: x.id,
+    contratId: x.contrat_id,
+    libelle: x.libelle,
+    description: x.description || undefined,
+    montant: x.montant != null ? Number(x.montant) : undefined,
+    statut: x.statut,
+    datePrevue: x.date_prevue || undefined,
+    dateRealisation: x.date_realisation || undefined,
+    creePar: x.cree_par || undefined,
   };
 }
 
@@ -417,6 +560,8 @@ function mapFactureFromDb(x: any): Facture {
     dossierId: x.dossier_id,
     clientId: x.client_id,
     clientNom: x.clients?.nom || "—",
+    societeId: x.societe_id || undefined,
+    societeNom: x.societes?.nom || undefined,
     date: x.date,
     dateEcheance: x.date_echeance,
     statut: x.statut,
@@ -439,12 +584,18 @@ function mapFactureFromDb(x: any): Facture {
 }
 
 function mapProfileFromDb(x: any): User {
+  const role = x.role as UserRole;
+  const raw = Array.isArray(x.permissions) ? x.permissions : [];
+  const normalized = normalizePermissions(raw);
   return {
     id: x.id,
     nom: x.nom,
     email: x.email,
-    role: x.role,
-    permissions: x.permissions || [],
+    role,
+    permissions:
+      normalized.length > 0
+        ? normalized
+        : (ROLE_DEFAULT_PERMISSIONS[role] ?? []),
     actif: x.actif,
     derniereConnexion: x.derniere_connexion || "",
     motDePasse: "",
@@ -514,11 +665,23 @@ type SequenceCounters = Pick<
   | "factureSeq"
   | "fournisseurSeq"
   | "dossierFournisseurSeq"
+  | "contratSeq"
+  | "contratFichierSeq"
+  | "depenseSeq"
+  | "contratPrestationSeq"
+  | "bonSortieCaisseSeq"
 >;
 
 function parseTrailingSeq(value: string | null | undefined): number | null {
   if (!value) return null;
   const match = value.match(/-(\d+)$/);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+/** Parse la référence "N°{n}" des bons de sortie de caisse (pas de préfixe année). */
+function parseNumeroSeq(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = value.match(/N°(\d+)/);
   return match ? Number.parseInt(match[1], 10) : null;
 }
 
@@ -533,7 +696,7 @@ function nextSeqFromValues(values: Array<number | null>, current: number): numbe
   return Math.max(current, max + 1);
 }
 
-function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "dossiers" | "factures" | "bons" | "devis" | "auditLogs" | "ecritures" | "clients" | "stock" | "users" | "mouvements" | "subDossiers" | "fichiers" | "comments" | "transporteurs" | "fournisseurs" | "dossierFournisseurs">): SequenceCounters {
+function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "dossiers" | "factures" | "bons" | "devis" | "auditLogs" | "ecritures" | "clients" | "stock" | "users" | "mouvements" | "subDossiers" | "fichiers" | "comments" | "transporteurs" | "fournisseurs" | "dossierFournisseurs" | "contrats" | "contratFichiers" | "depenses" | "contratPrestations" | "bonsSortieCaisse">): SequenceCounters {
   return {
     dossierSeq: nextSeqFromValues(state.dossiers.map((d) => parseTrailingSeq(d.reference)), state.dossierSeq),
     bonSeq: nextSeqFromValues(state.bons.map((b) => parseTrailingSeq(b.reference)), state.bonSeq),
@@ -551,6 +714,11 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
     factureSeq: nextSeqFromValues(state.factures.map((f) => parseTrailingSeq(f.numero)), state.factureSeq),
     fournisseurSeq: nextSeqFromValues(state.fournisseurs.map((f) => parseIdSeq(f.id, "F")), state.fournisseurSeq),
     dossierFournisseurSeq: nextSeqFromValues(state.dossierFournisseurs.map((df) => parseIdSeq(df.id, "DF")), state.dossierFournisseurSeq),
+    contratSeq: nextSeqFromValues(state.contrats.map((c) => parseTrailingSeq(c.reference)), state.contratSeq),
+    contratFichierSeq: nextSeqFromValues(state.contratFichiers.map((f) => parseIdSeq(f.id, "CF")), state.contratFichierSeq),
+    depenseSeq: nextSeqFromValues(state.depenses.map((d) => parseIdSeq(d.id, "DEP")), state.depenseSeq),
+    contratPrestationSeq: nextSeqFromValues(state.contratPrestations.map((p) => parseIdSeq(p.id, "PRES")), state.contratPrestationSeq),
+    bonSortieCaisseSeq: nextSeqFromValues(state.bonsSortieCaisse.map((b) => parseNumeroSeq(b.reference)), state.bonSortieCaisseSeq),
   };
 }
 
@@ -572,6 +740,12 @@ interface SLTTState {
   factures: Facture[];
   fournisseurs: Fournisseur[];
   dossierFournisseurs: DossierFournisseur[];
+  societes: Societe[];
+  contrats: Contrat[];
+  contratFichiers: ContratFichier[];
+  depenses: Depense[];
+  contratPrestations: ContratPrestation[];
+  bonsSortieCaisse: BonSortieCaisse[];
 
   // Counters for local reference fallback
   dossierSeq: number;
@@ -590,6 +764,11 @@ interface SLTTState {
   factureSeq: number;
   fournisseurSeq: number;
   dossierFournisseurSeq: number;
+  contratSeq: number;
+  contratFichierSeq: number;
+  depenseSeq: number;
+  contratPrestationSeq: number;
+  bonSortieCaisseSeq: number;
 
   // Supabase sync
   dataLoading: boolean;
@@ -685,6 +864,31 @@ interface SLTTState {
   updateDossierFournisseur: (id: string, input: Partial<DossierFournisseurInput>) => Promise<void>;
   removeDossierFournisseur: (id: string) => Promise<void>;
 
+  // ---- Contrats ----
+  addContrat: (input: ContratInput) => Promise<Contrat>;
+  updateContrat: (id: string, input: ContratInput) => Promise<void>;
+  updateContratStatut: (id: string, statut: ContratStatut) => Promise<void>;
+  removeContrat: (id: string) => Promise<void>;
+  getContrat: (id: string) => Contrat | undefined;
+
+  // ---- Contrat — fichiers (scans, bucket privé) ----
+  addContratFichier: (input: AddContratFichierInput) => Promise<ContratFichier>;
+  deleteContratFichier: (id: string) => Promise<void>;
+  getSignedContratFichierUrl: (storagePath: string) => Promise<string>;
+
+  // ---- Dépenses ----
+  addDepense: (input: AddDepenseInput) => Promise<Depense>;
+  removeDepense: (id: string) => Promise<void>;
+
+  // ---- Prestations optionnelles ----
+  addContratPrestation: (input: ContratPrestationInput) => Promise<ContratPrestation>;
+  updateContratPrestation: (id: string, input: Partial<ContratPrestationInput>) => Promise<void>;
+  removeContratPrestation: (id: string) => Promise<void>;
+
+  // ---- Bons de sortie de caisse (décaissement) ----
+  addBonSortieCaisse: (input: BonSortieCaisseInput) => Promise<BonSortieCaisse>;
+  removeBonSortieCaisse: (id: string) => Promise<void>;
+
   refetchData: () => Promise<void>;
 }
 
@@ -709,6 +913,11 @@ const INITIAL_SEQUENCES = {
   factureSeq: 1,
   fournisseurSeq: 1,
   dossierFournisseurSeq: 1,
+  contratSeq: 1,
+  contratFichierSeq: 1,
+  depenseSeq: 1,
+  contratPrestationSeq: 1,
+  bonSortieCaisseSeq: 1,
 } as const;
 
 export const useStore = create<SLTTState>()(
@@ -729,6 +938,12 @@ export const useStore = create<SLTTState>()(
       factures: [],
       fournisseurs: [],
       dossierFournisseurs: [],
+      societes: [],
+      contrats: [],
+      contratFichiers: [],
+      depenses: [],
+      contratPrestations: [],
+      bonsSortieCaisse: [],
       auditLogs: [],
       dataLoading: false,
       loadError: null,
@@ -740,12 +955,25 @@ export const useStore = create<SLTTState>()(
       fetchData: async () => {
         set({ dataLoading: true, loadError: null });
         try {
+          // Sans JWT, le RLS renvoie [] (HTTP 200) — pas d'erreur visible.
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+          if (sessionError) throw sessionError;
+          if (!session?.access_token) {
+            throw new Error(
+              "Session Supabase absente. Reconnectez-vous pour charger les données.",
+            );
+          }
+
           const coreResults = await Promise.all([
             supabase.from("clients").select("*"),
             supabase.from("dossiers").select("*, clients(nom)"),
-            supabase.from("ecritures").select("*, clients(nom)"),
-            supabase.from("factures").select("*, facture_lignes(*), clients(nom)"),
+            supabase.from("ecritures").select("*, clients(nom), societes(nom)"),
+            supabase.from("factures").select("*, facture_lignes(*), clients(nom), societes(nom)"),
             supabase.from("profiles").select("*"),
+            supabase.from("societes").select("*"),
           ]);
 
           const coreError = coreResults.find((r) => r.error)?.error;
@@ -757,6 +985,7 @@ export const useStore = create<SLTTState>()(
             { data: ecritures },
             { data: factures },
             { data: profiles },
+            { data: societes },
           ] = coreResults;
 
           const mappedClients = (clients || []).map(mapClientFromDb);
@@ -772,6 +1001,7 @@ export const useStore = create<SLTTState>()(
               ecritures: mappedEcritures,
               factures: mappedFactures,
               users: (profiles || []).map(mapProfileFromDb),
+              societes: (societes || []).map(mapSocieteFromDb),
               loadError: null,
               dataLoading: false,
             };
@@ -782,9 +1012,9 @@ export const useStore = create<SLTTState>()(
           });
 
           const secondaryResults = await Promise.all([
-            supabase.from("stock_items").select("*, clients(nom)"),
-            supabase.from("mouvements").select("*"),
-            supabase.from("bons_sortie").select("*, clients(nom)"),
+            supabase.from("stock_items").select("*, clients(nom), societes(nom)"),
+            supabase.from("mouvements").select("*, societes(nom)"),
+            supabase.from("bons_sortie").select("*, clients(nom), societes(nom)"),
             supabase.from("sub_dossiers").select("*"),
             supabase.from("dossier_fichiers").select("*"),
             supabase.from("dossier_comments").select("*"),
@@ -792,6 +1022,11 @@ export const useStore = create<SLTTState>()(
             supabase.from("transporteurs").select("*"),
             supabase.from("fournisseurs").select("*"),
             supabase.from("dossier_fournisseurs").select("*, fournisseurs(nom, type), dossiers(reference)"),
+            supabase.from("contrats").select("*, clients(nom), societes(nom)"),
+            supabase.from("contrat_fichiers").select("*"),
+            supabase.from("depenses").select("*"),
+            supabase.from("contrat_prestations").select("*"),
+            supabase.from("bons_sortie_caisse").select("*, bons_sortie_caisse_lignes(*)"),
             supabase.from("audit_logs").select("*").order("date", { ascending: false }),
           ]);
 
@@ -811,11 +1046,19 @@ export const useStore = create<SLTTState>()(
             { data: transporteurs },
             { data: fournisseurs },
             { data: dossierFournisseurs },
+            { data: contrats },
+            { data: contratFichiers },
+            { data: depenses },
+            { data: contratPrestations },
+            { data: bonsSortieCaisse },
             { data: auditLogs },
           ] = secondaryResults;
 
           const mappedFournisseurs = (fournisseurs || []).map(mapFournisseurFromDb);
           const mappedDossierFournisseurs = (dossierFournisseurs || []).map(mapDossierFournisseurFromDb);
+          const mappedDepenses = (depenses || []).map(mapDepenseFromDb);
+          const mappedPrestations = (contratPrestations || []).map(mapContratPrestationFromDb);
+          const mappedContratsRaw = (contrats || []).map(mapContratFromDb);
 
           set((s) => {
             const nextState = {
@@ -830,6 +1073,11 @@ export const useStore = create<SLTTState>()(
               transporteurs: (transporteurs || []).map(mapTransporteurFromDb),
               fournisseurs: syncFournisseurStats(mappedDossierFournisseurs, mappedFournisseurs),
               dossierFournisseurs: mappedDossierFournisseurs,
+              contrats: syncContratStats(mappedDepenses, mappedPrestations, mappedContratsRaw),
+              contratFichiers: (contratFichiers || []).map(mapContratFichierFromDb),
+              depenses: mappedDepenses,
+              contratPrestations: mappedPrestations,
+              bonsSortieCaisse: (bonsSortieCaisse || []).map(mapBonSortieCaisseFromDb),
               auditLogs: (auditLogs || []).map(mapAuditLogFromDb),
               clients: syncClientStats(s.dossiers, s.factures, s.ecritures, s.clients),
               lastSyncedAt: Date.now(),
@@ -1330,8 +1578,9 @@ export const useStore = create<SLTTState>()(
             somme_payee: input.sommePayee,
             reste_a_payer: input.resteAPayer,
             client_id: input.clientId || null,
+            societe_id: input.societeId,
           })
-          .select("*, clients(nom)")
+          .select("*, clients(nom), societes(nom)")
           .single();
 
         if (error) throw error;
@@ -1355,6 +1604,7 @@ export const useStore = create<SLTTState>()(
         await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
         await supabase.from("mouvements").insert({
           stock_id: stockId,
+          societe_id: stockItem.societeId,
           type: "Entrée",
           quantite,
           date: new Date().toISOString(),
@@ -1363,11 +1613,13 @@ export const useStore = create<SLTTState>()(
           unite: stockItem.unite,
           bon_ref: null,
         });
-      
+
 
         const seq = get().mouvementSeq;
         const newMouvement: Mouvement = {
           id: `M-${seq}`,
+          societeId: stockItem.societeId,
+          societeNom: stockItem.societeNom,
           date: new Date().toISOString(),
           type: "Entrée",
           marchandise: stockItem.marchandise,
@@ -1394,6 +1646,7 @@ export const useStore = create<SLTTState>()(
         await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
         await supabase.from("mouvements").insert({
           stock_id: stockId,
+          societe_id: stockItem.societeId,
           type: "Sortie",
           quantite,
           date: new Date().toISOString(),
@@ -1403,11 +1656,13 @@ export const useStore = create<SLTTState>()(
           bon_ref: bonRef || null,
           motif: motif || null,
         });
-      
+
 
         const seq = get().mouvementSeq;
         const newMouvement: Mouvement = {
           id: `M-${seq}`,
+          societeId: stockItem.societeId,
+          societeNom: stockItem.societeNom,
           date: new Date().toISOString(),
           type: "Sortie",
           marchandise: stockItem.marchandise,
@@ -1439,6 +1694,7 @@ export const useStore = create<SLTTState>()(
             reference: numero,
             date: input.date,
             client_id: input.clientId,
+            societe_id: input.societeId,
             stock_id: input.stockId,
             marchandise: input.marchandise,
             quantite: input.quantite,
@@ -1447,7 +1703,7 @@ export const useStore = create<SLTTState>()(
             montant: input.montant,
             statut: input.statut || "Brouillon",
           })
-          .select("*, clients(nom)")
+          .select("*, clients(nom), societes(nom)")
           .single();
 
         if (error) throw error;
@@ -2053,6 +2309,7 @@ export const useStore = create<SLTTState>()(
             numero,
             dossier_id: input.dossierId,
             client_id: input.clientId,
+            societe_id: input.societeId || null,
             date: input.date,
             date_echeance: input.dateEcheance,
             statut: "Brouillon",
@@ -2086,7 +2343,7 @@ export const useStore = create<SLTTState>()(
 
         const { data: fullFact, error: errFetch } = await supabase
           .from("factures")
-          .select("*, facture_lignes(*), clients(nom)")
+          .select("*, facture_lignes(*), clients(nom), societes(nom)")
           .eq("id", dbFact.id)
           .single();
 
@@ -2113,6 +2370,7 @@ export const useStore = create<SLTTState>()(
           .update({
             dossier_id: input.dossierId,
             client_id: input.clientId,
+            societe_id: input.societeId ?? null,
             date: input.date,
             date_echeance: input.dateEcheance,
             taux_tva: input.tauxTVA,
@@ -2152,6 +2410,7 @@ export const useStore = create<SLTTState>()(
             return {
               ...fact,
               ...input,
+              societeId: input.societeId ?? undefined,
               montantHT: HT,
               montantTVA: TVA,
               montantTTC: TTC,
@@ -2412,6 +2671,348 @@ export const useStore = create<SLTTState>()(
         });
       },
 
+      // ---- Contrats ----
+      addContrat: async (input) => {
+        const seq = get().contratSeq;
+        const year = new Date().getFullYear();
+        const reference = `CTR-${year}-${pad(seq, 4)}`;
+        const creePar = getConnectedUserName();
+
+        const { data, error } = await supabase
+          .from("contrats")
+          .insert({
+            reference,
+            societe_id: input.societeId,
+            client_id: input.clientId,
+            objet: input.objet,
+            date_debut: input.dateDebut,
+            date_fin: input.dateFin || null,
+            montant: input.montant,
+            statut: input.statut,
+            notes: input.notes || null,
+            cree_par: creePar,
+          })
+          .select("*, clients(nom), societes(nom)")
+          .single();
+
+        if (error) throw error;
+        const raw = mapContratFromDb(data);
+        set((s) => ({
+          contrats: syncContratStats(s.depenses, s.contratPrestations, [raw, ...s.contrats]),
+          contratSeq: seq + 1,
+        }));
+        await get().addAuditLog("Contrats", "Création", `Contrat ${reference} créé — ${input.clientNom}`);
+        return get().contrats.find((c) => c.id === raw.id)!;
+      },
+
+      updateContrat: async (id, input) => {
+        const { error } = await supabase
+          .from("contrats")
+          .update({
+            societe_id: input.societeId,
+            client_id: input.clientId,
+            objet: input.objet,
+            date_debut: input.dateDebut,
+            date_fin: input.dateFin || null,
+            montant: input.montant,
+            statut: input.statut,
+            notes: input.notes || null,
+          })
+          .eq("id", id);
+        if (error) throw error;
+
+        const existing = get().contrats.find((c) => c.id === id);
+        set((s) => ({
+          contrats: s.contrats.map((c) =>
+            c.id === id
+              ? { ...c, ...input, clientNom: input.clientNom }
+              : c,
+          ),
+        }));
+        if (existing) {
+          await get().addAuditLog("Contrats", "Modification", `Contrat ${existing.reference} modifié`);
+        }
+      },
+
+      updateContratStatut: async (id, statut) => {
+        const { error } = await supabase.from("contrats").update({ statut }).eq("id", id);
+        if (error) throw error;
+        const existing = get().contrats.find((c) => c.id === id);
+        set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
+        if (existing) {
+          await get().addAuditLog("Contrats", "Modification", `Contrat ${existing.reference} → ${statut}`);
+        }
+      },
+
+      removeContrat: async (id) => {
+        const contrat = get().contrats.find((c) => c.id === id);
+        if (!contrat) return;
+
+        // Garde client-side — message clair AVANT l'appel réseau. La contrainte FK
+        // (NO ACTION sur depenses.contrat_id / contrat_prestations.contrat_id) est
+        // la garde de dernier recours côté DB en cas de course (2 onglets, etc.).
+        const depensesLiees = get().depenses.filter((d) => d.contratId === id).length;
+        const prestationsLiees = get().contratPrestations.filter((p) => p.contratId === id).length;
+        if (depensesLiees > 0 || prestationsLiees > 0) {
+          throw new Error(
+            `Impossible de supprimer le contrat ${contrat.reference} : il porte ${depensesLiees} dépense(s) et ${prestationsLiees} prestation(s). Retirez-les d'abord.`,
+          );
+        }
+
+        const { error } = await supabase.from("contrats").delete().eq("id", id);
+        if (error) throw error;
+
+        set((s) => ({
+          contrats: s.contrats.filter((c) => c.id !== id),
+          contratFichiers: s.contratFichiers.filter((f) => f.contratId !== id),
+        }));
+        await get().addAuditLog("Contrats", "Suppression", `Contrat ${contrat.reference} supprimé`);
+      },
+
+      getContrat: (id) => get().contrats.find((c) => c.id === id),
+
+      // ---- Contrat — fichiers (scans, bucket privé) ----
+      addContratFichier: async (input) => {
+        const seq = get().contratFichierSeq;
+        const res = await fetch(input.dataUrl);
+        const blob = await res.blob();
+        const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
+        const path = `${input.contratId}/${Date.now()}-${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("contrat-fichiers")
+          .upload(path, blob, { contentType: blob.type || "application/octet-stream", upsert: false });
+        if (uploadError) throw uploadError;
+
+        const { data, error } = await supabase
+          .from("contrat_fichiers")
+          .insert({
+            contrat_id: input.contratId,
+            nom: input.nom,
+            taille: input.taille,
+            type: input.type,
+            storage_path: path,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+
+        const newFile = mapContratFichierFromDb(data);
+        set((s) => ({ contratFichiers: [newFile, ...s.contratFichiers], contratFichierSeq: seq + 1 }));
+        return newFile;
+      },
+
+      deleteContratFichier: async (id) => {
+        const file = get().contratFichiers.find((f) => f.id === id);
+        if (file) {
+          await supabase.storage.from("contrat-fichiers").remove([file.storagePath]);
+        }
+        const { error } = await supabase.from("contrat_fichiers").delete().eq("id", id);
+        if (error) throw error;
+        set((s) => ({ contratFichiers: s.contratFichiers.filter((f) => f.id !== id) }));
+      },
+
+      getSignedContratFichierUrl: async (storagePath) => {
+        const { data, error } = await supabase.storage
+          .from("contrat-fichiers")
+          .createSignedUrl(storagePath, 3600);
+        if (error) throw error;
+        return data.signedUrl;
+      },
+
+      // ---- Dépenses ----
+      addDepense: async (input) => {
+        const seq = get().depenseSeq;
+        const contrat = get().contrats.find((c) => c.id === input.contratId);
+        if (!contrat) throw new Error("Contrat introuvable.");
+        const creePar = getConnectedUserName();
+
+        let justificatifPath: string | undefined;
+        if (input.justificatifDataUrl && input.justificatifNom) {
+          const res = await fetch(input.justificatifDataUrl);
+          const blob = await res.blob();
+          const safeName = input.justificatifNom.replace(/[^\w.\-]+/g, "_");
+          justificatifPath = `${input.contratId}/depenses/${Date.now()}-${safeName}`;
+          const { error: uploadError } = await supabase.storage
+            .from("contrat-fichiers")
+            .upload(justificatifPath, blob, { contentType: blob.type || "application/octet-stream", upsert: false });
+          if (uploadError) throw uploadError;
+        }
+
+        const { data, error } = await supabase
+          .from("depenses")
+          .insert({
+            contrat_id: input.contratId,
+            societe_id: contrat.societeId,
+            libelle: input.libelle,
+            montant: input.montant,
+            date_depense: input.dateDepense,
+            mode_paiement: input.modePaiement,
+            justificatif_path: justificatifPath || null,
+            note: input.note || null,
+            cree_par: creePar,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+
+        const newDepense = mapDepenseFromDb(data);
+        set((s) => {
+          const updatedDepenses = [newDepense, ...s.depenses];
+          return {
+            depenses: updatedDepenses,
+            depenseSeq: seq + 1,
+            contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
+          };
+        });
+        await get().addAuditLog(
+          "Dépenses",
+          "Création",
+          `Dépense "${input.libelle}" (${input.montant.toLocaleString("fr-FR")} FCFA) — contrat ${contrat.reference}`,
+        );
+        return newDepense;
+      },
+
+      removeDepense: async (id) => {
+        const depense = get().depenses.find((d) => d.id === id);
+        if (depense?.justificatifPath) {
+          await supabase.storage.from("contrat-fichiers").remove([depense.justificatifPath]);
+        }
+        const { error } = await supabase.from("depenses").delete().eq("id", id);
+        if (error) throw error;
+        set((s) => {
+          const updatedDepenses = s.depenses.filter((d) => d.id !== id);
+          return {
+            depenses: updatedDepenses,
+            contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
+          };
+        });
+        if (depense) {
+          await get().addAuditLog("Dépenses", "Suppression", `Dépense "${depense.libelle}" supprimée`);
+        }
+      },
+
+      // ---- Prestations optionnelles ----
+      addContratPrestation: async (input) => {
+        const seq = get().contratPrestationSeq;
+        const creePar = getConnectedUserName();
+        const { data, error } = await supabase
+          .from("contrat_prestations")
+          .insert({
+            contrat_id: input.contratId,
+            libelle: input.libelle,
+            description: input.description || null,
+            montant: input.montant ?? null,
+            statut: input.statut,
+            date_prevue: input.datePrevue || null,
+            date_realisation: input.dateRealisation || null,
+            cree_par: creePar,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+
+        const newPrestation = mapContratPrestationFromDb(data);
+        set((s) => {
+          const updated = [newPrestation, ...s.contratPrestations];
+          return {
+            contratPrestations: updated,
+            contratPrestationSeq: seq + 1,
+            contrats: syncContratStats(s.depenses, updated, s.contrats),
+          };
+        });
+        return newPrestation;
+      },
+
+      updateContratPrestation: async (id, input) => {
+        const { error } = await supabase
+          .from("contrat_prestations")
+          .update({
+            libelle: input.libelle,
+            description: input.description,
+            montant: input.montant,
+            statut: input.statut,
+            date_prevue: input.datePrevue,
+            date_realisation: input.dateRealisation,
+          })
+          .eq("id", id);
+        if (error) throw error;
+
+        set((s) => {
+          const updated = s.contratPrestations.map((p) => (p.id === id ? { ...p, ...input } : p));
+          return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
+        });
+      },
+
+      removeContratPrestation: async (id) => {
+        const { error } = await supabase.from("contrat_prestations").delete().eq("id", id);
+        if (error) throw error;
+        set((s) => {
+          const updated = s.contratPrestations.filter((p) => p.id !== id);
+          return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
+        });
+      },
+
+      // ---- Bons de sortie de caisse (décaissement — sans rapport avec le stock) ----
+      addBonSortieCaisse: async (input) => {
+        const seq = get().bonSortieCaisseSeq;
+        const reference = `N°${seq}`;
+        const creePar = getConnectedUserName();
+        const montantTotal = input.lignes.reduce((sum, l) => sum + l.montant, 0);
+
+        const { data: dbBon, error: errBon } = await supabase
+          .from("bons_sortie_caisse")
+          .insert({
+            reference,
+            date: input.date,
+            montant_total: montantTotal,
+            cree_par: creePar,
+          })
+          .select()
+          .single();
+        if (errBon) throw errBon;
+
+        if (input.lignes.length > 0) {
+          const { error: errLignes } = await supabase
+            .from("bons_sortie_caisse_lignes")
+            .insert(
+              input.lignes.map((l) => ({
+                bon_id: dbBon.id,
+                date: l.date,
+                beneficiaire: l.beneficiaire,
+                motif: l.motif,
+                montant: l.montant,
+              })),
+            );
+          if (errLignes) throw errLignes;
+        }
+
+        const { data: fullBon, error: errFetch } = await supabase
+          .from("bons_sortie_caisse")
+          .select("*, bons_sortie_caisse_lignes(*)")
+          .eq("id", dbBon.id)
+          .single();
+        if (errFetch) throw errFetch;
+
+        const newBon = mapBonSortieCaisseFromDb(fullBon);
+        set((s) => ({
+          bonsSortieCaisse: [newBon, ...s.bonsSortieCaisse],
+          bonSortieCaisseSeq: seq + 1,
+        }));
+        await get().addAuditLog("Bons", "Création", `Bon de sortie caisse ${reference} créé — ${montantTotal.toLocaleString("fr-FR")} FCFA`);
+        return newBon;
+      },
+
+      removeBonSortieCaisse: async (id) => {
+        const bon = get().bonsSortieCaisse.find((b) => b.id === id);
+        const { error } = await supabase.from("bons_sortie_caisse").delete().eq("id", id);
+        if (error) throw error;
+        set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));
+        if (bon) {
+          await get().addAuditLog("Bons", "Suppression", `Bon de sortie caisse ${bon.reference} supprimé`);
+        }
+      },
+
       refetchData: async () => {
         set({ loadError: null });
         await get().fetchData();
@@ -2458,6 +3059,11 @@ export const useStore = create<SLTTState>()(
         factureSeq: s.factureSeq,
         fournisseurSeq: s.fournisseurSeq,
         dossierFournisseurSeq: s.dossierFournisseurSeq,
+        contratSeq: s.contratSeq,
+        contratFichierSeq: s.contratFichierSeq,
+        depenseSeq: s.depenseSeq,
+        contratPrestationSeq: s.contratPrestationSeq,
+        bonSortieCaisseSeq: s.bonSortieCaisseSeq,
       }),
     },
   ),

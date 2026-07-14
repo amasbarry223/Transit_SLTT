@@ -13,17 +13,21 @@ import {
   FilePen,
   Wallet,
   Package,
+  Banknote,
+  Trash2,
+  X,
 } from "lucide-react";
 
-import { useStore, type BonMotif, type StockItem } from "@/lib/store";
+import { useStore, type BonMotif, type StockItem, type BonSortieCaisse } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printHTML, htmlEscape } from "@/lib/export";
-import { PageHeader } from "@/components/sltt/page-header";
+import { printHTML, htmlEscape, printBonSortieCaisseModule } from "@/lib/export";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
+import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -53,6 +58,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { TablePagination } from "@/components/sltt/table-pagination";
 
@@ -74,15 +89,29 @@ const motifs: BonMotif[] = ["Vente", "Livraison", "Transfert"];
 
 export function BonsScreen() {
   const { toast } = useToast();
+  const canWrite = usePermission("bons:write");
   const go = useNav((s) => s.go);
   const selectedId = useNav((s) => s.selectedId);
 
-  const bons = useStore((s) => s.bons);
+  const allBons = useStore((s) => s.bons);
   const addBon = useStore((s) => s.addBon);
   const validateBon = useStore((s) => s.validateBon);
   const stock = useStore((s) => s.stock);
   const clients = useStore((s) => s.clients);
+  const societes = useStore((s) => s.societes);
   const bonSeq = useStore((s) => s.bonSeq);
+  const bonSortieCaisseSeq = useStore((s) => s.bonSortieCaisseSeq);
+  const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
+  const addBonSortieCaisse = useStore((s) => s.addBonSortieCaisse);
+  const removeBonSortieCaisse = useStore((s) => s.removeBonSortieCaisse);
+  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+
+  const [activeTab, setActiveTab] = useState<"marchandise" | "caisse">("marchandise");
+
+  const bons = useMemo(
+    () => (selectedSocieteId ? allBons.filter((b) => b.societeId === selectedSocieteId) : allBons),
+    [allBons, selectedSocieteId],
+  );
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
@@ -96,22 +125,131 @@ export function BonsScreen() {
     new Date().toISOString().slice(0, 10),
   );
   const [formClientId, setFormClientId] = useState("");
+  const [formSocieteId, setFormSocieteId] = useState("");
   const [formStockId, setFormStockId] = useState("");
   const [formQuantite, setFormQuantite] = useState<string>("");
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
   const [formMontant, setFormMontant] = useState<string>("");
 
-  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
-  if (selectedId !== prevSelectedId) {
-    setPrevSelectedId(selectedId);
-    if (selectedId === "new") setOpen(true);
-  }
-
   const nextRef = `BS-2026-${String(bonSeq).padStart(4, "0")}`;
+  const nextCaisseRef = `N°${bonSortieCaisseSeq}`;
 
   useEffect(() => {
-    if (selectedId === "new") go("bons");
+    if (selectedId === "new") {
+      setOpen(true);
+      go("bons");
+    }
   }, [selectedId, go]);
+
+  /* -------------------------------------------------------------- */
+  /* SORTIE DE CAISSE (décaissement — sans rapport avec le stock)     */
+  /* -------------------------------------------------------------- */
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const [caisseOpen, setCaisseOpen] = useState(false);
+  const [caisseDate, setCaisseDate] = useState(todayIso);
+  const [caisseLignes, setCaisseLignes] = useState<
+    Array<{ date: string; beneficiaire: string; motif: string; montant: string }>
+  >([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
+  const [caisseSearch, setCaisseSearch] = useState("");
+  const [caisseDeleteId, setCaisseDeleteId] = useState<string | null>(null);
+
+  const caisseStats = useMemo(
+    () => ({
+      total: bonsSortieCaisse.length,
+      montantTotal: bonsSortieCaisse.reduce((sum, b) => sum + b.montantTotal, 0),
+    }),
+    [bonsSortieCaisse],
+  );
+
+  const filteredCaisse = useMemo(() => {
+    const q = caisseSearch.trim().toLowerCase();
+    if (!q) return bonsSortieCaisse;
+    return bonsSortieCaisse.filter(
+      (b) =>
+        b.reference.toLowerCase().includes(q) ||
+        b.lignes.some((l) => l.beneficiaire.toLowerCase().includes(q) || l.motif.toLowerCase().includes(q)),
+    );
+  }, [bonsSortieCaisse, caisseSearch]);
+
+  const caisseTotalSaisi = caisseLignes.reduce((sum, l) => sum + (Number(l.montant) || 0), 0);
+  const caisseValid =
+    caisseLignes.length > 0 &&
+    caisseLignes.every((l) => l.beneficiaire.trim() && l.motif.trim() && Number(l.montant) > 0);
+
+  function openCaisseDialog() {
+    setCaisseDate(todayIso);
+    setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
+    setCaisseOpen(true);
+  }
+
+  function addCaisseLigne() {
+    setCaisseLignes((l) => [...l, { date: caisseDate, beneficiaire: "", motif: "", montant: "" }]);
+  }
+
+  function removeCaisseLigne(i: number) {
+    setCaisseLignes((l) => l.filter((_, idx) => idx !== i));
+  }
+
+  function updateCaisseLigne(i: number, field: "date" | "beneficiaire" | "motif" | "montant", value: string) {
+    setCaisseLignes((l) => l.map((row, idx) => (idx === i ? { ...row, [field]: value } : row)));
+  }
+
+  function beneficiairesSummary(bon: BonSortieCaisse): string {
+    if (bon.lignes.length === 0) return "—";
+    const first = bon.lignes[0].beneficiaire;
+    return bon.lignes.length > 1 ? `${first} +${bon.lignes.length - 1}` : first;
+  }
+
+  async function handleCreateCaisse() {
+    if (!caisseValid) return;
+    try {
+      const bon = await addBonSortieCaisse({
+        date: caisseDate,
+        lignes: caisseLignes.map((l) => ({
+          date: l.date,
+          beneficiaire: l.beneficiaire.trim(),
+          motif: l.motif.trim(),
+          montant: Number(l.montant) || 0,
+        })),
+      });
+      toast({ title: "Bon de sortie créé", description: `${bon.reference} — ${formatFCFA(bon.montantTotal)}` });
+      setCaisseOpen(false);
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Impossible de créer le bon de sortie.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  function handlePrintCaisse(bon: BonSortieCaisse) {
+    printBonSortieCaisseModule({
+      reference: bon.reference,
+      date: bon.date,
+      lignes: bon.lignes,
+      montantTotal: bon.montantTotal,
+    });
+  }
+
+  async function handleDeleteCaisse() {
+    if (!caisseDeleteId) return;
+    const bon = bonsSortieCaisse.find((b) => b.id === caisseDeleteId);
+    try {
+      await removeBonSortieCaisse(caisseDeleteId);
+      toast({ title: "Bon supprimé", description: bon?.reference });
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Impossible de supprimer le bon.",
+        variant: "destructive",
+      });
+    } finally {
+      setCaisseDeleteId(null);
+    }
+  }
 
   const stats = useMemo(() => {
     let valides = 0;
@@ -180,6 +318,7 @@ export function BonsScreen() {
   function resetForm() {
     setFormDate(new Date().toISOString().slice(0, 10));
     setFormClientId("");
+    setFormSocieteId(selectedSocieteId ?? societes[0]?.id ?? "");
     setFormStockId("");
     setFormQuantite("");
     setFormMotif("");
@@ -192,11 +331,12 @@ export function BonsScreen() {
   }
 
   function handleValider() {
-    if (!selectedStock || !selectedClient || !formMotif) return;
+    if (!selectedStock || !selectedClient || !formMotif || !formSocieteId) return;
     addBon({
       date: formDate,
       clientId: formClientId,
       clientNom: selectedClient.nom,
+      societeId: formSocieteId,
       stockId: selectedStock.id,
       marchandise: selectedStock.marchandise,
       quantite: quantiteNum,
@@ -214,11 +354,12 @@ export function BonsScreen() {
   }
 
   function handleSaveDraft() {
-    if (!selectedStock || !selectedClient || !formMotif) return;
+    if (!selectedStock || !selectedClient || !formMotif || !formSocieteId) return;
     addBon({
       date: formDate,
       clientId: formClientId,
       clientNom: selectedClient.nom,
+      societeId: formSocieteId,
       stockId: selectedStock.id,
       marchandise: selectedStock.marchandise,
       quantite: quantiteNum,
@@ -307,17 +448,135 @@ export function BonsScreen() {
     });
   }
 
+  const tabMeta = {
+    marchandise: {
+      description: "Sorties de stock : validation, stock et justificatifs clients.",
+      cta: "Nouveau bon de sortie",
+      onCreate: openDialog,
+    },
+    caisse: {
+      description: "Décaissements espèces : honoraires, frais divers, justificatifs caisse.",
+      cta: "Nouvelle sortie de caisse",
+      onCreate: openCaisseDialog,
+    },
+  } as const;
+
+  const currentTab = tabMeta[activeTab];
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Bons de sortie"
-        description="Sorties de marchandises et justificatifs"
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "marchandise" | "caisse")}
+        className="gap-5"
       >
-        <Button onClick={openDialog}>
-          <Plus className="size-4" />
-          Nouveau bon de sortie
-        </Button>
-      </PageHeader>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+              {currentTab.description}
+            </p>
+          </div>
+          {canWrite && (
+            <Button
+              onClick={currentTab.onCreate}
+              className="shrink-0 self-start"
+            >
+              <Plus className="size-4" />
+              {currentTab.cta}
+            </Button>
+          )}
+        </div>
+
+        <TabsList
+          className={cn(
+            "grid h-auto w-full grid-cols-1 gap-1 bg-slate-100/90 p-1.5 dark:bg-slate-800/60 sm:grid-cols-2",
+            "rounded-xl",
+          )}
+        >
+          <TabsTrigger
+            value="marchandise"
+            className={cn(
+              "group h-auto flex-col items-stretch gap-1 rounded-lg px-4 py-3 text-left",
+              "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-border/80",
+              "dark:data-[state=active]:bg-slate-900 dark:data-[state=active]:ring-slate-700",
+            )}
+          >
+            <span className="flex w-full items-center justify-between gap-3">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                    "bg-blue-50 text-blue-700 group-data-[state=inactive]:bg-slate-200/70 group-data-[state=inactive]:text-slate-500",
+                    "dark:bg-blue-950/50 dark:text-blue-300 dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-400",
+                  )}
+                >
+                  <Package className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Marchandises
+                  </span>
+                  <span className="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                    Entreposage · sorties stock
+                  </span>
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                  "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
+                  "group-data-[state=inactive]:bg-slate-200/80 group-data-[state=inactive]:text-slate-600",
+                  "dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-300",
+                )}
+              >
+                {bons.length}
+              </span>
+            </span>
+          </TabsTrigger>
+
+          <TabsTrigger
+            value="caisse"
+            className={cn(
+              "group h-auto flex-col items-stretch gap-1 rounded-lg px-4 py-3 text-left",
+              "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-border/80",
+              "dark:data-[state=active]:bg-slate-900 dark:data-[state=active]:ring-slate-700",
+            )}
+          >
+            <span className="flex w-full items-center justify-between gap-3">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                    "bg-emerald-50 text-emerald-700 group-data-[state=inactive]:bg-slate-200/70 group-data-[state=inactive]:text-slate-500",
+                    "dark:bg-emerald-950/50 dark:text-emerald-300 dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-400",
+                  )}
+                >
+                  <Banknote className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Caisse
+                  </span>
+                  <span className="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                    Décaissements · espèces
+                  </span>
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                  "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+                  "group-data-[state=inactive]:bg-slate-200/80 group-data-[state=inactive]:text-slate-600",
+                  "dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-300",
+                )}
+              >
+                {bonsSortieCaisse.length}
+              </span>
+            </span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="marchandise" className="mt-0 space-y-6">
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
@@ -448,6 +707,8 @@ export function BonsScreen() {
             aria-label="Filtrer par date"
           />
 
+          <SocieteFilterSelect className="w-full sm:w-44" />
+
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -486,7 +747,7 @@ export function BonsScreen() {
                 ? "Modifiez vos filtres ou créez un nouveau bon de sortie."
                 : "Enregistrez votre premier bon pour tracer une sortie de marchandise."}
             </p>
-            {!hasActiveFilters && (
+            {!hasActiveFilters && canWrite && (
               <Button className="mt-5" onClick={openDialog}>
                 <Plus className="size-4" />
                 Nouveau bon de sortie
@@ -507,6 +768,9 @@ export function BonsScreen() {
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                      Société
                     </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Marchandise
@@ -555,6 +819,9 @@ export function BonsScreen() {
                             {b.clientNom}
                           </p>
                         </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 sm:table-cell">
+                          <SocieteBadge societeNom={b.societeNom} size="sm" />
+                        </TableCell>
                         <TableCell className="hidden max-w-[140px] px-4 py-3.5 md:table-cell">
                           <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
                             <Package className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
@@ -576,7 +843,7 @@ export function BonsScreen() {
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1">
-                            {isBrouillon && (
+                            {isBrouillon && canWrite && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -630,6 +897,153 @@ export function BonsScreen() {
         )}
       </Card>
 
+        </TabsContent>
+
+        <TabsContent value="caisse" className="mt-0 space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <KpiCard
+              label="Bons émis"
+              value={String(caisseStats.total)}
+              icon={Banknote}
+              tone="emerald"
+              sublabel="décaissements enregistrés"
+            />
+            <KpiCard
+              label="Total décaissé"
+              value={formatFCFA(caisseStats.montantTotal)}
+              icon={Wallet}
+              tone="indigo"
+              sublabel="toutes sorties de caisse"
+            />
+          </div>
+
+          <Card className="p-4 shadow-sm border-border/80">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative w-full sm:w-64">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                <Input
+                  placeholder="Référence, bénéficiaire, motif…"
+                  value={caisseSearch}
+                  onChange={(e) => setCaisseSearch(e.target.value)}
+                  className="h-10 pl-9"
+                  aria-label="Rechercher un bon de sortie de caisse"
+                />
+              </div>
+              <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+                {filteredCaisse.length} bon{filteredCaisse.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </Card>
+
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+              <Banknote className="size-4 text-slate-400 dark:text-slate-500" />
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Sorties de caisse
+              </h2>
+            </div>
+
+            {filteredCaisse.length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                  <Banknote className="size-7" />
+                </div>
+                <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Aucune sortie de caisse
+                </h3>
+                <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+                  {caisseSearch
+                    ? "Modifiez votre recherche ou enregistrez une nouvelle sortie."
+                    : "Enregistrez un décaissement (honoraires, frais divers…)."}
+                </p>
+                {!caisseSearch && canWrite && (
+                  <Button className="mt-5" onClick={openCaisseDialog}>
+                    <Plus className="size-4" />
+                    Nouvelle sortie de caisse
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table aria-label="Liste des bons de sortie de caisse">
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Référence
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Date
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Bénéficiaire(s)
+                      </TableHead>
+                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                        Motif
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Montant
+                      </TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCaisse.map((b) => (
+                      <TableRow key={b.id} className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
+                        <TableCell className="px-4 py-3.5">
+                          <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{b.reference}</p>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+                          {formatDateShort(b.date)}
+                        </TableCell>
+                        <TableCell className="max-w-[180px] px-4 py-3.5">
+                          <p className="truncate font-medium text-slate-700 dark:text-slate-300">{beneficiairesSummary(b)}</p>
+                        </TableCell>
+                        <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
+                          <p className="truncate text-sm text-slate-600 dark:text-slate-300">
+                            {b.lignes.map((l) => l.motif).join(", ")}
+                          </p>
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100">
+                          {formatFCFA(b.montantTotal)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+                              aria-label={`Imprimer ${b.reference}`}
+                              title="PDF / Imprimer"
+                              onClick={() => handlePrintCaisse(b)}
+                            >
+                              <FileText className="size-4" />
+                            </Button>
+                            {canWrite && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-11 text-slate-400 hover:text-red-600"
+                                aria-label={`Supprimer ${b.reference}`}
+                                title="Supprimer"
+                                onClick={() => setCaisseDeleteId(b.id)}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+      </Tabs>
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-3xl lg:max-w-4xl">
           <DialogHeader>
@@ -663,6 +1077,33 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="bs-societe" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Société <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formSocieteId}
+                  onValueChange={(v) => {
+                    setFormSocieteId(v);
+                    // Garde la marchandise cohérente avec la société sélectionnée.
+                    if (selectedStock && selectedStock.societeId !== v) {
+                      setFormStockId("");
+                    }
+                  }}
+                >
+                  <SelectTrigger id="bs-societe" className="h-10 w-full">
+                    <SelectValue placeholder="Sélectionner une société" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {societes.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="bs-client" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Client <span className="text-red-500">*</span>
                 </Label>
@@ -687,16 +1128,30 @@ export function BonsScreen() {
                 <Label htmlFor="bs-stock" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Marchandise <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formStockId} onValueChange={setFormStockId}>
+                <Select
+                  value={formStockId}
+                  onValueChange={(v) => {
+                    setFormStockId(v);
+                    // Préremplit Société/Client depuis l'article choisi (sans écraser une sélection déjà faite),
+                    // pour éviter qu'un bon référence une marchandise qui n'appartient pas à la société/au client saisis.
+                    const picked = stock.find((s) => s.id === v);
+                    if (picked) {
+                      if (!formSocieteId) setFormSocieteId(picked.societeId);
+                      if (!formClientId && picked.clientId) setFormClientId(picked.clientId);
+                    }
+                  }}
+                >
                   <SelectTrigger id="bs-stock" className="h-10 w-full">
                     <SelectValue placeholder="Sélectionner une marchandise" />
                   </SelectTrigger>
                   <SelectContent>
-                    {stock.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.marchandise} (stock : {s.quantite} {s.unite})
-                      </SelectItem>
-                    ))}
+                    {stock
+                      .filter((s) => !formSocieteId || s.societeId === formSocieteId)
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.marchandise} — {s.societeNom} (stock : {s.quantite} {s.unite})
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -786,7 +1241,7 @@ export function BonsScreen() {
             <Button
               variant="outline"
               onClick={handleSaveDraft}
-              disabled={!formClientId || !formStockId || !formMotif || quantiteNum <= 0}
+              disabled={!formClientId || !formSocieteId || !formStockId || !formMotif || quantiteNum <= 0}
             >
               <FilePen className="size-4" />
               Brouillon
@@ -796,6 +1251,7 @@ export function BonsScreen() {
               disabled={
                 depasseStock ||
                 !formClientId ||
+                !formSocieteId ||
                 !formStockId ||
                 !formMotif ||
                 quantiteNum <= 0
@@ -807,6 +1263,133 @@ export function BonsScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={caisseOpen} onOpenChange={setCaisseOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <div className="flex flex-wrap items-center gap-3">
+              <DialogTitle>Nouvelle sortie de caisse</DialogTitle>
+              <Badge
+                variant="outline"
+                className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-slate-500 dark:text-slate-400"
+              >
+                {nextCaisseRef}
+              </Badge>
+            </div>
+            <DialogDescription>
+              Décaissement en espèces — indépendant de l’entreposage.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="caisse-date" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Date du bon
+              </Label>
+              <Input
+                id="caisse-date"
+                type="date"
+                value={caisseDate}
+                onChange={(e) => setCaisseDate(e.target.value)}
+                className="h-10 w-full sm:w-52"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Bénéficiaires
+                </p>
+                <Button type="button" variant="ghost" size="sm" onClick={addCaisseLigne} className="h-8 text-primary">
+                  <Plus className="size-3.5" />
+                  Ajouter une ligne
+                </Button>
+              </div>
+
+              <div className="mb-1 grid grid-cols-[100px_1fr_1fr_110px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                <span>Date</span>
+                <span>Prénom et Nom</span>
+                <span>Motif</span>
+                <span className="text-right">Montant</span>
+                <span />
+              </div>
+
+              <div className="space-y-2">
+                {caisseLignes.map((l, i) => (
+                  <div key={i} className="grid grid-cols-[100px_1fr_1fr_110px_24px] items-center gap-2">
+                    <Input
+                      type="date"
+                      value={l.date}
+                      onChange={(e) => updateCaisseLigne(i, "date", e.target.value)}
+                      className="h-9 text-xs"
+                    />
+                    <Input
+                      value={l.beneficiaire}
+                      onChange={(e) => updateCaisseLigne(i, "beneficiaire", e.target.value)}
+                      placeholder="ex. Kamisso"
+                      className="h-9 text-sm"
+                    />
+                    <Input
+                      value={l.motif}
+                      onChange={(e) => updateCaisseLigne(i, "motif", e.target.value)}
+                      placeholder="ex. Honoraire huissier"
+                      className="h-9 text-sm"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={l.montant}
+                      onChange={(e) => updateCaisseLigne(i, "montant", e.target.value)}
+                      placeholder="0"
+                      className="h-9 text-right text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCaisseLigne(i)}
+                      disabled={caisseLignes.length === 1}
+                      className="flex size-6 items-center justify-center rounded text-slate-300 dark:text-slate-600 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500 disabled:pointer-events-none"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-3">
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Total</span>
+              <span className="text-base font-bold tabular-nums text-blue-700">{formatFCFA(caisseTotalSaisi)}</span>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setCaisseOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleCreateCaisse} disabled={!caisseValid}>
+              <Check className="size-4" />
+              Enregistrer le bon
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!caisseDeleteId} onOpenChange={(v) => !v && setCaisseDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce bon de sortie ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le bon et ses lignes seront définitivement supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleDeleteCaisse}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -218,7 +218,7 @@ function ClientProfileCard({
 
 export function ClientFicheScreen() {
   const { toast } = useToast();
-  const { selectedId, go, openDossier, openDossierDetail } = useNav();
+  const { selectedId, go, openDossier, openDossierDetail, setPendingFacturePrefill } = useNav();
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
@@ -717,7 +717,25 @@ export function ClientFicheScreen() {
         </TabsContent>
 
         {/* Factures */}
-        <TabsContent value="factures" className="mt-6 focus-visible:outline-none">
+        <TabsContent value="factures" className="mt-6 space-y-3 focus-visible:outline-none">
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              onClick={() => {
+                if (!client) return;
+                setPendingFacturePrefill({
+                  clientId: client.id,
+                  clientNom: client.nom,
+                  description: "",
+                  montant: 0,
+                });
+                go("factures");
+              }}
+            >
+              <Plus className="size-4" />
+              Nouvelle facture
+            </Button>
+          </div>
           <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
             {factures.length === 0 ? (
               <EmptyState label="Aucune facture pour ce client." />

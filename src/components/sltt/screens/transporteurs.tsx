@@ -13,6 +13,7 @@ import type { Transporteur, TransporteurInput, TransporteurStatut } from "@/lib/
 import { formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import {
@@ -142,28 +143,26 @@ function TransporteurFormModal({
   const [errors, setErrors] = useState<Partial<Record<keyof TransporteurInput, string>>>({});
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);
-  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
 
-  if (openKey !== prevOpenKey) {
-    setPrevOpenKey(openKey);
-    if (openKey !== null) {
-      setForm(target ? {
-        nom: target.nom,
-        contact: target.contact,
-        telephone: target.telephone,
-        email: target.email ?? "",
-        vehicule: target.vehicule,
-        immatriculation: target.immatriculation,
-        trajet: target.trajet,
-        capacite: target.capacite,
-        statut: target.statut,
-        notes: target.notes ?? "",
-      } : emptyTransporteurForm());
-      setErrors({});
-      setSaving(false);
-      setStep(0);
-    }
-  }
+  useEffect(() => {
+    if (openKey === null) return;
+    setForm(target ? {
+      nom: target.nom,
+      contact: target.contact,
+      telephone: target.telephone,
+      email: target.email ?? "",
+      vehicule: target.vehicule,
+      immatriculation: target.immatriculation,
+      trajet: target.trajet,
+      capacite: target.capacite,
+      statut: target.statut,
+      notes: target.notes ?? "",
+    } : emptyTransporteurForm());
+    setErrors({});
+    setSaving(false);
+    setStep(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when dialog open target changes
+  }, [openKey]);
 
   const valid = isTransporteurFormValid(form);
   const stepValid = isTransporteurStepValid(step, form);
@@ -326,6 +325,7 @@ function TransporteurFormModal({
 
 export function TransporteursScreen() {
   const { toast }                   = useToast();
+  const canWrite                    = usePermission("transporteurs:write");
   const transporteurs               = useStore((s) => s.transporteurs);
   const updateTransporteurStatut    = useStore((s) => s.updateTransporteurStatut);
   const removeTransporteur          = useStore((s) => s.removeTransporteur);
@@ -467,9 +467,11 @@ export function TransporteursScreen() {
     <div className="space-y-6 pb-10">
       {/* Header */}
       <PageHeader title="Transporteurs" description="Annuaire des transporteurs et chauffeurs partenaires">
-        <Button onClick={() => { setInlineForm({ mode: "add" }); setDeleteTarget(null); }}>
-          <Plus className="size-4" /> Nouveau transporteur
-        </Button>
+        {canWrite && (
+          <Button onClick={() => { setInlineForm({ mode: "add" }); setDeleteTarget(null); }}>
+            <Plus className="size-4" /> Nouveau transporteur
+          </Button>
+        )}
       </PageHeader>
 
       {/* KPIs */}
@@ -578,7 +580,7 @@ export function TransporteursScreen() {
                     ? "Modifiez vos filtres ou ajoutez un nouveau partenaire."
                     : "Commencez par enregistrer votre premier transporteur partenaire."}
                 </p>
-                {!hasActiveFilters && (
+                {!hasActiveFilters && canWrite && (
                   <Button className="mt-5" onClick={() => setInlineForm({ mode: "add" })}>
                     <Plus className="size-4" /> Nouveau transporteur
                   </Button>
@@ -645,45 +647,51 @@ export function TransporteursScreen() {
                             <TableCell className="px-4 py-3.5">
                               <div className="flex flex-col gap-1">
                                 <StatutBadge statut={t.statut} />
-                                <button
-                                  className={cn(
-                                    "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80",
-                                    t.statut === "Actif" ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700",
-                                  )}
-                                  onClick={(e) => { e.stopPropagation(); handleToggleStatut(t); }}
-                                >
-                                  {t.statut === "Actif" ? "→ Désactiver" : "→ Activer"}
-                                </button>
+                                {canWrite && (
+                                  <button
+                                    className={cn(
+                                      "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80",
+                                      t.statut === "Actif" ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700",
+                                    )}
+                                    onClick={(e) => { e.stopPropagation(); handleToggleStatut(t); }}
+                                  >
+                                    {t.statut === "Actif" ? "→ Désactiver" : "→ Activer"}
+                                  </button>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="px-4 py-3.5">
                               <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
-                                  title="Modifier"
-                                  onClick={() => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); }}>
-                                  <Pencil className="size-4" />
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
-                                      <MoreHorizontal className="size-4" />
+                                {canWrite && (
+                                  <>
+                                    <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                                      title="Modifier"
+                                      onClick={() => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); }}>
+                                      <Pencil className="size-4" />
                                     </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem onClick={() => handleToggleStatut(t)}>
-                                      {t.statut === "Actif"
-                                        ? <><PowerOff className="mr-2 size-3.5" /> Désactiver</>
-                                        : <><Power className="mr-2 size-3.5 text-emerald-600 dark:text-emerald-400" /> Activer</>}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
-                                      onClick={() => { setDeleteTarget(t); setInlineForm(null); }}
-                                    >
-                                      <Trash2 className="mr-2 size-3.5" /> Supprimer
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
+                                          <MoreHorizontal className="size-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuItem onClick={() => handleToggleStatut(t)}>
+                                          {t.statut === "Actif"
+                                            ? <><PowerOff className="mr-2 size-3.5" /> Désactiver</>
+                                            : <><Power className="mr-2 size-3.5 text-emerald-600 dark:text-emerald-400" /> Activer</>}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+                                          onClick={() => { setDeleteTarget(t); setInlineForm(null); }}
+                                        >
+                                          <Trash2 className="mr-2 size-3.5" /> Supprimer
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>

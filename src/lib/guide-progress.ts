@@ -31,14 +31,16 @@ export const GUIDE_STEP_DEFS: GuideStepDef[] = [
     label: "Ajoutez vos clients",
     sub: "Annuaire et fiches clients",
     view: "clients",
-    roles: ["Administrateur", "Agent de transit", "Commercial", "Comptable"],
+    roles: ["Administrateur", "Agent de transit", "Comptable"],
   },
   {
     id: "dossiers",
     label: "Archivez un dossier",
     sub: "Client, camion, BL, montants",
     view: "dossiers",
-    roles: ["Administrateur", "Agent de transit", "Comptable"],
+    // Comptable n'a que dossiers:read (pas :write) — retiré pour éviter une
+    // étape d'onboarding sans bouton "Nouveau dossier" disponible.
+    roles: ["Administrateur", "Agent de transit"],
   },
   {
     id: "paiements",
@@ -66,7 +68,7 @@ export const GUIDE_STEP_DEFS: GuideStepDef[] = [
     label: "Émettez des bons de sortie",
     sub: "Date, client, motif, montant",
     view: "bons",
-    roles: ["Administrateur", "Magasinier", "Commercial"],
+    roles: ["Administrateur", "Magasinier"],
   },
 ];
 

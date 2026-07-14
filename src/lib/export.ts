@@ -406,6 +406,15 @@ table { width: 100%; border-collapse: collapse; }
 /* printFactureModule — facture TVA (module Factures)                  */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Source de vérité unique pour "faut-il afficher la ligne TVA ?" (F2 — TVA
+ * optionnelle). Réutilisée ici, dans facture-detail.tsx et factures.tsx pour
+ * éviter toute divergence entre le PDF, le détail et le formulaire.
+ */
+export function shouldShowTva(tauxTVA: number): boolean {
+  return tauxTVA > 0;
+}
+
 export interface FactureModuleData {
   numero: string;
   clientNom: string;
@@ -529,7 +538,7 @@ table { width: 100%; border-collapse: collapse; }
     </div>
     <div class="totals">
       <div class="total-line"><span>Sous-total HT</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantHT)}</span></div>
-      <div class="total-line"><span>TVA ${data.tauxTVA}%</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTVA)}</span></div>
+      ${shouldShowTva(data.tauxTVA) ? `<div class="total-line"><span>TVA ${data.tauxTVA}%</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTVA)}</span></div>` : ""}
       <div class="total-line total-main"><span>TOTAL TTC</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTTC)}</span></div>
       ${paiementHTML}
     </div>
@@ -538,6 +547,269 @@ table { width: 100%; border-collapse: collapse; }
   <div class="footer">
     Facture générée par le système SLTT · ${htmlEscape(data.creePar)} · ${fmtD(data.creeLe)}<br>
     Merci de votre confiance. Paiement par virement ou espèces.
+  </div>
+</div>
+</body>
+</html>`);
+  win.document.close();
+  triggerPrint(win);
+}
+
+/* ------------------------------------------------------------------ */
+/* CONTRATS (F3) — impression                                          */
+/* ------------------------------------------------------------------ */
+
+export interface ContratModuleData {
+  reference: string;
+  societeNom: string;
+  clientNom: string;
+  objet: string;
+  dateDebut: string;
+  dateFin?: string;
+  montant: number;
+  statut: string;
+  notes?: string;
+  depenses: Array<{ libelle: string; date: string; modePaiement: string; montant: number }>;
+  prestations: Array<{ libelle: string; statut: string; montant?: number }>;
+  documents: Array<{ nom: string; dateUpload: string }>;
+}
+
+export function printContratModule(data: ContratModuleData): void {
+  const logoUrl = getLogoUrl();
+  const fmtD = (iso: string) =>
+    new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+
+  const totalDepenses = data.depenses.reduce((sum, d) => sum + d.montant, 0);
+  const depensesHTML = data.depenses.map((d, i) => `
+    <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(d.libelle)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${fmtD(d.date)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(d.modePaiement)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${fmtFCFA(d.montant)}</td>
+    </tr>`).join("");
+
+  const nbRealisees = data.prestations.filter((p) => p.statut === "Réalisée").length;
+  const prestationsHTML = data.prestations.map((p, i) => `
+    <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(p.libelle)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(p.statut)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${p.montant != null ? fmtFCFA(p.montant) : "—"}</td>
+    </tr>`).join("");
+
+  const documentsHTML = data.documents.map((f) => `
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:#475569">
+      <span>${htmlEscape(f.nom)}</span><span>${fmtD(f.dateUpload)}</span>
+    </div>`).join("");
+
+  const win = window.open("", "_blank", "width=880,height=760");
+  if (!win) { window.print(); return; }
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Contrat ${htmlEscape(data.reference)}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
+.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 40px 28px; border-bottom: 3px solid #1e40af; }
+.brand { display: flex; align-items: flex-start; gap: 14px; }
+.brand-logo { width: 64px; height: 64px; object-fit: contain; }
+.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.doc-meta { text-align: right; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
+.doc-ref { font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
+.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
+.body { padding: 32px 40px; }
+.client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; }
+.client-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 6px; }
+.client-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+.client-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+.section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #1e40af; margin: 22px 0 10px; }
+.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; }
+.tbl-head { background: #1e3a8a; }
+.tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; font-weight: 700; color: #0f172a; }
+.notes { border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px; font-size: 12px; color: #64748b; }
+.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; line-height: 1.6; }
+.no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+@media print { .no-print { display: none !important; } body { background: white; } .wrap { box-shadow: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">⬇ &nbsp;Imprimer / Enregistrer en PDF</button>
+  </div>
+  <div class="doc-header">
+    <div class="brand">
+      <img src="${logoUrl}" alt="SLTT" class="brand-logo">
+      <div>
+        <div class="brand-name">SLTT</div>
+        <div class="brand-sub">Société Traoré de Logistique, Transit et Transport<br>Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml</div>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-type">Contrat</div>
+      <div class="doc-ref">${htmlEscape(data.reference)}</div>
+      <div class="doc-date">Société : ${htmlEscape(data.societeNom)}</div>
+      <div class="doc-date">Début : ${fmtD(data.dateDebut)}${data.dateFin ? ` · Fin : ${fmtD(data.dateFin)}` : ""}</div>
+      <div class="doc-date">Statut : ${htmlEscape(data.statut)}</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="client-box">
+      <div class="client-lbl">Client</div>
+      <div class="client-name">${htmlEscape(data.clientNom)}</div>
+      <div class="client-sub">${htmlEscape(data.objet)} · ${fmtFCFA(data.montant)}</div>
+    </div>
+
+    <div class="section-title">Dépenses (${data.depenses.length})</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead class="tbl-head">
+          <tr><th style="text-align:left">Libellé</th><th style="text-align:left">Date</th><th style="text-align:left">Mode</th><th style="text-align:right">Montant</th></tr>
+        </thead>
+        <tbody>${depensesHTML || `<tr><td colspan="4" style="padding:14px;text-align:center;color:#94a3b8">Aucune dépense</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="total-line"><span>Total dépenses</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(totalDepenses)}</span></div>
+
+    <div class="section-title">Prestations optionnelles (${nbRealisees}/${data.prestations.length} réalisées)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead class="tbl-head">
+          <tr><th style="text-align:left">Libellé</th><th style="text-align:left">Statut</th><th style="text-align:right">Montant</th></tr>
+        </thead>
+        <tbody>${prestationsHTML || `<tr><td colspan="3" style="padding:14px;text-align:center;color:#94a3b8">Aucune prestation</td></tr>`}</tbody>
+      </table>
+    </div>
+
+    ${data.documents.length > 0 ? `<div class="section-title">Documents (${data.documents.length})</div>${documentsHTML}` : ""}
+    ${data.notes ? `<div class="notes"><strong style="color:#334155">Notes</strong><p style="margin-top:6px;white-space:pre-wrap">${htmlEscape(data.notes)}</p></div>` : ""}
+  </div>
+  <div class="footer">
+    Contrat généré par le système SLTT · ${fmtD(new Date().toISOString())}
+  </div>
+</div>
+</body>
+</html>`);
+  win.document.close();
+  triggerPrint(win);
+}
+
+/* ------------------------------------------------------------------ */
+/* BON DE SORTIE DE CAISSE (décaissement) — reproduit le vrai papier   */
+/* à en-tête de la société mère (adresse, RCCM, NIF réels), avec les   */
+/* deux blocs de signature imprimés sur le formulaire physique.        */
+/* ------------------------------------------------------------------ */
+
+export interface BonSortieCaisseModuleData {
+  reference: string;
+  date: string;
+  lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;
+  montantTotal: number;
+}
+
+export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): void {
+  const logoUrl = getLogoUrl();
+  const fmtD = (iso: string) =>
+    new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+
+  const lignesHTML = data.lignes.map((l, i) => `
+    <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${fmtD(l.date)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.beneficiaire)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.motif)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${fmtFCFA(l.montant)}</td>
+    </tr>`).join("");
+
+  const win = window.open("", "_blank", "width=880,height=760");
+  if (!win) { window.print(); return; }
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Bon de sortie ${htmlEscape(data.reference)}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
+.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 28px 40px 20px; border-bottom: 3px solid #1e40af; }
+.brand { display: flex; align-items: flex-start; gap: 14px; }
+.brand-logo { width: 68px; height: 68px; object-fit: contain; }
+.brand-name { font-size: 17px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; line-height: 1.25; text-transform: uppercase; }
+.brand-sub { font-size: 10px; color: #64748b; line-height: 1.7; margin-top: 4px; }
+.doc-meta { text-align: right; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
+.doc-ref { font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
+.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
+.body { padding: 28px 40px; }
+.doc-title { text-align: center; font-size: 16px; font-weight: 800; letter-spacing: .04em; margin-bottom: 22px; }
+.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; }
+.tbl-head { background: #1e3a8a; }
+.tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.total-line { display: flex; justify-content: flex-end; gap: 24px; padding: 10px 0; font-size: 14px; font-weight: 800; color: #0f172a; }
+.signatures { display: flex; justify-content: space-between; margin-top: 64px; }
+.sig-block { text-align: center; width: 220px; }
+.sig-label { font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 48px; }
+.sig-name { font-size: 12px; color: #0f172a; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+.footer { padding: 12px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 9.5px; color: #94a3b8; text-align: center; }
+.no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+@media print { .no-print { display: none !important; } body { background: white; } .wrap { box-shadow: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">⬇ &nbsp;Imprimer / Enregistrer en PDF</button>
+  </div>
+  <div class="doc-header">
+    <div class="brand">
+      <img src="${logoUrl}" alt="Traoré de Logistique" class="brand-logo">
+      <div>
+        <div class="brand-name">Traoré de Logistique<br>Transit-Transport</div>
+        <div class="brand-sub">Niaréla - Rue 516 porte C/63<br>Tél. : +223 76 96 47 06 / 92 92 46 48<br>RCCM : Ma.Bko.2025 B.5897 &nbsp;·&nbsp; NIF : 084151062H</div>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-type">Bon de sortie</div>
+      <div class="doc-ref">${htmlEscape(data.reference)}</div>
+      <div class="doc-date">Date : ${fmtD(data.date)}</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="doc-title">BON DE SORTIE ${htmlEscape(data.reference)}</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead class="tbl-head">
+          <tr><th style="text-align:left">Dates</th><th style="text-align:left">Prénom et Nom</th><th style="text-align:left">Motif</th><th style="text-align:right">Montant</th></tr>
+        </thead>
+        <tbody>${lignesHTML || `<tr><td colspan="4" style="padding:14px;text-align:center;color:#94a3b8">Aucune ligne</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="total-line"><span>Total</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTotal)}</span></div>
+
+    <div class="signatures">
+      <div class="sig-block">
+        <div class="sig-label">Directeur Général</div>
+        <div class="sig-name">Ali Badra TRAORE</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Visa du PDG</div>
+        <div class="sig-name">Abdoul TRAORÉ</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    RCCM : Ma.Bko.2025 B.5897 &nbsp;·&nbsp; NIF : 084151062H
   </div>
 </div>
 </body>

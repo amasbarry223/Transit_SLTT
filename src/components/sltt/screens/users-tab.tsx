@@ -14,7 +14,6 @@ import {
   Truck,
   Wallet,
   Warehouse,
-  Briefcase,
   Mail,
   User,
   KeyRound,
@@ -90,7 +89,6 @@ const allRoles: UserRole[] = [
   "Agent de transit",
   "Comptable",
   "Magasinier",
-  "Commercial",
 ];
 
 const roleTone: Record<UserRole, "red" | "blue" | "emerald" | "amber" | "indigo"> = {
@@ -98,7 +96,6 @@ const roleTone: Record<UserRole, "red" | "blue" | "emerald" | "amber" | "indigo"
   "Agent de transit": "blue",
   Comptable: "emerald",
   Magasinier: "amber",
-  Commercial: "indigo",
 };
 
 const roleMeta: Record<
@@ -124,11 +121,6 @@ const roleMeta: Record<
     icon: Warehouse,
     description: "Entreposage et bons de sortie",
     gradient: "from-amber-500/10 to-yellow-500/10 border-amber-200/60 dark:border-amber-900/40",
-  },
-  Commercial: {
-    icon: Briefcase,
-    description: "Clients, devis et relation commerciale",
-    gradient: "from-indigo-500/10 to-violet-500/10 border-indigo-200/60 dark:border-indigo-900/40",
   },
 };
 
@@ -367,7 +359,7 @@ function UserFormModal({
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="form-nom">Nom complet</Label>
+                        <Label htmlFor="form-nom">Nom complet <span className="text-red-500">*</span></Label>
                         <Input
                           id="form-nom"
                           value={form.nom}
@@ -378,7 +370,7 @@ function UserFormModal({
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="form-email">Adresse e-mail</Label>
+                        <Label htmlFor="form-email">Adresse e-mail <span className="text-red-500">*</span></Label>
                         <Input
                           id="form-email"
                           type="email"
@@ -719,14 +711,14 @@ export function UsersTab() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / USERS_PAGE_SIZE));
 
-  const [prevFilters, setPrevFilters] = useState({ search, roleFilter });
-  if (search !== prevFilters.search || roleFilter !== prevFilters.roleFilter) {
-    setPrevFilters({ search, roleFilter });
+  useEffect(() => {
     setPage(1);
-  }
+  }, [search, roleFilter]);
 
   const safePage = Math.min(page, totalPages);
-  if (page !== safePage) setPage(safePage);
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage]);
 
   const paged = filtered.slice((safePage - 1) * USERS_PAGE_SIZE, safePage * USERS_PAGE_SIZE);
   const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * USERS_PAGE_SIZE + 1;

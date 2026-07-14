@@ -130,12 +130,13 @@ export function LoginScreen() {
         <div className="overflow-hidden rounded-2xl border border-white/25 bg-white dark:bg-slate-900 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.45)]">
           <div className="flex flex-col items-center px-8 pb-5 pt-8">
             <Image
-              src="/logo-login.png"
+              src="/logo.png"
               alt="SLTT"
               width={96}
               height={96}
               className="size-24 object-contain drop-shadow-md"
               priority
+              unoptimized
             />
           </div>
 

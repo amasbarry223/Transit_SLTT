@@ -27,6 +27,7 @@ import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge, StockStatutBadge } from "@/components/sltt/status-badge";
+import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentUser, usePermission } from "@/hooks/use-permission";
 
@@ -175,18 +176,21 @@ function StockTab({
       </div>
 
       <Card className="p-4 shadow-sm border-border/80">
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-          <Input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Rechercher une marchandise, dépositaire…"
-            className="h-10 pl-9"
-            aria-label="Rechercher dans le stock"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Rechercher une marchandise, dépositaire…"
+              className="h-10 pl-9"
+              aria-label="Rechercher dans le stock"
+            />
+          </div>
+          <SocieteFilterSelect />
         </div>
       </Card>
 
@@ -219,6 +223,9 @@ function StockTab({
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Marchandise
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                      Société
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Quantité
@@ -320,6 +327,9 @@ function StockRow({
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 md:hidden">
           {item.depositaire}
         </p>
+      </TableCell>
+      <TableCell className="hidden px-4 py-3.5 sm:table-cell">
+        <SocieteBadge societeNom={item.societeNom} size="sm" />
       </TableCell>
       <TableCell className="px-4 py-3.5 text-right tabular-nums">
         <span className="font-semibold text-slate-900 dark:text-slate-100">{item.quantite}</span>
@@ -484,6 +494,7 @@ function MouvementsTab({
               <SelectItem value="Sortie">Sorties</SelectItem>
             </SelectContent>
           </Select>
+          <SocieteFilterSelect className="w-full sm:w-40" />
           <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
             {filtered.length} mouvement{filtered.length !== 1 ? "s" : ""}
           </p>
@@ -509,6 +520,9 @@ function MouvementsTab({
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Marchandise
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                      Société
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Quantité
@@ -552,6 +566,9 @@ function MouvementsTab({
                         </TableCell>
                         <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
                           {m.marchandise}
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 sm:table-cell">
+                          <SocieteBadge societeNom={m.societeNom} size="sm" />
                         </TableCell>
                         <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
                           {m.quantite} {m.unite}
@@ -602,12 +619,23 @@ export function EntreposageScreen() {
   const openClient = useNav((s) => s.openClient);
   const canWrite = usePermission("stock:write");
   const currentUser = useCurrentUser();
-  const stock = useStore((s) => s.stock);
+  const allStock = useStore((s) => s.stock);
   const clients = useStore((s) => s.clients);
-  const mouvements = useStore((s) => s.mouvements);
+  const allMouvements = useStore((s) => s.mouvements);
+  const societes = useStore((s) => s.societes);
   const addStockEntry = useStore((s) => s.addStockEntry);
   const addStockExit = useStore((s) => s.addStockExit);
   const addStockItem = useStore((s) => s.addStockItem);
+  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+
+  const stock = useMemo(
+    () => (selectedSocieteId ? allStock.filter((s) => s.societeId === selectedSocieteId) : allStock),
+    [allStock, selectedSocieteId],
+  );
+  const mouvements = useMemo(
+    () => (selectedSocieteId ? allMouvements.filter((m) => m.societeId === selectedSocieteId) : allMouvements),
+    [allMouvements, selectedSocieteId],
+  );
 
   const [newItemOpen, setNewItemOpen] = useState(false);
   const [niMarchandise, setNiMarchandise] = useState("");
@@ -619,6 +647,7 @@ export function EntreposageScreen() {
   const [niSommePayee, setNiSommePayee] = useState("0");
   const [niResteAPayer, setNiResteAPayer] = useState("0");
   const [niClientId, setNiClientId] = useState<string>("");
+  const [niSocieteId, setNiSocieteId] = useState<string>("");
   const [niAdvancedOpen, setNiAdvancedOpen] = useState(false);
 
   function openNewItemDialog() {
@@ -631,6 +660,7 @@ export function EntreposageScreen() {
     setNiSommePayee("0");
     setNiResteAPayer("0");
     setNiClientId("");
+    setNiSocieteId(selectedSocieteId ?? societes[0]?.id ?? "");
     setNiAdvancedOpen(false);
     setNewItemOpen(true);
   }
@@ -638,7 +668,7 @@ export function EntreposageScreen() {
   function handleAddStockItem() {
     const marchandise = niMarchandise.trim();
     const unite = niUnite.trim();
-    if (!marchandise || !unite) return;
+    if (!marchandise || !unite || !niSocieteId) return;
     const input: StockItemInput = {
       marchandise,
       quantite: Number(niQuantite) || 0,
@@ -649,6 +679,7 @@ export function EntreposageScreen() {
       sommePayee: Number(niSommePayee) || 0,
       resteAPayer: Number(niResteAPayer) || 0,
       clientId: niClientId || undefined,
+      societeId: niSocieteId,
     };
     addStockItem(input);
     toast({ title: "Article ajouté", description: `${marchandise} ajouté au stock.` });
@@ -716,6 +747,7 @@ export function EntreposageScreen() {
       `inventaire-stock-${new Date().toISOString().slice(0, 10)}`,
       [
         { header: "Marchandise", accessor: (s) => s.marchandise },
+        { header: "Société", accessor: (s) => s.societeNom },
         { header: "Quantité disponible", accessor: (s) => s.quantite },
         { header: "Unité", accessor: (s) => s.unite },
         { header: "Seuil", accessor: (s) => s.seuil },
@@ -1241,6 +1273,22 @@ export function EntreposageScreen() {
 
             <div className="col-span-2 space-y-2">
               <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Société <span className="text-red-500">*</span>
+              </Label>
+              <Select value={niSocieteId} onValueChange={setNiSocieteId}>
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue placeholder="Sélectionner une société" />
+                </SelectTrigger>
+                <SelectContent>
+                  {societes.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="col-span-2 space-y-2">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Client (optionnel)
               </Label>
               <Select value={niClientId || "none"} onValueChange={(v) => setNiClientId(v === "none" ? "" : v)}>
@@ -1373,7 +1421,7 @@ export function EntreposageScreen() {
             </Button>
             <Button
               onClick={handleAddStockItem}
-              disabled={!niMarchandise.trim() || !niUnite.trim()}
+              disabled={!niMarchandise.trim() || !niUnite.trim() || !niSocieteId}
             >
               <Plus className="size-4" />
               Ajouter au stock

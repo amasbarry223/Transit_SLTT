@@ -23,7 +23,7 @@ export function Sidebar() {
           alt="SLTT"
           width={72}
           height={72}
-          className="m-auto size-[52px] object-contain drop-shadow"
+          className="m-auto size-[56px] object-contain drop-shadow"
           unoptimized
         />
       </div>

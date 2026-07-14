@@ -1,6 +1,6 @@
 import type { UserRole } from "@/lib/domain-types";
 import type { ViewKey } from "@/lib/nav-store";
-import { Wallet, BarChart3, Warehouse, FileOutput, Users, FolderKanban, ClipboardList, Settings, LayoutDashboard } from "lucide-react";
+import { Wallet, BarChart3, Warehouse, FileOutput, FolderKanban, ClipboardList, Settings, LayoutDashboard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface RoleShortcut {
@@ -17,11 +17,6 @@ export const ROLE_SHORTCUTS: Partial<Record<UserRole, RoleShortcut[]>> = {
   Magasinier: [
     { key: "entreposage", label: "Entreposage", icon: Warehouse },
     { key: "bons", label: "Bons de sortie", icon: FileOutput },
-  ],
-  Commercial: [
-    { key: "clients", label: "Clients", icon: Users },
-    { key: "devis", label: "Devis", icon: ClipboardList },
-    { key: "dossiers", label: "Dossiers", icon: FolderKanban },
   ],
   "Agent de transit": [
     { key: "dossiers", label: "Dossiers", icon: FolderKanban },

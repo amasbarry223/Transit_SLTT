@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCsvBlob } from "./export";
+import { buildCsvBlob, shouldShowTva } from "./export";
 
 interface TransporteurRow {
   nom: string;
@@ -69,5 +69,15 @@ describe("buildCsvBlob", () => {
     expect(text).toContain("sep=;");
     expect(text).toContain("Société");
     expect(text).not.toContain("Konaté Transport");
+  });
+});
+
+describe("shouldShowTva", () => {
+  it("masque la ligne TVA quand le taux est 0 (F2 — TVA optionnelle)", () => {
+    expect(shouldShowTva(0)).toBe(false);
+  });
+
+  it("affiche la ligne TVA pour un taux positif", () => {
+    expect(shouldShowTva(18)).toBe(true);
   });
 });

@@ -27,6 +27,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -132,11 +133,11 @@ function FournisseurModal({
         <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1.5">
-              <Label>Raison sociale *</Label>
+              <Label>Raison sociale <span className="text-red-500">*</span></Label>
               <Input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Nom du prestataire" className="h-10" autoFocus />
             </div>
             <div className="space-y-1.5">
-              <Label>Type de prestataire *</Label>
+              <Label>Type de prestataire</Label>
               <Select value={type} onValueChange={(v) => setType(v as FournisseurType)}>
                 <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>{TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -193,6 +194,7 @@ function FournisseurModal({
 export function FournisseursScreen() {
   const { go } = useNav();
   const { toast } = useToast();
+  const canWrite = usePermission("fournisseurs:write");
   const fournisseurs        = useStore((s) => s.fournisseurs);
   const dossierFournisseurs = useStore((s) => s.dossierFournisseurs);
   const dossiers            = useStore((s) => s.dossiers);
@@ -244,10 +246,12 @@ export function FournisseursScreen() {
   return (
     <div className="space-y-6">
       <PageHeader title="Fournisseurs" description="Prestataires externes, tarifs contractuels et suivi des coûts">
-        <Button onClick={() => { setEditing(undefined); setShowForm(true); }}>
-          <Plus className="size-4" />
-          Nouveau fournisseur
-        </Button>
+        {canWrite && (
+          <Button onClick={() => { setEditing(undefined); setShowForm(true); }}>
+            <Plus className="size-4" />
+            Nouveau fournisseur
+          </Button>
+        )}
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -300,9 +304,11 @@ export function FournisseursScreen() {
             title="Aucun fournisseur trouvé"
             description="Modifiez les filtres ou créez un nouveau prestataire."
             action={
-              <Button size="sm" onClick={() => { setEditing(undefined); setShowForm(true); }}>
-                <Plus className="mr-1.5 size-3.5" /> Nouveau fournisseur
-              </Button>
+              canWrite ? (
+                <Button size="sm" onClick={() => { setEditing(undefined); setShowForm(true); }}>
+                  <Plus className="mr-1.5 size-3.5" /> Nouveau fournisseur
+                </Button>
+              ) : undefined
             }
             className="m-4 border-0 bg-transparent"
           />
@@ -327,12 +333,16 @@ export function FournisseursScreen() {
               </p>
               <StatutBadge statut={f.statut} />
               <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="size-8" onClick={() => handleEdit(f)}>
-                  <Pencil className="size-3.5" />
-                </Button>
-                <Button size="icon" variant="ghost" className="size-8 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" onClick={() => setDeleteId(f.id)}>
-                  <Trash2 className="size-3.5" />
-                </Button>
+                {canWrite && (
+                  <>
+                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handleEdit(f)}>
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="size-8 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40" onClick={() => setDeleteId(f.id)}>
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           );

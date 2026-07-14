@@ -20,7 +20,10 @@ export type AuditModule =
   | "Transporteurs"
   | "Fournisseurs"
   | "Devis"
-  | "Utilisateurs";
+  | "Utilisateurs"
+  | "Contrats"
+  | "Dépenses"
+  | "Sociétés";
 
 export type AuditEntry = {
   id: string;

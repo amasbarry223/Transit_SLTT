@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -17,6 +18,7 @@ import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { shouldShowTva } from "@/lib/export";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 
 /* ------------------------------------------------------------------ */
@@ -38,6 +40,7 @@ function FactureFormModal({
 }) {
   const clients    = useStore((s) => s.clients);
   const dossiers   = useStore((s) => s.dossiers);
+  const societes   = useStore((s) => s.societes);
   const addFacture = useStore((s) => s.addFacture);
   const go         = useNav((s) => s.go);
   const { toast }  = useToast();
@@ -47,11 +50,13 @@ function FactureFormModal({
 
   const [clientId,     setClientId]     = React.useState(prefill?.clientId ?? "");
   const [clientNom,    setClientNom]    = React.useState(prefill?.clientNom ?? "");
+  const [societeId,    setSocieteId]    = React.useState(prefill?.societeId ?? "");
   const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
   const [date,         setDate]         = React.useState(prefill?.date ?? today);
   const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? in30days);
-  const [tauxTVA,      setTauxTVA]      = React.useState(String(prefill?.tauxTVA ?? 18));
+  const [tvaOn,        setTvaOn]        = React.useState((prefill?.tauxTVA ?? 18) > 0);
   const [notes,        setNotes]        = React.useState(prefill?.notes ?? "");
+  const tauxTVA = tvaOn ? "18" : "0";
   const [lignes,       setLignes]       = React.useState<LigneForm[]>(
     prefill?.lignes?.map((l) => ({
       description: l.description,
@@ -110,6 +115,7 @@ function FactureFormModal({
         dossierId: dossierId || null,
         clientId,
         clientNom,
+        societeId: societeId || null,
         date,
         dateEcheance,
         lignes: lignes
@@ -169,11 +175,34 @@ function FactureFormModal({
                   value={clientId}
                   onChange={(e) => handleClientChange(e.target.value)}
                   required
-                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  disabled={!!dossierId}
+                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <option value="">Sélectionner un client</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>{c.nom}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+              </div>
+              {dossierId && (
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Verrouillé sur le client du dossier lié.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Société (optionnel)</Label>
+              <div className="relative">
+                <select
+                  value={societeId}
+                  onChange={(e) => setSocieteId(e.target.value)}
+                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">— Aucune (transit) —</option>
+                  {societes.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nom}</option>
                   ))}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
@@ -253,16 +282,11 @@ function FactureFormModal({
           {/* Section 3 : TVA + totaux + notes */}
           <div className="grid grid-cols-2 gap-6 px-6 py-5">
             <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Taux TVA (%)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={tauxTVA}
-                  onChange={(e) => setTauxTVA(e.target.value)}
-                  className="h-9 w-28 text-sm"
-                />
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
+                <Label htmlFor="tva-switch" className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Appliquer la TVA (18 %)
+                </Label>
+                <Switch id="tva-switch" checked={tvaOn} onCheckedChange={setTvaOn} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Notes</Label>
@@ -282,10 +306,12 @@ function FactureFormModal({
                   <span>Sous-total HT</span>
                   <span className="tabular-nums">{formatFCFA(montantHT)}</span>
                 </div>
-                <div className="mt-1.5 flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>TVA {tva}%</span>
-                  <span className="tabular-nums">{formatFCFA(montantTVA)}</span>
-                </div>
+                {shouldShowTva(tva) && (
+                  <div className="mt-1.5 flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>TVA {tva}%</span>
+                    <span className="tabular-nums">{formatFCFA(montantTVA)}</span>
+                  </div>
+                )}
                 <div className="mt-3 flex justify-between border-t border-border/60 pt-3 font-semibold text-slate-900 dark:text-slate-100">
                   <span>Total TTC</span>
                   <span className="text-base tabular-nums text-blue-700">{formatFCFA(montantTTC)}</span>
@@ -329,24 +355,28 @@ export function FacturesScreen() {
   const go                  = useNav((s) => s.go);
   const { toast }           = useToast();
   const selectedId          = useNav((s) => s.selectedId);
+  const pendingFacturePrefill    = useNav((s) => s.pendingFacturePrefill);
+  const setPendingFacturePrefill = useNav((s) => s.setPendingFacturePrefill);
 
   const [search,     setSearch]     = React.useState("");
   const [activeTab,  setActiveTab]  = React.useState<FactureStatut | "Tous">("Tous");
   const [showForm,   setShowForm]   = React.useState(false);
   const [prefillDossierId, setPrefillDossierId] = React.useState<string | undefined>();
 
-  const [prevSelectedId, setPrevSelectedId] = React.useState(selectedId);
-  if (selectedId !== prevSelectedId) {
-    setPrevSelectedId(selectedId);
+  React.useEffect(() => {
     if (selectedId?.startsWith("D-")) {
       setPrefillDossierId(selectedId);
       setShowForm(true);
+      go("factures");
     }
-  }
-
-  React.useEffect(() => {
-    if (selectedId?.startsWith("D-")) go("factures");
   }, [selectedId, go]);
+
+  // F6 — pont "Facturer" depuis une prestation optionnelle réalisée
+  React.useEffect(() => {
+    if (!pendingFacturePrefill) return;
+    setPrefillDossierId(undefined);
+    setShowForm(true);
+  }, [pendingFacturePrefill]);
 
   const filtered = React.useMemo(() => {
     return factures.filter((f) => {
@@ -386,22 +416,44 @@ export function FacturesScreen() {
   return (
     <div className="space-y-5">
       <FactureFormModal
+        key={prefillDossierId ?? (pendingFacturePrefill ? "prestation-prefill" : "blank")}
         open={showForm}
-        onClose={() => { setShowForm(false); setPrefillDossierId(undefined); }}
-        prefill={prefillDossierId ? (() => {
-          const d = dossiers.find((x) => x.id === prefillDossierId);
-          if (!d) return {};
-          return {
-            dossierId: d.id,
-            clientId: d.clientId,
-            clientNom: d.clientNom,
-            lignes: [
-              { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.fraisPrestation, montantHT: d.fraisPrestation },
-              { description: `Droits de douane`, quantite: 1, prixUnitaire: d.droitDouane, montantHT: d.droitDouane },
-              { description: `Frais de circuit`, quantite: 1, prixUnitaire: d.fraisCircuit, montantHT: d.fraisCircuit },
-            ],
-          };
-        })() : undefined}
+        onClose={() => {
+          setShowForm(false);
+          setPrefillDossierId(undefined);
+          setPendingFacturePrefill(null);
+        }}
+        prefill={
+          prefillDossierId
+            ? (() => {
+                const d = dossiers.find((x) => x.id === prefillDossierId);
+                if (!d) return {};
+                return {
+                  dossierId: d.id,
+                  clientId: d.clientId,
+                  clientNom: d.clientNom,
+                  lignes: [
+                    { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.fraisPrestation, montantHT: d.fraisPrestation },
+                    { description: `Droits de douane`, quantite: 1, prixUnitaire: d.droitDouane, montantHT: d.droitDouane },
+                    { description: `Frais de circuit`, quantite: 1, prixUnitaire: d.fraisCircuit, montantHT: d.fraisCircuit },
+                  ],
+                };
+              })()
+            : pendingFacturePrefill
+              ? {
+                  clientId: pendingFacturePrefill.clientId,
+                  clientNom: pendingFacturePrefill.clientNom,
+                  societeId: pendingFacturePrefill.societeId,
+                  lignes: [
+                    {
+                      description: pendingFacturePrefill.description,
+                      quantite: 1,
+                      prixUnitaire: pendingFacturePrefill.montant,
+                    },
+                  ],
+                }
+              : undefined
+        }
       />
 
       <PageHeader title="Factures" description="Gestion et suivi de la facturation client">

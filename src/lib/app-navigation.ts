@@ -9,6 +9,7 @@ const DETAIL_ROUTES: Partial<Record<ViewKey, (id: string) => string>> = {
   "dossier-detail": (id) => `/dossiers/${id}`,
   "facture-detail": (id) => `/factures/${id}`,
   "devis-detail": (id) => `/devis/${id}`,
+  "contrat-detail": (id) => `/contrats/${id}`,
 };
 
 export function useAppNavigation() {
@@ -50,6 +51,11 @@ export function useAppNavigation() {
     [nav, router],
   );
 
+  const goToContrat = useCallback(
+    (id: string) => pushDetail("contrat-detail", id, nav.openContratDetail),
+    [nav.openContratDetail, pushDetail],
+  );
+
   const goToNewDossier = useCallback(() => {
     nav.openDossier(null, "create");
     router.push("/dossiers/new");
@@ -79,6 +85,7 @@ export function useAppNavigation() {
     goToDossier,
     goToFacture,
     goToDevis,
+    goToContrat,
     goToNewDossier,
     goToView,
     goBack,
@@ -91,7 +98,7 @@ export function syncNavFromRoute(
   id: string,
   actions: Pick<
     ReturnType<typeof useNav.getState>,
-    "openClient" | "openDossierDetail" | "openDevisDetail" | "go" | "openDossier"
+    "openClient" | "openDossierDetail" | "openDevisDetail" | "go" | "openDossier" | "openContratDetail"
   >,
   opts?: { dossierMode?: "create" | "edit"; devisEdit?: boolean },
 ) {
@@ -110,6 +117,9 @@ export function syncNavFromRoute(
       break;
     case "devis-detail":
       actions.openDevisDetail(id, opts?.devisEdit ?? false);
+      break;
+    case "contrat-detail":
+      actions.openContratDetail(id);
       break;
     default:
       break;

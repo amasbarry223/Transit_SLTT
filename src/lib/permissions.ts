@@ -70,6 +70,14 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
   {
+    id: "contrats",
+    label: "Contrats",
+    permissions: [
+      { key: "contrats:read", label: "Lecture", action: "read" },
+      { key: "contrats:write", label: "Écriture", action: "write" },
+    ],
+  },
+  {
     id: "fournisseurs",
     label: "Fournisseurs",
     permissions: [
@@ -135,6 +143,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "comptabilite:write",
     "rapports:read",
     "calendrier:read",
+    "contrats:read",
+    "contrats:write",
   ],
   "Agent de transit": [
     "dashboard:read",
@@ -149,6 +159,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "transporteurs:read",
     "transporteurs:write",
     "calendrier:read",
+    "contrats:read",
   ],
   Magasinier: [
     "dashboard:read",
@@ -157,16 +168,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "bons:read",
     "bons:write",
     "calendrier:read",
-  ],
-  Commercial: [
-    "dashboard:read",
-    "clients:read",
-    "clients:write",
-    "devis:read",
-    "devis:write",
-    "dossiers:read",
-    "bons:read",
-    "calendrier:read",
+    "contrats:read",
+    "contrats:write",
   ],
 };
 
@@ -179,7 +182,41 @@ export interface PermissionUser {
 export function hasPermission(user: PermissionUser | null | undefined, perm: string): boolean {
   if (!user || user.actif === false) return false;
   if (user.role === "Administrateur") return true;
-  return user.permissions.includes(perm);
+  const perms =
+    user.permissions.length > 0
+      ? normalizePermissions(user.permissions)
+      : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []);
+  return perms.includes(perm);
+}
+
+/**
+ * Résout l'utilisateur effectif pour les checks de permission.
+ * Si le profil n'est pas encore dans le store (fetchData en cours),
+ * on retombe sur les permissions par défaut du rôle de session —
+ * sinon la sidebar reste vide jusqu'au chargement.
+ */
+export function resolvePermissionUser(
+  user: PermissionUser | null | undefined,
+  fallbackRole?: UserRole | null,
+): PermissionUser | null {
+  if (user) {
+    if (user.actif === false) return null;
+    return {
+      ...user,
+      permissions:
+        user.permissions.length > 0
+          ? normalizePermissions(user.permissions)
+          : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []),
+    };
+  }
+  if (fallbackRole) {
+    return {
+      role: fallbackRole,
+      permissions: ROLE_DEFAULT_PERMISSIONS[fallbackRole] ?? [],
+      actif: true,
+    };
+  }
+  return null;
 }
 
 export function permissionsToSelection(permissions: string[]): Record<string, boolean> {

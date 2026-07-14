@@ -782,22 +782,13 @@ export function ParametresScreen() {
   const canViewAudit = usePermission("parametres:read");
   const [active, setActive] = useState<ParamTab>("profile");
 
-  const [prevCanManageUsers, setPrevCanManageUsers] = useState(canManageUsers);
-  const [prevCanViewAudit, setPrevCanViewAudit] = useState(canViewAudit);
-  if (canManageUsers !== prevCanManageUsers) {
-    setPrevCanManageUsers(canManageUsers);
-    if (canManageUsers) {
-      setActive((prev) => (prev === "profile" ? "users" : prev));
-    } else {
-      setActive((prev) => (prev === "users" ? "profile" : prev));
-    }
-  }
-  if (canViewAudit !== prevCanViewAudit) {
-    setPrevCanViewAudit(canViewAudit);
-    if (!canViewAudit) {
-      setActive((prev) => (prev === "audit" ? "profile" : prev));
-    }
-  }
+  useEffect(() => {
+    setActive((prev) => {
+      if (prev === "users" && !canManageUsers) return "profile";
+      if (prev === "audit" && !canViewAudit) return "profile";
+      return prev;
+    });
+  }, [canManageUsers, canViewAudit]);
 
   return (
     <div className="space-y-6">
