@@ -244,6 +244,12 @@ export function BilansScreen() {
     });
   }, [ecritures, mois, periode]);
 
+  // F5 : le Bénéfice compte une écriture au mois où l'argent est réellement
+  // arrivé (datePaiement), pas au mois de création de l'écriture.
+  const ecrituresAvecDate = useMemo(
+    () => allEcritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
+    [allEcritures],
+  );
   const depensesAvecDate = useMemo(
     () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
     [depenses],
@@ -265,7 +271,7 @@ export function BilansScreen() {
     const m = month - 1;
     const computeFor = (societeId: string | null) => {
       const recettes =
-        filterBySocieteAndPeriode(allEcritures, societeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
+        filterBySocieteAndPeriode(ecrituresAvecDate, societeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
         filterBySocieteAndPeriode(factures, societeId, year, m).reduce((sum, f) => sum + f.montantPaye, 0);
       const depensesMois =
         filterBySocieteAndPeriode(depensesAvecDate, societeId, year, m).reduce((sum, d) => sum + d.montant, 0) +
@@ -276,7 +282,7 @@ export function BilansScreen() {
       consolide: computeFor(null),
       parSociete: societes.map((s) => ({ societe: s, ...computeFor(s.id) })),
     };
-  }, [allEcritures, factures, depensesAvecDate, caisseAvecDate, societes, mois]);
+  }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, societes, mois]);
 
   const chartData = useMemo(() => {
     const [year] = (mois || "2026-01").split("-").map(Number);

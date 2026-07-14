@@ -110,6 +110,13 @@ export function ComptabiliteScreen() {
   );
 
   const now = new Date();
+  // F5 : le Bénéfice compte une écriture au mois où l'argent est réellement
+  // arrivé (datePaiement), pas au mois de création de l'écriture — sinon un
+  // paiement enregistré plus tard se retrouve compté dans le mauvais mois.
+  const ecrituresAvecDate = useMemo(
+    () => allEcritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
+    [allEcritures],
+  );
   const depensesAvecDate = useMemo(
     () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
     [depenses],
@@ -126,7 +133,7 @@ export function ComptabiliteScreen() {
   const benefice = useMemo(() => {
     const computeFor = (societeId: string | null) => {
       const recettes =
-        filterBySocieteAndPeriode(allEcritures, societeId, now.getFullYear(), now.getMonth()).reduce(
+        filterBySocieteAndPeriode(ecrituresAvecDate, societeId, now.getFullYear(), now.getMonth()).reduce(
           (sum, e) => sum + e.montantPaye,
           0,
         ) +
@@ -149,7 +156,7 @@ export function ComptabiliteScreen() {
       consolide: computeFor(null),
       parSociete: societes.map((s) => ({ societe: s, ...computeFor(s.id) })),
     };
-  }, [allEcritures, factures, depensesAvecDate, caisseAvecDate, societes, now]);
+  }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, societes, now]);
 
   const [query, setQuery] = useState("");
   const [statutFilter, setStatutFilter] = useState<StatutFilter>("all");

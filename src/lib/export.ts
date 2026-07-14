@@ -780,13 +780,13 @@ table { width: 100%; border-collapse: collapse; }
       </div>
     </div>
     <div class="doc-meta">
-      <div class="doc-type">Bon de sortie</div>
+      <div class="doc-type">Bon de sortie de caisse</div>
       <div class="doc-ref">${htmlEscape(data.reference)}</div>
       <div class="doc-date">Date : ${fmtD(data.date)}</div>
     </div>
   </div>
   <div class="body">
-    <div class="doc-title">BON DE SORTIE ${htmlEscape(data.reference)}</div>
+    <div class="doc-title">BON DE SORTIE DE CAISSE ${htmlEscape(data.reference)}</div>
     <div class="tbl-wrap">
       <table>
         <thead class="tbl-head">

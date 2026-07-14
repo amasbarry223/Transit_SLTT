@@ -721,8 +721,10 @@ export function DashboardScreen() {
     const prevY = curM === 0 ? curY - 1 : curY;
 
     const encaisseSur = (year: number, month: number) => {
+      // Une écriture compte au mois où l'argent est réellement arrivé
+      // (datePaiement), pas au mois de création de l'écriture.
       const fromEcritures = ecritures
-        .filter((e) => { const d = new Date(e.date); return d.getFullYear() === year && d.getMonth() === month; })
+        .filter((e) => { const d = new Date(e.datePaiement ?? e.date); return d.getFullYear() === year && d.getMonth() === month; })
         .reduce((sum, e) => sum + e.montantPaye, 0);
       // Les factures n'ont pas de date de paiement dédiée : la date de la
       // facture est le meilleur proxy disponible.
@@ -740,6 +742,11 @@ export function DashboardScreen() {
   }, [ecritures, factures, anchorDate]);
 
   // F5 — Bénéfice du mois courant (entreposage), scopé au filtre société partagé.
+  // Une écriture compte au mois où l'argent est réellement arrivé (datePaiement).
+  const ecrituresAvecDate = React.useMemo(
+    () => ecritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
+    [ecritures],
+  );
   const depensesAvecDate = React.useMemo(
     () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
     [depenses],
@@ -757,13 +764,13 @@ export function DashboardScreen() {
     const year = anchorDate.getFullYear();
     const month = anchorDate.getMonth();
     const recettes =
-      filterBySocieteAndPeriode(ecritures, selectedSocieteId, year, month).reduce((s, e) => s + e.montantPaye, 0) +
+      filterBySocieteAndPeriode(ecrituresAvecDate, selectedSocieteId, year, month).reduce((s, e) => s + e.montantPaye, 0) +
       filterBySocieteAndPeriode(factures, selectedSocieteId, year, month).reduce((s, f) => s + f.montantPaye, 0);
     const depensesMois =
       filterBySocieteAndPeriode(depensesAvecDate, selectedSocieteId, year, month).reduce((s, d) => s + d.montant, 0) +
       filterBySocieteAndPeriode(caisseAvecDate, selectedSocieteId, year, month).reduce((s, d) => s + d.montant, 0);
     return computeBenefice(recettes, depensesMois);
-  }, [ecritures, factures, depensesAvecDate, caisseAvecDate, selectedSocieteId, anchorDate]);
+  }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, selectedSocieteId, anchorDate]);
 
   // Restes à payer et dossiers non soldés → source : dossiers (pas les écritures)
   const { totalRestesAPayer, nbDossiersNonSoldes } = React.useMemo(() => {

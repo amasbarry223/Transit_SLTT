@@ -98,7 +98,6 @@ export function BonsScreen() {
   const validateBon = useStore((s) => s.validateBon);
   const stock = useStore((s) => s.stock);
   const clients = useStore((s) => s.clients);
-  const societes = useStore((s) => s.societes);
   const bonSeq = useStore((s) => s.bonSeq);
   const bonSortieCaisseSeq = useStore((s) => s.bonSortieCaisseSeq);
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
@@ -131,7 +130,7 @@ export function BonsScreen() {
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
   const [formMontant, setFormMontant] = useState<string>("");
 
-  const nextRef = `BS-2026-${String(bonSeq).padStart(4, "0")}`;
+  const nextRef = `BS-${new Date().getFullYear()}-${String(bonSeq).padStart(4, "0")}`;
   const nextCaisseRef = `N°${bonSortieCaisseSeq}`;
 
   useEffect(() => {
@@ -318,7 +317,7 @@ export function BonsScreen() {
   function resetForm() {
     setFormDate(new Date().toISOString().slice(0, 10));
     setFormClientId("");
-    setFormSocieteId(selectedSocieteId ?? societes[0]?.id ?? "");
+    setFormSocieteId("");
     setFormStockId("");
     setFormQuantite("");
     setFormMotif("");
@@ -409,7 +408,7 @@ export function BonsScreen() {
       Transfert: "background:#fef3c7;color:#92400e",
     };
     return `
-      <h1>Bon de sortie</h1>
+      <h1>Bon de sortie — Marchandise</h1>
       <div class="subtitle">Référence : <strong>${htmlEscape(b.reference)}</strong> · <span class="badge" style="${motifColors[b.motif] ?? ""}">${htmlEscape(b.motif)}</span></div>
       <table>
         <tbody>
@@ -1077,33 +1076,6 @@ export function BonsScreen() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bs-societe" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Société <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formSocieteId}
-                  onValueChange={(v) => {
-                    setFormSocieteId(v);
-                    // Garde la marchandise cohérente avec la société sélectionnée.
-                    if (selectedStock && selectedStock.societeId !== v) {
-                      setFormStockId("");
-                    }
-                  }}
-                >
-                  <SelectTrigger id="bs-societe" className="h-10 w-full">
-                    <SelectValue placeholder="Sélectionner une société" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {societes.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="bs-client" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Client <span className="text-red-500">*</span>
                 </Label>
@@ -1132,11 +1104,12 @@ export function BonsScreen() {
                   value={formStockId}
                   onValueChange={(v) => {
                     setFormStockId(v);
-                    // Préremplit Société/Client depuis l'article choisi (sans écraser une sélection déjà faite),
-                    // pour éviter qu'un bon référence une marchandise qui n'appartient pas à la société/au client saisis.
+                    // La société du bon est déduite de l'article choisi (chaque
+                    // article appartient à une seule société) — pas de sélecteur
+                    // société séparé, ce qui évite une saisie redondante.
                     const picked = stock.find((s) => s.id === v);
                     if (picked) {
-                      if (!formSocieteId) setFormSocieteId(picked.societeId);
+                      setFormSocieteId(picked.societeId);
                       if (!formClientId && picked.clientId) setFormClientId(picked.clientId);
                     }
                   }}
@@ -1145,15 +1118,18 @@ export function BonsScreen() {
                     <SelectValue placeholder="Sélectionner une marchandise" />
                   </SelectTrigger>
                   <SelectContent>
-                    {stock
-                      .filter((s) => !formSocieteId || s.societeId === formSocieteId)
-                      .map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.marchandise} — {s.societeNom} (stock : {s.quantite} {s.unite})
-                        </SelectItem>
-                      ))}
+                    {stock.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.marchandise} — {s.societeNom} (stock : {s.quantite} {s.unite})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {selectedStock && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Société : <span className="font-medium text-slate-700 dark:text-slate-300">{selectedStock.societeNom}</span>
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1201,7 +1177,7 @@ export function BonsScreen() {
 
               <div className="space-y-2">
                 <Label htmlFor="bs-montant" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Montant
+                  Montant <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -1241,7 +1217,7 @@ export function BonsScreen() {
             <Button
               variant="outline"
               onClick={handleSaveDraft}
-              disabled={!formClientId || !formSocieteId || !formStockId || !formMotif || quantiteNum <= 0}
+              disabled={!formClientId || !formStockId || !formMotif || quantiteNum <= 0 || montantNum <= 0}
             >
               <FilePen className="size-4" />
               Brouillon
@@ -1251,10 +1227,10 @@ export function BonsScreen() {
               disabled={
                 depasseStock ||
                 !formClientId ||
-                !formSocieteId ||
                 !formStockId ||
                 !formMotif ||
-                quantiteNum <= 0
+                quantiteNum <= 0 ||
+                montantNum <= 0
               }
             >
               <Check className="size-4" />
@@ -1459,7 +1435,7 @@ function BonPreview({
 
       <div className="my-5 text-center">
         <p className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
-          BON DE SORTIE
+          BON DE SORTIE — MARCHANDISE
         </p>
         <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">{reference}</p>
       </div>

@@ -1509,12 +1509,13 @@ export const useStore = create<SLTTState>()(
             date_paiement: e.datePaiement || null,
             client_id: e.clientId,
             dossier_id: e.dossierId || null,
+            societe_id: e.societeId || null,
             montant_investi: e.montantInvesti,
             montant_paye: validatedPaye,
             mode_paiement: e.modePaiement,
             note: e.note || null,
           })
-          .select()
+          .select("*, clients(nom), societes(nom)")
           .single();
 
         if (error) throw error;
@@ -2722,15 +2723,38 @@ export const useStore = create<SLTTState>()(
         if (error) throw error;
 
         const existing = get().contrats.find((c) => c.id === id);
+        const societeChanged = !!existing && existing.societeId !== input.societeId;
+
+        // La société d'une dépense est dénormalisée depuis son contrat à la
+        // création (perf/simplicité de lecture) — si le contrat change de
+        // société, il faut recaler les dépenses déjà créées pour ne pas
+        // fausser silencieusement le Bénéfice par société.
+        if (societeChanged) {
+          const { error: depensesError } = await supabase
+            .from("depenses")
+            .update({ societe_id: input.societeId })
+            .eq("contrat_id", id);
+          if (depensesError) throw depensesError;
+        }
+
         set((s) => ({
           contrats: s.contrats.map((c) =>
             c.id === id
               ? { ...c, ...input, clientNom: input.clientNom }
               : c,
           ),
+          depenses: societeChanged
+            ? s.depenses.map((d) => (d.contratId === id ? { ...d, societeId: input.societeId } : d))
+            : s.depenses,
         }));
         if (existing) {
-          await get().addAuditLog("Contrats", "Modification", `Contrat ${existing.reference} modifié`);
+          await get().addAuditLog(
+            "Contrats",
+            "Modification",
+            societeChanged
+              ? `Contrat ${existing.reference} modifié — société changée, dépenses liées recalées`
+              : `Contrat ${existing.reference} modifié`,
+          );
         }
       },
 

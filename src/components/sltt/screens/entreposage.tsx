@@ -644,8 +644,8 @@ export function EntreposageScreen() {
   const [niSeuil, setNiSeuil] = useState("10");
   const [niDepositaire, setNiDepositaire] = useState("");
   const [niCommercial, setNiCommercial] = useState("");
+  const [niValeurTotale, setNiValeurTotale] = useState("0");
   const [niSommePayee, setNiSommePayee] = useState("0");
-  const [niResteAPayer, setNiResteAPayer] = useState("0");
   const [niClientId, setNiClientId] = useState<string>("");
   const [niSocieteId, setNiSocieteId] = useState<string>("");
   const [niAdvancedOpen, setNiAdvancedOpen] = useState(false);
@@ -657,8 +657,8 @@ export function EntreposageScreen() {
     setNiSeuil("10");
     setNiDepositaire("");
     setNiCommercial("");
+    setNiValeurTotale("0");
     setNiSommePayee("0");
-    setNiResteAPayer("0");
     setNiClientId("");
     setNiSocieteId(selectedSocieteId ?? societes[0]?.id ?? "");
     setNiAdvancedOpen(false);
@@ -669,6 +669,8 @@ export function EntreposageScreen() {
     const marchandise = niMarchandise.trim();
     const unite = niUnite.trim();
     if (!marchandise || !unite || !niSocieteId) return;
+    const sommePayee = Number(niSommePayee) || 0;
+    const valeurTotale = Number(niValeurTotale) || 0;
     const input: StockItemInput = {
       marchandise,
       quantite: Number(niQuantite) || 0,
@@ -676,8 +678,10 @@ export function EntreposageScreen() {
       seuil: Number(niSeuil) || 10,
       depositaire: niDepositaire.trim() || "—",
       commercial: niCommercial.trim() || "—",
-      sommePayee: Number(niSommePayee) || 0,
-      resteAPayer: Number(niResteAPayer) || 0,
+      sommePayee,
+      // Calculé, jamais saisi directement — évite les incohérences entre les
+      // deux montants (ex. reste à payer supérieur à la valeur totale).
+      resteAPayer: Math.max(0, valeurTotale - sommePayee),
       clientId: niClientId || undefined,
       societeId: niSocieteId,
     };
@@ -1386,6 +1390,20 @@ export function EntreposageScreen() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="ni-valeur" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Valeur totale de la marchandise (FCFA)
+                </Label>
+                <Input
+                  id="ni-valeur"
+                  type="number"
+                  min={0}
+                  value={niValeurTotale}
+                  onChange={(e) => setNiValeurTotale(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="ni-payee" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Somme payée (FCFA)
                 </Label>
@@ -1399,18 +1417,13 @@ export function EntreposageScreen() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="ni-reste" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Reste à payer (FCFA)
+              <div className="col-span-2 space-y-2">
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Reste à payer
                 </Label>
-                <Input
-                  id="ni-reste"
-                  type="number"
-                  min={0}
-                  value={niResteAPayer}
-                  onChange={(e) => setNiResteAPayer(e.target.value)}
-                  className="h-10"
-                />
+                <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                  {formatFCFA(Math.max(0, (Number(niValeurTotale) || 0) - (Number(niSommePayee) || 0)))}
+                </p>
               </div>
             </div>
           )}

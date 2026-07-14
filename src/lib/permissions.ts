@@ -149,6 +149,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
   "Agent de transit": [
     "dashboard:read",
     "clients:read",
+    "clients:write",
     "devis:read",
     "devis:write",
     "dossiers:read",
@@ -156,6 +157,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "dossiers:transition",
     "factures:read",
     "fournisseurs:read",
+    "fournisseurs:write",
     "transporteurs:read",
     "transporteurs:write",
     "calendrier:read",

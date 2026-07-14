@@ -91,6 +91,11 @@ function FactureFormModal({
           { description: `Droits de douane`, quantite: "1", prixUnitaire: String(d.droitDouane) },
           { description: `Frais de circuit`, quantite: "1", prixUnitaire: String(d.fraisCircuit) },
         ]);
+        // Droits de douane et frais de circuit sont des débours refacturés au
+        // client, pas des prestations de service — la TVA ne s'applique pas
+        // dessus. On désactive la TVA par défaut ; l'utilisateur peut la
+        // réactiver s'il ne facture que la prestation.
+        setTvaOn(false);
       }
     }
   }
@@ -432,6 +437,9 @@ export function FacturesScreen() {
                   dossierId: d.id,
                   clientId: d.clientId,
                   clientNom: d.clientNom,
+                  // Droits de douane et frais de circuit sont des débours
+                  // refacturés, pas des prestations — pas de TVA par défaut.
+                  tauxTVA: 0,
                   lignes: [
                     { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.fraisPrestation, montantHT: d.fraisPrestation },
                     { description: `Droits de douane`, quantite: 1, prixUnitaire: d.droitDouane, montantHT: d.droitDouane },
