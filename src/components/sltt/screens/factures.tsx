@@ -18,8 +18,10 @@ import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { matchesQuery } from "@/lib/search-filter";
 import { shouldShowTva } from "@/lib/export";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 
 /* ------------------------------------------------------------------ */
 /* FORM — nouvelle facture                                             */
@@ -367,9 +369,11 @@ export function FacturesScreen() {
   const [activeTab,  setActiveTab]  = React.useState<FactureStatut | "Tous">("Tous");
   const [showForm,   setShowForm]   = React.useState(false);
   const [prefillDossierId, setPrefillDossierId] = React.useState<string | undefined>();
+  const [deleteTarget, setDeleteTarget] = React.useState<Facture | null>(null);
 
   React.useEffect(() => {
     if (selectedId?.startsWith("D-")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le formulaire puis consomme le marqueur "D-…" de l'URL
       setPrefillDossierId(selectedId);
       setShowForm(true);
       go("factures");
@@ -379,17 +383,15 @@ export function FacturesScreen() {
   // F6 — pont "Facturer" depuis une prestation optionnelle réalisée
   React.useEffect(() => {
     if (!pendingFacturePrefill) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le pont nav-store "Facturer" déclenché depuis un autre écran
     setPrefillDossierId(undefined);
     setShowForm(true);
   }, [pendingFacturePrefill]);
 
   const filtered = React.useMemo(() => {
     return factures.filter((f) => {
-      const matchTab    = activeTab === "Tous" || f.statut === activeTab;
-      const matchSearch = !search ||
-        f.numero.toLowerCase().includes(search.toLowerCase()) ||
-        f.clientNom.toLowerCase().includes(search.toLowerCase());
-      return matchTab && matchSearch;
+      const matchTab = activeTab === "Tous" || f.statut === activeTab;
+      return matchTab && matchesQuery(f, ["numero", "clientNom"], search);
     });
   }, [factures, activeTab, search]);
 
@@ -403,18 +405,17 @@ export function FacturesScreen() {
     return { total: actives.length, totalTTC, totalPaye, nonSoldees, tauxRecouvrement };
   }, [factures]);
 
-  async function handleDelete(f: Facture) {
-    if (confirm(`Supprimer la facture ${f.numero} ?`)) {
-      try {
-        await removeFacture(f.id);
-        toast({ title: "Facture supprimée", description: f.numero });
-      } catch (err: any) {
-        toast({
-          title: "Erreur",
-          description: err.message || "Impossible de supprimer la facture",
-          variant: "destructive",
-        });
-      }
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    try {
+      await removeFacture(deleteTarget.id);
+      toast({ title: "Facture supprimée", description: deleteTarget.numero });
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err.message || "Impossible de supprimer la facture",
+        variant: "destructive",
+      });
     }
   }
 
@@ -609,7 +610,7 @@ export function FacturesScreen() {
                     )}
                     <button
                       title="Supprimer"
-                      onClick={() => handleDelete(f)}
+                      onClick={() => setDeleteTarget(f)}
                       className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
                     >
                       <Trash2 className="size-3.5" />
@@ -621,6 +622,14 @@ export function FacturesScreen() {
           )}
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Supprimer cette facture ?"
+        description={<>La facture <strong>{deleteTarget?.numero}</strong> sera définitivement supprimée. Cette action est irréversible.</>}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

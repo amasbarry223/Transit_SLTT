@@ -8,8 +8,6 @@ import {
   FileText,
   Receipt,
   Check,
-  MessageSquare,
-  Send,
   Trash2,
   CheckCircle2,
   Info,
@@ -17,8 +15,6 @@ import {
   Upload,
   Download,
   File,
-  Image as ImageIcon,
-  FileSpreadsheet,
   ChevronDown,
   ChevronUp,
   Folder,
@@ -30,26 +26,26 @@ import {
   CalendarClock,
   CalendarCheck2,
   AlertTriangle,
-  ShieldCheck,
-  SquareCheckBig,
   Truck,
   Receipt as ReceiptIcon,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
-import { useStore, CHECKLIST_DOCS } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import type {
   SubDossierInput,
   FichierInput,
   SubDossier,
   DossierFichier,
-  DossierComment,
   FournisseurType,
   DossierFournisseurInput,
 } from "@/lib/store";
 import { calculerEcart } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import {
   DossierStatutBadge,
   EcartValue,
@@ -116,28 +112,6 @@ const STATUTS_ORDERED: DossierStatut[] = [
   "Livré",
   "Soldé",
 ];
-
-/* ------------------------------------------------------------------ */
-/* Utilities                                                           */
-/* ------------------------------------------------------------------ */
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-}
-
-function getFileIconComponent(mimeType: string) {
-  if (mimeType.startsWith("image/")) return ImageIcon;
-  if (mimeType === "application/pdf") return FileText;
-  if (
-    mimeType.includes("spreadsheet") ||
-    mimeType.includes("excel") ||
-    mimeType === "text/csv"
-  )
-    return FileSpreadsheet;
-  return File;
-}
 
 /* ------------------------------------------------------------------ */
 /* Stepper                                                             */
@@ -546,29 +520,26 @@ export function DossierDetailScreen() {
 
   const dossier = useStore((s) => s.dossiers.find((d) => d.id === selectedId));
   const client = useStore((s) => s.clients.find((c) => c.id === dossier?.clientId));
-  const addComment = useStore((s) => s.addComment);
-  const deleteComment = useStore((s) => s.deleteComment);
-  const currentUserName = useNav((s) => s.currentUserName);
   const addSubDossier = useStore((s) => s.addSubDossier);
   const updateSubDossier = useStore((s) => s.updateSubDossier);
   const deleteSubDossier = useStore((s) => s.deleteSubDossier);
   const addFichier = useStore((s) => s.addFichier);
   const deleteFichier = useStore((s) => s.deleteFichier);
-  const updateDossierChecklist = useStore((s) => s.updateDossierChecklist);
   const fournisseurs = useStore(useShallow((s) => s.fournisseurs));
   const addDossierFournisseur = useStore((s) => s.addDossierFournisseur);
+  const removeDossier = useStore((s) => s.removeDossier);
+  const canWrite = usePermission("dossiers:write");
   // PERF-01: subscribe only to relevant slice for this dossier
   const dossierId = selectedId ?? "";
   const dossierFournisseurs = useStore(useShallow((s) => s.dossierFournisseurs.filter((df) => df.dossierId === dossierId)));
   const allSubDossiers = useStore(useShallow((s) => s.subDossiers.filter((sd) => sd.dossierId === dossierId)));
-  const allComments = useStore(useShallow((s) => s.comments.filter((c) => c.dossierId === dossierId)));
   const allFichiers = useStore(useShallow((s) => s.fichiers.filter((f) => f.dossierId === dossierId)));
   const allEcritures = useStore(useShallow((s) => s.ecritures.filter((e) => e.dossierId === dossierId)));
   const auditLogs = useStore(useShallow((s) => s.auditLogs));
   const dossierFactures = useStore(useShallow((s) => s.factures.filter((f) => f.dossierId === dossierId)));
 
   const [transitionOpen, setTransitionOpen] = useState(false);
-  const [commentText, setCommentText] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Sub-dossier dialog states
   const [sdDialogOpen, setSdDialogOpen] = useState(false);
@@ -588,7 +559,7 @@ export function DossierDetailScreen() {
   const [dfStatut, setDfStatut] = useState<"En attente" | "Payé" | "Litige">("En attente");
   const [dfDate, setDfDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  // allSubDossiers, allFichiers, allComments, allEcritures are already filtered by dossierId (PERF-01)
+  // allSubDossiers, allFichiers, allEcritures are already filtered by dossierId (PERF-01)
   const subDossiers = allSubDossiers;
 
   const dossierFichiers = useMemo(
@@ -611,8 +582,6 @@ export function DossierDetailScreen() {
   const totalFichiers = allFichiers.length;
 
   const dossierEcritures = allEcritures;
-
-  const dossierComments = allComments;
 
   // PERF-03: use regex with word boundary to avoid false positives
   const dossierAuditLogs = useMemo(() => {
@@ -654,11 +623,6 @@ export function DossierDetailScreen() {
   const joursRestants = echeanceDate ? Math.ceil((echeanceDate.getTime() - today.getTime()) / 86400000) : null;
   const echeanceDepassee = joursRestants !== null && joursRestants < 0;
   const echeanceImminente = joursRestants !== null && joursRestants >= 0 && joursRestants <= 3;
-
-  // Checklist progression
-  const checklistChecked = dossier.checklistDocs ?? [];
-  const checklistTotal = CHECKLIST_DOCS.length;
-  const checklistDone = checklistChecked.length;
 
   /* ---------- Handlers ---------- */
 
@@ -781,6 +745,29 @@ export function DossierDetailScreen() {
     });
   }
 
+  const deleteConsequences = [
+    allFichiers.length > 0 && `${allFichiers.length} fichier(s) archivé(s) définitivement supprimé(s)`,
+    subDossiers.length > 0 && `${subDossiers.length} sous-dossier(s) définitivement supprimé(s)`,
+    dossierFournisseurs.length > 0 && `${dossierFournisseurs.length} prestataire(s) lié(s) définitivement supprimé(s)`,
+    allEcritures.length > 0 && `${allEcritures.length} écriture(s) comptable(s) seront déconnectée(s) du dossier (non supprimées)`,
+    dossierFactures.length > 0 && `${dossierFactures.length} facture(s) seront déconnectée(s) du dossier (non supprimées)`,
+  ].filter(Boolean) as string[];
+
+  async function handleDelete() {
+    if (!dossier) return;
+    try {
+      await removeDossier(dossier.id);
+      toast({ title: "Dossier supprimé", description: dossier.reference });
+      go("dossiers");
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Erreur inattendue.",
+        variant: "destructive",
+      });
+    }
+  }
+
   /* ---------- Render ---------- */
 
   return (
@@ -819,6 +806,16 @@ export function DossierDetailScreen() {
             <Pencil className="size-4" />
             Modifier
           </Button>
+          {canWrite && (
+            <Button
+              variant="outline"
+              className="text-red-600 hover:text-red-700 dark:text-red-400"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="size-4" />
+              Supprimer
+            </Button>
+          )}
         </div>
       </div>
 
@@ -836,14 +833,6 @@ export function DossierDetailScreen() {
           <TabsTrigger value="resume">Résumé</TabsTrigger>
           <TabsTrigger value="documents">
             Documents
-            <span className={cn(
-              "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-              checklistDone === checklistTotal
-                ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
-                : "bg-primary/10 text-primary"
-            )}>
-              {checklistDone}/{checklistTotal}
-            </span>
             {subDossiers.length > 0 && (
               <span className="ml-1 rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
                 +{subDossiers.length} sous-doss.
@@ -867,10 +856,10 @@ export function DossierDetailScreen() {
             )}
           </TabsTrigger>
           <TabsTrigger value="activite">
-            Activité
-            {(dossierComments.length > 0 || dossierAuditLogs.length > 0) && (
+            Historique
+            {dossierAuditLogs.length > 0 && (
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {dossierComments.length + dossierAuditLogs.length}
+                {dossierAuditLogs.length}
               </span>
             )}
           </TabsTrigger>
@@ -1163,72 +1152,6 @@ export function DossierDetailScreen() {
         {/* ---- TAB: Documents ---- */}
         <TabsContent value="documents" className="space-y-6">
           <div className="space-y-4">
-            {/* Checklist documentaire */}
-            <Card className="border-border/80 p-5 shadow-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
-                    <ShieldCheck className="size-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Checklist documentaire</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Documents standards d'un dossier de transit</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{checklistDone}/{checklistTotal}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">reçus</p>
-                </div>
-              </div>
-              {/* Barre de progression */}
-              <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all",
-                    checklistDone === checklistTotal ? "bg-emerald-500" : "bg-blue-500"
-                  )}
-                  style={{ width: `${Math.round((checklistDone / checklistTotal) * 100)}%` }}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {CHECKLIST_DOCS.map((doc) => {
-                  const isChecked = checklistChecked.includes(doc.id);
-                  return (
-                    <button
-                      key={doc.id}
-                      onClick={() => updateDossierChecklist(dossier.id, doc.id, !isChecked)}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg border p-3 text-left transition-all",
-                        isChecked
-                          ? "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800"
-                          : "border-border bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50"
-                      )}
-                    >
-                      <div className={cn(
-                        "flex size-5 shrink-0 items-center justify-center rounded",
-                        isChecked ? "bg-emerald-500 text-white" : "border border-slate-300 bg-white dark:bg-slate-900"
-                      )}>
-                        {isChecked && <Check className="size-3" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm font-medium">{doc.label}</span>
-                        {doc.obligatoire && !isChecked && (
-                          <span className="ml-1.5 text-[10px] text-red-500">obligatoire</span>
-                        )}
-                      </div>
-                      {isChecked && <SquareCheckBig className="size-4 shrink-0 text-emerald-500" />}
-                    </button>
-                  );
-                })}
-              </div>
-              {checklistDone === checklistTotal && (
-                <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-3 text-emerald-700 dark:text-emerald-400">
-                  <CheckCircle2 className="size-4 shrink-0" />
-                  <p className="text-sm font-medium">Tous les documents ont été reçus.</p>
-                </div>
-              )}
-            </Card>
-
             {/* Fichiers uploadés */}
             <Card className="border-border/80 p-6 shadow-sm">
               <div className="mb-5 flex items-center gap-3">
@@ -1569,105 +1492,6 @@ export function DossierDetailScreen() {
 
         {/* ---- TAB: Activité (discussion) ---- */}
         <TabsContent value="activite" className="space-y-6">
-          <Card className="border-border/80 shadow-sm">
-            <div className="p-5 border-b border-border flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
-                <MessageSquare className="size-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Discussion interne</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Notes et échanges entre membres de l&apos;équipe</p>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="min-h-[200px] divide-y divide-border">
-              {dossierComments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 text-center">
-                  <MessageSquare className="size-10 text-slate-200 dark:text-slate-700" />
-                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucun message pour ce dossier.</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Soyez le premier à laisser une note.</p>
-                </div>
-              ) : (
-                [...dossierComments].reverse().map((c) => {
-                  const isOwn = c.userName === currentUserName;
-                  return (
-                    <div key={c.id} className="flex items-start gap-3 p-4 group">
-                      <div className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white",
-                        isOwn ? "bg-gradient-to-br from-blue-600 to-blue-800" : "bg-gradient-to-br from-slate-500 to-slate-700",
-                      )}>
-                        {c.userName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{c.userName}</span>
-                          <span className="text-xs text-slate-400 dark:text-slate-500">
-                            {new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{c.texte}</p>
-                      </div>
-                      {isOwn && (
-                        <button
-                          onClick={() => deleteComment(c.id)}
-                          className="shrink-0 p-1 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-500 transition-all"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Input */}
-            <div className="border-t border-border p-4">
-              <div className="flex gap-2">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-xs font-bold text-white">
-                  {currentUserName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                </div>
-                <div className="relative flex-1">
-                  <Label htmlFor="comment-input" className="sr-only">Nouveau commentaire</Label>
-                  <textarea
-                    id="comment-input"
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        const t = commentText.trim();
-                        if (!t) return;
-                        addComment(dossierId, t);
-                        setCommentText("");
-                        toast({ title: "Message envoyé" });
-                      }
-                    }}
-                    placeholder="Écrire un message... (Entrée pour envoyer, Maj+Entrée pour sauter une ligne)"
-                    rows={2}
-                    className="w-full resize-none rounded-xl border border-border bg-slate-50/60 dark:bg-slate-800/60 px-3 py-2.5 pr-10 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                  <button
-                    onClick={() => {
-                      const t = commentText.trim();
-                      if (!t) return;
-                      addComment(dossierId, t);
-                      setCommentText("");
-                      toast({ title: "Message envoyé" });
-                    }}
-                    disabled={!commentText.trim()}
-                    className="absolute bottom-2.5 right-2.5 flex size-6 items-center justify-center rounded-lg bg-primary text-white disabled:opacity-30 hover:bg-primary/90 transition-colors"
-                  >
-                    <Send className="size-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* ---- Historique (même onglet Activité) ---- */}
           <Card className="border-border/80 p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
@@ -1919,6 +1743,15 @@ export function DossierDetailScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Supprimer ce dossier ?"
+        description={<>Le dossier <strong>{dossier.reference}</strong> sera définitivement supprimé. Cette action est irréversible.</>}
+        consequences={deleteConsequences}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

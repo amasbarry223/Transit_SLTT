@@ -13,6 +13,7 @@ import { useStore, type ContratInput, type ContratStatut } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { matchesQuery } from "@/lib/search-filter";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
 
@@ -99,11 +100,7 @@ export function ContratsScreen() {
 
   const filtered = useMemo(() => {
     return scoped.filter((c) => {
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const haystack = `${c.reference} ${c.objet} ${c.clientNom}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
+      if (!matchesQuery(c, ["reference", "objet", "clientNom"], search)) return false;
       if (statutFilter !== "all" && c.statut !== statutFilter) return false;
       if (clientFilter !== "all" && c.clientId !== clientFilter) return false;
       return true;

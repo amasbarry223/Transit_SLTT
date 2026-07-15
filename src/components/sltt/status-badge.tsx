@@ -170,6 +170,10 @@ export function DevisStatutBadge({
   );
 }
 
+export function ActifStatutBadge({ statut }: { statut: "Actif" | "Inactif" }) {
+  return <ToneBadge tone={statut === "Actif" ? "emerald" : "slate"}>{statut}</ToneBadge>;
+}
+
 export function DossierFournisseurStatutBadge({ statut }: { statut: "En attente" | "Payé" | "Litige" }) {
   const map: Record<"En attente" | "Payé" | "Litige", Tone> = {
     "En attente": "amber",

@@ -4,6 +4,13 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { useNav } from "@/lib/nav-store";
 import { supabase } from "@/lib/supabase";
+import { getConnectedUserName } from "@/lib/store/connected-user";
+import {
+  createContratFichiersSlice,
+  mapContratFichierFromDb,
+  type ContratFichiersSlice,
+} from "@/lib/store/contrat-fichiers-slice";
+import { createArchivesSlice, mapArchiveFromDb, type ArchivesSlice } from "@/lib/store/archives-slice";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncContratStats } from "@/lib/contrat-stats";
@@ -18,7 +25,6 @@ import {
   type AuditModule,
 } from "@/lib/audit";
 import {
-  CHECKLIST_DOCS,
   PRESTATION_OPTIONNELLE_LABEL,
   type Client,
   type Dossier,
@@ -36,7 +42,6 @@ import {
   type Devis,
   type DevisStatut,
   type DevisInput,
-  type DossierComment,
   type Transporteur,
   type TransporteurInput,
   type TransporteurStatut,
@@ -60,10 +65,14 @@ import {
   type SortieCaisseLigne,
   type BonSortieCaisse,
   type BonSortieCaisseInput,
+  type Archive,
+  type TypeDocument,
+  type Facture,
+  type FactureLigne,
+  type FactureStatut,
 } from "@/lib/domain-types";
 
 export {
-  CHECKLIST_DOCS,
   PRESTATION_OPTIONNELLE_LABEL,
 };
 
@@ -90,7 +99,6 @@ export type {
   Devis,
   DevisStatut,
   DevisInput,
-  DossierComment,
   Transporteur,
   TransporteurInput,
   TransporteurStatut,
@@ -108,41 +116,14 @@ export type {
   SortieCaisseLigne,
   BonSortieCaisse,
   BonSortieCaisseInput,
+  Archive,
+  TypeDocument,
+  Facture,
+  FactureLigne,
+  FactureStatut,
 };
 
 export type { AuditAction, AuditModule, AuditEntry };
-
-export type FactureStatut = "Brouillon" | "Envoyée" | "Partielle" | "Soldée" | "Annulée";
-
-export interface FactureLigne {
-  id: string;
-  description: string;
-  quantite: number;
-  prixUnitaire: number;
-  montantHT: number;
-}
-
-export interface Facture {
-  id: string;
-  numero: string;
-  dossierId: string | null;
-  clientId: string;
-  clientNom: string;
-  societeId?: string;
-  societeNom?: string;
-  date: string;
-  dateEcheance: string;
-  statut: FactureStatut;
-  lignes: FactureLigne[];
-  tauxTVA: number;
-  montantHT: number;
-  montantTVA: number;
-  montantTTC: number;
-  montantPaye: number;
-  notes: string;
-  creePar: string;
-  creeLe: string;
-}
 
 export interface FactureInput {
   dossierId?: string | null;
@@ -221,14 +202,6 @@ export interface AddDepenseInput extends DepenseInput {
   justificatifNom?: string;
 }
 
-export interface AddContratFichierInput {
-  contratId: string;
-  nom: string;
-  taille: number;
-  type: string;
-  dataUrl: string;
-}
-
 export interface SubDossierInput {
   dossierId: string;
   nom: string;
@@ -288,7 +261,6 @@ function mapDossierFromDb(x: any): Dossier {
     date: x.date,
     dateEcheance: x.date_echeance,
     dateDedouanement: x.date_dedouanement,
-    checklistDocs: x.checklist_docs || [],
     modeTransport: x.mode_transport,
     noConteneur: x.no_conteneur,
     portEntree: x.port_entree,
@@ -443,18 +415,6 @@ function mapContratFromDb(
   };
 }
 
-function mapContratFichierFromDb(x: any): ContratFichier {
-  return {
-    id: x.id,
-    contratId: x.contrat_id,
-    nom: x.nom,
-    taille: Number(x.taille),
-    type: x.type,
-    dateUpload: x.date_upload || x.created_at,
-    storagePath: x.storage_path,
-  };
-}
-
 function mapDepenseFromDb(x: any): Depense {
   return {
     id: x.id,
@@ -504,16 +464,6 @@ function mapFichierFromDb(x: any): DossierFichier {
     type: x.type,
     dateUpload: x.date_upload || new Date().toISOString(),
     dataUrl: x.data_url,
-  };
-}
-
-function mapCommentFromDb(x: any): DossierComment {
-  return {
-    id: x.id,
-    dossierId: x.dossier_id,
-    texte: x.texte,
-    userName: x.user_name || "",
-    date: x.date ?? x.created_at ?? new Date().toISOString(),
   };
 }
 
@@ -642,10 +592,6 @@ function syncFournisseurStats(df: DossierFournisseur[], providers: Fournisseur[]
   });
 }
 
-function getConnectedUserName(): string {
-  return useNav.getState().currentUserName || "Système";
-}
-
 type SequenceCounters = Pick<
   SLTTState,
   | "dossierSeq"
@@ -660,7 +606,6 @@ type SequenceCounters = Pick<
   | "fichierSeq"
   | "devisSeq"
   | "transporteurSeq"
-  | "commentSeq"
   | "factureSeq"
   | "fournisseurSeq"
   | "dossierFournisseurSeq"
@@ -695,7 +640,7 @@ function nextSeqFromValues(values: Array<number | null>, current: number): numbe
   return Math.max(current, max + 1);
 }
 
-function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "dossiers" | "factures" | "bons" | "devis" | "auditLogs" | "ecritures" | "clients" | "stock" | "users" | "mouvements" | "subDossiers" | "fichiers" | "comments" | "transporteurs" | "fournisseurs" | "dossierFournisseurs" | "contrats" | "contratFichiers" | "depenses" | "contratPrestations" | "bonsSortieCaisse">): SequenceCounters {
+function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "dossiers" | "factures" | "bons" | "devis" | "auditLogs" | "ecritures" | "clients" | "stock" | "users" | "mouvements" | "subDossiers" | "fichiers" | "transporteurs" | "fournisseurs" | "dossierFournisseurs" | "contrats" | "contratFichiers" | "depenses" | "contratPrestations" | "bonsSortieCaisse">): SequenceCounters {
   return {
     dossierSeq: nextSeqFromValues(state.dossiers.map((d) => parseTrailingSeq(d.reference)), state.dossierSeq),
     bonSeq: nextSeqFromValues(state.bons.map((b) => parseTrailingSeq(b.reference)), state.bonSeq),
@@ -709,7 +654,6 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
     fichierSeq: nextSeqFromValues(state.fichiers.map((f) => parseIdSeq(f.id, "F")), state.fichierSeq),
     devisSeq: nextSeqFromValues(state.devis.map((d) => parseTrailingSeq(d.reference)), state.devisSeq),
     transporteurSeq: nextSeqFromValues(state.transporteurs.map((t) => parseIdSeq(t.id, "T")), state.transporteurSeq),
-    commentSeq: nextSeqFromValues(state.comments.map((c) => parseIdSeq(c.id, "COM")), state.commentSeq),
     factureSeq: nextSeqFromValues(state.factures.map((f) => parseTrailingSeq(f.numero)), state.factureSeq),
     fournisseurSeq: nextSeqFromValues(state.fournisseurs.map((f) => parseIdSeq(f.id, "F")), state.fournisseurSeq),
     dossierFournisseurSeq: nextSeqFromValues(state.dossierFournisseurs.map((df) => parseIdSeq(df.id, "DF")), state.dossierFournisseurSeq),
@@ -721,7 +665,7 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
   };
 }
 
-interface SLTTState {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
   // Data
   clients: Client[];
   dossiers: Dossier[];
@@ -733,7 +677,6 @@ interface SLTTState {
   subDossiers: SubDossier[];
   fichiers: DossierFichier[];
   auditLogs: AuditEntry[];
-  comments: DossierComment[];
   devis: Devis[];
   transporteurs: Transporteur[];
   factures: Facture[];
@@ -741,7 +684,6 @@ interface SLTTState {
   dossierFournisseurs: DossierFournisseur[];
   societes: Societe[];
   contrats: Contrat[];
-  contratFichiers: ContratFichier[];
   depenses: Depense[];
   contratPrestations: ContratPrestation[];
   bonsSortieCaisse: BonSortieCaisse[];
@@ -759,7 +701,6 @@ interface SLTTState {
   fichierSeq: number;
   devisSeq: number;
   transporteurSeq: number;
-  commentSeq: number;
   factureSeq: number;
   fournisseurSeq: number;
   dossierFournisseurSeq: number;
@@ -782,7 +723,6 @@ interface SLTTState {
   // ---- Dossiers ----
   addDossier: (input: DossierInput) => Promise<Dossier>;
   updateDossier: (id: string, input: DossierInput) => Promise<void>;
-  updateDossierChecklist: (dossierId: string, docId: string, checked: boolean) => Promise<void>;
   removeDossier: (id: string) => Promise<void>;
   getDossier: (id: string) => Dossier | undefined;
   transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string) => Promise<void>;
@@ -830,10 +770,6 @@ interface SLTTState {
   deleteFichier: (id: string) => Promise<void>;
   deleteFichiersByDossier: (dossierId: string) => Promise<void>;
 
-  // ---- Commentaires dossiers ----
-  addComment: (dossierId: string, texte: string) => Promise<DossierComment>;
-  deleteComment: (id: string) => Promise<void>;
-
   // ---- Devis ----
   addDevis: (input: DevisInput) => Promise<Devis>;
   updateDevis: (id: string, input: DevisInput) => Promise<void>;
@@ -870,11 +806,6 @@ interface SLTTState {
   removeContrat: (id: string) => Promise<void>;
   getContrat: (id: string) => Contrat | undefined;
 
-  // ---- Contrat — fichiers (scans, bucket privé) ----
-  addContratFichier: (input: AddContratFichierInput) => Promise<ContratFichier>;
-  deleteContratFichier: (id: string) => Promise<void>;
-  getSignedContratFichierUrl: (storagePath: string) => Promise<string>;
-
   // ---- Dépenses ----
   addDepense: (input: AddDepenseInput) => Promise<Depense>;
   removeDepense: (id: string) => Promise<void>;
@@ -908,7 +839,6 @@ const INITIAL_SEQUENCES = {
   fichierSeq: 1,
   devisSeq: 1,
   transporteurSeq: 1,
-  commentSeq: 1,
   factureSeq: 1,
   fournisseurSeq: 1,
   dossierFournisseurSeq: 1,
@@ -921,7 +851,9 @@ const INITIAL_SEQUENCES = {
 
 export const useStore = create<SLTTState>()(
   persist(
-    (set, get) => ({
+    (set, get, api) => ({
+      ...createContratFichiersSlice(set, get, api),
+      ...createArchivesSlice(set, get, api),
       clients: [],
       dossiers: [],
       ecritures: [],
@@ -932,14 +864,12 @@ export const useStore = create<SLTTState>()(
       subDossiers: [],
       fichiers: [],
       devis: [],
-      comments: [],
       transporteurs: [],
       factures: [],
       fournisseurs: [],
       dossierFournisseurs: [],
       societes: [],
       contrats: [],
-      contratFichiers: [],
       depenses: [],
       contratPrestations: [],
       bonsSortieCaisse: [],
@@ -1016,7 +946,6 @@ export const useStore = create<SLTTState>()(
             supabase.from("bons_sortie").select("*, clients(nom), societes(nom)"),
             supabase.from("sub_dossiers").select("*"),
             supabase.from("dossier_fichiers").select("*"),
-            supabase.from("dossier_comments").select("*"),
             supabase.from("devis").select("*, clients(nom)"),
             supabase.from("transporteurs").select("*"),
             supabase.from("fournisseurs").select("*"),
@@ -1027,6 +956,7 @@ export const useStore = create<SLTTState>()(
             supabase.from("contrat_prestations").select("*"),
             supabase.from("bons_sortie_caisse").select("*, bons_sortie_caisse_lignes(*)"),
             supabase.from("audit_logs").select("*").order("date", { ascending: false }),
+            supabase.from("archives").select("*"),
           ]);
 
           const secondaryError = secondaryResults.find((r) => r.error)?.error;
@@ -1040,7 +970,6 @@ export const useStore = create<SLTTState>()(
             { data: bons },
             { data: subDossiers },
             { data: fichiers },
-            { data: comments },
             { data: devis },
             { data: transporteurs },
             { data: fournisseurs },
@@ -1051,6 +980,7 @@ export const useStore = create<SLTTState>()(
             { data: contratPrestations },
             { data: bonsSortieCaisse },
             { data: auditLogs },
+            { data: archives },
           ] = secondaryResults;
 
           const mappedFournisseurs = (fournisseurs || []).map(mapFournisseurFromDb);
@@ -1067,7 +997,6 @@ export const useStore = create<SLTTState>()(
               bons: (bons || []).map(mapBonFromDb),
               subDossiers: (subDossiers || []).map(mapSubDossierFromDb),
               fichiers: (fichiers || []).map(mapFichierFromDb),
-              comments: (comments || []).map(mapCommentFromDb),
               devis: (devis || []).map(mapDevisFromDb),
               transporteurs: (transporteurs || []).map(mapTransporteurFromDb),
               fournisseurs: syncFournisseurStats(mappedDossierFournisseurs, mappedFournisseurs),
@@ -1078,6 +1007,7 @@ export const useStore = create<SLTTState>()(
               contratPrestations: mappedPrestations,
               bonsSortieCaisse: (bonsSortieCaisse || []).map(mapBonSortieCaisseFromDb),
               auditLogs: (auditLogs || []).map(mapAuditLogFromDb),
+              archives: (archives || []).map(mapArchiveFromDb),
               clients: syncClientStats(s.dossiers, s.factures, s.ecritures, s.clients),
               lastSyncedAt: Date.now(),
             };
@@ -1137,7 +1067,6 @@ export const useStore = create<SLTTState>()(
             date: input.date,
             date_echeance: input.dateEcheance,
             date_dedouanement: input.dateDedouanement,
-            checklist_docs: [],
             mode_transport: input.modeTransport,
             no_conteneur: input.noConteneur,
             port_entree: input.portEntree,
@@ -1206,29 +1135,6 @@ export const useStore = create<SLTTState>()(
         }
       },
 
-      updateDossierChecklist: async (dossierId, docId, checked) => {
-        const dossier = get().dossiers.find((d) => d.id === dossierId);
-        if (!dossier) return;
-
-        const updatedDocs = checked
-          ? [...(dossier.checklistDocs ?? []), docId]
-          : (dossier.checklistDocs ?? []).filter((x) => x !== docId);
-
-        
-        const { error } = await supabase
-          .from("dossiers")
-          .update({ checklist_docs: updatedDocs })
-          .eq("id", dossierId);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          dossiers: s.dossiers.map((d) =>
-            d.id !== dossierId ? d : { ...d, checklistDocs: updatedDocs }
-          ),
-        }));
-      },
-
       removeDossier: async (id) => {
         const dossier = get().dossiers.find((d) => d.id === id);
         
@@ -1238,14 +1144,12 @@ export const useStore = create<SLTTState>()(
 
         set((s) => {
           const updatedDossiers = s.dossiers.filter((d) => d.id !== id);
-          const removedDF = s.dossierFournisseurs.filter((df) => df.dossierId === id);
           return {
             dossiers: updatedDossiers,
             clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-            ecritures: s.ecritures.filter((e) => e.dossierId !== id),
+            ecritures: s.ecritures.map((e) => (e.dossierId === id ? { ...e, dossierId: undefined } : e)),
             fichiers: s.fichiers.filter((f) => f.dossierId !== id),
             subDossiers: s.subDossiers.filter((sd) => sd.dossierId !== id),
-            comments: s.comments.filter((c) => c.dossierId !== id),
             factures: s.factures.map((f) => (f.dossierId === id ? { ...f, dossierId: null } : f)),
             dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.dossierId !== id),
             fournisseurs: syncFournisseurStats(
@@ -1253,6 +1157,7 @@ export const useStore = create<SLTTState>()(
               s.fournisseurs
             ),
             devis: s.devis.map((d) => (d.dossierId === id ? { ...d, dossierId: null } : d)),
+            archives: s.archives.map((a) => (a.dossierId === id ? { ...a, dossierId: undefined } : a)),
           };
         });
 
@@ -1966,14 +1871,17 @@ export const useStore = create<SLTTState>()(
       },
 
       deleteFichier: async (id) => {
-        
+        const fichier = get().fichiers.find((f) => f.id === id);
+
         const { error } = await supabase.from("dossier_fichiers").delete().eq("id", id);
         if (error) throw error;
-      
 
         set((s) => ({
           fichiers: s.fichiers.filter((f) => f.id !== id),
         }));
+        if (fichier) {
+          await get().addAuditLog("Dossiers", "Suppression", `Fichier "${fichier.nom}" supprimé`);
+        }
       },
 
       deleteFichiersByDossier: async (dossierId) => {
@@ -1984,44 +1892,6 @@ export const useStore = create<SLTTState>()(
 
         set((s) => ({
           fichiers: s.fichiers.filter((f) => f.dossierId !== dossierId),
-        }));
-      },
-
-      // ---- Commentaires dossiers ----
-      addComment: async (dossierId, texte) => {
-        const seq = get().commentSeq;
-        const userNom = getConnectedUserName();
-
-        
-        const { data, error } = await supabase
-          .from("dossier_comments")
-          .insert({
-            dossier_id: dossierId,
-            texte,
-            user_name: userNom,
-            date: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        const newComment = mapCommentFromDb(data);
-        set((s) => ({
-          comments: [newComment, ...s.comments],
-          commentSeq: seq + 1,
-        }));
-        return newComment;
-
-      },
-
-      deleteComment: async (id) => {
-        
-        const { error } = await supabase.from("dossier_comments").delete().eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          comments: s.comments.filter((c) => c.id !== id),
         }));
       },
 
@@ -2794,55 +2664,6 @@ export const useStore = create<SLTTState>()(
 
       getContrat: (id) => get().contrats.find((c) => c.id === id),
 
-      // ---- Contrat — fichiers (scans, bucket privé) ----
-      addContratFichier: async (input) => {
-        const seq = get().contratFichierSeq;
-        const res = await fetch(input.dataUrl);
-        const blob = await res.blob();
-        const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
-        const path = `${input.contratId}/${Date.now()}-${safeName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("contrat-fichiers")
-          .upload(path, blob, { contentType: blob.type || "application/octet-stream", upsert: false });
-        if (uploadError) throw uploadError;
-
-        const { data, error } = await supabase
-          .from("contrat_fichiers")
-          .insert({
-            contrat_id: input.contratId,
-            nom: input.nom,
-            taille: input.taille,
-            type: input.type,
-            storage_path: path,
-          })
-          .select()
-          .single();
-        if (error) throw error;
-
-        const newFile = mapContratFichierFromDb(data);
-        set((s) => ({ contratFichiers: [newFile, ...s.contratFichiers], contratFichierSeq: seq + 1 }));
-        return newFile;
-      },
-
-      deleteContratFichier: async (id) => {
-        const file = get().contratFichiers.find((f) => f.id === id);
-        if (file) {
-          await supabase.storage.from("contrat-fichiers").remove([file.storagePath]);
-        }
-        const { error } = await supabase.from("contrat_fichiers").delete().eq("id", id);
-        if (error) throw error;
-        set((s) => ({ contratFichiers: s.contratFichiers.filter((f) => f.id !== id) }));
-      },
-
-      getSignedContratFichierUrl: async (storagePath) => {
-        const { data, error } = await supabase.storage
-          .from("contrat-fichiers")
-          .createSignedUrl(storagePath, 3600);
-        if (error) throw error;
-        return data.signedUrl;
-      },
-
       // ---- Dépenses ----
       addDepense: async (input) => {
         const seq = get().depenseSeq;
@@ -3078,7 +2899,6 @@ export const useStore = create<SLTTState>()(
         fichierSeq: s.fichierSeq,
         devisSeq: s.devisSeq,
         transporteurSeq: s.transporteurSeq,
-        commentSeq: s.commentSeq,
         factureSeq: s.factureSeq,
         fournisseurSeq: s.fournisseurSeq,
         dossierFournisseurSeq: s.dossierFournisseurSeq,

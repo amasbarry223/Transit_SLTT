@@ -124,6 +124,14 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     label: "Gestion utilisateurs",
     permissions: [{ key: "utilisateurs:manage", label: "Administration", action: "manage" }],
   },
+  {
+    id: "archives",
+    label: "Archives",
+    permissions: [
+      { key: "archives:read", label: "Lecture", action: "read" },
+      { key: "archives:write", label: "Écriture", action: "write" },
+    ],
+  },
 ];
 
 export const ALL_PERMISSION_KEYS = PERMISSION_MODULES.flatMap((m) =>
@@ -145,6 +153,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "calendrier:read",
     "contrats:read",
     "contrats:write",
+    "archives:read",
+    "archives:write",
   ],
   "Agent de transit": [
     "dashboard:read",
@@ -162,6 +172,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "transporteurs:write",
     "calendrier:read",
     "contrats:read",
+    "archives:read",
+    "archives:write",
   ],
   Magasinier: [
     "dashboard:read",
@@ -172,6 +184,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "calendrier:read",
     "contrats:read",
     "contrats:write",
+    "archives:read",
   ],
 };
 

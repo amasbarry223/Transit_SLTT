@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import {
   Shield,
   Lock,
@@ -21,7 +21,7 @@ import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { useCurrentUser, useCanManageUsers, usePermission } from "@/hooks/use-permission";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
-import { UsersTab } from "@/components/sltt/screens/users-tab";
+import { UsersTab } from "@/components/sltt/users-tab";
 import type { UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
@@ -768,13 +768,15 @@ export function ParametresScreen() {
   const canViewAudit = usePermission("parametres:read");
   const [active, setActive] = useState<ParamTab>("profile");
 
-  useEffect(() => {
+  const [prevPerms, setPrevPerms] = useState({ canManageUsers, canViewAudit });
+  if (prevPerms.canManageUsers !== canManageUsers || prevPerms.canViewAudit !== canViewAudit) {
+    setPrevPerms({ canManageUsers, canViewAudit });
     setActive((prev) => {
       if (prev === "users" && !canManageUsers) return "profile";
       if (prev === "audit" && !canViewAudit) return "profile";
       return prev;
     });
-  }, [canManageUsers, canViewAudit]);
+  }
 
   return (
     <div className="space-y-6">

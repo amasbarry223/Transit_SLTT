@@ -50,8 +50,6 @@ export interface Dossier {
   dateEcheance?: string;
   /** Date réelle de dédouanement (remplie quand statut → Dédouané). */
   dateDedouanement?: string;
-  /** IDs des documents de la checklist reçus. */
-  checklistDocs?: string[];
   /** Mode de transport principal. */
   modeTransport?: "Maritime" | "Aérien" | "Routier" | "Ferroviaire";
   /** Numéro de conteneur (si Maritime). */
@@ -61,6 +59,38 @@ export interface Dossier {
   /** Poids total en kg. */
   poidsTotal?: number;
   notes?: string;
+}
+
+export type FactureStatut = "Brouillon" | "Envoyée" | "Partielle" | "Soldée" | "Annulée";
+
+export interface FactureLigne {
+  id: string;
+  description: string;
+  quantite: number;
+  prixUnitaire: number;
+  montantHT: number;
+}
+
+export interface Facture {
+  id: string;
+  numero: string;
+  dossierId: string | null;
+  clientId: string;
+  clientNom: string;
+  societeId?: string;
+  societeNom?: string;
+  date: string;
+  dateEcheance: string;
+  statut: FactureStatut;
+  lignes: FactureLigne[];
+  tauxTVA: number;
+  montantHT: number;
+  montantTVA: number;
+  montantTTC: number;
+  montantPaye: number;
+  notes: string;
+  creePar: string;
+  creeLe: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -127,17 +157,6 @@ export interface DossierFournisseurInput {
   statut: "En attente" | "Payé" | "Litige";
   date: string;
 }
-
-/** Documents standards d'un dossier de transit. */
-export const CHECKLIST_DOCS = [
-  { id: "bl",                  label: "Connaissement (BL)",         obligatoire: true  },
-  { id: "dau",                 label: "Déclaration en douane (DAU)", obligatoire: true  },
-  { id: "bad",                 label: "Bon à délivrer (BAD)",        obligatoire: true  },
-  { id: "facture-commerciale", label: "Facture commerciale",         obligatoire: true  },
-  { id: "colisage",            label: "Liste de colisage",           obligatoire: true  },
-  { id: "certif-origine",      label: "Certificat d'origine",        obligatoire: false },
-  { id: "assurance",           label: "Attestation d'assurance",     obligatoire: false },
-] as const;
 
 export interface Ecriture {
   id: string;
@@ -304,6 +323,30 @@ export interface ContratFichier {
   storagePath: string;
 }
 
+export type TypeDocument = "BL" | "DAU" | "Facture" | "Reçu" | "Contrat" | "Autre";
+
+/**
+ * Document archivé (module Archives) — bucket `archives` privé, storagePath
+ * seul est persisté, l'URL signée s'obtient à la demande (store.getSignedArchiveUrl).
+ * Rattachement optionnel à un dossier, une facture ou une dépense ; sinon "libre"
+ * avec client/société directs.
+ */
+export interface Archive {
+  id: string;
+  nom: string;
+  typeDocument: TypeDocument;
+  taille: number;
+  type: string;
+  storagePath: string;
+  dossierId?: string;
+  factureId?: string;
+  depenseId?: string;
+  clientId?: string;
+  societeId?: string;
+  creePar: string;
+  createdAt: string;
+}
+
 export interface Depense {
   id: string;
   contratId: string;
@@ -377,14 +420,6 @@ export interface DossierFichier {
   type: string;
   dateUpload: string;
   dataUrl: string;
-}
-
-export interface DossierComment {
-  id: string;
-  dossierId: string;
-  userName: string;
-  texte: string;
-  date: string;
 }
 
 export type DevisStatut = "Brouillon" | "Envoyé" | "Accepté" | "Refusé" | "Expiré";

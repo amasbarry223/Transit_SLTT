@@ -21,9 +21,10 @@ import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcritureStatutBadge, EcartValue } from "@/components/sltt/status-badge";
-import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
+import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
@@ -55,10 +56,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 8;
+
+/** Onglet spécial : écritures sans société assignée (dossiers de transit
+ * classiques, sorties de caisse) — activité de la société mère SLTT. */
+const SLTT_MERE_TAB = "__sltt_mere__";
 
 type StatutFilter = "all" | "En attente" | "Soldé";
 
@@ -99,15 +105,22 @@ export function ComptabiliteScreen() {
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
   const recordPayment = useStore((s) => s.recordPayment);
   const addEcriture = useStore((s) => s.addEcriture);
-  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
 
-  // F1/F5 : quand une société précise est sélectionnée, les écritures non
-  // affectées (societeId absent = transit global) sont exclues ; en vue
-  // "Toutes sociétés" elles restent incluses (activité non affectée).
-  const ecritures = useMemo(
-    () => (selectedSocieteId ? allEcritures.filter((e) => e.societeId === selectedSocieteId) : allEcritures),
-    [allEcritures, selectedSocieteId],
+  // Onglets : Toutes / une par société / société mère SLTT (écritures sans société).
+  const [activeTab, setActiveTab] = useState<string>(SLTT_MERE_TAB);
+
+  // Tri alphabétique simple — pas de liste de noms codée en dur à tenir à jour
+  // si une société est renommée ou qu'une nouvelle est ajoutée.
+  const sortedSocietes = useMemo(
+    () => [...societes].sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
+    [societes],
   );
+
+  const ecritures = useMemo(() => {
+    if (activeTab === "all") return allEcritures;
+    if (activeTab === SLTT_MERE_TAB) return allEcritures.filter((e) => !e.societeId);
+    return allEcritures.filter((e) => e.societeId === activeTab);
+  }, [allEcritures, activeTab]);
 
   const now = new Date();
   // F5 : le Bénéfice compte une écriture au mois où l'argent est réellement
@@ -273,11 +286,12 @@ export function ComptabiliteScreen() {
     setNeMode("Virement");
     setNeDate(new Date().toISOString().slice(0, 10));
     setNeNote("");
-    setNeSocieteId(selectedSocieteId ?? "");
+    setNeSocieteId(activeTab !== "all" && activeTab !== SLTT_MERE_TAB ? activeTab : "");
   }
 
   useEffect(() => {
     if (selectedId === "new") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le dialogue puis consomme le marqueur "new" de l'URL
       resetNewEcriture();
       setNewOpen(true);
       go("comptabilite");
@@ -350,6 +364,20 @@ export function ComptabiliteScreen() {
           </Button>
         )}
       </PageHeader>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="h-10 flex-wrap">
+          <TabsTrigger value="all">Toutes</TabsTrigger>
+          {sortedSocietes.map((s) => (
+            <TabsTrigger key={s.id} value={s.id}>
+              Société {s.nom}
+            </TabsTrigger>
+          ))}
+          <TabsTrigger value={SLTT_MERE_TAB} title="Société Traoré de Logistique, Transit et Transport">
+            SLTT
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="flex items-start gap-2.5 rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-950/30 px-4 py-3 text-xs text-blue-900 dark:text-blue-200">
         <Info className="mt-0.5 size-4 shrink-0 text-blue-500" />
@@ -481,8 +509,6 @@ export function ComptabiliteScreen() {
             </SelectContent>
           </Select>
 
-          <SocieteFilterSelect className="w-full sm:w-44" />
-
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -509,31 +535,28 @@ export function ComptabiliteScreen() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-              <Receipt className="size-7" />
-            </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Aucune écriture trouvée
-            </h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-              {hasActiveFilters
+          <EmptyState
+            icon={Receipt}
+            title="Aucune écriture trouvée"
+            description={
+              hasActiveFilters
                 ? "Modifiez vos filtres ou créez une nouvelle écriture."
-                : "Commencez par enregistrer votre première écriture comptable."}
-            </p>
-            {!hasActiveFilters && canWrite && (
-              <Button
-                className="mt-5"
-                onClick={() => {
-                  resetNewEcriture();
-                  setNewOpen(true);
-                }}
-              >
-                <Plus className="size-4" />
-                Nouvelle écriture
-              </Button>
-            )}
-          </div>
+                : "Commencez par enregistrer votre première écriture comptable."
+            }
+            action={
+              !hasActiveFilters && canWrite ? (
+                <Button
+                  onClick={() => {
+                    resetNewEcriture();
+                    setNewOpen(true);
+                  }}
+                >
+                  <Plus className="size-4" />
+                  Nouvelle écriture
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">

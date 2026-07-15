@@ -10,9 +10,6 @@ import {
   FileSignature,
   Upload,
   Download,
-  File,
-  Image as ImageIcon,
-  FileSpreadsheet,
   Receipt,
   CheckCircle2,
 } from "lucide-react";
@@ -26,6 +23,7 @@ import {
 } from "@/lib/store";
 import type { PaiementMode } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,17 +60,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo (aligné sur la limite du bucket contrat-fichiers)
 
@@ -91,18 +80,6 @@ const PRESTATION_STATUT_TONE: Record<ContratPrestationStatut, "blue" | "emerald"
 };
 
 const MODES_PAIEMENT: PaiementMode[] = ["Espèces", "Virement", "Mobile Money", "Chèque"];
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-}
-
-function getFileIconComponent(mimeType: string) {
-  if (mimeType.startsWith("image/")) return ImageIcon;
-  if (mimeType.includes("sheet") || mimeType.includes("excel")) return FileSpreadsheet;
-  return File;
-}
 
 export function ContratDetailScreen() {
   const { toast } = useToast();
@@ -511,22 +488,13 @@ export function ContratDetailScreen() {
         }}
       />
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce contrat ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Le contrat {contrat.reference} sera définitivement supprimé. Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleDelete}>
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Supprimer ce contrat ?"
+        description={<>Le contrat {contrat.reference} sera définitivement supprimé. Cette action est irréversible.</>}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

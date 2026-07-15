@@ -23,7 +23,8 @@ export type AuditModule =
   | "Utilisateurs"
   | "Contrats"
   | "Dépenses"
-  | "Sociétés";
+  | "Sociétés"
+  | "Archives";
 
 export type AuditEntry = {
   id: string;
@@ -94,7 +95,12 @@ export async function insertAuditLog(params: {
     if (error) throw error;
     return mapAuditLogFromDb(data as Record<string, unknown>);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "object" && err !== null && "message" in err
+          ? String((err as { message: unknown }).message)
+          : String(err);
     console.error(`[audit] Échec insert (${params.module}/${params.action}):`, message);
     return null;
   }

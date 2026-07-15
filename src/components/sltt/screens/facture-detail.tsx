@@ -443,9 +443,11 @@ function PaiementDialog({
   const [montant, setMontant] = React.useState(String(reste));
   const [saving, setSaving] = React.useState(false);
 
-  React.useEffect(() => {
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) setMontant(String(reste));
-  }, [open, reste]);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -589,22 +591,24 @@ export function FactureDetailScreen() {
   >([]);
 
   const editKey = isEditing ? (facture?.id ?? null) : null;
-  React.useEffect(() => {
-    if (editKey === null || !facture) return;
-    setEditDate(facture.date);
-    setEditDateEcheance(facture.dateEcheance);
-    setEditTvaOn(facture.tauxTVA > 0);
-    setEditSocieteId(facture.societeId ?? "");
-    setEditNotes(facture.notes);
-    setEditLignes(
-      facture.lignes.map((l) => ({
-        description: l.description,
-        quantite: String(l.quantite),
-        prixUnitaire: String(l.prixUnitaire),
-      })),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when entering edit for a facture
-  }, [editKey]);
+  const [prevEditKey, setPrevEditKey] = React.useState(editKey);
+  if (editKey !== prevEditKey) {
+    setPrevEditKey(editKey);
+    if (editKey !== null && facture) {
+      setEditDate(facture.date);
+      setEditDateEcheance(facture.dateEcheance);
+      setEditTvaOn(facture.tauxTVA > 0);
+      setEditSocieteId(facture.societeId ?? "");
+      setEditNotes(facture.notes);
+      setEditLignes(
+        facture.lignes.map((l) => ({
+          description: l.description,
+          quantite: String(l.quantite),
+          prixUnitaire: String(l.prixUnitaire),
+        })),
+      );
+    }
+  }
 
   if (!facture) {
     return (

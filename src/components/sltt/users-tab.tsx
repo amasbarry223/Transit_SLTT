@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import {
   UserPlus,
   Pencil,
@@ -38,6 +38,7 @@ import {
 } from "@/components/sltt/permission-matrix";
 import type { UserInput, UserRole } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
+import { matchesQuery } from "@/lib/search-filter";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
@@ -60,16 +61,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import {
   Table,
   TableHeader,
@@ -697,28 +689,26 @@ export function UsersTab() {
   );
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     return users.filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
-      if (!q) return true;
-      return (
-        u.nom.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.role.toLowerCase().includes(q)
-      );
+      return matchesQuery(u, ["nom", "email", "role"], search.trim());
     });
   }, [users, search, roleFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / USERS_PAGE_SIZE));
 
-  useEffect(() => {
+  const [prevSearch, setPrevSearch] = useState(search);
+  const [prevRoleFilter, setPrevRoleFilter] = useState(roleFilter);
+  if (search !== prevSearch || roleFilter !== prevRoleFilter) {
+    setPrevSearch(search);
+    setPrevRoleFilter(roleFilter);
     setPage(1);
-  }, [search, roleFilter]);
+  }
 
   const safePage = Math.min(page, totalPages);
-  useEffect(() => {
-    if (page !== safePage) setPage(safePage);
-  }, [page, safePage]);
+  if (page !== safePage) {
+    setPage(safePage);
+  }
 
   const paged = filtered.slice((safePage - 1) * USERS_PAGE_SIZE, safePage * USERS_PAGE_SIZE);
   const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * USERS_PAGE_SIZE + 1;
@@ -1035,38 +1025,25 @@ export function UsersTab() {
         onResetPassword={handleResetPassword}
       />
 
-      <AlertDialog open={!!deleteId} onOpenChange={(v) => { if (!v) setDeleteId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer l&apos;utilisateur ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              <strong>{userToDelete?.nom}</strong> sera définitivement supprimé. Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => {
-                if (!deleteId) return;
-                try {
-                  await removeUser(deleteId);
-                  toast({ title: "Utilisateur supprimé" });
-                  setDeleteId(null);
-                } catch (err: unknown) {
-                  toast({
-                    title: "Erreur",
-                    description: err instanceof Error ? err.message : "Suppression impossible.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={!!deleteId}
+        onOpenChange={(v) => { if (!v) setDeleteId(null); }}
+        title="Supprimer l'utilisateur ?"
+        description={<><strong>{userToDelete?.nom}</strong> sera définitivement supprimé. Cette action est irréversible.</>}
+        onConfirm={async () => {
+          if (!deleteId) return;
+          try {
+            await removeUser(deleteId);
+            toast({ title: "Utilisateur supprimé" });
+          } catch (err: unknown) {
+            toast({
+              title: "Erreur",
+              description: err instanceof Error ? err.message : "Suppression impossible.",
+              variant: "destructive",
+            });
+          }
+        }}
+      />
     </div>
   );
 }

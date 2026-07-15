@@ -13,6 +13,7 @@ import {
   Receipt,
   Building2,
   FileSignature,
+  Archive,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ViewKey } from "@/lib/nav-store";
@@ -39,6 +40,7 @@ export const navItems: NavItem[] = [
   { key: "entreposage", label: "Entreposage", shortLabel: "Stock", icon: Warehouse, requiredPermission: "stock:read", section: "Logistique" },
   { key: "contrats", label: "Contrats", icon: FileSignature, requiredPermission: "contrats:read", section: "Logistique" },
   { key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: FileOutput, requiredPermission: "bons:read", section: "Logistique" },
+  { key: "archives", label: "Archives", icon: Archive, requiredPermission: "archives:read", section: "Logistique" },
   { key: "fournisseurs", label: "Fournisseurs", icon: Building2, requiredPermission: "fournisseurs:read", section: "Logistique" },
   { key: "transporteurs", label: "Transporteurs", icon: Truck, requiredPermission: "transporteurs:read", section: "Logistique" },
   { key: "calendrier", label: "Calendrier", icon: CalendarDays, requiredPermission: "calendrier:read", section: "Logistique" },

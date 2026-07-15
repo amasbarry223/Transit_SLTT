@@ -29,9 +29,12 @@ import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { exportToCSV, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
+import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
+import { matchesQuery } from "@/lib/search-filter";
 import { usePermission } from "@/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 
 import { Card } from "@/components/ui/card";
@@ -64,16 +67,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +76,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
+import { StatusQuickAction } from "@/components/sltt/status-quick-action";
 import { TablePagination } from "@/components/sltt/table-pagination";
 
 /* ------------------------------------------------------------------ */
@@ -159,18 +154,20 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
 
   // Réinitialise le formulaire quand le dialog s'ouvre ou que le devis cible change.
   const openKey = open ? (devis?.id ?? "new") : null;
-  useEffect(() => {
-    if (openKey === null) return;
-    setClientId(devis?.clientId ?? "");
-    setClientNom(devis?.clientNom ?? "");
-    setNature(devis?.nature ?? "");
-    setDroitDouane(devis ? String(devis.droitDouane) : "");
-    setFraisCircuit(devis ? String(devis.fraisCircuit) : "");
-    setFraisPrestation(devis ? String(devis.fraisPrestation) : "");
-    setDateValidite(devis?.dateValidite ?? "");
-    setNotes(devis?.notes ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when dialog target opens/changes
-  }, [openKey]);
+  const [prevOpenKey, setPrevOpenKey] = useState(openKey);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    if (openKey !== null) {
+      setClientId(devis?.clientId ?? "");
+      setClientNom(devis?.clientNom ?? "");
+      setNature(devis?.nature ?? "");
+      setDroitDouane(devis ? String(devis.droitDouane) : "");
+      setFraisCircuit(devis ? String(devis.fraisCircuit) : "");
+      setFraisPrestation(devis ? String(devis.fraisPrestation) : "");
+      setDateValidite(devis?.dateValidite ?? "");
+      setNotes(devis?.notes ?? "");
+    }
+  }
 
   const dd = parseAmount(droitDouane);
   const fc = parseAmount(fraisCircuit);
@@ -302,11 +299,18 @@ export function DevisScreen() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editDevis, setEditDevis] = useState<Devis | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { target: deleteTarget, setTarget: setDeleteTarget, confirm: handleDelete } = useDeleteConfirm<Devis>(
+    removeDevis,
+    (d) => d.id,
+    (d) => d.reference,
+    "Devis supprimé",
+    "Impossible de supprimer le devis",
+  );
   const [convertTarget, setConvertTarget] = useState<Devis | null>(null);
 
   useEffect(() => {
     if (selectedId === "new") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le dialogue puis consomme le marqueur "new" de l'URL
       setEditDevis(null);
       setFormOpen(true);
       go("devis");
@@ -331,9 +335,8 @@ export function DevisScreen() {
 
   /* ---- Filters ---- */
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
     const list = devisList.filter((d) => {
-      if (q && !`${d.reference} ${d.clientNom} ${d.nature}`.toLowerCase().includes(q)) return false;
+      if (!matchesQuery(d, ["reference", "clientNom", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
       return true;
@@ -393,18 +396,6 @@ export function DevisScreen() {
       toast({ title: "Statut mis à jour", description: `${d.reference} → ${toStatut}` });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message || "Impossible de mettre à jour le statut", variant: "destructive" });
-    }
-  }
-
-  async function handleDelete() {
-    const d = devisList.find((x) => x.id === deleteId);
-    if (!d) return;
-    try {
-      await removeDevis(d.id);
-      toast({ title: "Devis supprimé", description: d.reference });
-      setDeleteId(null);
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de supprimer le devis", variant: "destructive" });
     }
   }
 
@@ -598,23 +589,23 @@ export function DevisScreen() {
         {!isLoaded ? (
           <DevisTableSkeleton />
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-              <ClipboardList className="size-7" />
-            </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Aucun devis trouvé</h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-              {hasActiveFilters
+          <EmptyState
+            icon={ClipboardList}
+            title="Aucun devis trouvé"
+            description={
+              hasActiveFilters
                 ? "Modifiez vos filtres ou créez un nouveau devis."
-                : "Commencez par créer votre premier devis client."}
-            </p>
-            {!hasActiveFilters && canWrite && (
-              <Button className="mt-5" onClick={() => { setEditDevis(null); setFormOpen(true); }}>
-                <Plus className="size-4" />
-                Nouveau devis
-              </Button>
-            )}
-          </div>
+                : "Commencez par créer votre premier devis client."
+            }
+            action={
+              !hasActiveFilters && canWrite ? (
+                <Button onClick={() => { setEditDevis(null); setFormOpen(true); }}>
+                  <Plus className="size-4" />
+                  Nouveau devis
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -689,15 +680,12 @@ export function DevisScreen() {
                                 <FolderKanban className="size-3" /> Dossier créé
                               </button>
                             ) : next && canWrite && (
-                              <button
-                                className={cn(
-                                  "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80",
-                                  next.bgClass, next.colorClass,
-                                )}
+                              <StatusQuickAction
+                                label={next.label}
+                                bgClass={next.bgClass}
+                                colorClass={next.colorClass}
                                 onClick={(e) => { e.stopPropagation(); handleQuickStatut(d, next.to); }}
-                              >
-                                {next.label}
-                              </button>
+                              />
                             )}
                           </div>
                         </TableCell>
@@ -747,7 +735,7 @@ export function DevisScreen() {
                                 {canWrite && (
                                   <DropdownMenuItem
                                     className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
-                                    onClick={() => setDeleteId(d.id)}
+                                    onClick={() => setDeleteTarget(d)}
                                   >
                                     <Trash2 className="mr-2 size-3.5" /> Supprimer
                                   </DropdownMenuItem>
@@ -785,22 +773,13 @@ export function DevisScreen() {
         onSave={handleSaveForm}
       />
 
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce devis ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. Le devis {devisList.find((x) => x.id === deleteId)?.reference} sera définitivement supprimé.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Supprimer ce devis ?"
+        description={<>Cette action est irréversible. Le devis {deleteTarget?.reference} sera définitivement supprimé.</>}
+        onConfirm={handleDelete}
+      />
 
       <ConvertDevisDialog
         key={convertTarget?.id ?? "closed"}

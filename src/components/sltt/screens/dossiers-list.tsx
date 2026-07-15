@@ -5,13 +5,11 @@ import {
   Plus,
   FileText,
   FileSpreadsheet,
-  Eye,
   Pencil,
   FolderKanban,
   Clock,
   CheckCircle2,
   TrendingUp,
-  Truck,
   ArrowUpDown,
 } from "lucide-react";
 
@@ -19,10 +17,12 @@ import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { calculerEcart, type DossierStatut } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { matchesQuery } from "@/lib/search-filter";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
+import { StatusQuickAction } from "@/components/sltt/status-quick-action";
 import {
   TransitionDialog,
   getNextTransition,
@@ -131,12 +131,7 @@ export function DossiersListScreen() {
 
   const filtered = useMemo(() => {
     const list = dossiers.filter((d) => {
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const haystack =
-          `${d.reference} ${d.clientNom} ${d.bl} ${d.camion} ${d.nature}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
+      if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
       if (nonSoldeOnly && d.montantInvesti - d.montantPaye <= 0) return false;
@@ -308,21 +303,6 @@ export function DossiersListScreen() {
           tooltip="Frais de prestation moins droits de douane et frais de circuit."
         />
       </div>
-
-      {stats.enCours > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/30 px-4 py-3">
-          <Truck className="mt-0.5 size-5 shrink-0 text-blue-600 dark:text-blue-400" />
-          <div>
-            <p className="text-sm font-medium text-blue-900">
-              {stats.enCours} dossier{stats.enCours > 1 ? "s" : ""} en cours
-              de traitement
-            </p>
-            <p className="mt-0.5 text-xs text-blue-800/80">
-              Dédouanement ou livraison en attente de finalisation.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       <ListFilters
@@ -652,20 +632,15 @@ export function DossiersListScreen() {
                           <div className="flex flex-col gap-1">
                             <DossierStatutBadge statut={d.statut} />
                             {nextTrans && (
-                              <button
-                                className={cn(
-                                  "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
-                                  TRANSITION_META[nextTrans].bgClass,
-                                  TRANSITION_META[nextTrans].colorClass,
-                                  "hover:opacity-80",
-                                )}
+                              <StatusQuickAction
+                                label={TRANSITION_META[nextTrans].actionLabel}
+                                bgClass={TRANSITION_META[nextTrans].bgClass}
+                                colorClass={TRANSITION_META[nextTrans].colorClass}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setTransitionDossier(d);
                                 }}
-                              >
-                                {TRANSITION_META[nextTrans].actionLabel}
-                              </button>
+                              />
                             )}
                           </div>
                         </TableCell>
@@ -674,16 +649,6 @@ export function DossiersListScreen() {
                             className="flex items-center justify-end gap-1"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
-                              aria-label={`Voir ${d.reference}`}
-                              title="Voir la fiche"
-                              onClick={() => openDossierDetail(d.id)}
-                            >
-                              <Eye className="size-4" />
-                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

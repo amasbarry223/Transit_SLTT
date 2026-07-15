@@ -60,6 +60,7 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   fournisseurs:     { title: "Fournisseurs",     sub: "Prestataires, sous-traitants et coûts externes" },
   contrats:         { title: "Contrats",         sub: "Contrats d'entreposage, dépenses et prestations optionnelles" },
   "contrat-detail": { title: "Détail contrat",   sub: "Infos, dépenses, prestations optionnelles et documents" },
+  archives:         { title: "Archives",         sub: "Documents scannés — dossiers, factures, dépenses" },
   parametres:       { title: "Paramètres",       sub: "Utilisateurs, rôles et sécurité" },
 };
 
@@ -274,7 +275,7 @@ export function Topbar() {
         <SheetContent side="left" className="w-[260px] p-0">
           <SheetHeader className="flex h-16 flex-row items-center justify-start gap-3 border-b border-border px-5">
             <Image
-              src="/logo.png"
+              src="/logoV.png"
               alt="SLTT"
               width={48}
               height={48}

@@ -60,7 +60,6 @@ create table if not exists public.dossiers (
     date date not null default current_date,
     date_echeance date,
     date_dedouanement date,
-    checklist_docs text[] not null default '{}',
     mode_transport text check (mode_transport in ('Maritime', 'Aérien', 'Routier', 'Ferroviaire')),
     no_conteneur text,
     port_entree text,

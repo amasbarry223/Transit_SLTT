@@ -25,6 +25,7 @@ export type ViewKey =
   | "fournisseurs"
   | "contrats"
   | "contrat-detail"
+  | "archives"
   | "parametres";
 
 /** TTL session sans "Rester connecté" : 8 heures */

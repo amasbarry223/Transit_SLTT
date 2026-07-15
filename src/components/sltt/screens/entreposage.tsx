@@ -23,7 +23,7 @@ import type { StockItem, StockItemInput } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import type { Mouvement } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { exportToCSV, printStockInventory } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge, StockStatutBadge } from "@/components/sltt/status-badge";
@@ -774,166 +774,23 @@ export function EntreposageScreen() {
   }
 
   function handlePrintStock() {
-    const sumPayee = stock.reduce((acc, s) => acc + s.sommePayee, 0);
-    const sumReste = stock.reduce((acc, s) => acc + s.resteAPayer, 0);
-    const valeurTotale = sumPayee + sumReste;
-    const nbFaible = stock.filter((s) => s.quantite < s.seuil).length;
-    const nbDisponibles = stock.length - nbFaible;
-
-    const rowsHTML = stock
-      .map(
-        (s, i) => {
-          const faible = s.quantite < s.seuil;
-          return `<tr class="${faible ? "row-faible" : ""}">
-            <td class="col-num">${i + 1}</td>
-            <td>
-              <strong class="${faible ? "name-warn" : ""}">${faible ? "⚠ " : ""}${htmlEscape(s.marchandise)}</strong>
-            </td>
-            <td class="num">${s.quantite}</td>
-            <td class="num col-seuil">${s.seuil}</td>
-            <td class="col-unit">${htmlEscape(s.unite)}</td>
-            <td>${htmlEscape(s.depositaire)}</td>
-            <td>${htmlEscape(s.commercial)}</td>
-            <td class="num col-payee">${formatFCFA(s.sommePayee, false)}</td>
-            <td class="num col-reste">${s.resteAPayer > 0 ? formatFCFA(s.resteAPayer, false) : "—"}</td>
-            <td>${faible
-              ? '<span class="badge" style="background:#fee2e2;color:#991b1b">Stock faible</span>'
-              : '<span class="badge" style="background:#d1fae5;color:#065f46">Disponible</span>'
-            }</td>
-          </tr>`;
-        }
-      )
-      .join("");
-
-    printHTML(
-      "Inventaire du stock",
-      `
-      <style>
-        .kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 14px;
-          margin-bottom: 32px;
-        }
-        .kpi-card {
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 16px;
-          border-left: 4px solid;
-        }
-        .kpi-blue   { border-left-color: #1e40af; }
-        .kpi-indigo { border-left-color: #4338ca; }
-        .kpi-green  { border-left-color: #059669; }
-        .kpi-red    { border-left-color: #dc2626; }
-        .kpi-value {
-          font-size: 22px; font-weight: 800; color: #0f172a;
-          line-height: 1.1; margin-bottom: 4px;
-        }
-        .kpi-value.sm { font-size: 15px; }
-        .kpi-label {
-          font-size: 10px; color: #64748b; font-weight: 600;
-          text-transform: uppercase; letter-spacing: 0.06em;
-        }
-        .section-header {
-          display: flex; align-items: center; gap: 10px;
-          margin: 0 0 14px;
-        }
-        .section-title {
-          font-size: 11px; font-weight: 700; color: #1e40af;
-          text-transform: uppercase; letter-spacing: 0.08em; margin: 0;
-          white-space: nowrap;
-        }
-        .section-line { flex: 1; height: 1px; background: #dbeafe; }
-        .section-count {
-          font-size: 11px; color: #64748b; background: #f1f5f9;
-          border-radius: 9999px; padding: 2px 8px; font-weight: 500;
-          white-space: nowrap;
-        }
-        .col-num { color: #94a3b8; font-size: 11px; width: 24px; }
-        .col-seuil { color: #94a3b8; }
-        .col-unit { color: #64748b; font-size: 12px; }
-        .col-payee { color: #047857 !important; font-weight: 600; }
-        .col-reste { color: #b45309 !important; font-weight: 600; }
-        .row-faible td { background: #fffbeb !important; }
-        .name-warn { color: #c2410c; }
-        .totals-row td {
-          font-weight: 700;
-          background: #f1f5f9 !important;
-          border-top: 2px solid #1e40af !important;
-        }
-        .legend {
-          margin-top: 20px; font-size: 11px; color: #64748b;
-          padding: 10px 14px; background: #fefce8;
-          border-radius: 6px; border: 1px solid #fde68a;
-        }
-      </style>
-
-      <h1>Inventaire du stock</h1>
-      <div class="subtitle">
-        ${stock.length} article${stock.length !== 1 ? "s" : ""} · Édité le ${formatDateShort(new Date())}
-      </div>
-
-      <div class="kpi-grid">
-        <div class="kpi-card kpi-blue">
-          <div class="kpi-value">${stock.length}</div>
-          <div class="kpi-label">Articles en stock</div>
-        </div>
-        <div class="kpi-card kpi-indigo">
-          <div class="kpi-value sm">${formatFCFA(valeurTotale, false)}</div>
-          <div class="kpi-label">Valeur totale (FCFA)</div>
-        </div>
-        <div class="kpi-card kpi-green">
-          <div class="kpi-value">${nbDisponibles}</div>
-          <div class="kpi-label">Disponibles</div>
-        </div>
-        <div class="kpi-card kpi-red">
-          <div class="kpi-value">${nbFaible}</div>
-          <div class="kpi-label">Stock faible</div>
-        </div>
-      </div>
-
-      <div class="section-header">
-        <h2 class="section-title">Inventaire détaillé</h2>
-        <div class="section-line"></div>
-        <span class="section-count">${stock.length} référence${stock.length !== 1 ? "s" : ""}</span>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th style="width:28px">#</th>
-            <th>Marchandise</th>
-            <th class="num">Qté dispo</th>
-            <th class="num">Seuil</th>
-            <th>Unité</th>
-            <th>Dépositaire</th>
-            <th>Commercial</th>
-            <th class="num">Somme payée</th>
-            <th class="num">Reste à payer</th>
-            <th>Statut</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHTML}</tbody>
-        <tfoot>
-          <tr class="totals-row">
-            <td colspan="7">
-              Total général · ${stock.length} article${stock.length !== 1 ? "s" : ""}
-            </td>
-            <td class="num col-payee">${formatFCFA(sumPayee, false)}</td>
-            <td class="num col-reste">${formatFCFA(sumReste, false)}</td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-
-      ${nbFaible > 0 ? `
-      <div class="legend">
-        ⚠ <strong>${nbFaible} article${nbFaible > 1 ? "s" : ""}</strong>
-        ${nbFaible > 1 ? "ont" : "a"} une quantité inférieure au seuil de réapprovisionnement
-        et nécessite${nbFaible > 1 ? "nt" : ""} une commande.
-      </div>
-      ` : ""}
-      `,
+    const societeLabel = selectedSocieteId
+      ? (societes.find((s) => s.id === selectedSocieteId)?.nom ?? "Société")
+      : "Toutes les sociétés";
+    printStockInventory(
+      stock.map((s) => ({
+        marchandise: s.marchandise,
+        quantite: s.quantite,
+        seuil: s.seuil,
+        unite: s.unite,
+        depositaire: s.depositaire,
+        commercial: s.commercial,
+        sommePayee: s.sommePayee,
+        resteAPayer: s.resteAPayer,
+        societeNom: s.societeNom,
+        clientNom: s.clientNom,
+      })),
+      { societeLabel },
     );
   }
 

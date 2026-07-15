@@ -5,12 +5,15 @@ import type { LucideIcon } from "lucide-react";
 
 export function EmptyState({
   icon: Icon,
+  illustration,
   title,
   description,
   action,
   className,
 }: {
   icon?: LucideIcon;
+  /** Remplace la pastille Lucide (ex. illustration dossier). */
+  illustration?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
@@ -23,11 +26,12 @@ export function EmptyState({
         className,
       )}
     >
-      {Icon && (
-        <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-          <Icon className="size-5" />
-        </div>
-      )}
+      {illustration ??
+        (Icon && (
+          <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+            <Icon className="size-5" />
+          </div>
+        ))}
       <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{title}</p>
       {description && (
         <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{description}</p>

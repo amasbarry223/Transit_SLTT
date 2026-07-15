@@ -7,7 +7,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { LoginScreen } from "@/components/sltt/screens/login";
 import { SupabaseRequiredScreen } from "@/components/sltt/screens/supabase-required";
 import { AppShell } from "@/components/sltt/layout/app-shell";
-import { useSupabaseRealtime } from "@/lib/use-supabase-realtime";
+import { useSupabaseRealtime } from "@/hooks/use-supabase-realtime";
 import { Loader2 } from "lucide-react";
 
 export function AppRoot() {

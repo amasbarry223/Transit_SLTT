@@ -24,10 +24,13 @@ import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML, htmlEscape, printBonSortieCaisseModule } from "@/lib/export";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
+import { matchesQuery } from "@/lib/search-filter";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,18 +61,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { TablePagination } from "@/components/sltt/table-pagination";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 
 const PAGE_SIZE = 8;
 
@@ -135,6 +129,7 @@ export function BonsScreen() {
 
   useEffect(() => {
     if (selectedId === "new") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le dialogue puis consomme le marqueur "new" de l'URL
       setOpen(true);
       go("bons");
     }
@@ -152,7 +147,13 @@ export function BonsScreen() {
     Array<{ date: string; beneficiaire: string; motif: string; montant: string }>
   >([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
   const [caisseSearch, setCaisseSearch] = useState("");
-  const [caisseDeleteId, setCaisseDeleteId] = useState<string | null>(null);
+  const { target: caisseDeleteTarget, setTarget: setCaisseDeleteTarget, confirm: handleDeleteCaisse } = useDeleteConfirm<BonSortieCaisse>(
+    removeBonSortieCaisse,
+    (b) => b.id,
+    (b) => b.reference,
+    "Bon supprimé",
+    "Impossible de supprimer le bon.",
+  );
 
   const caisseStats = useMemo(
     () => ({
@@ -233,21 +234,16 @@ export function BonsScreen() {
     });
   }
 
-  async function handleDeleteCaisse() {
-    if (!caisseDeleteId) return;
-    const bon = bonsSortieCaisse.find((b) => b.id === caisseDeleteId);
-    try {
-      await removeBonSortieCaisse(caisseDeleteId);
-      toast({ title: "Bon supprimé", description: bon?.reference });
-    } catch (e) {
-      toast({
-        title: "Erreur",
-        description: e instanceof Error ? e.message : "Impossible de supprimer le bon.",
-        variant: "destructive",
-      });
-    } finally {
-      setCaisseDeleteId(null);
-    }
+  function handleViewCaisse(bon: BonSortieCaisse) {
+    handlePrintCaisse(bon);
+  }
+
+  function handlePrintCaisseWithToast(bon: BonSortieCaisse) {
+    handlePrintCaisse(bon);
+    toast({
+      title: "Bon prêt à imprimer",
+      description: `${bon.reference} — ${formatFCFA(bon.montantTotal)}.`,
+    });
   }
 
   const stats = useMemo(() => {
@@ -264,11 +260,7 @@ export function BonsScreen() {
 
   const filtered = useMemo(() => {
     return bons.filter((b) => {
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const haystack = `${b.reference} ${b.clientNom} ${b.marchandise}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
+      if (!matchesQuery(b, ["reference", "clientNom", "marchandise"], search)) return false;
       if (clientFilter !== "all" && b.clientId !== clientFilter) return false;
       if (motifFilter !== "all" && b.motif !== motifFilter) return false;
       if (statutFilter !== "all" && b.statut !== statutFilter) return false;
@@ -734,25 +726,23 @@ export function BonsScreen() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-              <ClipboardList className="size-7" />
-            </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Aucun bon trouvé
-            </h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-              {hasActiveFilters
+          <EmptyState
+            icon={ClipboardList}
+            title="Aucun bon trouvé"
+            description={
+              hasActiveFilters
                 ? "Modifiez vos filtres ou créez un nouveau bon de sortie."
-                : "Enregistrez votre premier bon pour tracer une sortie de marchandise."}
-            </p>
-            {!hasActiveFilters && canWrite && (
-              <Button className="mt-5" onClick={openDialog}>
-                <Plus className="size-4" />
-                Nouveau bon de sortie
-              </Button>
-            )}
-          </div>
+                : "Enregistrez votre premier bon pour tracer une sortie de marchandise."
+            }
+            action={
+              !hasActiveFilters && canWrite ? (
+                <Button onClick={openDialog}>
+                  <Plus className="size-4" />
+                  Nouveau bon de sortie
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -1013,9 +1003,19 @@ export function BonsScreen() {
                               variant="ghost"
                               size="icon"
                               className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+                              aria-label={`Visualiser ${b.reference}`}
+                              title="Visualiser"
+                              onClick={() => handleViewCaisse(b)}
+                            >
+                              <Eye className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
                               aria-label={`Imprimer ${b.reference}`}
                               title="PDF / Imprimer"
-                              onClick={() => handlePrintCaisse(b)}
+                              onClick={() => handlePrintCaisseWithToast(b)}
                             >
                               <FileText className="size-4" />
                             </Button>
@@ -1026,7 +1026,7 @@ export function BonsScreen() {
                                 className="size-11 text-slate-400 hover:text-red-600"
                                 aria-label={`Supprimer ${b.reference}`}
                                 title="Supprimer"
-                                onClick={() => setCaisseDeleteId(b.id)}
+                                onClick={() => setCaisseDeleteTarget(b)}
                               >
                                 <Trash2 className="size-4" />
                               </Button>
@@ -1350,22 +1350,13 @@ export function BonsScreen() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!caisseDeleteId} onOpenChange={(v) => !v && setCaisseDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce bon de sortie ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. Le bon et ses lignes seront définitivement supprimés.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleDeleteCaisse}>
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={!!caisseDeleteTarget}
+        onOpenChange={(v) => !v && setCaisseDeleteTarget(null)}
+        title="Supprimer ce bon de sortie ?"
+        description="Cette action est irréversible. Le bon et ses lignes seront définitivement supprimés."
+        onConfirm={handleDeleteCaisse}
+      />
     </div>
   );
 }

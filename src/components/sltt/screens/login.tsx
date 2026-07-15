@@ -128,13 +128,13 @@ export function LoginScreen() {
 
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="overflow-hidden rounded-2xl border border-white/25 bg-white dark:bg-slate-900 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.45)]">
-          <div className="flex flex-col items-center px-8 pb-5 pt-8">
+          <div className="flex flex-col items-center px-8 pb-6 pt-9">
             <Image
-              src="/logo.png"
-              alt="SLTT"
-              width={96}
-              height={96}
-              className="size-24 object-contain drop-shadow-md"
+              src="/logoV.png"
+              alt="SLTT — Traoré de Logistique Transit-Transport"
+              width={140}
+              height={140}
+              className="size-[132px] object-contain drop-shadow-md sm:size-[140px]"
               priority
               unoptimized
             />

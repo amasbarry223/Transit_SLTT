@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, Fragment } from "react";
 import {
   ArrowLeft, Pencil, X, CheckCircle2, Clock, XCircle, AlertCircle,
   Send, FolderKanban, Trash2, Save, AlertTriangle, User, Package,
@@ -269,18 +269,20 @@ export function DevisDetailScreen() {
 
   // Réinitialise le formulaire d'édition quand on entre en mode édition ou que le devis change.
   const editKey = isEditing ? (devis?.id ?? null) : null;
-  useEffect(() => {
-    if (editKey === null || !devis) return;
-    setFClientId(devis.clientId);
-    setFClientNom(devis.clientNom);
-    setFNature(devis.nature);
-    setFDroitDouane(String(devis.droitDouane));
-    setFFraisCircuit(String(devis.fraisCircuit));
-    setFFraisPrestation(String(devis.fraisPrestation));
-    setFDateValidite(devis.dateValidite);
-    setFNotes(devis.notes ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when entering edit for a devis
-  }, [editKey]);
+  const [prevEditKey, setPrevEditKey] = useState(editKey);
+  if (editKey !== prevEditKey) {
+    setPrevEditKey(editKey);
+    if (editKey !== null && devis) {
+      setFClientId(devis.clientId);
+      setFClientNom(devis.clientNom);
+      setFNature(devis.nature);
+      setFDroitDouane(String(devis.droitDouane));
+      setFFraisCircuit(String(devis.fraisCircuit));
+      setFFraisPrestation(String(devis.fraisPrestation));
+      setFDateValidite(devis.dateValidite);
+      setFNotes(devis.notes ?? "");
+    }
+  }
 
   /* Guard */
   if (!devis) {

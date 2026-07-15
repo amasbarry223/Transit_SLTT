@@ -14,8 +14,11 @@ import { formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
+import { matchesQuery } from "@/lib/search-filter";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { ActifStatutBadge } from "@/components/sltt/status-badge";
 import {
   TransporteurFormFields,
   TransporteurFormStepper,
@@ -42,10 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -77,22 +77,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "dossiers-desc", label: "Dossiers traités" },
   { value: "statut",        label: "Statut" },
 ];
-
-/* ------------------------------------------------------------------ */
-/* Statut badge                                                         */
-/* ------------------------------------------------------------------ */
-
-function StatutBadge({ statut }: { statut: TransporteurStatut }) {
-  return statut === "Actif" ? (
-    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-      <span className="size-1.5 rounded-full bg-emerald-500" /> Actif
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-      <span className="size-1.5 rounded-full bg-slate-400" /> Inactif
-    </span>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Skeleton                                                             */
@@ -144,25 +128,27 @@ function TransporteurFormModal({
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);
 
-  useEffect(() => {
-    if (openKey === null) return;
-    setForm(target ? {
-      nom: target.nom,
-      contact: target.contact,
-      telephone: target.telephone,
-      email: target.email ?? "",
-      vehicule: target.vehicule,
-      immatriculation: target.immatriculation,
-      trajet: target.trajet,
-      capacite: target.capacite,
-      statut: target.statut,
-      notes: target.notes ?? "",
-    } : emptyTransporteurForm());
-    setErrors({});
-    setSaving(false);
-    setStep(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when dialog open target changes
-  }, [openKey]);
+  const [prevOpenKey, setPrevOpenKey] = useState(openKey);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    if (openKey !== null) {
+      setForm(target ? {
+        nom: target.nom,
+        contact: target.contact,
+        telephone: target.telephone,
+        email: target.email ?? "",
+        vehicule: target.vehicule,
+        immatriculation: target.immatriculation,
+        trajet: target.trajet,
+        capacite: target.capacite,
+        statut: target.statut,
+        notes: target.notes ?? "",
+      } : emptyTransporteurForm());
+      setErrors({});
+      setSaving(false);
+      setStep(0);
+    }
+  }
 
   const valid = isTransporteurFormValid(form);
   const stepValid = isTransporteurStepValid(step, form);
@@ -347,7 +333,13 @@ export function TransporteursScreen() {
   const [inlineForm, setInlineForm] = useState<{ mode: "add" | "edit"; target?: Transporteur } | null>(null);
 
   // Delete confirmation (inline)
-  const [deleteTarget, setDeleteTarget] = useState<Transporteur | null>(null);
+  const { target: deleteTarget, setTarget: setDeleteTarget, confirm: confirmDeleteTransporteur } = useDeleteConfirm<Transporteur>(
+    removeTransporteur,
+    (t) => t.id,
+    (t) => t.nom,
+    "Transporteur supprimé",
+    "Impossible de supprimer le transporteur",
+  );
 
   /* ---- KPIs ---- */
   const actifs        = transporteurs.filter((t) => t.statut === "Actif").length;
@@ -357,9 +349,8 @@ export function TransporteursScreen() {
 
   /* ---- Filtered & sorted ---- */
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
     const list = transporteurs.filter((t) => {
-      if (q && !`${t.nom} ${t.contact} ${t.trajet} ${t.immatriculation}`.toLowerCase().includes(q)) return false;
+      if (!matchesQuery(t, ["nom", "contact", "trajet", "immatriculation"], search)) return false;
       if (vehiculeFilter !== "all" && t.vehicule !== vehiculeFilter) return false;
       if (statutFilter !== "Tous" && t.statut !== statutFilter) return false;
       return true;
@@ -400,16 +391,6 @@ export function TransporteursScreen() {
       toast({ title: `Transporteur ${next === "Actif" ? "activé" : "désactivé"}`, description: t.nom });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message || "Impossible de modifier le statut", variant: "destructive" });
-    }
-  };
-
-  const handleDelete = async (t: Transporteur) => {
-    try {
-      await removeTransporteur(t.id);
-      toast({ title: "Transporteur supprimé", description: t.nom });
-      setDeleteTarget(null);
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de supprimer le transporteur", variant: "destructive" });
     }
   };
 
@@ -646,7 +627,7 @@ export function TransporteursScreen() {
                             </TableCell>
                             <TableCell className="px-4 py-3.5">
                               <div className="flex flex-col gap-1">
-                                <StatutBadge statut={t.statut} />
+                                <ActifStatutBadge statut={t.statut} />
                                 {canWrite && (
                                   <button
                                     className={cn(
@@ -721,27 +702,19 @@ export function TransporteursScreen() {
       )}
 
       {/* Delete confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce transporteur ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              <strong>{deleteTarget?.nom}</strong>
-              {deleteTarget && ` (${deleteTarget.vehicule} · ${deleteTarget.trajet})`} sera
-              définitivement retiré de l'annuaire. Les dossiers associés ne seront pas affectés.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteTarget && handleDelete(deleteTarget)}
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Supprimer ce transporteur ?"
+        description={
+          <>
+            <strong>{deleteTarget?.nom}</strong>
+            {deleteTarget && ` (${deleteTarget.vehicule} · ${deleteTarget.trajet})`} sera
+            définitivement retiré de l'annuaire. Les dossiers associés ne seront pas affectés.
+          </>
+        }
+        onConfirm={confirmDeleteTransporteur}
+      />
     </div>
   );
 }
