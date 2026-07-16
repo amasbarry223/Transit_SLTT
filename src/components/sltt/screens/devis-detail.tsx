@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
+import { canTransitionDevis, DEVIS_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 
 /* ------------------------------------------------------------------ */
 /* Statut config                                                        */
@@ -116,12 +117,14 @@ function VerticalStepper({
   }
 
   const currentIdx = STATUT_FLOW.indexOf(statut);
+  const allowedNext = DEVIS_ALLOWED_TRANSITIONS[statut] ?? [];
 
   return (
     <div>
       {STATUT_FLOW.map((s, idx) => {
         const done    = idx < currentIdx;
         const current = idx === currentIdx;
+        const clickable = !done && !current && allowedNext.includes(s);
         const cfg     = STATUT_CONFIG[s];
         const Icon    = cfg.icon;
         const isLast  = idx === STATUT_FLOW.length - 1;
@@ -131,13 +134,15 @@ function VerticalStepper({
             {/* Connector column */}
             <div className="flex flex-col items-center">
               <button
-                onClick={() => onSelect(s)}
-                title={`Passer à ${s}`}
+                onClick={() => clickable && onSelect(s)}
+                disabled={!clickable}
+                title={clickable ? `Passer à ${s}` : s}
                 className={cn(
                   "flex size-8 items-center justify-center rounded-full border-2 transition-all shrink-0",
-                  done    ? "border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600" :
+                  done    ? "border-emerald-500 bg-emerald-500 text-white cursor-default" :
                   current ? "border-blue-600 bg-blue-600 text-white cursor-default ring-4 ring-blue-100 dark:ring-blue-950" :
-                            "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800",
+                  clickable ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800" :
+                            "cursor-not-allowed border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700",
                 )}
               >
                 {done
@@ -329,10 +334,18 @@ export function DevisDetailScreen() {
     setConfirmConvert(false);
   };
 
-  const handleStatutChange = (to: DevisStatut) => {
-    if (!devis) return;
-    updateDevisStatut(devis.id, to);
-    toast({ title: "Statut mis à jour", description: `${devis.reference} → ${to}` });
+  const handleStatutChange = async (to: DevisStatut) => {
+    if (!devis || to === devis.statut) return;
+    try {
+      await updateDevisStatut(devis.id, to);
+      toast({ title: "Statut mis à jour", description: `${devis.reference} → ${to}` });
+    } catch (err: unknown) {
+      toast({
+        title: "Transition impossible",
+        description: err instanceof Error ? err.message : "Cette transition de statut n'est pas autorisée.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePrint = () => {
@@ -457,12 +470,13 @@ export function DevisDetailScreen() {
                     <DropdownMenuContent align="end" className="w-48">
                       {STATUTS_ALL.map((s) => {
                         const SIcon = STATUT_CONFIG[s].icon;
+                        const disabled = s === devis.statut || !canTransitionDevis(devis.statut, s);
                         return (
                           <DropdownMenuItem
                             key={s}
-                            disabled={s === devis.statut}
+                            disabled={disabled}
                             onClick={() => handleStatutChange(s)}
-                            className={s === devis.statut ? "opacity-50 cursor-default" : ""}
+                            className={disabled ? "opacity-50 cursor-default" : ""}
                           >
                             <SIcon className="mr-2 size-3.5" />
                             {s}

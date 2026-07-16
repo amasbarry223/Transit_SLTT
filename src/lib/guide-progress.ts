@@ -51,8 +51,8 @@ export const GUIDE_STEP_DEFS: GuideStepDef[] = [
   },
   {
     id: "bilans",
-    label: "Consultez vos bilans",
-    sub: "Mensuel, trimestriel, annuel",
+    label: "Soldez votre premier dossier",
+    sub: "Le bilan s'alimente une fois un dossier clôturé",
     view: "bilans",
     roles: ["Administrateur", "Comptable"],
   },

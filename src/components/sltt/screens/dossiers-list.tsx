@@ -22,6 +22,7 @@ import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
+import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { StatusQuickAction } from "@/components/sltt/status-quick-action";
 import {
   TransitionDialog,
@@ -534,7 +535,9 @@ export function DossiersListScreen() {
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.date)}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Marge</dt>
+                      <dt className="text-xs text-slate-500">
+                        <GlossaryLabel term="margeDossier" short className="text-xs" />
+                      </dt>
                       <dd><EcartValue value={calculerEcart(d)} /></dd>
                     </div>
                   </dl>
@@ -567,7 +570,7 @@ export function DossiersListScreen() {
                       Prestation
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Marge
+                      <GlossaryLabel term="margeDossier" short className="justify-end" />
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Statut

@@ -20,7 +20,10 @@ export function syncClientStats(
         ce.reduce((s, e) => s + e.montantPaye, 0),
       totalDu:
         cd.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0) +
-        ce.reduce((s, e) => s + Math.max(0, e.montantInvesti - e.montantPaye), 0),
+        ce.reduce((s, e) => s + Math.max(0, e.montantInvesti - e.montantPaye), 0) +
+        cf
+          .filter((f) => f.statut !== "Annulée")
+          .reduce((s, f) => s + Math.max(0, f.montantTTC - f.montantPaye), 0),
     };
   });
 }

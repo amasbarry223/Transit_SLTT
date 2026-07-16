@@ -21,7 +21,9 @@ import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
+import { InfoCallout } from "@/components/sltt/info-callout";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import {
   TransitionDialog,
   getNextTransition,
@@ -34,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -70,6 +73,7 @@ export function DossierFormScreen() {
 function DossierFormInner() {
   const { selectedId, dossierFormMode, go } = useNav();
   const { toast } = useToast();
+  const canWrite = usePermission("dossiers:write");
 
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
@@ -272,6 +276,14 @@ function DossierFormInner() {
   }
 
   function handleSave() {
+    if (!canWrite) {
+      toast({
+        title: "Action non autorisée",
+        description: "Vous n'avez pas la permission d'enregistrer un dossier.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!validate()) {
       toast({
         title: "Champs manquants",
@@ -380,12 +392,19 @@ function DossierFormInner() {
           <Button variant="outline" onClick={handleBack}>
             Annuler
           </Button>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={!canWrite} title={!canWrite ? "Vous n'avez pas la permission d'enregistrer un dossier." : undefined}>
             <Save className="size-4" />
             Enregistrer
           </Button>
         </div>
       </div>
+
+      {/* Permission warning */}
+      {!canWrite && (
+        <InfoCallout className="border-amber-200/80 bg-amber-50/60 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+          Vous consultez ce formulaire en lecture seule — vous n&apos;avez pas la permission d&apos;enregistrer un dossier.
+        </InfoCallout>
+      )}
 
       {/* Dirty warning banner */}
       {isDirty && (
@@ -490,7 +509,12 @@ function DossierFormInner() {
                 />
               </Field>
 
-              <Field label="N° de BL" required error={errors.bl}>
+              <Field
+                label="N° de BL"
+                required
+                error={errors.bl}
+                hint="Numéro du connaissement (Bill of Lading) — le document qui identifie la marchandise transportée."
+              >
                 <Input
                   className={cn("h-10", errors.bl && "border-red-400")}
                   value={bl}
@@ -593,16 +617,19 @@ function DossierFormInner() {
                 label="Droit de douane"
                 value={droitDouane}
                 onChange={setDroitDouane}
+                hint="Taxe versée à la douane pour dédouaner la marchandise."
               />
               <AmountField
                 label="Frais de circuit global"
                 value={fraisCircuit}
                 onChange={setFraisCircuit}
+                hint="Frais de transit (manutention, transport local, formalités) hors droit de douane."
               />
               <AmountField
                 label="Frais de prestation"
                 value={fraisPrestation}
                 onChange={setFraisPrestation}
+                hint="Rémunération de SLTT pour le service de transit — c'est elle qui détermine la marge du dossier."
               />
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Montant investi (calculé)</label>
@@ -731,7 +758,7 @@ function DossierFormInner() {
                   <ArrowRight className="size-4" />
                 </Button>
               ) : (
-                <Button type="button" onClick={handleSave}>
+                <Button type="button" onClick={handleSave} disabled={!canWrite} title={!canWrite ? "Vous n'avez pas la permission d'enregistrer un dossier." : undefined}>
                   <Save className="size-4" />
                   Enregistrer le dossier
                 </Button>
@@ -782,7 +809,7 @@ function DossierFormInner() {
               <Separator className="my-4" />
 
               <div className="flex flex-col gap-2">
-                <Button className="w-full" onClick={handleSave}>
+                <Button className="w-full" onClick={handleSave} disabled={!canWrite} title={!canWrite ? "Vous n'avez pas la permission d'enregistrer un dossier." : undefined}>
                   <Save className="size-4" />
                   Enregistrer le dossier
                 </Button>
@@ -941,18 +968,32 @@ function Field({
   label,
   required,
   error,
+  hint,
   children,
 }: {
   label: string;
   required?: boolean;
   error?: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+      <Label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}
+        {hint && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+                <Info className="size-3.5" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </Label>
       {children}
       {error && <p className="text-xs text-red-500">{error}</p>}
@@ -964,14 +1005,30 @@ function AmountField({
   label,
   value,
   onChange,
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  hint?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</Label>
+      <Label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+        {label}
+        {hint && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+                <Info className="size-3.5" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </Label>
       <div className="relative">
         <Input
           type="number"

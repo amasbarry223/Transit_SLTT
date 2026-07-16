@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
-import { authErrorResponse, requireAdmin } from "@/lib/auth/require-admin";
+import { authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
 import { normalizePermissions } from "@/lib/permissions";
 import type { UserRole } from "@/lib/domain-types";
 
+const VALID_ROLES: UserRole[] = ["Administrateur", "Agent de transit", "Comptable", "Magasinier"];
+
 export async function POST(request: NextRequest) {
   try {
-    const { admin } = await requireAdmin(request);
+    const { admin, isAdmin } = await requireUserManager(request);
     const body = await request.json();
     const { nom, email, role, permissions, password } = body as {
       nom: string;
@@ -19,6 +21,17 @@ export async function POST(request: NextRequest) {
       return Response.json(
         { error: "Nom, e-mail et mot de passe (8 caractères min.) requis." },
         { status: 400 },
+      );
+    }
+
+    if (!VALID_ROLES.includes(role)) {
+      return Response.json({ error: "Rôle invalide." }, { status: 400 });
+    }
+
+    if (role === "Administrateur" && !isAdmin) {
+      return Response.json(
+        { error: "Seul un administrateur peut créer un compte Administrateur." },
+        { status: 403 },
       );
     }
 

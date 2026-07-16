@@ -825,8 +825,8 @@ export function FournisseursScreen() {
         description={
           <>
             <strong>{deleteTarget?.nom}</strong> sera
-            définitivement supprimé. Les liaisons existantes sur les dossiers ne seront pas
-            affectées.
+            définitivement supprimé, ainsi que toutes ses liaisons budget/réel sur les dossiers
+            associés (historique perdu).
           </>
         }
         onConfirm={handleDelete}

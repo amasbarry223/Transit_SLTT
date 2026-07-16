@@ -24,6 +24,7 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcritureStatutBadge, EcartValue } from "@/components/sltt/status-badge";
+import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
@@ -582,7 +583,7 @@ export function ComptabiliteScreen() {
                       Reste dû
                     </TableHead>
                     <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
-                      Écart de règlement
+                      <GlossaryLabel term="ecartReglement" short className="justify-end" />
                     </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Mode

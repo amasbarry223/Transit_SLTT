@@ -200,13 +200,16 @@ function PasswordField({
 function RolePicker({
   value,
   onChange,
+  roles = allRoles,
 }: {
   value: UserRole;
   onChange: (role: UserRole) => void;
+  /** Rôles proposés — un délégué non-admin ne doit jamais pouvoir choisir "Administrateur". */
+  roles?: UserRole[];
 }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
-      {allRoles.map((r) => {
+      {roles.map((r) => {
         const meta = roleMeta[r];
         const Icon = meta.icon;
         const selected = value === r;
@@ -255,6 +258,7 @@ function UserFormModal({
   onSubmitCreate,
   onSubmitEdit,
   onResetPassword,
+  isCurrentActorAdmin,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -265,6 +269,8 @@ function UserFormModal({
   onSubmitCreate: (state: UserFormState) => Promise<void>;
   onSubmitEdit: (id: string, state: UserFormState) => Promise<void>;
   onResetPassword: (id: string, password: string) => Promise<void>;
+  /** False pour un délégué non-admin (permission utilisateurs:manage) — borne ce qu'il peut faire. */
+  isCurrentActorAdmin: boolean;
 }) {
   const [tab, setTab] = useState<FormTab>("identity");
   const [createStep, setCreateStep] = useState<1 | 2>(1);
@@ -275,6 +281,11 @@ function UserFormModal({
   const { toast } = useToast();
 
   const permCount = permissionsFromSelection(form.perms).length;
+  const selectableRoles = isCurrentActorAdmin ? allRoles : allRoles.filter((r) => r !== "Administrateur");
+  // Un délégué non-admin ne peut ni créer, ni modifier un compte Administrateur —
+  // le serveur refuse déjà ces requêtes ; ceci évite juste de lui montrer un
+  // formulaire qui échouera silencieusement.
+  const readOnly = mode === "edit" && initialState.role === "Administrateur" && !isCurrentActorAdmin;
 
   function applyRole(role: UserRole) {
     setForm((prev) => ({
@@ -402,7 +413,12 @@ function UserFormModal({
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         Choisissez un profil métier — les permissions standard sont appliquées automatiquement.
                       </p>
-                      <RolePicker value={form.role} onChange={applyRole} />
+                      <RolePicker value={form.role} onChange={applyRole} roles={selectableRoles} />
+                      {!isCurrentActorAdmin && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                          Seul un administrateur peut créer un compte Administrateur.
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -413,7 +429,18 @@ function UserFormModal({
                       <ChevronRight className={cn("size-4 transition-transform", advancedPermsOpen && "rotate-90")} />
                     </button>
                     {advancedPermsOpen && (
-                      <PermissionMatrix selection={form.perms} onChange={(perms) => setForm((p) => ({ ...p, perms }))} />
+                      <>
+                        {form.role === "Administrateur" && (
+                          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+                            Un Administrateur a toujours accès à tout, quelles que soient les cases cochées ci-dessous — ces permissions ne peuvent pas être restreintes.
+                          </p>
+                        )}
+                        <PermissionMatrix
+                          selection={form.perms}
+                          onChange={(perms) => setForm((p) => ({ ...p, perms }))}
+                          disabled={form.role === "Administrateur"}
+                        />
+                      </>
                     )}
                   </div>
                 )}
@@ -460,6 +487,11 @@ function UserFormModal({
             </>
           ) : (
           <Tabs value={tab} onValueChange={(v) => setTab(v as FormTab)} className="flex min-h-0 flex-1 flex-col">
+            {readOnly && (
+              <div className="border-b border-border bg-amber-50 px-6 py-2.5 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+                Seul un administrateur peut modifier un compte Administrateur — vous consultez cette fiche en lecture seule.
+              </div>
+            )}
             <div className="border-b border-border px-6 pt-4">
               <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-slate-100/80 p-1 dark:bg-slate-800/80">
                 {tabs.map((t) => {
@@ -518,7 +550,7 @@ function UserFormModal({
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Le rôle pré-remplit les permissions — vous pourrez les ajuster à l'étape suivante.
                   </p>
-                  <RolePicker value={form.role} onChange={applyRole} />
+                  <RolePicker value={form.role} onChange={applyRole} roles={selectableRoles} />
                 </div>
               </TabsContent>
 
@@ -560,7 +592,7 @@ function UserFormModal({
                       type="button"
                       variant="secondary"
                       className="mt-4"
-                      disabled={saving || !form.resetPassword}
+                      disabled={saving || !form.resetPassword || readOnly}
                       onClick={handleResetPassword}
                     >
                       <Lock className="size-4" />
@@ -590,7 +622,16 @@ function UserFormModal({
                     Réinitialiser selon le rôle
                   </Button>
                 </div>
-                <PermissionMatrix selection={form.perms} onChange={(perms) => setForm((p) => ({ ...p, perms }))} />
+                {form.role === "Administrateur" && (
+                  <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+                    Un Administrateur a toujours accès à tout, quelles que soient les cases cochées ci-dessous — ces permissions ne peuvent pas être restreintes.
+                  </p>
+                )}
+                <PermissionMatrix
+                  selection={form.perms}
+                  onChange={(perms) => setForm((p) => ({ ...p, perms }))}
+                  disabled={form.role === "Administrateur"}
+                />
               </TabsContent>
             </div>
 
@@ -620,7 +661,7 @@ function UserFormModal({
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Annuler
                 </Button>
-                <Button type="submit" disabled={saving || !form.nom.trim() || !form.email.trim()}>
+                <Button type="submit" disabled={saving || !form.nom.trim() || !form.email.trim() || readOnly}>
                   {saving ? "Enregistrement…" : "Enregistrer"}
                 </Button>
               </div>
@@ -677,6 +718,7 @@ export function UsersTab() {
   const [formInitial, setFormInitial] = useState<UserFormState>(emptyFormState());
   const [saving, setSaving] = useState(false);
 
+  const isCurrentAdmin = currentUser?.role === "Administrateur";
   const userToDelete = users.find((u) => u.id === deleteId);
 
   const stats = useMemo(
@@ -944,7 +986,7 @@ export function UsersTab() {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={u.actif}
-                            disabled={u.id === currentUser?.id}
+                            disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
                             onCheckedChange={async () => {
                               if (u.id === currentUser?.id) return;
                               try {
@@ -986,7 +1028,7 @@ export function UsersTab() {
                             variant="ghost"
                             size="icon"
                             className="size-8 text-slate-400 opacity-70 hover:text-destructive group-hover:opacity-100 disabled:opacity-30"
-                            disabled={u.id === currentUser?.id}
+                            disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
                             onClick={() => setDeleteId(u.id)}
                             title="Supprimer"
                           >
@@ -1023,6 +1065,7 @@ export function UsersTab() {
         onSubmitCreate={handleCreate}
         onSubmitEdit={handleEdit}
         onResetPassword={handleResetPassword}
+        isCurrentActorAdmin={isCurrentAdmin}
       />
 
       <ConfirmDeleteDialog

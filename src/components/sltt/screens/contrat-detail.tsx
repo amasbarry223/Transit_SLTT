@@ -141,7 +141,7 @@ export function ContratDetailScreen() {
     );
   }
 
-  const nonVide = contrat.totalDepenses > 0 || contrat.nbPrestations > 0;
+  const nonVide = contrat.totalDepenses > 0 || contrat.nbPrestations > 0 || contratDocuments.length > 0;
 
   async function handleDelete() {
     try {
@@ -244,7 +244,7 @@ export function ContratDetailScreen() {
               variant="outline"
               className="text-red-600 hover:text-red-700 dark:text-red-400"
               disabled={nonVide}
-              title={nonVide ? "Retirez d'abord les dépenses et prestations liées" : undefined}
+              title={nonVide ? "Retirez d'abord les dépenses, prestations et documents liés" : undefined}
               onClick={() => setDeleteOpen(true)}
             >
               <Trash2 className="size-4" />

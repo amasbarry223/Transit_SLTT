@@ -248,6 +248,16 @@ export function LoginScreen() {
               >
                 {loading ? "Vérification…" : "Se connecter"}
               </Button>
+
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                Mot de passe oublié ou compte bloqué ?{" "}
+                <a
+                  href="mailto:?subject=R%C3%A9initialisation%20mot%20de%20passe%20SLTT"
+                  className="font-medium text-primary underline underline-offset-2"
+                >
+                  Contactez votre administrateur
+                </a>
+              </p>
           </form>
 
             <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">

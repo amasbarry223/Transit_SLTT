@@ -190,6 +190,7 @@ export function printDevis(data: DevisData): void {
 
   const win = window.open("", "_blank", "width=880,height=760");
   if (!win) { window.print(); return; }
+  win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
@@ -463,6 +464,7 @@ export function printFactureModule(data: FactureModuleData): void {
 
   const win = window.open("", "_blank", "width=880,height=760");
   if (!win) { window.print(); return; }
+  win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
@@ -608,6 +610,7 @@ export function printContratModule(data: ContratModuleData): void {
 
   const win = window.open("", "_blank", "width=880,height=760");
   if (!win) { window.print(); return; }
+  win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
@@ -735,6 +738,7 @@ export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): voi
 
   const win = window.open("", "_blank", "width=880,height=760");
   if (!win) { window.print(); return; }
+  win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
@@ -879,6 +883,7 @@ export function printInvoice(data: InvoiceData, invoiceNum: string): void {
 
   const win = window.open("", "_blank", "width=880,height=760");
   if (!win) { window.print(); return; }
+  win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
@@ -1262,6 +1267,7 @@ export function printStockInventory(
     window.print();
     return;
   }
+  win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
@@ -1629,20 +1635,21 @@ export function printClients(
         <div style="display:flex;align-items:center;gap:10px">
           <div style="width:34px;height:34px;border-radius:50%;background:${r.type === "Entreprise" ? "linear-gradient(135deg,#2563eb,#4f46e5)" : "linear-gradient(135deg,#475569,#1e293b)"};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initiales(r.nom)}</div>
           <div>
-            <div style="font-weight:600;color:#0f172a;font-size:13px">${r.nom}</div>
+            <div style="font-weight:600;color:#0f172a;font-size:13px">${htmlEscape(r.nom)}</div>
             <div style="font-size:10px;color:#94a3b8;margin-top:1px;background:${r.type === "Entreprise" ? "#eff6ff" : "#f8fafc"};color:${r.type === "Entreprise" ? "#1e40af" : "#64748b"};border:1px solid ${r.type === "Entreprise" ? "#bfdbfe" : "#e2e8f0"};display:inline-block;padding:1px 7px;border-radius:9999px;font-weight:600">${r.type}</div>
           </div>
         </div>
       </td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.telephone ?? "<span style='color:#cbd5e1'>—</span>"}</td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.email ?? "<span style='color:#cbd5e1'>—</span>"}</td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.adresse ?? "<span style='color:#cbd5e1'>—</span>"}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.telephone ? htmlEscape(r.telephone) : "<span style='color:#cbd5e1'>—</span>"}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.email ? htmlEscape(r.email) : "<span style='color:#cbd5e1'>—</span>"}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.adresse ? htmlEscape(r.adresse) : "<span style='color:#cbd5e1'>—</span>"}</td>
       <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;text-align:center;font-size:13px;font-weight:600;color:#0f172a;vertical-align:middle">${r.nbDossiers}</td>
       <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:${r.totalDu > 0 ? "#b45309" : "#15803d"};vertical-align:middle">${r.totalDu > 0 ? fmtFCFA(r.totalDu) : "Soldé"}</td>
     </tr>`).join("");
 
   const win = window.open("", "_blank", "width=1060,height=820");
   if (!win) { window.print(); return; }
+  win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">

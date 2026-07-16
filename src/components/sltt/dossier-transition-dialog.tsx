@@ -167,13 +167,21 @@ export function TransitionDialog({
     const montantRecu_n =
       transition === "solder" && reste > 0 ? parseAmount(montantRecu) : undefined;
 
+    // Le dossier n'a pas de colonne dédiée à la date de livraison : on la
+    // consigne dans les observations pour ne pas la perdre silencieusement.
+    const noteFinale =
+      transition === "livrer"
+        ? `Livré le ${date}.${note ? ` ${note}` : ""}`
+        : note || undefined;
+
     try {
       await transitionDossierFn(
         dossier.id,
         meta.nextStatut,
         montantRecu_n,
         transition === "solder" ? mode : undefined,
-        note || undefined,
+        noteFinale,
+        date,
       );
     } catch (e: any) {
       toast({

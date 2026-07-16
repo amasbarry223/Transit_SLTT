@@ -33,6 +33,7 @@ import {
   type BonMotif,
 } from "@/lib/domain-types";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { InfoCallout } from "@/components/sltt/info-callout";
@@ -138,7 +139,7 @@ function ClientProfileCard({
 }: {
   client: Client;
   totalDu: number;
-  onEdit: () => void;
+  onEdit?: () => void;
   onNewDossier: () => void;
   onRelance: () => void;
 }) {
@@ -201,10 +202,12 @@ function ClientProfileCard({
                 Relancer
               </Button>
             )}
-            <Button variant="outline" size="sm" className="h-9" onClick={onEdit}>
-              <Pencil className="size-4" />
-              Modifier
-            </Button>
+            {onEdit && (
+              <Button variant="outline" size="sm" className="h-9" onClick={onEdit}>
+                <Pencil className="size-4" />
+                Modifier
+              </Button>
+            )}
             <Button size="sm" className="h-9" onClick={onNewDossier}>
               <Plus className="size-4" />
               Nouveau dossier
@@ -219,6 +222,7 @@ function ClientProfileCard({
 export function ClientFicheScreen() {
   const { toast } = useToast();
   const { selectedId, go, openDossier, openDossierDetail, setPendingFacturePrefill } = useNav();
+  const canWrite = usePermission("clients:write");
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
@@ -416,7 +420,7 @@ export function ClientFicheScreen() {
       <ClientProfileCard
         client={client}
         totalDu={totalDu}
-        onEdit={openEditDialog}
+        onEdit={canWrite ? openEditDialog : undefined}
         onNewDossier={() => openDossier(null, "create")}
         onRelance={openRelanceDialog}
       />

@@ -84,6 +84,7 @@ const motifs: BonMotif[] = ["Vente", "Livraison", "Transfert"];
 export function BonsScreen() {
   const { toast } = useToast();
   const canWrite = usePermission("bons:write");
+  const canWriteCaisse = usePermission("bons:write-caisse");
   const go = useNav((s) => s.go);
   const selectedId = useNav((s) => s.selectedId);
 
@@ -321,27 +322,35 @@ export function BonsScreen() {
     setOpen(true);
   }
 
-  function handleValider() {
+  async function handleValider() {
     if (!selectedStock || !selectedClient || !formMotif || !formSocieteId) return;
-    addBon({
-      date: formDate,
-      clientId: formClientId,
-      clientNom: selectedClient.nom,
-      societeId: formSocieteId,
-      stockId: selectedStock.id,
-      marchandise: selectedStock.marchandise,
-      quantite: quantiteNum,
-      unite: selectedStock.unite,
-      motif: formMotif,
-      montant: montantNum,
-      statut: "Validé",
-    });
-    toast({
-      title: "Bon de sortie validé",
-      description: "Bon de sortie validé — stock décrémenté.",
-    });
-    setOpen(false);
-    resetForm();
+    try {
+      await addBon({
+        date: formDate,
+        clientId: formClientId,
+        clientNom: selectedClient.nom,
+        societeId: formSocieteId,
+        stockId: selectedStock.id,
+        marchandise: selectedStock.marchandise,
+        quantite: quantiteNum,
+        unite: selectedStock.unite,
+        motif: formMotif,
+        montant: montantNum,
+        statut: "Validé",
+      });
+      toast({
+        title: "Bon de sortie validé",
+        description: "Bon de sortie validé — stock décrémenté.",
+      });
+      setOpen(false);
+      resetForm();
+    } catch {
+      toast({
+        title: "Validation impossible — stock insuffisant",
+        description: "Le stock disponible est inférieur à la quantité demandée. Le bon a été enregistré comme brouillon.",
+        variant: "destructive",
+      });
+    }
   }
 
   function handleSaveDraft() {
@@ -467,7 +476,7 @@ export function BonsScreen() {
               {currentTab.description}
             </p>
           </div>
-          {canWrite && (
+          {(activeTab === "caisse" ? canWriteCaisse : canWrite) && (
             <Button
               onClick={currentTab.onCreate}
               className="shrink-0 self-start"
@@ -945,7 +954,7 @@ export function BonsScreen() {
                     ? "Modifiez votre recherche ou enregistrez une nouvelle sortie."
                     : "Enregistrez un décaissement (honoraires, frais divers…)."}
                 </p>
-                {!caisseSearch && canWrite && (
+                {!caisseSearch && canWriteCaisse && (
                   <Button className="mt-5" onClick={openCaisseDialog}>
                     <Plus className="size-4" />
                     Nouvelle sortie de caisse
@@ -1019,7 +1028,7 @@ export function BonsScreen() {
                             >
                               <FileText className="size-4" />
                             </Button>
-                            {canWrite && (
+                            {canWriteCaisse && (
                               <Button
                                 variant="ghost"
                                 size="icon"

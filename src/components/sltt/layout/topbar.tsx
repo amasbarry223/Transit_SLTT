@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { Bell, ChevronDown, Menu, Moon, Sun } from "lucide-react";
+import { Bell, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -32,6 +32,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CommandPalette } from "./command-palette";
 import { BreadcrumbNav } from "./breadcrumb-nav";
@@ -39,6 +46,7 @@ import { NavList } from "./nav-list";
 import { getInitials } from "@/lib/utils";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
+import { GLOSSARY } from "@/lib/glossary";
 
 const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Dossiers, paiements et alertes du jour" },
@@ -77,6 +85,7 @@ export function Topbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [notifRead, setNotifRead] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const initials = getInitials(currentUserName);
   const shortName = currentUserName.split(" ").map((w, i) => i === 0 ? w : w[0] + ".").join(" ");
 
@@ -125,6 +134,18 @@ export function Topbar() {
 
         {/* Global search — command palette */}
         <CommandPalette />
+
+        {/* Aide — lexique des termes métier */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+          onClick={() => setHelpOpen(true)}
+          aria-label="Aide"
+          title="Aide et lexique"
+        >
+          <CircleHelp className="size-5" />
+        </Button>
 
         {/* Thème clair/sombre */}
         <Button
@@ -269,6 +290,29 @@ export function Topbar() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Aide — lexique des termes métier */}
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Lexique</DialogTitle>
+            <DialogDescription>
+              Les termes qui reviennent le plus souvent dans l&apos;application, expliqués simplement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-4 overflow-y-auto sltt-scroll pr-1">
+            {Object.values(GLOSSARY).map((entry) => (
+              <div key={entry.label} className="space-y-0.5">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{entry.label}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{entry.definition}</p>
+              </div>
+            ))}
+          </div>
+          <p className="border-t border-border pt-3 text-xs text-slate-400 dark:text-slate-500">
+            Une question qui n&apos;est pas ici ? Contactez votre administrateur.
+          </p>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile navigation drawer — Sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

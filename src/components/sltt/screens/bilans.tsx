@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Wallet,
   Clock,
@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcartValue } from "@/components/sltt/status-badge";
+import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -164,7 +165,7 @@ function SortableHead({
   align = "right",
 }: {
   col: SortKey;
-  label: string;
+  label: ReactNode;
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (k: SortKey) => void;
@@ -627,14 +628,14 @@ export function BilansScreen() {
                 />
                 <SortableHead
                   col="reste"
-                  label="Reste à payer"
+                  label={<GlossaryLabel term="resteAPayer" short />}
                   sortKey={sortKey}
                   sortDir={sortDir}
                   onSort={toggleSort}
                 />
                 <SortableHead
                   col="ecart"
-                  label="Écart de règlement"
+                  label={<GlossaryLabel term="ecartReglement" short />}
                   sortKey={sortKey}
                   sortDir={sortDir}
                   onSort={toggleSort}

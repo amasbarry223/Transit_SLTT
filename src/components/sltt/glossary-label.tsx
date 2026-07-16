@@ -14,10 +14,13 @@ export function GlossaryLabel({
   term,
   className,
   showIcon = true,
+  short = false,
 }: {
   term: GlossaryKey;
   className?: string;
   showIcon?: boolean;
+  /** Utilise le libellé court (ex. en-tête de colonne étroite) au lieu du libellé complet. */
+  short?: boolean;
 }) {
   const entry = GLOSSARY[term];
   return (
@@ -28,7 +31,7 @@ export function GlossaryLabel({
             className={cn("inline-flex items-center gap-1 cursor-help", className)}
             tabIndex={0}
           >
-            {entry.label}
+            {short ? entry.short : entry.label}
             {showIcon && (
               <Info className="size-3.5 text-slate-400 dark:text-slate-500" aria-hidden />
             )}

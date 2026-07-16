@@ -259,6 +259,7 @@ function StockTab({
                       onExit={(id) => onExit(id)}
                       onHistory={(m) => onHistory(m)}
                       onOpenClient={onOpenClient}
+                      canWrite={canWrite}
                     />
                   ))}
                 </TableBody>
@@ -286,12 +287,14 @@ function StockRow({
   onExit,
   onHistory,
   onOpenClient,
+  canWrite = true,
 }: {
   item: StockItem;
   onEntry: (id: string) => void;
   onExit: (id: string) => void;
   onHistory: (marchandise: string) => void;
   onOpenClient?: (clientId: string) => void;
+  canWrite?: boolean;
 }) {
   const faible = item.quantite < item.seuil;
   const statut = faible ? "Stock faible" : "Disponible";
@@ -352,26 +355,30 @@ function StockRow({
       </TableCell>
       <TableCell className="px-4 py-3.5">
         <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-11 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
-            aria-label="Entrée de marchandise"
-            title="Entrée"
-            onClick={() => onEntry(item.id)}
-          >
-            <PackagePlus className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-11 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
-            aria-label="Sortie de marchandise"
-            title="Sortie"
-            onClick={() => onExit(item.id)}
-          >
-            <PackageMinus className="size-4" />
-          </Button>
+          {canWrite && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
+              aria-label="Entrée de marchandise"
+              title="Entrée"
+              onClick={() => onEntry(item.id)}
+            >
+              <PackagePlus className="size-4" />
+            </Button>
+          )}
+          {canWrite && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
+              aria-label="Sortie de marchandise"
+              title="Sortie"
+              onClick={() => onExit(item.id)}
+            >
+              <PackageMinus className="size-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

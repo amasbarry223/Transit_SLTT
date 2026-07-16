@@ -68,6 +68,7 @@ import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printFactureModule, shouldShowTva } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { canTransitionFacture, FACTURE_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 
 /* ------------------------------------------------------------------ */
@@ -195,12 +196,14 @@ function VerticalStepper({
   }
 
   const currentIdx = STATUT_FLOW.indexOf(statut);
+  const allowedNext = FACTURE_ALLOWED_TRANSITIONS[statut] ?? [];
 
   return (
     <div>
       {STATUT_FLOW.map((s, idx) => {
         const done = idx < currentIdx;
         const current = idx === currentIdx;
+        const clickable = !done && !current && allowedNext.includes(s);
         const cfg = STATUT_CONFIG[s];
         const Icon = cfg.icon;
         const isLast = idx === STATUT_FLOW.length - 1;
@@ -209,15 +212,18 @@ function VerticalStepper({
           <div key={s} className="flex items-start gap-3">
             <div className="flex flex-col items-center">
               <button
-                onClick={() => onSelect(s)}
-                title={`Passer à ${s}`}
+                onClick={() => clickable && onSelect(s)}
+                disabled={!clickable}
+                title={clickable ? `Passer à ${s}` : s}
                 className={cn(
                   "flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-all",
                   done
-                    ? "border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600"
+                    ? "cursor-default border-emerald-500 bg-emerald-500 text-white"
                     : current
                       ? "cursor-default border-blue-600 bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-950"
-                      : "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500 dark:hover:border-slate-600 dark:hover:bg-slate-800",
+                      : clickable
+                        ? "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+                        : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-700",
                 )}
               >
                 {done ? <CheckCircle2 className="size-4" /> : <Icon className="size-3.5" />}
@@ -639,14 +645,23 @@ export function FactureDetailScreen() {
   const editTVA = editTvaOn ? 18 : 0;
   const editTTC = editMontantHT + Math.round(editMontantHT * (editTVA / 100));
 
-  function handleStatutClick(s: FactureStatut) {
+  async function handleStatutClick(s: FactureStatut) {
     if (!facture) return;
+    if (s === facture.statut) return;
     if (s === "Soldée" && facture.montantPaye < facture.montantTTC) {
       setConfirmSolde(true);
       return;
     }
-    updateFactureStatut(facture.id, s);
-    toast({ title: "Statut mis à jour", description: `${facture.numero} → ${s}` });
+    try {
+      await updateFactureStatut(facture.id, s);
+      toast({ title: "Statut mis à jour", description: `${facture.numero} → ${s}` });
+    } catch (err: unknown) {
+      toast({
+        title: "Transition impossible",
+        description: err instanceof Error ? err.message : "Cette transition de statut n'est pas autorisée.",
+        variant: "destructive",
+      });
+    }
   }
 
   function handleSaveEdit() {
@@ -811,12 +826,13 @@ export function FactureDetailScreen() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-52">
-                        {STATUTS_ALL.map((s) => {
+                        {STATUTS_ALL.filter((s) => s !== "Annulée").map((s) => {
                           const SIcon = STATUT_CONFIG[s].icon;
+                          const disabled = s === facture.statut || !canTransitionFacture(facture.statut, s);
                           return (
                             <DropdownMenuItem
                               key={s}
-                              disabled={s === facture.statut}
+                              disabled={disabled}
                               onClick={() => handleStatutClick(s)}
                             >
                               <SIcon className="mr-2 size-3.5" />
@@ -1184,8 +1200,17 @@ export function FactureDetailScreen() {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                updateFactureStatut(facture.id, "Soldée");
+              onClick={async () => {
+                try {
+                  await updateFactureStatut(facture.id, "Soldée");
+                  toast({ title: "Statut mis à jour", description: `${facture.numero} → Soldée` });
+                } catch (err: unknown) {
+                  toast({
+                    title: "Transition impossible",
+                    description: err instanceof Error ? err.message : "Cette transition de statut n'est pas autorisée.",
+                    variant: "destructive",
+                  });
+                }
                 setConfirmSolde(false);
               }}
             >

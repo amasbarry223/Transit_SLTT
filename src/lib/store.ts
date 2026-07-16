@@ -17,6 +17,7 @@ import { syncContratStats } from "@/lib/contrat-stats";
 import { assertDossierTransition } from "@/lib/dossier-flow";
 import { computeIncrementalPaye, validatePaymentAmount } from "@/lib/payments";
 import { normalizePermissions, ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
+import { canTransitionDevis, canTransitionFacture } from "@/lib/status-flow";
 import {
   insertAuditLog,
   mapAuditLogFromDb,
@@ -725,7 +726,7 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
   updateDossier: (id: string, input: DossierInput) => Promise<void>;
   removeDossier: (id: string) => Promise<void>;
   getDossier: (id: string) => Dossier | undefined;
-  transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string) => Promise<void>;
+  transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string, effectiveDate?: string) => Promise<void>;
 
   // ---- Clients ----
   addClient: (input: ClientInput) => Promise<Client>;
@@ -1170,7 +1171,7 @@ export const useStore = create<SLTTState>()(
 
       getDossier: (id) => get().dossiers.find((d) => d.id === id),
 
-      transitionDossier: async (id, newStatut, montantRecu, modePaiement, transitionNote) => {
+      transitionDossier: async (id, newStatut, montantRecu, modePaiement, transitionNote, effectiveDate) => {
         const dossier = get().dossiers.find((d) => d.id === id);
         if (!dossier) return;
         // LOGIC-audit : contrairement aux devis (dont le menu "..." permet un
@@ -1184,16 +1185,21 @@ export const useStore = create<SLTTState>()(
           montantApplicable !== undefined
             ? Math.min(dossier.montantInvesti, Math.max(0, dossier.montantPaye + montantApplicable))
             : dossier.montantPaye;
+        const today = new Date().toISOString().slice(0, 10);
+        const resolvedDate = effectiveDate || today;
+        const dateDedouanement = newStatut === "Dédouané" ? resolvedDate : dossier.dateDedouanement;
 
-        
         const { error } = await supabase
           .from("dossiers")
-          .update({ statut: newStatut, montant_paye: updatedMontantPaye })
+          .update({
+            statut: newStatut,
+            montant_paye: updatedMontantPaye,
+            ...(newStatut === "Dédouané" ? { date_dedouanement: resolvedDate } : {}),
+          })
           .eq("id", id);
         if (error) throw error;
 
         if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
-          const today = new Date().toISOString().slice(0, 10);
           const existing = get().ecritures.find((e) => e.dossierId === id);
           if (existing) {
             await supabase
@@ -1201,14 +1207,14 @@ export const useStore = create<SLTTState>()(
               .update({
                 montant_paye: updatedMontantPaye,
                 mode_paiement: modePaiement ?? existing.modePaiement,
-                date_paiement: today,
+                date_paiement: resolvedDate,
                 note: transitionNote || existing.note || `Solde dossier ${dossier.reference}`,
               })
               .eq("dossier_id", id);
           } else {
             await supabase.from("ecritures").insert({
               date: today,
-              date_paiement: today,
+              date_paiement: resolvedDate,
               client_id: dossier.clientId,
               dossier_id: dossier.id,
               montant_investi: dossier.montantInvesti,
@@ -1223,14 +1229,13 @@ export const useStore = create<SLTTState>()(
         set((s) => {
           const updatedDossiers = s.dossiers.map((d) =>
             d.id === id
-              ? { ...d, statut: newStatut, montantPaye: updatedMontantPaye }
+              ? { ...d, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
               : d,
           );
 
           let updatedEcritures = s.ecritures;
           let nextEcritureSeq = s.ecritureSeq;
           if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
-            const today = new Date().toISOString().slice(0, 10);
             const existingIdx = s.ecritures.findIndex((e) => e.dossierId === id);
             if (existingIdx >= 0) {
               updatedEcritures = s.ecritures.map((e) =>
@@ -1239,7 +1244,7 @@ export const useStore = create<SLTTState>()(
                       ...e,
                       montantPaye: updatedMontantPaye,
                       modePaiement: modePaiement ?? e.modePaiement,
-                      datePaiement: today,
+                      datePaiement: resolvedDate,
                       note: transitionNote || e.note || `Solde dossier ${dossier.reference}`,
                     }
                   : e,
@@ -1249,7 +1254,7 @@ export const useStore = create<SLTTState>()(
               const autoEcriture: Ecriture = {
                 id: `E-${seq}`,
                 date: today,
-                datePaiement: today,
+                datePaiement: resolvedDate,
                 clientId: dossier.clientId,
                 clientNom: dossier.clientNom,
                 dossierId: dossier.id,
@@ -1505,9 +1510,9 @@ export const useStore = create<SLTTState>()(
 
         const newQty = stockItem.quantite + quantite;
 
-        
-        await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
-        await supabase.from("mouvements").insert({
+        const { error: stockErr } = await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
+        if (stockErr) throw stockErr;
+        const { error: mvtErr } = await supabase.from("mouvements").insert({
           stock_id: stockId,
           societe_id: stockItem.societeId,
           type: "Entrée",
@@ -1518,7 +1523,7 @@ export const useStore = create<SLTTState>()(
           unite: stockItem.unite,
           bon_ref: null,
         });
-
+        if (mvtErr) throw mvtErr;
 
         const seq = get().mouvementSeq;
         const newMouvement: Mouvement = {
@@ -1545,11 +1550,14 @@ export const useStore = create<SLTTState>()(
         const stockItem = get().stock.find((s) => s.id === stockId);
         if (!stockItem) return;
 
-        const newQty = Math.max(0, stockItem.quantite - quantite);
+        if (quantite > stockItem.quantite) {
+          throw new Error("Quantité supérieure au stock disponible.");
+        }
+        const newQty = stockItem.quantite - quantite;
 
-        
-        await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
-        await supabase.from("mouvements").insert({
+        const { error: stockErr } = await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
+        if (stockErr) throw stockErr;
+        const { error: mvtErr } = await supabase.from("mouvements").insert({
           stock_id: stockId,
           societe_id: stockItem.societeId,
           type: "Sortie",
@@ -1561,7 +1569,7 @@ export const useStore = create<SLTTState>()(
           bon_ref: bonRef || null,
           motif: motif || null,
         });
-
+        if (mvtErr) throw mvtErr;
 
         const seq = get().mouvementSeq;
         const newMouvement: Mouvement = {
@@ -1592,7 +1600,6 @@ export const useStore = create<SLTTState>()(
         const year = new Date().getFullYear();
         const numero = `BS-${year}-${pad(seq, 4)}`;
 
-        
         const { data, error } = await supabase
           .from("bons_sortie")
           .insert({
@@ -1606,7 +1613,7 @@ export const useStore = create<SLTTState>()(
             unite: input.unite,
             motif: input.motif,
             montant: input.montant,
-            statut: input.statut || "Brouillon",
+            statut: "Brouillon",
           })
           .select("*, clients(nom), societes(nom)")
           .single();
@@ -1618,8 +1625,19 @@ export const useStore = create<SLTTState>()(
           bonSeq: seq + 1,
         }));
         await get().addAuditLog("Bons", "Création", `Bon ${numero} créé`);
-        return newBon;
 
+        if (input.statut === "Validé") {
+          // Réutilise le même chemin que la validation différée : vérifie le
+          // stock disponible et décrémente réellement au lieu de marquer le
+          // bon "Validé" sans toucher au stock.
+          const validated = await get().validateBon(newBon.id);
+          if (!validated) {
+            throw new Error("Stock insuffisant pour valider ce bon de sortie.");
+          }
+          return get().bons.find((b) => b.id === newBon.id) ?? newBon;
+        }
+
+        return newBon;
       },
 
       validateBon: async (id) => {
@@ -1631,9 +1649,8 @@ export const useStore = create<SLTTState>()(
           return false;
         }
 
-        
-        await supabase.from("bons_sortie").update({ statut: "Validé" }).eq("id", id);
-      
+        const { error } = await supabase.from("bons_sortie").update({ statut: "Validé" }).eq("id", id);
+        if (error) throw error;
 
         await get().addStockExit(stockItem.id, bon.quantite, getConnectedUserName(), bon.reference);
 
@@ -1970,7 +1987,11 @@ export const useStore = create<SLTTState>()(
       },
 
       updateDevisStatut: async (id, statut) => {
-        
+        const existingBefore = get().devis.find((d) => d.id === id);
+        if (existingBefore && !canTransitionDevis(existingBefore.statut, statut)) {
+          throw new Error(`Transition non autorisée : ${existingBefore.statut} → ${statut}.`);
+        }
+
         const { error } = await supabase
           .from("devis")
           .update({ statut })
@@ -2220,10 +2241,14 @@ export const useStore = create<SLTTState>()(
         if (errFetch) throw errFetch;
 
         const newFacture = mapFactureFromDb(fullFact);
-        set((s) => ({
-          factures: [newFacture, ...s.factures],
-          factureSeq: seq + 1,
-        }));
+        set((s) => {
+          const updatedFactures = [newFacture, ...s.factures];
+          return {
+            factures: updatedFactures,
+            factureSeq: seq + 1,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+          };
+        });
         await get().addAuditLog("Factures", "Création", `Facture ${numero} créée`);
         return newFacture;
 
@@ -2253,9 +2278,10 @@ export const useStore = create<SLTTState>()(
 
         if (errFact) throw errFact;
 
-        await supabase.from("facture_lignes").delete().eq("facture_id", id);
+        const { error: errDeleteLignes } = await supabase.from("facture_lignes").delete().eq("facture_id", id);
+        if (errDeleteLignes) throw errDeleteLignes;
         if (input.lignes.length > 0) {
-          await supabase.from("facture_lignes").insert(
+          const { error: errInsertLignes } = await supabase.from("facture_lignes").insert(
             input.lignes.map((l) => ({
               facture_id: id,
               description: l.description,
@@ -2264,11 +2290,11 @@ export const useStore = create<SLTTState>()(
               montant_ht: l.quantite * l.prixUnitaire,
             }))
           );
+          if (errInsertLignes) throw errInsertLignes;
         }
-      
 
-        set((s) => ({
-          factures: s.factures.map((fact) => {
+        set((s) => {
+          const updatedFactures = s.factures.map((fact) => {
             if (fact.id !== id) return fact;
             const updatedLignes: FactureLigne[] = input.lignes.map((l, idx) => ({
               id: `FL-${idx + 1}`,
@@ -2286,8 +2312,12 @@ export const useStore = create<SLTTState>()(
               montantTTC: TTC,
               lignes: updatedLignes,
             };
-          }),
-        }));
+          });
+          return {
+            factures: updatedFactures,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+          };
+        });
       },
 
       removeFacture: async (id) => {
@@ -2313,6 +2343,9 @@ export const useStore = create<SLTTState>()(
       updateFactureStatut: async (id, statut) => {
         const f = get().factures.find((x) => x.id === id);
         if (!f) return;
+        if (!canTransitionFacture(f.statut, statut)) {
+          throw new Error(`Transition non autorisée : ${f.statut} → ${statut}.`);
+        }
         const montantPaye = statut === "Soldée" ? f.montantTTC : f.montantPaye;
 
         
@@ -2650,6 +2683,19 @@ export const useStore = create<SLTTState>()(
           throw new Error(
             `Impossible de supprimer le contrat ${contrat.reference} : il porte ${depensesLiees} dépense(s) et ${prestationsLiees} prestation(s). Retirez-les d'abord.`,
           );
+        }
+
+        const fichiersLies = get().contratFichiers.filter((f) => f.contratId === id);
+        if (fichiersLies.length > 0) {
+          const { error: storageErr } = await supabase.storage
+            .from("contrat-fichiers")
+            .remove(fichiersLies.map((f) => f.storagePath));
+          if (storageErr) throw storageErr;
+          const { error: fichiersErr } = await supabase
+            .from("contrat_fichiers")
+            .delete()
+            .eq("contrat_id", id);
+          if (fichiersErr) throw fichiersErr;
         }
 
         const { error } = await supabase.from("contrats").delete().eq("id", id);

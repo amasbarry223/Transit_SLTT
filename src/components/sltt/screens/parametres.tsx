@@ -765,7 +765,7 @@ function UsersTabBadge() {
 
 export function ParametresScreen() {
   const canManageUsers = useCanManageUsers();
-  const canViewAudit = usePermission("parametres:read");
+  const canViewAudit = usePermission("audit:read");
   const [active, setActive] = useState<ParamTab>("profile");
 
   const [prevPerms, setPrevPerms] = useState({ canManageUsers, canViewAudit });

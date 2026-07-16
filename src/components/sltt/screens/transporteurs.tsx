@@ -592,8 +592,9 @@ export function TransporteursScreen() {
                             className={cn(
                               "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80",
                               isInactif && "bg-slate-50/40 dark:bg-slate-800/40 opacity-80",
+                              !canWrite && "cursor-default",
                             )}
-                            onClick={() => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); }}
+                            onClick={canWrite ? () => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); } : undefined}
                           >
                             <TableCell className="px-4 py-3.5">
                               <p className="font-semibold text-slate-900 dark:text-slate-100">{t.nom}</p>

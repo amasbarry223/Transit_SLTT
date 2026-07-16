@@ -66,7 +66,8 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     label: "Bons de sortie",
     permissions: [
       { key: "bons:read", label: "Lecture", action: "read" },
-      { key: "bons:write", label: "Écriture", action: "write" },
+      { key: "bons:write", label: "Écriture (marchandise)", action: "write" },
+      { key: "bons:write-caisse", label: "Décaissement de caisse", action: "write" },
     ],
   },
   {
@@ -117,12 +118,19 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     permissions: [
       { key: "parametres:read", label: "Lecture", action: "read" },
       { key: "parametres:write", label: "Écriture", action: "write" },
+      { key: "audit:read", label: "Journal d'audit", action: "read" },
     ],
   },
   {
     id: "utilisateurs",
     label: "Gestion utilisateurs",
-    permissions: [{ key: "utilisateurs:manage", label: "Administration", action: "manage" }],
+    permissions: [
+      {
+        key: "utilisateurs:manage",
+        label: "Gestion des comptes (hors Administrateurs)",
+        action: "manage",
+      },
+    ],
   },
   {
     id: "archives",
@@ -149,6 +157,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "fournisseurs:read",
     "comptabilite:read",
     "comptabilite:write",
+    "bons:read",
+    "bons:write-caisse",
     "rapports:read",
     "calendrier:read",
     "contrats:read",
