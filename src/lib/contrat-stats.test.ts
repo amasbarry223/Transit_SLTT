@@ -18,7 +18,7 @@ describe("syncContratStats", () => {
   it("compte les prestations réalisées et somme les dépenses pour le bon contrat", () => {
     const contrats: BaseContrat[] = [
       { id: "c1", reference: "CTR-2026-0001", societeId: "s1", societeNom: "Top Doumani", clientId: "cl1", clientNom: "ACME", objet: "Entreposage", dateDebut: "2026-01-01", montant: 0, statut: "Actif", creeLe: "2026-01-01" },
-      { id: "c2", reference: "CTR-2026-0002", societeId: "s2", societeNom: "Traçabilité Emballage", clientId: "cl2", clientNom: "Autre", objet: "Entreposage", dateDebut: "2026-01-01", montant: 0, statut: "Actif", creeLe: "2026-01-01" },
+      { id: "c2", reference: "CTR-2026-0002", societeId: "s2", societeNom: "Société d'Emballage", clientId: "cl2", clientNom: "Autre", objet: "Entreposage", dateDebut: "2026-01-01", montant: 0, statut: "Actif", creeLe: "2026-01-01" },
     ];
     const prestations: ContratPrestation[] = [
       { id: "p1", contratId: "c1", libelle: "A", statut: "Réalisée" },

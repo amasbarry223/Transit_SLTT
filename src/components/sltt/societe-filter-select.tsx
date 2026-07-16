@@ -20,7 +20,7 @@ type SocieteTone = "blue" | "indigo" | "slate";
  */
 const SOCIETE_TONE: Record<string, SocieteTone> = {
   "Top Doumani": "blue",
-  "Traçabilité Emballage": "indigo",
+  "Société d'Emballage": "indigo",
 };
 
 /**

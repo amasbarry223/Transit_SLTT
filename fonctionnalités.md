@@ -11,7 +11,7 @@ La plateforme SLTT gère déjà : clients, devis, dossiers de transit, factures 
 **Nouveauté métier :** deux sociétés distinctes vont désormais travailler sur la même plateforme, principalement sur l'activité **entreposage** :
 
 1. **Top Doumani**
-2. **Traçabilité Emballage**
+2. **Société d'Emballage**
 
 Le client demande de pouvoir séparer leur activité et leur comptabilité (chacune doit voir son résultat), tout en gardant **une seule application, simple d'utilisation**.
 
@@ -28,15 +28,15 @@ Le client demande de pouvoir séparer leur activité et leur comptabilité (chac
 
 ## 2. Fonctionnalités demandées
 
-### F1 — Dimension « Société » (Top Doumani / Traçabilité Emballage)
+### F1 — Dimension « Société » (Top Doumani / Société d'Emballage)
 
 **Demande client :** « Entreposage divisé en 2 sociétés » ; « ces deux sociétés vont bosser sur la plateforme ».
 
 **À implémenter :**
-- Table `societes` (id uuid, nom text, actif bool, created_at) seedée avec **Top Doumani** et **Traçabilité Emballage**. (Table plutôt qu'enum : permet d'en ajouter plus tard sans migration de type.)
+- Table `societes` (id uuid, nom text, actif bool, created_at) seedée avec **Top Doumani** et **Société d'Emballage**. (Table plutôt qu'enum : permet d'en ajouter plus tard sans migration de type.)
 - Colonne `societe_id` (FK `societes`, NOT NULL avec valeur par défaut lors de la migration des données existantes) sur : `stock_items`, `mouvements`, `bons_sortie`, ainsi que sur les nouvelles tables `contrats`, `depenses`, `interventions` (voir F3–F5).
 - Colonne `societe_id` **nullable** sur `ecritures` et `factures` : une écriture/facture peut être rattachée à une société (activité entreposage) ou rester au niveau global transit (comportement actuel inchangé).
-- **UI :** filtre « Société : Toutes / Top Doumani / Traçabilité Emballage » en tête des écrans Entreposage, Bons, Comptabilité, Bilans (et sur les nouveaux écrans Contrats). Le choix est mémorisé dans le store de navigation (Zustand persist) pour ne pas le re-sélectionner à chaque écran.
+- **UI :** filtre « Société : Toutes / Top Doumani / Société d'Emballage » en tête des écrans Entreposage, Bons, Comptabilité, Bilans (et sur les nouveaux écrans Contrats). Le choix est mémorisé dans le store de navigation (Zustand persist) pour ne pas le re-sélectionner à chaque écran.
 - Badge société sur les lignes des tables et sur les fiches détail concernées.
 
 **Critères d'acceptation :**
@@ -103,12 +103,12 @@ Le client demande de pouvoir séparer leur activité et leur comptabilité (chac
   - **Recettes** = encaissements de la période (écritures + paiements factures, selon les 3 canaux déjà documentés), filtrés par société quand `societe_id` est renseigné ;
   - **Dépenses** = somme des `depenses` de la période (par société) ;
   - **Bénéfice = Recettes − Dépenses**, mis en avant (KPI + graphique Recharts d'évolution mensuelle).
-- Vue « Toutes sociétés » = consolidé + décomposition par société (deux cartes côte à côte : Top Doumani / Traçabilité Emballage).
+- Vue « Toutes sociétés » = consolidé + décomposition par société (deux cartes côte à côte : Top Doumani / Société d'Emballage).
 - Dashboard : ajouter une section `kpi_benefice` dans `dashboard-config.ts` (visible avec `comptabilite:read`), avec sélecteur société.
 - Ne pas créer de plan comptable : conserver le principe existant « livre = table `ecritures` » ; les dépenses contrats sont une source d'agrégation supplémentaire, pas un nouveau canal de paiement client.
 
 **Critères d'acceptation :**
-- Un comptable peut répondre en un écran à : « Quel est le bénéfice de Top Doumani ce mois-ci ? » et « Et celui de Traçabilité Emballage ? ».
+- Un comptable peut répondre en un écran à : « Quel est le bénéfice de Top Doumani ce mois-ci ? » et « Et celui de Société d'Emballage ? ».
 - Les chiffres du consolidé = somme exacte des deux sociétés + activité non affectée (transit).
 
 ---
