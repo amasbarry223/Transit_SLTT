@@ -188,23 +188,3 @@
 .dark .sltt-scroll::-webkit-scrollbar-thumb:hover {
   background-color: #475569;
 }
-
-/* ---- Impression factures ----
-   #sltt-print-zone est nichée profondément dans l'arbre Next.js (pas un
-   enfant direct de body) : "body > *{display:none}" cachait donc son
-   ancêtre direct, et un display:none sur un ancêtre ne peut pas être
-   annulé par un descendant — la zone à imprimer restait invisible et le
-   PDF sortait vide. On utilise visibility (héritée mais réinscriptible
-   par un descendant) plutôt que display, puis on sort la zone du flux
-   normal pour éviter qu'elle reste coincée dans un conteneur avec
-   overflow/hauteur fixe (sidebar, scroll interne, etc.). */
-@media print {
-  body * { visibility: hidden; }
-  #sltt-print-zone,
-  #sltt-print-zone * { visibility: visible; }
-  #sltt-print-zone {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-  }
-}

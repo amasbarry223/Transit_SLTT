@@ -54,6 +54,19 @@ function buildLegalLine(info?: SocieteLegalInfo): string {
   ].filter(Boolean).join(" &nbsp;·&nbsp; ");
 }
 
+/**
+ * Fenêtre d'impression bloquée par le navigateur (popup). On ne retombe plus
+ * sur window.print() de la page en cours : le globals.css qui réservait ça à
+ * une #sltt-print-zone dédiée a été retiré (zone plus jamais rendue depuis un
+ * précédent refactor), donc ce fallback produisait un document entièrement
+ * vide au lieu de la page actuelle. Un message clair vaut mieux qu'un PDF vide.
+ */
+function warnPopupBlocked(): void {
+  window.alert(
+    "La fenêtre d'impression a été bloquée par le navigateur. Autorisez les pop-ups pour ce site puis réessayez.",
+  );
+}
+
 /** Attend le chargement des images avant d'ouvrir la boîte d'impression. */
 function triggerPrint(win: Window, delayMs = 400): void {
   const doPrint = () => {
@@ -222,7 +235,7 @@ export function printDevis(data: DevisData): void {
   }).join("");
 
   const win = window.open("", "_blank", "width=880,height=760");
-  if (!win) { window.print(); return; }
+  if (!win) { warnPopupBlocked(); return; }
   win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
@@ -496,7 +509,7 @@ export function printFactureModule(data: FactureModuleData): void {
     </div>` : "";
 
   const win = window.open("", "_blank", "width=880,height=760");
-  if (!win) { window.print(); return; }
+  if (!win) { warnPopupBlocked(); return; }
   win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
@@ -642,7 +655,7 @@ export function printContratModule(data: ContratModuleData): void {
     </div>`).join("");
 
   const win = window.open("", "_blank", "width=880,height=760");
-  if (!win) { window.print(); return; }
+  if (!win) { warnPopupBlocked(); return; }
   win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
@@ -777,7 +790,7 @@ export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): voi
     </tr>`).join("");
 
   const win = window.open("", "_blank", "width=880,height=760");
-  if (!win) { window.print(); return; }
+  if (!win) { warnPopupBlocked(); return; }
   win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
@@ -919,7 +932,7 @@ export function printInvoice(data: InvoiceData, invoiceNum: string): void {
   }).join("");
 
   const win = window.open("", "_blank", "width=880,height=760");
-  if (!win) { window.print(); return; }
+  if (!win) { warnPopupBlocked(); return; }
   win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
@@ -1142,8 +1155,7 @@ export function printHTML(title: string, bodyHTML: string, brand?: PrintHTMLBran
   const footerHTML = legalLine || "Document généré par la plateforme SLTT · © 2026";
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
-    // Popup blocked — fallback to printing current page
-    window.print();
+    warnPopupBlocked();
     return;
   }
   win.opener = null;
@@ -1322,7 +1334,7 @@ export function printStockInventory(
 
   const win = window.open("", "_blank", "width=1200,height=860");
   if (!win) {
-    window.print();
+    warnPopupBlocked();
     return;
   }
   win.opener = null;
@@ -1706,7 +1718,7 @@ export function printClients(
     </tr>`).join("");
 
   const win = window.open("", "_blank", "width=1060,height=820");
-  if (!win) { window.print(); return; }
+  if (!win) { warnPopupBlocked(); return; }
   win.opener = null;
 
   win.document.write(`<!DOCTYPE html>
