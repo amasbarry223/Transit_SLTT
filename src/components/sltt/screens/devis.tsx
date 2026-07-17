@@ -327,11 +327,17 @@ export function DevisScreen() {
 
   /* ---- KPIs ---- */
   const totalDevis = devisList.length;
-  const enAttente = devisList.filter((d) => d.statut === "Envoyé").length;
-  const acceptes = devisList.filter((d) => d.statut === "Accepté").length;
-  const totalEstime = devisList
-    .filter((d) => d.statut !== "Refusé" && d.statut !== "Expiré")
-    .reduce((s, d) => s + d.total, 0);
+  const { enAttente, acceptes, totalEstime } = useMemo(() => {
+    let enAttente = 0;
+    let acceptes = 0;
+    let totalEstime = 0;
+    for (const d of devisList) {
+      if (d.statut === "Envoyé") enAttente++;
+      if (d.statut === "Accepté") acceptes++;
+      if (d.statut !== "Refusé" && d.statut !== "Expiré") totalEstime += d.total;
+    }
+    return { enAttente, acceptes, totalEstime };
+  }, [devisList]);
 
   /* ---- Filters ---- */
   const filtered = useMemo(() => {

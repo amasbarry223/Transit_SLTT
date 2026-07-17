@@ -342,10 +342,22 @@ export function TransporteursScreen() {
   );
 
   /* ---- KPIs ---- */
-  const actifs        = transporteurs.filter((t) => t.statut === "Actif").length;
-  const inactifs      = transporteurs.filter((t) => t.statut === "Inactif").length;
-  const totalDossiers = transporteurs.reduce((s, t) => s + t.nbDossiers, 0);
-  const capaciteTotal = transporteurs.filter((t) => t.statut === "Actif").reduce((s, t) => s + t.capacite, 0);
+  const { actifs, inactifs, totalDossiers, capaciteTotal } = useMemo(() => {
+    let actifs = 0;
+    let inactifs = 0;
+    let totalDossiers = 0;
+    let capaciteTotal = 0;
+    for (const t of transporteurs) {
+      if (t.statut === "Actif") {
+        actifs++;
+        capaciteTotal += t.capacite;
+      } else {
+        inactifs++;
+      }
+      totalDossiers += t.nbDossiers;
+    }
+    return { actifs, inactifs, totalDossiers, capaciteTotal };
+  }, [transporteurs]);
 
   /* ---- Filtered & sorted ---- */
   const filtered = useMemo(() => {

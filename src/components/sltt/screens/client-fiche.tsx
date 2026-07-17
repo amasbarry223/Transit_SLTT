@@ -311,9 +311,9 @@ export function ClientFicheScreen() {
     if (!client) return;
     const unpaid = dossiers.filter((d) => d.montantInvesti - d.montantPaye > 0);
     const lignes = unpaid
-      .map((d) => `  • ${d.reference} — ${new Intl.NumberFormat("fr-FR").format(d.montantInvesti - d.montantPaye)} FCFA`)
+      .map((d) => `  • ${d.reference} — ${formatFCFA(d.montantInvesti - d.montantPaye, false)} FCFA`)
       .join("\n");
-    const total = new Intl.NumberFormat("fr-FR").format(totalDu);
+    const total = formatFCFA(totalDu, false);
     const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
     const msg = `Bamako, le ${today}\n\nObjet : Rappel de solde — SLTT\n\nBonjour${client.type === "Entreprise" ? "" : " M./Mme"},\n\nNous vous contactons au sujet du solde restant dû sur vos dossiers de transit :\n\n${lignes}\n\nMontant total dû : ${total} FCFA\n\nNous vous prions de bien vouloir régulariser ce solde dans les meilleurs délais. Pour tout renseignement, n'hésitez pas à nous contacter.\n\nCordialement,\nSLTT — Bamako`;
     setRelanceMsg(msg);

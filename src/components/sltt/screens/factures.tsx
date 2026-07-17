@@ -518,7 +518,7 @@ export function FacturesScreen() {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
+              className="h-full rounded-full bg-emerald-500 transition-[width]"
               style={{ width: `${kpi.tauxRecouvrement}%` }}
             />
           </div>

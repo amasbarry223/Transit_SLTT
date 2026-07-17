@@ -781,7 +781,7 @@ export function FactureDetailScreen() {
               <div className="shrink-0 text-right">
                 <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Total TTC</p>
                 <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700">
-                  {new Intl.NumberFormat("fr-FR").format(facture.montantTTC)}
+                  {formatFCFA(facture.montantTTC, false)}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-400">FCFA</p>
                 {facture.montantPaye > 0 && facture.statut !== "Soldée" && (

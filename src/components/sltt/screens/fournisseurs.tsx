@@ -583,9 +583,19 @@ export function FournisseursScreen() {
     () => dossierFournisseurs.reduce((s, df) => s + df.montantBudgete, 0),
     [dossierFournisseurs],
   );
-  const actifs = fournisseurs.filter((f) => f.statut === "Actif").length;
-  const enAttente = dossierFournisseurs.filter((df) => df.statut === "En attente").length;
-  const avecTarif = fournisseurs.filter((f) => f.tarifContractuel != null).length;
+  const { actifs, avecTarif } = React.useMemo(() => {
+    let actifs = 0;
+    let avecTarif = 0;
+    for (const f of fournisseurs) {
+      if (f.statut === "Actif") actifs++;
+      if (f.tarifContractuel != null) avecTarif++;
+    }
+    return { actifs, avecTarif };
+  }, [fournisseurs]);
+  const enAttente = React.useMemo(
+    () => dossierFournisseurs.filter((df) => df.statut === "En attente").length,
+    [dossierFournisseurs],
+  );
 
   const liaisonsEnrichies = React.useMemo(() => {
     return dossierFournisseurs

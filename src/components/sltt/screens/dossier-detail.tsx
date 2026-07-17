@@ -1113,7 +1113,7 @@ export function DossierDetailScreen() {
                           </div>
                           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <div
-                              className={cn("h-full rounded-full transition-all", tauxRec >= 100 ? "bg-emerald-500" : "bg-blue-500")}
+                              className={cn("h-full rounded-full transition-[width]", tauxRec >= 100 ? "bg-emerald-500" : "bg-blue-500")}
                               style={{ width: `${Math.min(100, tauxRec)}%` }}
                             />
                           </div>

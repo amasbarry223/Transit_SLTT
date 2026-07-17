@@ -425,7 +425,7 @@ export function DevisDetailScreen() {
               <div className="shrink-0 text-right">
                 <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total estimé</p>
                 <p className="mt-0.5 text-3xl font-extrabold tabular-nums text-blue-700 leading-tight">
-                  {new Intl.NumberFormat("fr-FR").format(devis.total)}
+                  {formatFCFA(devis.total, false)}
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">FCFA</p>
               </div>

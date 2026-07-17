@@ -259,7 +259,7 @@ export function ContratDetailScreen() {
               <div className="shrink-0 text-right">
                 <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Montant du contrat</p>
                 <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700">
-                  {new Intl.NumberFormat("fr-FR").format(contrat.montant)}
+                  {formatFCFA(contrat.montant, false)}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-400">FCFA</p>
               </div>

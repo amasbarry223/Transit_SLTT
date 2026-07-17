@@ -220,7 +220,7 @@ function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?: { id?:
               </div>
               <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
                 <div
-                  className={`h-1.5 rounded-full transition-all ${low ? "bg-red-400" : "bg-emerald-500"}`}
+                  className={`h-1.5 rounded-full transition-[width] ${low ? "bg-red-400" : "bg-emerald-500"}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -486,7 +486,7 @@ function GuideDemarrage({
       </div>
       <div className="mx-4 mb-2 mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/50">
         <div
-          className="h-full rounded-full bg-blue-600 transition-all dark:bg-blue-500"
+          className="h-full rounded-full bg-blue-600 transition-[width] dark:bg-blue-500"
           style={{ width: `${progress.total ? (progress.completed / progress.total) * 100 : 0}%` }}
         />
       </div>
