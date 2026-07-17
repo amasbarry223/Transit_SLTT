@@ -546,7 +546,31 @@ export function ClientFicheScreen() {
               />
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="space-y-3 p-4 md:hidden">
+                  {pagedDossiers.map((d) => (
+                    <Card
+                      key={d.id}
+                      className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
+                      onClick={() => openDossierDetail(d.id)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">{d.reference}</p>
+                        <DossierStatutBadge statut={d.statut} />
+                      </div>
+                      <dl className="mt-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Date</dt>
+                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.date)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Montant</dt>
+                          <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(d.montantInvesti)}</dd>
+                        </div>
+                      </dl>
+                    </Card>
+                  ))}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -638,7 +662,50 @@ export function ClientFicheScreen() {
               <EmptyState label="Aucune écriture de paiement pour ce client." />
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="space-y-3 p-4 md:hidden">
+                  {pagedEcritures.map((e) => {
+                    const reste = resteAPayer(e);
+                    return (
+                      <Card
+                        key={e.id}
+                        className={cn(
+                          "border-border/80 p-4 shadow-sm",
+                          reste > 0 && "bg-amber-50/20 dark:bg-amber-950/20",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="tabular-nums text-sm text-slate-600 dark:text-slate-300">{formatDateShort(e.date)}</p>
+                          <EcritureStatutBadge statut={deriveEcritureStatut(e)} />
+                        </div>
+                        <dl className="mt-3 space-y-1.5 text-sm">
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Investi</dt>
+                            <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(e.montantInvesti)}</dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Payé</dt>
+                            <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(e.montantPaye)}</dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Reste dû</dt>
+                            <dd className="tabular-nums">
+                              {reste > 0 ? (
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">{formatFCFA(reste)}</span>
+                              ) : (
+                                <span className="text-emerald-600 dark:text-emerald-400">Soldé</span>
+                              )}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Mode</dt>
+                            <dd className="text-slate-700 dark:text-slate-300">{e.modePaiement}</dd>
+                          </div>
+                        </dl>
+                      </Card>
+                    );
+                  })}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -744,7 +811,36 @@ export function ClientFicheScreen() {
             {factures.length === 0 ? (
               <EmptyState label="Aucune facture pour ce client." />
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="space-y-3 p-4 md:hidden">
+                {factures.map((f) => (
+                  <Card
+                    key={f.id}
+                    className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
+                    onClick={() => go("facture-detail", { id: f.id })}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-mono text-xs font-semibold text-blue-700">{f.numero}</p>
+                      <FactureStatutBadge statut={f.statut} />
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Date</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(f.date)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Montant TTC</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(f.montantTTC)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Payé</dt>
+                        <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(f.montantPaye)}</dd>
+                      </div>
+                    </dl>
+                  </Card>
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -792,6 +888,7 @@ export function ClientFicheScreen() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </Card>
         </TabsContent>
@@ -811,7 +908,36 @@ export function ClientFicheScreen() {
               />
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="space-y-3 p-4 md:hidden">
+                  {stockItems.map((item) => (
+                    <Card key={item.id} className="border-border/80 p-4 shadow-sm">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">{item.marchandise}</p>
+                      <dl className="mt-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Quantité</dt>
+                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{item.quantite} {item.unite}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Dépositaire</dt>
+                          <dd className="text-slate-700 dark:text-slate-300">{item.depositaire}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Commercial</dt>
+                          <dd className="text-slate-700 dark:text-slate-300">{item.commercial}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Payé</dt>
+                          <dd className="tabular-nums text-emerald-700 dark:text-emerald-400">{formatFCFA(item.sommePayee)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Reste</dt>
+                          <dd className="tabular-nums text-amber-700 dark:text-amber-400">{formatFCFA(item.resteAPayer)}</dd>
+                        </div>
+                      </dl>
+                    </Card>
+                  ))}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -862,7 +988,39 @@ export function ClientFicheScreen() {
               <EmptyState label="Aucun bon de sortie pour ce client." />
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="space-y-3 p-4 md:hidden">
+                  {pagedBons.map((b) => (
+                    <Card key={b.id} className="border-border/80 p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{b.reference}</p>
+                        <ToneBadge tone={bonStatutTone(b.statut)}>{b.statut}</ToneBadge>
+                      </div>
+                      <dl className="mt-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Date</dt>
+                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(b.date)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Marchandise</dt>
+                          <dd className="truncate text-right text-slate-700 dark:text-slate-300">{b.marchandise}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Quantité</dt>
+                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{b.quantite} {b.unite}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Motif</dt>
+                          <dd><ToneBadge tone={bonMotifTone[b.motif]}>{b.motif}</ToneBadge></dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Montant</dt>
+                          <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(b.montant)}</dd>
+                        </div>
+                      </dl>
+                    </Card>
+                  ))}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">

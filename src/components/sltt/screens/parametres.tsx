@@ -349,7 +349,7 @@ function SecurityTab() {
         </div>
         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
           La déconnexion automatique personnalisée et l&apos;authentification à deux facteurs seront disponibles dans une prochaine version.
-          La session actuelle utilise déjà un délai de sécurité à la connexion (8 h ou 7 jours avec « Rester connecté »).
+          La session actuelle utilise déjà une déconnexion automatique après 30 min d&apos;inactivité, avec un plafond de 8 h (ou 3 jours avec « Rester connecté »).
         </p>
       </Card>
     </div>
@@ -496,7 +496,34 @@ function AuditTab() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((row) => (
+                <Card key={row.id} className="border-border/80 p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">{row.user}</p>
+                      <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(row.date)}</p>
+                    </div>
+                    <ToneBadge tone={actionTone[row.action]}>{row.action}</ToneBadge>
+                  </div>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Module</dt>
+                      <dd><ToneBadge tone="slate">{row.module}</ToneBadge></dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-xs text-slate-500">Détail</dt>
+                      <dd className="text-right text-slate-700 dark:text-slate-300">{row.detail}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">IP</dt>
+                      <dd className="font-mono text-xs text-slate-500 dark:text-slate-400">{row.ip}</dd>
+                    </div>
+                  </dl>
+                </Card>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">

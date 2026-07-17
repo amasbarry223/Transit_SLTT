@@ -224,7 +224,44 @@ export function ContratsScreen() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((c) => (
+                <Card
+                  key={c.id}
+                  className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
+                  onClick={() => goToContrat(c.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{c.reference}</p>
+                      <p className="mt-1 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{c.clientNom}</p>
+                    </div>
+                    <ToneBadge tone={STATUT_TONE[c.statut]}>{c.statut}</ToneBadge>
+                  </div>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Société</dt>
+                      <dd><SocieteBadge societeNom={c.societeNom} size="sm" /></dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Montant</dt>
+                      <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(c.montant)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Prestations</dt>
+                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                        {c.nbPrestationsRealisees}/{c.nbPrestations}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Début</dt>
+                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(c.dateDebut)}</dd>
+                    </div>
+                  </dl>
+                </Card>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table aria-label="Liste des contrats">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">

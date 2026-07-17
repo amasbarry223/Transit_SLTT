@@ -169,7 +169,7 @@ function AgentPanel({
           <p className="text-xs text-slate-400 dark:text-slate-500">Créez un devis ou un dossier pour démarrer.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {steps.map((s) => (
             <div key={s.label} className={`rounded-xl p-4 text-center ${s.bg}`}>
               <p className={`text-2xl font-bold tabular-nums ${s.text}`}>{s.count}</p>

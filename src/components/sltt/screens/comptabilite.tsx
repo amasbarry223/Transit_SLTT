@@ -561,7 +561,77 @@ export function ComptabiliteScreen() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((e) => {
+                const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+                const ecart = e.montantPaye - e.montantInvesti;
+                const statut = deriveStatut(e);
+                const ModeIcon = modeIcon[e.modePaiement];
+                const solde = reste === 0;
+                return (
+                  <Card
+                    key={e.id}
+                    className={cn(
+                      "border-border/80 p-4 shadow-sm",
+                      !solde && "bg-amber-50/20 dark:bg-amber-950/20",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">{e.clientNom}</p>
+                        <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(e.date)}</p>
+                      </div>
+                      <EcritureStatutBadge statut={statut} />
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Société</dt>
+                        <dd><SocieteBadge societeNom={e.societeNom} size="sm" /></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Investi</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(e.montantInvesti)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Payé</dt>
+                        <dd className="tabular-nums text-emerald-600 dark:text-emerald-400">{formatFCFA(e.montantPaye)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Reste dû</dt>
+                        <dd className="tabular-nums">
+                          {solde ? (
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">Soldé</span>
+                          ) : (
+                            <span className="font-semibold text-amber-600 dark:text-amber-400">{formatFCFA(reste)}</span>
+                          )}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Mode</dt>
+                        <dd className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                          <ModeIcon className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                          {e.modePaiement}
+                        </dd>
+                      </div>
+                    </dl>
+                    {!solde && (
+                      <div className="mt-3 flex justify-end border-t border-border pt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 text-primary"
+                          onClick={() => openPanel(e)}
+                        >
+                          <HandCoins className="size-3.5" />
+                          Enregistrer un paiement
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">

@@ -28,10 +28,14 @@ export type ViewKey =
   | "archives"
   | "parametres";
 
-/** TTL session sans "Rester connecté" : 8 heures */
+/** TTL session sans "Rester connecté" : 8 heures (plafond absolu, voir IDLE_TIMEOUT pour la déconnexion réelle) */
 export const SESSION_TTL_SHORT = 8 * 60 * 60 * 1000;
-/** TTL session avec "Rester connecté" : 7 jours */
-export const SESSION_TTL_LONG = 7 * 24 * 60 * 60 * 1000;
+/** TTL session avec "Rester connecté" : 3 jours (réduit de 7 jours pour limiter la fenêtre d'exposition) */
+export const SESSION_TTL_LONG = 3 * 24 * 60 * 60 * 1000;
+/** Déconnexion après cette durée d'inactivité, quelle que soit l'option "Rester connecté" */
+export const IDLE_TIMEOUT = 30 * 60 * 1000;
+/** Délai d'avertissement avant la déconnexion pour inactivité */
+export const IDLE_WARNING_BEFORE = 60 * 1000;
 
 export type Theme = "light" | "dark";
 
@@ -46,6 +50,7 @@ interface NavState {
   currentUserId: string | null;
   loginAt: number | null;
   rememberMe: boolean;
+  lastActivityAt: number | null;
   theme: Theme;
   /** Filtre société partagé et mémorisé entre écrans (F1). null = "Toutes les sociétés". */
   selectedSocieteId: string | null;
@@ -67,6 +72,8 @@ interface NavState {
   /** Restaure la session sans réinitialiser la vue courante. */
   restoreSession: (role: UserRole, name: string, userId: string) => void;
   logout: () => Promise<void>;
+  /** Marque une activité utilisateur, ce qui repousse la déconnexion pour inactivité. */
+  touchActivity: () => void;
   setCurrentUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -81,6 +88,7 @@ const LOGGED_OUT = {
   currentUserId: null as string | null,
   loginAt: null as number | null,
   rememberMe: false,
+  lastActivityAt: null as number | null,
 };
 
 export const useNav = create<NavState>()(
@@ -114,6 +122,7 @@ export const useNav = create<NavState>()(
           currentUserId: userId,
           loginAt: Date.now(),
           rememberMe: remember,
+          lastActivityAt: Date.now(),
         }),
 
       restoreSession: (role, name, userId) =>
@@ -123,6 +132,7 @@ export const useNav = create<NavState>()(
           currentUserName: name,
           currentUserId: userId,
           loginAt: s.loginAt ?? Date.now(),
+          lastActivityAt: s.lastActivityAt ?? Date.now(),
         })),
 
       logout: async () => {
@@ -138,6 +148,8 @@ export const useNav = create<NavState>()(
           dossierFormMode: "create",
         });
       },
+
+      touchActivity: () => set({ lastActivityAt: Date.now() }),
 
       setCurrentUserName: (name) => set({ currentUserName: name }),
 
@@ -155,6 +167,7 @@ export const useNav = create<NavState>()(
         currentUserId: s.currentUserId,
         loginAt: s.loginAt,
         rememberMe: s.rememberMe,
+        lastActivityAt: s.lastActivityAt,
         theme: s.theme,
         selectedSocieteId: s.selectedSocieteId,
       }),

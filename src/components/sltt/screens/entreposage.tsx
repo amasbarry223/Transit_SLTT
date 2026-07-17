@@ -218,7 +218,20 @@ function StockTab({
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((item) => (
+                <StockCard
+                  key={item.id}
+                  item={item}
+                  onEntry={(id) => onEntry(id)}
+                  onExit={(id) => onExit(id)}
+                  onHistory={(m) => onHistory(m)}
+                  onOpenClient={onOpenClient}
+                  canWrite={canWrite}
+                />
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -396,6 +409,115 @@ function StockRow({
   );
 }
 
+function StockCard({
+  item,
+  onEntry,
+  onExit,
+  onHistory,
+  onOpenClient,
+  canWrite = true,
+}: {
+  item: StockItem;
+  onEntry: (id: string) => void;
+  onExit: (id: string) => void;
+  onHistory: (marchandise: string) => void;
+  onOpenClient?: (clientId: string) => void;
+  canWrite?: boolean;
+}) {
+  const faible = item.quantite < item.seuil;
+  const statut = faible ? "Stock faible" : "Disponible";
+
+  return (
+    <Card
+      className={cn(
+        "border-border/80 p-4 shadow-sm",
+        faible && "bg-red-50/40 dark:bg-red-950/20",
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-slate-100">
+            {faible && <AlertTriangle className="size-3.5 shrink-0 text-red-500" />}
+            <span className="truncate">{item.marchandise}</span>
+          </p>
+          {item.clientId && item.clientNom && onOpenClient ? (
+            <button
+              type="button"
+              className="text-left text-xs text-primary hover:underline"
+              onClick={() => onOpenClient(item.clientId!)}
+            >
+              {item.clientNom}
+            </button>
+          ) : (
+            <p className="text-xs text-slate-500 dark:text-slate-400">{item.depositaire}</p>
+          )}
+        </div>
+        <StockStatutBadge statut={statut} />
+      </div>
+      <dl className="mt-3 space-y-1.5 text-sm">
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500">Société</dt>
+          <dd><SocieteBadge societeNom={item.societeNom} size="sm" /></dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500">Quantité</dt>
+          <dd className="tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+            {item.quantite} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{item.unite}</span>
+          </dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500">Commercial</dt>
+          <dd className="text-slate-700 dark:text-slate-300">{item.commercial}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500">Payé</dt>
+          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(item.sommePayee)}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500">Reste dû</dt>
+          <dd className="tabular-nums text-amber-600 dark:text-amber-400">{formatFCFA(item.resteAPayer)}</dd>
+        </div>
+      </dl>
+      <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+        {canWrite && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/40 hover:text-emerald-700"
+            aria-label="Entrée de marchandise"
+            title="Entrée"
+            onClick={() => onEntry(item.id)}
+          >
+            <PackagePlus className="size-4" />
+          </Button>
+        )}
+        {canWrite && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-950/40 hover:text-amber-700"
+            aria-label="Sortie de marchandise"
+            title="Sortie"
+            onClick={() => onExit(item.id)}
+          >
+            <PackageMinus className="size-4" />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-9 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+          aria-label="Historique"
+          title="Historique"
+          onClick={() => onHistory(item.marchandise)}
+        >
+          <History className="size-4" />
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* MOUVEMENTS TAB                                                      */
 /* ------------------------------------------------------------------ */
@@ -516,7 +638,53 @@ function MouvementsTab({
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((m) => {
+                const isEntree = m.type === "Entrée";
+                const hasBon = m.bonRef && m.bonRef !== "—";
+                return (
+                  <Card key={m.id} className="border-border/80 p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">{m.marchandise}</p>
+                        <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(m.date)}</p>
+                      </div>
+                      <ToneBadge tone={isEntree ? "emerald" : "amber"} dot={false} className="gap-1">
+                        {isEntree ? <ArrowDownToLine className="size-3" /> : <ArrowUpFromLine className="size-3" />}
+                        {m.type}
+                      </ToneBadge>
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Société</dt>
+                        <dd><SocieteBadge societeNom={m.societeNom} size="sm" /></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Quantité</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{m.quantite} {m.unite}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Responsable</dt>
+                        <dd className="text-slate-700 dark:text-slate-300">{m.responsable}</dd>
+                      </div>
+                      {hasBon && (
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Bon lié</dt>
+                          <dd className="font-mono text-xs text-primary">{m.bonRef}</dd>
+                        </div>
+                      )}
+                      {m.motif && (
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Motif</dt>
+                          <dd className="text-right text-slate-700 dark:text-slate-300">{m.motif}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -1132,8 +1300,8 @@ export function EntreposageScreen() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 space-y-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="ni-marchandise" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Marchandise <span className="text-red-500">*</span>
               </Label>
@@ -1146,7 +1314,7 @@ export function EntreposageScreen() {
               />
             </div>
 
-            <div className="col-span-2 space-y-2">
+            <div className="sm:col-span-2 space-y-2">
               <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Société <span className="text-red-500">*</span>
               </Label>
@@ -1162,7 +1330,7 @@ export function EntreposageScreen() {
               </Select>
             </div>
 
-            <div className="col-span-2 space-y-2">
+            <div className="sm:col-span-2 space-y-2">
               <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Client (optionnel)
               </Label>
@@ -1233,7 +1401,7 @@ export function EntreposageScreen() {
           </button>
 
           {niAdvancedOpen && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="ni-depositaire" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Dépositaire

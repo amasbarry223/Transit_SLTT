@@ -210,7 +210,7 @@ function TransporteurFormModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="flex max-h-[92vh] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent className="flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="space-y-0 border-b border-border/60 px-6 py-5 text-left">
           <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
@@ -569,7 +569,83 @@ export function TransporteursScreen() {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="space-y-3 p-4 md:hidden">
+                  {paged.map((t) => {
+                    const isInactif = t.statut === "Inactif";
+                    return (
+                      <Card
+                        key={t.id}
+                        className={cn(
+                          "border-border/80 p-4 shadow-sm",
+                          canWrite && "cursor-pointer active:bg-slate-50 dark:active:bg-slate-800/60",
+                          isInactif && "opacity-80",
+                        )}
+                        onClick={canWrite ? () => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); } : undefined}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">{t.nom}</p>
+                            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{t.contact}</p>
+                          </div>
+                          <ActifStatutBadge statut={t.statut} />
+                        </div>
+                        <dl className="mt-3 space-y-1.5 text-sm">
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Véhicule</dt>
+                            <dd className="text-right text-slate-700 dark:text-slate-300">
+                              {t.vehicule} <span className="font-mono text-xs text-slate-500">{t.immatriculation}</span>
+                            </dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Téléphone</dt>
+                            <dd className="font-mono text-xs text-slate-700 dark:text-slate-300">{t.telephone}</dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Trajet</dt>
+                            <dd className="truncate text-right text-slate-700 dark:text-slate-300">{t.trajet}</dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-xs text-slate-500">Capacité / Dossiers</dt>
+                            <dd className="tabular-nums text-slate-700 dark:text-slate-300">{t.capacite} t · {t.nbDossiers}</dd>
+                          </div>
+                        </dl>
+                        {canWrite && (
+                          <div
+                            className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleStatut(t)}
+                            >
+                              {t.statut === "Actif" ? "Désactiver" : "Activer"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                              title="Modifier"
+                              onClick={() => { setInlineForm({ mode: "edit", target: t }); setDeleteTarget(null); }}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-slate-500 dark:text-slate-400 hover:text-destructive"
+                              title="Supprimer"
+                              onClick={() => { setDeleteTarget(t); setInlineForm(null); }}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">

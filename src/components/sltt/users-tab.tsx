@@ -918,7 +918,89 @@ export function UsersTab() {
           <UsersEmptyState hasFilters={hasFilters} onCreate={openCreate} />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((u) => (
+                <Card key={u.id} className="border-border/80 p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-xs font-bold text-white">
+                        {getInitials(u.nom)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900 dark:text-slate-100">{u.nom}</p>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{u.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        onClick={() => openEdit(u.id)}
+                        aria-label={`Modifier ${u.nom}`}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-slate-400 hover:text-destructive disabled:opacity-30"
+                        disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
+                        onClick={() => setDeleteId(u.id)}
+                        aria-label={`Supprimer ${u.nom}`}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Rôle</dt>
+                      <dd className="flex flex-wrap justify-end gap-1.5">
+                        <ToneBadge tone={roleTone[u.role]}>{u.role}</ToneBadge>
+                        {isCustomPermissionSet(u.role, u.permissions) && (
+                          <ToneBadge tone="slate" dot={false}>Personnalisé</ToneBadge>
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Statut</dt>
+                      <dd className="flex items-center gap-2">
+                        <Switch
+                          checked={u.actif}
+                          disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
+                          onCheckedChange={async () => {
+                            if (u.id === currentUser?.id) return;
+                            try {
+                              await toggleUserActive(u.id);
+                              toast({
+                                title: "Statut mis à jour",
+                                description: `${u.nom} est maintenant ${u.actif ? "inactif" : "actif"}.`,
+                              });
+                            } catch (err: unknown) {
+                              toast({
+                                title: "Erreur",
+                                variant: "destructive",
+                                description: err instanceof Error ? err.message : undefined,
+                              });
+                            }
+                          }}
+                          aria-label={`Statut de ${u.nom}`}
+                        />
+                        <ToneBadge tone={u.actif ? "emerald" : "slate"}>
+                          {u.actif ? "Actif" : "Inactif"}
+                        </ToneBadge>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Dernière connexion</dt>
+                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(u.derniereConnexion)}</dd>
+                    </div>
+                  </dl>
+                </Card>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-white hover:bg-white dark:bg-slate-950 dark:hover:bg-slate-950">

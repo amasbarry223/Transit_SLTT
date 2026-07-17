@@ -233,7 +233,7 @@ function FournisseurModal({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="max-w-lg gap-0 p-0">
+      <DialogContent className="gap-0 p-0 sm:max-w-lg">
         <div className="flex items-center gap-2 border-b border-border/60 px-6 py-4">
           <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
@@ -241,8 +241,8 @@ function FournisseurModal({
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 space-y-1.5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 space-y-1.5">
               <Label>
                 Raison sociale <span className="text-red-500">*</span>
               </Label>
@@ -319,7 +319,7 @@ function FournisseurModal({
                 className="h-10"
               />
             </div>
-            <div className="col-span-2 space-y-1.5">
+            <div className="sm:col-span-2 space-y-1.5">
               <Label>Adresse</Label>
               <Input
                 value={adresse}

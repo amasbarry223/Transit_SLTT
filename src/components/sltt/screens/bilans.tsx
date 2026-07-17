@@ -600,6 +600,7 @@ export function BilansScreen() {
               {recapParClient.length} client{recapParClient.length !== 1 ? "s" : ""} · {periodeLabel}
             </span>
           </div>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-border">
@@ -698,6 +699,7 @@ export function BilansScreen() {
               </TableFooter>
             )}
           </Table>
+          </div>
         </Card>
 
         <Card className="p-5 shadow-sm border-border/80 lg:col-span-1 gap-4">

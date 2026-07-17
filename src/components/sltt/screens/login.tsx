@@ -24,28 +24,12 @@ import {
 function LoginBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      <div className="absolute inset-0 bg-[#0c1a4a]" />
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1e40af] via-[#1d4ed8] to-[#0f172a]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_-10%,rgba(96,165,250,0.45),transparent_55%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_100%_100%,rgba(30,64,175,0.6),transparent_50%)]" />
       <div
-        className="absolute inset-0 opacity-[0.14]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.9) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.9) 1px, transparent 1px)`,
-          backgroundSize: "64px 64px",
-        }}
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url('/bg.jpg')` }}
       />
-      <div
-        className="absolute inset-0 opacity-[0.06]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`,
-          backgroundSize: "16px 16px",
-        }}
-      />
-      <div className="absolute -left-24 top-1/4 size-96 rounded-full bg-blue-400/20 blur-3xl" />
-      <div className="absolute -right-16 bottom-0 size-80 rounded-full bg-indigo-500/25 blur-3xl" />
-      <div className="absolute left-1/2 top-1/2 size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-300/10 blur-3xl" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(15,23,42,0.35)_100%)]" />
+      <div className="absolute inset-0 bg-[#0c1a4a]/50" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(15,23,42,0.45)_100%)]" />
     </div>
   );
 }
@@ -58,7 +42,7 @@ export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
 
   async function doLogin(userEmail: string, userPassword: string) {
     if (loading) return;
@@ -230,7 +214,7 @@ export function LoginScreen() {
                   htmlFor="remember"
                   className="cursor-pointer text-sm text-slate-600 dark:text-slate-300"
                 >
-                  Rester connecté (7 jours)
+                  Rester connecté (3 jours)
                 </Label>
               </div>
 

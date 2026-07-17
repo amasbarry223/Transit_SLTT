@@ -152,7 +152,7 @@ function FactureFormModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-2xl">
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-border/60 px-6 py-4">
           <Receipt className="size-4 text-blue-600 dark:text-blue-400" />
@@ -161,7 +161,7 @@ function FactureFormModal({
 
         <form onSubmit={handleSubmit} className="divide-y divide-border/40">
           {/* Section 1 : client + dossier */}
-          <div className="grid grid-cols-2 gap-4 px-6 py-5">
+          <div className="grid grid-cols-1 gap-4 px-6 py-5 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Dossier lié (optionnel)</Label>
               <div className="relative">
@@ -203,7 +203,7 @@ function FactureFormModal({
               )}
             </div>
 
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Société (optionnel)</Label>
               <div className="relative">
                 <select
@@ -245,7 +245,7 @@ function FactureFormModal({
             </div>
 
             {/* En-têtes colonnes */}
-            <div className="mb-1.5 grid grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <div className="mb-1.5 hidden grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:grid">
               <span>Description</span>
               <span className="text-center">Qté</span>
               <span className="text-right">Prix unitaire</span>
@@ -254,7 +254,7 @@ function FactureFormModal({
 
             <div className="space-y-2">
               {lignes.map((l, i) => (
-                <div key={i} className="grid grid-cols-[1fr_60px_100px_24px] items-center gap-2">
+                <div key={i} className="grid grid-cols-[1fr_40px_56px_20px] items-center gap-1.5 sm:grid-cols-[1fr_60px_100px_24px] sm:gap-2">
                   <Input
                     value={l.description}
                     onChange={(e) => updateLigne(i, "description", e.target.value)}
@@ -291,7 +291,7 @@ function FactureFormModal({
           </div>
 
           {/* Section 3 : TVA + totaux + notes */}
-          <div className="grid grid-cols-2 gap-6 px-6 py-5">
+          <div className="grid grid-cols-1 gap-6 px-6 py-5 sm:grid-cols-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
                 <Label htmlFor="tva-switch" className="text-xs font-medium text-slate-600 dark:text-slate-300">

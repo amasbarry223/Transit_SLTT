@@ -391,7 +391,84 @@ export function ClientsScreen() {
           <EmptyState hasQuery={hasActiveFilters} onCreate={openCreateDialog} canCreate={canWrite} />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((c) => (
+                <Card
+                  key={c.id}
+                  className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
+                  onClick={() => openClient(c.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className={cn(
+                          "flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white",
+                          avatarGradient(c.type),
+                        )}
+                      >
+                        {getInitials(c.nom)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900 dark:text-slate-100">{c.nom}</p>
+                        <ToneBadge tone={c.type === "Entreprise" ? "blue" : "slate"}>{c.type}</ToneBadge>
+                      </div>
+                    </div>
+                    <div
+                      className="flex shrink-0 items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                        onClick={() => openClient(c.id)}
+                        aria-label={`Voir la fiche de ${c.nom}`}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                      {canWrite && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                          onClick={(e) => openEditDialog(c.id, e)}
+                          aria-label={`Modifier ${c.nom}`}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    {c.telephone && (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Téléphone</dt>
+                        <dd className="font-mono text-xs text-slate-700 dark:text-slate-300">{c.telephone}</dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Dossiers</dt>
+                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                        {clientStats.get(c.id)?.nbDossiers ?? 0}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-xs text-slate-500">Total dû</dt>
+                      <dd className="tabular-nums">
+                        {(clientStats.get(c.id)?.totalDu ?? 0) > 0 ? (
+                          <span className="font-semibold text-amber-600 dark:text-amber-400">
+                            {formatFCFA(clientStats.get(c.id)!.totalDu)}
+                          </span>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400">Soldé</span>
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                </Card>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table aria-label="Liste des clients">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">

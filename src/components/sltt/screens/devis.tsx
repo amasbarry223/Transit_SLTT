@@ -188,7 +188,7 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Modifier le devis" : "Nouveau devis"}</DialogTitle>
           <DialogDescription>
@@ -216,7 +216,7 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
             <Input value={nature} onChange={(e) => setNature(e.target.value)} placeholder="ex. Matériaux de construction" />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-2">
               <Label className="text-xs">Droits douane (FCFA)</Label>
               <Input value={droitDouane} onChange={(e) => setDroitDouane(e.target.value)} placeholder="0" className="text-right tabular-nums" />
@@ -608,7 +608,111 @@ export function DevisScreen() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((d) => {
+                const next = NEXT_STATUT[d.statut];
+                const isEnAttente = d.statut === "Envoyé";
+                return (
+                  <Card
+                    key={d.id}
+                    className={cn(
+                      "cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60",
+                      isEnAttente && "bg-blue-50/30 dark:bg-blue-950/20",
+                    )}
+                    onClick={() => handleOpenDevis(d)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">{d.reference}</p>
+                        <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <DevisStatutBadge statut={d.statut} />
+                        {d.dossierId ? (
+                          <button
+                            className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
+                            onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
+                          >
+                            <FolderKanban className="size-3" /> Dossier
+                          </button>
+                        ) : next && canWrite && (
+                          <StatusQuickAction
+                            label={next.label}
+                            bgClass={next.bgClass}
+                            colorClass={next.colorClass}
+                            onClick={(e) => { e.stopPropagation(); handleQuickStatut(d, next.to); }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Nature</dt>
+                        <dd className="truncate text-right text-slate-700 dark:text-slate-300">{d.nature}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Total estimé</dt>
+                        <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(d.total)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Validité</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.dateValidite)}</dd>
+                      </div>
+                    </dl>
+                    <div
+                      className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Voir" onClick={() => handleOpenDevis(d)}>
+                        <Eye className="size-4" />
+                      </Button>
+                      {canWrite && (
+                        <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Modifier" onClick={() => handleOpenEdit(d)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => handleOpenDevis(d)}>
+                            <ExternalLink className="mr-2 size-3.5" /> Ouvrir la fiche
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePrintDevis(d)}>
+                            <FileText className="mr-2 size-3.5" /> Imprimer le devis
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {d.dossierId ? (
+                            <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
+                              <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
+                            </DropdownMenuItem>
+                          ) : canWrite && (
+                            <DropdownMenuItem
+                              className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
+                              onClick={() => setConvertTarget(d)}
+                            >
+                              <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
+                            </DropdownMenuItem>
+                          )}
+                          {canWrite && (
+                            <DropdownMenuItem
+                              className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+                              onClick={() => setDeleteTarget(d)}
+                            >
+                              <Trash2 className="mr-2 size-3.5" /> Supprimer
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">

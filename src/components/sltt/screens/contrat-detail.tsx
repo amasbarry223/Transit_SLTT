@@ -350,6 +350,7 @@ export function ContratDetailScreen() {
                 <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucune dépense enregistrée</p>
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <Table aria-label="Dépenses du contrat">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
@@ -384,6 +385,7 @@ export function ContratDetailScreen() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </Card>
         </TabsContent>
@@ -408,6 +410,7 @@ export function ContratDetailScreen() {
                 <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucune prestation optionnelle</p>
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <Table aria-label="Prestations optionnelles du contrat">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
@@ -478,6 +481,7 @@ export function ContratDetailScreen() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </Card>
         </TabsContent>
@@ -789,7 +793,7 @@ function DepenseFormModal({
             <Label>Libellé <span className="text-red-500">*</span></Label>
             <Input value={libelle} onChange={(e) => setLibelle(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Montant <span className="text-red-500">*</span></Label>
               <Input type="number" min={0} value={montant} onChange={(e) => setMontant(e.target.value)} />
@@ -905,7 +909,7 @@ function PrestationFormModal({
             <Label>Description</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Montant (optionnel)</Label>
               <Input type="number" min={0} value={montant} onChange={(e) => setMontant(e.target.value)} />

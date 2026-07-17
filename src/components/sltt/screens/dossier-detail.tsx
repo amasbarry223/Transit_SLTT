@@ -1260,7 +1260,46 @@ export function DossierDetailScreen() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="space-y-3 sm:hidden">
+                {dossierEcritures.map((e) => {
+                  const resteE = Math.max(0, e.montantInvesti - e.montantPaye);
+                  const statut: "Soldé" | "En attente" = resteE === 0 ? "Soldé" : "En attente";
+                  return (
+                    <Card key={e.id} className="border-border/80 p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="tabular-nums text-sm text-slate-600 dark:text-slate-300">{formatDateShort(e.date)}</p>
+                        <EcritureStatutBadge statut={statut} />
+                      </div>
+                      <dl className="mt-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Investi</dt>
+                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(e.montantInvesti)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Payé</dt>
+                          <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(e.montantPaye)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Reste dû</dt>
+                          <dd className="tabular-nums">
+                            {resteE > 0 ? (
+                              <span className="font-semibold text-amber-600 dark:text-amber-400">{formatFCFA(resteE)}</span>
+                            ) : (
+                              <span className="text-emerald-600 dark:text-emerald-400">Soldé</span>
+                            )}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Mode</dt>
+                          <dd className="text-slate-700 dark:text-slate-300">{e.modePaiement}</dd>
+                        </div>
+                      </dl>
+                    </Card>
+                  );
+                })}
+              </div>
+              <div className="hidden overflow-x-auto sm:block">
                 <Table aria-label="Historique des écritures du dossier">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -1323,6 +1362,7 @@ export function DossierDetailScreen() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </Card>
 
@@ -1356,7 +1396,36 @@ export function DossierDetailScreen() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="space-y-3 sm:hidden">
+                {dossierFactures.map((f) => (
+                  <Card
+                    key={f.id}
+                    className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
+                    onClick={() => go("facture-detail", { id: f.id })}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-mono text-xs font-semibold text-blue-700">{f.numero}</p>
+                      <FactureStatutBadge statut={f.statut} />
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Date</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(f.date)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Montant TTC</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(f.montantTTC)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Payé</dt>
+                        <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(f.montantPaye)}</dd>
+                      </div>
+                    </dl>
+                  </Card>
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto sm:block">
                 <Table aria-label="Factures du dossier">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -1404,6 +1473,7 @@ export function DossierDetailScreen() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </Card>
         </TabsContent>
@@ -1442,7 +1512,37 @@ export function DossierDetailScreen() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="space-y-3 sm:hidden">
+                {dossierFournisseurs.map((df) => (
+                  <Card key={df.id} className="border-border/80 p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{df.fournisseurNom}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{df.type}</p>
+                      </div>
+                      <DossierFournisseurStatutBadge statut={df.statut} />
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      {df.description && (
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Description</dt>
+                          <dd className="text-right text-slate-600 dark:text-slate-300">{df.description}</dd>
+                        </div>
+                      )}
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Budgété</dt>
+                        <dd className="tabular-nums text-slate-600 dark:text-slate-300">{formatFCFA(df.montantBudgete)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Réel</dt>
+                        <dd className="tabular-nums font-medium text-slate-800 dark:text-slate-200">{formatFCFA(df.montantReel)}</dd>
+                      </div>
+                    </dl>
+                  </Card>
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto sm:block">
                 <Table aria-label="Fournisseurs liés au dossier">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -1487,6 +1587,7 @@ export function DossierDetailScreen() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </Card>
         </TabsContent>

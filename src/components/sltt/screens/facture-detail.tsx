@@ -332,40 +332,59 @@ function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border/60 bg-slate-50/80 dark:bg-slate-800/50">
-            <th className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">
-              Description
-            </th>
-            <th className="w-16 px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
-              Qté
-            </th>
-            <th className="w-32 px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
-              P.U. HT
-            </th>
-            <th className="w-36 px-5 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
-              Total HT
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/30">
-          {lignes.map((l, i) => (
-            <tr key={l.id} className={cn(i % 2 === 1 && "bg-slate-50/40 dark:bg-slate-800/20")}>
-              <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-200">{l.description}</td>
-              <td className="px-3 py-3 text-center tabular-nums text-slate-500">{l.quantite}</td>
-              <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
-                {formatFCFA(l.prixUnitaire)}
-              </td>
-              <td className="px-5 py-3 text-right font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                {formatFCFA(l.montantHT)}
-              </td>
+    <>
+      <div className="space-y-2 p-4 sm:hidden">
+        {lignes.map((l) => (
+          <div key={l.id} className="rounded-lg border border-border/60 p-3">
+            <p className="font-medium text-slate-800 dark:text-slate-200">{l.description}</p>
+            <dl className="mt-1.5 space-y-1 text-xs">
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate-400">Qté × P.U. HT</dt>
+                <dd className="tabular-nums text-slate-600 dark:text-slate-300">{l.quantite} × {formatFCFA(l.prixUnitaire)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate-400">Total HT</dt>
+                <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(l.montantHT)}</dd>
+              </div>
+            </dl>
+          </div>
+        ))}
+      </div>
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border/60 bg-slate-50/80 dark:bg-slate-800/50">
+              <th className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Description
+              </th>
+              <th className="w-16 px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Qté
+              </th>
+              <th className="w-32 px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                P.U. HT
+              </th>
+              <th className="w-36 px-5 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Total HT
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-border/30">
+            {lignes.map((l, i) => (
+              <tr key={l.id} className={cn(i % 2 === 1 && "bg-slate-50/40 dark:bg-slate-800/20")}>
+                <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-200">{l.description}</td>
+                <td className="px-3 py-3 text-center tabular-nums text-slate-500">{l.quantite}</td>
+                <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                  {formatFCFA(l.prixUnitaire)}
+                </td>
+                <td className="px-5 py-3 text-right font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                  {formatFCFA(l.montantHT)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -502,15 +521,15 @@ function PaiementDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { label: "Total TTC", value: formatFCFA(facture.montantTTC), color: "text-slate-700 dark:text-slate-300" },
               { label: "Déjà payé", value: formatFCFA(facture.montantPaye), color: "text-emerald-700 dark:text-emerald-400" },
               { label: "Reste", value: formatFCFA(reste), color: "text-amber-700 dark:text-amber-400" },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-border/60 bg-slate-50/80 p-3 dark:bg-slate-800/50">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
-                <p className={cn("mt-1 text-sm font-bold tabular-nums", item.color)}>{item.value}</p>
+              <div key={item.label} className="min-w-0 rounded-xl border border-border/60 bg-slate-50/80 p-2 dark:bg-slate-800/50 sm:p-3">
+                <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
+                <p className={cn("mt-1 break-words text-xs font-bold tabular-nums sm:text-sm", item.color)}>{item.value}</p>
               </div>
             ))}
           </div>

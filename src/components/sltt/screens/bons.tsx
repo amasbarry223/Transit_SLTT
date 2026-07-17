@@ -802,7 +802,90 @@ export function BonsScreen() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((b) => {
+                const isBrouillon = b.statut === "Brouillon";
+                return (
+                  <Card
+                    key={b.id}
+                    className={cn(
+                      "border-border/80 p-4 shadow-sm",
+                      isBrouillon && "bg-amber-50/25 dark:bg-amber-950/20",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{b.reference}</p>
+                        <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{b.clientNom}</p>
+                      </div>
+                      <ToneBadge tone={statutTone[b.statut]}>{b.statut}</ToneBadge>
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Date</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(b.date)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Société</dt>
+                        <dd><SocieteBadge societeNom={b.societeNom} size="sm" /></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Marchandise</dt>
+                        <dd className="truncate text-right text-slate-700 dark:text-slate-300">{b.marchandise}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Motif</dt>
+                        <dd><ToneBadge tone={motifTone[b.motif]}>{b.motif}</ToneBadge></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Quantité</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{b.quantite} {b.unite}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Montant</dt>
+                        <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(b.montant)}</dd>
+                      </div>
+                    </dl>
+                    <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+                      {isBrouillon && canWrite && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 text-amber-600 dark:text-amber-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                          aria-label={`Valider ${b.reference}`}
+                          title="Valider le bon"
+                          disabled={validatingIds.has(b.id)}
+                          onClick={() => handleValidateBon(b.id, b.reference)}
+                        >
+                          <Check className="size-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 text-slate-500 dark:text-slate-400 hover:text-primary"
+                        aria-label={`Visualiser ${b.reference}`}
+                        title="Visualiser"
+                        onClick={() => handleView(b.reference)}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 text-slate-500 dark:text-slate-400 hover:text-primary"
+                        aria-label={`Imprimer ${b.reference}`}
+                        title="PDF / Imprimer"
+                        onClick={() => handlePrint(b.reference)}
+                      >
+                        <FileText className="size-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <Table aria-label="Liste des bons de sortie">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -1011,7 +1094,61 @@ export function BonsScreen() {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="space-y-3 p-4 md:hidden">
+                {filteredCaisse.map((b) => (
+                  <Card key={b.id} className="border-border/80 p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{b.reference}</p>
+                        <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{beneficiairesSummary(b)}</p>
+                      </div>
+                      <SocieteBadge societeNom={b.societeNom} size="sm" />
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Date</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(b.date)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Motif</dt>
+                        <dd className="truncate text-right text-slate-700 dark:text-slate-300">
+                          {b.lignes.map((l) => l.motif).join(", ")}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500">Montant</dt>
+                        <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(b.montantTotal)}</dd>
+                      </div>
+                    </dl>
+                    <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 text-slate-500 dark:text-slate-400 hover:text-primary"
+                        aria-label={`Imprimer ${b.reference}`}
+                        title="PDF / Imprimer"
+                        onClick={() => handlePrintCaisseWithToast(b)}
+                      >
+                        <FileText className="size-4" />
+                      </Button>
+                      {canWriteCaisse && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 text-slate-400 hover:text-red-600"
+                          aria-label={`Supprimer ${b.reference}`}
+                          title="Supprimer"
+                          onClick={() => setCaisseDeleteTarget(b)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <Table aria-label="Liste des bons de sortie de caisse">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -1092,6 +1229,7 @@ export function BonsScreen() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </Card>
         </TabsContent>
