@@ -16,8 +16,9 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { calculerEcart, type DossierStatut } from "@/lib/domain-types";
-import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
+import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -103,12 +104,10 @@ export function DossiersListScreen() {
   const [sortBy, setSortBy] = useState<SortKey>("date-desc");
   const [page, setPage] = useState(1);
 
-  // Ancrage temporel sur la date la plus récente des données (cohérent avec le dashboard)
-  const refDate = useMemo(() => {
-    if (dossiers.length === 0) return new Date();
-    const max = dossiers.reduce((a, b) => (a.date > b.date ? a : b)).date;
-    return new Date(max);
-  }, [dossiers]);
+  // Ancrage temporel sur aujourd'hui (cohérent avec le dashboard, cf. getDashboardAnchorDate) —
+  // pas sur la date du dossier le plus récent, sinon "dernier mois" dérive dès qu'aucun
+  // nouveau dossier n'a été créé récemment.
+  const refDate = getDashboardAnchorDate();
 
   const availableYears = useMemo(() => {
     const years = new Set(dossiers.map((d) => d.date.slice(0, 4)).filter(Boolean));
@@ -138,7 +137,7 @@ export function DossiersListScreen() {
       if (nonSoldeOnly && d.montantInvesti - d.montantPaye <= 0) return false;
       if (yearFilter !== "all" && d.date.slice(0, 4) !== yearFilter) return false;
       if (periode !== "all") {
-        const dDate = new Date(d.date);
+        const dDate = parseLocalDate(d.date);
         const diffDays = (refDate.getTime() - dDate.getTime()) / (1000 * 60 * 60 * 24);
         if (periode === "month" && (diffDays > 31 || diffDays < 0)) return false;
         if (periode === "quarter" && (diffDays > 92 || diffDays < 0)) return false;

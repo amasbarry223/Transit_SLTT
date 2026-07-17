@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { usePagination } from "@/hooks/use-pagination";
 import {
   Plus,
   FileSignature,
@@ -107,11 +108,7 @@ export function ContratsScreen() {
     });
   }, [scoped, search, statutFilter, clientFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
+  const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, PAGE_SIZE);
 
   const chips: FilterChip[] = STATUTS.map((s) => ({
     id: s,

@@ -49,7 +49,7 @@ import { DossierStatutBadge, DOSSIER_STATUT_DOT, DOSSIER_STATUT_HEX } from "@/co
 
 import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { formatFCFA, formatFCFACompact } from "@/lib/format";
+import { formatFCFA, formatFCFACompact, parseLocalDate } from "@/lib/format";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { getDashboardSections, kpiGridClass, type DashboardSection } from "@/lib/dashboard-config";
 import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
@@ -677,7 +677,7 @@ export function DashboardScreen() {
   const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
   const stock = useStore((s) => s.stock);
-  const users = useStore((s) => s.users);
+  const users = useStore((s) => s.usersPublic);
   const clients = useStore((s) => s.clients);
   const depenses = useStore((s) => s.depenses);
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
@@ -709,11 +709,35 @@ export function DashboardScreen() {
     return `Sync · il y a ${hours}h`;
   }, [lastSyncedAt]);
 
+  // Une écriture compte au mois où l'argent est réellement arrivé
+  // (datePaiement), pas au mois de création de l'écriture — utilisé pour
+  // tous les calculs "encaissé" ci-dessous (KPI, graphique, bénéfice) afin
+  // qu'ils s'accordent tous sur la même règle.
+  const ecrituresAvecDate = React.useMemo(
+    () => ecritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
+    [ecritures],
+  );
+  const depensesAvecDate = React.useMemo(
+    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
+    [depenses],
+  );
+  // Sorties de caisse : chaque bon porte désormais sa propre société (F1).
+  const caisseAvecDate = React.useMemo(
+    () =>
+      bonsSortieCaisse.flatMap((b) =>
+        b.lignes.map((l) => ({ societeId: b.societeId as string | undefined, date: l.date, montant: l.montant })),
+      ),
+    [bonsSortieCaisse],
+  );
+
   // ---- Live KPI computations ----
   // LOGIC-03 (audit) : Écritures et Factures sont deux canaux de paiement
   // indépendants — payer une facture ne touche jamais une écriture, et
   // inversement. Ils sont donc additionnés (pas dédoublonnés) pour donner
   // un seul chiffre "encaissé" fiable au lieu de deux chiffres partiels.
+  // Filtrage via filterBySocieteAndPeriode (societeId=null → pas de scope
+  // société) pour un parsing de date sûr (ancré à midi, pas minuit UTC —
+  // évite un décalage d'un jour selon le fuseau du navigateur).
   const { chiffreEncaisse, variationEncaisse } = React.useMemo(() => {
     const curM = anchorDate.getMonth();
     const curY = anchorDate.getFullYear();
@@ -721,15 +745,11 @@ export function DashboardScreen() {
     const prevY = curM === 0 ? curY - 1 : curY;
 
     const encaisseSur = (year: number, month: number) => {
-      // Une écriture compte au mois où l'argent est réellement arrivé
-      // (datePaiement), pas au mois de création de l'écriture.
-      const fromEcritures = ecritures
-        .filter((e) => { const d = new Date(e.datePaiement ?? e.date); return d.getFullYear() === year && d.getMonth() === month; })
+      const fromEcritures = filterBySocieteAndPeriode(ecrituresAvecDate, null, year, month)
         .reduce((sum, e) => sum + e.montantPaye, 0);
       // Les factures n'ont pas de date de paiement dédiée : la date de la
       // facture est le meilleur proxy disponible.
-      const fromFactures = factures
-        .filter((f) => { const d = new Date(f.date); return d.getFullYear() === year && d.getMonth() === month; })
+      const fromFactures = filterBySocieteAndPeriode(factures, null, year, month)
         .reduce((sum, f) => sum + f.montantPaye, 0);
       return fromEcritures + fromFactures;
     };
@@ -739,27 +759,7 @@ export function DashboardScreen() {
 
     const variation = prev === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - prev) / prev) * 100);
     return { chiffreEncaisse: current, variationEncaisse: variation };
-  }, [ecritures, factures, anchorDate]);
-
-  // F5 — Bénéfice du mois courant (entreposage), scopé au filtre société partagé.
-  // Une écriture compte au mois où l'argent est réellement arrivé (datePaiement).
-  const ecrituresAvecDate = React.useMemo(
-    () => ecritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
-    [ecritures],
-  );
-  const depensesAvecDate = React.useMemo(
-    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
-    [depenses],
-  );
-  // Sorties de caisse : sans société (société mère), comptées uniquement dans
-  // la vue consolidée "Toutes sociétés" (comme le transit).
-  const caisseAvecDate = React.useMemo(
-    () =>
-      bonsSortieCaisse.flatMap((b) =>
-        b.lignes.map((l) => ({ societeId: undefined as string | undefined, date: l.date, montant: l.montant })),
-      ),
-    [bonsSortieCaisse],
-  );
+  }, [ecrituresAvecDate, factures, anchorDate]);
   const beneficeMoisCourant = React.useMemo(() => {
     const year = anchorDate.getFullYear();
     const month = anchorDate.getMonth();
@@ -803,17 +803,19 @@ export function DashboardScreen() {
   );
 
   // ---- Chart: encaissements des 6 derniers mois (source : ecritures) ----
+  // Utilise ecrituresAvecDate (date de paiement réelle) + filterBySocieteAndPeriode
+  // (parsing sûr) — même règle que le KPI "Encaissé ce mois" ci-dessus, pour que
+  // le chiffre du mois courant sur le graphique et sur le KPI concordent toujours.
   const encaissementsParMois = React.useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
       const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - (5 - i), 1);
       const m = d.getMonth();
       const y = d.getFullYear();
-      const valeur = ecritures
-        .filter((e) => { const dd = new Date(e.date); return dd.getFullYear() === y && dd.getMonth() === m; })
+      const valeur = filterBySocieteAndPeriode(ecrituresAvecDate, null, y, m)
         .reduce((sum, e) => sum + e.montantPaye, 0);
       return { mois: MONTHS[m], valeur };
     });
-  }, [ecritures, anchorDate]);
+  }, [ecrituresAvecDate, anchorDate]);
 
   // ---- Chart: marge brute des 6 derniers mois (source : dossiers) ----
   const ecartsParPeriode = React.useMemo(() => {
@@ -821,8 +823,7 @@ export function DashboardScreen() {
       const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - (5 - i), 1);
       const m = d.getMonth();
       const y = d.getFullYear();
-      const ecart = dossiers
-        .filter((dos) => { const dd = new Date(dos.date); return dd.getFullYear() === y && dd.getMonth() === m; })
+      const ecart = filterBySocieteAndPeriode(dossiers, null, y, m)
         .reduce((sum, dos) => sum + (dos.fraisPrestation - dos.droitDouane - dos.fraisCircuit), 0);
       return { periode: MONTHS[m], ecart };
     });
@@ -871,7 +872,7 @@ export function DashboardScreen() {
     const echeanceAlerts: LiveAlert[] = dossiers
       .filter((d) => d.dateEcheance && !["Livré", "Soldé"].includes(d.statut))
       .reduce<LiveAlert[]>((acc, d) => {
-        const echeance = new Date(d.dateEcheance!).setHours(0, 0, 0, 0);
+        const echeance = parseLocalDate(d.dateEcheance!).setHours(0, 0, 0, 0);
         const jours = Math.ceil((echeance - todayMs) / 86400000);
         if (jours < 0) {
           acc.push({

@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { ContratFichier } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 
-export interface AddContratFichierInput {
+interface AddContratFichierInput {
   contratId: string;
   nom: string;
   taille: number;

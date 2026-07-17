@@ -17,6 +17,7 @@ import {
 import { useNav } from "@/lib/nav-store";
 import {
   useStore,
+  PRESTATION_OPTIONNELLE_LABEL,
   type ContratInput,
   type ContratStatut,
   type ContratPrestationStatut,
@@ -28,7 +29,7 @@ import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
 
 import { SocieteBadge } from "@/components/sltt/societe-filter-select";
-import { ToneBadge } from "@/components/sltt/status-badge";
+import { ToneBadge, TONE_CLASSES } from "@/components/sltt/status-badge";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 
 import { Card } from "@/components/ui/card";
@@ -71,6 +72,13 @@ const CONTRAT_STATUT_TONE: Record<ContratStatut, "emerald" | "slate" | "amber"> 
   Clôturé: "slate",
   Suspendu: "amber",
 };
+/** Couleur de l'accent latéral de la carte résumé — même sémantique que CONTRAT_STATUT_TONE,
+ * alignée sur le en-tête de facture-detail.tsx (carte à bordure gauche colorée). */
+const CONTRAT_STATUT_BORDER: Record<ContratStatut, string> = {
+  Actif: "border-emerald-600",
+  Clôturé: "border-slate-400",
+  Suspendu: "border-amber-500",
+};
 
 const PRESTATION_STATUTS: ContratPrestationStatut[] = ["Prévue", "Réalisée", "Annulée"];
 const PRESTATION_STATUT_TONE: Record<ContratPrestationStatut, "blue" | "emerald" | "red"> = {
@@ -89,7 +97,6 @@ export function ContratDetailScreen() {
 
   const contrats = useStore((s) => s.contrats);
   const societes = useStore((s) => s.societes);
-  const clients = useStore((s) => s.clients);
   const depenses = useStore((s) => s.depenses);
   const prestations = useStore((s) => s.contratPrestations);
   const contratFichiers = useStore((s) => s.contratFichiers);
@@ -174,85 +181,112 @@ export function ContratDetailScreen() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon" className="mt-0.5 size-9" onClick={() => go("contrats")} aria-label="Retour">
-            <ArrowLeft className="size-4" />
-          </Button>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-mono text-lg font-bold text-slate-900 dark:text-slate-100">{contrat.reference}</h1>
-              {canWrite ? (
-                <Select
-                  value={contrat.societeId}
-                  onValueChange={async (v) => {
-                    await updateContrat(contrat.id, { ...contratToInput(contrat), societeId: v });
-                    const nom = societes.find((s) => s.id === v)?.nom ?? v;
-                    toast({ title: "Société mise à jour", description: `${contrat.reference} → ${nom}` });
-                  }}
-                >
-                  <SelectTrigger className="h-7 w-auto gap-1 border-none bg-transparent px-1 shadow-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {societes.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <SocieteBadge societeNom={contrat.societeNom} />
-              )}
-              {canWrite ? (
-                <Select
-                  value={contrat.statut}
-                  onValueChange={async (v) => {
-                    await updateContratStatut(contrat.id, v as ContratStatut);
-                    toast({ title: "Statut mis à jour", description: `${contrat.reference} → ${v}` });
-                  }}
-                >
-                  <SelectTrigger className="h-7 w-auto gap-1 border-none bg-transparent px-1 shadow-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONTRAT_STATUTS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <ToneBadge tone={CONTRAT_STATUT_TONE[contrat.statut]}>{contrat.statut}</ToneBadge>
-              )}
+      <button
+        onClick={() => go("contrats")}
+        className="group inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+      >
+        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+        Retour aux contrats
+      </button>
+
+      <Card className="overflow-hidden border-border/80 shadow-sm">
+        <div className={cn("flex border-l-4", CONTRAT_STATUT_BORDER[contrat.statut])}>
+          <div className="flex-1 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="font-mono text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                    {contrat.reference}
+                  </h1>
+                  {canWrite ? (
+                    <Select
+                      value={contrat.statut}
+                      onValueChange={async (v) => {
+                        await updateContratStatut(contrat.id, v as ContratStatut);
+                        toast({ title: "Statut mis à jour", description: `${contrat.reference} → ${v}` });
+                      }}
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "h-7 w-auto gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium shadow-none",
+                          TONE_CLASSES[CONTRAT_STATUT_TONE[contrat.statut]],
+                        )}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONTRAT_STATUTS.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <ToneBadge tone={CONTRAT_STATUT_TONE[contrat.statut]}>{contrat.statut}</ToneBadge>
+                  )}
+                  {canWrite ? (
+                    <Select
+                      value={contrat.societeId}
+                      onValueChange={async (v) => {
+                        await updateContrat(contrat.id, { ...contratToInput(contrat), societeId: v });
+                        const nom = societes.find((s) => s.id === v)?.nom ?? v;
+                        toast({ title: "Société mise à jour", description: `${contrat.reference} → ${nom}` });
+                      }}
+                    >
+                      <SelectTrigger className="h-7 w-auto gap-1 border-none bg-transparent px-1 shadow-none">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {societes.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <SocieteBadge societeNom={contrat.societeNom} />
+                  )}
+                </div>
+                <p className="mt-1.5 text-base font-semibold text-slate-700 dark:text-slate-300">{contrat.clientNom}</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                  {contrat.objet} &nbsp;·&nbsp; Début {formatDateShort(contrat.dateDebut)}
+                  {contrat.dateFin && <> &nbsp;·&nbsp; Fin {formatDateShort(contrat.dateFin)}</>}
+                  {contrat.creePar && <> &nbsp;·&nbsp; Créé par {contrat.creePar}</>}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Montant du contrat</p>
+                <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700">
+                  {new Intl.NumberFormat("fr-FR").format(contrat.montant)}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">FCFA</p>
+              </div>
             </div>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {contrat.clientNom} · {formatFCFA(contrat.montant)}
-            </p>
+
+            {canWrite && (
+              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border/50 pt-4">
+                <Button size="sm" variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
+                  <Pencil className="size-4" />
+                  Modifier
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 text-red-600 hover:text-red-700 dark:text-red-400"
+                  disabled={nonVide}
+                  title={nonVide ? "Retirez d'abord les dépenses, prestations et documents liés" : undefined}
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 className="size-4" />
+                  Supprimer
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-
-        {canWrite && (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil className="size-4" />
-              Modifier
-            </Button>
-            <Button
-              variant="outline"
-              className="text-red-600 hover:text-red-700 dark:text-red-400"
-              disabled={nonVide}
-              title={nonVide ? "Retirez d'abord les dépenses, prestations et documents liés" : undefined}
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="size-4" />
-              Supprimer
-            </Button>
-          </div>
-        )}
-      </div>
+      </Card>
 
       <Tabs defaultValue="infos">
         <TabsList className="h-10 flex-wrap">
@@ -264,7 +298,7 @@ export function ContratDetailScreen() {
             </span>
           </TabsTrigger>
           <TabsTrigger value="prestations">
-            Prestations optionnelles
+            {PRESTATION_OPTIONNELLE_LABEL}
             <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {contrat.nbPrestationsRealisees}/{contrat.nbPrestations}
             </span>

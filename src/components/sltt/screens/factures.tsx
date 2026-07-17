@@ -22,6 +22,10 @@ import { matchesQuery } from "@/lib/search-filter";
 import { shouldShowTva } from "@/lib/export";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
+import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
+import { TablePagination } from "@/components/sltt/table-pagination";
+
+const PAGE_SIZE = 8;
 
 /* ------------------------------------------------------------------ */
 /* FORM — nouvelle facture                                             */
@@ -364,12 +368,14 @@ export function FacturesScreen() {
   const selectedId          = useNav((s) => s.selectedId);
   const pendingFacturePrefill    = useNav((s) => s.pendingFacturePrefill);
   const setPendingFacturePrefill = useNav((s) => s.setPendingFacturePrefill);
+  const selectedSocieteId   = useNav((s) => s.selectedSocieteId);
 
   const [search,     setSearch]     = React.useState("");
   const [activeTab,  setActiveTab]  = React.useState<FactureStatut | "Tous">("Tous");
   const [showForm,   setShowForm]   = React.useState(false);
   const [prefillDossierId, setPrefillDossierId] = React.useState<string | undefined>();
   const [deleteTarget, setDeleteTarget] = React.useState<Facture | null>(null);
+  const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
     if (selectedId?.startsWith("D-")) {
@@ -388,22 +394,36 @@ export function FacturesScreen() {
     setShowForm(true);
   }, [pendingFacturePrefill]);
 
+  // F1 — Une facture peut être rattachée à une société (entreposage) ou rester
+  // au niveau transit global (societeId null) ; le filtre société partagé
+  // scope KPIs et table, comme sur Bons de sortie.
+  const societeFactures = React.useMemo(
+    () => (selectedSocieteId ? factures.filter((f) => f.societeId === selectedSocieteId) : factures),
+    [factures, selectedSocieteId],
+  );
+
   const filtered = React.useMemo(() => {
-    return factures.filter((f) => {
+    return societeFactures.filter((f) => {
       const matchTab = activeTab === "Tous" || f.statut === activeTab;
       return matchTab && matchesQuery(f, ["numero", "clientNom"], search);
     });
-  }, [factures, activeTab, search]);
+  }, [societeFactures, activeTab, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
 
   // KPIs
   const kpi = React.useMemo(() => {
-    const actives  = factures.filter((f) => f.statut !== "Annulée");
+    const actives  = societeFactures.filter((f) => f.statut !== "Annulée");
     const totalTTC = actives.reduce((s, f) => s + f.montantTTC, 0);
     const totalPaye = actives.reduce((s, f) => s + f.montantPaye, 0);
     const nonSoldees = actives.filter((f) => f.statut !== "Soldée").length;
     const tauxRecouvrement = totalTTC > 0 ? Math.round((totalPaye / totalTTC) * 100) : 0;
     return { total: actives.length, totalTTC, totalPaye, nonSoldees, tauxRecouvrement };
-  }, [factures]);
+  }, [societeFactures]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -510,12 +530,15 @@ export function FacturesScreen() {
         <div className="flex gap-1 overflow-x-auto">
           {TABS.map((tab) => {
             const count = tab.key === "Tous"
-              ? factures.length
-              : factures.filter((f) => f.statut === tab.key).length;
+              ? societeFactures.length
+              : societeFactures.filter((f) => f.statut === tab.key).length;
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setPage(1);
+                }}
                 className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   activeTab === tab.key
                     ? "bg-blue-600 text-white"
@@ -531,23 +554,30 @@ export function FacturesScreen() {
           })}
         </div>
 
-        <div className="relative w-full sm:w-56">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-          <Input
-            placeholder="Rechercher…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8 pl-8 text-sm"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <SocieteFilterSelect className="h-8 w-full sm:w-44" />
+          <div className="relative w-full sm:w-56">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Input
+              placeholder="Rechercher…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
         </div>
       </div>
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
         {/* Labels */}
-        <div className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] gap-x-3 border-b border-border/50 bg-slate-50/70 px-5 py-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+        <div className="grid grid-cols-[1.3fr_1.3fr_1fr_80px_90px_110px_110px_100px_auto] gap-x-3 border-b border-border/50 bg-slate-50/70 px-5 py-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
           <span>N° Facture</span>
           <span>Client</span>
+          <span>Société</span>
           <span>Date</span>
           <span>Échéance</span>
           <span className="text-right">Montant TTC</span>
@@ -570,12 +600,12 @@ export function FacturesScreen() {
               )}
             </div>
           ) : (
-            filtered.map((f) => {
+            paged.map((f) => {
               const isEchue = f.statut !== "Soldée" && f.statut !== "Annulée" && f.dateEcheance < new Date().toISOString().slice(0, 10);
               return (
                 <div
                   key={f.id}
-                  className="grid grid-cols-[1.4fr_1.6fr_80px_90px_110px_110px_100px_auto] items-center gap-x-3 px-5 py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                  className="grid grid-cols-[1.3fr_1.3fr_1fr_80px_90px_110px_110px_100px_auto] items-center gap-x-3 px-5 py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                 >
                   <button
                     onClick={() => go("facture-detail", { id: f.id })}
@@ -584,6 +614,9 @@ export function FacturesScreen() {
                     {f.numero}
                   </button>
                   <p className="truncate text-xs text-slate-700 dark:text-slate-300">{f.clientNom}</p>
+                  <div>
+                    <SocieteBadge societeNom={f.societeNom} size="sm" />
+                  </div>
                   <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(f.date)}</p>
                   <p className={`text-xs tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
                     {formatDateShort(f.dateEcheance)}
@@ -621,6 +654,16 @@ export function FacturesScreen() {
             })
           )}
         </div>
+
+        <TablePagination
+          startIdx={startIdx}
+          endIdx={endIdx}
+          totalItems={filtered.length}
+          itemLabel={`facture${filtered.length !== 1 ? "s" : ""}`}
+          page={safePage}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </div>
 
       <ConfirmDeleteDialog

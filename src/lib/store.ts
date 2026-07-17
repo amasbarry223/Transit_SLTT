@@ -378,6 +378,8 @@ function mapBonSortieCaisseFromDb(x: any): BonSortieCaisse {
     id: x.id,
     reference: x.reference,
     date: x.date,
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom || "—",
     montantTotal: Number(x.montant_total),
     creePar: x.cree_par || undefined,
     creeLe: x.created_at,
@@ -392,7 +394,17 @@ function mapBonSortieCaisseFromDb(x: any): BonSortieCaisse {
 }
 
 function mapSocieteFromDb(x: any): Societe {
-  return { id: x.id, nom: x.nom, actif: x.actif };
+  return {
+    id: x.id,
+    nom: x.nom,
+    actif: x.actif,
+    logoUrl: x.logo_url || undefined,
+    adresse: x.adresse || undefined,
+    telephone: x.telephone || undefined,
+    rccm: x.rccm || undefined,
+    nif: x.nif || undefined,
+    afficherNomAvecLogo: x.afficher_nom_avec_logo ?? true,
+  };
 }
 
 function mapContratFromDb(
@@ -675,6 +687,8 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
   mouvements: Mouvement[];
   bons: BonSortie[];
   users: User[];
+  /** Sous-ensemble sans email/permissions, visible par tous les authentifiés (profiles_public) — pour l'affichage seul (ex. "utilisateurs récents"), jamais pour des décisions de permission. */
+  usersPublic: Pick<User, "id" | "nom" | "role" | "actif" | "derniereConnexion">[];
   subDossiers: SubDossier[];
   fichiers: DossierFichier[];
   auditLogs: AuditEntry[];
@@ -862,6 +876,7 @@ export const useStore = create<SLTTState>()(
       mouvements: [],
       bons: [],
       users: [],
+      usersPublic: [],
       subDossiers: [],
       fichiers: [],
       devis: [],
@@ -918,6 +933,18 @@ export const useStore = create<SLTTState>()(
             { data: societes },
           ] = coreResults;
 
+          // Vue optionnelle (migration 20260722) — tant qu'elle n'est pas encore
+          // appliquée en base, on dégrade sur users (ou liste vide) plutôt que
+          // de faire échouer tout le chargement des données.
+          let profilesPublic: any[] | null = null;
+          try {
+            const { data, error } = await supabase.from("profiles_public").select("*");
+            if (error) throw error;
+            profilesPublic = data;
+          } catch {
+            profilesPublic = null;
+          }
+
           const mappedClients = (clients || []).map(mapClientFromDb);
           const mappedDossiers = (dossiers || []).map(mapDossierFromDb);
           const mappedFactures = (factures || []).map(mapFactureFromDb);
@@ -931,6 +958,15 @@ export const useStore = create<SLTTState>()(
               ecritures: mappedEcritures,
               factures: mappedFactures,
               users: (profiles || []).map(mapProfileFromDb),
+              usersPublic: (
+                profilesPublic ?? (profiles || [])
+              ).map((x: any) => ({
+                id: x.id,
+                nom: x.nom,
+                role: x.role as UserRole,
+                actif: x.actif,
+                derniereConnexion: x.derniere_connexion,
+              })),
               societes: (societes || []).map(mapSocieteFromDb),
               loadError: null,
               dataLoading: false,
@@ -955,7 +991,7 @@ export const useStore = create<SLTTState>()(
             supabase.from("contrat_fichiers").select("*"),
             supabase.from("depenses").select("*"),
             supabase.from("contrat_prestations").select("*"),
-            supabase.from("bons_sortie_caisse").select("*, bons_sortie_caisse_lignes(*)"),
+            supabase.from("bons_sortie_caisse").select("*, bons_sortie_caisse_lignes(*), societes(nom)"),
             supabase.from("audit_logs").select("*").order("date", { ascending: false }),
             supabase.from("archives").select("*"),
           ]);
@@ -2855,6 +2891,7 @@ export const useStore = create<SLTTState>()(
           .insert({
             reference,
             date: input.date,
+            societe_id: input.societeId,
             montant_total: montantTotal,
             cree_par: creePar,
           })
@@ -2879,7 +2916,7 @@ export const useStore = create<SLTTState>()(
 
         const { data: fullBon, error: errFetch } = await supabase
           .from("bons_sortie_caisse")
-          .select("*, bons_sortie_caisse_lignes(*)")
+          .select("*, bons_sortie_caisse_lignes(*), societes(nom)")
           .eq("id", dbBon.id)
           .single();
         if (errFetch) throw errFetch;

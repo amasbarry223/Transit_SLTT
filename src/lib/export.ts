@@ -21,6 +21,39 @@ function getLogoUrl(): string {
   return typeof window !== "undefined" ? `${window.location.origin}/logoV.png` : "/logoV.png";
 }
 
+/** Résout un chemin de logo (ex. celui d'une société) en URL absolue, pour la fenêtre d'impression. */
+function resolveLogoUrl(path?: string): string {
+  if (!path) return getLogoUrl();
+  if (typeof window === "undefined" || /^https?:\/\//.test(path)) return path;
+  return `${window.location.origin}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
+export interface SocieteLegalInfo {
+  adresse?: string;
+  telephone?: string;
+  rccm?: string;
+  nif?: string;
+}
+
+/**
+ * Construit la ligne légale (adresse · tél · RCCM · NIF) d'une société pour le
+ * pied de page d'un document imprimé — n'affiche que les champs renseignés,
+ * sur une seule ligne. Toujours rendue en pied de page plutôt que sous le
+ * logo : les deux sociétés n'ont pas encore les mêmes champs renseignés
+ * (Top Doumani : NIF seul), et une ligne unique reste équilibrée quel que
+ * soit le nombre de champs, alors qu'un bloc multi-ligne sous le logo se
+ * retrouve visuellement incomplet pour la société la moins renseignée.
+ */
+function buildLegalLine(info?: SocieteLegalInfo): string {
+  if (!info) return "";
+  return [
+    info.adresse ? htmlEscape(info.adresse) : "",
+    info.telephone ? `Tél. : ${htmlEscape(info.telephone)}` : "",
+    info.rccm ? `RCCM : ${htmlEscape(info.rccm)}` : "",
+    info.nif ? `NIF : ${htmlEscape(info.nif)}` : "",
+  ].filter(Boolean).join(" &nbsp;·&nbsp; ");
+}
+
 /** Attend le chargement des images avant d'ouvrir la boîte d'impression. */
 function triggerPrint(win: Window, delayMs = 400): void {
   const doPrint = () => {
@@ -712,19 +745,26 @@ table { width: 100%; border-collapse: collapse; }
 
 /* ------------------------------------------------------------------ */
 /* BON DE SORTIE DE CAISSE (décaissement) — reproduit le vrai papier   */
-/* à en-tête de la société mère (adresse, RCCM, NIF réels), avec les   */
-/* deux blocs de signature imprimés sur le formulaire physique.        */
+/* à en-tête de la société choisie (logo + nom dynamiques ; adresse,   */
+/* RCCM, NIF partagés par les sociétés du groupe), avec les deux       */
+/* blocs de signature imprimés sur le formulaire physique.             */
 /* ------------------------------------------------------------------ */
 
 export interface BonSortieCaisseModuleData {
   reference: string;
   date: string;
+  societeNom: string;
+  logoUrl?: string;
+  /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). Défaut true. */
+  afficherNomAvecLogo?: boolean;
+  legal?: SocieteLegalInfo;
   lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;
   montantTotal: number;
 }
 
 export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): void {
-  const logoUrl = getLogoUrl();
+  const logoUrl = resolveLogoUrl(data.logoUrl);
+  const footerLegal = buildLegalLine(data.legal);
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -749,11 +789,13 @@ export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): voi
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
 .wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
-.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 28px 40px 22px; border-bottom: 3px solid #1e40af; gap: 20px; }
-.brand { display: flex; align-items: center; gap: 18px; min-width: 0; }
-.brand-logo { width: 108px; height: 108px; object-fit: contain; flex-shrink: 0; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 26px 40px; border-bottom: 3px solid #1e40af; gap: 20px; }
+.brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+/* Hauteur fixe, largeur libre : le badge circulaire de Traoré Transit Logistique
+   (ratio ~1:1) et la bannière large de Top Doumani (ratio ~4:1) doivent tous deux
+   rester lisibles — une boîte carrée écraserait la bannière en un filet illisible. */
+.brand-logo { height: 60px; width: auto; max-width: 220px; object-fit: contain; flex-shrink: 0; }
 .brand-name { font-size: 17px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; line-height: 1.25; text-transform: uppercase; }
-.brand-sub { font-size: 10px; color: #64748b; line-height: 1.7; margin-top: 4px; }
 .doc-meta { text-align: right; flex-shrink: 0; }
 .doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
 .doc-ref { font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
@@ -769,14 +811,14 @@ table { width: 100%; border-collapse: collapse; }
 .sig-block { text-align: center; width: 220px; }
 .sig-label { font-size: 11.5px; font-weight: 700; color: #334155; margin-bottom: 48px; }
 .sig-name { font-size: 12px; color: #0f172a; border-top: 1px solid #cbd5e1; padding-top: 6px; }
-.footer { padding: 12px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 9.5px; color: #94a3b8; text-align: center; }
+.footer { padding: 12px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 10px; color: #475569; text-align: center; }
 .no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
 .btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 @media print {
   .no-print { display: none !important; }
   body { background: white; }
   .wrap { box-shadow: none; }
-  .brand-logo { width: 96px; height: 96px; }
+  .brand-logo { height: 52px; max-width: 190px; }
 }
 </style>
 </head>
@@ -787,11 +829,8 @@ table { width: 100%; border-collapse: collapse; }
   </div>
   <div class="doc-header">
     <div class="brand">
-      <img src="${logoUrl}" alt="Traoré de Logistique" class="brand-logo">
-      <div>
-        <div class="brand-name">Traoré de Logistique<br>Transit-Transport</div>
-        <div class="brand-sub">Niaréla - Rue 516 porte C/63<br>Tél. : +223 76 96 47 06 / 92 92 46 48<br>RCCM : Ma.Bko.2025 B.5897 &nbsp;·&nbsp; NIF : 084151062H</div>
-      </div>
+      <img src="${logoUrl}" alt="${htmlEscape(data.societeNom)}" class="brand-logo">
+      ${data.afficherNomAvecLogo === false ? "" : `<div class="brand-name">${htmlEscape(data.societeNom)}</div>`}
     </div>
     <div class="doc-meta">
       <div class="doc-type">Bon de sortie de caisse</div>
@@ -822,9 +861,7 @@ table { width: 100%; border-collapse: collapse; }
       </div>
     </div>
   </div>
-  <div class="footer">
-    RCCM : Ma.Bko.2025 B.5897 &nbsp;·&nbsp; NIF : 084151062H
-  </div>
+  ${footerLegal ? `<div class="footer">${footerLegal}</div>` : ""}
 </div>
 </body>
 </html>`);
@@ -1085,14 +1122,31 @@ table { width: 100%; border-collapse: collapse; }
  * Print a specific HTML string in a new window.
  * Useful for generating a clean PDF/document without the app chrome.
  */
-export function printHTML(title: string, bodyHTML: string): void {
-  const logoUrl = getLogoUrl();
+export interface PrintHTMLBrand {
+  logoUrl?: string;
+  name?: string;
+  sub?: string;
+  legal?: SocieteLegalInfo;
+  /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). Défaut true. */
+  afficherNomAvecLogo?: boolean;
+}
+
+export function printHTML(title: string, bodyHTML: string, brand?: PrintHTMLBrand): void {
+  const logoUrl = brand?.logoUrl ? resolveLogoUrl(brand.logoUrl) : getLogoUrl();
+  const brandName = brand?.name || "SLTT";
+  // Le détail légal (adresse/tél/RCCM/NIF) va en pied de page, pas sous le logo :
+  // les sociétés n'ont pas encore toutes les mêmes champs renseignés, une ligne
+  // unique en pied de page reste équilibrée quel que soit le nombre de champs.
+  const legalLine = brand?.legal ? buildLegalLine(brand.legal) : "";
+  const brandSubHTML = brand?.legal ? "" : htmlEscape(brand?.sub || "Société Traoré de Logistique, Transit et Transport");
+  const footerHTML = legalLine || "Document généré par la plateforme SLTT · © 2026";
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
     // Popup blocked — fallback to printing current page
     window.print();
     return;
   }
+  win.opener = null;
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1112,9 +1166,12 @@ export function printHTML(title: string, bodyHTML: string): void {
       display: flex; justify-content: space-between; align-items: flex-start;
       border-bottom: 2px solid #1e40af; padding-bottom: 16px; margin-bottom: 24px;
     }
-    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    /* Hauteur fixe, largeur libre : les logos des sociétés n'ont pas tous le
+       même ratio (badge carré vs bannière large) — une boîte carrée écraserait
+       une bannière large en un filet illisible. */
     .brand-logo {
-      width: 64px; height: 64px;
+      height: 48px; width: auto; max-width: 160px;
       object-fit: contain;
     }
     .brand-name { font-weight: 700; font-size: 15px; }
@@ -1132,7 +1189,7 @@ export function printHTML(title: string, bodyHTML: string): void {
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .total-row td { font-weight: 700; background: #f8fafc; border-top: 2px solid #1e40af; }
     .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0;
-      font-size: 11px; color: #94a3b8; text-align: center; }
+      font-size: 11px; color: #475569; text-align: center; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px;
       font-size: 11px; font-weight: 500; }
     @media print {
@@ -1144,11 +1201,12 @@ export function printHTML(title: string, bodyHTML: string): void {
 <body>
   <div class="doc-header">
     <div class="brand">
-      <img class="brand-logo" src="${logoUrl}" alt="SLTT" />
+      <img class="brand-logo" src="${logoUrl}" alt="${htmlEscape(brandName)}" />
+      ${brand?.afficherNomAvecLogo === false ? "" : `
       <div>
-        <div class="brand-name">SLTT</div>
-        <div class="brand-sub">Société Traoré de Logistique, Transit et Transport</div>
-      </div>
+        <div class="brand-name">${htmlEscape(brandName)}</div>
+        ${brandSubHTML ? `<div class="brand-sub">${brandSubHTML}</div>` : ""}
+      </div>`}
     </div>
     <div class="doc-meta">
       <div style="font-weight:600;color:#0f172a">${title}</div>
@@ -1156,7 +1214,7 @@ export function printHTML(title: string, bodyHTML: string): void {
     </div>
   </div>
   ${bodyHTML}
-  <div class="footer">Document généré par la plateforme SLTT · © 2026</div>
+  <div class="footer">${footerHTML}</div>
 </body>
 </html>`);
   win.document.close();

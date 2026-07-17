@@ -27,11 +27,3 @@ export function computeIncrementalPaye(
   const effective = Math.min(reste, montant);
   return Math.min(plafond, currentPaye + effective);
 }
-
-export type PaymentSourceType = "ecriture" | "facture" | "dossier";
-
-export interface PaymentSource {
-  type: PaymentSourceType;
-  id: string;
-  montant: number;
-}

@@ -93,6 +93,7 @@ export function BonsScreen() {
   const validateBon = useStore((s) => s.validateBon);
   const stock = useStore((s) => s.stock);
   const clients = useStore((s) => s.clients);
+  const societes = useStore((s) => s.societes);
   const bonSeq = useStore((s) => s.bonSeq);
   const bonSortieCaisseSeq = useStore((s) => s.bonSortieCaisseSeq);
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
@@ -113,6 +114,7 @@ export function BonsScreen() {
   const [statutFilter, setStatutFilter] = useState<"all" | "Validé" | "Brouillon">("all");
   const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [validatingIds, setValidatingIds] = useState<Set<string>>(new Set());
 
   const [open, setOpen] = useState(false);
   const [formDate, setFormDate] = useState(
@@ -144,6 +146,7 @@ export function BonsScreen() {
 
   const [caisseOpen, setCaisseOpen] = useState(false);
   const [caisseDate, setCaisseDate] = useState(todayIso);
+  const [caisseSocieteId, setCaisseSocieteId] = useState("");
   const [caisseLignes, setCaisseLignes] = useState<
     Array<{ date: string; beneficiaire: string; motif: string; montant: string }>
   >([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
@@ -176,11 +179,13 @@ export function BonsScreen() {
 
   const caisseTotalSaisi = caisseLignes.reduce((sum, l) => sum + (Number(l.montant) || 0), 0);
   const caisseValid =
+    !!caisseSocieteId &&
     caisseLignes.length > 0 &&
     caisseLignes.every((l) => l.beneficiaire.trim() && l.motif.trim() && Number(l.montant) > 0);
 
   function openCaisseDialog() {
     setCaisseDate(todayIso);
+    setCaisseSocieteId(selectedSocieteId ?? societes[0]?.id ?? "");
     setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
     setCaisseOpen(true);
   }
@@ -208,6 +213,7 @@ export function BonsScreen() {
     try {
       const bon = await addBonSortieCaisse({
         date: caisseDate,
+        societeId: caisseSocieteId,
         lignes: caisseLignes.map((l) => ({
           date: l.date,
           beneficiaire: l.beneficiaire.trim(),
@@ -227,16 +233,22 @@ export function BonsScreen() {
   }
 
   function handlePrintCaisse(bon: BonSortieCaisse) {
+    const societe = societes.find((s) => s.id === bon.societeId);
     printBonSortieCaisseModule({
       reference: bon.reference,
       date: bon.date,
+      societeNom: bon.societeNom,
+      logoUrl: societe?.logoUrl,
+      afficherNomAvecLogo: societe?.afficherNomAvecLogo,
+      legal: societe && {
+        adresse: societe.adresse,
+        telephone: societe.telephone,
+        rccm: societe.rccm,
+        nif: societe.nif,
+      },
       lignes: bon.lignes,
       montantTotal: bon.montantTotal,
     });
-  }
-
-  function handleViewCaisse(bon: BonSortieCaisse) {
-    handlePrintCaisse(bon);
   }
 
   function handlePrintCaisseWithToast(bon: BonSortieCaisse) {
@@ -252,9 +264,15 @@ export function BonsScreen() {
     let brouillons = 0;
     let montantTotal = 0;
     for (const b of bons) {
-      if (b.statut === "Validé") valides++;
-      else brouillons++;
-      montantTotal += b.montant;
+      if (b.statut === "Validé") {
+        valides++;
+        // "Montant total" = valeur des sorties déjà confirmées (stock
+        // décrémenté) — un brouillon n'est pas encore une sortie réelle et
+        // ne doit pas gonfler ce total.
+        montantTotal += b.montant;
+      } else {
+        brouillons++;
+      }
     }
     return { total: bons.length, valides, brouillons, montantTotal };
   }, [bons]);
@@ -377,17 +395,29 @@ export function BonsScreen() {
   }
 
   async function handleValidateBon(id: string, ref: string) {
-    const stockSuffisant = await validateBon(id);
-    if (stockSuffisant) {
-      toast({
-        title: "Bon validé",
-        description: `${ref} — stock décrémenté.`,
-      });
-    } else {
-      toast({
-        title: "Validation impossible — stock insuffisant",
-        description: `${ref} n'a pas été validé : le stock disponible est inférieur à la quantité demandée.`,
-        variant: "destructive",
+    // Empêche un double-clic de déclencher deux vérifications de stock en
+    // parallèle avant que la première n'ait eu le temps de décrémenter.
+    if (validatingIds.has(id)) return;
+    setValidatingIds((prev) => new Set(prev).add(id));
+    try {
+      const stockSuffisant = await validateBon(id);
+      if (stockSuffisant) {
+        toast({
+          title: "Bon validé",
+          description: `${ref} — stock décrémenté.`,
+        });
+      } else {
+        toast({
+          title: "Validation impossible — stock insuffisant",
+          description: `${ref} n'a pas été validé : le stock disponible est inférieur à la quantité demandée.`,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setValidatingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
       });
     }
   }
@@ -396,6 +426,7 @@ export function BonsScreen() {
     reference: string;
     date: string;
     clientNom: string;
+    societeNom: string;
     marchandise: string;
     quantite: number;
     unite: string;
@@ -414,6 +445,7 @@ export function BonsScreen() {
       <table>
         <tbody>
           <tr><th style="width:40%">Date</th><td>${formatDateShort(b.date)}</td></tr>
+          <tr><th>Société</th><td>${htmlEscape(b.societeNom)}</td></tr>
           <tr><th>Client</th><td>${htmlEscape(b.clientNom)}</td></tr>
           <tr><th>Marchandise</th><td>${htmlEscape(b.marchandise)}</td></tr>
           <tr><th>Quantité sortie</th><td>${b.quantite} ${htmlEscape(b.unite)}</td></tr>
@@ -426,22 +458,38 @@ export function BonsScreen() {
           <div style="border-top:1px solid #94a3b8;width:200px;padding-top:6px;font-size:11px;color:#64748b">Signature du responsable</div>
         </div>
         <div>
-          <div style="border-top:1px solid #94a3b8;width:200px;padding-top:6px;font-size:11px;color:#64748b;text-align:right">Cachet SLTT</div>
+          <div style="border-top:1px solid #94a3b8;width:200px;padding-top:6px;font-size:11px;color:#64748b;text-align:right">Cachet ${htmlEscape(b.societeNom)}</div>
         </div>
       </div>
     `;
   }
 
+  function bonBrand(societeId: string) {
+    const societe = societes.find((s) => s.id === societeId);
+    if (!societe) return undefined;
+    return {
+      logoUrl: societe.logoUrl,
+      name: societe.nom,
+      afficherNomAvecLogo: societe.afficherNomAvecLogo,
+      legal: {
+        adresse: societe.adresse,
+        telephone: societe.telephone,
+        rccm: societe.rccm,
+        nif: societe.nif,
+      },
+    };
+  }
+
   function handleView(ref: string) {
     const b = bons.find((x) => x.reference === ref);
     if (!b) return;
-    printHTML(`Bon ${ref}`, buildBonHTML(b));
+    printHTML(`Bon ${ref}`, buildBonHTML(b), bonBrand(b.societeId));
   }
 
   function handlePrint(ref: string) {
     const b = bons.find((x) => x.reference === ref);
     if (!b) return;
-    printHTML(`Bon ${ref}`, buildBonHTML(b));
+    printHTML(`Bon ${ref}`, buildBonHTML(b), bonBrand(b.societeId));
     toast({
       title: "Bon prêt à imprimer",
       description: `${ref} — ${b.clientNom}.`,
@@ -848,6 +896,7 @@ export function BonsScreen() {
                                 className="size-11 text-amber-600 dark:text-amber-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                                 aria-label={`Valider ${b.reference}`}
                                 title="Valider le bon"
+                                disabled={validatingIds.has(b.id)}
                                 onClick={() => handleValidateBon(b.id, b.reference)}
                               >
                                 <Check className="size-4" />
@@ -976,6 +1025,9 @@ export function BonsScreen() {
                         Bénéficiaire(s)
                       </TableHead>
                       <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                        Société
+                      </TableHead>
+                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                         Motif
                       </TableHead>
                       <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -998,6 +1050,9 @@ export function BonsScreen() {
                         <TableCell className="max-w-[180px] px-4 py-3.5">
                           <p className="truncate font-medium text-slate-700 dark:text-slate-300">{beneficiairesSummary(b)}</p>
                         </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 md:table-cell">
+                          <SocieteBadge societeNom={b.societeNom} size="sm" />
+                        </TableCell>
                         <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
                           <p className="truncate text-sm text-slate-600 dark:text-slate-300">
                             {b.lignes.map((l) => l.motif).join(", ")}
@@ -1008,16 +1063,6 @@ export function BonsScreen() {
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
-                              aria-label={`Visualiser ${b.reference}`}
-                              title="Visualiser"
-                              onClick={() => handleViewCaisse(b)}
-                            >
-                              <Eye className="size-4" />
-                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1215,6 +1260,9 @@ export function BonsScreen() {
                 unite={selectedStock?.unite}
                 motif={formMotif as BonMotif | ""}
                 montant={montantNum}
+                societeNom={selectedStock?.societeNom}
+                logoUrl={societes.find((s) => s.id === formSocieteId)?.logoUrl}
+                afficherNomAvecLogo={societes.find((s) => s.id === formSocieteId)?.afficherNomAvecLogo}
               />
             </div>
           </div>
@@ -1278,6 +1326,24 @@ export function BonsScreen() {
                 onChange={(e) => setCaisseDate(e.target.value)}
                 className="h-10 w-full sm:w-52"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="caisse-societe" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Société <span className="text-red-500">*</span>
+              </Label>
+              <Select value={caisseSocieteId} onValueChange={setCaisseSocieteId}>
+                <SelectTrigger id="caisse-societe" className="h-10 w-full sm:w-52">
+                  <SelectValue placeholder="Sélectionner une société" />
+                </SelectTrigger>
+                <SelectContent>
+                  {societes.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-3">
@@ -1379,6 +1445,9 @@ function BonPreview({
   unite,
   motif,
   montant,
+  societeNom,
+  logoUrl,
+  afficherNomAvecLogo = true,
 }: {
   reference: string;
   date: string;
@@ -1388,6 +1457,9 @@ function BonPreview({
   unite?: string;
   motif: BonMotif | "";
   montant: number;
+  societeNom?: string;
+  logoUrl?: string;
+  afficherNomAvecLogo?: boolean;
 }) {
   const rows: { label: string; value: React.ReactNode }[] = [
     {
@@ -1420,17 +1492,26 @@ function BonPreview({
   return (
     <div className="rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 font-[var(--font-heading)]">
       <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Truck className="size-5" />
-        </div>
+        {logoUrl ? (
+          // Hauteur fixe, largeur libre : certains logos société sont des bannières
+          // larges (ratio ~4:1), pas des badges carrés — une boîte size-10 les
+          // écraserait en un filet illisible.
+          <img src={logoUrl} alt={societeNom || "Logo société"} className="h-10 w-auto max-w-28 object-contain" />
+        ) : (
+          <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Truck className="size-5" />
+          </div>
+        )}
+        {afficherNomAvecLogo && (
         <div>
-          <p className="font-bold leading-tight text-slate-900 dark:text-slate-100">SLTT</p>
+          <p className="font-bold leading-tight text-slate-900 dark:text-slate-100">
+            {societeNom || "SLTT"}
+          </p>
           <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400">
-            Société Traoré de Logistique,
-            <br />
-            Transit et Transport
+            Bon de sortie — Marchandise
           </p>
         </div>
+        )}
       </div>
 
       <div className="my-5 text-center">

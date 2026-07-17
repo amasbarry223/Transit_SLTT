@@ -40,7 +40,7 @@ import type {
   DossierFournisseurInput,
 } from "@/lib/store";
 import { calculerEcart } from "@/lib/domain-types";
-import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
@@ -619,7 +619,8 @@ export function DossierDetailScreen() {
 
   // Échéance
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const echeanceDate = dossier.dateEcheance ? new Date(dossier.dateEcheance) : null;
+  const echeanceDate = dossier.dateEcheance ? parseLocalDate(dossier.dateEcheance) : null;
+  echeanceDate?.setHours(0, 0, 0, 0);
   const joursRestants = echeanceDate ? Math.ceil((echeanceDate.getTime() - today.getTime()) / 86400000) : null;
   const echeanceDepassee = joursRestants !== null && joursRestants < 0;
   const echeanceImminente = joursRestants !== null && joursRestants >= 0 && joursRestants <= 3;

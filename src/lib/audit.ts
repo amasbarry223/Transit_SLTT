@@ -39,7 +39,7 @@ export type AuditEntry = {
 let cachedClientIp: string | null = null;
 
 /** Résout l'IP client via l'API Next (cache en mémoire pour la session). */
-export async function resolveClientIp(): Promise<string> {
+async function resolveClientIp(): Promise<string> {
   if (cachedClientIp) return cachedClientIp;
   try {
     const res = await fetch("/api/client-ip", { cache: "no-store" });

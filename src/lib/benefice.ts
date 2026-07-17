@@ -3,6 +3,7 @@
  * Fonctions pures (testables sans React/Zustand) pour filtrer par société +
  * période et calculer le bénéfice = recettes - dépenses.
  */
+import { parseLocalDate } from "@/lib/format";
 
 /**
  * Filtre une liste par société et par mois/année.
@@ -19,7 +20,7 @@ export function filterBySocieteAndPeriode<T extends { societeId?: string | null;
 ): T[] {
   return rows.filter((row) => {
     if (societeId !== null && row.societeId !== societeId) return false;
-    const d = new Date(row.date.includes("T") ? row.date : `${row.date}T12:00:00`);
+    const d = parseLocalDate(row.date);
     if (Number.isNaN(d.getTime())) return false;
     return d.getFullYear() === year && d.getMonth() === month;
   });

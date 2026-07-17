@@ -31,7 +31,7 @@ export const VEHICULES: TypeVehicule[] = [
   "Fourgon",
 ];
 
-export const TRAJETS_SUGGERES = [
+const TRAJETS_SUGGERES = [
   "Bamako – Dakar",
   "Bamako – Abidjan",
   "Bamako – Conakry",
@@ -39,7 +39,7 @@ export const TRAJETS_SUGGERES = [
   "Local Bamako",
 ] as const;
 
-export const CAPACITE_PRESETS = [5, 10, 20, 30, 35] as const;
+const CAPACITE_PRESETS = [5, 10, 20, 30, 35] as const;
 
 export const TRANSPORTEUR_FORM_STEPS = [
   { id: "partenaire", label: "Partenaire", description: "Société et contact", icon: Building2 },
@@ -47,8 +47,6 @@ export const TRANSPORTEUR_FORM_STEPS = [
   { id: "flotte", label: "Flotte", description: "Véhicule et trajet", icon: Truck },
   { id: "validation", label: "Validation", description: "Statut et récapitulatif", icon: ClipboardList },
 ] as const;
-
-export type TransporteurFormStepId = (typeof TRANSPORTEUR_FORM_STEPS)[number]["id"];
 
 const VEHICULE_META: Record<TypeVehicule, { icon: LucideIcon; hint: string }> = {
   Camion: { icon: Truck, hint: "Porteur classique" },
@@ -463,7 +461,7 @@ export function TransporteurFormFields({
   );
 }
 
-export function TransporteurFormSummary({ values }: { values: TransporteurInput }) {
+function TransporteurFormSummary({ values }: { values: TransporteurInput }) {
   const rows = [
     { label: "Société", value: values.nom || "—" },
     { label: "Contact", value: values.contact || "—" },

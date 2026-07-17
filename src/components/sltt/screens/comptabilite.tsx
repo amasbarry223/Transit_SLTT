@@ -63,9 +63,11 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 8;
 
-/** Onglet spécial : écritures sans société assignée (dossiers de transit
- * classiques, sorties de caisse) — activité de la société mère SLTT. */
-const SLTT_MERE_TAB = "__sltt_mere__";
+/** Traoré Transit Logistique = la société mère du groupe (id fixe, seedé dans
+ * supabase/migrations/20260713_societes.sql). Les écritures historiques sans
+ * société assignée (dossiers de transit classiques, sorties de caisse) lui
+ * sont rattachées d'office dans cet onglet — même entité légale. */
+const TRAORE_TRANSIT_LOGISTIQUE_ID = "22222222-2222-2222-2222-222222222222";
 
 type StatutFilter = "all" | "En attente" | "Soldé";
 
@@ -107,8 +109,9 @@ export function ComptabiliteScreen() {
   const recordPayment = useStore((s) => s.recordPayment);
   const addEcriture = useStore((s) => s.addEcriture);
 
-  // Onglets : Toutes / une par société / société mère SLTT (écritures sans société).
-  const [activeTab, setActiveTab] = useState<string>(SLTT_MERE_TAB);
+  // Onglets : Toutes / une par société (celui de Traoré Transit Logistique
+  // inclut aussi les écritures historiques sans société assignée).
+  const [activeTab, setActiveTab] = useState<string>(TRAORE_TRANSIT_LOGISTIQUE_ID);
 
   // Tri alphabétique simple — pas de liste de noms codée en dur à tenir à jour
   // si une société est renommée ou qu'une nouvelle est ajoutée.
@@ -119,7 +122,9 @@ export function ComptabiliteScreen() {
 
   const ecritures = useMemo(() => {
     if (activeTab === "all") return allEcritures;
-    if (activeTab === SLTT_MERE_TAB) return allEcritures.filter((e) => !e.societeId);
+    if (activeTab === TRAORE_TRANSIT_LOGISTIQUE_ID) {
+      return allEcritures.filter((e) => !e.societeId || e.societeId === TRAORE_TRANSIT_LOGISTIQUE_ID);
+    }
     return allEcritures.filter((e) => e.societeId === activeTab);
   }, [allEcritures, activeTab]);
 
@@ -135,12 +140,11 @@ export function ComptabiliteScreen() {
     () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
     [depenses],
   );
-  // Sorties de caisse : sans société (au nom de la société mère), donc uniquement
-  // comptées dans la vue consolidée "Toutes sociétés" (comme le transit).
+  // Sorties de caisse : chaque bon porte désormais sa propre société (F1).
   const caisseAvecDate = useMemo(
     () =>
       bonsSortieCaisse.flatMap((b) =>
-        b.lignes.map((l) => ({ societeId: undefined as string | undefined, date: l.date, montant: l.montant })),
+        b.lignes.map((l) => ({ societeId: b.societeId as string | undefined, date: l.date, montant: l.montant })),
       ),
     [bonsSortieCaisse],
   );
@@ -287,7 +291,7 @@ export function ComptabiliteScreen() {
     setNeMode("Virement");
     setNeDate(new Date().toISOString().slice(0, 10));
     setNeNote("");
-    setNeSocieteId(activeTab !== "all" && activeTab !== SLTT_MERE_TAB ? activeTab : "");
+    setNeSocieteId(activeTab !== "all" ? activeTab : "");
   }
 
   useEffect(() => {
@@ -351,7 +355,7 @@ export function ComptabiliteScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Comptabilité"
-        description="Suivi interne des paiements liés aux dossiers de transit"
+        description="Suivi interne des paiements — dossiers de transit et entreposage par société"
       >
         {canWrite && (
           <Button
@@ -374,9 +378,6 @@ export function ComptabiliteScreen() {
               Société {s.nom}
             </TabsTrigger>
           ))}
-          <TabsTrigger value={SLTT_MERE_TAB} title="Société Traoré de Logistique, Transit et Transport">
-            SLTT
-          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -398,7 +399,7 @@ export function ComptabiliteScreen() {
           value={formatFCFA(totalInvesti)}
           icon={TrendingUp}
           tone="blue"
-          sublabel="cumul des dossiers"
+          sublabel="cumul des écritures"
         />
         <KpiCard
           label="Total encaissé"

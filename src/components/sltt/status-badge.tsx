@@ -21,9 +21,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-type Tone = "blue" | "emerald" | "amber" | "red" | "indigo" | "slate";
+export type Tone = "blue" | "emerald" | "amber" | "red" | "indigo" | "slate";
 
-const toneClasses: Record<Tone, string> = {
+/** Classes bg/text/border par tone — exportées pour styler un contrôle interactif (ex. Select)
+ * avec la même identité visuelle qu'un ToneBadge en lecture seule (cohérence édition/affichage). */
+export const TONE_CLASSES: Record<Tone, string> = {
   blue: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900",
   emerald: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900",
   amber: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-900",
@@ -62,7 +64,7 @@ export function ToneBadge({
       className={cn(
         "rounded-full font-medium border gap-1.5",
         size === "sm" ? "px-2 py-0 text-[11px]" : "px-2.5 py-0.5",
-        toneClasses[tone],
+        TONE_CLASSES[tone],
         className,
       )}
     >

@@ -24,18 +24,19 @@ export function formatFCFACompact(amount: number): string {
   return new Intl.NumberFormat("fr-FR").format(amount);
 }
 
-/** Format a date as "12/01/2026"
- * DX-03: Plain date strings (YYYY-MM-DD) get noon local time to avoid timezone off-by-one.
- *        Datetime strings (containing "T") are parsed as-is. Invalid/missing values return "—".
+/**
+ * DX-03: Parse a "YYYY-MM-DD" date string at noon local time instead of
+ * midnight UTC, so getFullYear()/getMonth()/getDate() never shift by a day
+ * in timezones behind UTC. Datetime strings (containing "T") are parsed as-is.
  */
+export function parseLocalDate(date: string): Date {
+  return date.includes("T") ? new Date(date) : new Date(`${date}T12:00:00`);
+}
+
+/** Format a date as "12/01/2026". Invalid/missing values return "—". */
 export function formatDateShort(date: Date | string | null | undefined): string {
   if (!date) return "—";
-  let d: Date;
-  if (typeof date === "string") {
-    d = date.includes("T") ? new Date(date) : new Date(date + "T12:00:00");
-  } else {
-    d = date;
-  }
+  const d: Date = typeof date === "string" ? parseLocalDate(date) : date;
   if (isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",

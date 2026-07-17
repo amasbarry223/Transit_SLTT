@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
-import { formatFCFA, formatFCFACompact, formatDateShort } from "@/lib/format";
+import { formatFCFA, formatFCFACompact, formatDateShort, parseLocalDate } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
 import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
@@ -227,7 +227,7 @@ export function BilansScreen() {
   const filteredEcritures = useMemo(() => {
     const [year, month] = (mois || "2026-01").split("-").map(Number);
     return ecritures.filter((e) => {
-      const d = new Date(e.date);
+      const d = parseLocalDate(e.date);
       const eYear = d.getFullYear();
       const eMonth = d.getMonth() + 1;
       switch (periode) {
@@ -255,12 +255,11 @@ export function BilansScreen() {
     () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
     [depenses],
   );
-  // Sorties de caisse : sans société (société mère), comptées uniquement dans
-  // la vue consolidée "Toutes sociétés" (comme le transit).
+  // Sorties de caisse : chaque bon porte désormais sa propre société (F1).
   const caisseAvecDate = useMemo(
     () =>
       bonsSortieCaisse.flatMap((b) =>
-        b.lignes.map((l) => ({ societeId: undefined as string | undefined, date: l.date, montant: l.montant })),
+        b.lignes.map((l) => ({ societeId: b.societeId as string | undefined, date: l.date, montant: l.montant })),
       ),
     [bonsSortieCaisse],
   );
@@ -290,7 +289,7 @@ export function BilansScreen() {
     return Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
       const monthEcritures = ecritures.filter((e) => {
-        const d = new Date(e.date);
+        const d = parseLocalDate(e.date);
         return d.getFullYear() === year && d.getMonth() + 1 === m;
       });
       return {

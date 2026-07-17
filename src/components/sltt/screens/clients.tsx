@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { usePagination } from "@/hooks/use-pagination";
 import {
   UserPlus,
   Search,
@@ -31,7 +32,6 @@ import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableHeader,
@@ -172,11 +172,7 @@ export function ClientsScreen() {
     });
   }, [query, typeFilter, sortBy, clients, clientStats]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
-  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
-  const endIdx = Math.min(safePage * pageSize, filtered.length);
+  const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, pageSize);
 
   const hasActiveFilters = query.trim() !== "" || typeFilter !== "all";
 

@@ -13,6 +13,7 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
+import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { DossierStatutBadge, DOSSIER_STATUT_DOT } from "@/components/sltt/status-badge";
 import { PageHeader } from "@/components/sltt/page-header";
 import { Card } from "@/components/ui/card";
@@ -153,16 +154,10 @@ export function CalendrierScreen() {
   const bons = useStore((s) => s.bons);
   const ecritures = useStore((s) => s.ecritures);
 
-  // Ancrage sur la date la plus récente des données Supabase
-  const anchorDate = React.useMemo(() => {
-    const dates = [
-      ...dossiers.map((d) => d.date),
-      ...bons.map((b) => b.date),
-      ...ecritures.map((e) => e.date),
-    ].filter(Boolean);
-    if (dates.length === 0) return new Date();
-    return new Date(dates.reduce((a, b) => (a > b ? a : b)));
-  }, [dossiers, bons, ecritures]);
+  // Ancrage sur aujourd'hui (cohérent avec le dashboard) — pas sur la donnée
+  // la plus récente, sinon le bouton "Aujourd'hui" ne ramène pas au mois
+  // courant si aucun dossier/bon/écriture n'a été créé récemment.
+  const anchorDate = getDashboardAnchorDate();
 
   const [year, setYear] = React.useState(() => anchorDate.getFullYear());
   const [month, setMonth] = React.useState(() => anchorDate.getMonth());

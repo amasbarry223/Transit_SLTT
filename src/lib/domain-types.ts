@@ -241,6 +241,8 @@ export interface BonSortieCaisse {
   /** Format "N°{n}", séquence indépendante des bons de sortie stock. */
   reference: string;
   date: string;
+  societeId: string;
+  societeNom: string;
   lignes: SortieCaisseLigne[];
   montantTotal: number;
   creePar?: string;
@@ -249,6 +251,7 @@ export interface BonSortieCaisse {
 
 export interface BonSortieCaisseInput {
   date: string;
+  societeId: string;
   lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;
 }
 
@@ -260,6 +263,15 @@ export interface Societe {
   id: string;
   nom: string;
   actif: boolean;
+  /** Chemin public du logo affiché sur les documents imprimés de la société (ex. bons de sortie). */
+  logoUrl?: string;
+  /** Coordonnées légales affichées sur l'en-tête des documents imprimés (bons de sortie). */
+  adresse?: string;
+  telephone?: string;
+  rccm?: string;
+  nif?: string;
+  /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). */
+  afficherNomAvecLogo: boolean;
 }
 
 /* ------------------------------------------------------------------ */

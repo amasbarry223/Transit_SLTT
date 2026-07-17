@@ -4,7 +4,7 @@ import type { Archive, TypeDocument } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 
-export interface AddArchiveInput {
+interface AddArchiveInput {
   nom: string;
   typeDocument: TypeDocument;
   taille: number;

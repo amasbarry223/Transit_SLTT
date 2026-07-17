@@ -207,11 +207,12 @@ export interface PermissionUser {
 export function hasPermission(user: PermissionUser | null | undefined, perm: string): boolean {
   if (!user || user.actif === false) return false;
   if (user.role === "Administrateur") return true;
-  const perms =
-    user.permissions.length > 0
-      ? normalizePermissions(user.permissions)
-      : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []);
-  return perms.includes(perm);
+  // Les permissions stockées font foi telles quelles — y compris un tableau
+  // vide, qui signifie "aucun accès" (un admin peut retirer tous les droits
+  // d'un utilisateur sans changer son rôle). Retomber sur les permissions
+  // par défaut du rôle ici contredirait la policy RLS has_permission() côté
+  // base, qui ne fait elle-même aucun repli sur le rôle.
+  return normalizePermissions(user.permissions).includes(perm);
 }
 
 /**
@@ -226,13 +227,9 @@ export function resolvePermissionUser(
 ): PermissionUser | null {
   if (user) {
     if (user.actif === false) return null;
-    return {
-      ...user,
-      permissions:
-        user.permissions.length > 0
-          ? normalizePermissions(user.permissions)
-          : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []),
-    };
+    // Cf. hasPermission : un tableau vide signifie "aucun accès", pas
+    // "utiliser les permissions par défaut du rôle".
+    return { ...user, permissions: normalizePermissions(user.permissions) };
   }
   if (fallbackRole) {
     return {

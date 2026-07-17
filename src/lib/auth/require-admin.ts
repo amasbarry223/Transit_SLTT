@@ -33,7 +33,7 @@ export function getServerClient(token?: string) {
   }
 }
 
-/** Authentifie la requête et charge le profil appelant — brique commune à requireAdmin/requireUserManager/requireUser. */
+/** Authentifie la requête et charge le profil appelant — brique commune à requireUserManager/requireUser. */
 async function getAuthenticatedProfile(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -60,16 +60,6 @@ async function getAuthenticatedProfile(request: Request) {
 
   if (profileError || !profile) {
     throw new AuthError("Profil introuvable.", 403);
-  }
-
-  return { user, profile, admin };
-}
-
-export async function requireAdmin(request: Request) {
-  const { user, profile, admin } = await getAuthenticatedProfile(request);
-
-  if (!profile.actif || profile.role !== "Administrateur") {
-    throw new AuthError("Accès réservé aux administrateurs.", 403);
   }
 
   return { user, profile, admin };

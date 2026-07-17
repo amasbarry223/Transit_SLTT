@@ -22,7 +22,8 @@ import { useStore } from "@/lib/store";
 import type { StockItem, StockItemInput } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import type { Mouvement } from "@/lib/domain-types";
-import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
+import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { exportToCSV, printStockInventory } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -716,7 +717,13 @@ export function EntreposageScreen() {
     (acc, s) => acc + s.sommePayee + s.resteAPayer,
     0,
   );
-  const mouvementsCeMois = mouvements.length;
+  const mouvementsCeMois = useMemo(() => {
+    const anchor = getDashboardAnchorDate();
+    return mouvements.filter((m) => {
+      const d = parseLocalDate(m.date);
+      return d.getFullYear() === anchor.getFullYear() && d.getMonth() === anchor.getMonth();
+    }).length;
+  }, [mouvements]);
   const alertesStockFaible = stock.filter((s) => s.quantite < s.seuil).length;
 
   function openEntry(stockId: string | null) {
