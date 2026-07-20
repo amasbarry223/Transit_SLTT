@@ -28,6 +28,7 @@ import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { exportToCSV, printHTML, printInvoice, htmlEscape } from "@/lib/export";
+import { resolveSlttBrand } from "@/lib/classeur";
 import { useToast } from "@/hooks/use-toast";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
@@ -274,6 +275,7 @@ export function DevisScreen() {
 
   const devisList = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
+  const societes = useStore((s) => s.societes);
   const addDevis = useStore((s) => s.addDevis);
   const updateDevis = useStore((s) => s.updateDevis);
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
@@ -420,7 +422,7 @@ export function DevisScreen() {
       fraisPrestation: d.fraisPrestation,
       montantInvesti: d.total,
       montantPaye: 0,
-    }, d.reference);
+    }, d.reference, resolveSlttBrand(societes));
   }
 
   function handleExportCSV() {

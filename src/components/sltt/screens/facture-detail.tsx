@@ -65,7 +65,9 @@ import {
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printFactureModule, shouldShowTva } from "@/lib/export";
+import { resteAPayer, DEFAULT_TVA_RATE } from "@/lib/domain-types";
+import { printFactureModule, shouldShowTva, type SocieteBrand } from "@/lib/export";
+import { resolveSlttBrand } from "@/lib/classeur";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { canTransitionFacture, FACTURE_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
@@ -464,7 +466,7 @@ function PaiementDialog({
 }) {
   const { toast } = useToast();
   const recordPaiement = useStore((s) => s.recordFacturePaiement);
-  const reste = facture.montantTTC - facture.montantPaye;
+  const reste = resteAPayer({ montantInvesti: facture.montantTTC, montantPaye: facture.montantPaye });
   const [montant, setMontant] = React.useState(String(reste));
   const [saving, setSaving] = React.useState(false);
 
@@ -648,7 +650,7 @@ export function FactureDetailScreen() {
   }
 
   const dossier = facture.dossierId ? dossiers.find((d) => d.id === facture.dossierId) : null;
-  const reste = facture.montantTTC - facture.montantPaye;
+  const reste = resteAPayer({ montantInvesti: facture.montantTTC, montantPaye: facture.montantPaye });
   const pctPaye = facture.montantTTC > 0 ? Math.round((facture.montantPaye / facture.montantTTC) * 100) : 0;
   const isEchue =
     facture.statut !== "Soldée" &&
@@ -661,7 +663,7 @@ export function FactureDetailScreen() {
     (s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
     0,
   );
-  const editTVA = editTvaOn ? 18 : 0;
+  const editTVA = editTvaOn ? DEFAULT_TVA_RATE : 0;
   const editTTC = editMontantHT + Math.round(editMontantHT * (editTVA / 100));
 
   async function handleStatutClick(s: FactureStatut) {
@@ -692,7 +694,7 @@ export function FactureDetailScreen() {
       societeId: editSocieteId || null,
       date: editDate,
       dateEcheance: editDateEcheance,
-      tauxTVA: editTvaOn ? 18 : 0,
+      tauxTVA: editTvaOn ? DEFAULT_TVA_RATE : 0,
       notes: editNotes,
       lignes: editLignes
         .filter((l) => l.description.trim())
@@ -709,6 +711,18 @@ export function FactureDetailScreen() {
 
   function handlePrint() {
     if (!facture) return;
+    // Facture rattachée à une société précise → ses propres coordonnées ;
+    // sinon (canal transit global) → SLTT par défaut, cf. resolveSlttBrand.
+    const societe = facture.societeId
+      ? societes.find((s) => s.id === facture.societeId)
+      : undefined;
+    const brand: SocieteBrand = societe
+      ? {
+          nom: societe.nom,
+          logoUrl: societe.logoUrl,
+          legal: { adresse: societe.adresse, telephone: societe.telephone, rccm: societe.rccm, nif: societe.nif },
+        }
+      : resolveSlttBrand(societes);
     printFactureModule({
       numero: facture.numero,
       clientNom: facture.clientNom,
@@ -726,7 +740,7 @@ export function FactureDetailScreen() {
       creeLe: facture.creeLe,
       dossierReference: dossier?.reference,
       dossierBl: dossier?.bl,
-    });
+    }, brand);
   }
 
   return (
@@ -1107,7 +1121,7 @@ export function FactureDetailScreen() {
 
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
               <Label htmlFor="edit-tva-switch" className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Appliquer la TVA (18 %)
+                Appliquer la TVA ({DEFAULT_TVA_RATE} %)
               </Label>
               <Switch id="edit-tva-switch" checked={editTvaOn} onCheckedChange={setEditTvaOn} />
             </div>

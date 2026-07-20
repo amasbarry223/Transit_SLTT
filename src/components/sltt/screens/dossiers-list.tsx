@@ -15,7 +15,7 @@ import {
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { calculerEcart, type DossierStatut } from "@/lib/domain-types";
+import { calculerEcart, resteAPayer, type DossierStatut } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
@@ -134,7 +134,7 @@ export function DossiersListScreen() {
       if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
-      if (nonSoldeOnly && d.montantInvesti - d.montantPaye <= 0) return false;
+      if (nonSoldeOnly && resteAPayer(d) <= 0) return false;
       if (yearFilter !== "all" && d.date.slice(0, 4) !== yearFilter) return false;
       if (periode !== "all") {
         const dDate = parseLocalDate(d.date);
@@ -212,7 +212,7 @@ export function DossiersListScreen() {
         { header: "Montant payé (FCFA)", accessor: (d) => d.montantPaye },
         {
           header: "Reste à payer (FCFA)",
-          accessor: (d) => Math.max(0, d.montantInvesti - d.montantPaye),
+          accessor: (d) => resteAPayer(d),
         },
         { header: "Marge (FCFA)", accessor: (d) => calculerEcart(d) },
         { header: "Statut", accessor: (d) => d.statut },

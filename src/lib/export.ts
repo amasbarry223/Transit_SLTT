@@ -2,6 +2,7 @@
 
 import type { AuditModule } from "@/lib/audit";
 import { useStore } from "@/lib/store";
+import { resteAPayer } from "@/lib/domain-types";
 /**
  * SEC-06: Escape HTML special characters to prevent injection in generated documents.
  * Exported so that screen-level printHTML templates escape user-entered data
@@ -52,6 +53,28 @@ function buildLegalLine(info?: SocieteLegalInfo): string {
     info.rccm ? `RCCM : ${htmlEscape(info.rccm)}` : "",
     info.nif ? `NIF : ${htmlEscape(info.nif)}` : "",
   ].filter(Boolean).join(" &nbsp;·&nbsp; ");
+}
+
+/** Identité d'une société pour l'en-tête d'un document imprimé — cf. Societe (domain-types.ts). */
+export interface SocieteBrand {
+  nom: string;
+  logoUrl?: string;
+  legal?: SocieteLegalInfo;
+}
+
+/**
+ * Repli utilisé uniquement si aucune société n'est fournie à l'appel (ne
+ * devrait plus arriver une fois tous les call sites branchés sur le store —
+ * conservé pour ne rien casser plutôt que d'imposer un objet obligatoire).
+ */
+const FALLBACK_BRAND_SUB =
+  "Société Traoré de Logistique, Transit et Transport<br>Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml";
+
+/** Bloc nom + coordonnées sous le logo, construit depuis la société réelle (societes en base). */
+function buildBrandSubHTML(brand?: SocieteBrand): string {
+  if (!brand) return FALLBACK_BRAND_SUB;
+  const legalLine = buildLegalLine(brand.legal);
+  return legalLine ? `${htmlEscape(brand.nom)}<br>${legalLine}` : htmlEscape(brand.nom);
 }
 
 /**
@@ -203,10 +226,11 @@ export interface DevisData {
   statut?: string;
 }
 
-export function printDevis(data: DevisData): void {
+export function printDevis(data: DevisData, societe?: SocieteBrand): void {
+  const brandSubHTML = buildBrandSubHTML(societe);
   /* Logo sur fond blanc — même technique que printHTML (Bons de sortie).
      Pas de filtre, pas de gradient : le logo s'affiche correctement à l'écran ET à l'impression. */
-  const logoUrl = getLogoUrl();
+  const logoUrl = societe?.logoUrl ? resolveLogoUrl(societe.logoUrl) : getLogoUrl();
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -347,11 +371,8 @@ table { width: 100%; border-collapse: collapse; }
     <div class="brand">
       <img src="${logoUrl}" alt="SLTT" class="brand-logo" onerror="this.style.display='none'">
       <div>
-        <div class="brand-name">SLTT</div>
-        <div class="brand-sub">
-          Société Traoré de Logistique, Transit et Transport<br>
-          Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml
-        </div>
+        <div class="brand-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="brand-sub">${brandSubHTML}</div>
       </div>
     </div>
     <div class="doc-meta">
@@ -368,8 +389,8 @@ table { width: 100%; border-collapse: collapse; }
     <div class="parties">
       <div class="party">
         <div class="party-lbl">Prestataire</div>
-        <div class="party-name">SLTT</div>
-        <div class="party-detail">Société Traoré de Logistique<br>Transit et Transport<br>Bamako, Mali · contact@sltt.ml</div>
+        <div class="party-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="party-detail">${brandSubHTML}</div>
       </div>
       <div class="party">
         <div class="party-lbl">Client</div>
@@ -486,8 +507,9 @@ export interface FactureModuleData {
   dossierBl?: string;
 }
 
-export function printFactureModule(data: FactureModuleData): void {
-  const logoUrl = getLogoUrl();
+export function printFactureModule(data: FactureModuleData, societe?: SocieteBrand): void {
+  const logoUrl = societe?.logoUrl ? resolveLogoUrl(societe.logoUrl) : getLogoUrl();
+  const brandSubHTML = buildBrandSubHTML(societe);
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -556,10 +578,10 @@ table { width: 100%; border-collapse: collapse; }
   </div>
   <div class="doc-header">
     <div class="brand">
-      <img src="${logoUrl}" alt="SLTT" class="brand-logo">
+      <img src="${logoUrl}" alt="${htmlEscape(societe?.nom ?? "SLTT")}" class="brand-logo">
       <div>
-        <div class="brand-name">SLTT</div>
-        <div class="brand-sub">Société Traoré de Logistique, Transit et Transport<br>Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml</div>
+        <div class="brand-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="brand-sub">${brandSubHTML}</div>
       </div>
     </div>
     <div class="doc-meta">
@@ -627,8 +649,9 @@ export interface ContratModuleData {
   documents: Array<{ nom: string; dateUpload: string }>;
 }
 
-export function printContratModule(data: ContratModuleData): void {
-  const logoUrl = getLogoUrl();
+export function printContratModule(data: ContratModuleData, societe?: SocieteBrand): void {
+  const logoUrl = societe?.logoUrl ? resolveLogoUrl(societe.logoUrl) : getLogoUrl();
+  const brandSubHTML = buildBrandSubHTML(societe);
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -701,10 +724,10 @@ table { width: 100%; border-collapse: collapse; }
   </div>
   <div class="doc-header">
     <div class="brand">
-      <img src="${logoUrl}" alt="SLTT" class="brand-logo">
+      <img src="${logoUrl}" alt="${htmlEscape(societe?.nom ?? data.societeNom)}" class="brand-logo">
       <div>
-        <div class="brand-name">SLTT</div>
-        <div class="brand-sub">Société Traoré de Logistique, Transit et Transport<br>Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml</div>
+        <div class="brand-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="brand-sub">${brandSubHTML}</div>
       </div>
     </div>
     <div class="doc-meta">
@@ -773,6 +796,9 @@ export interface BonSortieCaisseModuleData {
   legal?: SocieteLegalInfo;
   lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;
   montantTotal: number;
+  /** Noms des signataires (societes.signataire_dg / signataire_pdg) — repli sur les noms historiques si non renseignés. */
+  signataireDg?: string;
+  signatairePdg?: string;
 }
 
 export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): void {
@@ -866,11 +892,11 @@ table { width: 100%; border-collapse: collapse; }
     <div class="signatures">
       <div class="sig-block">
         <div class="sig-label">Directeur Général</div>
-        <div class="sig-name">Ali Badra TRAORE</div>
+        <div class="sig-name">${htmlEscape(data.signataireDg || "Ali Badra TRAORE")}</div>
       </div>
       <div class="sig-block">
         <div class="sig-label">Visa du PDG</div>
-        <div class="sig-name">Abdoul TRAORÉ</div>
+        <div class="sig-name">${htmlEscape(data.signatairePdg || "Abdoul TRAORÉ")}</div>
       </div>
     </div>
   </div>
@@ -901,9 +927,10 @@ export interface InvoiceData {
   modePaiement?: string;
 }
 
-export function printInvoice(data: InvoiceData, invoiceNum: string): void {
-  const logoUrl = getLogoUrl();
-  const reste    = Math.max(0, data.montantInvesti - data.montantPaye);
+export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: SocieteBrand): void {
+  const logoUrl = societe?.logoUrl ? resolveLogoUrl(societe.logoUrl) : getLogoUrl();
+  const brandSubHTML = buildBrandSubHTML(societe);
+  const reste    = resteAPayer(data);
   const soldé    = reste === 0;
   const today    = fmtDate(new Date().toISOString().slice(0, 10));
 
@@ -1027,10 +1054,10 @@ table { width: 100%; border-collapse: collapse; }
   <!-- Header -->
   <div class="doc-header">
     <div class="brand">
-      <img src="${logoUrl}" alt="SLTT" class="brand-logo" onerror="this.style.display='none'">
+      <img src="${logoUrl}" alt="${htmlEscape(societe?.nom ?? "SLTT")}" class="brand-logo" onerror="this.style.display='none'">
       <div>
-        <div class="brand-name">SLTT</div>
-        <div class="brand-sub">Société Traoré de Logistique, Transit et Transport<br>Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml</div>
+        <div class="brand-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="brand-sub">${brandSubHTML}</div>
       </div>
     </div>
     <div class="doc-meta">
@@ -1048,8 +1075,8 @@ table { width: 100%; border-collapse: collapse; }
     <div class="parties">
       <div class="party">
         <div class="party-lbl">Prestataire</div>
-        <div class="party-name">SLTT</div>
-        <div class="party-detail">Société Traoré de Logistique<br>Transit et Transport<br>Bamako, Mali · contact@sltt.ml</div>
+        <div class="party-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="party-detail">${brandSubHTML}</div>
       </div>
       <div class="party">
         <div class="party-lbl">Client</div>
@@ -1152,7 +1179,7 @@ export function printHTML(title: string, bodyHTML: string, brand?: PrintHTMLBran
   // unique en pied de page reste équilibrée quel que soit le nombre de champs.
   const legalLine = brand?.legal ? buildLegalLine(brand.legal) : "";
   const brandSubHTML = brand?.legal ? "" : htmlEscape(brand?.sub || "Société Traoré de Logistique, Transit et Transport");
-  const footerHTML = legalLine || "Document généré par la plateforme SLTT · © 2026";
+  const footerHTML = legalLine || `Document généré par la plateforme SLTT · © ${new Date().getFullYear()}`;
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
     warnPopupBlocked();
@@ -1254,13 +1281,16 @@ export interface StockInventoryRow {
 export interface StockInventoryPrintOptions {
   /** Libellé du filtre société actif (ex. « Top Doumani » ou « Toutes les sociétés »). */
   societeLabel?: string;
+  /** Société sélectionnée (filtre précis, pas "Toutes") — sert à afficher sa véritable identité légale plutôt que celle de SLTT par défaut. */
+  societe?: SocieteBrand;
 }
 
 export function printStockInventory(
   rows: StockInventoryRow[],
   options: StockInventoryPrintOptions = {},
 ): void {
-  const logoUrl = getLogoUrl();
+  const logoUrl = options.societe?.logoUrl ? resolveLogoUrl(options.societe.logoUrl) : getLogoUrl();
+  const brandSubHTML = buildBrandSubHTML(options.societe);
   const now = new Date();
   const today = now.toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -1540,14 +1570,10 @@ table { width: 100%; border-collapse: collapse; }
 
   <div class="doc-header">
     <div class="brand">
-      <img src="${logoUrl}" alt="Traoré de Logistique" class="brand-logo" onerror="this.style.display='none'">
+      <img src="${logoUrl}" alt="${htmlEscape(options.societe?.nom ?? "SLTT")}" class="brand-logo" onerror="this.style.display='none'">
       <div>
-        <div class="brand-name">Traoré de Logistique<br>Transit-Transport</div>
-        <div class="brand-sub">
-          Niaréla - Rue 516 porte C/63<br>
-          Tél. : +223 76 96 47 06 / 92 92 46 48<br>
-          RCCM : Ma.Bko.2025 B.5897 &nbsp;·&nbsp; NIF : 084151062H
-        </div>
+        <div class="brand-name">${htmlEscape(options.societe?.nom ?? "SLTT")}</div>
+        <div class="brand-sub">${brandSubHTML}</div>
       </div>
     </div>
     <div class="doc-meta">
@@ -1659,10 +1685,10 @@ table { width: 100%; border-collapse: collapse; }
 
   <div class="footer">
     <div class="footer-note">
-      Document confidentiel · usage interne SLTT<br>
+      Document confidentiel · usage interne ${htmlEscape(options.societe?.nom ?? "SLTT")}<br>
       Inventaire généré automatiquement · © ${now.getFullYear()}
     </div>
-    <div class="footer-brand">SLTT · Bamako</div>
+    <div class="footer-brand">${htmlEscape(options.societe?.nom ?? "SLTT")}</div>
   </div>
 </div>
 </body>
@@ -1688,8 +1714,10 @@ export interface ClientPrintRow {
 export function printClients(
   rows: ClientPrintRow[],
   filterLabel?: string,
+  societe?: SocieteBrand,
 ): void {
-  const logoUrl      = getLogoUrl();
+  const logoUrl      = societe?.logoUrl ? resolveLogoUrl(societe.logoUrl) : getLogoUrl();
+  const brandSubHTML = buildBrandSubHTML(societe);
   const today        = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const totalCreance = rows.reduce((s, r) => s + r.totalDu, 0);
   const nbEntreprises  = rows.filter((r) => r.type === "Entreprise").length;
@@ -1786,10 +1814,10 @@ table { width: 100%; border-collapse: collapse; }
   <!-- Header -->
   <div class="doc-header">
     <div class="brand">
-      <img src="${logoUrl}" alt="SLTT" class="brand-logo" onerror="this.style.display='none'">
+      <img src="${logoUrl}" alt="${htmlEscape(societe?.nom ?? "SLTT")}" class="brand-logo" onerror="this.style.display='none'">
       <div>
-        <div class="brand-name">SLTT</div>
-        <div class="brand-sub">Société Traoré de Logistique, Transit et Transport<br>Bamako, Mali &nbsp;·&nbsp; contact@sltt.ml</div>
+        <div class="brand-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="brand-sub">${brandSubHTML}</div>
       </div>
     </div>
     <div class="doc-meta">
@@ -1863,6 +1891,154 @@ table { width: 100%; border-collapse: collapse; }
     <div class="footer-brand">SLTT · sltt.ml</div>
   </div>
 
+</div>
+</body>
+</html>`);
+  win.document.close();
+  triggerPrint(win);
+}
+
+/* ------------------------------------------------------------------ */
+/* printClasseur — classeur client (journal unifié + solde cumulé)      */
+/* ------------------------------------------------------------------ */
+
+export interface ClasseurPrintRow {
+  date: string;
+  societeNom: string;
+  type: string;
+  reference: string;
+  libelle: string;
+  debit: number;
+  credit: number;
+  soldeCumule: number;
+}
+
+export function printClasseur(
+  clientNom: string,
+  rows: ClasseurPrintRow[],
+  totals: { totalDebit: number; totalCredit: number; soldeNet: number },
+  filterLabel?: string,
+  societe?: SocieteBrand,
+): void {
+  const logoUrl = societe?.logoUrl ? resolveLogoUrl(societe.logoUrl) : getLogoUrl();
+  const brandSubHTML = buildBrandSubHTML(societe);
+  const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+
+  const rowsHTML = rows.map((r, i) => `
+    <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#475569;white-space:nowrap">${fmtDate(r.date)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:11.5px;color:#475569">${htmlEscape(r.societeNom)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:11.5px;color:#475569">${htmlEscape(r.type)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#0f172a;white-space:nowrap">${htmlEscape(r.reference)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#475569">${htmlEscape(r.libelle)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#0f172a">${r.debit > 0 ? fmtFCFA(r.debit) : "—"}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#15803d">${r.credit > 0 ? fmtFCFA(r.credit) : "—"}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:${r.soldeCumule > 0 ? "#b45309" : "#15803d"}">${fmtFCFA(r.soldeCumule)}</td>
+    </tr>`).join("");
+
+  const win = window.open("", "_blank", "width=1100,height=820");
+  if (!win) { warnPopupBlocked(); return; }
+  win.opener = null;
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Classeur — ${htmlEscape(clientNom)}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
+.wrap { max-width: 1040px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid #1e40af; }
+.brand { display: flex; align-items: flex-start; gap: 14px; }
+.brand-logo { width: 64px; height: 64px; object-fit: contain; }
+.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.doc-meta { text-align: right; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
+.doc-title { font-size: 26px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
+.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
+.doc-filter { display: inline-block; margin-top: 7px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
+.kpi-band { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+.kpi { flex: 1; padding: 16px 20px; border-right: 1px solid #e2e8f0; }
+.kpi:last-child { border-right: none; }
+.kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 5px; }
+.kpi-val { font-size: 20px; font-weight: 800; color: #1e40af; line-height: 1; }
+.tbl-outer { padding: 24px 44px 32px; }
+.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+.tbl-head { background: #1e3a8a; }
+.tbl-head th { color: #fff; padding: 10px 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.tbl-head th:nth-child(6), .tbl-head th:nth-child(7), .tbl-head th:nth-child(8) { text-align: right; }
+.tbl-foot td { background: #1e3a8a; color: #fff; padding: 12px; font-weight: 700; font-size: 12px; }
+.tbl-foot .amt { text-align: right; font-variant-numeric: tabular-nums; color: #fde68a; font-size: 13px; }
+.footer { padding: 14px 44px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+.footer-note { font-size: 10px; color: #94a3b8; line-height: 1.65; }
+.footer-brand { font-size: 11px; font-weight: 800; color: #1e40af; }
+.no-print { text-align: center; padding: 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+@media print { .no-print { display: none !important; } body { background: white; } .wrap { box-shadow: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">⬇ &nbsp;Imprimer / Enregistrer en PDF</button>
+  </div>
+  <div class="doc-header">
+    <div class="brand">
+      <img src="${logoUrl}" alt="${htmlEscape(societe?.nom ?? "SLTT")}" class="brand-logo" onerror="this.style.display='none'">
+      <div>
+        <div class="brand-name">${htmlEscape(societe?.nom ?? "SLTT")}</div>
+        <div class="brand-sub">${brandSubHTML}</div>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-type">Classeur client</div>
+      <div class="doc-title">${htmlEscape(clientNom)}</div>
+      <div class="doc-date">Édité le ${today}</div>
+      ${filterLabel ? `<div class="doc-filter">${htmlEscape(filterLabel)}</div>` : ""}
+    </div>
+  </div>
+  <div class="kpi-band">
+    <div class="kpi"><div class="kpi-lbl">Total débit</div><div class="kpi-val">${fmtFCFA(totals.totalDebit)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total crédit</div><div class="kpi-val" style="color:#15803d">${fmtFCFA(totals.totalCredit)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Solde net</div><div class="kpi-val" style="color:${totals.soldeNet > 0 ? "#b45309" : "#15803d"}">${fmtFCFA(totals.soldeNet)}</div></div>
+  </div>
+  <div class="tbl-outer">
+    <div class="tbl-wrap">
+      <table>
+        <thead class="tbl-head">
+          <tr>
+            <th style="text-align:left">Date</th>
+            <th style="text-align:left">Société</th>
+            <th style="text-align:left">Type</th>
+            <th style="text-align:left">Référence</th>
+            <th style="text-align:left">Libellé</th>
+            <th>Débit</th>
+            <th>Crédit</th>
+            <th>Solde</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML || `<tr><td colspan="8" style="padding:16px;text-align:center;color:#94a3b8">Aucun mouvement</td></tr>`}</tbody>
+        <tfoot class="tbl-foot">
+          <tr>
+            <td colspan="5">Total &mdash; ${rows.length} mouvement${rows.length !== 1 ? "s" : ""}</td>
+            <td class="amt">${fmtFCFA(totals.totalDebit)}</td>
+            <td class="amt">${fmtFCFA(totals.totalCredit)}</td>
+            <td class="amt">${fmtFCFA(totals.soldeNet)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-note">
+      Document confidentiel · usage interne uniquement<br>
+      Généré par la plateforme SLTT · © ${new Date().getFullYear()}
+    </div>
+    <div class="footer-brand">SLTT · sltt.ml</div>
+  </div>
 </div>
 </body>
 </html>`);

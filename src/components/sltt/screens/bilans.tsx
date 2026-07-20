@@ -66,8 +66,14 @@ const periodes: { value: Periode; label: string }[] = [
   { value: "annuel", label: "Annuel" },
 ];
 
+/** "AAAA-MM" du mois courant — mois par défaut du filtre Bilans (jamais figé dans le passé). */
+function currentYearMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function getPeriodeLabel(periode: Periode, mois: string): string {
-  const [year, month] = (mois || "2026-01").split("-").map(Number);
+  const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
   switch (periode) {
     case "mensuel":
       return new Date(year, month - 1).toLocaleString("fr-FR", {
@@ -203,7 +209,7 @@ function SortableHead({
 export function BilansScreen() {
   const { toast } = useToast();
   const [periode, setPeriode] = useState<Periode>("mensuel");
-  const [mois, setMois] = useState("2026-01");
+  const [mois, setMois] = useState(currentYearMonth);
   const [sortKey, setSortKey] = useState<SortKey>("reste");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -225,7 +231,7 @@ export function BilansScreen() {
   const periodeLabel = getPeriodeLabel(periode, mois);
 
   const filteredEcritures = useMemo(() => {
-    const [year, month] = (mois || "2026-01").split("-").map(Number);
+    const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
     return ecritures.filter((e) => {
       const d = parseLocalDate(e.date);
       const eYear = d.getFullYear();
@@ -267,7 +273,7 @@ export function BilansScreen() {
   // F5 — Bénéfice sur le mois de référence sélectionné (indépendant de la
   // granularité "période" choisie, qui ne s'applique qu'au récap client).
   const benefice = useMemo(() => {
-    const [year, month] = (mois || "2026-01").split("-").map(Number);
+    const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
     const m = month - 1;
     const computeFor = (societeId: string | null) => {
       const recettes =
@@ -285,7 +291,7 @@ export function BilansScreen() {
   }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, societes, mois]);
 
   const chartData = useMemo(() => {
-    const [year] = (mois || "2026-01").split("-").map(Number);
+    const [year] = (mois || currentYearMonth()).split("-").map(Number);
     return Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
       const monthEcritures = ecritures.filter((e) => {
@@ -534,7 +540,7 @@ export function BilansScreen() {
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Investi vs encaissé — mois par mois —{" "}
-            {(mois || "2026-01").split("-")[0]}
+            {(mois || currentYearMonth()).split("-")[0]}
           </p>
         </div>
         <div className="h-80 w-full">

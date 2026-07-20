@@ -248,6 +248,8 @@ export function BonsScreen() {
       },
       lignes: bon.lignes,
       montantTotal: bon.montantTotal,
+      signataireDg: societe?.signataireDg,
+      signatairePdg: societe?.signatairePdg,
     });
   }
 

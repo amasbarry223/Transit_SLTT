@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Phone,
   Mail,
@@ -22,28 +22,37 @@ import {
   Check,
   Receipt,
   Warehouse,
+  BookOpen,
+  Printer,
+  Download,
+  History,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore, type ClientInput } from "@/lib/store";
 import type { Client } from "@/lib/domain-types";
-import {
-  resteAPayer,
-  type Ecriture,
-  type EcritureStatut,
-  type BonMotif,
-} from "@/lib/domain-types";
+import { resteAPayer, type BonMotif } from "@/lib/domain-types";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import {
+  buildClasseurJournal,
+  fetchClasseurMouvements,
+  filterClasseurJournal,
+  computeClasseurTotals,
+  resolveSlttBrand,
+  type ClasseurEntry,
+  type ClasseurFilters,
+} from "@/lib/classeur";
+import { exportToCSV, printClasseur } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
-import { InfoCallout } from "@/components/sltt/info-callout";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import {
   ToneBadge,
   DossierStatutBadge,
-  EcritureStatutBadge,
   FactureStatutBadge,
+  type Tone,
 } from "@/components/sltt/status-badge";
+import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,7 +88,11 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 6;
 
-type FicheTab = "dossiers" | "paiements" | "factures" | "bons" | "stock";
+// Paiements a été retiré comme onglet séparé — le Classeur (filtre Type =
+// Paiement) montre la même chose avec le solde cumulé en plus. Un onglet
+// qui n'ajoute aucune information par rapport à un autre est de la
+// confusion, pas du choix.
+type FicheTab = "classeur" | "dossiers" | "factures" | "stock" | "bons";
 
 const tabs: {
   key: FicheTab;
@@ -87,8 +100,8 @@ const tabs: {
   shortLabel: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
+  { key: "classeur", label: "Classeur", shortLabel: "Classeur", icon: BookOpen },
   { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban },
-  { key: "paiements", label: "Paiements", shortLabel: "Paiements", icon: Wallet },
   { key: "factures", label: "Factures", shortLabel: "Factures", icon: Receipt },
   { key: "stock", label: "Stock", shortLabel: "Stock", icon: Warehouse },
   { key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: Truck },
@@ -100,10 +113,6 @@ function avatarGradient(type: Client["type"]): string {
     : "from-slate-600 to-slate-800";
 }
 
-function deriveEcritureStatut(e: Ecriture): EcritureStatut {
-  return e.montantPaye >= e.montantInvesti ? "Soldé" : "En attente";
-}
-
 const bonMotifTone: Record<BonMotif, "blue" | "emerald" | "indigo"> = {
   Vente: "blue",
   Livraison: "emerald",
@@ -112,6 +121,22 @@ const bonMotifTone: Record<BonMotif, "blue" | "emerald" | "indigo"> = {
 
 function bonStatutTone(statut: "Validé" | "Brouillon"): "emerald" | "amber" {
   return statut === "Validé" ? "emerald" : "amber";
+}
+
+const CLASSEUR_STATUT_TONE: Record<string, Tone> = {
+  "En cours": "blue",
+  "Dédouané": "indigo",
+  "Livré": "blue",
+  "Soldé": "emerald",
+  "Soldée": "emerald",
+  "En attente": "amber",
+  "Brouillon": "slate",
+  "Envoyée": "blue",
+  "Partielle": "amber",
+  "Annulée": "red",
+};
+function classeurStatutTone(statut: string): Tone {
+  return CLASSEUR_STATUT_TONE[statut] ?? "slate";
 }
 
 
@@ -230,12 +255,17 @@ export function ClientFicheScreen() {
   const allFactures = useStore((s) => s.factures);
   const allStock = useStore((s) => s.stock);
   const allMouvements = useStore((s) => s.mouvements);
+  const societes = useStore((s) => s.societes);
+  const auditLogs = useStore((s) => s.auditLogs);
   const updateClient = useStore((s) => s.updateClient);
 
-  const [activeTab, setActiveTab] = useState<FicheTab>("dossiers");
+  const [activeTab, setActiveTab] = useState<FicheTab>("classeur");
   const [dossierPage, setDossierPage] = useState(1);
-  const [paiementPage, setPaiementPage] = useState(1);
   const [bonPage, setBonPage] = useState(1);
+  const [classeurFilters, setClasseurFilters] = useState<ClasseurFilters>({
+    societeId: "all",
+    type: "all",
+  });
 
   // Relance dialog state
   const [relanceOpen, setRelanceOpen] = useState(false);
@@ -256,11 +286,6 @@ export function ClientFicheScreen() {
       selectedId ? allDossiers.filter((d) => d.clientId === selectedId) : [],
     [allDossiers, selectedId],
   );
-  const ecritures = useMemo(
-    () =>
-      selectedId ? allEcritures.filter((e) => e.clientId === selectedId) : [],
-    [allEcritures, selectedId],
-  );
   const bons = useMemo(
     () => (selectedId ? allBons.filter((b) => b.clientId === selectedId) : []),
     [allBons, selectedId],
@@ -280,38 +305,90 @@ export function ClientFicheScreen() {
     [allMouvements, stockIds],
   );
 
-  const payeDossiers = useMemo(
-    () => dossiers.reduce((s, d) => s + d.montantPaye, 0),
-    [dossiers],
+  // Calcul client-side instantané (pas d'attente réseau) — reste la
+  // source affichée tant que la vue SQL n'a pas répondu, et sert de
+  // repli si `classeur_mouvements` n'existe pas encore sur cette
+  // instance Supabase (migration 20260727 non appliquée).
+  const clientSideJournal = useMemo(
+    () =>
+      selectedId
+        ? buildClasseurJournal(selectedId, allDossiers, allEcritures, allFactures, societes)
+        : [],
+    [selectedId, allDossiers, allEcritures, allFactures, societes],
   );
-  const payeFactures = useMemo(
-    () => factures.reduce((s, f) => s + f.montantPaye, 0),
-    [factures],
+  // { clientId, rows } plutôt que rows seul : permet de reconnaître une
+  // réponse devenue obsolète après un changement de client sans avoir à
+  // la réinitialiser nous-mêmes (pas de setState synchrone dans l'effet).
+  const [sqlJournal, setSqlJournal] = useState<{ clientId: string; rows: ClasseurEntry[] } | null>(null);
+  useEffect(() => {
+    if (!selectedId) return;
+    let cancelled = false;
+    fetchClasseurMouvements(selectedId).then((rows) => {
+      if (!cancelled && rows) setSqlJournal({ clientId: selectedId, rows });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
+  // Section 4 du retour client : la vue SQL fait foi une fois chargée
+  // (solde cumulé calculé côté base) ; le calcul client-side comble
+  // l'instant avant sa réponse (ou si la vue échoue), sans écran vide.
+  const classeurJournal =
+    sqlJournal?.clientId === selectedId ? sqlJournal.rows : clientSideJournal;
+  const classeurFiltered = useMemo(
+    () => filterClasseurJournal(classeurJournal, classeurFilters),
+    [classeurJournal, classeurFilters],
   );
+  const classeurTotals = useMemo(
+    () => computeClasseurTotals(classeurFiltered, classeurJournal),
+    [classeurFiltered, classeurJournal],
+  );
+  const classeurSocieteOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const e of classeurJournal) seen.set(e.societeId, e.societeNom);
+    return Array.from(seen.entries()).map(([id, nom]) => ({ id, nom }));
+  }, [classeurJournal]);
+  // Suivi des mouvements (3.3) : réutilise le journal d'audit existant plutôt
+  // qu'un nouveau mécanisme. Filtre structuré sur clientId (fiable) — avec
+  // repli sur la correspondance texte pour les entrées antérieures à la
+  // migration client_id, qui n'ont pas cette colonne renseignée.
+  const clientAuditHistory = useMemo(() => {
+    if (!client) return [];
+    const needle = client.nom.toLowerCase();
+    return auditLogs
+      .filter(
+        (a) =>
+          ["Dossiers", "Comptabilité", "Factures", "Clients"].includes(a.module) &&
+          (a.clientId ? a.clientId === client.id : a.detail.toLowerCase().includes(needle)),
+      )
+      .slice(0, 25);
+  }, [auditLogs, client]);
 
-  // LOGIC-03 (audit) : Écritures (via les dossiers) et Factures sont deux
-  // canaux de paiement indépendants — on les additionne pour que "Total payé"
-  // reflète tout ce que le client a réellement réglé, pas seulement la moitié.
+  // Source unique de vérité : ces trois totaux dérivent du même journal que
+  // l'onglet Classeur (dossiers + écritures autonomes + factures), donc le
+  // bandeau en haut de page ne peut plus raconter un chiffre différent de
+  // ce que montre le Classeur juste en dessous.
   const { totalInvesti, totalPaye, totalDu } = useMemo(() => {
     let investi = 0;
     let paye = 0;
     let du = 0;
-    for (const d of dossiers) {
-      investi += d.montantInvesti;
-      paye += d.montantPaye;
-      du += Math.max(0, d.montantInvesti - d.montantPaye);
-    }
-    for (const f of factures) {
-      paye += f.montantPaye;
+    for (const e of classeurJournal) {
+      investi += e.debit;
+      paye += e.credit;
+      du += Math.max(0, e.debit - e.credit);
     }
     return { totalInvesti: investi, totalPaye: paye, totalDu: du };
-  }, [dossiers, factures]);
+  }, [classeurJournal]);
+  const pendingCount = useMemo(
+    () => classeurJournal.filter((e) => e.debit - e.credit > 0).length,
+    [classeurJournal],
+  );
 
   function openRelanceDialog() {
     if (!client) return;
-    const unpaid = dossiers.filter((d) => d.montantInvesti - d.montantPaye > 0);
+    const unpaid = dossiers.filter((d) => resteAPayer(d) > 0);
     const lignes = unpaid
-      .map((d) => `  • ${d.reference} — ${formatFCFA(d.montantInvesti - d.montantPaye, false)} FCFA`)
+      .map((d) => `  • ${d.reference} — ${formatFCFA(resteAPayer(d), false)} FCFA`)
       .join("\n");
     const total = formatFCFA(totalDu, false);
     const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
@@ -334,6 +411,60 @@ export function ClientFicheScreen() {
     if (!phone) return;
     const encoded = encodeURIComponent(relanceMsg);
     window.open(`https://wa.me/${phone}?text=${encoded}`, "_blank");
+  }
+
+  function handleExportClasseurCsv() {
+    if (!client) return;
+    exportToCSV(
+      `classeur-${client.nom.replace(/\s+/g, "-").toLowerCase()}`,
+      [
+        { header: "Date", accessor: (r: (typeof classeurFiltered)[number]) => formatDateShort(r.date) },
+        { header: "Société", accessor: (r: (typeof classeurFiltered)[number]) => r.societeNom },
+        { header: "Type", accessor: (r: (typeof classeurFiltered)[number]) => r.type },
+        { header: "Référence", accessor: (r: (typeof classeurFiltered)[number]) => r.reference },
+        { header: "Libellé", accessor: (r: (typeof classeurFiltered)[number]) => r.libelle },
+        { header: "Débit", accessor: (r: (typeof classeurFiltered)[number]) => r.debit },
+        { header: "Crédit", accessor: (r: (typeof classeurFiltered)[number]) => r.credit },
+        { header: "Solde cumulé", accessor: (r: (typeof classeurFiltered)[number]) => r.soldeCumule },
+        { header: "Statut", accessor: (r: (typeof classeurFiltered)[number]) => r.statut },
+      ],
+      classeurFiltered,
+      { module: "Clients" },
+    );
+  }
+
+  function handlePrintClasseur() {
+    if (!client) return;
+    const societeLabel =
+      classeurFilters.societeId === "all"
+        ? undefined
+        : classeurSocieteOptions.find((s) => s.id === classeurFilters.societeId)?.nom;
+    printClasseur(
+      client.nom,
+      classeurFiltered.map((r) => ({
+        date: r.date,
+        societeNom: r.societeNom,
+        type: r.type,
+        reference: r.reference,
+        libelle: r.libelle,
+        debit: r.debit,
+        credit: r.credit,
+        soldeCumule: r.soldeCumule,
+      })),
+      classeurTotals,
+      societeLabel,
+      resolveSlttBrand(societes),
+    );
+  }
+
+  // Chaque ligne du Classeur pointe vers son dossier/sa facture d'origine —
+  // un clic suffit pour voir le détail, pas besoin de le chercher dans un
+  // autre onglet. Les lignes "Paiement" (écriture autonome) n'ont pas de
+  // page dédiée : elles restent non cliquables.
+  function classeurRowTarget(entry: (typeof classeurFiltered)[number]): (() => void) | undefined {
+    if (entry.type === "Dossier") return () => openDossierDetail(entry.sourceId);
+    if (entry.type === "Facture") return () => go("facture-detail", { id: entry.sourceId });
+    return undefined;
   }
 
   function openEditDialog() {
@@ -367,13 +498,6 @@ export function ClientFicheScreen() {
   const pagedDossiers = dossiers.slice(
     (dossierSafePage - 1) * PAGE_SIZE,
     dossierSafePage * PAGE_SIZE,
-  );
-
-  const paiementPages = Math.max(1, Math.ceil(ecritures.length / PAGE_SIZE));
-  const paiementSafePage = Math.min(paiementPage, paiementPages);
-  const pagedEcritures = ecritures.slice(
-    (paiementSafePage - 1) * PAGE_SIZE,
-    paiementSafePage * PAGE_SIZE,
   );
 
   const bonPages = Math.max(1, Math.ceil(bons.length / PAGE_SIZE));
@@ -433,20 +557,12 @@ export function ClientFicheScreen() {
               Solde impayé : {formatFCFA(totalDu)}
             </p>
             <p className="mt-0.5 text-xs text-amber-800/80">
-              {dossiers.filter((d) => Math.max(0, d.montantInvesti - d.montantPaye) > 0).length} dossier
-              {dossiers.filter((d) => Math.max(0, d.montantInvesti - d.montantPaye) > 0).length !== 1 ? "s" : ""}{" "}
-              en attente de règlement.
+              {pendingCount} mouvement{pendingCount !== 1 ? "s" : ""} en attente de règlement —
+              voir le détail dans le Classeur.
             </p>
           </div>
         </div>
       )}
-
-      <InfoCallout>
-        <strong>Synthèse financière :</strong> dossiers {formatFCFA(payeDossiers)} payé
-        {totalDu > 0 && <> · reste dossiers {formatFCFA(totalDu)}</>}
-        {payeFactures > 0 && <> · factures {formatFCFA(payeFactures)} encaissé</>}
-        . Les canaux dossiers et factures sont indépendants.
-      </InfoCallout>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
@@ -494,10 +610,10 @@ export function ClientFicheScreen() {
             {tabs.map((t) => {
               const Icon = t.icon;
               const count =
-                t.key === "dossiers"
-                  ? dossiers.length
-                  : t.key === "paiements"
-                    ? ecritures.length
+                t.key === "classeur"
+                  ? classeurJournal.length
+                  : t.key === "dossiers"
+                    ? dossiers.length
                     : t.key === "factures"
                       ? factures.length
                       : t.key === "stock"
@@ -530,6 +646,295 @@ export function ClientFicheScreen() {
             })}
           </TabsList>
         </div>
+
+        {/* Classeur — journal chronologique unifié (retour client V1, section 3) */}
+        <TabsContent value="classeur" className="mt-6 space-y-4 focus-visible:outline-none">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Select
+              value={classeurFilters.societeId === "" ? "none" : classeurFilters.societeId}
+              onValueChange={(v) =>
+                setClasseurFilters((f) => ({ ...f, societeId: v === "none" ? "" : v }))
+              }
+            >
+              <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Filtrer par société">
+                <SelectValue placeholder="Société" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les sociétés</SelectItem>
+                {classeurSocieteOptions.map((s) => (
+                  <SelectItem key={s.id || "none"} value={s.id || "none"}>
+                    {s.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={classeurFilters.type}
+              onValueChange={(v) =>
+                setClasseurFilters((f) => ({ ...f, type: v as ClasseurFilters["type"] }))
+              }
+            >
+              <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Filtrer par type">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les types</SelectItem>
+                <SelectItem value="Dossier">Dossier</SelectItem>
+                <SelectItem value="Paiement">Paiement</SelectItem>
+                <SelectItem value="Facture">Facture</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                className="h-10 w-[150px]"
+                value={classeurFilters.dateFrom ?? ""}
+                onChange={(e) =>
+                  setClasseurFilters((f) => ({ ...f, dateFrom: e.target.value || undefined }))
+                }
+                aria-label="Date de début"
+              />
+              <span className="text-sm text-slate-400">→</span>
+              <Input
+                type="date"
+                className="h-10 w-[150px]"
+                value={classeurFilters.dateTo ?? ""}
+                onChange={(e) =>
+                  setClasseurFilters((f) => ({ ...f, dateTo: e.target.value || undefined }))
+                }
+                aria-label="Date de fin"
+              />
+            </div>
+            <div className="flex gap-2 sm:ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10"
+                onClick={handleExportClasseurCsv}
+                disabled={classeurFiltered.length === 0}
+              >
+                <Download className="size-4" />
+                Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10"
+                onClick={handlePrintClasseur}
+                disabled={classeurFiltered.length === 0}
+              >
+                <Printer className="size-4" />
+                Imprimer
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <KpiCard
+              label="Total débit"
+              value={formatFCFA(classeurTotals.totalDebit)}
+              icon={TrendingUp}
+              tone="indigo"
+              sublabel="engagé (sélection filtrée)"
+            />
+            <KpiCard
+              label="Total crédit"
+              value={formatFCFA(classeurTotals.totalCredit)}
+              icon={Wallet}
+              tone="emerald"
+              sublabel="payé (sélection filtrée)"
+            />
+            <KpiCard
+              label="Solde net"
+              value={formatFCFA(classeurTotals.soldeNet)}
+              icon={Clock}
+              tone={classeurTotals.soldeNet > 0 ? "amber" : "emerald"}
+              sublabel="reste dû (sélection filtrée)"
+            />
+          </div>
+
+          {classeurTotals.parSociete.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Solde global par société :
+              </span>
+              {classeurTotals.parSociete.map((p) => (
+                <ToneBadge key={p.societeNom} tone={p.soldeNet > 0 ? "amber" : "emerald"}>
+                  {p.societeNom} · {formatFCFA(p.soldeNet)}
+                </ToneBadge>
+              ))}
+            </div>
+          )}
+
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+            {classeurFiltered.length === 0 ? (
+              <EmptyState label="Aucun mouvement pour ce client sur cette sélection." />
+            ) : (
+              <>
+                <div className="space-y-3 p-4 md:hidden">
+                  {classeurFiltered.map((entry) => {
+                    const onOpen = classeurRowTarget(entry);
+                    return (
+                    <Card
+                      key={entry.id}
+                      className={cn(
+                        "border-border/80 p-4 shadow-sm",
+                        onOpen && "cursor-pointer active:bg-slate-50 dark:active:bg-slate-800/60",
+                      )}
+                      onClick={onOpen}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
+                            {entry.reference}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            {entry.type} · {entry.societeNom}
+                          </p>
+                        </div>
+                        <ToneBadge tone={classeurStatutTone(entry.statut)}>{entry.statut}</ToneBadge>
+                      </div>
+                      <dl className="mt-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Date</dt>
+                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(entry.date)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Libellé</dt>
+                          <dd className="truncate text-right text-slate-700 dark:text-slate-300">{entry.libelle}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Débit</dt>
+                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                            {entry.debit > 0 ? formatFCFA(entry.debit) : "—"}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Crédit</dt>
+                          <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
+                            {entry.credit > 0 ? formatFCFA(entry.credit) : "—"}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500">Solde cumulé</dt>
+                          <dd
+                            className={cn(
+                              "tabular-nums font-semibold",
+                              entry.soldeCumule > 0
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-emerald-600 dark:text-emerald-400",
+                            )}
+                          >
+                            {formatFCFA(entry.soldeCumule)}
+                          </dd>
+                        </div>
+                      </dl>
+                    </Card>
+                    );
+                  })}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Date</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">Société</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">Type</TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Référence</TableHead>
+                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">Libellé</TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Débit</TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Crédit</TableHead>
+                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Solde</TableHead>
+                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {classeurFiltered.map((entry) => {
+                        const onOpen = classeurRowTarget(entry);
+                        return (
+                        <TableRow
+                          key={entry.id}
+                          className={cn(
+                            "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+                            onOpen && "cursor-pointer",
+                          )}
+                          onClick={onOpen}
+                        >
+                          <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+                            {formatDateShort(entry.date)}
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 sm:table-cell">
+                            <SocieteBadge societeNom={entry.societeNom} size="sm" />
+                          </TableCell>
+                          <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300 md:table-cell">
+                            {entry.type}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
+                            {entry.reference}
+                          </TableCell>
+                          <TableCell className="hidden max-w-[220px] px-4 py-3.5 lg:table-cell">
+                            <span className="line-clamp-1 text-sm text-slate-600 dark:text-slate-300">{entry.libelle}</span>
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                            {entry.debit > 0 ? formatFCFA(entry.debit) : "—"}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
+                            {entry.credit > 0 ? formatFCFA(entry.credit) : "—"}
+                          </TableCell>
+                          <TableCell
+                            className={cn(
+                              "px-4 py-3.5 text-right tabular-nums font-semibold",
+                              entry.soldeCumule > 0
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-emerald-600 dark:text-emerald-400",
+                            )}
+                          >
+                            {formatFCFA(entry.soldeCumule)}
+                          </TableCell>
+                          <TableCell className="px-4 py-3.5">
+                            <ToneBadge tone={classeurStatutTone(entry.statut)}>{entry.statut}</ToneBadge>
+                          </TableCell>
+                        </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </Card>
+
+          <Card className="border-border/80 p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <History className="size-4 text-slate-400 dark:text-slate-500" />
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Suivi des mouvements</p>
+            </div>
+            {clientAuditHistory.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Aucun historique enregistré pour ce client.
+              </p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {clientAuditHistory.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex items-start justify-between gap-3 border-b border-border/60 pb-2 last:border-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-slate-700 dark:text-slate-300">{a.detail}</p>
+                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                        {a.module} · {a.action} · {a.user}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs tabular-nums text-slate-400 dark:text-slate-500">
+                      {formatDateShort(a.date)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </TabsContent>
 
         {/* Dossiers */}
         <TabsContent value="dossiers" className="mt-6 focus-visible:outline-none">
@@ -649,138 +1054,6 @@ export function ClientFicheScreen() {
                   page={dossierSafePage}
                   totalPages={dossierPages}
                   onPageChange={setDossierPage}
-                />
-              </>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* Paiements */}
-        <TabsContent value="paiements" className="mt-6 focus-visible:outline-none">
-          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
-            {ecritures.length === 0 ? (
-              <EmptyState label="Aucune écriture de paiement pour ce client." />
-            ) : (
-              <>
-                <div className="space-y-3 p-4 md:hidden">
-                  {pagedEcritures.map((e) => {
-                    const reste = resteAPayer(e);
-                    return (
-                      <Card
-                        key={e.id}
-                        className={cn(
-                          "border-border/80 p-4 shadow-sm",
-                          reste > 0 && "bg-amber-50/20 dark:bg-amber-950/20",
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="tabular-nums text-sm text-slate-600 dark:text-slate-300">{formatDateShort(e.date)}</p>
-                          <EcritureStatutBadge statut={deriveEcritureStatut(e)} />
-                        </div>
-                        <dl className="mt-3 space-y-1.5 text-sm">
-                          <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Investi</dt>
-                            <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(e.montantInvesti)}</dd>
-                          </div>
-                          <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Payé</dt>
-                            <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(e.montantPaye)}</dd>
-                          </div>
-                          <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Reste dû</dt>
-                            <dd className="tabular-nums">
-                              {reste > 0 ? (
-                                <span className="font-semibold text-amber-600 dark:text-amber-400">{formatFCFA(reste)}</span>
-                              ) : (
-                                <span className="text-emerald-600 dark:text-emerald-400">Soldé</span>
-                              )}
-                            </dd>
-                          </div>
-                          <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Mode</dt>
-                            <dd className="text-slate-700 dark:text-slate-300">{e.modePaiement}</dd>
-                          </div>
-                        </dl>
-                      </Card>
-                    );
-                  })}
-                </div>
-                <div className="hidden overflow-x-auto md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Date
-                        </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
-                          Investi
-                        </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
-                          Payé
-                        </TableHead>
-                        <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Reste dû
-                        </TableHead>
-                        <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
-                          Mode
-                        </TableHead>
-                        <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Statut
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pagedEcritures.map((e) => {
-                        const reste = resteAPayer(e);
-                        return (
-                          <TableRow
-                            key={e.id}
-                            className={cn(
-                              "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
-                              reste > 0 && "bg-amber-50/20 dark:bg-amber-950/20",
-                            )}
-                          >
-                            <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
-                              {formatDateShort(e.date)}
-                            </TableCell>
-                            <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
-                              {formatFCFA(e.montantInvesti)}
-                            </TableCell>
-                            <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 md:table-cell">
-                              {formatFCFA(e.montantPaye)}
-                            </TableCell>
-                            <TableCell className="px-4 py-3.5 text-right tabular-nums">
-                              {reste > 0 ? (
-                                <span className="font-semibold text-amber-600 dark:text-amber-400">
-                                  {formatFCFA(reste)}
-                                </span>
-                              ) : (
-                                <span className="text-sm text-emerald-600 dark:text-emerald-400">Soldé</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300 lg:table-cell">
-                              {e.modePaiement}
-                            </TableCell>
-                            <TableCell className="px-4 py-3.5">
-                              <EcritureStatutBadge statut={deriveEcritureStatut(e)} />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-                <TablePagination
-                  startIdx={
-                    ecritures.length === 0
-                      ? 0
-                      : (paiementSafePage - 1) * PAGE_SIZE + 1
-                  }
-                  endIdx={Math.min(paiementSafePage * PAGE_SIZE, ecritures.length)}
-                  totalItems={ecritures.length}
-                  page={paiementSafePage}
-                  totalPages={paiementPages}
-                  onPageChange={setPaiementPage}
                 />
               </>
             )}

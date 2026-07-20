@@ -27,6 +27,7 @@ import {
 } from "@/lib/audit";
 import {
   PRESTATION_OPTIONNELLE_LABEL,
+  resteAPayer,
   type Client,
   type Dossier,
   type DossierStatut,
@@ -54,6 +55,7 @@ import {
   type DossierFournisseur,
   type DossierFournisseurInput,
   type Societe,
+  type SocieteInput,
   type Contrat,
   type ContratInput,
   type ContratStatut,
@@ -404,6 +406,8 @@ function mapSocieteFromDb(x: any): Societe {
     rccm: x.rccm || undefined,
     nif: x.nif || undefined,
     afficherNomAvecLogo: x.afficher_nom_avec_logo ?? true,
+    signataireDg: x.signataire_dg || undefined,
+    signatairePdg: x.signataire_pdg || undefined,
   };
 }
 
@@ -733,7 +737,7 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
   clearLoadError: () => void;
 
   // ---- Audit ----
-  addAuditLog: (module: AuditModule, action: AuditAction, detail: string) => Promise<void>;
+  addAuditLog: (module: AuditModule, action: AuditAction, detail: string, clientId?: string) => Promise<void>;
 
   // ---- Dossiers ----
   addDossier: (input: DossierInput) => Promise<Dossier>;
@@ -746,6 +750,9 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
   addClient: (input: ClientInput) => Promise<Client>;
   updateClient: (id: string, input: ClientInput) => Promise<void>;
   getClient: (id: string) => Client | undefined;
+
+  // ---- Sociétés (identité légale — pas de création/suppression depuis l'UI) ----
+  updateSociete: (id: string, input: SocieteInput) => Promise<void>;
 
   // ---- Comptabilité ----
   recordPayment: (
@@ -1061,7 +1068,7 @@ export const useStore = create<SLTTState>()(
       },
 
       // ---- Audit ----
-      addAuditLog: async (module, action, detail) => {
+      addAuditLog: async (module, action, detail, clientId) => {
         const seq = get().auditSeq;
         const userStr = getConnectedUserName();
         const newLog = await insertAuditLog({
@@ -1069,6 +1076,7 @@ export const useStore = create<SLTTState>()(
           action,
           detail,
           userName: userStr,
+          clientId,
         });
         if (!newLog) return;
         set((s) => ({
@@ -1123,7 +1131,7 @@ export const useStore = create<SLTTState>()(
             clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
           };
         });
-        await get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`);
+        await get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`, input.clientId);
         return newDossier;
 
       },
@@ -1168,7 +1176,7 @@ export const useStore = create<SLTTState>()(
         });
 
         if (existing) {
-          await get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`);
+          await get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`, existing.clientId);
         }
       },
 
@@ -1201,7 +1209,7 @@ export const useStore = create<SLTTState>()(
         if (dossier) {
           const orphanBons = get().bons.filter((b) => b.marchandise.includes(dossier.reference));
           const orphanNote = orphanBons.length > 0 ? ` — ${orphanBons.length} bon(s) potentiellement orphelin(s)` : "";
-          await get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé${orphanNote}`);
+          await get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé${orphanNote}`, dossier.clientId);
         }
       },
 
@@ -1316,6 +1324,7 @@ export const useStore = create<SLTTState>()(
           "Dossiers",
           "Validation",
           `Dossier ${dossier.reference} → ${newStatut}${montantRecu ? ` — ${montantRecu.toLocaleString("fr-FR")} FCFA reçus` : ""}`,
+          dossier.clientId,
         );
       },
 
@@ -1342,7 +1351,7 @@ export const useStore = create<SLTTState>()(
           clients: [newClient, ...s.clients],
           clientSeq: seq + 1,
         }));
-        await get().addAuditLog("Clients", "Création", `Client ${input.nom} créé`);
+        await get().addAuditLog("Clients", "Création", `Client ${input.nom} créé`, newClient.id);
         return newClient;
 
       },
@@ -1365,10 +1374,33 @@ export const useStore = create<SLTTState>()(
         set((s) => ({
           clients: s.clients.map((c) => (c.id === id ? { ...c, ...input } : c)),
         }));
-        await get().addAuditLog("Clients", "Modification", `Client ${input.nom} mis à jour`);
+        await get().addAuditLog("Clients", "Modification", `Client ${input.nom} mis à jour`, id);
       },
 
       getClient: (id) => get().clients.find((c) => c.id === id),
+
+      // ---- Sociétés ----
+      updateSociete: async (id, input) => {
+        const { error } = await supabase
+          .from("societes")
+          .update({
+            nom: input.nom,
+            logo_url: input.logoUrl || null,
+            adresse: input.adresse || null,
+            telephone: input.telephone || null,
+            rccm: input.rccm || null,
+            nif: input.nif || null,
+            signataire_dg: input.signataireDg || null,
+            signataire_pdg: input.signatairePdg || null,
+          })
+          .eq("id", id);
+        if (error) throw error;
+
+        set((s) => ({
+          societes: s.societes.map((soc) => (soc.id === id ? { ...soc, ...input } : soc)),
+        }));
+        await get().addAuditLog("Sociétés", "Modification", `Société ${input.nom} mise à jour`);
+      },
 
       // ---- Comptabilité ----
       recordPayment: async (ecritureId, montant, mode, date, note) => {
@@ -1438,7 +1470,8 @@ export const useStore = create<SLTTState>()(
         await get().addAuditLog(
           "Comptabilité",
           "Paiement",
-          `Paiement ${montant.toLocaleString("fr-FR")} FCFA — Écriture ${ecritureId}`
+          `Paiement ${montant.toLocaleString("fr-FR")} FCFA — Écriture ${ecritureId}`,
+          ecriture.clientId,
         );
       },
 
@@ -1502,7 +1535,7 @@ export const useStore = create<SLTTState>()(
           };
         });
 
-        await get().addAuditLog("Comptabilité", "Création", `Écriture créée pour ${e.clientNom}`);
+        await get().addAuditLog("Comptabilité", "Création", `Écriture créée pour ${e.clientNom}`, e.clientId);
         return newEcriture;
 
       },
@@ -2285,7 +2318,7 @@ export const useStore = create<SLTTState>()(
             clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
           };
         });
-        await get().addAuditLog("Factures", "Création", `Facture ${numero} créée`);
+        await get().addAuditLog("Factures", "Création", `Facture ${numero} créée`, newFacture.clientId);
         return newFacture;
 
       },
@@ -2372,7 +2405,7 @@ export const useStore = create<SLTTState>()(
         });
 
         if (fact) {
-          await get().addAuditLog("Factures", "Suppression", `Facture ${fact.numero} supprimée`);
+          await get().addAuditLog("Factures", "Suppression", `Facture ${fact.numero} supprimée`, fact.clientId);
         }
       },
 
@@ -2402,14 +2435,14 @@ export const useStore = create<SLTTState>()(
           };
         });
         
-        await get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`);
+        await get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`, f.clientId);
       },
 
       recordFacturePaiement: async (id, montant) => {
         const fact = get().factures.find((f) => f.id === id);
         if (!fact) return;
 
-        const reste = Math.max(0, fact.montantTTC - fact.montantPaye);
+        const reste = resteAPayer({ montantInvesti: fact.montantTTC, montantPaye: fact.montantPaye });
         const effective = validatePaymentAmount(montant, reste);
         const newPaye = computeIncrementalPaye(fact.montantPaye, fact.montantTTC, effective);
         const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
@@ -2435,7 +2468,8 @@ export const useStore = create<SLTTState>()(
         await get().addAuditLog(
           "Factures",
           "Paiement",
-          `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`
+          `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
+          fact.clientId,
         );
       },
 

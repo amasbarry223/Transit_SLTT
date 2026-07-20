@@ -17,6 +17,8 @@ import {
   Info,
 } from "lucide-react";
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
+import { resteAPayer } from "@/lib/domain-types";
+import { SLTT_SOCIETE_ID } from "@/lib/classeur";
 import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -63,12 +65,6 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 8;
 
-/** Traoré Transit Logistique = la société mère du groupe (id fixe, seedé dans
- * supabase/migrations/20260713_societes.sql). Les écritures historiques sans
- * société assignée (dossiers de transit classiques, sorties de caisse) lui
- * sont rattachées d'office dans cet onglet — même entité légale. */
-const TRAORE_TRANSIT_LOGISTIQUE_ID = "22222222-2222-2222-2222-222222222222";
-
 type StatutFilter = "all" | "En attente" | "Soldé";
 
 const modeIcon: Record<
@@ -90,7 +86,7 @@ const modeOptions: PaiementMode[] = [
 
 
 function deriveStatut(e: Ecriture): "Soldé" | "En attente" {
-  const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+  const reste = resteAPayer(e);
   return reste === 0 ? "Soldé" : "En attente";
 }
 
@@ -109,9 +105,10 @@ export function ComptabiliteScreen() {
   const recordPayment = useStore((s) => s.recordPayment);
   const addEcriture = useStore((s) => s.addEcriture);
 
-  // Onglets : Toutes / une par société (celui de Traoré Transit Logistique
-  // inclut aussi les écritures historiques sans société assignée).
-  const [activeTab, setActiveTab] = useState<string>(TRAORE_TRANSIT_LOGISTIQUE_ID);
+  // Onglets : Toutes / une par société (celui de Traoré Transit Logistique,
+  // SLTT_SOCIETE_ID cf. classeur.ts, inclut aussi les écritures historiques
+  // sans société assignée).
+  const [activeTab, setActiveTab] = useState<string>(SLTT_SOCIETE_ID);
 
   // Tri alphabétique simple — pas de liste de noms codée en dur à tenir à jour
   // si une société est renommée ou qu'une nouvelle est ajoutée.
@@ -122,8 +119,8 @@ export function ComptabiliteScreen() {
 
   const ecritures = useMemo(() => {
     if (activeTab === "all") return allEcritures;
-    if (activeTab === TRAORE_TRANSIT_LOGISTIQUE_ID) {
-      return allEcritures.filter((e) => !e.societeId || e.societeId === TRAORE_TRANSIT_LOGISTIQUE_ID);
+    if (activeTab === SLTT_SOCIETE_ID) {
+      return allEcritures.filter((e) => !e.societeId || e.societeId === SLTT_SOCIETE_ID);
     }
     return allEcritures.filter((e) => e.societeId === activeTab);
   }, [allEcritures, activeTab]);
@@ -249,7 +246,7 @@ export function ComptabiliteScreen() {
   }
 
   function openPanel(e: Ecriture) {
-    const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+    const reste = resteAPayer(e);
     setSelected(e);
     setMontant(String(reste));
     setMode(e.modePaiement);
@@ -261,7 +258,7 @@ export function ComptabiliteScreen() {
   function valider() {
     if (!selected) return;
     const montantNum = Number(montant.replace(/\s/g, "")) || 0;
-    const reste = Math.max(0, selected.montantInvesti - selected.montantPaye);
+    const reste = resteAPayer(selected);
     if (montantNum <= 0) {
       toast({ title: "Montant invalide", description: "Le montant doit être supérieur à 0.", variant: "destructive" });
       return;
@@ -563,7 +560,7 @@ export function ComptabiliteScreen() {
           <>
             <div className="space-y-3 p-4 md:hidden">
               {paged.map((e) => {
-                const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+                const reste = resteAPayer(e);
                 const ecart = e.montantPaye - e.montantInvesti;
                 const statut = deriveStatut(e);
                 const ModeIcon = modeIcon[e.modePaiement];
@@ -669,7 +666,7 @@ export function ComptabiliteScreen() {
                 </TableHeader>
                 <TableBody>
                   {paged.map((e) => {
-                    const reste = Math.max(0, e.montantInvesti - e.montantPaye);
+                    const reste = resteAPayer(e);
                     const ecart = e.montantPaye - e.montantInvesti;
                     const statut = deriveStatut(e);
                     const ModeIcon = modeIcon[e.modePaiement];
@@ -800,12 +797,7 @@ export function ComptabiliteScreen() {
                 <div className="mt-1.5 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-1.5">
                   <span className="text-slate-500 dark:text-slate-400">Reste à payer</span>
                   <span className="font-semibold tabular-nums text-amber-600 dark:text-amber-400">
-                    {formatFCFA(
-                      Math.max(
-                        0,
-                        selected.montantInvesti - selected.montantPaye,
-                      ),
-                    )}
+                    {formatFCFA(resteAPayer(selected))}
                   </span>
                 </div>
               </div>

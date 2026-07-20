@@ -177,10 +177,11 @@ function AppRootInner() {
   }, [isAuthenticated, touchActivity]);
 
   useEffect(() => {
-    if (!authReady || !isAuthenticated) {
-      setShowIdleWarning(false);
-      return;
-    }
+    // Pas besoin de réinitialiser showIdleWarning ici : le rendu du Dialog
+    // (ligne ~230) le combine déjà avec `isAuthenticated`, donc une valeur
+    // restée à true pendant la déconnexion n'affiche jamais rien à tort —
+    // et cet effet la recalcule proprement dès la reconnexion.
+    if (!authReady || !isAuthenticated) return;
 
     const reference = lastActivityAt ?? loginAt;
     if (reference === null) {
@@ -191,11 +192,20 @@ function AppRootInner() {
     const remaining = IDLE_TIMEOUT - (Date.now() - reference);
 
     if (remaining <= 0) {
-      setShowIdleWarning(false);
+      // Idem : la déconnexion qui suit bascule isAuthenticated à false, ce
+      // qui referme déjà le Dialog via son propre guard — pas besoin de
+      // remettre showIdleWarning à false ici en plus.
       logoutRef.current();
       return;
     }
 
+    // Contrairement aux deux cas ci-dessus, celui-ci est légitime : il fixe
+    // l'état correct dès ce rendu (ex. l'onglet redevient actif alors que le
+    // délai d'avertissement est déjà écoulé) plutôt que d'attendre le prochain
+    // déclenchement de warningTimer ci-dessous — c'est une synchronisation
+    // avec une horloge murale, pas un état dérivé de props/state à calculer
+    // au rendu.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowIdleWarning(remaining <= IDLE_WARNING_BEFORE);
 
     const warningTimer = setTimeout(

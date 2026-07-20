@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, Truck, Banknote } from "lucide-react";
 import { useStore, type DossierStatut } from "@/lib/store";
-import type { Dossier, PaiementMode } from "@/lib/domain-types";
+import { resteAPayer, type Dossier, type PaiementMode } from "@/lib/domain-types";
 import { formatFCFA, parseAmount } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -134,7 +134,7 @@ export function TransitionDialog({
   const { toast } = useToast();
   const transitionDossierFn = useStore((s) => s.transitionDossier);
   const meta = TRANSITION_META[transition];
-  const reste = Math.max(0, dossier.montantInvesti - dossier.montantPaye);
+  const reste = resteAPayer(dossier);
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [montantRecu, setMontantRecu] = useState(String(reste));

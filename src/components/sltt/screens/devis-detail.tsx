@@ -13,6 +13,7 @@ import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printDevis } from "@/lib/export";
+import { resolveSlttBrand } from "@/lib/classeur";
 import { useToast } from "@/hooks/use-toast";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 
@@ -251,6 +252,7 @@ export function DevisDetailScreen() {
 
   const allDevis             = useStore((s) => s.devis);
   const clients              = useStore((s) => s.clients);
+  const societes             = useStore((s) => s.societes);
   const updateDevis          = useStore((s) => s.updateDevis);
   const updateDevisStatut    = useStore((s) => s.updateDevisStatut);
   const removeDevis          = useStore((s) => s.removeDevis);
@@ -366,7 +368,7 @@ export function DevisDetailScreen() {
       total: devis.total,
       notes: devis.notes,
       statut: devis.statut,
-    });
+    }, resolveSlttBrand(societes));
   };
 
   const handleDelete = async () => {

@@ -63,6 +63,9 @@ export interface Dossier {
 
 export type FactureStatut = "Brouillon" | "Envoyée" | "Partielle" | "Soldée" | "Annulée";
 
+/** Taux de TVA standard au Mali — un seul endroit à changer si le taux légal évolue. */
+export const DEFAULT_TVA_RATE = 18;
+
 export interface FactureLigne {
   id: string;
   description: string;
@@ -272,6 +275,21 @@ export interface Societe {
   nif?: string;
   /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). */
   afficherNomAvecLogo: boolean;
+  /** Noms des signataires affichés sur le bon de sortie de caisse (Directeur Général / PDG). */
+  signataireDg?: string;
+  signatairePdg?: string;
+}
+
+/** Champs éditables d'une société depuis Paramètres — id/actif exclus (pas encore gérés côté UI). */
+export interface SocieteInput {
+  nom: string;
+  logoUrl?: string;
+  adresse?: string;
+  telephone?: string;
+  rccm?: string;
+  nif?: string;
+  signataireDg?: string;
+  signatairePdg?: string;
 }
 
 /* ------------------------------------------------------------------ */

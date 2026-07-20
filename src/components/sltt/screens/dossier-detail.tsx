@@ -39,7 +39,7 @@ import type {
   FournisseurType,
   DossierFournisseurInput,
 } from "@/lib/store";
-import { calculerEcart } from "@/lib/domain-types";
+import { calculerEcart, resteAPayer } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
 import { printHTML, htmlEscape } from "@/lib/export";
@@ -249,11 +249,28 @@ function FileDropZone({
   sousDossierId?: string;
   fichiers: DossierFichier[];
   onUpload: (input: FichierInput) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [fichierToDelete, setFichierToDelete] = useState<{ id: string; nom: string } | null>(null);
+
+  async function handleConfirmDeleteFichier() {
+    if (!fichierToDelete) return;
+    try {
+      await onDelete(fichierToDelete.id);
+      toast({ title: "Fichier supprimé", description: fichierToDelete.nom });
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Erreur inattendue.",
+        variant: "destructive",
+      });
+    } finally {
+      setFichierToDelete(null);
+    }
+  }
 
   function processFiles(fileList: FileList | null) {
     if (!fileList) return;
@@ -392,7 +409,7 @@ function FileDropZone({
                     className="size-7 text-slate-400 dark:text-slate-500 hover:text-destructive"
                     title="Supprimer"
                     aria-label={`Supprimer le fichier ${f.nom}`}
-                    onClick={() => onDelete(f.id)}
+                    onClick={() => setFichierToDelete({ id: f.id, nom: f.nom })}
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
@@ -406,6 +423,14 @@ function FileDropZone({
       {fichiers.length === 0 && (
         <p className="text-center text-xs text-slate-400 dark:text-slate-500">Aucun fichier</p>
       )}
+
+      <ConfirmDeleteDialog
+        open={!!fichierToDelete}
+        onOpenChange={(v) => !v && setFichierToDelete(null)}
+        title="Supprimer ce fichier ?"
+        description={<>Le fichier « {fichierToDelete?.nom} » sera définitivement supprimé. Cette action est irréversible.</>}
+        onConfirm={handleConfirmDeleteFichier}
+      />
     </div>
   );
 }
@@ -427,7 +452,7 @@ function SubDossierCard({
   onEdit: () => void;
   onDelete: () => void;
   addFichier: (input: FichierInput) => void;
-  deleteFichier: (id: string) => void;
+  deleteFichier: (id: string) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -615,7 +640,7 @@ export function DossierDetailScreen() {
 
   const nextTransition = getNextTransition(dossier.statut);
   const ecart = calculerEcart(dossier);
-  const reste = Math.max(0, dossier.montantInvesti - dossier.montantPaye);
+  const reste = resteAPayer(dossier);
 
   // Échéance
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1263,7 +1288,7 @@ export function DossierDetailScreen() {
               <>
               <div className="space-y-3 sm:hidden">
                 {dossierEcritures.map((e) => {
-                  const resteE = Math.max(0, e.montantInvesti - e.montantPaye);
+                  const resteE = resteAPayer(e);
                   const statut: "Soldé" | "En attente" = resteE === 0 ? "Soldé" : "En attente";
                   return (
                     <Card key={e.id} className="border-border/80 p-4 shadow-sm">
@@ -1325,7 +1350,7 @@ export function DossierDetailScreen() {
                   </TableHeader>
                   <TableBody>
                     {dossierEcritures.map((e) => {
-                      const resteE = Math.max(0, e.montantInvesti - e.montantPaye);
+                      const resteE = resteAPayer(e);
                       const statut: "Soldé" | "En attente" = resteE === 0 ? "Soldé" : "En attente";
                       return (
                         <TableRow

@@ -246,7 +246,7 @@ export function LoginScreen() {
 
             <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
               <ShieldCheck className="size-3.5" />
-              Accès sécurisé · SLTT © 2026
+              Accès sécurisé · SLTT © {new Date().getFullYear()}
             </div>
           </div>
         </div>

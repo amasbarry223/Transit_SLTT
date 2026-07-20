@@ -10,6 +10,7 @@ import {
   Coins,
   Users,
   User,
+  Building2,
   RotateCcw,
   AlertTriangle,
   ScrollText,
@@ -23,6 +24,7 @@ import { useCurrentUser, useCanManageUsers, usePermission } from "@/hooks/use-pe
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { UsersTab } from "@/components/sltt/users-tab";
 import type { UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
+import type { Societe, SocieteInput } from "@/lib/domain-types";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
@@ -70,7 +72,7 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, getInitials } from "@/lib/utils";
 
-type ParamTab = "users" | "profile" | "security" | "audit" | "preferences";
+type ParamTab = "users" | "societes" | "profile" | "security" | "audit" | "preferences";
 
 const AUDIT_PAGE_SIZE = 8;
 
@@ -94,6 +96,7 @@ const tabs: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { key: "users", label: "Utilisateurs & rôles", shortLabel: "Utilisateurs", icon: Users },
+  { key: "societes", label: "Sociétés", shortLabel: "Sociétés", icon: Building2 },
   { key: "profile", label: "Mon profil", shortLabel: "Profil", icon: User },
   { key: "security", label: "Sécurité", shortLabel: "Sécurité", icon: Shield },
   { key: "audit", label: "Audit & traçabilité", shortLabel: "Audit", icon: ScrollText },
@@ -223,6 +226,151 @@ function ProfileTabForm({
           </div>
         </form>
       </Card>
+    </div>
+  );
+}
+
+function SocieteCard({
+  societe,
+  onSave,
+}: {
+  societe: Societe;
+  onSave: (id: string, input: SocieteInput) => Promise<void>;
+}) {
+  const { toast } = useToast();
+  const [values, setValues] = useState<SocieteInput>({
+    nom: societe.nom,
+    logoUrl: societe.logoUrl ?? "",
+    adresse: societe.adresse ?? "",
+    telephone: societe.telephone ?? "",
+    rccm: societe.rccm ?? "",
+    nif: societe.nif ?? "",
+    signataireDg: societe.signataireDg ?? "",
+    signatairePdg: societe.signatairePdg ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  function set<K extends keyof SocieteInput>(key: K, value: SocieteInput[K]) {
+    setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmedNom = values.nom.trim();
+    if (!trimmedNom) {
+      toast({ title: "Le nom de la société est requis", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(societe.id, {
+        nom: trimmedNom,
+        logoUrl: values.logoUrl?.trim() || undefined,
+        adresse: values.adresse?.trim() || undefined,
+        telephone: values.telephone?.trim() || undefined,
+        rccm: values.rccm?.trim() || undefined,
+        nif: values.nif?.trim() || undefined,
+        signataireDg: values.signataireDg?.trim() || undefined,
+        signatairePdg: values.signatairePdg?.trim() || undefined,
+      });
+      toast({ title: "Société mise à jour", description: trimmedNom });
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible d'enregistrer la société.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-6 shadow-sm border-border/80">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+            <Building2 className="size-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{societe.nom}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Ces informations apparaissent sur tous les documents imprimés (devis, factures, bons…).
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Nom</Label>
+            <Input value={values.nom} onChange={(e) => set("nom", e.target.value)} />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</Label>
+            <Input
+              value={values.adresse}
+              onChange={(e) => set("adresse", e.target.value)}
+              placeholder="Ex. Niaréla - Rue 516 porte C/63"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
+            <Input value={values.telephone} onChange={(e) => set("telephone", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Logo (chemin public)</Label>
+            <Input
+              value={values.logoUrl}
+              onChange={(e) => set("logoUrl", e.target.value)}
+              placeholder="/logoV.png"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">RCCM</Label>
+            <Input value={values.rccm} onChange={(e) => set("rccm", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">NIF</Label>
+            <Input value={values.nif} onChange={(e) => set("nif", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Signataire — Directeur Général
+            </Label>
+            <Input value={values.signataireDg} onChange={(e) => set("signataireDg", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Signataire — PDG
+            </Label>
+            <Input value={values.signatairePdg} onChange={(e) => set("signatairePdg", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={saving}>
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+function SocietesTab() {
+  const societes = useStore((s) => s.societes);
+  const updateSociete = useStore((s) => s.updateSociete);
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
+        Identité légale de chaque société — utilisée automatiquement sur les devis, factures,
+        bons de sortie et autres documents imprimés. Modifier ces champs ne nécessite plus
+        d&apos;intervention technique.
+      </p>
+      {societes.map((societe) => (
+        <SocieteCard key={societe.id} societe={societe} onSave={updateSociete} />
+      ))}
     </div>
   );
 }
@@ -793,14 +941,20 @@ function UsersTabBadge() {
 export function ParametresScreen() {
   const canManageUsers = useCanManageUsers();
   const canViewAudit = usePermission("audit:read");
+  const canManageSocietes = usePermission("parametres:write");
   const [active, setActive] = useState<ParamTab>("profile");
 
-  const [prevPerms, setPrevPerms] = useState({ canManageUsers, canViewAudit });
-  if (prevPerms.canManageUsers !== canManageUsers || prevPerms.canViewAudit !== canViewAudit) {
-    setPrevPerms({ canManageUsers, canViewAudit });
+  const [prevPerms, setPrevPerms] = useState({ canManageUsers, canViewAudit, canManageSocietes });
+  if (
+    prevPerms.canManageUsers !== canManageUsers ||
+    prevPerms.canViewAudit !== canViewAudit ||
+    prevPerms.canManageSocietes !== canManageSocietes
+  ) {
+    setPrevPerms({ canManageUsers, canViewAudit, canManageSocietes });
     setActive((prev) => {
       if (prev === "users" && !canManageUsers) return "profile";
       if (prev === "audit" && !canViewAudit) return "profile";
+      if (prev === "societes" && !canManageSocietes) return "profile";
       return prev;
     });
   }
@@ -833,6 +987,7 @@ export function ParametresScreen() {
             {tabs.filter((t) => {
               if (t.key === "users") return canManageUsers;
               if (t.key === "audit") return canViewAudit;
+              if (t.key === "societes") return canManageSocietes;
               return true;
             }).map((t) => {
               const Icon = t.icon;
@@ -865,6 +1020,11 @@ export function ParametresScreen() {
         {canManageUsers && (
           <TabsContent value="users" className="mt-6 focus-visible:outline-none">
             <UsersTab />
+          </TabsContent>
+        )}
+        {canManageSocietes && (
+          <TabsContent value="societes" className="mt-6 focus-visible:outline-none">
+            <SocietesTab />
           </TabsContent>
         )}
         <TabsContent value="profile" className="mt-6 focus-visible:outline-none">

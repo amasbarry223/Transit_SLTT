@@ -133,6 +133,10 @@ export function ContratDetailScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [depenseOpen, setDepenseOpen] = useState(false);
   const [prestationOpen, setPrestationOpen] = useState(false);
+  // Suppressions de dépense/prestation — jusqu'ici directes en un clic, sans
+  // confirmation, contrairement à la suppression du contrat lui-même ci-dessous.
+  const [depenseToDelete, setDepenseToDelete] = useState<{ id: string; libelle: string } | null>(null);
+  const [prestationToDelete, setPrestationToDelete] = useState<{ id: string; libelle: string } | null>(null);
 
   if (!contrat) {
     return (
@@ -163,6 +167,38 @@ export function ContratDetailScreen() {
       });
     } finally {
       setDeleteOpen(false);
+    }
+  }
+
+  async function handleDeleteDepense() {
+    if (!depenseToDelete) return;
+    try {
+      await removeDepense(depenseToDelete.id);
+      toast({ title: "Dépense supprimée", description: depenseToDelete.libelle });
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Erreur inattendue.",
+        variant: "destructive",
+      });
+    } finally {
+      setDepenseToDelete(null);
+    }
+  }
+
+  async function handleDeletePrestation() {
+    if (!prestationToDelete) return;
+    try {
+      await removeContratPrestation(prestationToDelete.id);
+      toast({ title: "Prestation supprimée", description: prestationToDelete.libelle });
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Erreur inattendue.",
+        variant: "destructive",
+      });
+    } finally {
+      setPrestationToDelete(null);
     }
   }
 
@@ -375,7 +411,7 @@ export function ContratDetailScreen() {
                             size="icon"
                             className="size-9 text-slate-400 hover:text-red-600"
                             aria-label={`Supprimer la dépense ${d.libelle}`}
-                            onClick={() => removeDepense(d.id)}
+                            onClick={() => setDepenseToDelete({ id: d.id, libelle: d.libelle })}
                           >
                             <Trash2 className="size-4" />
                           </Button>
@@ -470,7 +506,7 @@ export function ContratDetailScreen() {
                               size="icon"
                               className="size-9 text-slate-400 hover:text-red-600"
                               aria-label={`Supprimer la prestation ${p.libelle}`}
-                              onClick={() => removeContratPrestation(p.id)}
+                              onClick={() => setPrestationToDelete({ id: p.id, libelle: p.libelle })}
                             >
                               <Trash2 className="size-4" />
                             </Button>
@@ -532,6 +568,22 @@ export function ContratDetailScreen() {
         title="Supprimer ce contrat ?"
         description={<>Le contrat {contrat.reference} sera définitivement supprimé. Cette action est irréversible.</>}
         onConfirm={handleDelete}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!depenseToDelete}
+        onOpenChange={(v) => !v && setDepenseToDelete(null)}
+        title="Supprimer cette dépense ?"
+        description={<>La dépense « {depenseToDelete?.libelle} » sera définitivement supprimée. Cette action est irréversible.</>}
+        onConfirm={handleDeleteDepense}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!prestationToDelete}
+        onOpenChange={(v) => !v && setPrestationToDelete(null)}
+        title="Supprimer cette prestation ?"
+        description={<>La prestation « {prestationToDelete?.libelle} » sera définitivement supprimée. Cette action est irréversible.</>}
+        onConfirm={handleDeletePrestation}
       />
     </div>
   );
@@ -966,6 +1018,23 @@ function ContratFileDropZone({
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [fichierToDelete, setFichierToDelete] = useState<{ id: string; nom: string } | null>(null);
+
+  async function handleDeleteFichier() {
+    if (!fichierToDelete) return;
+    try {
+      await onDelete(fichierToDelete.id);
+      toast({ title: "Document supprimé", description: fichierToDelete.nom });
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Erreur inattendue.",
+        variant: "destructive",
+      });
+    } finally {
+      setFichierToDelete(null);
+    }
+  }
 
   function processFiles(fileList: FileList | null) {
     if (!fileList) return;
@@ -1085,7 +1154,7 @@ function ContratFileDropZone({
                       size="icon"
                       className="size-9 text-slate-400 hover:text-red-600"
                       aria-label={`Supprimer ${f.nom}`}
-                      onClick={() => onDelete(f.id)}
+                      onClick={() => setFichierToDelete({ id: f.id, nom: f.nom })}
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -1096,6 +1165,14 @@ function ContratFileDropZone({
           })}
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={!!fichierToDelete}
+        onOpenChange={(v) => !v && setFichierToDelete(null)}
+        title="Supprimer ce document ?"
+        description={<>Le document « {fichierToDelete?.nom} » sera définitivement supprimé. Cette action est irréversible.</>}
+        onConfirm={handleDeleteFichier}
+      />
     </div>
   );
 }

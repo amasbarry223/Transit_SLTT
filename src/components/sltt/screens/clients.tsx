@@ -23,6 +23,7 @@ import type { ClientInput } from "@/lib/store";
 import type { ClientType } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
 import { printClients } from "@/lib/export";
+import { resolveSlttBrand } from "@/lib/classeur";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -106,7 +107,7 @@ export function ClientsScreen() {
   const canWrite = usePermission("clients:write");
   const openClient = useNav((s) => s.openClient);
   const clients = useStore((s) => s.clients);
-  const dossiers = useStore((s) => s.dossiers);
+  const societes = useStore((s) => s.societes);
   const addClient = useStore((s) => s.addClient);
   const updateClient = useStore((s) => s.updateClient);
 
@@ -122,19 +123,10 @@ export function ClientsScreen() {
 
   const isEdit = editingId !== null;
 
-  const clientStats = useMemo(() => {
-    const map = new Map<string, { totalDu: number; nbDossiers: number }>();
-    for (const d of dossiers) {
-      const prev = map.get(d.clientId) ?? { totalDu: 0, nbDossiers: 0 };
-      const reste = d.montantInvesti - d.montantPaye;
-      map.set(d.clientId, {
-        totalDu: prev.totalDu + (reste > 0 ? reste : 0),
-        nbDossiers: prev.nbDossiers + 1,
-      });
-    }
-    return map;
-  }, [dossiers]);
-
+  // c.totalDu / c.nbDossiers viennent du store (syncClientStats, cf.
+  // client-stats.ts) — comptent dossiers + écritures autonomes + factures.
+  // Ne pas les recalculer ici : un recalcul local qui ne compte que les
+  // dossiers désynchronise ce total de celui affiché dans le Classeur.
   const stats = useMemo(() => {
     let entreprises = 0;
     let particuliers = 0;
@@ -142,10 +134,10 @@ export function ClientsScreen() {
     for (const c of clients) {
       if (c.type === "Entreprise") entreprises++;
       else particuliers++;
-      totalDu += clientStats.get(c.id)?.totalDu ?? 0;
+      totalDu += c.totalDu;
     }
     return { total: clients.length, entreprises, particuliers, totalDu };
-  }, [clients, clientStats]);
+  }, [clients]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -166,11 +158,10 @@ export function ClientsScreen() {
 
     return [...list].sort((a, b) => {
       if (sortBy === "nom") return a.nom.localeCompare(b.nom, "fr");
-      if (sortBy === "totalDu")
-        return (clientStats.get(b.id)?.totalDu ?? 0) - (clientStats.get(a.id)?.totalDu ?? 0);
-      return (clientStats.get(b.id)?.nbDossiers ?? 0) - (clientStats.get(a.id)?.nbDossiers ?? 0);
+      if (sortBy === "totalDu") return b.totalDu - a.totalDu;
+      return b.nbDossiers - a.nbDossiers;
     });
-  }, [query, typeFilter, sortBy, clients, clientStats]);
+  }, [query, typeFilter, sortBy, clients]);
 
   const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, pageSize);
 
@@ -257,13 +248,13 @@ export function ClientsScreen() {
       telephone: c.telephone || undefined,
       email: c.email || undefined,
       adresse: c.adresse || undefined,
-      nbDossiers: clientStats.get(c.id)?.nbDossiers ?? 0,
-      totalDu: clientStats.get(c.id)?.totalDu ?? 0,
+      nbDossiers: c.nbDossiers,
+      totalDu: c.totalDu,
     }));
     const parts: string[] = [];
     if (typeFilter !== "all") parts.push(typeFilter);
     if (query.trim()) parts.push(`"${query.trim()}"`);
-    printClients(rows, parts.length ? `Filtre : ${parts.join(" · ")}` : undefined);
+    printClients(rows, parts.length ? `Filtre : ${parts.join(" · ")}` : undefined, resolveSlttBrand(societes));
   }
 
   return (
@@ -449,15 +440,15 @@ export function ClientsScreen() {
                     <div className="flex justify-between gap-3">
                       <dt className="text-xs text-slate-500">Dossiers</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
-                        {clientStats.get(c.id)?.nbDossiers ?? 0}
+                        {c.nbDossiers}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
                       <dt className="text-xs text-slate-500">Total dû</dt>
                       <dd className="tabular-nums">
-                        {(clientStats.get(c.id)?.totalDu ?? 0) > 0 ? (
+                        {c.totalDu > 0 ? (
                           <span className="font-semibold text-amber-600 dark:text-amber-400">
-                            {formatFCFA(clientStats.get(c.id)!.totalDu)}
+                            {formatFCFA(c.totalDu)}
                           </span>
                         ) : (
                           <span className="text-emerald-600 dark:text-emerald-400">Soldé</span>
@@ -555,13 +546,13 @@ export function ClientsScreen() {
                       <TableCell className="px-4 py-3.5 text-center">
                         <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-sm font-medium tabular-nums text-slate-700 dark:text-slate-300">
                           <FolderKanban className="size-3.5 text-slate-400 dark:text-slate-500" />
-                          {clientStats.get(c.id)?.nbDossiers ?? 0}
+                          {c.nbDossiers}
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3.5 text-right tabular-nums">
-                        {(clientStats.get(c.id)?.totalDu ?? 0) > 0 ? (
+                        {c.totalDu > 0 ? (
                           <span className="font-semibold text-amber-600 dark:text-amber-400">
-                            {formatFCFA(clientStats.get(c.id)!.totalDu)}
+                            {formatFCFA(c.totalDu)}
                           </span>
                         ) : (
                           <span className="text-sm text-emerald-600 dark:text-emerald-400">Soldé</span>

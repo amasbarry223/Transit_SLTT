@@ -34,6 +34,8 @@ export type AuditEntry = {
   action: AuditAction;
   detail: string;
   ip: string;
+  /** Client concerné par le mouvement, quand applicable (Classeur, suivi 3.3). */
+  clientId?: string;
 };
 
 let cachedClientIp: string | null = null;
@@ -66,6 +68,7 @@ export function mapAuditLogFromDb(x: Record<string, unknown>): AuditEntry {
     action: x.action as AuditAction,
     detail: String(x.detail),
     ip: String(x.ip ?? "N/A"),
+    clientId: x.client_id ? String(x.client_id) : undefined,
   };
 }
 
@@ -76,6 +79,8 @@ export async function insertAuditLog(params: {
   detail: string;
   userName: string;
   ip?: string;
+  /** Client concerné, pour un suivi structuré côté Classeur plutôt qu'une correspondance texte. */
+  clientId?: string;
 }): Promise<AuditEntry | null> {
   const ip = params.ip ?? (await resolveClientIp());
 
@@ -88,6 +93,7 @@ export async function insertAuditLog(params: {
         action: params.action,
         detail: params.detail,
         ip,
+        client_id: params.clientId ?? null,
       })
       .select()
       .single();

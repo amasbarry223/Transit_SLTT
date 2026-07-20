@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
+import { resteAPayer } from "@/lib/domain-types";
 import { Bell, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -99,9 +100,7 @@ export function Topbar() {
 
   // Live alerts
   const lowStock = stock.filter((s) => s.quantite < s.seuil);
-  const unpaidDossiers = dossiers.filter(
-    (d) => d.montantInvesti - d.montantPaye > 0,
-  );
+  const unpaidDossiers = dossiers.filter((d) => resteAPayer(d) > 0);
   const alertCount = lowStock.length + unpaidDossiers.length;
   const hasUnread = alertCount > 0 && !notifRead;
 
@@ -210,7 +209,7 @@ export function Topbar() {
                   Dossier non soldé · {d.reference}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Reste : {formatFCFA(d.montantInvesti - d.montantPaye)} — {d.clientNom}
+                  Reste : {formatFCFA(resteAPayer(d))} — {d.clientNom}
                 </span>
               </DropdownMenuItem>
             ))}

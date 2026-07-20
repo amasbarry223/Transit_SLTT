@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { InfoCallout } from "@/components/sltt/info-callout";
 import { useStore, type Facture, type FactureStatut, type FactureInput } from "@/lib/store";
+import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
@@ -60,9 +61,9 @@ function FactureFormModal({
   const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
   const [date,         setDate]         = React.useState(prefill?.date ?? today);
   const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? in30days);
-  const [tvaOn,        setTvaOn]        = React.useState((prefill?.tauxTVA ?? 18) > 0);
+  const [tvaOn,        setTvaOn]        = React.useState((prefill?.tauxTVA ?? DEFAULT_TVA_RATE) > 0);
   const [notes,        setNotes]        = React.useState(prefill?.notes ?? "");
-  const tauxTVA = tvaOn ? "18" : "0";
+  const tauxTVA = tvaOn ? String(DEFAULT_TVA_RATE) : "0";
   const [lignes,       setLignes]       = React.useState<LigneForm[]>(
     prefill?.lignes?.map((l) => ({
       description: l.description,
@@ -295,7 +296,7 @@ function FactureFormModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
                 <Label htmlFor="tva-switch" className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                  Appliquer la TVA (18 %)
+                  Appliquer la TVA ({DEFAULT_TVA_RATE} %)
                 </Label>
                 <Switch id="tva-switch" checked={tvaOn} onCheckedChange={setTvaOn} />
               </div>

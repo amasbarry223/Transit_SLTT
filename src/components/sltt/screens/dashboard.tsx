@@ -50,6 +50,7 @@ import { DossierStatutBadge, DOSSIER_STATUT_DOT, DOSSIER_STATUT_HEX } from "@/co
 import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact, parseLocalDate } from "@/lib/format";
+import { resteAPayer } from "@/lib/domain-types";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { getDashboardSections, kpiGridClass, type DashboardSection } from "@/lib/dashboard-config";
 import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
@@ -274,14 +275,17 @@ function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "factures"
   const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
   const dossiers = useStore((s) => s.dossiers);
-  const totalDu = dossiers.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0);
-  const nbImpayés = dossiers.filter((d) => d.montantInvesti - d.montantPaye > 0).length;
+  const totalDu = dossiers.reduce((s, d) => s + resteAPayer(d), 0);
+  const nbImpayés = dossiers.filter((d) => resteAPayer(d) > 0).length;
   const dernières = [...ecritures]
     .sort((a, b) => (a.date > b.date ? -1 : 1))
     .slice(0, 5);
 
   const facturesImpayées = factures.filter((f) => f.statut !== "Soldée" && f.statut !== "Annulée");
-  const totalFactures = facturesImpayées.reduce((s, f) => s + Math.max(0, f.montantTTC - f.montantPaye), 0);
+  const totalFactures = facturesImpayées.reduce(
+    (s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }),
+    0,
+  );
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -345,7 +349,7 @@ function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "factures"
               <p className="text-xs text-slate-500 dark:text-slate-400">{f.statut}</p>
             </div>
             <span className="text-xs font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-              {formatFCFA(Math.max(0, f.montantTTC - f.montantPaye))}
+              {formatFCFA(resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }))}
             </span>
           </div>
         ))}
@@ -777,7 +781,7 @@ export function DashboardScreen() {
     let total = 0;
     let count = 0;
     for (const d of dossiers) {
-      const reste = Math.max(0, d.montantInvesti - d.montantPaye);
+      const reste = resteAPayer(d);
       if (reste > 0) {
         total += reste;
         count += 1;
@@ -895,15 +899,13 @@ export function DashboardScreen() {
       }, []);
 
     const unpaid: LiveAlert[] = dossiers
-      .filter((d) => d.montantInvesti - d.montantPaye > 0)
+      .filter((d) => resteAPayer(d) > 0)
       .slice(0, 4)
       .map((d) => ({
         id: `dossier-${d.id}`,
         niveau: "warning" as const,
         message: `Dossier non soldé : ${d.reference}`,
-        detail: `Reste à payer : ${formatFCFA(
-          d.montantInvesti - d.montantPaye,
-        )} — ${d.clientNom}`,
+        detail: `Reste à payer : ${formatFCFA(resteAPayer(d))} — ${d.clientNom}`,
         target: { view: "dossier-detail" as const, id: d.id },
       }));
 

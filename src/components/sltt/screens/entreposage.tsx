@@ -24,7 +24,7 @@ import { useNav } from "@/lib/nav-store";
 import type { Mouvement } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
-import { exportToCSV, printStockInventory } from "@/lib/export";
+import { exportToCSV, printStockInventory, type SocieteBrand } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge, StockStatutBadge } from "@/components/sltt/status-badge";
@@ -107,8 +107,8 @@ function StockTab({
   onEntry: (id: string | null) => void;
   onExit: (id: string | null) => void;
   onHistory: (marchandise: string) => void;
-  onPrint: () => void;
-  onExport: () => void;
+  onPrint: (rows: StockItem[]) => void;
+  onExport: (rows: StockItem[]) => void;
   canWrite?: boolean;
   onCreateItem?: () => void;
   onOpenClient?: (clientId: string) => void;
@@ -165,11 +165,11 @@ function StockTab({
               </Button>
             </>
           )}
-          <Button variant="outline" size="sm" className="h-9" onClick={onPrint} disabled={stock.length === 0}>
+          <Button variant="outline" size="sm" className="h-9" onClick={() => onPrint(filtered)} disabled={filtered.length === 0}>
             <FileText className="size-4" />
             Imprimer
           </Button>
-          <Button variant="outline" size="sm" className="h-9" onClick={onExport} disabled={stock.length === 0}>
+          <Button variant="outline" size="sm" className="h-9" onClick={() => onExport(filtered)} disabled={filtered.length === 0}>
             <FileSpreadsheet className="size-4" />
             Exporter
           </Button>
@@ -920,11 +920,11 @@ export function EntreposageScreen() {
     });
   }
 
-  function handleExportStockCSV() {
-    if (stock.length === 0) {
+  function handleExportStockCSV(rows: StockItem[]) {
+    if (rows.length === 0) {
       toast({
         title: "Rien à exporter",
-        description: "Aucun article en stock pour le moment.",
+        description: "Aucun article ne correspond à la recherche actuelle.",
         variant: "destructive",
       });
       return;
@@ -946,21 +946,36 @@ export function EntreposageScreen() {
           accessor: (s) => (s.quantite < s.seuil ? "Stock faible" : "Disponible"),
         },
       ],
-      stock,
+      rows,
       { module: "Stock" },
     );
     toast({
       title: "Inventaire exporté",
-      description: `${stock.length} articles exportés en CSV.`,
+      description: `${rows.length} article${rows.length !== 1 ? "s" : ""} exporté${rows.length !== 1 ? "s" : ""} en CSV.`,
     });
   }
 
-  function handlePrintStock() {
-    const societeLabel = selectedSocieteId
-      ? (societes.find((s) => s.id === selectedSocieteId)?.nom ?? "Société")
-      : "Toutes les sociétés";
+  // Reçoit les lignes réellement visibles dans StockTab (après sa recherche
+  // locale) plutôt que tout le stock de la société — sans ça, imprimer/
+  // exporter pendant qu'une recherche est active produit un document qui ne
+  // correspond pas à ce que l'utilisateur a sous les yeux.
+  function handlePrintStock(rows: StockItem[]) {
+    const selectedSociete = selectedSocieteId ? societes.find((s) => s.id === selectedSocieteId) : undefined;
+    const societeLabel = selectedSocieteId ? (selectedSociete?.nom ?? "Société") : "Toutes les sociétés";
+    const brand: SocieteBrand | undefined = selectedSociete
+      ? {
+          nom: selectedSociete.nom,
+          logoUrl: selectedSociete.logoUrl,
+          legal: {
+            adresse: selectedSociete.adresse,
+            telephone: selectedSociete.telephone,
+            rccm: selectedSociete.rccm,
+            nif: selectedSociete.nif,
+          },
+        }
+      : undefined;
     printStockInventory(
-      stock.map((s) => ({
+      rows.map((s) => ({
         marchandise: s.marchandise,
         quantite: s.quantite,
         seuil: s.seuil,
@@ -972,7 +987,7 @@ export function EntreposageScreen() {
         societeNom: s.societeNom,
         clientNom: s.clientNom,
       })),
-      { societeLabel },
+      { societeLabel, societe: brand },
     );
   }
 

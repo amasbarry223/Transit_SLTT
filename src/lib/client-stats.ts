@@ -1,3 +1,4 @@
+import { resteAPayer } from "@/lib/domain-types";
 import type { Client, Dossier, Ecriture, Facture } from "@/lib/store";
 
 /** Recalcule les agrégats client à partir des dossiers, factures et écritures autonomes. */
@@ -19,11 +20,11 @@ export function syncClientStats(
         cf.reduce((s, f) => s + f.montantPaye, 0) +
         ce.reduce((s, e) => s + e.montantPaye, 0),
       totalDu:
-        cd.reduce((s, d) => s + Math.max(0, d.montantInvesti - d.montantPaye), 0) +
-        ce.reduce((s, e) => s + Math.max(0, e.montantInvesti - e.montantPaye), 0) +
+        cd.reduce((s, d) => s + resteAPayer(d), 0) +
+        ce.reduce((s, e) => s + resteAPayer(e), 0) +
         cf
           .filter((f) => f.statut !== "Annulée")
-          .reduce((s, f) => s + Math.max(0, f.montantTTC - f.montantPaye), 0),
+          .reduce((s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }), 0),
     };
   });
 }
