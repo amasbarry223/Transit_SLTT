@@ -21,7 +21,7 @@ type ClientProfileCardProps = {
   client: Client;
   totalDu: number;
   onEdit?: () => void;
-  onNewDossier: () => void;
+  onNewDossier?: () => void;
   onRelance: () => void;
 };
 
@@ -97,10 +97,12 @@ export function ClientProfileCard({
                 Modifier
               </Button>
             )}
-            <Button size="sm" className="h-9" onClick={onNewDossier}>
-              <Plus className="size-4" />
-              Nouveau dossier
-            </Button>
+            {onNewDossier && (
+              <Button size="sm" className="h-9" onClick={onNewDossier}>
+                <Plus className="size-4" />
+                Nouveau dossier
+              </Button>
+            )}
           </div>
         </div>
       </div>

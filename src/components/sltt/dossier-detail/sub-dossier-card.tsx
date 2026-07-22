@@ -22,6 +22,7 @@ export function SubDossierCard({
   onDelete,
   addFichier,
   deleteFichier,
+  canWrite = true,
 }: {
   sd: SubDossier;
   fichiers: DossierFichier[];
@@ -29,6 +30,7 @@ export function SubDossierCard({
   onDelete: () => void;
   addFichier: (input: FichierInput) => void;
   deleteFichier: (id: string) => Promise<void>;
+  canWrite?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -48,6 +50,7 @@ export function SubDossierCard({
             {fichiers.length} fichier{fichiers.length !== 1 ? "s" : ""}
           </p>
         </div>
+        {canWrite && (
         <div className="flex shrink-0 gap-1" onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="icon" className="size-7" onClick={onEdit}>
             <Pencil className="size-3.5" />
@@ -56,6 +59,7 @@ export function SubDossierCard({
             <Trash2 className="size-3.5" />
           </Button>
         </div>
+        )}
         {expanded ? <ChevronUp className="size-4 text-slate-400" /> : <ChevronDown className="size-4 text-slate-400" />}
       </div>
       {expanded && (
@@ -67,6 +71,7 @@ export function SubDossierCard({
             fichiers={fichiers}
             onUpload={addFichier}
             onDelete={deleteFichier}
+            canWrite={canWrite}
           />
         </div>
       )}

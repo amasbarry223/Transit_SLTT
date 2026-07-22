@@ -42,6 +42,7 @@ export function DossierDetailSuivi({
   onOpenFacture,
   onAddFournisseur,
   onGoComptabilite,
+  canWrite = true,
 }: {
   dossier: Dossier;
   ecritures: Ecriture[];
@@ -52,6 +53,7 @@ export function DossierDetailSuivi({
   onOpenFacture: (id: string) => void;
   onAddFournisseur: () => void;
   onGoComptabilite: () => void;
+  canWrite?: boolean;
 }) {
   return (
     <div className="space-y-8">
@@ -177,10 +179,12 @@ export function DossierDetailSuivi({
             <h2 className="text-base font-semibold">Prestataires & transporteurs</h2>
             <p className="text-xs text-slate-500">Coûts de sous-traitance imputés au dossier</p>
           </div>
+          {canWrite && (
           <Button size="sm" onClick={onAddFournisseur}>
             <Plus className="size-4" />
             Ajouter
           </Button>
+          )}
         </div>
         <Card className="border-border/80 p-6 shadow-sm">
           {fournisseurs.length === 0 ? (
@@ -189,10 +193,12 @@ export function DossierDetailSuivi({
               title="Aucun prestataire"
               description="Ajoutez un transporteur ou commissionnaire et le coût associé à ce dossier."
               action={
-                <Button onClick={onAddFournisseur}>
-                  <Plus className="size-4" />
-                  Ajouter un prestataire
-                </Button>
+                canWrite ? (
+                  <Button onClick={onAddFournisseur}>
+                    <Plus className="size-4" />
+                    Ajouter un prestataire
+                  </Button>
+                ) : undefined
               }
             />
           ) : (

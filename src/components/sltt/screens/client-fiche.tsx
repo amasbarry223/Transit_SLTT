@@ -62,6 +62,11 @@ export function ClientFicheScreen() {
   const { toast } = useToast();
   const { selectedId, go, openDossier, openDossierDetail, setPendingFacturePrefill } = useNav();
   const canWrite = usePermission("clients:write");
+  // Le Classeur expose le grand livre financier (débit/crédit/solde par
+  // société, écritures de paiement) — clients:read seul ne suffit pas, un
+  // rôle comme Agent de transit qui n'a que clients:read ne doit pas y
+  // accéder via la fiche client.
+  const canSeeCompta = usePermission("comptabilite:read");
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
@@ -73,7 +78,11 @@ export function ClientFicheScreen() {
   const auditLogs = useStore((s) => s.auditLogs);
   const updateClient = useStore((s) => s.updateClient);
 
-  const [activeTab, setActiveTab] = useState<FicheTab>("classeur");
+  const [activeTab, setActiveTab] = useState<FicheTab>(() => (canSeeCompta ? "classeur" : "dossiers"));
+  const visibleFicheTabs = useMemo(
+    () => FICHE_TABS.filter((t) => t.key !== "classeur" || canSeeCompta),
+    [canSeeCompta],
+  );
   const [dossierPage, setDossierPage] = useState(1);
   const [bonPage, setBonPage] = useState(1);
   const [classeurFilters, setClasseurFilters] = useState<ClasseurFilters>({
@@ -437,7 +446,7 @@ export function ClientFicheScreen() {
           )}
         >
           <TabsList className="flex h-12 w-full items-stretch rounded-none bg-slate-50/80 p-0 dark:bg-slate-800/80">
-            {FICHE_TABS.map((t) => {
+            {visibleFicheTabs.map((t) => {
               const Icon = t.icon;
               const count =
                 t.key === "classeur"
@@ -477,6 +486,7 @@ export function ClientFicheScreen() {
           </TabsList>
         </div>
 
+        {canSeeCompta && (
         <ClasseurTab
           classeurFilters={classeurFilters}
           onFiltersChange={setClasseurFilters}
@@ -489,6 +499,7 @@ export function ClientFicheScreen() {
           onPrint={handlePrintClasseur}
           onRowClick={openClasseurSuivi}
         />
+        )}
 
         <ClasseurSuiviDialog
           entry={suiviEntry}

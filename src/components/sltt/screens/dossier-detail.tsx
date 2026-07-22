@@ -397,9 +397,10 @@ export function DossierDetailScreen() {
             onCreateSubDossier={openCreateSubDossier}
             onEditSubDossier={openEditSubDossier}
             onDeleteSubDossier={setSubDossierDeleteId}
-                addFichier={addFichier}
-                deleteFichier={deleteFichier}
-              />
+            addFichier={addFichier}
+            deleteFichier={deleteFichier}
+            canWrite={canWrite}
+          />
         </TabsContent>
 
         <TabsContent value="suivi">
@@ -413,6 +414,7 @@ export function DossierDetailScreen() {
             onOpenFacture={(factureId) => go("facture-detail", { id: factureId })}
             onAddFournisseur={openAddFournisseur}
             onGoComptabilite={() => go("comptabilite")}
+            canWrite={canWrite}
           />
         </TabsContent>
       </Tabs>

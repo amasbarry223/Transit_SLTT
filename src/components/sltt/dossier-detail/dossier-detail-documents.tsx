@@ -19,6 +19,7 @@ export function DossierDetailDocuments({
   onDeleteSubDossier,
   addFichier,
   deleteFichier,
+  canWrite = true,
 }: {
   dossierId: string;
   dossierFichiers: DossierFichier[];
@@ -29,6 +30,7 @@ export function DossierDetailDocuments({
   onDeleteSubDossier: (id: string) => void;
   addFichier: (input: FichierInput) => void;
   deleteFichier: (id: string) => Promise<void>;
+  canWrite?: boolean;
 }) {
   return (
     <div className="space-y-8">
@@ -47,6 +49,7 @@ export function DossierDetailDocuments({
           fichiers={dossierFichiers}
           onUpload={addFichier}
           onDelete={deleteFichier}
+          canWrite={canWrite}
         />
       </Card>
 
@@ -58,10 +61,12 @@ export function DossierDetailDocuments({
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">Classez vos pièces par thème : douane, livraison, BL…</p>
           </div>
+          {canWrite && (
           <Button onClick={onCreateSubDossier}>
             <FolderPlus className="size-4" />
             Nouveau sous-dossier
           </Button>
+          )}
         </div>
 
         {subDossiers.length === 0 ? (
@@ -70,10 +75,12 @@ export function DossierDetailDocuments({
             title="Aucun sous-dossier"
             description="Créez des sous-dossiers pour organiser vos documents par étape ou par type."
             action={
-              <Button onClick={onCreateSubDossier}>
-                <FolderPlus className="size-4" />
-                Créer un sous-dossier
-              </Button>
+              canWrite ? (
+                <Button onClick={onCreateSubDossier}>
+                  <FolderPlus className="size-4" />
+                  Créer un sous-dossier
+                </Button>
+              ) : undefined
             }
           />
         ) : (
@@ -86,6 +93,7 @@ export function DossierDetailDocuments({
               onDelete={() => onDeleteSubDossier(sd.id)}
               addFichier={addFichier}
               deleteFichier={deleteFichier}
+              canWrite={canWrite}
             />
           ))
         )}

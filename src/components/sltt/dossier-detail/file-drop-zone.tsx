@@ -18,12 +18,14 @@ export function FileDropZone({
   fichiers,
   onUpload,
   onDelete,
+  canWrite = true,
 }: {
   dossierId: string;
   sousDossierId?: string;
   fichiers: DossierFichier[];
   onUpload: (input: FichierInput) => void;
   onDelete: (id: string) => Promise<void>;
+  canWrite?: boolean;
 }) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +86,7 @@ export function FileDropZone({
 
   return (
     <div className="space-y-3">
+      {canWrite && (
       <div
         role="button"
         tabIndex={0}
@@ -116,7 +119,7 @@ export function FileDropZone({
         <div>
           <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Glissez vos PDF ici</p>
           <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-            ou cliquez pour sélectionner · Max 2 Mo par fichier
+            ou cliquez pour sélectionner · Max {MAX_FILE_SIZE_MB} Mo par fichier
           </p>
         </div>
         <input
@@ -130,6 +133,7 @@ export function FileDropZone({
           }}
         />
       </div>
+      )}
 
       {fichiers.length > 0 ? (
         <div className="space-y-1.5">
@@ -153,14 +157,16 @@ export function FileDropZone({
                   <Button variant="ghost" size="icon" className="size-7" onClick={() => handleDownload(f)}>
                     <Download className="size-3.5" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 text-destructive"
-                    onClick={() => setFichierToDelete({ id: f.id, nom: f.nom })}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
+                  {canWrite && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-destructive"
+                      onClick={() => setFichierToDelete({ id: f.id, nom: f.nom })}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  )}
                 </div>
               </div>
             );
