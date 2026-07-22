@@ -1,71 +1,27 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import {
-  ArrowLeft,
-  Pencil,
-  FileText,
-  Receipt,
-  Check,
-  Trash2,
-  CheckCircle2,
-  Info,
-  Plus,
-  Upload,
-  Download,
-  File,
-  ChevronDown,
-  ChevronUp,
-  Folder,
-  FolderPlus,
-  FolderOpen,
-  Wallet,
-  History,
-  Clock,
-  CalendarClock,
-  CalendarCheck2,
-  AlertTriangle,
-  Truck,
-  Receipt as ReceiptIcon,
-} from "lucide-react";
+import { ArrowLeft, Info, Check, Plus } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import type {
-  SubDossierInput,
-  FichierInput,
-  SubDossier,
-  DossierFichier,
-  FournisseurType,
-  DossierFournisseurInput,
-} from "@/lib/store";
+import type { SubDossier, DossierFournisseurInput, FournisseurType } from "@/lib/store";
 import { calculerEcart, resteAPayer } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
-import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
+import { CHART_COLORS } from "@/lib/constants";
+import {
+  calculateDaysUntil,
+  isEcheanceDepassee,
+  isEcheanceImminente,
+} from "@/lib/echeance-utils";
 import { printHTML, htmlEscape } from "@/lib/export";
+import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
-import {
-  DossierStatutBadge,
-  EcartValue,
-  EcritureStatutBadge,
-  DossierFournisseurStatutBadge,
-  FactureStatutBadge,
-} from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -95,531 +51,104 @@ import {
 import {
   TransitionDialog,
   getNextTransition,
-  TRANSITION_META,
 } from "@/components/sltt/dossier-transition-dialog";
-import { cn } from "@/lib/utils";
-import type { DossierStatut } from "@/lib/store";
-
-/* ------------------------------------------------------------------ */
-/* Constants                                                           */
-/* ------------------------------------------------------------------ */
-
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 Mo
-
-const STATUTS_ORDERED: DossierStatut[] = [
-  "En cours",
-  "Dédouané",
-  "Livré",
-  "Soldé",
-];
-
-/* ------------------------------------------------------------------ */
-/* Stepper                                                             */
-/* ------------------------------------------------------------------ */
-
-function DossierStepper({ statut }: { statut: DossierStatut }) {
-  const currentIdx = STATUTS_ORDERED.indexOf(statut);
-  return (
-    <div role="list" aria-label="Progression du dossier" className="flex items-start">
-      {STATUTS_ORDERED.map((s, i) => {
-        const done = currentIdx > i;
-        const active = currentIdx === i;
-        const isLast = i === STATUTS_ORDERED.length - 1;
-        return (
-          <div
-            key={s}
-            role="listitem"
-            aria-current={active ? "step" : undefined}
-            aria-label={done ? `${s} — complété` : undefined}
-            className={cn("flex flex-col items-center", !isLast && "flex-1")}
-          >
-            <div className="flex w-full items-center">
-              <div
-                className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors",
-                  done
-                    ? "bg-primary text-white"
-                    : active
-                    ? "bg-primary text-white ring-4 ring-primary/20"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500",
-                )}
-              >
-                {done ? <Check className="size-3.5" /> : i + 1}
-              </div>
-              {!isLast && (
-                <div
-                  className={cn(
-                    "h-0.5 flex-1 transition-colors",
-                    done ? "bg-primary" : "bg-slate-200 dark:bg-slate-700",
-                  )}
-                />
-              )}
-            </div>
-            <span
-              className={cn(
-                "mt-2 text-xs",
-                !isLast && "w-full pr-4",
-                active
-                  ? "font-semibold text-primary"
-                  : done
-                  ? "text-slate-600 dark:text-slate-300"
-                  : "text-slate-400 dark:text-slate-500",
-              )}
-            >
-              {s}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Info rows                                                           */
-/* ------------------------------------------------------------------ */
-
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-border py-2.5 last:border-0">
-      <span className="shrink-0 text-sm text-slate-500 dark:text-slate-400">{label}</span>
-      <span className="text-right text-sm font-medium text-slate-900 dark:text-slate-100">
-        {value || "—"}
-      </span>
-    </div>
-  );
-}
-
-function AmountRow({
-  label,
-  value,
-  tone,
-  size = "sm",
-}: {
-  label: string;
-  value: number;
-  tone?: "emerald" | "amber" | "red";
-  size?: "sm" | "lg";
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 last:border-0">
-      <span
-        className={cn(
-          "shrink-0 text-sm",
-          tone ? "font-medium" : "text-slate-500 dark:text-slate-400",
-          tone === "emerald" && "text-emerald-700 dark:text-emerald-400",
-          tone === "amber" && "text-amber-700",
-          tone === "red" && "text-red-600 dark:text-red-400",
-          !tone && "text-slate-500 dark:text-slate-400",
-        )}
-      >
-        {label}
-      </span>
-      <span
-        className={cn(
-          "font-semibold tabular-nums",
-          size === "lg" ? "text-xl" : "text-sm",
-          tone === "emerald"
-            ? "text-emerald-700 dark:text-emerald-400"
-            : tone === "amber"
-            ? "text-amber-700"
-            : tone === "red"
-            ? "text-red-600 dark:text-red-400"
-            : "text-slate-900 dark:text-slate-100",
-        )}
-      >
-        {formatFCFA(value)}
-      </span>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* File Drop Zone                                                      */
-/* ------------------------------------------------------------------ */
-
-function FileDropZone({
-  dossierId,
-  sousDossierId,
-  fichiers,
-  onUpload,
-  onDelete,
-}: {
-  dossierId: string;
-  sousDossierId?: string;
-  fichiers: DossierFichier[];
-  onUpload: (input: FichierInput) => void;
-  onDelete: (id: string) => Promise<void>;
-}) {
-  const { toast } = useToast();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
-  const [fichierToDelete, setFichierToDelete] = useState<{ id: string; nom: string } | null>(null);
-
-  async function handleConfirmDeleteFichier() {
-    if (!fichierToDelete) return;
-    try {
-      await onDelete(fichierToDelete.id);
-      toast({ title: "Fichier supprimé", description: fichierToDelete.nom });
-    } catch (e) {
-      toast({
-        title: "Suppression impossible",
-        description: e instanceof Error ? e.message : "Erreur inattendue.",
-        variant: "destructive",
-      });
-    } finally {
-      setFichierToDelete(null);
-    }
-  }
-
-  function processFiles(fileList: FileList | null) {
-    if (!fileList) return;
-    Array.from(fileList).forEach((file) => {
-      if (file.size > MAX_FILE_SIZE) {
-        toast({
-          title: "Fichier trop volumineux",
-          description: `${file.name} dépasse la limite de 2 Mo.`,
-          variant: "destructive",
-        });
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        onUpload({
-          dossierId,
-          sousDossierId,
-          nom: file.name,
-          taille: file.size,
-          type: file.type || "application/octet-stream",
-          dataUrl: ev.target?.result as string,
-        });
-        toast({
-          title: "Fichier ajouté",
-          description: file.name,
-        });
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    processFiles(e.target.files);
-    if (inputRef.current) inputRef.current.value = "";
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragging(false);
-    processFiles(e.dataTransfer.files);
-  }
-
-  function handleDownload(f: DossierFichier) {
-    const a = document.createElement("a");
-    a.href = f.dataUrl;
-    a.download = f.nom;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-
-  return (
-    <div className="space-y-3">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Cliquer ou déposer des fichiers ici pour les joindre au dossier"
-        className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
-          dragging
-            ? "border-primary bg-primary/5"
-            : "border-border hover:border-primary/40 hover:bg-slate-50/50 dark:hover:bg-slate-800/60",
-        )}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            inputRef.current?.click();
-          }
-        }}
-      >
-        <Upload
-          className={cn(
-            "size-7 transition-colors",
-            dragging ? "text-primary" : "text-slate-300 dark:text-slate-700",
-          )}
-        />
-        <div>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Déposer des fichiers ici
-          </p>
-          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-            ou cliquer pour sélectionner · Max 2 Mo par fichier
-          </p>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          className="hidden"
-          multiple
-          onChange={handleInputChange}
-        />
-      </div>
-
-      {fichiers.length > 0 && (
-        <div className="space-y-1.5">
-          {fichiers.map((f) => {
-            const Icon = getFileIconComponent(f.type);
-            return (
-              <div
-                key={f.id}
-                className="flex items-center gap-3 rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
-              >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                  <Icon className="size-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {f.nom}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {formatFileSize(f.taille)} ·{" "}
-                    {formatDateShort(f.dateUpload)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 text-slate-400 dark:text-slate-500 hover:text-primary"
-                    title="Télécharger"
-                    aria-label={`Télécharger ${f.nom}`}
-                    onClick={() => handleDownload(f)}
-                  >
-                    <Download className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 text-slate-400 dark:text-slate-500 hover:text-destructive"
-                    title="Supprimer"
-                    aria-label={`Supprimer le fichier ${f.nom}`}
-                    onClick={() => setFichierToDelete({ id: f.id, nom: f.nom })}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {fichiers.length === 0 && (
-        <p className="text-center text-xs text-slate-400 dark:text-slate-500">Aucun fichier</p>
-      )}
-
-      <ConfirmDeleteDialog
-        open={!!fichierToDelete}
-        onOpenChange={(v) => !v && setFichierToDelete(null)}
-        title="Supprimer ce fichier ?"
-        description={<>Le fichier « {fichierToDelete?.nom} » sera définitivement supprimé. Cette action est irréversible.</>}
-        onConfirm={handleConfirmDeleteFichier}
-      />
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Sub-dossier card                                                    */
-/* ------------------------------------------------------------------ */
-
-function SubDossierCard({
-  sd,
-  fichiers,
-  onEdit,
-  onDelete,
-  addFichier,
-  deleteFichier,
-}: {
-  sd: SubDossier;
-  fichiers: DossierFichier[];
-  onEdit: () => void;
-  onDelete: () => void;
-  addFichier: (input: FichierInput) => void;
-  deleteFichier: (id: string) => Promise<void>;
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white dark:bg-slate-900 shadow-sm">
-      <div
-        className="flex cursor-pointer items-center gap-3 px-4 py-3.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-primary">
-          {expanded ? (
-            <FolderOpen className="size-4" />
-          ) : (
-            <Folder className="size-4" />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-slate-900 dark:text-slate-100">{sd.nom}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Créé le {formatDateShort(sd.dateCreation)} ·{" "}
-            <span className="font-medium">
-              {fichiers.length} fichier{fichiers.length !== 1 ? "s" : ""}
-            </span>
-          </p>
-        </div>
-        {sd.description && (
-          <p className="hidden max-w-[180px] truncate text-xs text-slate-400 dark:text-slate-500 sm:block">
-            {sd.description}
-          </p>
-        )}
-        <div
-          className="flex shrink-0 items-center gap-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-slate-400 dark:text-slate-500 hover:text-primary"
-            title="Renommer"
-            aria-label={`Renommer le sous-dossier ${sd.nom}`}
-            onClick={onEdit}
-          >
-            <Pencil className="size-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-slate-400 dark:text-slate-500 hover:text-destructive"
-            title="Supprimer"
-            aria-label={`Supprimer le sous-dossier ${sd.nom}`}
-            onClick={onDelete}
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
-        </div>
-        {expanded ? (
-          <ChevronUp className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
-        ) : (
-          <ChevronDown className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
-        )}
-      </div>
-
-      {expanded && (
-        <div className="border-t border-border px-4 pb-4 pt-3">
-          {sd.description && (
-            <p className="mb-3 text-sm text-slate-600 dark:text-slate-300 sm:hidden">
-              {sd.description}
-            </p>
-          )}
-          <FileDropZone
-            dossierId={sd.dossierId}
-            sousDossierId={sd.id}
-            fichiers={fichiers}
-            onUpload={addFichier}
-            onDelete={deleteFichier}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Main screen                                                         */
-/* ------------------------------------------------------------------ */
+import { DossierDetailHero } from "@/components/sltt/dossier-detail/dossier-detail-hero";
+import { DossierDetailOverview } from "@/components/sltt/dossier-detail/dossier-detail-overview";
+import { DossierDetailDocuments } from "@/components/sltt/dossier-detail/dossier-detail-documents";
+import { DossierDetailSuivi } from "@/components/sltt/dossier-detail/dossier-detail-suivi";
 
 export function DossierDetailScreen() {
   const { selectedId, go, openDossier } = useNav();
   const { toast } = useToast();
 
-  const dossier = useStore((s) => s.dossiers.find((d) => d.id === selectedId));
-  const client = useStore((s) => s.clients.find((c) => c.id === dossier?.clientId));
-  const addSubDossier = useStore((s) => s.addSubDossier);
-  const updateSubDossier = useStore((s) => s.updateSubDossier);
-  const deleteSubDossier = useStore((s) => s.deleteSubDossier);
-  const addFichier = useStore((s) => s.addFichier);
-  const deleteFichier = useStore((s) => s.deleteFichier);
-  const fournisseurs = useStore(useShallow((s) => s.fournisseurs));
-  const addDossierFournisseur = useStore((s) => s.addDossierFournisseur);
-  const removeDossier = useStore((s) => s.removeDossier);
+  const dossier = useStore((state) => state.dossiers.find((item) => item.id === selectedId));
+  const societes = useStore((state) => state.societes);
+  const addSubDossier = useStore((state) => state.addSubDossier);
+  const updateSubDossier = useStore((state) => state.updateSubDossier);
+  const deleteSubDossier = useStore((state) => state.deleteSubDossier);
+  const addFichier = useStore((state) => state.addFichier);
+  const deleteFichier = useStore((state) => state.deleteFichier);
+  const fournisseurs = useStore(useShallow((state) => state.fournisseurs));
+  const addDossierFournisseur = useStore((state) => state.addDossierFournisseur);
+  const removeDossier = useStore((state) => state.removeDossier);
   const canWrite = usePermission("dossiers:write");
-  // PERF-01: subscribe only to relevant slice for this dossier
+  const canTransition = usePermission("dossiers:transition");
+
   const dossierId = selectedId ?? "";
-  const dossierFournisseurs = useStore(useShallow((s) => s.dossierFournisseurs.filter((df) => df.dossierId === dossierId)));
-  const allSubDossiers = useStore(useShallow((s) => s.subDossiers.filter((sd) => sd.dossierId === dossierId)));
-  const allFichiers = useStore(useShallow((s) => s.fichiers.filter((f) => f.dossierId === dossierId)));
-  const allEcritures = useStore(useShallow((s) => s.ecritures.filter((e) => e.dossierId === dossierId)));
-  const auditLogs = useStore(useShallow((s) => s.auditLogs));
-  const dossierFactures = useStore(useShallow((s) => s.factures.filter((f) => f.dossierId === dossierId)));
+  const dossierFournisseurs = useStore(
+    useShallow((state) => state.dossierFournisseurs.filter((item) => item.dossierId === dossierId)),
+  );
+  const allSubDossiers = useStore(
+    useShallow((state) => state.subDossiers.filter((item) => item.dossierId === dossierId)),
+  );
+  const allFichiers = useStore(
+    useShallow((state) => state.fichiers.filter((item) => item.dossierId === dossierId)),
+  );
+  const allEcritures = useStore(
+    useShallow((state) => state.ecritures.filter((item) => item.dossierId === dossierId)),
+  );
+  const auditLogs = useStore(useShallow((state) => state.auditLogs));
+  const dossierFactures = useStore(
+    useShallow((state) => state.factures.filter((item) => item.dossierId === dossierId)),
+  );
 
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [subDossierDialogOpen, setSubDossierDialogOpen] = useState(false);
+  const [subDossierEditId, setSubDossierEditId] = useState<string | null>(null);
+  const [subDossierName, setSubDossierName] = useState("");
+  const [subDossierDescription, setSubDossierDescription] = useState("");
+  const [subDossierDeleteId, setSubDossierDeleteId] = useState<string | null>(null);
+  const [fournisseurDialogOpen, setFournisseurDialogOpen] = useState(false);
+  const [selectedFournisseurId, setSelectedFournisseurId] = useState("");
+  const [fournisseurDescription, setFournisseurDescription] = useState("");
+  const [fournisseurBudgetAmount, setFournisseurBudgetAmount] = useState("");
+  const [fournisseurActualAmount, setFournisseurActualAmount] = useState("");
+  const [fournisseurStatut, setFournisseurStatut] = useState<"En attente" | "Payé" | "Litige">(
+    "En attente",
+  );
+  const [fournisseurDate, setFournisseurDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
 
-  // Sub-dossier dialog states
-  const [sdDialogOpen, setSdDialogOpen] = useState(false);
-  const [sdEditId, setSdEditId] = useState<string | null>(null);
-  const [sdNom, setSdNom] = useState("");
-  const [sdDesc, setSdDesc] = useState("");
-
-  // Sub-dossier delete confirmation
-  const [sdDeleteId, setSdDeleteId] = useState<string | null>(null);
-
-  // Dossier ↔ Fournisseur link dialog
-  const [dfDialogOpen, setDfDialogOpen] = useState(false);
-  const [dfFournisseurId, setDfFournisseurId] = useState("");
-  const [dfDescription, setDfDescription] = useState("");
-  const [dfMontantBudgete, setDfMontantBudgete] = useState("");
-  const [dfMontantReel, setDfMontantReel] = useState("");
-  const [dfStatut, setDfStatut] = useState<"En attente" | "Payé" | "Litige">("En attente");
-  const [dfDate, setDfDate] = useState(() => new Date().toISOString().slice(0, 10));
-
-  // allSubDossiers, allFichiers, allEcritures are already filtered by dossierId (PERF-01)
   const subDossiers = allSubDossiers;
 
   const dossierFichiers = useMemo(
-    () => allFichiers.filter((f) => !f.sousDossierId),
+    () => allFichiers.filter((fichier) => !fichier.sousDossierId),
     [allFichiers],
   );
 
-  // BUG-04: build a Map once instead of calling subFichiersOf(sdId) per render
   const fichiersBySubDossier = useMemo(() => {
     const map = new Map<string, typeof allFichiers>();
-    allFichiers.forEach((f) => {
-      if (f.sousDossierId) {
-        if (!map.has(f.sousDossierId)) map.set(f.sousDossierId, []);
-        map.get(f.sousDossierId)!.push(f);
+    allFichiers.forEach((fichier) => {
+      if (fichier.sousDossierId) {
+        if (!map.has(fichier.sousDossierId)) map.set(fichier.sousDossierId, []);
+        map.get(fichier.sousDossierId)!.push(fichier);
       }
     });
     return map;
   }, [allFichiers]);
 
   const totalFichiers = allFichiers.length;
-
   const dossierEcritures = allEcritures;
 
-  // PERF-03: use regex with word boundary to avoid false positives
   const dossierAuditLogs = useMemo(() => {
     if (!dossier) return [];
-    const refEscaped = dossier.reference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const refRegex = new RegExp(`\\b${refEscaped}\\b`);
-    return auditLogs.filter((a) => refRegex.test(a.detail));
+    const escapedReference = dossier.reference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const referenceRegex = new RegExp(`\\b${escapedReference}\\b`);
+    return auditLogs.filter((entry) => referenceRegex.test(entry.detail));
   }, [auditLogs, dossier?.reference]);
+
+  const suiviCount =
+    dossierEcritures.length +
+    dossierFactures.length +
+    dossierFournisseurs.length +
+    dossierAuditLogs.length;
 
   if (!dossier) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+        <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
           <Info className="size-7" />
         </div>
         <div className="text-center">
@@ -638,132 +167,139 @@ export function DossierDetailScreen() {
     );
   }
 
-  const nextTransition = getNextTransition(dossier.statut);
-  const ecart = calculerEcart(dossier);
-  const reste = resteAPayer(dossier);
+  const currentDossier = dossier;
 
-  // Échéance
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const echeanceDate = dossier.dateEcheance ? parseLocalDate(dossier.dateEcheance) : null;
+  const nextTransition = getNextTransition(currentDossier.statut);
+  const ecart = calculerEcart(currentDossier);
+  const reste = resteAPayer(currentDossier);
+  const tauxRecouvrement =
+    currentDossier.montantInvesti > 0
+      ? Math.round((currentDossier.montantPaye / currentDossier.montantInvesti) * 100)
+      : 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const echeanceDate = currentDossier.dateEcheance
+    ? parseLocalDate(currentDossier.dateEcheance)
+    : null;
   echeanceDate?.setHours(0, 0, 0, 0);
-  const joursRestants = echeanceDate ? Math.ceil((echeanceDate.getTime() - today.getTime()) / 86400000) : null;
-  const echeanceDepassee = joursRestants !== null && joursRestants < 0;
-  const echeanceImminente = joursRestants !== null && joursRestants >= 0 && joursRestants <= 3;
-
-  /* ---------- Handlers ---------- */
+  const joursRestants = echeanceDate ? calculateDaysUntil(echeanceDate, today) : null;
+  const echeanceDepassee = isEcheanceDepassee(joursRestants);
+  const echeanceImminente = isEcheanceImminente(joursRestants);
 
   function openCreateSubDossier() {
-    setSdEditId(null);
-    setSdNom("");
-    setSdDesc("");
-    setSdDialogOpen(true);
+    setSubDossierEditId(null);
+    setSubDossierName("");
+    setSubDossierDescription("");
+    setSubDossierDialogOpen(true);
   }
 
-  function openEditSubDossier(sd: SubDossier) {
-    setSdEditId(sd.id);
-    setSdNom(sd.nom);
-    setSdDesc(sd.description ?? "");
-    setSdDialogOpen(true);
+  function openEditSubDossier(subDossier: SubDossier) {
+    setSubDossierEditId(subDossier.id);
+    setSubDossierName(subDossier.nom);
+    setSubDossierDescription(subDossier.description ?? "");
+    setSubDossierDialogOpen(true);
   }
 
   function handleSaveSubDossier() {
-    const nom = sdNom.trim();
-    if (!nom) return;
-    if (sdEditId) {
-      updateSubDossier(sdEditId, nom, sdDesc.trim() || undefined);
-      toast({ title: "Sous-dossier modifié", description: nom });
+    if (!canWrite) return;
+    const trimmedName = subDossierName.trim();
+    if (!trimmedName) return;
+    if (subDossierEditId) {
+      updateSubDossier(subDossierEditId, trimmedName, subDossierDescription.trim() || undefined);
+      toast({ title: "Sous-dossier modifié", description: trimmedName });
     } else {
-      addSubDossier({ dossierId: dossierId, nom, description: sdDesc.trim() || undefined });
-      toast({ title: "Sous-dossier créé", description: nom });
+      addSubDossier({
+        dossierId,
+        nom: trimmedName,
+        description: subDossierDescription.trim() || undefined,
+      });
+      toast({ title: "Sous-dossier créé", description: trimmedName });
     }
-    setSdDialogOpen(false);
+    setSubDossierDialogOpen(false);
   }
 
   function handleDeleteSubDossier() {
-    if (!sdDeleteId) return;
-    const sd = subDossiers.find((s) => s.id === sdDeleteId);
-    deleteSubDossier(sdDeleteId);
-    setSdDeleteId(null);
-    toast({
-      title: "Sous-dossier supprimé",
-      description: sd?.nom,
-    });
+    if (!canWrite || !subDossierDeleteId) return;
+    const subDossier = subDossiers.find((item) => item.id === subDossierDeleteId);
+    deleteSubDossier(subDossierDeleteId);
+    setSubDossierDeleteId(null);
+    toast({ title: "Sous-dossier supprimé", description: subDossier?.nom });
   }
 
   function openAddFournisseur() {
-    setDfFournisseurId("");
-    setDfDescription("");
-    setDfMontantBudgete("");
-    setDfMontantReel("");
-    setDfStatut("En attente");
-    setDfDate(new Date().toISOString().slice(0, 10));
-    setDfDialogOpen(true);
+    setSelectedFournisseurId("");
+    setFournisseurDescription("");
+    setFournisseurBudgetAmount("");
+    setFournisseurActualAmount("");
+    setFournisseurStatut("En attente");
+    setFournisseurDate(new Date().toISOString().slice(0, 10));
+    setFournisseurDialogOpen(true);
   }
 
   function handleSaveDossierFournisseur() {
-    if (!dossier || !dfFournisseurId) return;
-    const f = fournisseurs.find((x) => x.id === dfFournisseurId);
-    if (!f) return;
+    if (!canWrite || !selectedFournisseurId) return;
+    const fournisseur = fournisseurs.find((item) => item.id === selectedFournisseurId);
+    if (!fournisseur) return;
     const input: DossierFournisseurInput = {
-      dossierId: dossier.id,
-      dossierRef: dossier.reference,
-      fournisseurId: f.id,
-      fournisseurNom: f.nom,
-      type: f.type as FournisseurType,
-      description: dfDescription.trim(),
-      montantBudgete: dfMontantBudgete ? parseFloat(dfMontantBudgete) : 0,
-      montantReel: dfMontantReel ? parseFloat(dfMontantReel) : 0,
-      statut: dfStatut,
-      date: dfDate,
+      dossierId: currentDossier.id,
+      dossierRef: currentDossier.reference,
+      fournisseurId: fournisseur.id,
+      fournisseurNom: fournisseur.nom,
+      type: fournisseur.type as FournisseurType,
+      description: fournisseurDescription.trim(),
+      montantBudgete: fournisseurBudgetAmount ? parseFloat(fournisseurBudgetAmount) : 0,
+      montantReel: fournisseurActualAmount ? parseFloat(fournisseurActualAmount) : 0,
+      statut: fournisseurStatut,
+      date: fournisseurDate,
     };
     addDossierFournisseur(input);
-    setDfDialogOpen(false);
-    toast({ title: "Prestataire lié au dossier", description: f.nom });
+    setFournisseurDialogOpen(false);
+    toast({ title: "Prestataire lié au dossier", description: fournisseur.nom });
   }
 
   function handleInvoice() {
-    if (!dossier) return;
-    // Naviguer vers le module Factures avec le dossier pré-rempli
-    go("factures", { id: dossier.id });
+    go("factures", { id: currentDossier.id });
   }
 
-  function handlePdf() {
-    if (!dossier) return;
-    const d = dossier;
+  function handlePdfExport() {
+    const positiveMarginColor = CHART_COLORS.emerald;
+    const negativeMarginColor = CHART_COLORS.red;
     printHTML(
-      `Dossier ${d.reference}`,
+      `Dossier ${currentDossier.reference}`,
       `
       <h1>Dossier de transit</h1>
-      <div class="subtitle">Référence : <strong>${htmlEscape(d.reference)}</strong> · Statut : ${htmlEscape(d.statut)}</div>
+      <div class="subtitle">Référence : <strong>${htmlEscape(currentDossier.reference)}</strong> · Statut : ${htmlEscape(currentDossier.statut)}</div>
       <table>
         <tbody>
-          <tr><th style="width:35%">Client</th><td>${htmlEscape(d.clientNom)}</td></tr>
-          <tr><th>Nature de la marchandise</th><td>${htmlEscape(d.nature) || "—"}</td></tr>
-          <tr><th>N° de BL</th><td>${htmlEscape(d.bl) || "—"}</td></tr>
-          <tr><th>N° du camion</th><td>${htmlEscape(d.camion) || "—"}</td></tr>
-          <tr><th>Date</th><td>${d.date ? formatDateShort(d.date) : "—"}</td></tr>
+          <tr><th style="width:35%">Client</th><td>${htmlEscape(currentDossier.clientNom)}</td></tr>
+          <tr><th>Nature de la marchandise</th><td>${htmlEscape(currentDossier.nature) || "—"}</td></tr>
+          <tr><th>N° de BL</th><td>${htmlEscape(currentDossier.bl) || "—"}</td></tr>
+          <tr><th>N° du camion</th><td>${htmlEscape(currentDossier.camion) || "—"}</td></tr>
+          <tr><th>Date</th><td>${currentDossier.date ? formatDateShort(currentDossier.date) : "—"}</td></tr>
         </tbody>
       </table>
       <h2 style="margin-top:24px;font-size:14px;color:#1e40af">Montants (FCFA)</h2>
       <table>
         <tbody>
-          <tr><th style="width:35%">Droit de douane</th><td class="num">${formatFCFA(d.droitDouane, false)}</td></tr>
-          <tr><th>Frais de circuit global</th><td class="num">${formatFCFA(d.fraisCircuit, false)}</td></tr>
-          <tr><th>Frais de prestation</th><td class="num">${formatFCFA(d.fraisPrestation, false)}</td></tr>
-          <tr><th>Montant investi</th><td class="num">${formatFCFA(d.montantInvesti, false)}</td></tr>
-          <tr><th>Montant payé</th><td class="num">${formatFCFA(d.montantPaye, false)}</td></tr>
+          <tr><th style="width:35%">Droit de douane</th><td class="num">${formatFCFA(currentDossier.droitDouane, false)}</td></tr>
+          <tr><th>Frais de circuit global</th><td class="num">${formatFCFA(currentDossier.fraisCircuit, false)}</td></tr>
+          <tr><th>Frais de prestation</th><td class="num">${formatFCFA(currentDossier.fraisPrestation, false)}</td></tr>
+          <tr><th>Montant investi</th><td class="num">${formatFCFA(currentDossier.montantInvesti, false)}</td></tr>
+          <tr><th>Montant payé</th><td class="num">${formatFCFA(currentDossier.montantPaye, false)}</td></tr>
           <tr><th>Reste à payer</th><td class="num">${formatFCFA(reste, false)}</td></tr>
           <tr class="total-row">
             <th>Marge calculée</th>
-            <td class="num" style="color:${ecart >= 0 ? "#059669" : "#dc2626"}">
+            <td class="num" style="color:${ecart >= 0 ? positiveMarginColor : negativeMarginColor}">
               ${ecart >= 0 ? "+" : ""}${ecart.toLocaleString("fr-FR")}
             </td>
           </tr>
         </tbody>
       </table>
-      ${d.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${htmlEscape(d.notes)}</p>` : ""}
-      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#475569">${subDossiers.map((sd) => `<li>${htmlEscape(sd.nom)}${sd.description ? ` — ${htmlEscape(sd.description)}` : ""}</li>`).join("")}</ul>` : ""}
+      ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
+      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#475569">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
     `,
+      resolvePrintHTMLBrand(societes),
     );
     toast({
       title: "PDF généré",
@@ -774,917 +310,130 @@ export function DossierDetailScreen() {
   const deleteConsequences = [
     allFichiers.length > 0 && `${allFichiers.length} fichier(s) archivé(s) définitivement supprimé(s)`,
     subDossiers.length > 0 && `${subDossiers.length} sous-dossier(s) définitivement supprimé(s)`,
-    dossierFournisseurs.length > 0 && `${dossierFournisseurs.length} prestataire(s) lié(s) définitivement supprimé(s)`,
-    allEcritures.length > 0 && `${allEcritures.length} écriture(s) comptable(s) seront déconnectée(s) du dossier (non supprimées)`,
-    dossierFactures.length > 0 && `${dossierFactures.length} facture(s) seront déconnectée(s) du dossier (non supprimées)`,
+    dossierFournisseurs.length > 0 &&
+      `${dossierFournisseurs.length} prestataire(s) lié(s) définitivement supprimé(s)`,
+    allEcritures.length > 0 &&
+      `${allEcritures.length} écriture(s) comptable(s) seront déconnectée(s) du dossier (non supprimées)`,
+    dossierFactures.length > 0 &&
+      `${dossierFactures.length} facture(s) seront déconnectée(s) du dossier (non supprimées)`,
   ].filter(Boolean) as string[];
 
   async function handleDelete() {
-    if (!dossier) return;
     try {
-      await removeDossier(dossier.id);
-      toast({ title: "Dossier supprimé", description: dossier.reference });
+      await removeDossier(currentDossier.id);
+      toast({ title: "Dossier supprimé", description: currentDossier.reference });
       go("dossiers");
-    } catch (e) {
+    } catch (error) {
       toast({
         title: "Suppression impossible",
-        description: e instanceof Error ? e.message : "Erreur inattendue.",
+        description: error instanceof Error ? error.message : "Erreur inattendue.",
         variant: "destructive",
       });
     }
   }
 
-  /* ---------- Render ---------- */
-
   return (
     <div className="space-y-6">
-      {/* Back */}
-      <Button
-        variant="ghost"
-        className="-ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-        onClick={() => go("dossiers")}
-      >
-        <ArrowLeft className="size-4" />
-        ← Liste
-      </Button>
+      <DossierDetailHero
+        dossier={currentDossier}
+        reste={reste}
+        ecart={ecart}
+        tauxRecouvrement={tauxRecouvrement}
+        joursRestants={joursRestants}
+        echeanceDepassee={echeanceDepassee}
+        echeanceImminente={echeanceImminente}
+        nextTransition={nextTransition}
+        canWrite={canWrite}
+        canTransition={canTransition}
+        onBack={() => go("dossiers")}
+        onEdit={() => openDossier(currentDossier.id, "edit")}
+        onTransition={() => setTransitionOpen(true)}
+        onInvoice={handleInvoice}
+        onPdf={handlePdfExport}
+        onDelete={() => setDeleteOpen(true)}
+      />
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            {dossier.reference}
-          </h1>
-          <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1 font-mono text-xs text-slate-500 dark:text-slate-400">
-            {dossier.clientNom}
-          </span>
-          <DossierStatutBadge statut={dossier.statut} />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleInvoice}>
-            <Receipt className="size-4" />
-            Facture
-          </Button>
-          <Button variant="outline" onClick={handlePdf}>
-            <FileText className="size-4" />
-            PDF
-          </Button>
-          <Button onClick={() => openDossier(dossier.id, "edit")}>
-            <Pencil className="size-4" />
-            Modifier
-          </Button>
-          {canWrite && (
-            <Button
-              variant="outline"
-              className="text-red-600 hover:text-red-700 dark:text-red-400"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="size-4" />
-              Supprimer
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Stepper */}
-      <Card className="border-border/80 p-5 shadow-sm">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-          Progression du dossier
-        </p>
-        <DossierStepper statut={dossier.statut} />
-      </Card>
-
-      {/* Tabs */}
-      <Tabs defaultValue="resume">
+      <Tabs defaultValue="apercu">
         <TabsList className="mb-4 h-10 flex-wrap">
-          <TabsTrigger value="resume">Résumé</TabsTrigger>
+          <TabsTrigger value="apercu">Aperçu</TabsTrigger>
           <TabsTrigger value="documents">
             Documents
-            {subDossiers.length > 0 && (
-              <span className="ml-1 rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
-                +{subDossiers.length} sous-doss.
+            {totalFichiers > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                {totalFichiers}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="finance">
-            Finance
-            {(dossierEcritures.length > 0 || dossierFactures.length > 0) && (
+          <TabsTrigger value="suivi">
+            Suivi
+            {suiviCount > 0 && (
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {dossierEcritures.length + dossierFactures.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="fournisseurs">
-            Partenaires
-            {dossierFournisseurs.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {dossierFournisseurs.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="activite">
-            Historique
-            {dossierAuditLogs.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {dossierAuditLogs.length}
+                {suiviCount}
               </span>
             )}
           </TabsTrigger>
         </TabsList>
 
-        {/* ---- TAB: Informations ---- */}
-        <TabsContent value="resume">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
-              {/* General info */}
-              <Card className="border-border/80 p-5 shadow-sm">
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                  Informations générales
-                </h2>
-                <InfoRow label="Client" value={dossier.clientNom} />
-                <InfoRow label="Nature de la marchandise" value={dossier.nature} />
-                <InfoRow
-                  label="N° de BL"
-                  value={<span className="font-mono text-slate-700 dark:text-slate-300">{dossier.bl}</span>}
-                />
-                <InfoRow
-                  label="N° du camion"
-                  value={<span className="font-mono text-slate-700 dark:text-slate-300">{dossier.camion}</span>}
-                />
-                {dossier.modeTransport && (
-                  <InfoRow label="Mode de transport" value={dossier.modeTransport} />
-                )}
-                {dossier.portEntree && (
-                  <InfoRow label="Port / Frontière d'entrée" value={dossier.portEntree} />
-                )}
-                {dossier.noConteneur && (
-                  <InfoRow label="N° conteneur" value={<span className="font-mono text-slate-700 dark:text-slate-300">{dossier.noConteneur}</span>} />
-                )}
-                {dossier.poidsTotal && (
-                  <InfoRow label="Poids total" value={`${dossier.poidsTotal.toLocaleString("fr-FR")} kg`} />
-                )}
-                <InfoRow
-                  label="Date d'ouverture"
-                  value={dossier.date ? formatDateShort(dossier.date) : "—"}
-                />
-                {dossier.dateEcheance && (
-                  <InfoRow
-                    label="Date d'échéance"
-                    value={
-                      <span className={cn(
-                        "flex items-center gap-1.5 font-medium",
-                        echeanceDepassee ? "text-red-600 dark:text-red-400" : echeanceImminente ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"
-                      )}>
-                        {echeanceDepassee ? <AlertTriangle className="size-3.5" /> : <CalendarClock className="size-3.5" />}
-                        {formatDateShort(dossier.dateEcheance)}
-                        {echeanceDepassee && <span className="text-xs font-normal">(dépassée de {Math.abs(joursRestants!)}j)</span>}
-                        {echeanceImminente && <span className="text-xs font-normal">({joursRestants}j restants)</span>}
-                      </span>
-                    }
-                  />
-                )}
-                {dossier.dateDedouanement && (
-                  <InfoRow
-                    label="Date de dédouanement"
-                    value={
-                      <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-medium">
-                        <CalendarCheck2 className="size-3.5" />
-                        {formatDateShort(dossier.dateDedouanement)}
-                      </span>
-                    }
-                  />
-                )}
-              </Card>
-
-              {/* Alerte échéance dépassée */}
-              {echeanceDepassee && (
-                <Card className="border-l-4 border-l-red-500 border-border/80 p-4 shadow-sm bg-red-50/60 dark:bg-red-950/30">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="size-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-red-800">Échéance dépassée</p>
-                      <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                        La date limite du {formatDateShort(dossier.dateEcheance!)} est dépassée de {Math.abs(joursRestants!)} jour{Math.abs(joursRestants!) > 1 ? "s" : ""}. Des surestaries peuvent s'appliquer.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              )}
-              {echeanceImminente && !echeanceDepassee && (
-                <Card className="border-l-4 border-l-amber-500 border-border/80 p-4 shadow-sm bg-amber-50/60 dark:bg-amber-950/30">
-                  <div className="flex items-start gap-3">
-                    <CalendarClock className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-amber-800">Échéance imminente</p>
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                        Il reste {joursRestants} jour{joursRestants! > 1 ? "s" : ""} avant la date limite du {formatDateShort(dossier.dateEcheance!)}.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {/* Notes */}
-              {dossier.notes && (
-                <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    Notes
-                  </h2>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                    {dossier.notes}
-                  </p>
-                </Card>
-              )}
-
-              {/* Next action */}
-              {nextTransition ? (
-                (() => {
-                  const meta = TRANSITION_META[nextTransition];
-                  const Icon = meta.icon;
-                  return (
-                    <Card
-                      className={cn(
-                        "border-border/80 border-l-4 p-5 shadow-sm",
-                        meta.borderClass,
-                      )}
-                    >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={cn(
-                              "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                              meta.bgClass,
-                              meta.colorClass,
-                            )}
-                          >
-                            <Icon className="size-5" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                              Action suivante
-                            </p>
-                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
-                              {meta.actionDescription}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          className="shrink-0 self-start"
-                          onClick={() => setTransitionOpen(true)}
-                        >
-                          {meta.confirmLabel}
-                        </Button>
-                      </div>
-                    </Card>
-                  );
-                })()
-              ) : (
-                <Card className="border-border/80 border-l-4 border-l-emerald-500 p-5 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        Dossier clôturé
-                      </p>
-                      <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
-                        Ce dossier est soldé. Tous les paiements ont été enregistrés.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              )}
-            </div>
-
-            {/* Right — financial summary */}
-            <div className="lg:col-span-1">
-              <div className="space-y-4 lg:sticky lg:top-24">
-                <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    Récapitulatif financier
-                  </h2>
-                  <AmountRow label="Droit de douane" value={dossier.droitDouane} />
-                  <AmountRow label="Frais de circuit" value={dossier.fraisCircuit} />
-                  <AmountRow label="Frais de prestation" value={dossier.fraisPrestation} />
-                  <Separator className="my-1" />
-                  <AmountRow label="Montant investi" value={dossier.montantInvesti} />
-                  <AmountRow label="Montant payé" value={dossier.montantPaye} tone="emerald" />
-                  <AmountRow
-                    label="Reste à payer"
-                    value={reste}
-                    tone={reste > 0 ? "amber" : "emerald"}
-                  />
-                  <div className="mt-4 border-t border-border pt-4">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-sm text-slate-500 dark:text-slate-400">Marge calculée</span>
-                      <EcartValue value={ecart} />
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                      Prestation − (Douane + Circuit)
-                    </p>
-                  </div>
-                  <Separator className="my-4" />
-                  <div className="flex flex-col gap-2">
-                    <Button className="w-full" onClick={() => openDossier(dossier.id, "edit")}>
-                      <Pencil className="size-4" />
-                      Modifier le dossier
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={handlePdf}>
-                      <FileText className="size-4" />
-                      Générer le PDF
-                    </Button>
-                  </div>
-                </Card>
-
-                {/* Rentabilité */}
-                <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Rentabilité</h2>
-                  {(() => {
-                    const recettes = dossier.fraisPrestation;
-                    const charges  = dossier.droitDouane + dossier.fraisCircuit;
-                    const marge    = recettes - charges;
-                    const tauxMarge = recettes > 0 ? Math.round((marge / recettes) * 100) : 0;
-                    const tauxRec   = dossier.montantInvesti > 0 ? Math.round((dossier.montantPaye / dossier.montantInvesti) * 100) : 0;
-                    return (
-                      <>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Recettes (prestation)</span>
-                            <span className="font-semibold tabular-nums">{formatFCFA(recettes)}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Charges (douane + circuit)</span>
-                            <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">−{formatFCFA(charges)}</span>
-                          </div>
-                          <Separator className="my-1" />
-                          <div className="flex justify-between text-sm font-semibold">
-                            <span>Marge brute</span>
-                            <span className={marge >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
-                              {marge >= 0 ? "+" : ""}{formatFCFA(marge)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Taux de marge</span>
-                            <span className={cn("font-semibold tabular-nums", marge >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                              {tauxMarge}%
-                            </span>
-                          </div>
-                        </div>
-                        <Separator className="my-3" />
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Recouvrement</span>
-                            <span className="font-semibold tabular-nums">{tauxRec}%</span>
-                          </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                            <div
-                              className={cn("h-full rounded-full transition-[width]", tauxRec >= 100 ? "bg-emerald-500" : "bg-blue-500")}
-                              style={{ width: `${Math.min(100, tauxRec)}%` }}
-                            />
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </Card>
-
-                {/* Quick stats */}
-                <Card className="border-border/80 p-5 shadow-sm">
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    Contenu du dossier
-                  </h2>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                        <Folder className="size-3.5" />
-                        Sous-dossiers
-                      </span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">{subDossiers.length}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                        <File className="size-3.5" />
-                        Fichiers joints
-                      </span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">{totalFichiers}</span>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </div>
+        <TabsContent value="apercu">
+          <DossierDetailOverview
+            dossier={currentDossier}
+            ecart={ecart}
+            reste={reste}
+            nextTransition={nextTransition}
+            canTransition={canTransition}
+            echeanceDepassee={echeanceDepassee}
+            echeanceImminente={echeanceImminente}
+            joursRestants={joursRestants}
+            onTransition={() => setTransitionOpen(true)}
+          />
         </TabsContent>
 
-        {/* ---- TAB: Documents ---- */}
-        <TabsContent value="documents" className="space-y-6">
-          <div className="space-y-4">
-            {/* Fichiers uploadés */}
-            <Card className="border-border/80 p-6 shadow-sm">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <FileText className="size-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Fichiers joints
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Déposez les documents numérisés liés à ce dossier
-                  </p>
-                </div>
-              </div>
-              <FileDropZone
-                dossierId={dossier.id}
-                fichiers={dossierFichiers}
-                onUpload={addFichier}
-                onDelete={deleteFichier}
-              />
-            </Card>
-          </div>
-
-          {/* ---- Sous-dossiers (même onglet Documents) ---- */}
-          <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Sous-dossiers ({subDossiers.length})
-                </h2>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  Organisez vos documents par catégorie ou par étape
-                </p>
-              </div>
-              <Button onClick={openCreateSubDossier}>
-                <FolderPlus className="size-4" />
-                Nouveau sous-dossier
-              </Button>
-            </div>
-
-            {/* Empty state */}
-            {subDossiers.length === 0 && (
-              <Card className="border-border/80 shadow-sm">
-                <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-                  <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-                    <FolderOpen className="size-7" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Aucun sous-dossier
-                  </h3>
-                  <p className="max-w-xs text-sm text-slate-500 dark:text-slate-400">
-                    Créez des sous-dossiers pour organiser vos documents : BL, douane,
-                    livraison…
-                  </p>
-                  <Button className="mt-1" onClick={openCreateSubDossier}>
-                    <FolderPlus className="size-4" />
-                    Créer un sous-dossier
-                  </Button>
-                </div>
-              </Card>
-            )}
-
-            {/* Sub-dossier cards */}
-            {subDossiers.map((sd) => (
-              <SubDossierCard
-                key={sd.id}
-                sd={sd}
-                fichiers={fichiersBySubDossier.get(sd.id) ?? []}
-                onEdit={() => openEditSubDossier(sd)}
-                onDelete={() => setSdDeleteId(sd.id)}
+        <TabsContent value="documents">
+          <DossierDetailDocuments
+            dossierId={currentDossier.id}
+            dossierFichiers={dossierFichiers}
+            subDossiers={subDossiers}
+            fichiersBySubDossier={fichiersBySubDossier}
+            onCreateSubDossier={openCreateSubDossier}
+            onEditSubDossier={openEditSubDossier}
+            onDeleteSubDossier={setSubDossierDeleteId}
                 addFichier={addFichier}
                 deleteFichier={deleteFichier}
               />
-            ))}
-          </div>
         </TabsContent>
 
-        {/* ---- TAB: Finance (paiements) ---- */}
-        <TabsContent value="finance" className="space-y-6">
-          <Card className="border-border/80 p-6 shadow-sm">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-                <Wallet className="size-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Paiements liés à ce dossier
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Écritures comptables enregistrées pour {dossier.reference}
-                </p>
-              </div>
-            </div>
-
-            {dossierEcritures.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Wallet className="size-10 text-slate-200 dark:text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  Aucun paiement enregistré pour ce dossier.
-                </p>
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                  Les paiements apparaissent ici lors du passage en statut Soldé ou via la comptabilité.
-                </p>
-              </div>
-            ) : (
-              <>
-              <div className="space-y-3 sm:hidden">
-                {dossierEcritures.map((e) => {
-                  const resteE = resteAPayer(e);
-                  const statut: "Soldé" | "En attente" = resteE === 0 ? "Soldé" : "En attente";
-                  return (
-                    <Card key={e.id} className="border-border/80 p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="tabular-nums text-sm text-slate-600 dark:text-slate-300">{formatDateShort(e.date)}</p>
-                        <EcritureStatutBadge statut={statut} />
-                      </div>
-                      <dl className="mt-3 space-y-1.5 text-sm">
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500">Investi</dt>
-                          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(e.montantInvesti)}</dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500">Payé</dt>
-                          <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(e.montantPaye)}</dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500">Reste dû</dt>
-                          <dd className="tabular-nums">
-                            {resteE > 0 ? (
-                              <span className="font-semibold text-amber-600 dark:text-amber-400">{formatFCFA(resteE)}</span>
-                            ) : (
-                              <span className="text-emerald-600 dark:text-emerald-400">Soldé</span>
-                            )}
-                          </dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500">Mode</dt>
-                          <dd className="text-slate-700 dark:text-slate-300">{e.modePaiement}</dd>
-                        </div>
-                      </dl>
-                    </Card>
-                  );
-                })}
-              </div>
-              <div className="hidden overflow-x-auto sm:block">
-                <Table aria-label="Historique des écritures du dossier">
-                  <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Date
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Investi
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Payé
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Reste dû
-                      </TableHead>
-                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
-                        Mode
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Statut
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dossierEcritures.map((e) => {
-                      const resteE = resteAPayer(e);
-                      const statut: "Soldé" | "En attente" = resteE === 0 ? "Soldé" : "En attente";
-                      return (
-                        <TableRow
-                          key={e.id}
-                          className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
-                        >
-                          <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
-                            {formatDateShort(e.date)}
-                          </TableCell>
-                          <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
-                            {formatFCFA(e.montantInvesti)}
-                          </TableCell>
-                          <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
-                            {formatFCFA(e.montantPaye)}
-                          </TableCell>
-                          <TableCell className="px-4 py-3.5 text-right tabular-nums">
-                            {resteE > 0 ? (
-                              <span className="font-semibold text-amber-600 dark:text-amber-400">
-                                {formatFCFA(resteE)}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-emerald-600 dark:text-emerald-400">Soldé</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="hidden px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300 sm:table-cell">
-                            {e.modePaiement}
-                          </TableCell>
-                          <TableCell className="px-4 py-3.5">
-                            <EcritureStatutBadge statut={statut} />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              </>
-            )}
-          </Card>
-
-          {/* ---- Factures liées (même onglet Finance) ---- */}
-          <Card className="border-border/80 p-6 shadow-sm">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
-                  <ReceiptIcon className="size-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Factures liées à ce dossier
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Émises séparément dans le module Factures — indépendant des écritures ci-dessus
-                  </p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleInvoice}>
-                <ReceiptIcon className="size-4" />
-                Nouvelle facture
-              </Button>
-            </div>
-
-            {dossierFactures.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <ReceiptIcon className="size-10 text-slate-200 dark:text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  Aucune facture émise pour ce dossier.
-                </p>
-              </div>
-            ) : (
-              <>
-              <div className="space-y-3 sm:hidden">
-                {dossierFactures.map((f) => (
-                  <Card
-                    key={f.id}
-                    className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
-                    onClick={() => go("facture-detail", { id: f.id })}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-mono text-xs font-semibold text-blue-700">{f.numero}</p>
-                      <FactureStatutBadge statut={f.statut} />
-                    </div>
-                    <dl className="mt-3 space-y-1.5 text-sm">
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Date</dt>
-                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(f.date)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Montant TTC</dt>
-                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(f.montantTTC)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Payé</dt>
-                        <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{formatFCFA(f.montantPaye)}</dd>
-                      </div>
-                    </dl>
-                  </Card>
-                ))}
-              </div>
-              <div className="hidden overflow-x-auto sm:block">
-                <Table aria-label="Factures du dossier">
-                  <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Numéro
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Date
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Montant TTC
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Payé
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Statut
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dossierFactures.map((f) => (
-                      <TableRow
-                        key={f.id}
-                        className="cursor-pointer border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
-                        onClick={() => go("facture-detail", { id: f.id })}
-                      >
-                        <TableCell className="px-4 py-3.5 font-mono text-xs font-semibold text-blue-700">
-                          {f.numero}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
-                          {formatDateShort(f.date)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
-                          {formatFCFA(f.montantTTC)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
-                          {formatFCFA(f.montantPaye)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5">
-                          <FactureStatutBadge statut={f.statut} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              </>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ---- TAB: Fournisseurs ---- */}
-        <TabsContent value="fournisseurs">
-          <Card className="border-border/80 p-6 shadow-sm">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
-                  <Truck className="size-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Fournisseurs & sous-traitants
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Coûts de sous-traitance imputés à {dossier.reference}
-                  </p>
-                </div>
-              </div>
-              <Button size="sm" onClick={openAddFournisseur}>
-                <Plus className="size-4" />
-                Ajouter un prestataire
-              </Button>
-            </div>
-
-            {dossierFournisseurs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Truck className="size-10 text-slate-200 dark:text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  Aucun fournisseur lié à ce dossier.
-                </p>
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                  Ajoutez un transporteur, un commissionnaire ou un manutentionnaire et son coût réel.
-                </p>
-              </div>
-            ) : (
-              <>
-              <div className="space-y-3 sm:hidden">
-                {dossierFournisseurs.map((df) => (
-                  <Card key={df.id} className="border-border/80 p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{df.fournisseurNom}</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500">{df.type}</p>
-                      </div>
-                      <DossierFournisseurStatutBadge statut={df.statut} />
-                    </div>
-                    <dl className="mt-3 space-y-1.5 text-sm">
-                      {df.description && (
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500">Description</dt>
-                          <dd className="text-right text-slate-600 dark:text-slate-300">{df.description}</dd>
-                        </div>
-                      )}
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Budgété</dt>
-                        <dd className="tabular-nums text-slate-600 dark:text-slate-300">{formatFCFA(df.montantBudgete)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Réel</dt>
-                        <dd className="tabular-nums font-medium text-slate-800 dark:text-slate-200">{formatFCFA(df.montantReel)}</dd>
-                      </div>
-                    </dl>
-                  </Card>
-                ))}
-              </div>
-              <div className="hidden overflow-x-auto sm:block">
-                <Table aria-label="Fournisseurs liés au dossier">
-                  <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Prestataire
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Description
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Budgété
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Réel
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Statut
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dossierFournisseurs.map((df) => (
-                      <TableRow key={df.id} className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
-                        <TableCell className="px-4 py-3.5 text-sm font-medium text-slate-800 dark:text-slate-200">
-                          {df.fournisseurNom}
-                          <p className="text-xs font-normal text-slate-400 dark:text-slate-500">{df.type}</p>
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300">
-                          {df.description || "—"}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-600 dark:text-slate-300">
-                          {formatFCFA(df.montantBudgete)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-800 dark:text-slate-200">
-                          {formatFCFA(df.montantReel)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5">
-                          <DossierFournisseurStatutBadge statut={df.statut} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              </>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ---- TAB: Activité (discussion) ---- */}
-        <TabsContent value="activite" className="space-y-6">
-          <Card className="border-border/80 p-6 shadow-sm">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                <History className="size-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Historique du dossier
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Toutes les actions enregistrées sur {dossier.reference}
-                </p>
-              </div>
-            </div>
-
-            {dossierAuditLogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <History className="size-10 text-slate-200 dark:text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  Aucune action enregistrée pour ce dossier.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {dossierAuditLogs.map((a) => (
-                  <div key={a.id} className="flex items-start gap-3 py-3.5">
-                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                      <Clock className="size-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{a.action}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{a.detail}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
-                        {formatDateShort(a.date.slice(0, 10))}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{a.user}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+        <TabsContent value="suivi">
+          <DossierDetailSuivi
+            dossier={currentDossier}
+            ecritures={dossierEcritures}
+            factures={dossierFactures}
+            fournisseurs={dossierFournisseurs}
+            auditLogs={dossierAuditLogs}
+            onNewFacture={handleInvoice}
+            onOpenFacture={(factureId) => go("facture-detail", { id: factureId })}
+            onAddFournisseur={openAddFournisseur}
+            onGoComptabilite={() => go("comptabilite")}
+          />
         </TabsContent>
       </Tabs>
 
-      {/* Transition dialog */}
       {nextTransition && (
         <TransitionDialog
-          dossier={dossier}
+          dossier={currentDossier}
           transition={nextTransition}
           open={transitionOpen}
           onOpenChange={setTransitionOpen}
         />
       )}
 
-      {/* Sub-dossier create/edit dialog */}
-      <Dialog open={sdDialogOpen} onOpenChange={setSdDialogOpen}>
+      <Dialog open={subDossierDialogOpen} onOpenChange={setSubDossierDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {sdEditId ? "Modifier le sous-dossier" : "Nouveau sous-dossier"}
+              {subDossierEditId ? "Modifier le sous-dossier" : "Nouveau sous-dossier"}
             </DialogTitle>
             <DialogDescription>
-              {sdEditId
+              {subDossierEditId
                 ? "Mettez à jour le nom ou la description."
                 : "Créez un sous-dossier pour organiser vos documents."}
             </DialogDescription>
@@ -1696,13 +445,13 @@ export function DossierDetailScreen() {
               </Label>
               <Input
                 id="sd-nom"
-                value={sdNom}
-                onChange={(e) => setSdNom(e.target.value)}
+                value={subDossierName}
+                onChange={(event) => setSubDossierName(event.target.value)}
                 placeholder="ex. Documents douane"
                 className="h-10"
                 autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveSubDossier();
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") handleSaveSubDossier();
                 }}
               />
             </div>
@@ -1712,19 +461,19 @@ export function DossierDetailScreen() {
               </Label>
               <Input
                 id="sd-desc"
-                value={sdDesc}
-                onChange={(e) => setSdDesc(e.target.value)}
+                value={subDossierDescription}
+                onChange={(event) => setSubDossierDescription(event.target.value)}
                 placeholder="Brève description du contenu…"
                 className="h-10"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSdDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setSubDossierDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSaveSubDossier} disabled={!sdNom.trim()}>
-              {sdEditId ? (
+            <Button onClick={handleSaveSubDossier} disabled={!subDossierName.trim()}>
+              {subDossierEditId ? (
                 <>
                   <Check className="size-4" />
                   Enregistrer
@@ -1740,11 +489,10 @@ export function DossierDetailScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* Sub-dossier delete confirmation */}
       <AlertDialog
-        open={!!sdDeleteId}
-        onOpenChange={(v) => {
-          if (!v) setSdDeleteId(null);
+        open={!!subDossierDeleteId}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSubDossierDeleteId(null);
         }}
       >
         <AlertDialogContent>
@@ -1753,7 +501,7 @@ export function DossierDetailScreen() {
             <AlertDialogDescription>
               Le sous-dossier{" "}
               <strong>
-                {subDossiers.find((s) => s.id === sdDeleteId)?.nom}
+                {subDossiers.find((item) => item.id === subDossierDeleteId)?.nom}
               </strong>{" "}
               et tous ses fichiers seront définitivement supprimés.
             </AlertDialogDescription>
@@ -1770,8 +518,7 @@ export function DossierDetailScreen() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dossier ↔ Fournisseur link dialog */}
-      <Dialog open={dfDialogOpen} onOpenChange={setDfDialogOpen}>
+      <Dialog open={fournisseurDialogOpen} onOpenChange={setFournisseurDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Ajouter un prestataire</DialogTitle>
@@ -1784,7 +531,7 @@ export function DossierDetailScreen() {
               <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Fournisseur <span className="text-red-500">*</span>
               </Label>
-              <Select value={dfFournisseurId} onValueChange={setDfFournisseurId}>
+              <Select value={selectedFournisseurId} onValueChange={setSelectedFournisseurId}>
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
@@ -1794,9 +541,9 @@ export function DossierDetailScreen() {
                       Aucun fournisseur — créez-en un dans le module Fournisseurs.
                     </div>
                   ) : (
-                    fournisseurs.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        {f.nom} · {f.type}
+                    fournisseurs.map((fournisseur) => (
+                      <SelectItem key={fournisseur.id} value={fournisseur.id}>
+                        {fournisseur.nom} · {fournisseur.type}
                       </SelectItem>
                     ))
                   )}
@@ -1804,31 +551,37 @@ export function DossierDetailScreen() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Description</Label>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Description
+              </Label>
               <Input
-                value={dfDescription}
-                onChange={(e) => setDfDescription(e.target.value)}
+                value={fournisseurDescription}
+                onChange={(event) => setFournisseurDescription(event.target.value)}
                 placeholder="ex. Transport Dakar → Bamako"
                 className="h-10"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Montant budgété (FCFA)</Label>
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Montant budgété (FCFA)
+                </Label>
                 <Input
                   type="number"
-                  value={dfMontantBudgete}
-                  onChange={(e) => setDfMontantBudgete(e.target.value)}
+                  value={fournisseurBudgetAmount}
+                  onChange={(event) => setFournisseurBudgetAmount(event.target.value)}
                   placeholder="0"
                   className="h-10"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Montant réel (FCFA)</Label>
+                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Montant réel (FCFA)
+                </Label>
                 <Input
                   type="number"
-                  value={dfMontantReel}
-                  onChange={(e) => setDfMontantReel(e.target.value)}
+                  value={fournisseurActualAmount}
+                  onChange={(event) => setFournisseurActualAmount(event.target.value)}
                   placeholder="0"
                   className="h-10"
                 />
@@ -1839,14 +592,19 @@ export function DossierDetailScreen() {
                 <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Date</Label>
                 <Input
                   type="date"
-                  value={dfDate}
-                  onChange={(e) => setDfDate(e.target.value)}
+                  value={fournisseurDate}
+                  onChange={(event) => setFournisseurDate(event.target.value)}
                   className="h-10"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Statut</Label>
-                <Select value={dfStatut} onValueChange={(v) => setDfStatut(v as typeof dfStatut)}>
+                <Select
+                  value={fournisseurStatut}
+                  onValueChange={(value) =>
+                    setFournisseurStatut(value as typeof fournisseurStatut)
+                  }
+                >
                   <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
@@ -1860,10 +618,10 @@ export function DossierDetailScreen() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDfDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setFournisseurDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSaveDossierFournisseur} disabled={!dfFournisseurId}>
+            <Button onClick={handleSaveDossierFournisseur} disabled={!selectedFournisseurId}>
               <Check className="size-4" />
               Ajouter
             </Button>
@@ -1875,7 +633,12 @@ export function DossierDetailScreen() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Supprimer ce dossier ?"
-        description={<>Le dossier <strong>{dossier.reference}</strong> sera définitivement supprimé. Cette action est irréversible.</>}
+        description={
+          <>
+            Le dossier <strong>{currentDossier.reference}</strong> sera définitivement supprimé.
+            Cette action est irréversible.
+          </>
+        }
         consequences={deleteConsequences}
         onConfirm={handleDelete}
       />

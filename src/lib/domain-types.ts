@@ -266,6 +266,8 @@ export interface Societe {
   id: string;
   nom: string;
   actif: boolean;
+  /** true = société porteuse du transit (dossiers, devis sans societe_id en base). */
+  isTransit?: boolean;
   /** Chemin public du logo affiché sur les documents imprimés de la société (ex. bons de sortie). */
   logoUrl?: string;
   /** Coordonnées légales affichées sur l'en-tête des documents imprimés (bons de sortie). */
@@ -290,6 +292,8 @@ export interface SocieteInput {
   nif?: string;
   signataireDg?: string;
   signatairePdg?: string;
+  /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). */
+  afficherNomAvecLogo?: boolean;
 }
 
 /* ------------------------------------------------------------------ */

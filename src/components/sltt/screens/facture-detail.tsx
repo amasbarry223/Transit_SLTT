@@ -64,11 +64,14 @@ import {
   type FactureInput,
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
+import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { resteAPayer, DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { printFactureModule, shouldShowTva, type SocieteBrand } from "@/lib/export";
-import { resolveSlttBrand } from "@/lib/classeur";
+import { resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
+import { FactureDocumentHeader } from "@/components/sltt/facture-document-header";
 import { useToast } from "@/hooks/use-toast";
+import { PAYMENT_RING_RADIUS_PX } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { canTransitionFacture, FACTURE_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
@@ -132,9 +135,11 @@ const STATUT_CONFIG: Record<FactureStatut, StatutCfg> = {
 const STATUT_FLOW: FactureStatut[] = ["Brouillon", "Envoyée", "Partielle", "Soldée"];
 const STATUTS_ALL: FactureStatut[] = ["Brouillon", "Envoyée", "Partielle", "Soldée", "Annulée"];
 
+// "Partielle" n'est jamais un statut cible manuel : il ne doit résulter que
+// d'un paiement réel enregistré via recordFacturePaiement (montantPaye > 0),
+// jamais d'un simple changement de statut sans montant associé.
 const NEXT_STATUT: Partial<Record<FactureStatut, { to: FactureStatut; label: string }>> = {
   Brouillon: { to: "Envoyée", label: "Marquer comme envoyée" },
-  Envoyée: { to: "Partielle", label: "Marquer partiellement payée" },
   Partielle: { to: "Soldée", label: "Marquer comme soldée" },
 };
 
@@ -179,9 +184,11 @@ function InfoRow({
 function VerticalStepper({
   statut,
   onSelect,
+  canWrite,
 }: {
   statut: FactureStatut;
   onSelect: (s: FactureStatut) => void;
+  canWrite: boolean;
 }) {
   if (statut === "Annulée") {
     const cfg = STATUT_CONFIG.Annulée;
@@ -205,7 +212,9 @@ function VerticalStepper({
       {STATUT_FLOW.map((s, idx) => {
         const done = idx < currentIdx;
         const current = idx === currentIdx;
-        const clickable = !done && !current && allowedNext.includes(s);
+        // "Partielle" ne s'atteint que via un paiement réel (recordFacturePaiement),
+        // jamais par un clic manuel sur le pipeline.
+        const clickable = canWrite && !done && !current && s !== "Partielle" && allowedNext.includes(s);
         const cfg = STATUT_CONFIG[s];
         const Icon = cfg.icon;
         const isLast = idx === STATUT_FLOW.length - 1;
@@ -278,19 +287,19 @@ function VerticalStepper({
 }
 
 function PaymentRing({ pct, reste, isEchue }: { pct: number; reste: number; isEchue: boolean }) {
-  const r = 36;
-  const circ = 2 * Math.PI * r;
+  const ringRadiusPx = PAYMENT_RING_RADIUS_PX;
+  const circ = 2 * Math.PI * ringRadiusPx;
   const offset = circ - (pct / 100) * circ;
 
   return (
     <div className="flex items-center gap-4">
       <div className="relative size-20 shrink-0">
         <svg className="-rotate-90 size-20" viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r={r} fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-100 dark:text-slate-800" />
+          <circle cx="40" cy="40" r={ringRadiusPx} fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-100 dark:text-slate-800" />
           <circle
             cx="40"
             cy="40"
-            r={r}
+            r={ringRadiusPx}
             fill="none"
             stroke="currentColor"
             strokeWidth="6"
@@ -601,12 +610,22 @@ export function FactureDetailScreen() {
   const updateFacture = useStore((s) => s.updateFacture);
   const dossiers = useStore((s) => s.dossiers);
   const { toast } = useToast();
+  const canWrite = usePermission("factures:write");
 
   const facture = factures.find((f) => f.id === selectedId);
+
+  const factureBrand = React.useMemo((): SocieteBrand | null => {
+    if (!facture) return null;
+    const societe = facture.societeId
+      ? societes.find((s) => s.id === facture.societeId)
+      : undefined;
+    return societe ? societeToBrand(societe) : resolveSlttBrand(societes);
+  }, [facture, societes]);
 
   const [showPaiement, setShowPaiement] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
   const [confirmSolde, setConfirmSolde] = React.useState(false);
+  const [confirmAnnuler, setConfirmAnnuler] = React.useState(false);
 
   const [editDate, setEditDate] = React.useState("");
   const [editDateEcheance, setEditDateEcheance] = React.useState("");
@@ -657,7 +676,9 @@ export function FactureDetailScreen() {
     facture.statut !== "Annulée" &&
     facture.dateEcheance < new Date().toISOString().slice(0, 10);
   const nextStatut = NEXT_STATUT[facture.statut];
-  const canEdit = facture.statut === "Brouillon" && !isEditing;
+  const canEdit = facture.statut === "Brouillon" && !isEditing && canWrite;
+  const canRecordPaiement =
+    canWrite && facture.statut !== "Soldée" && facture.statut !== "Annulée" && facture.statut !== "Brouillon";
 
   const editMontantHT = editLignes.reduce(
     (s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
@@ -667,7 +688,7 @@ export function FactureDetailScreen() {
   const editTTC = editMontantHT + Math.round(editMontantHT * (editTVA / 100));
 
   async function handleStatutClick(s: FactureStatut) {
-    if (!facture) return;
+    if (!facture || !canWrite) return;
     if (s === facture.statut) return;
     if (s === "Soldée" && facture.montantPaye < facture.montantTTC) {
       setConfirmSolde(true);
@@ -686,7 +707,7 @@ export function FactureDetailScreen() {
   }
 
   function handleSaveEdit() {
-    if (!facture) return;
+    if (!facture || !canWrite) return;
     const input: FactureInput = {
       dossierId: facture.dossierId,
       clientId: facture.clientId,
@@ -710,19 +731,7 @@ export function FactureDetailScreen() {
   }
 
   function handlePrint() {
-    if (!facture) return;
-    // Facture rattachée à une société précise → ses propres coordonnées ;
-    // sinon (canal transit global) → SLTT par défaut, cf. resolveSlttBrand.
-    const societe = facture.societeId
-      ? societes.find((s) => s.id === facture.societeId)
-      : undefined;
-    const brand: SocieteBrand = societe
-      ? {
-          nom: societe.nom,
-          logoUrl: societe.logoUrl,
-          legal: { adresse: societe.adresse, telephone: societe.telephone, rccm: societe.rccm, nif: societe.nif },
-        }
-      : resolveSlttBrand(societes);
+    if (!facture || !factureBrand) return;
     printFactureModule({
       numero: facture.numero,
       clientNom: facture.clientNom,
@@ -740,7 +749,7 @@ export function FactureDetailScreen() {
       creeLe: facture.creeLe,
       dossierReference: dossier?.reference,
       dossierBl: dossier?.bl,
-    }, brand);
+    }, factureBrand);
   }
 
   return (
@@ -762,7 +771,8 @@ export function FactureDetailScreen() {
       <Card className="overflow-hidden border-border/80 shadow-sm">
         <div className="flex border-l-4 border-blue-600">
           <div className="flex-1 p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+            {factureBrand && <FactureDocumentHeader brand={factureBrand} />}
+            <div className={cn("flex flex-wrap items-start justify-between gap-4", factureBrand && "mt-4")}>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="font-mono text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
@@ -823,7 +833,7 @@ export function FactureDetailScreen() {
                       <Pencil className="size-4" /> Modifier
                     </Button>
                   )}
-                  {facture.statut !== "Soldée" && facture.statut !== "Annulée" && (
+                  {canRecordPaiement && (
                     <Button
                       size="sm"
                       className="gap-2 bg-emerald-700 hover:bg-emerald-800"
@@ -832,7 +842,7 @@ export function FactureDetailScreen() {
                       <CreditCard className="size-4" /> Enregistrer paiement
                     </Button>
                   )}
-                  {nextStatut && facture.statut !== "Annulée" && (
+                  {nextStatut && facture.statut !== "Annulée" && canWrite && (
                     <Button
                       size="sm"
                       className="gap-2 bg-primary hover:bg-primary/90 text-white"
@@ -851,7 +861,7 @@ export function FactureDetailScreen() {
                       <FolderKanban className="size-4" /> Voir le dossier
                     </Button>
                   )}
-                  {facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
+                  {canWrite && facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="sm" variant="ghost" className="ml-auto text-slate-400">
@@ -859,7 +869,7 @@ export function FactureDetailScreen() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-52">
-                        {STATUTS_ALL.filter((s) => s !== "Annulée").map((s) => {
+                        {STATUTS_ALL.filter((s) => s !== "Annulée" && s !== "Partielle").map((s) => {
                           const SIcon = STATUT_CONFIG[s].icon;
                           const disabled = s === facture.statut || !canTransitionFacture(facture.statut, s);
                           return (
@@ -879,7 +889,7 @@ export function FactureDetailScreen() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-950/40"
-                          onClick={() => handleStatutClick("Annulée")}
+                          onClick={() => setConfirmAnnuler(true)}
                         >
                           <XCircle className="mr-2 size-3.5" /> Annuler la facture
                         </DropdownMenuItem>
@@ -990,7 +1000,7 @@ export function FactureDetailScreen() {
                       </p>
                     </div>
                   </div>
-                  {facture.statut !== "Soldée" && (
+                  {canRecordPaiement && (
                     <Button className="w-full gap-2 bg-emerald-700 hover:bg-emerald-800" onClick={() => setShowPaiement(true)}>
                       <CreditCard className="size-4" /> Enregistrer un paiement
                     </Button>
@@ -1005,15 +1015,7 @@ export function FactureDetailScreen() {
                 <span className="text-[10px] text-slate-400">Cliquez pour changer</span>
               </div>
               <div className="p-5">
-                <VerticalStepper statut={facture.statut} onSelect={handleStatutClick} />
-                {facture.statut === "Annulée" && (
-                  <button
-                    onClick={() => handleStatutClick("Brouillon")}
-                    className="mt-4 text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400"
-                  >
-                    ↩ Remettre en brouillon
-                  </button>
-                )}
+                <VerticalStepper statut={facture.statut} onSelect={handleStatutClick} canWrite={canWrite} />
               </div>
             </Card>
 
@@ -1034,7 +1036,7 @@ export function FactureDetailScreen() {
                     <Pencil className="size-4 text-slate-400" /> Modifier la facture
                   </Button>
                 )}
-                {facture.statut !== "Soldée" && facture.statut !== "Annulée" && (
+                {canRecordPaiement && (
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
@@ -1052,13 +1054,13 @@ export function FactureDetailScreen() {
                     <FolderKanban className="size-4" /> Voir le dossier lié
                   </Button>
                 )}
-                {facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
+                {canWrite && facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
                   <>
                     <Separator />
                     <Button
                       variant="outline"
                       className="w-full justify-start gap-2.5 font-medium text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:bg-red-950/40"
-                      onClick={() => handleStatutClick("Annulée")}
+                      onClick={() => setConfirmAnnuler(true)}
                     >
                       <XCircle className="size-4" /> Annuler la facture
                     </Button>
@@ -1248,6 +1250,29 @@ export function FactureDetailScreen() {
               }}
             >
               Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmAnnuler} onOpenChange={setConfirmAnnuler}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Annuler définitivement cette facture ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La facture <strong>{facture.numero}</strong> passera au statut <strong>Annulée</strong>, un statut
+              terminal sans retour possible. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Retour</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                await handleStatutClick("Annulée");
+                setConfirmAnnuler(false);
+              }}
+            >
+              Confirmer l&apos;annulation
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

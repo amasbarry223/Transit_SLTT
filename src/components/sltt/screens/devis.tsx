@@ -27,8 +27,10 @@ import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { UI_LOAD_DELAY_MS } from "@/lib/constants";
 import { exportToCSV, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
+import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
@@ -284,8 +286,8 @@ export function DevisScreen() {
 
   const [isLoaded, setIsLoaded] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setIsLoaded(true), 300);
-    return () => clearTimeout(t);
+    const loadTimer = setTimeout(() => setIsLoaded(true), UI_LOAD_DELAY_MS);
+    return () => clearTimeout(loadTimer);
   }, []);
 
   // LM-06: expirer les devis obsolètes au montage du composant
@@ -465,7 +467,7 @@ export function DevisScreen() {
         <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${htmlEscape(d.statut)}</span></td>
       </tr>`).join("");
     printHTML("Liste des devis", `
-      <h1>Devis SLTT</h1>
+      <h1>Liste des devis</h1>
       <div class="subtitle">${filtered.length} devis · ${formatDateShort(new Date())}</div>
       <table>
         <thead><tr>
@@ -473,7 +475,7 @@ export function DevisScreen() {
           <th class="num">Total estimé</th><th>Validité</th><th>Statut</th>
         </tr></thead>
         <tbody>${rowsHTML}</tbody>
-      </table>`);
+      </table>`, resolvePrintHTMLBrand(societes));
   }
 
   /* ---------------------------------------------------------------- */
@@ -503,10 +505,10 @@ export function DevisScreen() {
         <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/30 px-4 py-3">
           <Send className="mt-0.5 size-5 shrink-0 text-blue-600 dark:text-blue-400" />
           <div>
-            <p className="text-sm font-medium text-blue-900">
-              {enAttente} devis{enAttente > 1 ? "" : ""} en attente de réponse client
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
+              {enAttente} devis{enAttente > 1 ? "s" : ""} en attente de réponse client
             </p>
-            <p className="mt-0.5 text-xs text-blue-800/80">
+            <p className="mt-0.5 text-xs text-blue-800/80 dark:text-blue-400/80">
               Relancez vos clients, puis utilisez « Convertir en dossier » une fois le devis accepté.
             </p>
           </div>
@@ -697,7 +699,7 @@ export function DevisScreen() {
                             <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
                               <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
                             </DropdownMenuItem>
-                          ) : canWrite && (
+                          ) : canWrite && d.statut === "Accepté" && (
                             <DropdownMenuItem
                               className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
                               onClick={() => setConvertTarget(d)}
@@ -836,7 +838,7 @@ export function DevisScreen() {
                                   <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
                                     <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
                                   </DropdownMenuItem>
-                                ) : canWrite && (
+                                ) : canWrite && d.statut === "Accepté" && (
                                   <DropdownMenuItem
                                     className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
                                     onClick={() => setConvertTarget(d)}

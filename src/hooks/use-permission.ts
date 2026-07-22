@@ -1,8 +1,9 @@
 "use client";
 
-import { useNav } from "@/lib/nav-store";
+import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { hasPermission, resolvePermissionUser } from "@/lib/permissions";
+import { VIEW_PERMISSIONS } from "@/lib/nav-items";
 import type { UserRole } from "@/lib/domain-types";
 
 function useEffectivePermissionUser() {
@@ -16,6 +17,21 @@ function useEffectivePermissionUser() {
 /** Retourne true si l'utilisateur connecté possède la permission demandée. */
 export function usePermission(perm: string): boolean {
   return hasPermission(useEffectivePermissionUser(), perm);
+}
+
+/**
+ * Retourne true si l'utilisateur connecté a le droit de VOIR cette vue
+ * (permission `:read` du module). À consulter à chaque point d'entrée vers
+ * une vue — rendu (AppShell), routage direct par URL (RouteSync), et
+ * recherche (CommandPalette) — sinon la navigation sidebar reste filtrée
+ * mais une URL tapée à la main ou ⌘K contournent totalement la règle.
+ */
+export function useCanView(view: ViewKey | null | undefined): boolean {
+  const effective = useEffectivePermissionUser();
+  if (!view) return false;
+  const perm = VIEW_PERMISSIONS[view];
+  if (!perm) return true;
+  return hasPermission(effective, perm);
 }
 
 export function useCanManageUsers(): boolean {

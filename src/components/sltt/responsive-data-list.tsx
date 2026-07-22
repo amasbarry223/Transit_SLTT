@@ -55,11 +55,23 @@ export function ResponsiveDataList<T>({
         {items.map((item) => (
           <Card
             key={getRowKey(item)}
+            role={onRowClick ? "button" : undefined}
+            tabIndex={onRowClick ? 0 : undefined}
             className={cn(
               "border-border/80 p-4 shadow-sm",
-              onRowClick && "cursor-pointer active:bg-slate-50 dark:active:bg-slate-800/60",
+              onRowClick && "cursor-pointer active:bg-slate-50 dark:active:bg-slate-800/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
             )}
             onClick={onRowClick ? () => onRowClick(item) : undefined}
+            onKeyDown={
+              onRowClick
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onRowClick(item);
+                    }
+                  }
+                : undefined
+            }
           >
             <dl className="space-y-2">
               {visibleMobileCols.map((col) => (
@@ -113,11 +125,23 @@ export function ResponsiveDataList<T>({
             {items.map((item) => (
               <TableRow
                 key={getRowKey(item)}
+                role={onRowClick ? "button" : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
                 className={cn(
                   "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
-                  onRowClick && "cursor-pointer",
+                  onRowClick && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                 )}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onRowClick(item);
+                        }
+                      }
+                    : undefined
+                }
               >
                 {columns.map((col) => (
                   <td

@@ -140,6 +140,7 @@ export function TransitionDialog({
   const [montantRecu, setMontantRecu] = useState(String(reste));
   const [mode, setMode] = useState<PaiementMode>("Espèces");
   const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{
     montantRecu?: string;
     date?: string;
@@ -152,6 +153,10 @@ export function TransitionDialog({
       const amt = parseAmount(montantRecu);
       if (amt < reste) {
         errs.montantRecu = `Le paiement doit couvrir le solde dû (${formatFCFA(reste)}).`;
+      } else if (amt > reste) {
+        // Plafonné ici plutôt que laissé au clampage silencieux côté store,
+        // qui écrirait alors un montant faux dans le journal d'audit.
+        errs.montantRecu = `Le montant ne peut pas dépasser le solde dû (${formatFCFA(reste)}).`;
       }
       if (!date) errs.date = "La date de paiement est requise.";
     }
@@ -174,6 +179,7 @@ export function TransitionDialog({
         ? `Livré le ${date}.${note ? ` ${note}` : ""}`
         : note || undefined;
 
+    setSaving(true);
     try {
       await transitionDossierFn(
         dossier.id,
@@ -190,6 +196,8 @@ export function TransitionDialog({
         variant: "destructive",
       });
       return;
+    } finally {
+      setSaving(false);
     }
 
     toast({
@@ -324,10 +332,12 @@ export function TransitionDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={handleConfirm}>{meta.confirmLabel}</Button>
+          <Button onClick={handleConfirm} disabled={saving}>
+            {saving ? "Enregistrement…" : meta.confirmLabel}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -36,7 +36,7 @@ import {
   defaultSelectionForRole,
   permissionsFromSelection,
 } from "@/components/sltt/permission-matrix";
-import type { UserInput, UserRole } from "@/lib/store";
+import type { User as UserAccount, UserInput, UserRole } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { ToneBadge } from "@/components/sltt/status-badge";
@@ -721,6 +721,12 @@ export function UsersTab() {
   const isCurrentAdmin = currentUser?.role === "Administrateur";
   const userToDelete = users.find((u) => u.id === deleteId);
 
+  function actionDisabledReason(u: UserAccount): string | undefined {
+    if (u.id === currentUser?.id) return "Vous ne pouvez pas modifier votre propre statut ici.";
+    if (u.role === "Administrateur" && !isCurrentAdmin) return "Seul un administrateur peut modifier un autre administrateur.";
+    return undefined;
+  }
+
   const stats = useMemo(
     () => ({
       total: users.length,
@@ -946,6 +952,7 @@ export function UsersTab() {
                         size="icon"
                         className="size-8 text-slate-400 hover:text-destructive disabled:opacity-30"
                         disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
+                        title={actionDisabledReason(u)}
                         onClick={() => setDeleteId(u.id)}
                         aria-label={`Supprimer ${u.nom}`}
                       >
@@ -969,6 +976,7 @@ export function UsersTab() {
                         <Switch
                           checked={u.actif}
                           disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
+                        title={actionDisabledReason(u)}
                           onCheckedChange={async () => {
                             if (u.id === currentUser?.id) return;
                             try {
@@ -1069,6 +1077,7 @@ export function UsersTab() {
                           <Switch
                             checked={u.actif}
                             disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
+                        title={actionDisabledReason(u)}
                             onCheckedChange={async () => {
                               if (u.id === currentUser?.id) return;
                               try {
@@ -1112,7 +1121,7 @@ export function UsersTab() {
                             className="size-8 text-slate-400 opacity-70 hover:text-destructive group-hover:opacity-100 disabled:opacity-30"
                             disabled={u.id === currentUser?.id || (u.role === "Administrateur" && !isCurrentAdmin)}
                             onClick={() => setDeleteId(u.id)}
-                            title="Supprimer"
+                            title={actionDisabledReason(u) ?? "Supprimer"}
                           >
                             <Trash2 className="size-4" />
                           </Button>

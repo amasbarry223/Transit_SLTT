@@ -105,7 +105,7 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
             Annuler
           </Button>
           <Button onClick={handleConvert} disabled={!bl.trim() || !camion.trim() || saving}>
-            Créer le dossier
+            {saving ? "Création…" : "Créer le dossier"}
           </Button>
         </DialogFooter>
       </DialogContent>

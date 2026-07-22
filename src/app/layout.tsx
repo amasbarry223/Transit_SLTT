@@ -21,11 +21,10 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "SLTT · Société Traoré de Logistique, Transit et Transport",
+  title: "Transit SLTT · Gestion logistique",
   description:
-    "Plateforme de gestion logistique, transit douanier, comptabilité et entreposage — Société Traoré de Logistique, Transit et Transport.",
+    "Plateforme de gestion logistique, transit douanier, comptabilité et entreposage.",
   keywords: [
-    "SLTT",
     "transit",
     "logistique",
     "douane",
@@ -34,7 +33,7 @@ export const metadata: Metadata = {
     "UEMOA",
     "Mali",
   ],
-  authors: [{ name: "SLTT" }],
+  authors: [{ name: "Transit SLTT" }],
   icons: {
     icon: "/logoV.png",
   },

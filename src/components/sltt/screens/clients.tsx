@@ -487,8 +487,16 @@ export function ClientsScreen() {
                   {paged.map((c) => (
                     <TableRow
                       key={c.id}
-                      className="cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80"
+                      role="button"
+                      tabIndex={0}
+                      className="cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                       onClick={() => openClient(c.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openClient(c.id);
+                        }
+                      }}
                     >
                       <TableCell className="px-4 py-3.5">
                         <div className="flex items-center gap-3">

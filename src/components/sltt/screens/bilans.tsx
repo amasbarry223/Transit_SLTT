@@ -16,6 +16,7 @@ import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatFCFACompact, formatDateShort, parseLocalDate } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -49,11 +50,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { CHART_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-const BLUE = "#1E40AF";
-const EMERALD = "#059669";
-const AMBER = "#D97706";
 
 type Periode = "mensuel" | "trimestriel" | "semestriel" | "annuel";
 type SortKey = "client" | "investi" | "encaisse" | "reste" | "ecart";
@@ -290,6 +288,15 @@ export function BilansScreen() {
     };
   }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, societes, mois]);
 
+  // Le calcul ci-dessus porte toujours sur un seul mois de référence, quelle
+  // que soit la granularité "période" choisie (voir commentaire F5 plus haut)
+  // — le libellé doit donc toujours nommer ce mois, jamais l'année ou le
+  // trimestre sélectionné, sous peine de laisser croire à un chiffre agrégé.
+  const beneficeMoisLabel = useMemo(() => {
+    const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
+    return new Date(year, month - 1).toLocaleString("fr-FR", { month: "long", year: "numeric" });
+  }, [mois]);
+
   const chartData = useMemo(() => {
     const [year] = (mois || currentYearMonth()).split("-").map(Number);
     return Array.from({ length: 12 }, (_, i) => {
@@ -348,8 +355,8 @@ export function BilansScreen() {
   }, [recapParClient, sortKey, sortDir]);
 
   const pieData = [
-    { name: "Encaissé", value: recapTotaux.encaisse, color: EMERALD },
-    { name: "Reste à payer", value: recapTotaux.reste, color: AMBER },
+    { name: "Encaissé", value: recapTotaux.encaisse, color: CHART_COLORS.emerald },
+    { name: "Reste à payer", value: recapTotaux.reste, color: CHART_COLORS.amber },
   ];
   const pieTotal = recapTotaux.encaisse + recapTotaux.reste;
   const hasData = recapParClient.length > 0;
@@ -419,7 +426,7 @@ export function BilansScreen() {
           <td class="num">${recapTotaux.ecart.toLocaleString("fr-FR")}</td>
         </tr></tfoot>
       </table>
-    `);
+    `, resolvePrintHTMLBrand(societes));
   }
 
   return (
@@ -508,7 +515,7 @@ export function BilansScreen() {
 
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          Bénéfice entreposage — {periodeLabel.split(" ").slice(0, 2).join(" ") || periodeLabel}
+          Bénéfice entreposage — {beneficeMoisLabel}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard
@@ -517,7 +524,7 @@ export function BilansScreen() {
             icon={TrendingUp}
             tone={benefice.consolide.benefice >= 0 ? "emerald" : "red"}
             sublabel="Recettes − Dépenses, consolidé"
-            tooltip="Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois. Consolidé = somme des deux sociétés + activité non affectée (transit)."
+            tooltip={`Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois. Consolidé = somme de toutes les sociétés (${societes.length}) + activité non affectée (transit).`}
           />
           {benefice.parSociete.map(({ societe, benefice: b }) => (
             <KpiCard
@@ -581,13 +588,13 @@ export function BilansScreen() {
               <Bar
                 dataKey="investi"
                 name="Investi"
-                fill={BLUE}
+                fill={CHART_COLORS.blue}
                 radius={[3, 3, 0, 0]}
               />
               <Bar
                 dataKey="encaisse"
                 name="Encaissé"
-                fill={EMERALD}
+                fill={CHART_COLORS.emerald}
                 radius={[3, 3, 0, 0]}
               />
             </BarChart>

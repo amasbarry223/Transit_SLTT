@@ -50,10 +50,19 @@ import { DossierStatutBadge, DOSSIER_STATUT_DOT, DOSSIER_STATUT_HEX } from "@/co
 import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatFCFACompact, parseLocalDate } from "@/lib/format";
-import { resteAPayer } from "@/lib/domain-types";
+import { resteAPayer, calculerEcart } from "@/lib/domain-types";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { getDashboardSections, kpiGridClass, type DashboardSection } from "@/lib/dashboard-config";
-import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
+import { filterBySocieteAndPeriode } from "@/lib/benefice";
+import {
+  CHART_MONTHS_COUNT,
+  CHART_MONTHS_OFFSET,
+  ECHEANCE_IMMINENTE_JOURS,
+  MS_PER_DAY,
+  CHART_COLORS,
+  SLTT_BLUE,
+} from "@/lib/constants";
+import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
 import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import {
   GUIDE_DISMISS_KEY,
@@ -65,18 +74,7 @@ import {
 import { useCurrentUser } from "@/hooks/use-permission";
 import { cn } from "@/lib/utils";
 
-/* ------------------------------------------------------------------ */
-/* CHART COLORS                                                        */
-/* ------------------------------------------------------------------ */
-
-const SLTT_BLUE = "#1E40AF";
-const SLTT_EMERALD = "#059669";
-const SLTT_RED = "#DC2626";
 const SLTT_GRID = "#E2E8F0";
-
-/* ------------------------------------------------------------------ */
-/* CUSTOM TOOLTIPS                                                     */
-/* ------------------------------------------------------------------ */
 
 type ChartTooltipPayload = {
   name?: string | number;
@@ -187,7 +185,7 @@ function AgentPanel({
 function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?: { id?: string | null }) => void }) {
   const stock = useStore((s) => s.stock);
   const bons = useStore((s) => s.bons);
-  const lowStock = stock.filter((s) => s.quantite <= s.seuil);
+  const lowStock = stock.filter((s) => s.quantite < s.seuil);
   const bonsBrouillon = bons.filter((b) => b.statut === "Brouillon");
 
   return (
@@ -210,7 +208,7 @@ function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?: { id?:
           </div>
         ) : stock.slice(0, 4).map((s) => {
           const pct = Math.min(100, Math.round((s.quantite / Math.max(1, s.seuil * 2)) * 100));
-          const low = s.quantite <= s.seuil;
+          const low = s.quantite < s.seuil;
           return (
             <div key={s.id} className="mb-3 last:mb-0">
               <div className="mb-1 flex items-center justify-between text-xs">
@@ -678,13 +676,10 @@ export function DashboardScreen() {
   const barCursorFill = isDark ? "#1E293B" : "#EFF6FF";
   const lineCursorStroke = isDark ? "#334155" : "#CBD5E1";
   const dossiers = useStore((s) => s.dossiers);
-  const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
   const stock = useStore((s) => s.stock);
   const users = useStore((s) => s.usersPublic);
   const clients = useStore((s) => s.clients);
-  const depenses = useStore((s) => s.depenses);
-  const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
   const lastSyncedAt = useStore((s) => s.lastSyncedAt);
   const currentUser = useCurrentUser();
   const selectedSocieteId = useNav((s) => s.selectedSocieteId);
@@ -699,6 +694,8 @@ export function DashboardScreen() {
 
   // Ancrage calendaire : date du jour (pas la date max des données)
   const anchorDate = getDashboardAnchorDate();
+  const { ecrituresAvecDate, calculerBeneficeMensuel } = useBeneficeParSociete(anchorDate);
+  const beneficeMoisCourant = calculerBeneficeMensuel(selectedSocieteId).benefice;
 
   const periodeLabel = anchorDate
     .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
@@ -713,28 +710,6 @@ export function DashboardScreen() {
     return `Sync · il y a ${hours}h`;
   }, [lastSyncedAt]);
 
-  // Une écriture compte au mois où l'argent est réellement arrivé
-  // (datePaiement), pas au mois de création de l'écriture — utilisé pour
-  // tous les calculs "encaissé" ci-dessous (KPI, graphique, bénéfice) afin
-  // qu'ils s'accordent tous sur la même règle.
-  const ecrituresAvecDate = React.useMemo(
-    () => ecritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
-    [ecritures],
-  );
-  const depensesAvecDate = React.useMemo(
-    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
-    [depenses],
-  );
-  // Sorties de caisse : chaque bon porte désormais sa propre société (F1).
-  const caisseAvecDate = React.useMemo(
-    () =>
-      bonsSortieCaisse.flatMap((b) =>
-        b.lignes.map((l) => ({ societeId: b.societeId as string | undefined, date: l.date, montant: l.montant })),
-      ),
-    [bonsSortieCaisse],
-  );
-
-  // ---- Live KPI computations ----
   // LOGIC-03 (audit) : Écritures et Factures sont deux canaux de paiement
   // indépendants — payer une facture ne touche jamais une écriture, et
   // inversement. Ils sont donc additionnés (pas dédoublonnés) pour donner
@@ -764,17 +739,6 @@ export function DashboardScreen() {
     const variation = prev === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - prev) / prev) * 100);
     return { chiffreEncaisse: current, variationEncaisse: variation };
   }, [ecrituresAvecDate, factures, anchorDate]);
-  const beneficeMoisCourant = React.useMemo(() => {
-    const year = anchorDate.getFullYear();
-    const month = anchorDate.getMonth();
-    const recettes =
-      filterBySocieteAndPeriode(ecrituresAvecDate, selectedSocieteId, year, month).reduce((s, e) => s + e.montantPaye, 0) +
-      filterBySocieteAndPeriode(factures, selectedSocieteId, year, month).reduce((s, f) => s + f.montantPaye, 0);
-    const depensesMois =
-      filterBySocieteAndPeriode(depensesAvecDate, selectedSocieteId, year, month).reduce((s, d) => s + d.montant, 0) +
-      filterBySocieteAndPeriode(caisseAvecDate, selectedSocieteId, year, month).reduce((s, d) => s + d.montant, 0);
-    return computeBenefice(recettes, depensesMois);
-  }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, selectedSocieteId, anchorDate]);
 
   // Restes à payer et dossiers non soldés → source : dossiers (pas les écritures)
   const { totalRestesAPayer, nbDossiersNonSoldes } = React.useMemo(() => {
@@ -806,43 +770,44 @@ export function DashboardScreen() {
     [stock],
   );
 
-  // ---- Chart: encaissements des 6 derniers mois (source : ecritures) ----
-  // Utilise ecrituresAvecDate (date de paiement réelle) + filterBySocieteAndPeriode
-  // (parsing sûr) — même règle que le KPI "Encaissé ce mois" ci-dessus, pour que
-  // le chiffre du mois courant sur le graphique et sur le KPI concordent toujours.
   const encaissementsParMois = React.useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - (5 - i), 1);
-      const m = d.getMonth();
-      const y = d.getFullYear();
-      const valeur = filterBySocieteAndPeriode(ecrituresAvecDate, null, y, m)
-        .reduce((sum, e) => sum + e.montantPaye, 0);
-      return { mois: MONTHS[m], valeur };
+    return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
+      const chartDate = new Date(
+        anchorDate.getFullYear(),
+        anchorDate.getMonth() - (CHART_MONTHS_OFFSET - index),
+        1,
+      );
+      const monthIndex = chartDate.getMonth();
+      const year = chartDate.getFullYear();
+      const valeur = filterBySocieteAndPeriode(ecrituresAvecDate, null, year, monthIndex)
+        .reduce((sum, ecriture) => sum + ecriture.montantPaye, 0);
+      return { mois: MONTHS[monthIndex], valeur };
     });
   }, [ecrituresAvecDate, anchorDate]);
 
-  // ---- Chart: marge brute des 6 derniers mois (source : dossiers) ----
   const ecartsParPeriode = React.useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - (5 - i), 1);
-      const m = d.getMonth();
-      const y = d.getFullYear();
-      const ecart = filterBySocieteAndPeriode(dossiers, null, y, m)
-        .reduce((sum, dos) => sum + (dos.fraisPrestation - dos.droitDouane - dos.fraisCircuit), 0);
-      return { periode: MONTHS[m], ecart };
+    return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
+      const chartDate = new Date(
+        anchorDate.getFullYear(),
+        anchorDate.getMonth() - (CHART_MONTHS_OFFSET - index),
+        1,
+      );
+      const monthIndex = chartDate.getMonth();
+      const year = chartDate.getFullYear();
+      const ecart = filterBySocieteAndPeriode(dossiers, null, year, monthIndex)
+        .reduce((sum, dossier) => sum + calculerEcart(dossier), 0);
+      return { periode: MONTHS[monthIndex], ecart };
     });
   }, [dossiers, anchorDate]);
 
-  // ---- Derniers dossiers (sorted by date desc, first 6) ----
   const derniersDossiers = React.useMemo(
     () =>
       [...dossiers]
         .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
-        .slice(0, 6),
+        .slice(0, CHART_MONTHS_COUNT),
     [dossiers],
   );
 
-  // ---- Chart: répartition dossiers par statut (donut) ----
   // Uses DOSSIER_STATUT_HEX (status-badge.tsx) so the donut always agrees with
   // the DossierStatutBadge shown everywhere else — see LOGIC-04 in the audit.
   const statutDonutData = React.useMemo(() => {
@@ -859,7 +824,6 @@ export function DashboardScreen() {
 
   const totalDossiers = dossiers.length;
 
-  // ---- Live alerts (low stock + unpaid dossiers + échéances) ----
   const alertes = React.useMemo<LiveAlert[]>(() => {
     const todayMs = new Date().setHours(0, 0, 0, 0);
 
@@ -877,7 +841,7 @@ export function DashboardScreen() {
       .filter((d) => d.dateEcheance && !["Livré", "Soldé"].includes(d.statut))
       .reduce<LiveAlert[]>((acc, d) => {
         const echeance = parseLocalDate(d.dateEcheance!).setHours(0, 0, 0, 0);
-        const jours = Math.ceil((echeance - todayMs) / 86400000);
+        const jours = Math.ceil((echeance - todayMs) / MS_PER_DAY);
         if (jours < 0) {
           acc.push({
             id: `echeance-${d.id}`,
@@ -886,7 +850,7 @@ export function DashboardScreen() {
             detail: `Dépassée de ${Math.abs(jours)}j — ${d.clientNom}`,
             target: { view: "dossier-detail", id: d.id },
           });
-        } else if (jours <= 3) {
+        } else if (jours <= ECHEANCE_IMMINENTE_JOURS) {
           acc.push({
             id: `echeance-${d.id}`,
             niveau: "warning",
@@ -1101,18 +1065,20 @@ export function DashboardScreen() {
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                Écarts par période
+                Marge de prestation
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Marge brute mensuelle</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Frais de prestation facturés − droits de douane et frais de circuit engagés, par dossier créé dans le mois
+              </p>
             </div>
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1">
                 <span className="inline-block size-2.5 rounded-full bg-[#059669]" />
-                Bénéfice
+                Marge positive
               </span>
               <span className="flex items-center gap-1">
                 <span className="inline-block size-2.5 rounded-full bg-[#DC2626]" />
-                Perte
+                Marge négative
               </span>
             </div>
           </div>
@@ -1158,7 +1124,7 @@ export function DashboardScreen() {
                         cx={cx}
                         cy={cy}
                         r={4}
-                        fill={payload.ecart >= 0 ? SLTT_EMERALD : SLTT_RED}
+                        fill={payload.ecart >= 0 ? CHART_COLORS.emerald : CHART_COLORS.red}
                         stroke="white"
                         strokeWidth={2}
                       />

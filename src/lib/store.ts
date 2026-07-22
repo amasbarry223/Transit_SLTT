@@ -11,10 +11,16 @@ import {
   type ContratFichiersSlice,
 } from "@/lib/store/contrat-fichiers-slice";
 import { createArchivesSlice, mapArchiveFromDb, type ArchivesSlice } from "@/lib/store/archives-slice";
+import {
+  createDossiersSlice,
+  mapDossierFromDb,
+  type DossiersSlice,
+} from "@/lib/store/dossiers-slice";
+import { syncDossierPayeFromEcritures } from "@/lib/store/sync-helpers";
+import { DEFAULT_PAIEMENT_MODE } from "@/lib/constants";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncContratStats } from "@/lib/contrat-stats";
-import { assertDossierTransition } from "@/lib/dossier-flow";
 import { computeIncrementalPaye, validatePaymentAmount } from "@/lib/payments";
 import { normalizePermissions, ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import { canTransitionDevis, canTransitionFacture } from "@/lib/status-flow";
@@ -24,6 +30,7 @@ import {
   type AuditAction,
   type AuditEntry,
   type AuditModule,
+  type AuditSourceRef,
 } from "@/lib/audit";
 import {
   PRESTATION_OPTIONNELLE_LABEL,
@@ -246,32 +253,6 @@ function mapClientFromDb(x: any): Client {
   };
 }
 
-function mapDossierFromDb(x: any): Dossier {
-  return {
-    id: x.id,
-    reference: x.reference,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    bl: x.bl,
-    camion: x.camion,
-    nature: x.nature,
-    droitDouane: Number(x.droit_douane),
-    fraisCircuit: Number(x.frais_circuit),
-    fraisPrestation: Number(x.frais_prestation),
-    montantInvesti: Number(x.montant_investi),
-    montantPaye: Number(x.montant_paye),
-    statut: x.statut,
-    date: x.date,
-    dateEcheance: x.date_echeance,
-    dateDedouanement: x.date_dedouanement,
-    modeTransport: x.mode_transport,
-    noConteneur: x.no_conteneur,
-    portEntree: x.port_entree,
-    poidsTotal: x.poids_total ? Number(x.poids_total) : undefined,
-    notes: x.notes,
-  };
-}
-
 function mapFournisseurFromDb(x: any): Fournisseur {
   return {
     id: x.id,
@@ -316,7 +297,7 @@ function mapEcritureFromDb(x: any): Ecriture {
     societeNom: x.societes?.nom || undefined,
     montantInvesti: Number(x.montant_investi || 0),
     montantPaye: Number(x.montant_paye || 0),
-    modePaiement: x.mode_paiement || "Virement",
+    modePaiement: x.mode_paiement || DEFAULT_PAIEMENT_MODE,
     note: x.note || undefined,
   };
 }
@@ -408,6 +389,7 @@ function mapSocieteFromDb(x: any): Societe {
     afficherNomAvecLogo: x.afficher_nom_avec_logo ?? true,
     signataireDg: x.signataire_dg || undefined,
     signatairePdg: x.signataire_pdg || undefined,
+    isTransit: x.is_transit ?? undefined,
   };
 }
 
@@ -682,10 +664,9 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
   };
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DossiersSlice {
   // Data
   clients: Client[];
-  dossiers: Dossier[];
   ecritures: Ecriture[];
   stock: StockItem[];
   mouvements: Mouvement[];
@@ -737,14 +718,13 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
   clearLoadError: () => void;
 
   // ---- Audit ----
-  addAuditLog: (module: AuditModule, action: AuditAction, detail: string, clientId?: string) => Promise<void>;
-
-  // ---- Dossiers ----
-  addDossier: (input: DossierInput) => Promise<Dossier>;
-  updateDossier: (id: string, input: DossierInput) => Promise<void>;
-  removeDossier: (id: string) => Promise<void>;
-  getDossier: (id: string) => Dossier | undefined;
-  transitionDossier: (id: string, newStatut: DossierStatut, montantRecu?: number, modePaiement?: PaiementMode, transitionNote?: string, effectiveDate?: string) => Promise<void>;
+  addAuditLog: (
+    module: AuditModule,
+    action: AuditAction,
+    detail: string,
+    clientId?: string,
+    source?: AuditSourceRef,
+  ) => Promise<void>;
 
   // ---- Clients ----
   addClient: (input: ClientInput) => Promise<Client>;
@@ -753,6 +733,8 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice {
 
   // ---- Sociétés (identité légale — pas de création/suppression depuis l'UI) ----
   updateSociete: (id: string, input: SocieteInput) => Promise<void>;
+  /** Envoie le fichier vers le bucket public societe-logos et renvoie son URL publique (ne persiste pas seule — combiner avec updateSociete). */
+  uploadSocieteLogo: (id: string, file: File) => Promise<string>;
 
   // ---- Comptabilité ----
   recordPayment: (
@@ -876,8 +858,8 @@ export const useStore = create<SLTTState>()(
     (set, get, api) => ({
       ...createContratFichiersSlice(set, get, api),
       ...createArchivesSlice(set, get, api),
+      ...createDossiersSlice(set, get, api),
       clients: [],
-      dossiers: [],
       ecritures: [],
       stock: [],
       mouvements: [],
@@ -1068,7 +1050,7 @@ export const useStore = create<SLTTState>()(
       },
 
       // ---- Audit ----
-      addAuditLog: async (module, action, detail, clientId) => {
+      addAuditLog: async (module, action, detail, clientId, source) => {
         const seq = get().auditSeq;
         const userStr = getConnectedUserName();
         const newLog = await insertAuditLog({
@@ -1077,255 +1059,13 @@ export const useStore = create<SLTTState>()(
           detail,
           userName: userStr,
           clientId,
+          source,
         });
         if (!newLog) return;
         set((s) => ({
           auditLogs: [newLog, ...s.auditLogs],
           auditSeq: seq + 1,
         }));
-      },
-
-      // ---- Dossiers ----
-      addDossier: async (input) => {
-        const seq = get().dossierSeq;
-        const year = new Date().getFullYear();
-        const reference = `SLTT-TR-${year}-${pad(seq, 4)}`;
-        // Tout nouveau dossier démarre à « En cours » — les transitions guidées
-        // sont le seul chemin légitime pour avancer le statut.
-        const statut: DossierStatut = "En cours";
-
-        
-        const { data, error } = await supabase
-          .from("dossiers")
-          .insert({
-            reference,
-            client_id: input.clientId,
-            bl: input.bl,
-            camion: input.camion,
-            nature: input.nature,
-            droit_douane: input.droitDouane,
-            frais_circuit: input.fraisCircuit,
-            frais_prestation: input.fraisPrestation,
-            montant_investi: input.montantInvesti,
-            montant_paye: 0,
-            statut,
-            date: input.date,
-            date_echeance: input.dateEcheance,
-            date_dedouanement: input.dateDedouanement,
-            mode_transport: input.modeTransport,
-            no_conteneur: input.noConteneur,
-            port_entree: input.portEntree,
-            poids_total: input.poidsTotal,
-            notes: input.notes,
-          })
-          .select("*, clients(nom)")
-          .single();
-
-        if (error) throw error;
-        const newDossier = mapDossierFromDb(data);
-        set((s) => {
-          const updatedDossiers = [newDossier, ...s.dossiers];
-          return {
-            dossiers: updatedDossiers,
-            dossierSeq: seq + 1,
-            clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-          };
-        });
-        await get().addAuditLog("Dossiers", "Création", `Dossier ${reference} créé — Client ${input.clientNom}`, input.clientId);
-        return newDossier;
-
-      },
-
-      updateDossier: async (id, input) => {
-        const existing = get().dossiers.find((d) => d.id === id);
-        // Le statut ne se change que via transitionDossier (flux guidé) — on
-        // ignore toute valeur envoyée ici pour ne pas contourner la garde.
-        const statut = existing?.statut ?? input.statut;
-        
-        const { error } = await supabase
-          .from("dossiers")
-          .update({
-            client_id: input.clientId,
-            bl: input.bl,
-            camion: input.camion,
-            nature: input.nature,
-            droit_douane: input.droitDouane,
-            frais_circuit: input.fraisCircuit,
-            frais_prestation: input.fraisPrestation,
-            montant_investi: input.montantInvesti,
-            statut,
-            date: input.date,
-            date_echeance: input.dateEcheance,
-            date_dedouanement: input.dateDedouanement,
-            mode_transport: input.modeTransport,
-            no_conteneur: input.noConteneur,
-            port_entree: input.portEntree,
-            poids_total: input.poidsTotal,
-            notes: input.notes,
-          })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => {
-          const updatedDossiers = s.dossiers.map((d) => d.id === id ? { ...d, ...input, statut } : d);
-          return {
-            dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-          };
-        });
-
-        if (existing) {
-          await get().addAuditLog("Dossiers", "Modification", `Dossier ${existing.reference} modifié`, existing.clientId);
-        }
-      },
-
-      removeDossier: async (id) => {
-        const dossier = get().dossiers.find((d) => d.id === id);
-        
-        const { error } = await supabase.from("dossiers").delete().eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => {
-          const updatedDossiers = s.dossiers.filter((d) => d.id !== id);
-          return {
-            dossiers: updatedDossiers,
-            clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-            ecritures: s.ecritures.map((e) => (e.dossierId === id ? { ...e, dossierId: undefined } : e)),
-            fichiers: s.fichiers.filter((f) => f.dossierId !== id),
-            subDossiers: s.subDossiers.filter((sd) => sd.dossierId !== id),
-            factures: s.factures.map((f) => (f.dossierId === id ? { ...f, dossierId: null } : f)),
-            dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.dossierId !== id),
-            fournisseurs: syncFournisseurStats(
-              s.dossierFournisseurs.filter((df) => df.dossierId !== id),
-              s.fournisseurs
-            ),
-            devis: s.devis.map((d) => (d.dossierId === id ? { ...d, dossierId: null } : d)),
-            archives: s.archives.map((a) => (a.dossierId === id ? { ...a, dossierId: undefined } : a)),
-          };
-        });
-
-        if (dossier) {
-          const orphanBons = get().bons.filter((b) => b.marchandise.includes(dossier.reference));
-          const orphanNote = orphanBons.length > 0 ? ` — ${orphanBons.length} bon(s) potentiellement orphelin(s)` : "";
-          await get().addAuditLog("Dossiers", "Suppression", `Dossier ${dossier.reference} supprimé${orphanNote}`, dossier.clientId);
-        }
-      },
-
-      getDossier: (id) => get().dossiers.find((d) => d.id === id),
-
-      transitionDossier: async (id, newStatut, montantRecu, modePaiement, transitionNote, effectiveDate) => {
-        const dossier = get().dossiers.find((d) => d.id === id);
-        if (!dossier) return;
-        // LOGIC-audit : contrairement aux devis (dont le menu "..." permet un
-        // recalage manuel volontaire de statut), aucun écran ne propose de
-        // saut libre pour un dossier — le seul chemin légitime est le flux
-        // linéaire guidé par TransitionDialog. On le fait respecter ici aussi
-        // pour ne pas dépendre uniquement de la garde côté UI.
-        assertDossierTransition(dossier.statut, newStatut);
-        const montantApplicable = newStatut === "Soldé" ? montantRecu : undefined;
-        const updatedMontantPaye =
-          montantApplicable !== undefined
-            ? Math.min(dossier.montantInvesti, Math.max(0, dossier.montantPaye + montantApplicable))
-            : dossier.montantPaye;
-        const today = new Date().toISOString().slice(0, 10);
-        const resolvedDate = effectiveDate || today;
-        const dateDedouanement = newStatut === "Dédouané" ? resolvedDate : dossier.dateDedouanement;
-
-        const { error } = await supabase
-          .from("dossiers")
-          .update({
-            statut: newStatut,
-            montant_paye: updatedMontantPaye,
-            ...(newStatut === "Dédouané" ? { date_dedouanement: resolvedDate } : {}),
-          })
-          .eq("id", id);
-        if (error) throw error;
-
-        if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
-          const existing = get().ecritures.find((e) => e.dossierId === id);
-          if (existing) {
-            await supabase
-              .from("ecritures")
-              .update({
-                montant_paye: updatedMontantPaye,
-                mode_paiement: modePaiement ?? existing.modePaiement,
-                date_paiement: resolvedDate,
-                note: transitionNote || existing.note || `Solde dossier ${dossier.reference}`,
-              })
-              .eq("dossier_id", id);
-          } else {
-            await supabase.from("ecritures").insert({
-              date: today,
-              date_paiement: resolvedDate,
-              client_id: dossier.clientId,
-              dossier_id: dossier.id,
-              montant_investi: dossier.montantInvesti,
-              montant_paye: updatedMontantPaye,
-              mode_paiement: modePaiement ?? "Virement",
-              note: transitionNote || `Solde dossier ${dossier.reference}`,
-            });
-          }
-        }
-      
-
-        set((s) => {
-          const updatedDossiers = s.dossiers.map((d) =>
-            d.id === id
-              ? { ...d, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
-              : d,
-          );
-
-          let updatedEcritures = s.ecritures;
-          let nextEcritureSeq = s.ecritureSeq;
-          if (newStatut === "Soldé" && montantRecu && montantRecu > 0) {
-            const existingIdx = s.ecritures.findIndex((e) => e.dossierId === id);
-            if (existingIdx >= 0) {
-              updatedEcritures = s.ecritures.map((e) =>
-                e.dossierId === id
-                  ? {
-                      ...e,
-                      montantPaye: updatedMontantPaye,
-                      modePaiement: modePaiement ?? e.modePaiement,
-                      datePaiement: resolvedDate,
-                      note: transitionNote || e.note || `Solde dossier ${dossier.reference}`,
-                    }
-                  : e,
-              );
-            } else {
-              const seq = s.ecritureSeq;
-              const autoEcriture: Ecriture = {
-                id: `E-${seq}`,
-                date: today,
-                datePaiement: resolvedDate,
-                clientId: dossier.clientId,
-                clientNom: dossier.clientNom,
-                dossierId: dossier.id,
-                montantInvesti: dossier.montantInvesti,
-                montantPaye: updatedMontantPaye,
-                modePaiement: modePaiement ?? "Virement",
-                note: transitionNote || `Solde dossier ${dossier.reference}`,
-              };
-              updatedEcritures = [autoEcriture, ...s.ecritures];
-              nextEcritureSeq = seq + 1;
-            }
-          }
-
-          return {
-            dossiers: updatedDossiers,
-            ecritures: updatedEcritures,
-            ecritureSeq: nextEcritureSeq,
-            clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-          };
-        });
-
-        await get().addAuditLog(
-          "Dossiers",
-          "Validation",
-          `Dossier ${dossier.reference} → ${newStatut}${montantRecu ? ` — ${montantRecu.toLocaleString("fr-FR")} FCFA reçus` : ""}`,
-          dossier.clientId,
-        );
       },
 
       // ---- Clients ----
@@ -1392,6 +1132,10 @@ export const useStore = create<SLTTState>()(
             nif: input.nif || null,
             signataire_dg: input.signataireDg || null,
             signataire_pdg: input.signatairePdg || null,
+            // `?? true` (et non `|| true`) : false est une valeur valide et
+            // voulue ici, contrairement aux champs texte ci-dessus où vide
+            // doit devenir null.
+            afficher_nom_avec_logo: input.afficherNomAvecLogo ?? true,
           })
           .eq("id", id);
         if (error) throw error;
@@ -1402,13 +1146,28 @@ export const useStore = create<SLTTState>()(
         await get().addAuditLog("Sociétés", "Modification", `Société ${input.nom} mise à jour`);
       },
 
+      uploadSocieteLogo: async (id, file) => {
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${id}/${Date.now()}-${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("societe-logos")
+          .upload(path, file, { contentType: file.type || "image/png", upsert: false });
+        if (uploadError) throw uploadError;
+
+        // Bucket public (societe-logos) : URL stable, pas de signature à
+        // renouveler — nécessaire puisque le logo est référencé depuis des
+        // documents imprimés (fenêtres ouvertes hors session applicative).
+        const { data } = supabase.storage.from("societe-logos").getPublicUrl(path);
+        return data.publicUrl;
+      },
+
       // ---- Comptabilité ----
       recordPayment: async (ecritureId, montant, mode, date, note) => {
         const ecriture = get().ecritures.find((e) => e.id === ecritureId);
         if (!ecriture) return;
         const newMontantPaye = Math.min(ecriture.montantInvesti, Math.max(0, ecriture.montantPaye + montant));
 
-        
         const { error: ecritureError } = await supabase
           .from("ecritures")
           .update({
@@ -1420,19 +1179,29 @@ export const useStore = create<SLTTState>()(
           .eq("id", ecritureId);
         if (ecritureError) throw ecritureError;
 
-        if (ecriture.dossierId) {
-          const relatedEcritures = get().ecritures.map((e) =>
-            e.id === ecritureId ? { ...e, montantPaye: newMontantPaye } : e
-          ).filter((e) => e.dossierId === ecriture.dossierId);
-          const totalPaye = relatedEcritures.reduce((sum, e) => sum + e.montantPaye, 0);
+        const updatedEcrituresPreview = get().ecritures.map((e) =>
+          e.id === ecritureId
+            ? {
+                ...e,
+                montantPaye: newMontantPaye,
+                modePaiement: mode,
+                datePaiement: date,
+                note: note || e.note,
+              }
+            : e,
+        );
 
-          const { error: dossierError } = await supabase
-            .from("dossiers")
-            .update({ montant_paye: totalPaye })
-            .eq("id", ecriture.dossierId);
-          if (dossierError) throw dossierError;
+        let syncedMontantPaye: number | undefined;
+        if (ecriture.dossierId) {
+          const dossier = get().dossiers.find((d) => d.id === ecriture.dossierId);
+          if (dossier) {
+            syncedMontantPaye = await syncDossierPayeFromEcritures(
+              ecriture.dossierId,
+              updatedEcrituresPreview,
+              dossier,
+            );
+          }
         }
-      
 
         set((s) => {
           const updatedEcritures = s.ecritures.map((e) =>
@@ -1444,7 +1213,7 @@ export const useStore = create<SLTTState>()(
                   datePaiement: date,
                   note: note || e.note,
                 }
-              : e
+              : e,
           );
           if (!ecriture.dossierId) {
             return {
@@ -1452,13 +1221,10 @@ export const useStore = create<SLTTState>()(
               clients: syncClientStats(s.dossiers, s.factures, updatedEcritures, s.clients),
             };
           }
-          const totalPaye = updatedEcritures
-            .filter((e) => e.dossierId === ecriture.dossierId)
-            .reduce((sum, e) => sum + e.montantPaye, 0);
           const updatedDossiers = s.dossiers.map((d) =>
             d.id === ecriture.dossierId
-              ? { ...d, montantPaye: Math.min(d.montantInvesti, totalPaye) }
-              : d
+              ? { ...d, montantPaye: syncedMontantPaye ?? d.montantPaye }
+              : d,
           );
           return {
             ecritures: updatedEcritures,
@@ -1472,6 +1238,7 @@ export const useStore = create<SLTTState>()(
           "Paiement",
           `Paiement ${montant.toLocaleString("fr-FR")} FCFA — Écriture ${ecritureId}`,
           ecriture.clientId,
+          { sourceType: "ecriture", sourceId: ecritureId },
         );
       },
 
@@ -1479,7 +1246,6 @@ export const useStore = create<SLTTState>()(
         const seq = get().ecritureSeq;
         const validatedPaye = Math.max(0, e.montantPaye);
 
-        
         const { data, error } = await supabase
           .from("ecritures")
           .insert({
@@ -1498,16 +1264,18 @@ export const useStore = create<SLTTState>()(
 
         if (error) throw error;
         const newEcriture = mapEcritureFromDb(data);
+        const updatedEcrituresPreview = [newEcriture, ...get().ecritures];
 
+        let syncedMontantPaye: number | undefined;
         if (e.dossierId) {
-          const relatedEcritures = [newEcriture, ...get().ecritures].filter((ec) => ec.dossierId === e.dossierId);
-          const totalPaye = relatedEcritures.reduce((sum, ec) => sum + ec.montantPaye, 0);
-
-          const { error: dossierError } = await supabase
-            .from("dossiers")
-            .update({ montant_paye: totalPaye })
-            .eq("id", e.dossierId);
-          if (dossierError) throw dossierError;
+          const dossier = get().dossiers.find((d) => d.id === e.dossierId);
+          if (dossier) {
+            syncedMontantPaye = await syncDossierPayeFromEcritures(
+              e.dossierId,
+              updatedEcrituresPreview,
+              dossier,
+            );
+          }
         }
 
         set((s) => {
@@ -1519,13 +1287,10 @@ export const useStore = create<SLTTState>()(
               clients: syncClientStats(s.dossiers, s.factures, updatedEcritures, s.clients),
             };
           }
-          const totalPaye = updatedEcritures
-            .filter((ec) => ec.dossierId === e.dossierId)
-            .reduce((sum, ec) => sum + ec.montantPaye, 0);
           const updatedDossiers = s.dossiers.map((d) =>
             d.id === e.dossierId
-              ? { ...d, montantPaye: Math.min(d.montantInvesti, Math.max(0, totalPaye)) }
-              : d
+              ? { ...d, montantPaye: syncedMontantPaye ?? d.montantPaye }
+              : d,
           );
           return {
             ecritures: updatedEcritures,
@@ -1535,9 +1300,14 @@ export const useStore = create<SLTTState>()(
           };
         });
 
-        await get().addAuditLog("Comptabilité", "Création", `Écriture créée pour ${e.clientNom}`, e.clientId);
+        await get().addAuditLog(
+          "Comptabilité",
+          "Création",
+          `Écriture créée pour ${e.clientNom}`,
+          e.clientId,
+          { sourceType: "ecriture", sourceId: newEcriture.id },
+        );
         return newEcriture;
-
       },
 
       // ---- Stock ----
@@ -2108,6 +1878,9 @@ export const useStore = create<SLTTState>()(
       convertDevisToDossier: async (id, bl, camion) => {
         const dev = get().devis.find((d) => d.id === id);
         if (!dev || dev.dossierId) return null; // déjà converti — pas de doublon
+        if (dev.statut !== "Accepté") {
+          throw new Error("Seul un devis Accepté peut être converti en dossier.");
+        }
 
         const inputDossier: DossierInput = {
           clientId: dev.clientId,
@@ -2318,7 +2091,13 @@ export const useStore = create<SLTTState>()(
             clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
           };
         });
-        await get().addAuditLog("Factures", "Création", `Facture ${numero} créée`, newFacture.clientId);
+        await get().addAuditLog(
+          "Factures",
+          "Création",
+          `Facture ${numero} créée`,
+          newFacture.clientId,
+          { sourceType: "facture", sourceId: newFacture.id },
+        );
         return newFacture;
 
       },
@@ -2405,7 +2184,13 @@ export const useStore = create<SLTTState>()(
         });
 
         if (fact) {
-          await get().addAuditLog("Factures", "Suppression", `Facture ${fact.numero} supprimée`, fact.clientId);
+          await get().addAuditLog(
+            "Factures",
+            "Suppression",
+            `Facture ${fact.numero} supprimée`,
+            fact.clientId,
+            { sourceType: "facture", sourceId: fact.id },
+          );
         }
       },
 
@@ -2435,12 +2220,21 @@ export const useStore = create<SLTTState>()(
           };
         });
         
-        await get().addAuditLog("Factures", "Modification", `Facture ${f.numero} → ${statut}`, f.clientId);
+        await get().addAuditLog(
+          "Factures",
+          "Modification",
+          `Facture ${f.numero} → ${statut}`,
+          f.clientId,
+          { sourceType: "facture", sourceId: id },
+        );
       },
 
       recordFacturePaiement: async (id, montant) => {
         const fact = get().factures.find((f) => f.id === id);
         if (!fact) return;
+        if (fact.statut === "Brouillon" || fact.statut === "Annulée" || fact.statut === "Soldée") {
+          throw new Error(`Impossible d'enregistrer un paiement sur une facture ${fact.statut}.`);
+        }
 
         const reste = resteAPayer({ montantInvesti: fact.montantTTC, montantPaye: fact.montantPaye });
         const effective = validatePaymentAmount(montant, reste);
@@ -2470,6 +2264,7 @@ export const useStore = create<SLTTState>()(
           "Paiement",
           `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
           fact.clientId,
+          { sourceType: "facture", sourceId: fact.id },
         );
       },
 

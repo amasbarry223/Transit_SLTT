@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useNav, type ViewKey } from "@/lib/nav-store";
 import {
@@ -47,7 +47,9 @@ import { NavList } from "./nav-list";
 import { getInitials } from "@/lib/utils";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
+import { resolveAppShellBranding } from "@/lib/societe-brand";
 import { GLOSSARY } from "@/lib/glossary";
+import { usePermission } from "@/hooks/use-permission";
 
 const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Dossiers, paiements et alertes du jour" },
@@ -85,24 +87,36 @@ export function Topbar() {
   const toggleTheme = useNav((s) => s.toggleTheme);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
-  const [notifRead, setNotifRead] = useState(false);
+  const [seenAlertIds, setSeenAlertIds] = useState<Set<string>>(new Set());
   const [helpOpen, setHelpOpen] = useState(false);
   const initials = getInitials(currentUserName);
   const shortName = currentUserName.split(" ").map((w, i) => i === 0 ? w : w[0] + ".").join(" ");
 
-  const meta = viewTitles[view] ?? {
-    title: "SLTT",
-    sub: "Société Traoré de Logistique, Transit et Transport",
-  };
-
+  const canSeeStock = usePermission("stock:read");
+  const canSeeDossiers = usePermission("dossiers:read");
   const stock = useStore((s) => s.stock);
   const dossiers = useStore((s) => s.dossiers);
+  const societes = useStore((s) => s.societes);
+  const shellBrand = resolveAppShellBranding(societes);
 
-  // Live alerts
-  const lowStock = stock.filter((s) => s.quantite < s.seuil);
-  const unpaidDossiers = dossiers.filter((d) => resteAPayer(d) > 0);
+  const meta = viewTitles[view] ?? {
+    title: shellBrand.appTitle,
+    sub: shellBrand.appSubtitle,
+  };
+
+  // Live alerts — chaque source reste soumise à la permission de son module
+  // d'origine : la cloche ne doit pas devenir un canal de fuite de données
+  // (client, montants dus) vers un rôle qui n'a pas accès au module concerné.
+  const lowStock = canSeeStock ? stock.filter((s) => s.quantite < s.seuil) : [];
+  const unpaidDossiers = canSeeDossiers ? dossiers.filter((d) => resteAPayer(d) > 0) : [];
   const alertCount = lowStock.length + unpaidDossiers.length;
-  const hasUnread = alertCount > 0 && !notifRead;
+  // Comparaison par identifiants (pas un simple booléen) : une nouvelle alerte
+  // qui apparaît après une première consultation doit redéclencher le badge.
+  const alertIds = useMemo(
+    () => [...lowStock.map((s) => `stock-${s.id}`), ...unpaidDossiers.map((d) => `dossier-${d.id}`)],
+    [lowStock, unpaidDossiers],
+  );
+  const hasUnread = alertIds.some((id) => !seenAlertIds.has(id));
 
   function handleNav(key: ViewKey) {
     go(key);
@@ -158,7 +172,7 @@ export function Topbar() {
         </Button>
 
         {/* Notifications */}
-        <DropdownMenu onOpenChange={(open) => { if (open) setNotifRead(true); }}>
+        <DropdownMenu onOpenChange={(open) => { if (open) setSeenAlertIds(new Set(alertIds)); }}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -318,8 +332,8 @@ export function Topbar() {
         <SheetContent side="left" className="w-[260px] p-0">
           <SheetHeader className="flex h-16 flex-row items-center justify-start gap-3 border-b border-border px-5">
             <Image
-              src="/logoV.png"
-              alt="SLTT"
+              src={shellBrand.logoUrl ?? "/logoV.png"}
+              alt={shellBrand.appTitle}
               width={48}
               height={48}
               className="size-11 object-contain"

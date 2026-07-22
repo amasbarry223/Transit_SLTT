@@ -12,16 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type SocieteTone = "blue" | "indigo" | "slate";
-
-/**
- * Couleur par société — mapping fixe (pas dérivé de l'id) pour rester stable
- * même si l'ordre de chargement change. Fallback slate pour une 3e société future.
- */
-const SOCIETE_TONE: Record<string, SocieteTone> = {
-  "Top Doumani": "blue",
-  "Traoré Transit Logistique": "indigo",
-};
+import { societeToneById } from "@/lib/societe-brand";
 
 /**
  * Filtre société partagé (F1) — mémorisé dans le nav-store (persisté) pour ne
@@ -53,9 +44,19 @@ export function SocieteFilterSelect({ className }: { className?: string }) {
   );
 }
 
-export function SocieteBadge({ societeNom, size = "md" }: { societeNom?: string; size?: "sm" | "md" }) {
+export function SocieteBadge({
+  societeNom,
+  societeId,
+  size = "md",
+}: {
+  societeNom?: string;
+  societeId?: string;
+  size?: "sm" | "md";
+}) {
+  const societes = useStore((s) => s.societes);
   if (!societeNom) return null;
-  const tone = SOCIETE_TONE[societeNom] ?? "slate";
+  const id = societeId ?? societes.find((s) => s.nom === societeNom)?.id;
+  const tone = id ? societeToneById(id) : "slate";
   return (
     <ToneBadge tone={tone} size={size}>
       {societeNom}

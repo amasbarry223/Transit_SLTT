@@ -44,7 +44,7 @@ export function LoginScreen() {
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
-  async function doLogin(userEmail: string, userPassword: string) {
+  async function signInWithCredentials(userEmail: string, userPassword: string) {
     if (loading) return;
     setError("");
     setLoading(true);
@@ -102,7 +102,7 @@ export function LoginScreen() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await doLogin(email, password);
+    await signInWithCredentials(email, password);
   }
 
 
@@ -115,7 +115,7 @@ export function LoginScreen() {
           <div className="flex flex-col items-center px-8 pb-6 pt-9">
             <Image
               src="/logoV.png"
-              alt="SLTT — Traoré de Logistique Transit-Transport"
+              alt="Transit SLTT"
               width={140}
               height={140}
               className="size-[132px] object-contain drop-shadow-md sm:size-[140px]"
@@ -154,7 +154,7 @@ export function LoginScreen() {
                       setEmail(e.target.value);
                       setError("");
                     }}
-                    placeholder="vous@sltt.ml"
+                    placeholder="vous@exemple.com"
                     className="h-11 border-slate-200 dark:border-slate-700 bg-slate-50/50 pl-10 focus:bg-white dark:focus:bg-slate-900"
                     required
                     disabled={loading}
@@ -219,7 +219,7 @@ export function LoginScreen() {
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/40 px-3 py-2.5 text-sm text-red-700">
+                <div role="alert" className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/40 px-3 py-2.5 text-sm text-red-700">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -234,13 +234,8 @@ export function LoginScreen() {
               </Button>
 
               <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                Mot de passe oublié ou compte bloqué ?{" "}
-                <a
-                  href="mailto:?subject=R%C3%A9initialisation%20mot%20de%20passe%20SLTT"
-                  className="font-medium text-primary underline underline-offset-2"
-                >
-                  Contactez votre administrateur
-                </a>
+                Mot de passe oublié ou compte bloqué ? Contactez l&apos;administrateur de votre société pour
+                obtenir une réinitialisation.
               </p>
           </form>
 

@@ -45,6 +45,20 @@ export function formatDateShort(date: Date | string | null | undefined): string 
   }).format(d);
 }
 
+/** Format a date+time as "12/01/2026 14:30". Invalid/missing values return "—". */
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const d: Date = typeof date === "string" ? parseLocalDate(date) : date;
+  if (isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
 /** Parse a user-typed number string (allow spaces) into a number.
  * DX-04: Returns 0 for negative values to reject invalid input.
  */

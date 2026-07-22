@@ -261,7 +261,7 @@ export function ContratDetailScreen() {
                   ) : (
                     <ToneBadge tone={CONTRAT_STATUT_TONE[contrat.statut]}>{contrat.statut}</ToneBadge>
                   )}
-                  {canWrite ? (
+                  {canWrite && contratDepenses.length === 0 ? (
                     <Select
                       value={contrat.societeId}
                       onValueChange={async (v) => {
@@ -282,7 +282,9 @@ export function ContratDetailScreen() {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <SocieteBadge societeNom={contrat.societeNom} />
+                    <span title={canWrite && contratDepenses.length > 0 ? "Société verrouillée : des dépenses sont déjà rattachées à ce contrat." : undefined}>
+                      <SocieteBadge societeNom={contrat.societeNom} />
+                    </span>
                   )}
                 </div>
                 <p className="mt-1.5 text-base font-semibold text-slate-700 dark:text-slate-300">{contrat.clientNom}</p>
@@ -656,7 +658,8 @@ function ContratFormModal({
   const [notes, setNotes] = useState(initial.notes ?? "");
 
   const selectedClient = clients.find((c) => c.id === clientId);
-  const canSubmit = Boolean(societeId && clientId && objet.trim());
+  const dateFinValide = !dateFin || dateFin >= dateDebut;
+  const canSubmit = Boolean(societeId && clientId && objet.trim() && dateFinValide);
 
   function handleSubmit() {
     if (!selectedClient || !canSubmit) return;
@@ -729,6 +732,9 @@ function ContratFormModal({
           <div className="space-y-2">
             <Label>Date de fin</Label>
             <Input type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} className="h-10" />
+            {!dateFinValide && (
+              <p className="text-xs text-red-600 dark:text-red-400">La date de fin doit être postérieure à la date de début.</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -1036,7 +1042,7 @@ function ContratFileDropZone({
     }
   }
 
-  function processFiles(fileList: FileList | null) {
+  function uploadSelectedFiles(fileList: FileList | null) {
     if (!fileList) return;
     Array.from(fileList).forEach((file) => {
       if (file.size > MAX_FILE_SIZE) {
@@ -1096,7 +1102,7 @@ function ContratFileDropZone({
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
-            processFiles(e.dataTransfer.files);
+            uploadSelectedFiles(e.dataTransfer.files);
           }}
           onClick={() => inputRef.current?.click()}
           onKeyDown={(e) => {
@@ -1117,7 +1123,7 @@ function ContratFileDropZone({
             className="hidden"
             multiple
             onChange={(e) => {
-              processFiles(e.target.files);
+              uploadSelectedFiles(e.target.files);
               if (inputRef.current) inputRef.current.value = "";
             }}
           />

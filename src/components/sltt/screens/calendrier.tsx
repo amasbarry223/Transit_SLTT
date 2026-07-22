@@ -12,6 +12,7 @@ import {
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA } from "@/lib/format";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { DossierStatutBadge, DOSSIER_STATUT_DOT } from "@/components/sltt/status-badge";
@@ -119,10 +120,19 @@ function DayPanel({
             return (
               <div
                 key={ev.id}
-                className="flex cursor-pointer items-start gap-3 px-5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors"
+                role="button"
+                tabIndex={0}
+                className="flex cursor-pointer items-start gap-3 px-5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                 onClick={() => {
                   if (ev.type === "dossier") onOpenDossier(ev.payload.id as string);
                   if (ev.type === "bon") onOpenBon();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (ev.type === "dossier") onOpenDossier(ev.payload.id as string);
+                    if (ev.type === "bon") onOpenBon();
+                  }
                 }}
               >
                 <div className={cn("mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border text-xs", TYPE_PILL[ev.type])}>
@@ -150,9 +160,18 @@ function DayPanel({
 
 export function CalendrierScreen() {
   const { openDossierDetail, go } = useNav();
-  const dossiers = useStore((s) => s.dossiers);
-  const bons = useStore((s) => s.bons);
-  const ecritures = useStore((s) => s.ecritures);
+  const canSeeDossiers = usePermission("dossiers:read");
+  const canSeeBons = usePermission("bons:read");
+  const canSeeComptabilite = usePermission("comptabilite:read");
+  const dossiersRaw = useStore((s) => s.dossiers);
+  const bonsRaw = useStore((s) => s.bons);
+  const ecrituresRaw = useStore((s) => s.ecritures);
+  // Le calendrier est accessible à tous les rôles (calendrier:read) mais chaque
+  // type d'événement expose des données métier (client, montants) qui restent
+  // soumises à la permission du module d'origine — pas de fuite entre modules.
+  const dossiers = canSeeDossiers ? dossiersRaw : [];
+  const bons = canSeeBons ? bonsRaw : [];
+  const ecritures = canSeeComptabilite ? ecrituresRaw : [];
 
   // Ancrage sur aujourd'hui (cohérent avec le dashboard) — pas sur la donnée
   // la plus récente, sinon le bouton "Aujourd'hui" ne ramène pas au mois
@@ -321,9 +340,18 @@ export function CalendrierScreen() {
             return (
               <div
                 key={dateStr}
+                role="button"
+                tabIndex={0}
+                aria-label={`${day} — ${events.length} événement${events.length !== 1 ? "s" : ""}`}
                 onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedDate(isSelected ? null : dateStr);
+                  }
+                }}
                 className={cn(
-                  "min-h-[96px] cursor-pointer p-2 transition-colors",
+                  "min-h-[96px] cursor-pointer p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                   isSelected
                     ? "bg-blue-50/80 dark:bg-blue-950/40"
                     : events.length > 0

@@ -26,6 +26,13 @@ export type AuditModule =
   | "Sociétés"
   | "Archives";
 
+export type AuditSourceType = "dossier" | "ecriture" | "facture";
+
+export type AuditSourceRef = {
+  sourceType: AuditSourceType;
+  sourceId: string;
+};
+
 export type AuditEntry = {
   id: string;
   date: string;
@@ -36,6 +43,8 @@ export type AuditEntry = {
   ip: string;
   /** Client concerné par le mouvement, quand applicable (Classeur, suivi 3.3). */
   clientId?: string;
+  sourceType?: AuditSourceType;
+  sourceId?: string;
 };
 
 let cachedClientIp: string | null = null;
@@ -69,6 +78,8 @@ export function mapAuditLogFromDb(x: Record<string, unknown>): AuditEntry {
     detail: String(x.detail),
     ip: String(x.ip ?? "N/A"),
     clientId: x.client_id ? String(x.client_id) : undefined,
+    sourceType: x.source_type ? (String(x.source_type) as AuditSourceType) : undefined,
+    sourceId: x.source_id ? String(x.source_id) : undefined,
   };
 }
 
@@ -81,6 +92,7 @@ export async function insertAuditLog(params: {
   ip?: string;
   /** Client concerné, pour un suivi structuré côté Classeur plutôt qu'une correspondance texte. */
   clientId?: string;
+  source?: AuditSourceRef;
 }): Promise<AuditEntry | null> {
   const ip = params.ip ?? (await resolveClientIp());
 
@@ -94,6 +106,8 @@ export async function insertAuditLog(params: {
         detail: params.detail,
         ip,
         client_id: params.clientId ?? null,
+        source_type: params.source?.sourceType ?? null,
+        source_id: params.source?.sourceId ?? null,
       })
       .select()
       .single();

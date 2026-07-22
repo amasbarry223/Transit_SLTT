@@ -50,3 +50,35 @@ export const navItems: NavItem[] = [
 
   { key: "parametres", label: "Paramètres", shortLabel: "Réglages", icon: Settings, requiredPermission: "parametres:read" },
 ];
+
+/**
+ * Permission requise pour accéder à CHAQUE vue, y compris les écrans de
+ * détail (dossier-detail, devis-detail…) absents de navItems car non liés
+ * depuis la sidebar — mais atteignables par URL directe ou la palette de
+ * commandes (⌘K), qui doivent donc appliquer la même règle que la liste
+ * parente. Sans cette table, ces deux points d'entrée contournaient
+ * totalement les permissions (cf. audit du 21/07/2026).
+ */
+export const VIEW_PERMISSIONS: Record<ViewKey, string | undefined> = {
+  dashboard: "dashboard:read",
+  dossiers: "dossiers:read",
+  "dossier-form": "dossiers:read",
+  "dossier-detail": "dossiers:read",
+  comptabilite: "comptabilite:read",
+  bilans: "rapports:read",
+  entreposage: "stock:read",
+  bons: "bons:read",
+  clients: "clients:read",
+  "client-fiche": "clients:read",
+  devis: "devis:read",
+  "devis-detail": "devis:read",
+  calendrier: "calendrier:read",
+  transporteurs: "transporteurs:read",
+  factures: "factures:read",
+  "facture-detail": "factures:read",
+  fournisseurs: "fournisseurs:read",
+  contrats: "contrats:read",
+  "contrat-detail": "contrats:read",
+  archives: "archives:read",
+  parametres: "parametres:read",
+};

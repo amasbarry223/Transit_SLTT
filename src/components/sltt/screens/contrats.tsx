@@ -369,7 +369,8 @@ function ContratFormModal({
   }
 
   const selectedClient = clients.find((c) => c.id === clientId);
-  const canSubmit = Boolean(societeId && clientId && objet.trim());
+  const dateFinValide = !dateFin || dateFin >= dateDebut;
+  const canSubmit = Boolean(societeId && clientId && objet.trim() && dateFinValide);
 
   function handleSubmit() {
     if (!selectedClient || !canSubmit) return;
@@ -449,6 +450,9 @@ function ContratFormModal({
           <div className="space-y-2">
             <Label>Date de fin</Label>
             <Input type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} className="h-10" />
+            {!dateFinValide && (
+              <p className="text-xs text-red-600 dark:text-red-400">La date de fin doit être postérieure à la date de début.</p>
+            )}
           </div>
 
           <div className="space-y-2">

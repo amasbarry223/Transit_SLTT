@@ -2,10 +2,11 @@
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import { useCanView } from "@/hooks/use-permission";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
 
 import { DashboardScreen } from "@/components/sltt/screens/dashboard";
 import { DossiersListScreen } from "@/components/sltt/screens/dossiers-list";
@@ -31,10 +32,16 @@ import { ArchivesScreen } from "@/components/sltt/screens/archives";
 
 export function AppShell() {
   const view = useNav((s) => s.view);
+  const go = useNav((s) => s.go);
   const dataLoading = useStore((s) => s.dataLoading);
   const loadError = useStore((s) => s.loadError);
   const fetchData = useStore((s) => s.fetchData);
   const clearLoadError = useStore((s) => s.clearLoadError);
+  // Dernier rempart de permission : la sidebar/le breadcrumb/la palette de
+  // commandes filtrent déjà ce qu'ils proposent, mais une URL tapée à la
+  // main ou un état restauré peut viser une vue interdite — on ne rend
+  // jamais l'écran cible dans ce cas, quel que soit le point d'entrée.
+  const canViewCurrent = useCanView(view);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -65,6 +72,23 @@ export function AppShell() {
         )}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="w-full">
+            {!canViewCurrent ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                  <ShieldAlert className="size-7" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Accès non autorisé</h2>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Vous n&apos;avez pas la permission de consulter cette page.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => go("dashboard")}>
+                  Retour au tableau de bord
+                </Button>
+              </div>
+            ) : (
+            <>
             {view === "dashboard" && <DashboardScreen />}
             {view === "dossiers" && <DossiersListScreen />}
             {view === "dossier-form" && <DossierFormScreen />}
@@ -86,6 +110,8 @@ export function AppShell() {
             {view === "fournisseurs" && <FournisseursScreen />}
             {view === "archives" && <ArchivesScreen />}
             {view === "parametres" && <ParametresScreen />}
+            </>
+            )}
           </div>
         </main>
       </div>

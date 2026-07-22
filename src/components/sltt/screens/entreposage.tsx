@@ -25,6 +25,7 @@ import type { Mouvement } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { exportToCSV, printStockInventory, type SocieteBrand } from "@/lib/export";
+import { resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge, StockStatutBadge } from "@/components/sltt/status-badge";
@@ -106,7 +107,7 @@ function StockTab({
   stock: StockItem[];
   onEntry: (id: string | null) => void;
   onExit: (id: string | null) => void;
-  onHistory: (marchandise: string) => void;
+  onHistory: (stockId: string, marchandise: string) => void;
   onPrint: (rows: StockItem[]) => void;
   onExport: (rows: StockItem[]) => void;
   canWrite?: boolean;
@@ -225,7 +226,7 @@ function StockTab({
                   item={item}
                   onEntry={(id) => onEntry(id)}
                   onExit={(id) => onExit(id)}
-                  onHistory={(m) => onHistory(m)}
+                  onHistory={(id, m) => onHistory(id, m)}
                   onOpenClient={onOpenClient}
                   canWrite={canWrite}
                 />
@@ -271,7 +272,7 @@ function StockTab({
                       item={item}
                       onEntry={(id) => onEntry(id)}
                       onExit={(id) => onExit(id)}
-                      onHistory={(m) => onHistory(m)}
+                      onHistory={(id, m) => onHistory(id, m)}
                       onOpenClient={onOpenClient}
                       canWrite={canWrite}
                     />
@@ -306,7 +307,7 @@ function StockRow({
   item: StockItem;
   onEntry: (id: string) => void;
   onExit: (id: string) => void;
-  onHistory: (marchandise: string) => void;
+  onHistory: (stockId: string, marchandise: string) => void;
   onOpenClient?: (clientId: string) => void;
   canWrite?: boolean;
 }) {
@@ -399,7 +400,7 @@ function StockRow({
             className="size-11 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
             aria-label="Historique"
             title="Historique"
-            onClick={() => onHistory(item.marchandise)}
+            onClick={() => onHistory(item.id, item.marchandise)}
           >
             <History className="size-4" />
           </Button>
@@ -420,7 +421,7 @@ function StockCard({
   item: StockItem;
   onEntry: (id: string) => void;
   onExit: (id: string) => void;
-  onHistory: (marchandise: string) => void;
+  onHistory: (stockId: string, marchandise: string) => void;
   onOpenClient?: (clientId: string) => void;
   canWrite?: boolean;
 }) {
@@ -509,7 +510,7 @@ function StockCard({
           className="size-9 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
           aria-label="Historique"
           title="Historique"
-          onClick={() => onHistory(item.marchandise)}
+          onClick={() => onHistory(item.id, item.marchandise)}
         >
           <History className="size-4" />
         </Button>
@@ -525,10 +526,12 @@ function StockCard({
 function MouvementsTab({
   mouvements,
   marchandiseFilter,
+  stockIdFilter,
   onClearMarchandiseFilter,
 }: {
   mouvements: Mouvement[];
   marchandiseFilter: string;
+  stockIdFilter: string;
   onClearMarchandiseFilter: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -537,7 +540,12 @@ function MouvementsTab({
 
   const filtered = useMemo(() => {
     let list = mouvements;
-    if (marchandiseFilter) {
+    if (stockIdFilter) {
+      // Filtre par article précis (stockId) — évite de mélanger deux articles
+      // de sociétés différentes portant le même nom de marchandise. Les
+      // mouvements plus anciens sans stockId retombent sur le nom seul.
+      list = list.filter((m) => (m.stockId ? m.stockId === stockIdFilter : m.marchandise === marchandiseFilter));
+    } else if (marchandiseFilter) {
       list = list.filter((m) => m.marchandise === marchandiseFilter);
     }
     if (typeFilter !== "all") {
@@ -553,7 +561,7 @@ function MouvementsTab({
       );
     }
     return list;
-  }, [mouvements, marchandiseFilter, typeFilter, query]);
+  }, [mouvements, marchandiseFilter, stockIdFilter, typeFilter, query]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -845,8 +853,10 @@ export function EntreposageScreen() {
     const marchandise = niMarchandise.trim();
     const unite = niUnite.trim();
     if (!marchandise || !unite || !niSocieteId) return;
-    const sommePayee = Number(niSommePayee) || 0;
     const valeurTotale = Number(niValeurTotale) || 0;
+    // Plafonnée à la valeur totale — sinon sommePayee + resteAPayer (utilisé
+    // pour le KPI "Valeur du stock") dépasserait la valeur réelle de l'article.
+    const sommePayee = Math.min(Number(niSommePayee) || 0, valeurTotale);
     const input: StockItemInput = {
       marchandise,
       quantite: Number(niQuantite) || 0,
@@ -855,8 +865,6 @@ export function EntreposageScreen() {
       depositaire: niDepositaire.trim() || "—",
       commercial: niCommercial.trim() || "—",
       sommePayee,
-      // Calculé, jamais saisi directement — évite les incohérences entre les
-      // deux montants (ex. reste à payer supérieur à la valeur totale).
       resteAPayer: Math.max(0, valeurTotale - sommePayee),
       clientId: niClientId || undefined,
       societeId: niSocieteId,
@@ -868,6 +876,7 @@ export function EntreposageScreen() {
 
   const [activeTab, setActiveTab] = useState<EntrepotTab>("stock");
   const [marchandiseFilter, setMarchandiseFilter] = useState("");
+  const [stockIdFilter, setStockIdFilter] = useState("");
 
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryStockId, setEntryStockId] = useState<string>("");
@@ -911,7 +920,8 @@ export function EntreposageScreen() {
     setExitOpen(true);
   }
 
-  function goToHistory(marchandise: string) {
+  function goToHistory(stockId: string, marchandise: string) {
+    setStockIdFilter(stockId);
     setMarchandiseFilter(marchandise);
     setActiveTab("mouvements");
     toast({
@@ -962,18 +972,8 @@ export function EntreposageScreen() {
   function handlePrintStock(rows: StockItem[]) {
     const selectedSociete = selectedSocieteId ? societes.find((s) => s.id === selectedSocieteId) : undefined;
     const societeLabel = selectedSocieteId ? (selectedSociete?.nom ?? "Société") : "Toutes les sociétés";
-    const brand: SocieteBrand | undefined = selectedSociete
-      ? {
-          nom: selectedSociete.nom,
-          logoUrl: selectedSociete.logoUrl,
-          legal: {
-            adresse: selectedSociete.adresse,
-            telephone: selectedSociete.telephone,
-            rccm: selectedSociete.rccm,
-            nif: selectedSociete.nif,
-          },
-        }
-      : undefined;
+    const brand: SocieteBrand | undefined =
+      selectedSociete ? societeToBrand(selectedSociete) : resolveSlttBrand(societes) ?? undefined;
     printStockInventory(
       rows.map((s) => ({
         marchandise: s.marchandise,
@@ -1153,10 +1153,11 @@ export function EntreposageScreen() {
 
         <TabsContent value="mouvements" className="mt-6 focus-visible:outline-none">
           <MouvementsTab
-            key={marchandiseFilter}
+            key={stockIdFilter || marchandiseFilter}
             mouvements={mouvements}
             marchandiseFilter={marchandiseFilter}
-            onClearMarchandiseFilter={() => setMarchandiseFilter("")}
+            stockIdFilter={stockIdFilter}
+            onClearMarchandiseFilter={() => { setMarchandiseFilter(""); setStockIdFilter(""); }}
           />
         </TabsContent>
       </Tabs>

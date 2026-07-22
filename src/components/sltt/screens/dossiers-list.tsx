@@ -20,6 +20,7 @@ import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
@@ -80,8 +81,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "date-asc", label: "Date (ancien d'abord)" },
   { value: "reference", label: "Référence A → Z" },
   { value: "client", label: "Client A → Z" },
-  { value: "montant-desc", label: "Montant (décroissant)" },
-  { value: "montant-asc", label: "Montant (croissant)" },
+  { value: "montant-desc", label: "Prestation (décroissante)" },
+  { value: "montant-asc", label: "Prestation (croissante)" },
   { value: "statut", label: "Statut" },
   { value: "ecart-desc", label: "Marge (décroissante)" },
 ];
@@ -92,8 +93,10 @@ export function DossiersListScreen() {
   const { openDossier, openDossierDetail } = useNav();
   const { toast } = useToast();
   const canWrite = usePermission("dossiers:write");
+  const canTransition = usePermission("dossiers:transition");
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
+  const societes = useStore((s) => s.societes);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
@@ -117,24 +120,14 @@ export function DossiersListScreen() {
   // Quick-action transition dialog
   const [transitionDossier, setTransitionDossier] = useState<Dossier | null>(null);
 
-  const stats = useMemo(() => {
-    let enCours = 0;
-    let soldes = 0;
-    let ecartTotal = 0;
-    for (const d of dossiers) {
-      if (d.statut === "En cours") enCours++;
-      if (d.statut === "Soldé") soldes++;
-      ecartTotal += calculerEcart(d);
-    }
-    return { total: dossiers.length, enCours, soldes, ecartTotal };
-  }, [dossiers]);
-
   const filtered = useMemo(() => {
     const list = dossiers.filter((d) => {
       if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
-      if (nonSoldeOnly && resteAPayer(d) <= 0) return false;
+      // Exclut seulement les dossiers réellement soldés à solde nul — un dossier
+      // "En cours" à montant nul (reste = 0 avant tout chiffrage) doit rester visible.
+      if (nonSoldeOnly && resteAPayer(d) <= 0 && d.statut === "Soldé") return false;
       if (yearFilter !== "all" && d.date.slice(0, 4) !== yearFilter) return false;
       if (periode !== "all") {
         const dDate = parseLocalDate(d.date);
@@ -151,14 +144,31 @@ export function DossiersListScreen() {
         case "date-asc":    return a.date.localeCompare(b.date);
         case "reference":   return a.reference.localeCompare(b.reference);
         case "client":      return a.clientNom.localeCompare(b.clientNom, "fr");
-        case "montant-desc": return b.montantInvesti - a.montantInvesti;
-        case "montant-asc":  return a.montantInvesti - b.montantInvesti;
+        // Trie sur fraisPrestation, la seule colonne montant visible dans ce tableau
+        // (montantInvesti n'y est pas affiché) — voir libellé "Prestation" ci-dessus.
+        case "montant-desc": return b.fraisPrestation - a.fraisPrestation;
+        case "montant-asc":  return a.fraisPrestation - b.fraisPrestation;
         case "statut":      return a.statut.localeCompare(b.statut);
         case "ecart-desc":  return calculerEcart(b) - calculerEcart(a);
         default: return 0;
       }
     });
   }, [dossiers, search, clientFilter, statutFilter, nonSoldeOnly, periode, yearFilter, sortBy, refDate]);
+
+  // Les KPI reflètent les filtres actifs (comme le tableau juste en dessous),
+  // pas l'ensemble des dossiers — sinon les chiffres semblent contredire ce
+  // qui est affiché à l'écran dès qu'un filtre est appliqué.
+  const stats = useMemo(() => {
+    let enCours = 0;
+    let soldes = 0;
+    let ecartTotal = 0;
+    for (const d of filtered) {
+      if (d.statut === "En cours") enCours++;
+      if (d.statut === "Soldé") soldes++;
+      ecartTotal += calculerEcart(d);
+    }
+    return { total: filtered.length, enCours, soldes, ecartTotal };
+  }, [filtered]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -255,6 +265,7 @@ export function DossiersListScreen() {
         <tbody>${rowsHTML}</tbody>
       </table>
     `,
+      resolvePrintHTMLBrand(societes),
     );
   }
 
@@ -633,7 +644,7 @@ export function DossiersListScreen() {
                         <TableCell className="px-4 py-3.5">
                           <div className="flex flex-col gap-1">
                             <DossierStatutBadge statut={d.statut} />
-                            {nextTrans && (
+                            {nextTrans && canTransition && (
                               <StatusQuickAction
                                 label={TRANSITION_META[nextTrans].actionLabel}
                                 bgClass={TRANSITION_META[nextTrans].bgClass}

@@ -10,6 +10,7 @@ import {
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import { usePermission } from "@/hooks/use-permission";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printDevis } from "@/lib/export";
@@ -93,10 +94,11 @@ const NEXT_STATUT: Partial<Record<DevisStatut, { to: DevisStatut; label: string 
 /* ------------------------------------------------------------------ */
 
 function VerticalStepper({
-  statut, onSelect,
+  statut, onSelect, canWrite,
 }: {
   statut: DevisStatut;
   onSelect: (s: DevisStatut) => void;
+  canWrite: boolean;
 }) {
   const isTerminal = statut === "Refusé" || statut === "Expiré";
 
@@ -125,7 +127,7 @@ function VerticalStepper({
       {STATUT_FLOW.map((s, idx) => {
         const done    = idx < currentIdx;
         const current = idx === currentIdx;
-        const clickable = !done && !current && allowedNext.includes(s);
+        const clickable = canWrite && !done && !current && allowedNext.includes(s);
         const cfg     = STATUT_CONFIG[s];
         const Icon    = cfg.icon;
         const isLast  = idx === STATUT_FLOW.length - 1;
@@ -257,6 +259,7 @@ export function DevisDetailScreen() {
   const updateDevisStatut    = useStore((s) => s.updateDevisStatut);
   const removeDevis          = useStore((s) => s.removeDevis);
   const { toast }            = useToast();
+  const canWrite              = usePermission("devis:write");
 
   const devis = allDevis.find((d) => d.id === selectedId);
 
@@ -310,6 +313,10 @@ export function DevisDetailScreen() {
   const editTotal = dd + fc + fp;
   const nextStatut = NEXT_STATUT[devis.statut];
   const canEdit    = !isEditing;
+  // Comme pour les factures (verrouillées hors Brouillon), un devis Accepté
+  // ou déjà converti en dossier ne doit plus être modifiable : le dossier
+  // réel est un instantané figé, l'éditer ensuite désynchroniserait les deux.
+  const canEditContent = canWrite && !devis.dossierId && devis.statut !== "Accepté";
 
   /* Handlers */
   const handleClientChange = (id: string) => {
@@ -319,7 +326,7 @@ export function DevisDetailScreen() {
   };
 
   const handleSave = () => {
-    if (!devis || !fClientId || !fNature.trim() || !fDateValidite) return;
+    if (!devis || !canEditContent || !fClientId || !fNature.trim() || !fDateValidite) return;
     updateDevis(devis.id, {
       clientId: fClientId, clientNom: fClientNom, nature: fNature,
       droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp,
@@ -337,7 +344,7 @@ export function DevisDetailScreen() {
   };
 
   const handleStatutChange = async (to: DevisStatut) => {
-    if (!devis || to === devis.statut) return;
+    if (!devis || !canWrite || to === devis.statut) return;
     try {
       await updateDevisStatut(devis.id, to);
       toast({ title: "Statut mis à jour", description: `${devis.reference} → ${to}` });
@@ -372,7 +379,7 @@ export function DevisDetailScreen() {
   };
 
   const handleDelete = async () => {
-    if (!devis) return;
+    if (!devis || !canWrite) return;
     try {
       await removeDevis(devis.id);
       toast({ title: "Devis supprimé", description: devis.reference });
@@ -437,14 +444,16 @@ export function DevisDetailScreen() {
             <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border/50 pt-4">
               {canEdit ? (
                 <>
-                  <Button size="sm" variant="outline" className="gap-2"
-                    onClick={() => { setIsEditing(true); setConfirmDelete(false); setConfirmConvert(false); }}>
-                    <Pencil className="size-4" /> Modifier
-                  </Button>
+                  {canEditContent && (
+                    <Button size="sm" variant="outline" className="gap-2"
+                      onClick={() => { setIsEditing(true); setConfirmDelete(false); setConfirmConvert(false); }}>
+                      <Pencil className="size-4" /> Modifier
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" className="gap-2" onClick={handlePrint}>
                     <Printer className="size-4" /> Télécharger PDF
                   </Button>
-                  {nextStatut && (
+                  {nextStatut && canWrite && (
                     <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 text-white"
                       onClick={() => handleStatutChange(nextStatut.to)}>
                       <ChevronRight className="size-4" /> {nextStatut.label}
@@ -456,13 +465,14 @@ export function DevisDetailScreen() {
                       onClick={() => openDossierDetail(devis.dossierId!)}>
                       <FileCheck2 className="size-4" /> Voir le dossier
                     </Button>
-                  ) : (
+                  ) : canWrite && devis.statut === "Accepté" ? (
                     <Button size="sm" variant="outline"
                       className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                       onClick={() => { setConfirmConvert(true); setConfirmDelete(false); }}>
                       <FileCheck2 className="size-4" /> Convertir en dossier
                     </Button>
-                  )}
+                  ) : null}
+                  {canWrite && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="ghost" className="ml-auto text-slate-400 dark:text-slate-500">
@@ -495,6 +505,7 @@ export function DevisDetailScreen() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  )}
                 </>
               ) : (
                 <>
@@ -555,9 +566,9 @@ export function DevisDetailScreen() {
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">Cliquez pour changer</span>
               </div>
               <div className="p-5">
-                <VerticalStepper statut={devis.statut} onSelect={handleStatutChange} />
+                <VerticalStepper statut={devis.statut} onSelect={handleStatutChange} canWrite={canWrite} />
                 {/* Terminal statuts (Refusé / Expiré) actions */}
-                {(devis.statut === "Refusé" || devis.statut === "Expiré") && (
+                {canWrite && (devis.statut === "Refusé" || devis.statut === "Expiré") && (
                   <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-border/40">
                     <button
                       onClick={() => handleStatutChange("Brouillon")}
@@ -587,30 +598,36 @@ export function DevisDetailScreen() {
                 <Button variant="outline" className="w-full justify-start gap-2.5 font-medium" onClick={handlePrint}>
                   <Printer className="size-4 text-slate-400 dark:text-slate-500" /> Télécharger PDF
                 </Button>
+                {canEditContent && (
                 <Button variant="outline"
                   className="w-full justify-start gap-2.5 font-medium"
                   onClick={() => { setIsEditing(true); setConfirmDelete(false); setConfirmConvert(false); }}>
                   <Pencil className="size-4 text-slate-400 dark:text-slate-500" /> Modifier le devis
                 </Button>
+                )}
                 {devis.dossierId ? (
                   <Button variant="outline"
                     className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                     onClick={() => openDossierDetail(devis.dossierId!)}>
                     <FileCheck2 className="size-4" /> Voir le dossier
                   </Button>
-                ) : (
+                ) : canWrite && devis.statut === "Accepté" ? (
                   <Button variant="outline"
                     className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                     onClick={() => { setConfirmConvert(true); setConfirmDelete(false); }}>
                     <FileCheck2 className="size-4" /> Convertir en dossier
                   </Button>
-                )}
+                ) : null}
+                {canWrite && (
+                <>
                 <Separator />
                 <Button variant="outline"
                   className="w-full justify-start gap-2.5 font-medium text-red-600 dark:text-red-400 border-red-200 hover:bg-red-50 dark:bg-red-950/40"
                   onClick={() => { setConfirmDelete(true); setConfirmConvert(false); }}>
                   <Trash2 className="size-4" /> Supprimer
                 </Button>
+                </>
+                )}
               </div>
             </Card>
           </div>
@@ -738,6 +755,11 @@ export function DevisDetailScreen() {
                 Le devis <strong>{devis.reference}</strong> ({devis.clientNom} · {formatFCFA(devis.total)})
                 sera supprimé de façon permanente et irréversible.
               </p>
+              {devis.dossierId && (
+                <p className="mt-2 text-sm font-medium text-red-900 leading-relaxed">
+                  ⚠ Ce devis est à l'origine du dossier associé — le dossier n'est pas supprimé, mais son devis d'origine disparaîtra de l'historique.
+                </p>
+              )}
               <div className="mt-4 flex items-center gap-3">
                 <Button size="sm" variant="destructive" className="gap-2" onClick={handleDelete}>
                   <Trash2 className="size-4" /> Confirmer la suppression

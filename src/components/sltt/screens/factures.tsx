@@ -25,6 +25,7 @@ import { FactureStatutBadge } from "@/components/sltt/status-badge";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { TablePagination } from "@/components/sltt/table-pagination";
+import { FACTURE_ECHEANCE_JOURS, MS_PER_DAY } from "@/lib/constants";
 
 const PAGE_SIZE = 8;
 
@@ -53,14 +54,18 @@ function FactureFormModal({
   const { toast }  = useToast();
 
   const today    = new Date().toISOString().slice(0, 10);
-  const in30days = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const defaultDueDate = new Date(
+    Date.now() + FACTURE_ECHEANCE_JOURS * MS_PER_DAY,
+  )
+    .toISOString()
+    .slice(0, 10);
 
   const [clientId,     setClientId]     = React.useState(prefill?.clientId ?? "");
   const [clientNom,    setClientNom]    = React.useState(prefill?.clientNom ?? "");
   const [societeId,    setSocieteId]    = React.useState(prefill?.societeId ?? "");
   const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
   const [date,         setDate]         = React.useState(prefill?.date ?? today);
-  const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? in30days);
+  const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? defaultDueDate);
   const [tvaOn,        setTvaOn]        = React.useState((prefill?.tauxTVA ?? DEFAULT_TVA_RATE) > 0);
   const [notes,        setNotes]        = React.useState(prefill?.notes ?? "");
   const tauxTVA = tvaOn ? String(DEFAULT_TVA_RATE) : "0";
@@ -633,7 +638,7 @@ export function FacturesScreen() {
                     >
                       <Eye className="size-3.5" />
                     </button>
-                    {f.statut === "Brouillon" && (
+                    {canWrite && f.statut === "Brouillon" && (
                       <button
                         title="Marquer comme envoyée"
                         onClick={() => updateFactureStatut(f.id, "Envoyée")}
@@ -642,6 +647,7 @@ export function FacturesScreen() {
                         <Send className="size-3.5" />
                       </button>
                     )}
+                    {canWrite && (
                     <button
                       title="Supprimer"
                       onClick={() => setDeleteTarget(f)}
@@ -649,6 +655,7 @@ export function FacturesScreen() {
                     >
                       <Trash2 className="size-3.5" />
                     </button>
+                    )}
                   </div>
                 </div>
               );

@@ -18,6 +18,7 @@ import { useStore, type TypeDocument } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { formatFileSize, getFileIconMeta } from "@/lib/file-utils";
 import { matchesQuery } from "@/lib/search-filter";
+import { deriveClientIdFromRattachement } from "@/lib/archives-utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission, useHasRole } from "@/hooks/use-permission";
@@ -306,6 +307,7 @@ function ArchiveUploadDialog({
   const contrats = useStore((s) => s.contrats);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const captureInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [typeDocument, setTypeDocument] = useState<TypeDocument>("Autre");
   const [rattachementKind, setRattachementKind] = useState<RattachementKind>(initialKind);
@@ -326,7 +328,12 @@ function ArchiveUploadDialog({
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) reset(initialKind);
+    if (open) {
+      reset(initialKind);
+      // Une seule société active : pas d'ambiguïté, on la présélectionne
+      // plutôt que de forcer une sélection manuelle systématique.
+      if (societes.length === 1) setSocieteId(societes[0].id);
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -357,12 +364,12 @@ function ArchiveUploadDialog({
         reader.readAsDataURL(file);
       });
 
-      let derivedClientId: string | undefined;
-      if (rattachementKind === "dossier") {
-        derivedClientId = dossiers.find((x) => x.id === rattachementId)?.clientId;
-      } else if (rattachementKind === "facture") {
-        derivedClientId = factures.find((x) => x.id === rattachementId)?.clientId;
-      }
+      const derivedClientId = deriveClientIdFromRattachement(
+        rattachementKind,
+        rattachementId,
+        dossiers,
+        factures,
+      );
 
       await addArchive({
         nom: file.name,
@@ -416,18 +423,37 @@ function ArchiveUploadDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Fichier <span className="text-red-500">*</span></Label>
+            {/* Deux entrées séparées : combiner accept="image/*,application/pdf"
+                avec capture="environment" force l'appareil photo sur certains
+                navigateurs mobiles et masque l'accès aux fichiers/PDF existants. */}
             <input
               ref={inputRef}
               type="file"
               className="hidden"
               accept="image/*,application/pdf"
+              onChange={handleFileChange}
+            />
+            <input
+              ref={captureInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*"
               capture="environment"
               onChange={handleFileChange}
             />
-            <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
-              <Upload className="size-4" />
-              {file ? file.name : "Choisir un fichier ou scanner"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
+                <Upload className="size-4" />
+                Choisir un fichier
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => captureInputRef.current?.click()}>
+                <Upload className="size-4" />
+                Prendre une photo
+              </Button>
+            </div>
+            {file && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">{file.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">

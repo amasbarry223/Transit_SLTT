@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
-import { SLTT_SOCIETE_ID } from "@/lib/classeur";
+import { resolveTransitSociete, SLTT_SOCIETE_ID } from "@/lib/societe-brand";
 import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -28,7 +28,8 @@ import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcritureStatutBadge, EcartValue } from "@/components/sltt/status-badge";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { SocieteBadge } from "@/components/sltt/societe-filter-select";
-import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
+import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
+import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { Card } from "@/components/ui/card";
@@ -99,16 +100,17 @@ export function ComptabiliteScreen() {
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
   const societes = useStore((s) => s.societes);
-  const factures = useStore((s) => s.factures);
-  const depenses = useStore((s) => s.depenses);
-  const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
   const recordPayment = useStore((s) => s.recordPayment);
   const addEcriture = useStore((s) => s.addEcriture);
 
-  // Onglets : Toutes / une par société (celui de Traoré Transit Logistique,
-  // SLTT_SOCIETE_ID cf. classeur.ts, inclut aussi les écritures historiques
-  // sans société assignée).
-  const [activeTab, setActiveTab] = useState<string>(SLTT_SOCIETE_ID);
+  // Onglets : Toutes / une par société. L'onglet transit inclut aussi les
+  // écritures historiques sans société assignée (résolu via is_transit).
+  const transitSocieteId = useMemo(
+    () => resolveTransitSociete(societes)?.id ?? SLTT_SOCIETE_ID,
+    [societes],
+  );
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const resolvedTab = activeTab ?? transitSocieteId;
 
   // Tri alphabétique simple — pas de liste de noms codée en dur à tenir à jour
   // si une société est renommée ou qu'une nouvelle est ajoutée.
@@ -118,60 +120,14 @@ export function ComptabiliteScreen() {
   );
 
   const ecritures = useMemo(() => {
-    if (activeTab === "all") return allEcritures;
-    if (activeTab === SLTT_SOCIETE_ID) {
-      return allEcritures.filter((e) => !e.societeId || e.societeId === SLTT_SOCIETE_ID);
+    if (resolvedTab === "all") return allEcritures;
+    if (resolvedTab === transitSocieteId) {
+      return allEcritures.filter((e) => !e.societeId || e.societeId === transitSocieteId);
     }
-    return allEcritures.filter((e) => e.societeId === activeTab);
-  }, [allEcritures, activeTab]);
+    return allEcritures.filter((e) => e.societeId === resolvedTab);
+  }, [allEcritures, resolvedTab, transitSocieteId]);
 
-  const now = new Date();
-  // F5 : le Bénéfice compte une écriture au mois où l'argent est réellement
-  // arrivé (datePaiement), pas au mois de création de l'écriture — sinon un
-  // paiement enregistré plus tard se retrouve compté dans le mauvais mois.
-  const ecrituresAvecDate = useMemo(
-    () => allEcritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
-    [allEcritures],
-  );
-  const depensesAvecDate = useMemo(
-    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
-    [depenses],
-  );
-  // Sorties de caisse : chaque bon porte désormais sa propre société (F1).
-  const caisseAvecDate = useMemo(
-    () =>
-      bonsSortieCaisse.flatMap((b) =>
-        b.lignes.map((l) => ({ societeId: b.societeId as string | undefined, date: l.date, montant: l.montant })),
-      ),
-    [bonsSortieCaisse],
-  );
-  const benefice = useMemo(() => {
-    const computeFor = (societeId: string | null) => {
-      const recettes =
-        filterBySocieteAndPeriode(ecrituresAvecDate, societeId, now.getFullYear(), now.getMonth()).reduce(
-          (sum, e) => sum + e.montantPaye,
-          0,
-        ) +
-        filterBySocieteAndPeriode(factures, societeId, now.getFullYear(), now.getMonth()).reduce(
-          (sum, f) => sum + f.montantPaye,
-          0,
-        );
-      const depensesMois =
-        filterBySocieteAndPeriode(depensesAvecDate, societeId, now.getFullYear(), now.getMonth()).reduce(
-          (sum, d) => sum + d.montant,
-          0,
-        ) +
-        filterBySocieteAndPeriode(caisseAvecDate, societeId, now.getFullYear(), now.getMonth()).reduce(
-          (sum, d) => sum + d.montant,
-          0,
-        );
-      return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
-    };
-    return {
-      consolide: computeFor(null),
-      parSociete: societes.map((s) => ({ societe: s, ...computeFor(s.id) })),
-    };
-  }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, societes, now]);
+  const { consolide, parSociete } = useBeneficeParSociete();
 
   const [query, setQuery] = useState("");
   const [statutFilter, setStatutFilter] = useState<StatutFilter>("all");
@@ -288,7 +244,7 @@ export function ComptabiliteScreen() {
     setNeMode("Virement");
     setNeDate(new Date().toISOString().slice(0, 10));
     setNeNote("");
-    setNeSocieteId(activeTab !== "all" ? activeTab : "");
+    setNeSocieteId(resolvedTab !== "all" ? resolvedTab : "");
   }
 
   useEffect(() => {
@@ -321,12 +277,12 @@ export function ComptabiliteScreen() {
       });
       return;
     }
-    // UX-03: avertir si paye > investi (la valeur sera plafonnée)
+    // UX-03: avertir si paye > investi (la valeur sera plafonnée) — l'écriture
+    // est tout de même créée, donc pas un style "destructive" (échec).
     if (paye > investi) {
       toast({
         title: "Montant payé plafonné",
         description: `Le montant payé (${formatFCFA(paye)}) dépasse le montant investi (${formatFCFA(investi)}). Il a été ramené à ${formatFCFA(investi)}.`,
-        variant: "destructive",
       });
     }
     addEcriture({
@@ -367,7 +323,7 @@ export function ComptabiliteScreen() {
         )}
       </PageHeader>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={resolvedTab} onValueChange={setActiveTab}>
         <TabsList className="h-10 flex-wrap">
           <TabsTrigger value="all">Toutes</TabsTrigger>
           {sortedSocietes.map((s) => (
@@ -419,24 +375,31 @@ export function ComptabiliteScreen() {
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bénéfice du mois (entreposage)</h2>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <KpiCard
-            label="Toutes sociétés"
-            value={formatFCFA(benefice.consolide.benefice)}
-            icon={TrendingUp}
-            tone={benefice.consolide.benefice >= 0 ? "emerald" : "red"}
-            sublabel="Recettes − Dépenses, consolidé"
-            tooltip="Recettes = encaissements (écritures + paiements factures) du mois. Dépenses = dépenses de contrats du mois. Consolidé = somme des deux sociétés + activité non affectée."
-          />
-          {benefice.parSociete.map(({ societe, benefice: b }) => (
+          {/* N'affiche que ce qui correspond à l'onglet actif — sinon ce bloc
+              semble ignorer le filtre alors que le tableau juste en dessous
+              en tient compte. */}
+          {resolvedTab === "all" && (
             <KpiCard
-              key={societe.id}
-              label={societe.nom}
-              value={formatFCFA(b)}
+              label="Toutes sociétés"
+              value={formatFCFA(consolide.benefice)}
               icon={TrendingUp}
-              tone={b >= 0 ? "emerald" : "red"}
-              sublabel="bénéfice du mois"
+              tone={consolide.benefice >= 0 ? "emerald" : "red"}
+              sublabel="Recettes − Dépenses, consolidé"
+              tooltip={`Recettes = encaissements (écritures + paiements factures) du mois. Dépenses = dépenses de contrats du mois. Consolidé = somme de toutes les sociétés (${sortedSocietes.length}) + activité non affectée.`}
             />
-          ))}
+          )}
+          {parSociete
+            .filter(({ societe }) => resolvedTab === "all" || societe.id === resolvedTab)
+            .map(({ societe, benefice: b }) => (
+              <KpiCard
+                key={societe.id}
+                label={societe.nom}
+                value={formatFCFA(b)}
+                icon={TrendingUp}
+                tone={b >= 0 ? "emerald" : "red"}
+                sublabel="bénéfice du mois"
+              />
+            ))}
         </div>
       </div>
 
@@ -444,11 +407,11 @@ export function ComptabiliteScreen() {
         <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 px-4 py-3">
           <Clock className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
-            <p className="text-sm font-medium text-amber-900">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-400">
               {enAttenteCount} écriture{enAttenteCount > 1 ? "s" : ""} en attente
               de paiement
             </p>
-            <p className="mt-0.5 text-xs text-amber-800/80">
+            <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-400/80">
               {formatFCFA(totalDu)} reste à encaisser au total.
             </p>
           </div>

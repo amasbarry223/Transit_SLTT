@@ -2,48 +2,32 @@
  * Classeur client (retour client V1, section 3) — journal chronologique
  * unifié de tous les mouvements d'un client, toutes activités confondues
  * (dossiers de transit SLTT, écritures/bons de paiement, factures).
- *
- * Source de vérité : la vue SQL `public.classeur_mouvements` (migration
- * 20260727_classeur_mouvements_view.sql, section 4 du retour client) —
- * mêmes règles métier, calculées côté base avec le solde cumulé en window
- * function. `fetchClasseurMouvements()` l'interroge ; si la migration
- * n'est pas encore appliquée sur l'instance Supabase (relation absente),
- * on retombe silencieusement sur `buildClasseurJournal()`, qui recalcule
- * exactement la même chose à partir des données déjà chargées dans le
- * store. Reprend la même règle de non-double-comptage que
- * client-stats.ts : seules les écritures SANS dossierId sont comptées
- * (les écritures liées à un dossier sont déjà reflétées dans
- * dossier.montantPaye).
  */
+import type { AuditEntry } from "@/lib/audit";
+import { mapAuditLogFromDb, type AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
 import { supabase } from "@/lib/supabase";
-import type { SocieteBrand } from "@/lib/export";
+import {
+  LEGACY_TRANSIT_SOCIETE_ID,
+  resolveSlttBrand,
+  resolveSocieteDisplayNameById,
+  resolveTransitSociete,
+  SLTT_SOCIETE_ID,
+} from "@/lib/societe-brand";
 
-/** ID fixe de la société transit (cf. 20260713_societes.sql / 20260724_societe_identite_legale.sql).
- * Les dossiers n'ont pas de societe_id en base : le transit est exclusivement porté par cette société. */
-export const SLTT_SOCIETE_ID = "22222222-2222-2222-2222-222222222222";
-const SLTT_FALLBACK_NOM = "Traoré Transit Logistique";
-
-/**
- * Identité SLTT prête à passer aux fonctions d'impression (printDevis,
- * printClasseur, printClients…) — tout ce qui est intrinsèquement
- * transit/SLTT (pas de societe_id en base, cf. plus haut). Les documents
- * société-scopés (facture, bon) résolvent leur propre société directement.
- */
-export function resolveSlttBrand(societes: Societe[]): SocieteBrand {
-  const s = societes.find((x) => x.id === SLTT_SOCIETE_ID);
-  return {
-    nom: s?.nom ?? SLTT_FALLBACK_NOM,
-    logoUrl: s?.logoUrl,
-    legal: s ? { adresse: s.adresse, telephone: s.telephone, rccm: s.rccm, nif: s.nif } : undefined,
-  };
-}
+export {
+  LEGACY_TRANSIT_SOCIETE_ID,
+  resolveSlttBrand,
+  resolveTransitSociete,
+  SLTT_SOCIETE_ID,
+};
 
 export type ClasseurType = "Dossier" | "Paiement" | "Facture";
 
+export type MouvementSourceType = AuditSourceType;
+
 export interface ClasseurEntry {
   id: string;
-  /** ID brut de l'enregistrement source (dossier/écriture/facture), pour naviguer vers son détail. */
   sourceId: string;
   date: string;
   societeId: string;
@@ -57,8 +41,22 @@ export interface ClasseurEntry {
   soldeCumule: number;
 }
 
-function resolveSocieteNom(societes: Societe[], societeId: string, fallback: string): string {
-  return societes.find((s) => s.id === societeId)?.nom ?? fallback;
+function transitSocieteId(societes: Societe[]): string {
+  return resolveTransitSociete(societes)?.id ?? LEGACY_TRANSIT_SOCIETE_ID;
+}
+
+function buildDossierLibelle(d: Dossier): string {
+  const bl = d.bl?.trim();
+  return `Dossier transit — ${d.nature}${bl ? ` · BL ${bl}` : ""}`;
+}
+
+function resolveEntrySocieteNom(
+  societes: Societe[],
+  societeId: string | undefined,
+  fallback: string,
+): string {
+  if (!societeId) return fallback;
+  return resolveSocieteDisplayNameById(societes, societeId, fallback);
 }
 
 /** Construit le journal complet (non filtré), trié chronologiquement, avec solde cumulé réel. */
@@ -69,7 +67,8 @@ export function buildClasseurJournal(
   factures: Facture[],
   societes: Societe[],
 ): ClasseurEntry[] {
-  const sltNom = resolveSocieteNom(societes, SLTT_SOCIETE_ID, SLTT_FALLBACK_NOM);
+  const slttId = transitSocieteId(societes);
+  const slttNom = resolveSocieteDisplayNameById(societes, slttId, "SLTT");
   const unsorted: Omit<ClasseurEntry, "soldeCumule">[] = [];
 
   for (const d of dossiers) {
@@ -78,18 +77,17 @@ export function buildClasseurJournal(
       id: `dossier-${d.id}`,
       sourceId: d.id,
       date: d.date,
-      societeId: SLTT_SOCIETE_ID,
-      societeNom: sltNom,
+      societeId: slttId,
+      societeNom: slttNom,
       type: "Dossier",
       reference: d.reference,
-      libelle: `Dossier transit — ${d.nature}`,
+      libelle: buildDossierLibelle(d),
       debit: d.montantInvesti,
       credit: d.montantPaye,
       statut: d.statut,
     });
   }
 
-  // Écritures liées à un dossier déjà reflétées dans dossier.montantPaye — exclues ici.
   for (const e of ecritures) {
     if (e.clientId !== clientId || e.dossierId) continue;
     unsorted.push({
@@ -97,7 +95,7 @@ export function buildClasseurJournal(
       sourceId: e.id,
       date: e.date,
       societeId: e.societeId ?? "",
-      societeNom: e.societeNom ?? "Non affecté",
+      societeNom: resolveEntrySocieteNom(societes, e.societeId, e.societeNom ?? "Non affecté"),
       type: "Paiement",
       reference: `ÉCR-${e.id.slice(0, 8).toUpperCase()}`,
       libelle: e.note?.trim() || "Bon de paiement",
@@ -115,11 +113,10 @@ export function buildClasseurJournal(
       sourceId: f.id,
       date: f.date,
       societeId: f.societeId ?? "",
-      societeNom: f.societeNom ?? "Non affecté",
+      societeNom: resolveEntrySocieteNom(societes, f.societeId, f.societeNom ?? "Non affecté"),
       type: "Facture",
       reference: f.numero,
       libelle: f.lignes[0]?.description || "Facture",
-      // Une facture annulée n'engage plus le client — ne pèse pas sur le solde.
       debit: annulee ? 0 : f.montantTTC,
       credit: annulee ? 0 : f.montantPaye,
       statut: f.statut,
@@ -167,12 +164,6 @@ function mapClasseurRowFromDb(row: ClasseurMouvementRow): ClasseurEntry {
   };
 }
 
-/**
- * Interroge la vue SQL `classeur_mouvements` pour un client. Retourne
- * `null` (plutôt que lever) si la vue est indisponible — migration pas
- * encore appliquée, ou tout autre souci réseau/base — pour laisser
- * l'appelant retomber sur `buildClasseurJournal()` sans casser l'écran.
- */
 export async function fetchClasseurMouvements(clientId: string): Promise<ClasseurEntry[] | null> {
   const { data, error } = await supabase
     .from("classeur_mouvements")
@@ -197,6 +188,10 @@ export interface ClasseurFilters {
   dateTo?: string;
 }
 
+export function hasClasseurPeriodFilter(filters: ClasseurFilters): boolean {
+  return Boolean(filters.dateFrom || filters.dateTo);
+}
+
 export function filterClasseurJournal(
   entries: ClasseurEntry[],
   filters: ClasseurFilters,
@@ -217,16 +212,12 @@ export interface ClasseurTotals {
   parSociete: Array<{ societeNom: string; soldeNet: number }>;
 }
 
-/** Totaux sur les lignes affichées (filtrées) + répartition par société sur le journal complet. */
-export function computeClasseurTotals(
-  filteredEntries: ClasseurEntry[],
-  fullJournal: ClasseurEntry[],
-): ClasseurTotals {
+export function computeClasseurTotals(filteredEntries: ClasseurEntry[]): ClasseurTotals {
   const totalDebit = filteredEntries.reduce((s, e) => s + e.debit, 0);
   const totalCredit = filteredEntries.reduce((s, e) => s + e.credit, 0);
 
   const bySociete = new Map<string, number>();
-  for (const e of fullJournal) {
+  for (const e of filteredEntries) {
     bySociete.set(e.societeNom, (bySociete.get(e.societeNom) ?? 0) + (e.debit - e.credit));
   }
 
@@ -236,4 +227,32 @@ export function computeClasseurTotals(
     soldeNet: totalDebit - totalCredit,
     parSociete: Array.from(bySociete.entries()).map(([societeNom, soldeNet]) => ({ societeNom, soldeNet })),
   };
+}
+
+export function classeurEntrySourceType(entry: ClasseurEntry): MouvementSourceType {
+  if (entry.type === "Dossier") return "dossier";
+  if (entry.type === "Paiement") return "ecriture";
+  return "facture";
+}
+
+/** Suivi horodaté d'un mouvement (audit lié à source_type / source_id). */
+export async function fetchMouvementSuivi(
+  sourceType: MouvementSourceType,
+  sourceId: string,
+): Promise<AuditEntry[]> {
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select("*")
+    .eq("source_type", sourceType)
+    .eq("source_id", sourceId)
+    .order("date", { ascending: false });
+
+  if (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[classeur] Suivi mouvement indisponible :", error.message);
+    }
+    return [];
+  }
+
+  return (data as Record<string, unknown>[]).map(mapAuditLogFromDb);
 }

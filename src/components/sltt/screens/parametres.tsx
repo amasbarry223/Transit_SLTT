@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Shield,
   Lock,
@@ -17,6 +17,9 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
+  Loader2,
+  X,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
@@ -25,7 +28,7 @@ import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { UsersTab } from "@/components/sltt/users-tab";
 import type { UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
 import type { Societe, SocieteInput } from "@/lib/domain-types";
-import { formatDateShort } from "@/lib/format";
+import { formatDateShort, formatDateTime } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { GUIDE_DISMISS_KEY, emitGuideReset } from "@/lib/guide-progress";
@@ -230,14 +233,21 @@ function ProfileTabForm({
   );
 }
 
+const LOGO_MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const LOGO_ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+
 function SocieteCard({
   societe,
   onSave,
+  onUploadLogo,
 }: {
   societe: Societe;
   onSave: (id: string, input: SocieteInput) => Promise<void>;
+  onUploadLogo: (id: string, file: File) => Promise<string>;
 }) {
   const { toast } = useToast();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [values, setValues] = useState<SocieteInput>({
     nom: societe.nom,
     logoUrl: societe.logoUrl ?? "",
@@ -247,15 +257,73 @@ function SocieteCard({
     nif: societe.nif ?? "",
     signataireDg: societe.signataireDg ?? "",
     signatairePdg: societe.signatairePdg ?? "",
+    afficherNomAvecLogo: societe.afficherNomAvecLogo,
   });
   const [saving, setSaving] = useState(false);
+  // Instantané pris à l'ouverture du formulaire — sert à détecter qu'un autre
+  // administrateur a modifié cette société pendant que ce formulaire était
+  // ouvert, pour ne pas écraser ses changements en silence.
+  const [baseline, setBaseline] = useState(societe);
+  const hasConflict = JSON.stringify(societe) !== JSON.stringify(baseline);
 
   function set<K extends keyof SocieteInput>(key: K, value: SocieteInput[K]) {
     setValues((v) => ({ ...v, [key]: value }));
   }
 
+  async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permet de resélectionner le même fichier après une erreur
+    if (!file) return;
+    if (!LOGO_ACCEPTED_TYPES.includes(file.type)) {
+      toast({ title: "Format non supporté", description: "PNG, JPEG, WebP ou SVG uniquement.", variant: "destructive" });
+      return;
+    }
+    if (file.size > LOGO_MAX_SIZE_BYTES) {
+      toast({ title: "Fichier trop volumineux", description: "5 Mo maximum.", variant: "destructive" });
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      const url = await onUploadLogo(societe.id, file);
+      set("logoUrl", url);
+      toast({ title: "Logo envoyé", description: "Cliquez sur Enregistrer pour appliquer le changement." });
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible d'envoyer le logo.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  function reloadFromLatest() {
+    setValues({
+      nom: societe.nom,
+      logoUrl: societe.logoUrl ?? "",
+      adresse: societe.adresse ?? "",
+      telephone: societe.telephone ?? "",
+      rccm: societe.rccm ?? "",
+      nif: societe.nif ?? "",
+      signataireDg: societe.signataireDg ?? "",
+      signatairePdg: societe.signatairePdg ?? "",
+      afficherNomAvecLogo: societe.afficherNomAvecLogo,
+    });
+    setBaseline(societe);
+    toast({ title: "Dernières valeurs chargées", description: "Vos modifications précédentes ont été remplacées." });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (hasConflict) {
+      toast({
+        title: "Conflit de modification",
+        description: "Cette société a été modifiée entre-temps. Rechargez les dernières valeurs avant d'enregistrer.",
+        variant: "destructive",
+      });
+      return;
+    }
     const trimmedNom = values.nom.trim();
     if (!trimmedNom) {
       toast({ title: "Le nom de la société est requis", variant: "destructive" });
@@ -263,7 +331,7 @@ function SocieteCard({
     }
     setSaving(true);
     try {
-      await onSave(societe.id, {
+      const input = {
         nom: trimmedNom,
         logoUrl: values.logoUrl?.trim() || undefined,
         adresse: values.adresse?.trim() || undefined,
@@ -272,7 +340,13 @@ function SocieteCard({
         nif: values.nif?.trim() || undefined,
         signataireDg: values.signataireDg?.trim() || undefined,
         signatairePdg: values.signatairePdg?.trim() || undefined,
-      });
+        afficherNomAvecLogo: values.afficherNomAvecLogo ?? true,
+      };
+      await onSave(societe.id, input);
+      // Le prochain rendu recevra le `societe` mis à jour depuis le store —
+      // on aligne la référence tout de suite pour ne pas déclencher un faux
+      // conflit avec notre propre sauvegarde qui vient de réussir.
+      setBaseline((b) => ({ ...b, ...input }));
       toast({ title: "Société mise à jour", description: trimmedNom });
     } catch (err: unknown) {
       toast({
@@ -288,6 +362,17 @@ function SocieteCard({
   return (
     <Card className="p-6 shadow-sm border-border/80">
       <form onSubmit={handleSubmit} className="space-y-5">
+        {hasConflict && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="size-4 shrink-0" />
+              Cette société a été modifiée par quelqu&apos;un d&apos;autre depuis l&apos;ouverture de ce formulaire.
+            </span>
+            <Button type="button" size="sm" variant="outline" onClick={reloadFromLatest}>
+              Charger les dernières valeurs
+            </Button>
+          </div>
+        )}
         <div className="flex items-center gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
             <Building2 className="size-5" />
@@ -310,7 +395,7 @@ function SocieteCard({
             <Input
               value={values.adresse}
               onChange={(e) => set("adresse", e.target.value)}
-              placeholder="Ex. Niaréla - Rue 516 porte C/63"
+              placeholder="Ex. Quartier, rue, porte"
             />
           </div>
           <div className="space-y-2">
@@ -318,11 +403,69 @@ function SocieteCard({
             <Input value={values.telephone} onChange={(e) => set("telephone", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Logo (chemin public)</Label>
-            <Input
-              value={values.logoUrl}
-              onChange={(e) => set("logoUrl", e.target.value)}
-              placeholder="/logoV.png"
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Logo</Label>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept={LOGO_ACCEPTED_TYPES.join(",")}
+              className="hidden"
+              onChange={handleLogoFile}
+            />
+            <div className="flex items-center gap-3">
+              <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-slate-50 dark:bg-slate-900">
+                {uploadingLogo ? (
+                  <Loader2 className="size-5 animate-spin text-slate-400" />
+                ) : values.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- logo distant (Supabase Storage), pas un asset local optimisable par next/image
+                  <img src={values.logoUrl} alt="" className="size-full object-contain" />
+                ) : (
+                  <ImagePlus className="size-5 text-slate-300 dark:text-slate-600" />
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingLogo}
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    <ImagePlus className="size-3.5" />
+                    {values.logoUrl ? "Changer le logo" : "Ajouter un logo"}
+                  </Button>
+                  {values.logoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 dark:text-red-400"
+                      disabled={uploadingLogo}
+                      onClick={() => set("logoUrl", "")}
+                    >
+                      <X className="size-3.5" />
+                      Retirer
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 dark:text-slate-500">PNG, JPEG, WebP ou SVG · 5 Mo max.</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2.5 sm:col-span-2">
+            <div>
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Répéter le nom à côté du logo
+              </Label>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                À désactiver si le logo contient déjà le nom en toutes lettres — sinon il apparaît en double
+                sur les devis, factures, contrats et bons imprimés.
+              </p>
+            </div>
+            <Switch
+              checked={values.afficherNomAvecLogo ?? true}
+              onCheckedChange={(v) => set("afficherNomAvecLogo", v)}
+              aria-label="Répéter le nom à côté du logo"
             />
           </div>
           <div className="space-y-2">
@@ -360,6 +503,7 @@ function SocieteCard({
 function SocietesTab() {
   const societes = useStore((s) => s.societes);
   const updateSociete = useStore((s) => s.updateSociete);
+  const uploadSocieteLogo = useStore((s) => s.uploadSocieteLogo);
 
   return (
     <div className="space-y-5">
@@ -369,7 +513,12 @@ function SocietesTab() {
         d&apos;intervention technique.
       </p>
       {societes.map((societe) => (
-        <SocieteCard key={societe.id} societe={societe} onSave={updateSociete} />
+        <SocieteCard
+          key={societe.id}
+          societe={societe}
+          onSave={updateSociete}
+          onUploadLogo={uploadSocieteLogo}
+        />
       ))}
     </div>
   );
@@ -650,7 +799,7 @@ function AuditTab() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900 dark:text-slate-100">{row.user}</p>
-                      <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(row.date)}</p>
+                      <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateTime(row.date)}</p>
                     </div>
                     <ToneBadge tone={actionTone[row.action]}>{row.action}</ToneBadge>
                   </div>
@@ -702,7 +851,7 @@ function AuditTab() {
                       className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                     >
                       <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
-                        {formatDateShort(row.date)}
+                        {formatDateTime(row.date)}
                       </TableCell>
                       <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
                         {row.user}

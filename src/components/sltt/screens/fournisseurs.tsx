@@ -186,6 +186,7 @@ function FournisseurModal({
     editing?.tarifContractuel ? String(editing.tarifContractuel) : "",
   );
   const [statut, setStatut] = React.useState<FournisseurStatut>(editing?.statut ?? "Actif");
+  const [saving, setSaving] = React.useState(false);
 
   const resetKey = open ? (editing?.id ?? "new") : null;
   const [prevResetKey, setPrevResetKey] = React.useState(resetKey);
@@ -203,7 +204,7 @@ function FournisseurModal({
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!nom.trim()) return;
     const input: FournisseurInput = {
@@ -216,14 +217,22 @@ function FournisseurModal({
       tarifContractuel: tarif ? parseFloat(tarif) : undefined,
       statut,
     };
-    if (editing) {
-      updateFournisseur(editing.id, input);
-      toast({ title: "Fournisseur mis à jour", description: nom });
-    } else {
-      addFournisseur(input);
-      toast({ title: "Fournisseur créé", description: nom });
+    setSaving(true);
+    try {
+      if (editing) {
+        await updateFournisseur(editing.id, input);
+        toast({ title: "Fournisseur mis à jour", description: nom });
+      } else {
+        await addFournisseur(input);
+        toast({ title: "Fournisseur créé", description: nom });
+      }
+      onClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Impossible d'enregistrer le fournisseur";
+      toast({ title: "Erreur", description: message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-    onClose();
   }
 
   return (
@@ -333,7 +342,7 @@ function FournisseurModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!nom.trim()}>
+            <Button type="submit" disabled={!nom.trim() || saving}>
               <Check className="size-4" />
               {editing ? "Enregistrer" : "Créer"}
             </Button>
@@ -575,13 +584,30 @@ export function FournisseursScreen() {
     [filtered],
   );
 
+  const liaisonsEnrichies = React.useMemo(() => {
+    return dossierFournisseurs
+      .filter((df) => {
+        if (typeFilter && df.type !== typeFilter) return false;
+        if (!matchesQuery(df, ["fournisseurNom", "dossierRef", "description"], search)) return false;
+        return true;
+      })
+      .map((df) => ({
+        ...df,
+        dossier: dossiers.find((d) => d.id === df.dossierId),
+      }))
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+  }, [dossierFournisseurs, dossiers, search, typeFilter]);
+
+  // Dérivés de liaisonsEnrichies (déjà filtré par type/recherche) plutôt que
+  // de dossierFournisseurs brut — sinon ces totaux contredisent le tableau
+  // "Suivi des coûts" affiché juste en dessous dès qu'un filtre est actif.
   const totalMontant = React.useMemo(
-    () => dossierFournisseurs.reduce((s, df) => s + df.montantReel, 0),
-    [dossierFournisseurs],
+    () => liaisonsEnrichies.reduce((s, df) => s + df.montantReel, 0),
+    [liaisonsEnrichies],
   );
   const totalBudgete = React.useMemo(
-    () => dossierFournisseurs.reduce((s, df) => s + df.montantBudgete, 0),
-    [dossierFournisseurs],
+    () => liaisonsEnrichies.reduce((s, df) => s + df.montantBudgete, 0),
+    [liaisonsEnrichies],
   );
   const { actifs, avecTarif } = React.useMemo(() => {
     let actifs = 0;
@@ -596,20 +622,6 @@ export function FournisseursScreen() {
     () => dossierFournisseurs.filter((df) => df.statut === "En attente").length,
     [dossierFournisseurs],
   );
-
-  const liaisonsEnrichies = React.useMemo(() => {
-    return dossierFournisseurs
-      .filter((df) => {
-        if (typeFilter && df.type !== typeFilter) return false;
-        if (!matchesQuery(df, ["fournisseurNom", "dossierRef", "description"], search)) return false;
-        return true;
-      })
-      .map((df) => ({
-        ...df,
-        dossier: dossiers.find((d) => d.id === df.dossierId),
-      }))
-      .sort((a, b) => (a.date < b.date ? 1 : -1));
-  }, [dossierFournisseurs, dossiers, search, typeFilter]);
 
   const counts: Record<FournisseurTab, number> = {
     prestataires: filtered.length,

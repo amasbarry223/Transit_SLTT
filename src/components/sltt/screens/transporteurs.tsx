@@ -12,6 +12,8 @@ import { useStore } from "@/lib/store";
 import type { Transporteur, TransporteurInput, TransporteurStatut } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
+import { UI_LOAD_DELAY_MS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
@@ -313,13 +315,14 @@ export function TransporteursScreen() {
   const { toast }                   = useToast();
   const canWrite                    = usePermission("transporteurs:write");
   const transporteurs               = useStore((s) => s.transporteurs);
+  const societes                    = useStore((s) => s.societes);
   const updateTransporteurStatut    = useStore((s) => s.updateTransporteurStatut);
   const removeTransporteur          = useStore((s) => s.removeTransporteur);
 
   const [isLoaded, setIsLoaded]     = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setIsLoaded(true), 300);
-    return () => clearTimeout(t);
+    const loadTimer = setTimeout(() => setIsLoaded(true), UI_LOAD_DELAY_MS);
+    return () => clearTimeout(loadTimer);
   }, []);
 
   // Filters
@@ -451,7 +454,7 @@ export function TransporteursScreen() {
           <th>Trajet</th><th class="num">Capacité</th><th class="num">Dossiers</th><th>Statut</th>
         </tr></thead>
         <tbody>${rowsHTML}</tbody>
-      </table>`);
+      </table>`, resolvePrintHTMLBrand(societes));
   };
 
   /* ---------------------------------------------------------------- */

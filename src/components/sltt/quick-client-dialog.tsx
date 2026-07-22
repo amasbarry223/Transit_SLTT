@@ -26,6 +26,7 @@ export function QuickClientButton({ onCreated }: Props) {
   const canCreateClient = usePermission("clients:write");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ClientInput>(emptyClientForm());
+  const [saving, setSaving] = useState(false);
 
   function reset() {
     setForm(emptyClientForm());
@@ -33,7 +34,8 @@ export function QuickClientButton({ onCreated }: Props) {
 
   async function handleCreate() {
     const trimmed = form.nom.trim();
-    if (!trimmed) return;
+    if (!trimmed || saving) return;
+    setSaving(true);
     try {
       const newClient = await addClient({ ...form, nom: trimmed });
       toast({ title: "Client créé", description: trimmed });
@@ -46,6 +48,8 @@ export function QuickClientButton({ onCreated }: Props) {
         description: e.message || "Impossible de créer le client",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -81,12 +85,12 @@ export function QuickClientButton({ onCreated }: Props) {
           />
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => { setOpen(false); reset(); }}>
+            <Button variant="outline" onClick={() => { setOpen(false); reset(); }} disabled={saving}>
               Annuler
             </Button>
-            <Button onClick={handleCreate} disabled={!form.nom.trim()}>
+            <Button onClick={handleCreate} disabled={!form.nom.trim() || saving}>
               <UserPlus className="size-4" />
-              Créer le client
+              {saving ? "Création…" : "Créer le client"}
             </Button>
           </DialogFooter>
         </DialogContent>

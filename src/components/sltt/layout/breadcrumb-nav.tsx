@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { navItems } from "@/lib/nav-items";
+import { useCanView } from "@/hooks/use-permission";
 
 const DETAIL_PARENT: Partial<Record<ViewKey, ViewKey>> = {
   "dossier-detail": "dossiers",
@@ -27,6 +28,10 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
 
   const parentKey = DETAIL_PARENT[view];
   const parentItem = parentKey ? navItems.find((n) => n.key === parentKey) : null;
+  // Le lien parent ne doit pas offrir une porte vers une liste que
+  // l'utilisateur n'a pas le droit de consulter (ex. atteint ce détail via
+  // une URL directe ou ⌘K malgré l'absence de permission de lecture).
+  const canViewParent = useCanView(parentKey);
 
   let detailLabel = title;
   if (selectedId) {
@@ -50,13 +55,17 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
     return (
       <div className="min-w-0">
         <div className="flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
-          <button
-            type="button"
-            onClick={() => go(parentKey)}
-            className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors truncate"
-          >
-            {parentItem.label}
-          </button>
+          {canViewParent ? (
+            <button
+              type="button"
+              onClick={() => go(parentKey)}
+              className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors truncate"
+            >
+              {parentItem.label}
+            </button>
+          ) : (
+            <span className="truncate">{parentItem.label}</span>
+          )}
           <ChevronRight className="mx-1.5 size-4 shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
           <span className="text-slate-900 dark:text-slate-100 font-semibold truncate">{detailLabel}</span>
         </div>
