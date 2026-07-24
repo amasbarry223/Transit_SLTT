@@ -759,8 +759,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_toast",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 124,
+      "community_name": "@radix-ui/react-toast",
       "norm_label": "@radix-ui/react-toast"
     },
     {
@@ -770,8 +770,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "radix_ui_react_toast",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 124,
+      "community_name": "@radix-ui/react-toast",
       "norm_label": "@radix-ui/react-toast"
     },
     {
@@ -781,8 +781,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_tooltip",
-      "community": 109,
-      "community_name": "@radix-ui/react-tooltip",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "@radix-ui/react-tooltip"
     },
     {
@@ -792,8 +792,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "radix_ui_react_tooltip",
-      "community": 109,
-      "community_name": "@radix-ui/react-tooltip",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "@radix-ui/react-tooltip"
     },
     {
@@ -847,8 +847,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "package_dependencies_clsx",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 123,
+      "community_name": "clsx",
       "norm_label": "clsx"
     },
     {
@@ -858,8 +858,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "clsx",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 123,
+      "community_name": "clsx",
       "norm_label": "clsx"
     },
     {
@@ -957,8 +957,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "package_dependencies_react",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "react"
     },
     {
@@ -968,8 +968,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "react",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "react"
     },
     {
@@ -979,8 +979,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "package_dependencies_react_dom",
-      "community": 116,
-      "community_name": "entreposage.tsx",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "react-dom"
     },
     {
@@ -990,8 +990,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "react_dom",
-      "community": 116,
-      "community_name": "entreposage.tsx",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "react-dom"
     },
     {
@@ -1023,8 +1023,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "package_dependencies_server_only",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 126,
+      "community_name": "server-only",
       "norm_label": "server-only"
     },
     {
@@ -1034,8 +1034,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "server_only",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 126,
+      "community_name": "server-only",
       "norm_label": "server-only"
     },
     {
@@ -1067,8 +1067,8 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "package_dependencies_tailwindcss_animate",
-      "community": 106,
-      "community_name": "UserRole",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "tailwindcss-animate"
     },
     {
@@ -1078,8 +1078,8 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "tailwindcss_animate",
-      "community": 106,
-      "community_name": "UserRole",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "tailwindcss-animate"
     },
     {
@@ -1683,8 +1683,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_api_admin_users_route",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "route.ts"
     },
     {
@@ -1694,8 +1694,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_app_api_admin_users_route_valid_roles",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "valid_roles"
     },
     {
@@ -1705,8 +1705,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_api_admin_users_route_post",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "post()"
     },
     {
@@ -1749,8 +1749,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_api_auth_password_route",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "route.ts"
     },
     {
@@ -1760,8 +1760,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_app_api_auth_password_route_patch",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "patch()"
     },
     {
@@ -1837,8 +1837,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_api_export_excel_route",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "route.ts"
     },
     {
@@ -1848,8 +1848,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_app_api_export_excel_route_sanitizefilename",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "sanitizefilename()"
     },
     {
@@ -1859,8 +1859,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_app_api_export_excel_route_post",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "post()"
     },
     {
@@ -2134,8 +2134,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_app_root",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "app-root.tsx"
     },
     {
@@ -2145,8 +2145,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_sltt_app_root_activity_events",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "activity_events"
     },
     {
@@ -2167,8 +2167,8 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_components_sltt_app_root_approotinner",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "approotinner()"
     },
     {
@@ -2211,8 +2211,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_form_dialog_boncaisseformdialog",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "boncaisseformdialog()"
     },
     {
@@ -2244,8 +2244,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_tab_beneficiairessummary",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "beneficiairessummary()"
     },
     {
@@ -2266,8 +2266,8 @@
       "source_location": "L236",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_tab_caissemobilecard",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "caissemobilecard()"
     },
     {
@@ -2277,8 +2277,8 @@
       "source_location": "L302",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_tab_caissetablerow",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "caissetablerow()"
     },
     {
@@ -2321,8 +2321,8 @@
       "source_location": "L399",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_form_dialog_bonpreview",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "bonpreview()"
     },
     {
@@ -2365,8 +2365,8 @@
       "source_location": "L306",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_marchandise_tab_bonmobilecard",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "bonmobilecard()"
     },
     {
@@ -2376,8 +2376,8 @@
       "source_location": "L405",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_marchandise_tab_bontablerow",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "bontablerow()"
     },
     {
@@ -2387,8 +2387,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "use-bon-filters.ts"
     },
     {
@@ -2398,8 +2398,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters_bon_motifs",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "bon_motifs"
     },
     {
@@ -2409,8 +2409,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters_bon_motif_tone",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "bon_motif_tone"
     },
     {
@@ -2420,8 +2420,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters_bon_statut_tone",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "bon_statut_tone"
     },
     {
@@ -2464,8 +2464,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_bons_tab_bonstab",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "bonstab()"
     },
     {
@@ -2475,8 +2475,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_classeur_suivi_dialog",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "classeur-suivi-dialog.tsx"
     },
     {
@@ -2486,8 +2486,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_classeur_suivi_dialog_classeursuividialogprops",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "classeursuividialogprops"
     },
     {
@@ -2530,8 +2530,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_classeur_tab_classeurtab",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "classeurtab()"
     },
     {
@@ -2596,8 +2596,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_dossiers_tab_dossierstab",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "dossierstab()"
     },
     {
@@ -2629,8 +2629,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_factures_tab_facturestab",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "facturestab()"
     },
     {
@@ -2772,8 +2772,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_client_form_fields",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "client-form-fields.tsx"
     },
     {
@@ -2783,8 +2783,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_client_form_fields_clienttypes",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "clienttypes"
     },
     {
@@ -2794,8 +2794,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sltt_client_form_fields_clientformfieldsprops",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 121,
+      "community_name": "clients-slice.ts",
       "norm_label": "clientformfieldsprops"
     },
     {
@@ -2805,8 +2805,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_sltt_client_form_fields_emptyclientform",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "emptyclientform()"
     },
     {
@@ -2816,8 +2816,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_sltt_client_form_fields_clientformfields",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "clientformfields()"
     },
     {
@@ -2838,8 +2838,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_components_sltt_confirm_delete_dialog_confirmdeletedialog",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "confirmdeletedialog()"
     },
     {
@@ -2871,8 +2871,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_components_sltt_convert_devis_dialog_convertdevisdialog",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "convertdevisdialog()"
     },
     {
@@ -2904,8 +2904,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_agent_panel",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "agent-panel.tsx"
     },
     {
@@ -2948,8 +2948,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "chart-tooltips.tsx"
     },
     {
@@ -2959,8 +2959,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips_charttooltippayload",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "charttooltippayload"
     },
     {
@@ -2970,8 +2970,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips_encaissementstooltip",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "encaissementstooltip()"
     },
     {
@@ -2981,8 +2981,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips_ecartstooltip",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "ecartstooltip()"
     },
     {
@@ -2992,8 +2992,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_comptable_panel",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "comptable-panel.tsx"
     },
     {
@@ -3003,8 +3003,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_comptable_panel_comptablepanel",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "comptablepanel()"
     },
     {
@@ -3014,8 +3014,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_derniers_dossiers_card",
-      "community": 18,
-      "community_name": "contrat-fichiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "derniers-dossiers-card.tsx"
     },
     {
@@ -3025,8 +3025,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_derniers_dossiers_card_derniersdossierscard",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "derniersdossierscard()"
     },
     {
@@ -3036,8 +3036,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_encaissements_chart",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "encaissements-chart.tsx"
     },
     {
@@ -3047,8 +3047,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_encaissements_chart_encaissementschart",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "encaissementschart()"
     },
     {
@@ -3058,8 +3058,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_guide_demarrage",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "guide-demarrage.tsx"
     },
     {
@@ -3069,8 +3069,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_guide_demarrage_guidedemarrage",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "guidedemarrage()"
     },
     {
@@ -3080,8 +3080,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_magasinier_panel",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "magasinier-panel.tsx"
     },
     {
@@ -3102,8 +3102,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_marge_chart",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "marge-chart.tsx"
     },
     {
@@ -3113,8 +3113,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_marge_chart_margechart",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "margechart()"
     },
     {
@@ -3289,8 +3289,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_detail_dossier_detail_suivi_dossierdetailsuivi",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "dossierdetailsuivi()"
     },
     {
@@ -3377,8 +3377,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_amounts_section",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "dossier-amounts-section.tsx"
     },
     {
@@ -3388,8 +3388,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_amounts_section_dossieramountssectionprops",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "dossieramountssectionprops"
     },
     {
@@ -3399,8 +3399,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_amounts_section_dossieramountssection",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "dossieramountssection()"
     },
     {
@@ -3410,8 +3410,8 @@
       "source_location": "L100",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_amounts_section_amountfield",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "amountfield()"
     },
     {
@@ -3421,8 +3421,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_form_ui",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "dossier-form-ui.tsx"
     },
     {
@@ -3432,8 +3432,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_form_ui_tonemap",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "tonemap"
     },
     {
@@ -3443,8 +3443,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_form_ui_sectiontitle",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "sectiontitle()"
     },
     {
@@ -3476,8 +3476,8 @@
       "source_location": "L147",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_form_ui_summaryrow",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "summaryrow()"
     },
     {
@@ -3663,8 +3663,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_use_dossier_form_state_usedossierformstate",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "usedossierformstate()"
     },
     {
@@ -3696,8 +3696,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_transition_dialog_getnexttransition",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "getnexttransition()"
     },
     {
@@ -3729,8 +3729,8 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_transition_dialog_transitiondialogprops",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 4,
+      "community_name": "dossiers-slice.ts",
       "norm_label": "transitiondialogprops"
     },
     {
@@ -3740,8 +3740,8 @@
       "source_location": "L127",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_transition_dialog_transitiondialog",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "transitiondialog()"
     },
     {
@@ -3817,8 +3817,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_mouvements_tab_mouvementstab",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "mouvementstab()"
     },
     {
@@ -3861,8 +3861,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_stock_row_card_stockrow",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "stockrow()"
     },
     {
@@ -3872,8 +3872,8 @@
       "source_location": "L127",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_stock_row_card_stockcard",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "stockcard()"
     },
     {
@@ -3938,8 +3938,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_use_stock_movement_dialogs_usestockmovementdialogs",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "usestockmovementdialogs()"
     },
     {
@@ -3949,8 +3949,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_actions_card",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "actions-card.tsx"
     },
     {
@@ -3960,8 +3960,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_actions_card_actionscard",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "actionscard()"
     },
     {
@@ -3971,8 +3971,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_edit_form",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "facture-edit-form.tsx"
     },
     {
@@ -3982,8 +3982,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_edit_form_factureeditform",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "factureeditform()"
     },
     {
@@ -4059,8 +4059,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_summary_header",
-      "community": 24,
-      "community_name": "dossier-detail-hero.tsx",
+      "community": 21,
+      "community_name": "transporteur-form-fields.tsx",
       "norm_label": "facture-summary-header.tsx"
     },
     {
@@ -4070,8 +4070,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_summary_header_facturesummaryheader",
-      "community": 24,
-      "community_name": "dossier-detail-hero.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "facturesummaryheader()"
     },
     {
@@ -4081,8 +4081,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_financial_summary",
-      "community": 2,
-      "community_name": "print-modules.ts",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "financial-summary.tsx"
     },
     {
@@ -4092,8 +4092,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_financial_summary_financialsummary",
-      "community": 2,
-      "community_name": "print-modules.ts",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "financialsummary()"
     },
     {
@@ -4103,8 +4103,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_info_row",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "info-row.tsx"
     },
     {
@@ -4114,8 +4114,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_info_row_inforow",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "inforow()"
     },
     {
@@ -4125,8 +4125,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_informations_card",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "informations-card.tsx"
     },
     {
@@ -4136,8 +4136,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_informations_card_informationscard",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "informationscard()"
     },
     {
@@ -4202,8 +4202,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_paiement_dialog_paiementdialog",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "paiementdialog()"
     },
     {
@@ -4279,8 +4279,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_use_facture_edit_state",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "use-facture-edit-state.ts"
     },
     {
@@ -4290,8 +4290,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_use_facture_edit_state_usefactureeditstate",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "usefactureeditstate()"
     },
     {
@@ -4345,8 +4345,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_glossary_label",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "glossary-label.tsx"
     },
     {
@@ -4367,8 +4367,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_info_callout",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "info-callout.tsx"
     },
     {
@@ -4378,8 +4378,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_sltt_info_callout_infocallout",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "infocallout()"
     },
     {
@@ -4389,8 +4389,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_kpi_card",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "kpi-card.tsx"
     },
     {
@@ -4400,8 +4400,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_sltt_kpi_card_kpitone",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "kpitone"
     },
     {
@@ -4411,8 +4411,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_components_sltt_kpi_card_iconwrap",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "iconwrap"
     },
     {
@@ -4422,8 +4422,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_sltt_kpi_card_kpicard",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "kpicard()"
     },
     {
@@ -4455,8 +4455,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_breadcrumb_nav",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "breadcrumb-nav.tsx"
     },
     {
@@ -4466,8 +4466,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_layout_breadcrumb_nav_detail_parent",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "detail_parent"
     },
     {
@@ -4477,8 +4477,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_sltt_layout_breadcrumb_nav_breadcrumbnav",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "breadcrumbnav()"
     },
     {
@@ -4488,8 +4488,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_command_palette",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "command-palette.tsx"
     },
     {
@@ -4510,8 +4510,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_nav_list",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "nav-list.tsx"
     },
     {
@@ -4521,8 +4521,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_sltt_layout_nav_list_navlist",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "navlist()"
     },
     {
@@ -4532,8 +4532,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_sidebar",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "sidebar.tsx"
     },
     {
@@ -4543,8 +4543,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_layout_sidebar_sidebar",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "sidebar()"
     },
     {
@@ -4554,8 +4554,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_topbar",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 29,
+      "community_name": "users-tab.tsx",
       "norm_label": "topbar.tsx"
     },
     {
@@ -4565,8 +4565,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_components_sltt_layout_topbar_viewtitles",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 29,
+      "community_name": "users-tab.tsx",
       "norm_label": "viewtitles"
     },
     {
@@ -4576,8 +4576,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_components_sltt_layout_topbar_topbar",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "topbar()"
     },
     {
@@ -4587,8 +4587,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "list-filters.tsx"
     },
     {
@@ -4598,8 +4598,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters_filterchip",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "filterchip"
     },
     {
@@ -4609,8 +4609,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters_listfiltersprops",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "listfiltersprops"
     },
     {
@@ -4620,8 +4620,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters_listfilters",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "listfilters()"
     },
     {
@@ -4664,8 +4664,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_page_header",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "page-header.tsx"
     },
     {
@@ -4675,8 +4675,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_sltt_page_header_pageheader",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "pageheader()"
     },
     {
@@ -4686,8 +4686,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_permission_matrix",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "permission-matrix.tsx"
     },
     {
@@ -4697,8 +4697,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_components_sltt_permission_matrix_permissionmatrixprops",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "permissionmatrixprops"
     },
     {
@@ -4708,8 +4708,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_components_sltt_permission_matrix_permissionmatrix",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "permissionmatrix()"
     },
     {
@@ -4719,8 +4719,8 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_components_sltt_permission_matrix_defaultselectionforrole",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "defaultselectionforrole()"
     },
     {
@@ -4730,8 +4730,8 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "src_components_sltt_permission_matrix_permissionsfromselection",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "permissionsfromselection()"
     },
     {
@@ -4763,8 +4763,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_sltt_quick_client_dialog_quickclientbutton",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "quickclientbutton()"
     },
     {
@@ -4950,8 +4950,8 @@
       "source_location": "L291",
       "_origin": "ast",
       "id": "src_components_sltt_screens_archives_archiveuploaddialog",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "archiveuploaddialog()"
     },
     {
@@ -5027,8 +5027,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_currentyearmonth",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 122,
+      "community_name": "BilansScreen",
       "norm_label": "currentyearmonth()"
     },
     {
@@ -5038,8 +5038,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_getperiodelabel",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 122,
+      "community_name": "BilansScreen",
       "norm_label": "getperiodelabel()"
     },
     {
@@ -5060,8 +5060,8 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_charttooltip",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "charttooltip()"
     },
     {
@@ -5082,8 +5082,8 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_pietooltip",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "pietooltip()"
     },
     {
@@ -5104,8 +5104,8 @@
       "source_location": "L207",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_bilansscreen",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 122,
+      "community_name": "BilansScreen",
       "norm_label": "bilansscreen()"
     },
     {
@@ -5137,8 +5137,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "calendrier.tsx"
     },
     {
@@ -5148,8 +5148,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_eventtype",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "eventtype"
     },
     {
@@ -5159,8 +5159,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_calevent",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "calevent"
     },
     {
@@ -5170,8 +5170,8 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_type_pill",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "type_pill"
     },
     {
@@ -5181,8 +5181,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_type_icon",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "type_icon"
     },
     {
@@ -5192,8 +5192,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_fr_days",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "fr_days"
     },
     {
@@ -5203,8 +5203,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_fr_months",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "fr_months"
     },
     {
@@ -5214,8 +5214,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_isodate",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "isodate()"
     },
     {
@@ -5225,8 +5225,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_startofmonth",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "startofmonth()"
     },
     {
@@ -5236,8 +5236,8 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_weekoffset",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "weekoffset()"
     },
     {
@@ -5247,8 +5247,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_daysinmonth",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "daysinmonth()"
     },
     {
@@ -5258,8 +5258,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_daypanel",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "daypanel()"
     },
     {
@@ -5269,8 +5269,8 @@
       "source_location": "L161",
       "_origin": "ast",
       "id": "src_components_sltt_screens_calendrier_calendrierscreen",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "calendrierscreen()"
     },
     {
@@ -5302,8 +5302,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_clients",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "clients.tsx"
     },
     {
@@ -5313,8 +5313,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_sltt_screens_clients_clienttypes",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "clienttypes"
     },
     {
@@ -5324,8 +5324,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_components_sltt_screens_clients_typefilter",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "typefilter"
     },
     {
@@ -5335,8 +5335,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_components_sltt_screens_clients_sortkey",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "sortkey"
     },
     {
@@ -5357,8 +5357,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "src_components_sltt_screens_clients_emptystate",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "emptystate()"
     },
     {
@@ -5379,8 +5379,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 55,
+      "community_name": "archives.tsx",
       "norm_label": "comptabilite.tsx"
     },
     {
@@ -5390,8 +5390,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_statutfilter",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 55,
+      "community_name": "archives.tsx",
       "norm_label": "statutfilter"
     },
     {
@@ -5401,8 +5401,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_modeicon",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 55,
+      "community_name": "archives.tsx",
       "norm_label": "modeicon"
     },
     {
@@ -5412,8 +5412,8 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_modeoptions",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 55,
+      "community_name": "archives.tsx",
       "norm_label": "modeoptions"
     },
     {
@@ -5423,8 +5423,8 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_derivestatut",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "derivestatut()"
     },
     {
@@ -5434,8 +5434,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_comptabilitescreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "comptabilitescreen()"
     },
     {
@@ -5522,8 +5522,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_contratdetailscreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "contratdetailscreen()"
     },
     {
@@ -5533,8 +5533,8 @@
       "source_location": "L594",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_contrattoinput",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "contrattoinput()"
     },
     {
@@ -5588,8 +5588,8 @@
       "source_location": "L1009",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_contratfiledropzone",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "contratfiledropzone()"
     },
     {
@@ -5599,8 +5599,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrats",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "contrats.tsx"
     },
     {
@@ -5610,8 +5610,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrats_statut_tone",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "statut_tone"
     },
     {
@@ -5621,8 +5621,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrats_statuts",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "statuts"
     },
     {
@@ -5665,8 +5665,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dashboard_dashboardscreen",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "dashboardscreen()"
     },
     {
@@ -5676,8 +5676,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "devis-detail.tsx"
     },
     {
@@ -5687,8 +5687,8 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statutcfg",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "statutcfg"
     },
     {
@@ -5698,8 +5698,8 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statut_config",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "statut_config"
     },
     {
@@ -5709,8 +5709,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statut_flow",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "statut_flow"
     },
     {
@@ -5720,8 +5720,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statuts_all",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "statuts_all"
     },
     {
@@ -5731,8 +5731,8 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_next_statut",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "next_statut"
     },
     {
@@ -5742,8 +5742,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_verticalstepper",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "verticalstepper()"
     },
     {
@@ -5753,8 +5753,8 @@
       "source_location": "L195",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_inforow",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "inforow()"
     },
     {
@@ -5764,8 +5764,8 @@
       "source_location": "L216",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_financialbreakdown",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "financialbreakdown()"
     },
     {
@@ -5775,8 +5775,8 @@
       "source_location": "L250",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_devisdetailscreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "devisdetailscreen()"
     },
     {
@@ -5786,8 +5786,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "devis.tsx"
     },
     {
@@ -5797,8 +5797,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_next_statut",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "next_statut"
     },
     {
@@ -5808,8 +5808,8 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_sortkey",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "sortkey"
     },
     {
@@ -5819,8 +5819,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_sort_options",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "sort_options"
     },
     {
@@ -5830,8 +5830,8 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_devistableskeleton",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "devistableskeleton()"
     },
     {
@@ -5841,8 +5841,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_devisformprops",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "devisformprops"
     },
     {
@@ -5852,8 +5852,8 @@
       "source_location": "L147",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_devisformdialog",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "devisformdialog()"
     },
     {
@@ -5863,8 +5863,8 @@
       "source_location": "L270",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_devisscreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "devisscreen()"
     },
     {
@@ -5874,8 +5874,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_detail",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "dossier-detail.tsx"
     },
     {
@@ -5885,8 +5885,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_detail_dossierdetailscreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "dossierdetailscreen()"
     },
     {
@@ -5896,8 +5896,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_form",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 29,
+      "community_name": "users-tab.tsx",
       "norm_label": "dossier-form.tsx"
     },
     {
@@ -5918,8 +5918,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_form_dossierforminner",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "dossierforminner()"
     },
     {
@@ -5929,8 +5929,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "dossiers-list.tsx"
     },
     {
@@ -5940,8 +5940,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list_statut_options",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "statut_options"
     },
     {
@@ -5951,8 +5951,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list_sortkey",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "sortkey"
     },
     {
@@ -5962,8 +5962,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list_sort_options",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "sort_options"
     },
     {
@@ -5973,8 +5973,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list_dossierslistscreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "dossierslistscreen()"
     },
     {
@@ -6017,8 +6017,8 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "src_components_sltt_screens_entreposage_entreposagescreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "entreposagescreen()"
     },
     {
@@ -6039,8 +6039,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_components_sltt_screens_facture_detail_facturedetailscreen",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "facturedetailscreen()"
     },
     {
@@ -6050,8 +6050,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_factures",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "factures.tsx"
     },
     {
@@ -6061,8 +6061,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_components_sltt_screens_factures_ligneform",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "ligneform"
     },
     {
@@ -6072,8 +6072,8 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_components_sltt_screens_factures_empty_ligne",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "empty_ligne"
     },
     {
@@ -6083,8 +6083,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_components_sltt_screens_factures_factureformmodal",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "factureformmodal()"
     },
     {
@@ -6094,8 +6094,8 @@
       "source_location": "L358",
       "_origin": "ast",
       "id": "src_components_sltt_screens_factures_tabs",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "tabs"
     },
     {
@@ -6116,8 +6116,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "fournisseurs.tsx"
     },
     {
@@ -6127,8 +6127,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_types",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "types"
     },
     {
@@ -6138,8 +6138,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_type_meta",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "type_meta"
     },
     {
@@ -6149,8 +6149,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_fournisseurtab",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "fournisseurtab"
     },
     {
@@ -6160,8 +6160,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_tab_meta",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "tab_meta"
     },
     {
@@ -6182,8 +6182,8 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_fournisseurmodal",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "fournisseurmodal()"
     },
     {
@@ -6226,8 +6226,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_login",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "login.tsx"
     },
     {
@@ -6237,8 +6237,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_sltt_screens_login_loginbackground",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "loginbackground()"
     },
     {
@@ -6248,8 +6248,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "src_components_sltt_screens_login_loginscreen",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "loginscreen()"
     },
     {
@@ -6259,8 +6259,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "parametres.tsx"
     },
     {
@@ -6270,8 +6270,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_paramtab",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "paramtab"
     },
     {
@@ -6281,8 +6281,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_actiontone",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "actiontone"
     },
     {
@@ -6292,8 +6292,8 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_tabs",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "tabs"
     },
     {
@@ -6314,8 +6314,8 @@
       "source_location": "L132",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_profiletabform",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "profiletabform()"
     },
     {
@@ -6325,8 +6325,8 @@
       "source_location": "L237",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_logo_accepted_types",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "logo_accepted_types"
     },
     {
@@ -6336,8 +6336,8 @@
       "source_location": "L239",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_societecard",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "societecard()"
     },
     {
@@ -6347,8 +6347,8 @@
       "source_location": "L502",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_societestab",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "societestab()"
     },
     {
@@ -6358,8 +6358,8 @@
       "source_location": "L526",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_securitytab",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "securitytab()"
     },
     {
@@ -6369,8 +6369,8 @@
       "source_location": "L655",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_audittab",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "audittab()"
     },
     {
@@ -6380,8 +6380,8 @@
       "source_location": "L916",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_preferencestab",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "preferencestab()"
     },
     {
@@ -6391,8 +6391,8 @@
       "source_location": "L1080",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_userstabbadge",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "userstabbadge()"
     },
     {
@@ -6413,8 +6413,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_supabase_required",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "supabase-required.tsx"
     },
     {
@@ -6424,8 +6424,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_sltt_screens_supabase_required_supabaserequiredscreen",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "supabaserequiredscreen()"
     },
     {
@@ -6435,8 +6435,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_transporteurs",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "transporteurs.tsx"
     },
     {
@@ -6446,8 +6446,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_components_sltt_screens_transporteurs_sortkey",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "sortkey"
     },
     {
@@ -6457,8 +6457,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "src_components_sltt_screens_transporteurs_sort_options",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "sort_options"
     },
     {
@@ -6468,8 +6468,8 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "src_components_sltt_screens_transporteurs_transporteurstableskeleton",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "transporteurstableskeleton()"
     },
     {
@@ -6523,8 +6523,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_sltt_societe_filter_select_societebadge",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 0,
+      "community_name": "devis.tsx",
       "norm_label": "societebadge()"
     },
     {
@@ -6545,8 +6545,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_tone",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "tone"
     },
     {
@@ -6578,8 +6578,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_tonebadge",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "tonebadge()"
     },
     {
@@ -6600,8 +6600,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_dossier_statut_dot",
-      "community": 18,
-      "community_name": "contrat-fichiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "dossier_statut_dot"
     },
     {
@@ -6622,8 +6622,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_dossierstatutbadge",
-      "community": 18,
-      "community_name": "contrat-fichiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "dossierstatutbadge()"
     },
     {
@@ -6688,8 +6688,8 @@
       "source_location": "L175",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_actifstatutbadge",
-      "community": 18,
-      "community_name": "contrat-fichiers-slice.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "actifstatutbadge()"
     },
     {
@@ -6699,8 +6699,8 @@
       "source_location": "L179",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_dossierfournisseurstatutbadge",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "dossierfournisseurstatutbadge()"
     },
     {
@@ -6710,8 +6710,8 @@
       "source_location": "L188",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_ecartvalue",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "ecartvalue()"
     },
     {
@@ -6721,8 +6721,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_status_quick_action",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "status-quick-action.tsx"
     },
     {
@@ -6732,8 +6732,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_status_quick_action_statusquickaction",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "statusquickaction()"
     },
     {
@@ -6809,8 +6809,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_theme_effect",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "theme-effect.tsx"
     },
     {
@@ -6820,8 +6820,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_sltt_theme_effect_themeeffect",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "themeeffect()"
     },
     {
@@ -7062,8 +7062,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "users-tab.tsx"
     },
     {
@@ -7073,8 +7073,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_allroles",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "allroles"
     },
     {
@@ -7084,8 +7084,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_roletone",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "roletone"
     },
     {
@@ -7095,8 +7095,8 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_rolemeta",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "rolemeta"
     },
     {
@@ -7106,8 +7106,8 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_formmode",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "formmode"
     },
     {
@@ -7117,8 +7117,8 @@
       "source_location": "L120",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_formtab",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "formtab"
     },
     {
@@ -7128,8 +7128,8 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_rolefilter",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "rolefilter"
     },
     {
@@ -7139,8 +7139,8 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_userformstate",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "userformstate"
     },
     {
@@ -7150,8 +7150,8 @@
       "source_location": "L135",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_iscustompermissionset",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "iscustompermissionset()"
     },
     {
@@ -7161,8 +7161,8 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_emptyformstate",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "emptyformstate()"
     },
     {
@@ -7172,8 +7172,8 @@
       "source_location": "L155",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_passwordfield",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "passwordfield()"
     },
     {
@@ -7194,8 +7194,8 @@
       "source_location": "L251",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_userformmodal",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "userformmodal()"
     },
     {
@@ -7205,8 +7205,8 @@
       "source_location": "L677",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_usersemptystate",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 118,
+      "community_name": "users-tab.tsx",
       "norm_label": "usersemptystate()"
     },
     {
@@ -7216,8 +7216,8 @@
       "source_location": "L701",
       "_origin": "ast",
       "id": "src_components_sltt_users_tab_userstab",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "userstab()"
     },
     {
@@ -7359,8 +7359,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "avatar.tsx"
     },
     {
@@ -7370,8 +7370,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "avatar()"
     },
     {
@@ -7381,8 +7381,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatarimage",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "avatarimage()"
     },
     {
@@ -7392,8 +7392,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatarfallback",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "avatarfallback()"
     },
     {
@@ -7403,8 +7403,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "badge.tsx"
     },
     {
@@ -7414,8 +7414,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_ui_badge_badgevariants",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "badgevariants"
     },
     {
@@ -7425,8 +7425,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "badge()"
     },
     {
@@ -7436,8 +7436,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_button",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 0,
+      "community_name": "devis.tsx",
       "norm_label": "button.tsx"
     },
     {
@@ -7458,8 +7458,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "src_components_ui_button_button",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 0,
+      "community_name": "devis.tsx",
       "norm_label": "button()"
     },
     {
@@ -7579,8 +7579,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_command",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "command.tsx"
     },
     {
@@ -7590,8 +7590,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_ui_command_command",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "command()"
     },
     {
@@ -7601,8 +7601,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_components_ui_command_commanddialog",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commanddialog()"
     },
     {
@@ -7612,8 +7612,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_components_ui_command_commandinput",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commandinput()"
     },
     {
@@ -7623,8 +7623,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "src_components_ui_command_commandlist",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commandlist()"
     },
     {
@@ -7634,8 +7634,8 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "src_components_ui_command_commandempty",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commandempty()"
     },
     {
@@ -7645,8 +7645,8 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "src_components_ui_command_commandgroup",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commandgroup()"
     },
     {
@@ -7656,8 +7656,8 @@
       "source_location": "L129",
       "_origin": "ast",
       "id": "src_components_ui_command_commandseparator",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commandseparator()"
     },
     {
@@ -7667,8 +7667,8 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "src_components_ui_command_commanditem",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commanditem()"
     },
     {
@@ -7678,8 +7678,8 @@
       "source_location": "L158",
       "_origin": "ast",
       "id": "src_components_ui_command_commandshortcut",
-      "community": 14,
-      "community_name": "calendrier.tsx",
+      "community": 117,
+      "community_name": "command-palette.tsx",
       "norm_label": "commandshortcut()"
     },
     {
@@ -8151,8 +8151,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_separator",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "separator.tsx"
     },
     {
@@ -8162,8 +8162,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_ui_separator_separator",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "separator()"
     },
     {
@@ -8173,8 +8173,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_sheet",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheet.tsx"
     },
     {
@@ -8184,8 +8184,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheet",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheet()"
     },
     {
@@ -8195,8 +8195,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheettrigger",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheettrigger()"
     },
     {
@@ -8206,8 +8206,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetclose",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheetclose()"
     },
     {
@@ -8217,8 +8217,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetportal",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheetportal()"
     },
     {
@@ -8228,8 +8228,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetoverlay",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheetoverlay()"
     },
     {
@@ -8239,8 +8239,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetcontent",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheetcontent()"
     },
     {
@@ -8250,8 +8250,8 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetheader",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheetheader()"
     },
     {
@@ -8261,8 +8261,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetfooter",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheetfooter()"
     },
     {
@@ -8272,8 +8272,8 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheettitle",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheettitle()"
     },
     {
@@ -8283,8 +8283,8 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetdescription",
-      "community": 19,
-      "community_name": "fournisseurs.tsx",
+      "community": 14,
+      "community_name": "calendrier.tsx",
       "norm_label": "sheetdescription()"
     },
     {
@@ -8294,8 +8294,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_skeleton",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "skeleton.tsx"
     },
     {
@@ -8305,8 +8305,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_components_ui_skeleton_skeleton",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "skeleton()"
     },
     {
@@ -8316,8 +8316,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_switch",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "switch.tsx"
     },
     {
@@ -8327,8 +8327,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_ui_switch_switch",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "switch()"
     },
     {
@@ -8492,8 +8492,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_textarea",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 55,
+      "community_name": "archives.tsx",
       "norm_label": "textarea.tsx"
     },
     {
@@ -8503,8 +8503,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_textarea_textarea",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 55,
+      "community_name": "archives.tsx",
       "norm_label": "textarea()"
     },
     {
@@ -8646,8 +8646,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_tooltip",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "tooltip.tsx"
     },
     {
@@ -8657,8 +8657,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltipprovider",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "tooltipprovider()"
     },
     {
@@ -8668,8 +8668,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltip",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "tooltip()"
     },
     {
@@ -8679,8 +8679,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltiptrigger",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "tooltiptrigger()"
     },
     {
@@ -8690,8 +8690,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltipcontent",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "tooltipcontent()"
     },
     {
@@ -8734,8 +8734,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_hooks_use_benefice_par_societe_usebeneficeparsociete",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "usebeneficeparsociete()"
     },
     {
@@ -8745,8 +8745,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_delete_confirm",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "use-delete-confirm.ts"
     },
     {
@@ -8767,8 +8767,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_pagination",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "use-pagination.ts"
     },
     {
@@ -8778,8 +8778,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_hooks_use_pagination_usepagination",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "usepagination()"
     },
     {
@@ -8789,8 +8789,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_permission",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "use-permission.ts"
     },
     {
@@ -8800,8 +8800,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_hooks_use_permission_useeffectivepermissionuser",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "useeffectivepermissionuser()"
     },
     {
@@ -8822,8 +8822,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_hooks_use_permission_usecanview",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 59,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "usecanview()"
     },
     {
@@ -8833,8 +8833,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_hooks_use_permission_usecanmanageusers",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "usecanmanageusers()"
     },
     {
@@ -8855,8 +8855,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "src_hooks_use_permission_usecurrentuser",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "usecurrentuser()"
     },
     {
@@ -8866,8 +8866,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_supabase_realtime",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "use-supabase-realtime.ts"
     },
     {
@@ -8877,8 +8877,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_hooks_use_supabase_realtime_realtime_tables",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "realtime_tables"
     },
     {
@@ -8888,8 +8888,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_hooks_use_supabase_realtime_usesupabaserealtime",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "usesupabaserealtime()"
     },
     {
@@ -9053,8 +9053,8 @@
       "source_location": "L174",
       "_origin": "ast",
       "id": "src_hooks_use_toast_usetoast",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "usetoast()"
     },
     {
@@ -9064,8 +9064,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_unsaved_changes_warning",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 29,
+      "community_name": "users-tab.tsx",
       "norm_label": "use-unsaved-changes-warning.ts"
     },
     {
@@ -9075,8 +9075,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_hooks_use_unsaved_changes_warning_useunsavedchangeswarning",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 29,
+      "community_name": "users-tab.tsx",
       "norm_label": "useunsavedchangeswarning()"
     },
     {
@@ -9086,8 +9086,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_visible_nav_items",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "use-visible-nav-items.ts"
     },
     {
@@ -9097,8 +9097,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_hooks_use_visible_nav_items_usevisiblenavitems",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "usevisiblenavitems()"
     },
     {
@@ -9108,8 +9108,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_api_fetch_auth",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "fetch-auth.ts"
     },
     {
@@ -9119,8 +9119,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_api_fetch_auth_fetchwithauth",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "fetchwithauth()"
     },
     {
@@ -9218,8 +9218,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_audit",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "audit.ts"
     },
     {
@@ -9229,8 +9229,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_audit_auditaction",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "auditaction"
     },
     {
@@ -9240,8 +9240,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_lib_audit_auditmodule",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "auditmodule"
     },
     {
@@ -9262,8 +9262,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_lib_audit_auditsourceref",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "auditsourceref"
     },
     {
@@ -9273,8 +9273,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_lib_audit_auditentry",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "auditentry"
     },
     {
@@ -9284,8 +9284,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_lib_audit_resolveclientip",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "resolveclientip()"
     },
     {
@@ -9295,8 +9295,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "src_lib_audit_mapauditlogfromdb",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "mapauditlogfromdb()"
     },
     {
@@ -9306,8 +9306,8 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "src_lib_audit_insertauditlog",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "insertauditlog()"
     },
     {
@@ -9361,8 +9361,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_auth_require_admin",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "require-admin.ts"
     },
     {
@@ -9394,8 +9394,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_lib_auth_require_admin_getadminclient",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "getadminclient()"
     },
     {
@@ -9405,8 +9405,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_auth_require_admin_getserverclient",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "getserverclient()"
     },
     {
@@ -9416,8 +9416,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_lib_auth_require_admin_getauthenticatedprofile",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "getauthenticatedprofile()"
     },
     {
@@ -9438,8 +9438,8 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "src_lib_auth_require_admin_requireuser",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "requireuser()"
     },
     {
@@ -9504,8 +9504,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_calendar_anchor",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "calendar-anchor.ts"
     },
     {
@@ -9515,8 +9515,8 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "src_lib_calendar_anchor_getdashboardanchordate",
-      "community": 16,
-      "community_name": "client-fiche.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "getdashboardanchordate()"
     },
     {
@@ -9669,8 +9669,8 @@
       "source_location": "L178",
       "_origin": "ast",
       "id": "src_lib_classeur_classeurfilters",
-      "community": 37,
-      "community_name": "audit.ts",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "classeurfilters"
     },
     {
@@ -9735,8 +9735,8 @@
       "source_location": "L233",
       "_origin": "ast",
       "id": "src_lib_classeur_fetchmouvementsuivi",
-      "community": 112,
-      "community_name": "excel-export.ts",
+      "community": 37,
+      "community_name": "audit.ts",
       "norm_label": "fetchmouvementsuivi()"
     },
     {
@@ -9746,8 +9746,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_client_stats_test",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 4,
+      "community_name": "dossiers-slice.ts",
       "norm_label": "client-stats.test.ts"
     },
     {
@@ -9757,8 +9757,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_client_stats",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 4,
+      "community_name": "dossiers-slice.ts",
       "norm_label": "client-stats.ts"
     },
     {
@@ -9768,8 +9768,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_lib_client_stats_syncclientstats",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 4,
+      "community_name": "dossiers-slice.ts",
       "norm_label": "syncclientstats()"
     },
     {
@@ -9779,8 +9779,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_api_constants",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "api.constants.ts"
     },
     {
@@ -9790,8 +9790,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "app.constants.ts"
     },
     {
@@ -9801,8 +9801,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_default_paiement_mode",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "default_paiement_mode"
     },
     {
@@ -9812,8 +9812,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_dossier_statut_en_cours",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "dossier_statut_en_cours"
     },
     {
@@ -9823,8 +9823,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_dossier_statut_dedouane",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "dossier_statut_dedouane"
     },
     {
@@ -9834,8 +9834,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_dossier_statut_solde",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "dossier_statut_solde"
     },
     {
@@ -9845,8 +9845,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_index",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "index.ts"
     },
     {
@@ -9856,8 +9856,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_ui_constants",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "ui.constants.ts"
     },
     {
@@ -9867,8 +9867,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_lib_constants_ui_constants_chart_colors",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "chart_colors"
     },
     {
@@ -9878,8 +9878,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_validation_constants",
-      "community": 4,
-      "community_name": "dossiers-slice.ts",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "validation.constants.ts"
     },
     {
@@ -10329,8 +10329,8 @@
       "source_location": "L247",
       "_origin": "ast",
       "id": "src_lib_db_rows_transporteurrow",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "transporteurrow"
     },
     {
@@ -10351,8 +10351,8 @@
       "source_location": "L270",
       "_origin": "ast",
       "id": "src_lib_db_rows_facturerow",
-      "community": 24,
-      "community_name": "dossier-detail-hero.tsx",
+      "community": 17,
+      "community_name": "contrat-stats.test.ts",
       "norm_label": "facturerow"
     },
     {
@@ -10417,8 +10417,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_domain_types",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "domain-types.ts"
     },
     {
@@ -10450,8 +10450,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_lib_domain_types_ecriturestatut",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "ecriturestatut"
     },
     {
@@ -10461,8 +10461,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_lib_domain_types_stockstatut",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "stockstatut"
     },
     {
@@ -10494,8 +10494,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_lib_domain_types_userrole",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "userrole"
     },
     {
@@ -10505,8 +10505,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_lib_domain_types_client",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 121,
+      "community_name": "clients-slice.ts",
       "norm_label": "client"
     },
     {
@@ -10516,8 +10516,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_lib_domain_types_dossier",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 4,
+      "community_name": "dossiers-slice.ts",
       "norm_label": "dossier"
     },
     {
@@ -10538,8 +10538,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_lib_domain_types_factureligne",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "factureligne"
     },
     {
@@ -10637,8 +10637,8 @@
       "source_location": "L180",
       "_origin": "ast",
       "id": "src_lib_domain_types_stockitem",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "stockitem"
     },
     {
@@ -10659,8 +10659,8 @@
       "source_location": "L211",
       "_origin": "ast",
       "id": "src_lib_domain_types_bonsortie",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "bonsortie"
     },
     {
@@ -10670,8 +10670,8 @@
       "source_location": "L233",
       "_origin": "ast",
       "id": "src_lib_domain_types_sortiecaisseligne",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "sortiecaisseligne"
     },
     {
@@ -10703,8 +10703,8 @@
       "source_location": "L265",
       "_origin": "ast",
       "id": "src_lib_domain_types_societe",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "societe"
     },
     {
@@ -10802,8 +10802,8 @@
       "source_location": "L397",
       "_origin": "ast",
       "id": "src_lib_domain_types_depenseinput",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "depenseinput"
     },
     {
@@ -10912,8 +10912,8 @@
       "source_location": "L490",
       "_origin": "ast",
       "id": "src_lib_domain_types_transporteurstatut",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "transporteurstatut"
     },
     {
@@ -10923,8 +10923,8 @@
       "source_location": "L491",
       "_origin": "ast",
       "id": "src_lib_domain_types_typevehicule",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "typevehicule"
     },
     {
@@ -10934,8 +10934,8 @@
       "source_location": "L493",
       "_origin": "ast",
       "id": "src_lib_domain_types_transporteur",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "transporteur"
     },
     {
@@ -10945,8 +10945,8 @@
       "source_location": "L509",
       "_origin": "ast",
       "id": "src_lib_domain_types_transporteurinput",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "transporteurinput"
     },
     {
@@ -10956,8 +10956,8 @@
       "source_location": "L523",
       "_origin": "ast",
       "id": "src_lib_domain_types_calculerecart",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "calculerecart()"
     },
     {
@@ -10967,8 +10967,8 @@
       "source_location": "L532",
       "_origin": "ast",
       "id": "src_lib_domain_types_resteapayer",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "resteapayer()"
     },
     {
@@ -11033,8 +11033,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_echeance_utils",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "echeance-utils.ts"
     },
     {
@@ -11044,8 +11044,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_echeance_utils_calculatedaysuntil",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "calculatedaysuntil()"
     },
     {
@@ -11055,8 +11055,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_echeance_utils_isecheancedepassee",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "isecheancedepassee()"
     },
     {
@@ -11066,8 +11066,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_echeance_utils_isecheanceimminente",
-      "community": 29,
-      "community_name": "users-tab.tsx",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "isecheanceimminente()"
     },
     {
@@ -11077,8 +11077,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_export_test",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "export.test.ts"
     },
     {
@@ -11088,8 +11088,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_lib_export_test_isvalidxlsxbytes",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "isvalidxlsxbytes()"
     },
     {
@@ -11110,8 +11110,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_export_excel_export",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "excel-export.ts"
     },
     {
@@ -11121,52 +11121,52 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_column",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "column"
     },
     {
       "label": "sanitizeFilename()",
       "file_type": "code",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L18",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_sanitizefilename",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "sanitizefilename()"
     },
     {
       "label": "downloadBlob()",
       "file_type": "code",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L27",
+      "source_location": "L31",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_downloadblob",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "downloadblob()"
     },
     {
       "label": "isValidXlsxBytes()",
       "file_type": "code",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L43",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_isvalidxlsxbytes",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "isvalidxlsxbytes()"
     },
     {
       "label": "exportToExcel()",
       "file_type": "code",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L64",
+      "source_location": "L73",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_exporttoexcel",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 120,
+      "community_name": "excel-export.ts",
       "norm_label": "exporttoexcel()"
     },
     {
@@ -11209,8 +11209,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_export_normalize_export_cell",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "normalize-export-cell.ts"
     },
     {
@@ -11220,8 +11220,8 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "src_lib_export_normalize_export_cell_normalizeexportcell",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "normalizeexportcell()"
     },
     {
@@ -11231,8 +11231,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_export_normalize_export_cell_normalizeexportrows",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "normalizeexportrows()"
     },
     {
@@ -11649,8 +11649,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_lib_export_print_modules_shared_shouldshowtva",
-      "community": 2,
-      "community_name": "print-modules.ts",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "shouldshowtva()"
     },
     {
@@ -11715,30 +11715,63 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_export_xlsx_builder",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "xlsx-builder.ts"
+    },
+    {
+      "label": "HEADER_FILL",
+      "file_type": "code",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "src_lib_export_xlsx_builder_header_fill",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
+      "norm_label": "header_fill"
     },
     {
       "label": "sanitizeExcelCell()",
       "file_type": "code",
       "source_file": "src/lib/export/xlsx-builder.ts",
-      "source_location": "L6",
+      "source_location": "L14",
       "_origin": "ast",
       "id": "src_lib_export_xlsx_builder_sanitizeexcelcell",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "sanitizeexcelcell()"
+    },
+    {
+      "label": "cellDisplayLength()",
+      "file_type": "code",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "src_lib_export_xlsx_builder_celldisplaylength",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
+      "norm_label": "celldisplaylength()"
+    },
+    {
+      "label": "computeColumnWidths()",
+      "file_type": "code",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "src_lib_export_xlsx_builder_computecolumnwidths",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
+      "norm_label": "computecolumnwidths()"
     },
     {
       "label": "buildXlsxBuffer()",
       "file_type": "code",
       "source_file": "src/lib/export/xlsx-builder.ts",
-      "source_location": "L18",
+      "source_location": "L46",
       "_origin": "ast",
       "id": "src_lib_export_xlsx_builder_buildxlsxbuffer",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 109,
+      "community_name": "@radix-ui/react-tooltip",
       "norm_label": "buildxlsxbuffer()"
     },
     {
@@ -11803,8 +11836,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_lib_format_formatfcfa",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "formatfcfa()"
     },
     {
@@ -11814,8 +11847,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_lib_format_formatfcfacompact",
-      "community": 47,
-      "community_name": "dossier-amounts-section.tsx",
+      "community": 12,
+      "community_name": "nav-store.ts",
       "norm_label": "formatfcfacompact()"
     },
     {
@@ -11825,8 +11858,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_lib_format_parselocaldate",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 47,
+      "community_name": "dossier-amounts-section.tsx",
       "norm_label": "parselocaldate()"
     },
     {
@@ -11836,8 +11869,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_lib_format_formatdateshort",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "formatdateshort()"
     },
     {
@@ -11847,8 +11880,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_lib_format_formatdatetime",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 13,
+      "community_name": "parametres.tsx",
       "norm_label": "formatdatetime()"
     },
     {
@@ -11858,8 +11891,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_lib_format_parseamount",
-      "community": 59,
-      "community_name": "contrat-detail.tsx",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "parseamount()"
     },
     {
@@ -11891,8 +11924,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_glossary",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "glossary.ts"
     },
     {
@@ -11902,8 +11935,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_glossary_glossary",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "glossary"
     },
     {
@@ -11913,8 +11946,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "src_lib_glossary_glossarykey",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "glossarykey"
     },
     {
@@ -11924,8 +11957,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_guide_progress",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "guide-progress.ts"
     },
     {
@@ -11935,8 +11968,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_guide_progress_guidestepid",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "guidestepid"
     },
     {
@@ -11946,8 +11979,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_lib_guide_progress_guidestepview",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "guidestepview"
     },
     {
@@ -11957,8 +11990,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_lib_guide_progress_guidestepdef",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "guidestepdef"
     },
     {
@@ -11968,8 +12001,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_lib_guide_progress_guide_step_defs",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "guide_step_defs"
     },
     {
@@ -11979,8 +12012,8 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "src_lib_guide_progress_guidestoresnapshot",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "guidestoresnapshot"
     },
     {
@@ -11990,8 +12023,8 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_lib_guide_progress_isguidestepcomplete",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "isguidestepcomplete()"
     },
     {
@@ -12001,8 +12034,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "src_lib_guide_progress_getguidestepsforrole",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "getguidestepsforrole()"
     },
     {
@@ -12012,8 +12045,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "src_lib_guide_progress_getguideprogress",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "getguideprogress()"
     },
     {
@@ -12023,8 +12056,8 @@
       "source_location": "L124",
       "_origin": "ast",
       "id": "src_lib_guide_progress_emitguidereset",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 116,
+      "community_name": "entreposage.tsx",
       "norm_label": "emitguidereset()"
     },
     {
@@ -12034,8 +12067,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_nav_items",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "nav-items.ts"
     },
     {
@@ -12045,8 +12078,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_nav_items_navitem",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "navitem"
     },
     {
@@ -12056,8 +12089,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_lib_nav_items_navitems",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "navitems"
     },
     {
@@ -12067,8 +12100,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_lib_nav_items_view_permissions",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "view_permissions"
     },
     {
@@ -12089,8 +12122,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_lib_nav_store_viewkey",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "viewkey"
     },
     {
@@ -12111,8 +12144,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_lib_nav_store_navstate",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "navstate"
     },
     {
@@ -12232,8 +12265,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_lib_permissions_permission_modules",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "permission_modules"
     },
     {
@@ -12243,8 +12276,8 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "src_lib_permissions_all_permission_keys",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "all_permission_keys"
     },
     {
@@ -12254,8 +12287,8 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "src_lib_permissions_role_default_permissions",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "role_default_permissions"
     },
     {
@@ -12276,8 +12309,8 @@
       "source_location": "L207",
       "_origin": "ast",
       "id": "src_lib_permissions_haspermission",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "haspermission()"
     },
     {
@@ -12287,8 +12320,8 @@
       "source_location": "L224",
       "_origin": "ast",
       "id": "src_lib_permissions_resolvepermissionuser",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "resolvepermissionuser()"
     },
     {
@@ -12298,8 +12331,8 @@
       "source_location": "L244",
       "_origin": "ast",
       "id": "src_lib_permissions_permissionstoselection",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "permissionstoselection()"
     },
     {
@@ -12309,8 +12342,8 @@
       "source_location": "L253",
       "_origin": "ast",
       "id": "src_lib_permissions_selectiontopermissions",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "selectiontopermissions()"
     },
     {
@@ -12320,8 +12353,8 @@
       "source_location": "L257",
       "_origin": "ast",
       "id": "src_lib_permissions_normalizepermissions",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "normalizepermissions()"
     },
     {
@@ -12331,8 +12364,8 @@
       "source_location": "L278",
       "_origin": "ast",
       "id": "src_lib_permissions_getmodulesummary",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 27,
+      "community_name": "calendrier.tsx",
       "norm_label": "getmodulesummary()"
     },
     {
@@ -12342,8 +12375,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_role_shortcuts",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "role-shortcuts.ts"
     },
     {
@@ -12353,8 +12386,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_lib_role_shortcuts_roleshortcut",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "roleshortcut"
     },
     {
@@ -12364,8 +12397,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_lib_role_shortcuts_role_shortcuts",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "role_shortcuts"
     },
     {
@@ -12375,8 +12408,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_search_filter",
-      "community": 55,
-      "community_name": "archives.tsx",
+      "community": 19,
+      "community_name": "fournisseurs.tsx",
       "norm_label": "search-filter.ts"
     },
     {
@@ -12452,8 +12485,8 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolvetransitsociete",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 2,
+      "community_name": "print-modules.ts",
       "norm_label": "resolvetransitsociete()"
     },
     {
@@ -12474,8 +12507,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolvesocietedisplayname",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 2,
+      "community_name": "print-modules.ts",
       "norm_label": "resolvesocietedisplayname()"
     },
     {
@@ -12507,8 +12540,8 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "src_lib_societe_brand_societetoprinthtmlbrand",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 2,
+      "community_name": "print-modules.ts",
       "norm_label": "societetoprinthtmlbrand()"
     },
     {
@@ -12518,8 +12551,8 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolveclasseurprintbrand",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 2,
+      "community_name": "print-modules.ts",
       "norm_label": "resolveclasseurprintbrand()"
     },
     {
@@ -12540,8 +12573,8 @@
       "source_location": "L124",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolveprinthtmlbrand",
-      "community": 15,
-      "community_name": "dossiers-slice.ts",
+      "community": 2,
+      "community_name": "print-modules.ts",
       "norm_label": "resolveprinthtmlbrand()"
     },
     {
@@ -12562,8 +12595,8 @@
       "source_location": "L134",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolveappshellbranding",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 2,
+      "community_name": "print-modules.ts",
       "norm_label": "resolveappshellbranding()"
     },
     {
@@ -12694,8 +12727,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_lib_status_flow_devis_allowed_transitions",
-      "community": 21,
-      "community_name": "transporteur-form-fields.tsx",
+      "community": 108,
+      "community_name": "devis-detail.tsx",
       "norm_label": "devis_allowed_transitions"
     },
     {
@@ -12738,8 +12771,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_actions_test",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "store-actions.test.ts"
     },
     {
@@ -12749,8 +12782,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_calls_remotestate_resetfake",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "{ calls, remotestate, resetfake }"
     },
     {
@@ -12760,8 +12793,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_basedossier",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "basedossier"
     },
     {
@@ -12771,8 +12804,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_baseclient",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "baseclient"
     },
     {
@@ -12782,8 +12815,8 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_seedstate",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "seedstate()"
     },
     {
@@ -12793,8 +12826,8 @@
       "source_location": "L216",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_seedarchive",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "seedarchive()"
     },
     {
@@ -12815,8 +12848,8 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "src_lib_store_factureinput",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 16,
+      "community_name": "client-fiche.tsx",
       "norm_label": "factureinput"
     },
     {
@@ -12837,8 +12870,8 @@
       "source_location": "L217",
       "_origin": "ast",
       "id": "src_lib_store_clientinput",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 121,
+      "community_name": "clients-slice.ts",
       "norm_label": "clientinput"
     },
     {
@@ -13178,8 +13211,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 121,
+      "community_name": "clients-slice.ts",
       "norm_label": "clients-slice.ts"
     },
     {
@@ -13189,8 +13222,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice_mapclientfromdb",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 121,
+      "community_name": "clients-slice.ts",
       "norm_label": "mapclientfromdb()"
     },
     {
@@ -13200,8 +13233,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice_clientsslice",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 121,
+      "community_name": "clients-slice.ts",
       "norm_label": "clientsslice"
     },
     {
@@ -13211,8 +13244,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice_createclientsslice",
-      "community": 119,
-      "community_name": "facture-edit-form.tsx",
+      "community": 121,
+      "community_name": "clients-slice.ts",
       "norm_label": "createclientsslice()"
     },
     {
@@ -13717,8 +13750,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "transporteurs-slice.ts"
     },
     {
@@ -13728,8 +13761,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice_maptransporteurfromdb",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "maptransporteurfromdb()"
     },
     {
@@ -13739,8 +13772,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice_transporteursslice",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 112,
+      "community_name": "excel-export.ts",
       "norm_label": "transporteursslice"
     },
     {
@@ -13750,8 +13783,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice_createtransporteursslice",
-      "community": 25,
-      "community_name": "dossier-form.tsx",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "createtransporteursslice()"
     },
     {
@@ -13805,8 +13838,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_supabase",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "supabase.ts"
     },
     {
@@ -13816,8 +13849,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_lib_supabase_issupabaseconfigured",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "issupabaseconfigured"
     },
     {
@@ -13827,8 +13860,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_lib_supabase_supabase",
-      "community": 11,
-      "community_name": "route-sync.tsx",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "supabase"
     },
     {
@@ -13838,8 +13871,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_supabase_admin",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "admin.ts"
     },
     {
@@ -13849,8 +13882,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_supabase_admin_createadminclient",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "createadminclient()"
     },
     {
@@ -13860,8 +13893,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_supabase_server",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "server.ts"
     },
     {
@@ -13871,8 +13904,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_supabase_server_getpublickey",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "getpublickey()"
     },
     {
@@ -13882,8 +13915,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_lib_supabase_server_createserverclient",
-      "community": 36,
-      "community_name": "contrat-stats.test.ts",
+      "community": 111,
+      "community_name": "require-admin.ts",
       "norm_label": "createserverclient()"
     },
     {
@@ -13893,8 +13926,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_utils",
-      "community": 13,
-      "community_name": "parametres.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "utils.ts"
     },
     {
@@ -13926,8 +13959,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_lib_utils_isnavactive",
-      "community": 27,
-      "community_name": "calendrier.tsx",
+      "community": 11,
+      "community_name": "route-sync.tsx",
       "norm_label": "isnavactive()"
     },
     {
@@ -16225,8 +16258,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_societe_brand_sltt_societe_id",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 55,
+      "community_name": "archives.tsx",
       "norm_label": "sltt_societe_id"
     }
   ],
@@ -23400,7 +23433,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/client-fiche/classeur-tab.tsx",
-      "source_location": "L204",
+      "source_location": "L206",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_client_fiche_classeur_tab_classeurtab",
@@ -23412,7 +23445,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/client-fiche/classeur-tab.tsx",
-      "source_location": "L210",
+      "source_location": "L212",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_client_fiche_classeur_tab_classeurtab",
@@ -23424,7 +23457,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/client-fiche/classeur-tab.tsx",
-      "source_location": "L142",
+      "source_location": "L144",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_client_fiche_classeur_tab_classeurtab",
@@ -23436,7 +23469,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/client-fiche/classeur-tab.tsx",
-      "source_location": "L234",
+      "source_location": "L236",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_client_fiche_classeur_tab_classeurtab",
@@ -31616,7 +31649,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/dossiers-list.tsx",
-      "source_location": "L600",
+      "source_location": "L601",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_dossiers_list_dossierslistscreen",
@@ -42873,7 +42906,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/bilans.tsx",
-      "source_location": "L484",
+      "source_location": "L496",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_bilans_bilansscreen",
@@ -42885,7 +42918,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/bilans.tsx",
-      "source_location": "L577",
+      "source_location": "L589",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_bilans_bilansscreen",
@@ -42933,7 +42966,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/bilans.tsx",
-      "source_location": "L787",
+      "source_location": "L799",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_bilans_bilansscreen",
@@ -50686,7 +50719,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L673",
+      "source_location": "L689",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -50746,7 +50779,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L632",
+      "source_location": "L648",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -52935,7 +52968,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/dossiers-list.tsx",
-      "source_location": "L549",
+      "source_location": "L550",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_dossiers_list_dossierslistscreen",
@@ -53007,7 +53040,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/dossiers-list.tsx",
-      "source_location": "L606",
+      "source_location": "L607",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_dossiers_list_dossierslistscreen",
@@ -58296,7 +58329,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/transporteurs.tsx",
-      "source_location": "L597",
+      "source_location": "L613",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_transporteurs_transporteursscreen",
@@ -64852,7 +64885,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L90",
+      "source_location": "L93",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export_exporttoexcel",
@@ -71333,7 +71366,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L27",
+      "source_location": "L31",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export",
@@ -71344,7 +71377,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L64",
+      "source_location": "L73",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export",
@@ -71355,7 +71388,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L43",
+      "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export",
@@ -71366,7 +71399,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L18",
+      "source_location": "L21",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export",
@@ -71438,7 +71471,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L83",
+      "source_location": "L86",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export_exporttoexcel",
@@ -71450,7 +71483,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L115",
+      "source_location": "L113",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export_exporttoexcel",
@@ -71462,7 +71495,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L103",
+      "source_location": "L106",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export_exporttoexcel",
@@ -71475,7 +71508,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/export/excel-export.ts",
-      "source_location": "L86",
+      "source_location": "L89",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_excel_export_exporttoexcel",
@@ -74486,7 +74519,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/xlsx-builder.ts",
-      "source_location": "L18",
+      "source_location": "L46",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_xlsx_builder",
@@ -74497,7 +74530,40 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/export/xlsx-builder.ts",
-      "source_location": "L6",
+      "source_location": "L25",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_export_xlsx_builder",
+      "target": "src_lib_export_xlsx_builder_celldisplaylength",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L29",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_export_xlsx_builder",
+      "target": "src_lib_export_xlsx_builder_computecolumnwidths",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_export_xlsx_builder",
+      "target": "src_lib_export_xlsx_builder_header_fill",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_xlsx_builder",
@@ -74505,16 +74571,40 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "indirect_call",
-      "context": "argument",
-      "confidence": "INFERRED",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
       "source_file": "src/lib/export/xlsx-builder.ts",
-      "source_location": "L33",
+      "source_location": "L70",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_export_xlsx_builder_buildxlsxbuffer",
       "target": "src_lib_export_xlsx_builder_sanitizeexcelcell",
-      "confidence_score": 0.5
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_export_xlsx_builder_computecolumnwidths",
+      "target": "src_lib_export_xlsx_builder_celldisplaylength",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/export/xlsx-builder.ts",
+      "source_location": "L54",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_export_xlsx_builder_buildxlsxbuffer",
+      "target": "src_lib_export_xlsx_builder_computecolumnwidths",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -80634,5 +80724,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "cc6e85bf09fb3c07abc074d07470b42d3b3e146a"
+  "built_at_commit": "0832515b3bf6968b383adeae14cf1b5c616eec00"
 }

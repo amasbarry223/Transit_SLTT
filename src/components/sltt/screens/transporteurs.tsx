@@ -545,13 +545,29 @@ export function TransporteursScreen() {
               )}
 
               <div className="ml-auto flex items-center gap-2">
-                <Button variant="outline" size="icon" className="size-9 shrink-0"
-                  onClick={handleExportPDF} disabled={filtered.length === 0} title="Exporter PDF">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0"
+                  onClick={handleExportPDF}
+                  disabled={filtered.length === 0}
+                  title="Exporter en PDF"
+                  aria-label="Exporter en PDF"
+                >
                   <FileText className="size-4" />
+                  <span className="hidden sm:inline">PDF</span>
                 </Button>
-                <Button variant="outline" size="icon" className="size-9 shrink-0"
-                  onClick={handleExportExcel} disabled={filtered.length === 0} title="Exporter Excel">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0"
+                  onClick={handleExportExcel}
+                  disabled={filtered.length === 0}
+                  title="Exporter en Excel"
+                  aria-label="Exporter en Excel"
+                >
                   <FileSpreadsheet className="size-4" />
+                  <span className="hidden sm:inline">Excel</span>
                 </Button>
               </div>
             </div>

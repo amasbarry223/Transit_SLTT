@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Printer, History, TrendingUp, Wallet, Clock } from "lucide-react";
+import { FileSpreadsheet, Printer, History, TrendingUp, Wallet, Clock } from "lucide-react";
 import type { AuditEntry } from "@/lib/audit";
 import type { ClasseurEntry, ClasseurFilters, ClasseurTotals } from "@/lib/classeur";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -119,9 +119,11 @@ export function ClasseurTab({
             className="h-10"
             onClick={onExportExcel}
             disabled={classeurFiltered.length === 0}
+            title="Exporter en Excel"
+            aria-label="Exporter en Excel"
           >
-            <Download className="size-4" />
-            Export Excel
+            <FileSpreadsheet className="size-4" />
+            <span className="hidden sm:inline">Excel</span>
           </Button>
           <Button
             variant="outline"

@@ -90,9 +90,17 @@ export function StockTab({
             <FileText className="size-4" />
             Imprimer
           </Button>
-          <Button variant="outline" size="sm" className="h-9" onClick={() => onExport(filtered)} disabled={filtered.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() => onExport(filtered)}
+            disabled={filtered.length === 0}
+            title="Exporter en Excel"
+            aria-label="Exporter en Excel"
+          >
             <FileSpreadsheet className="size-4" />
-            Exporter Excel
+            <span className="hidden sm:inline">Excel</span>
           </Button>
         </div>
       </div>

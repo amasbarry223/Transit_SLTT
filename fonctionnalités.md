@@ -21,7 +21,7 @@ Le client demande de pouvoir séparer leur activité et leur comptabilité (chac
 
 1. **Zéro duplication.** Ne PAS dupliquer d'écrans, de tables ni de composants par société. Introduire une seule dimension `societe` filtrable, et réutiliser les composants existants (tables TanStack, dialogs, `export.ts`, pattern `dossier_fichiers` + bucket Storage pour les scans).
 2. **Simplicité d'utilisation.** L'utilisateur choisit la société via un simple sélecteur (filtre en tête de module et/ou sélecteur global dans la topbar). Aucune configuration complexe, aucun nouvel écran superflu.
-3. **Respect de l'existant.** Suivre les conventions du repo : types dans `src/lib/domain-types.ts`, store `src/lib/store.ts`, permissions `permissions.ts` + `has_permission()` en RLS, audit `audit.ts`, realtime `use-supabase-realtime.ts`, exports CSV/print `export.ts`.
+3. **Respect de l'existant.** Suivre les conventions du repo : types dans `src/lib/domain-types.ts`, store `src/lib/store.ts`, permissions `permissions.ts` + `has_permission()` en RLS, audit `audit.ts`, realtime `use-supabase-realtime.ts`, exports Excel/print `export.ts`.
 4. **Toute nouvelle table** = migration SQL datée dans `supabase/migrations/`, RLS activée, ajout à l'audit, et à la publication realtime si affichée au dashboard.
 
 ---
@@ -41,7 +41,7 @@ Le client demande de pouvoir séparer leur activité et leur comptabilité (chac
 
 **Critères d'acceptation :**
 - Un article de stock, un mouvement, un bon, un contrat, une dépense appartiennent toujours à une société.
-- Le filtre société s'applique de façon cohérente sur listes, KPI, graphiques et exports (CSV/PDF).
+- Le filtre société s'applique de façon cohérente sur listes, KPI, graphiques et exports (Excel/PDF).
 - Aucune donnée existante n'est perdue : migration avec société par défaut à confirmer avec le client (voir §4).
 
 ---
@@ -90,7 +90,7 @@ Le client demande de pouvoir séparer leur activité et leur comptabilité (chac
 
 **Critères d'acceptation :**
 - Chaque dépense est rattachée à un contrat (donc à une société et un client).
-- Les dépenses entrent dans le calcul du bénéfice (F5) et sont exportables (CSV/PDF via `export.ts`).
+- Les dépenses entrent dans le calcul du bénéfice (F5) et sont exportables (Excel/PDF via `export.ts`).
 
 ---
 
@@ -160,6 +160,6 @@ Le client demande de pouvoir séparer leur activité et leur comptabilité (chac
 ## 5. Hors périmètre (pour éviter la dérive)
 
 - Pas de plan comptable ni de table `comptes` : on reste sur le modèle `ecritures` existant.
-- Pas de génération PDF/XLSX native côté serveur : on conserve `window.print` + CSV BOM.
+- Impression PDF via `window.print` ; exports tabulaires en `.xlsx` via `POST /api/export/excel` (ExcelJS côté serveur Node.js).
 - Pas de refonte des 3 canaux de paiement existants : le bénéfice est un agrégat, pas un rapprochement bancaire.
 - Pas de gestion multi-devise ni multi-langue (préférences restent « Bientôt disponible »).

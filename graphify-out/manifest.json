@@ -295,8 +295,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/bilans.tsx": {
-    "mtime": 1784776980.2462478,
-    "ast_hash": "411e8e0e6718166b83593cd449778fb8",
+    "mtime": 1784862004.4826653,
+    "ast_hash": "40a100caed1a3191f6584a72ab5af9e0",
     "semantic_hash": ""
   },
   "src/components/sltt/screens/bons.tsx": {
@@ -345,8 +345,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/devis.tsx": {
-    "mtime": 1784858056.9735904,
-    "ast_hash": "808ad5758554c7ad3346baac70ed2a58",
+    "mtime": 1784862001.2584558,
+    "ast_hash": "c57b09bf452af57f8f18a46086ac0d01",
     "semantic_hash": ""
   },
   "src/components/sltt/screens/dossier-detail.tsx": {
@@ -360,8 +360,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/dossiers-list.tsx": {
-    "mtime": 1784776947.3539248,
-    "ast_hash": "aefc8895415db8cb5b5c2d61ea319fc7",
+    "mtime": 1784862006.2233236,
+    "ast_hash": "3282b0746066e070b2e0f9604d15f980",
     "semantic_hash": ""
   },
   "src/components/sltt/screens/entreposage.tsx": {
@@ -400,8 +400,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/transporteurs.tsx": {
-    "mtime": 1784858058.0822277,
-    "ast_hash": "8f5da6977ddbf4de50beeadbdd95e077",
+    "mtime": 1784862003.0410876,
+    "ast_hash": "20123cb55f557c972ae8569ca07b97ad",
     "semantic_hash": ""
   },
   "src/components/sltt/societe-filter-select.tsx": {
@@ -1245,8 +1245,8 @@
     "semantic_hash": ""
   },
   "fonctionnalit\u00e9s.md": {
-    "mtime": 1784244740.179089,
-    "ast_hash": "53449538ebe565f2529d63ad0f928830",
+    "mtime": 1784862036.5877478,
+    "ast_hash": "9f316dd0690a3a2d14edc0304070937d",
     "semantic_hash": ""
   },
   "public/bg.jpg": {
@@ -1280,8 +1280,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/client-fiche/classeur-tab.tsx": {
-    "mtime": 1784858062.39721,
-    "ast_hash": "02a4012cda29bdc4c2b9a4354cf6d72d",
+    "mtime": 1784862031.4313571,
+    "ast_hash": "5d39ce2ed3e65bd377a9c1f53f7b94c8",
     "semantic_hash": ""
   },
   "src/components/sltt/client-fiche/client-profile-card.tsx": {
@@ -1370,8 +1370,8 @@
     "semantic_hash": ""
   },
   "src/lib/export/excel-export.ts": {
-    "mtime": 1784848423.0313847,
-    "ast_hash": "29b3cc87938a5e216ff288d90e9e048f",
+    "mtime": 1784861978.4317026,
+    "ast_hash": "7872d833497876747906b4226653777f",
     "semantic_hash": ""
   },
   "src/app/api/admin/users/[id]/password/route.test.ts": {
@@ -1485,8 +1485,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/entreposage/stock-tab.tsx": {
-    "mtime": 1784778103.7892609,
-    "ast_hash": "d27da3c8cb357e59e8a9c9667439d078",
+    "mtime": 1784862006.0459983,
+    "ast_hash": "cc584e4c95ab456ddbe19972280b91ea",
     "semantic_hash": ""
   },
   "src/components/sltt/entreposage/use-stock-movement-dialogs.ts": {
@@ -1630,8 +1630,8 @@
     "semantic_hash": ""
   },
   "src/lib/export/xlsx-builder.ts": {
-    "mtime": 1784848423.036414,
-    "ast_hash": "03185b1b840a1b8e71bb174859c3f492",
+    "mtime": 1784860553.0592232,
+    "ast_hash": "a76ad67400515f677ace17330d04b8c1",
     "semantic_hash": ""
   },
   "src/lib/fournisseur-stats.ts": {

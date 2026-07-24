@@ -483,6 +483,7 @@ export function DossiersListScreen() {
               className="h-10 shrink-0"
               onClick={handleExportExcel}
               disabled={filtered.length === 0}
+              title="Exporter en Excel"
               aria-label="Exporter en Excel"
             >
               <FileSpreadsheet className="size-4" />

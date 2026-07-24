@@ -439,13 +439,25 @@ export function BilansScreen() {
         title="Bilans périodiques"
         description="Analyse financière par période, basée sur les écritures comptables (hors module Factures)"
       >
-        <Button variant="outline" onClick={handleExportPDF} disabled={!hasData}>
+        <Button
+          variant="outline"
+          onClick={handleExportPDF}
+          disabled={!hasData}
+          title="Exporter en PDF"
+          aria-label="Exporter en PDF"
+        >
           <FileText className="size-4" />
-          Exporter PDF
+          <span className="hidden sm:inline">PDF</span>
         </Button>
-        <Button variant="outline" onClick={handleExportExcel} disabled={!hasData}>
+        <Button
+          variant="outline"
+          onClick={handleExportExcel}
+          disabled={!hasData}
+          title="Exporter en Excel"
+          aria-label="Exporter en Excel"
+        >
           <FileSpreadsheet className="size-4" />
-          Exporter Excel
+          <span className="hidden sm:inline">Excel</span>
         </Button>
       </PageHeader>
 
