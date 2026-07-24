@@ -339,7 +339,7 @@ export function Topbar() {
               className="size-11 object-contain"
               unoptimized
             />
-            <SheetTitle className="sr-only">SLTT</SheetTitle>
+            <SheetTitle className="sr-only">{shellBrand.appTitle}</SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-4 overflow-y-auto sltt-scroll px-3 py-4 pb-24">
             {roleShortcuts.length > 0 && (

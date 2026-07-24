@@ -48,10 +48,17 @@ export function resolveTransitSociete(societes: Societe[]): Societe | undefined 
   );
 }
 
-/** Libellé affiché uniforme (Classeur, badges, exports). */
-export function resolveSocieteDisplayName(societe: Pick<Societe, "nom" | "isTransit">): string {
-  if (societe.isTransit) return "SLTT";
-  if (societe.nom === "Top Doumani") return "Top Doumani";
+/**
+ * Préfixe des références dossier — dérivé du nom (éditable) de la société
+ * transit, avec repli si aucune société n'est encore configurée (compte
+ * flambant neuf, avant tout paramétrage).
+ */
+export function resolveDossierReferencePrefix(societes: Societe[]): string {
+  return resolveTransitSociete(societes)?.nom || "SLTT";
+}
+
+/** Libellé affiché uniforme (Classeur, badges, exports) — toujours le nom en base, éditable depuis Paramètres. */
+export function resolveSocieteDisplayName(societe: Pick<Societe, "nom">): string {
   return societe.nom;
 }
 

@@ -1,15 +1,18 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { syncClientStats } from "@/lib/client-stats";
+import { syncFournisseurStats } from "@/lib/fournisseur-stats";
 import { assertDossierTransition } from "@/lib/dossier-flow";
+import { resolveDossierReferencePrefix } from "@/lib/societe-brand";
 import {
   DOSSIER_REFERENCE_PAD_LENGTH,
   DOSSIER_STATUT_DEDOUANE,
   DOSSIER_STATUT_EN_COURS,
   DOSSIER_STATUT_SOLDE,
 } from "@/lib/constants";
-import type { Dossier, DossierStatut, Fournisseur, PaiementMode } from "@/lib/domain-types";
+import type { Dossier, DossierStatut, PaiementMode } from "@/lib/domain-types";
 import type { DossierInput, SLTTState } from "@/lib/store";
+import type { DossierRow } from "@/lib/db-rows";
 import {
   shouldSyncEcritureOnDossierSolde,
   syncEcritureWhenDossierSolde,
@@ -19,7 +22,7 @@ function pad(n: number, len: number): string {
   return String(n).padStart(len, "0");
 }
 
-export function mapDossierFromDb(x: any): Dossier {
+export function mapDossierFromDb(x: DossierRow): Dossier {
   return {
     id: x.id,
     reference: x.reference,
@@ -35,28 +38,14 @@ export function mapDossierFromDb(x: any): Dossier {
     montantPaye: Number(x.montant_paye),
     statut: x.statut,
     date: x.date,
-    dateEcheance: x.date_echeance,
-    dateDedouanement: x.date_dedouanement,
-    modeTransport: x.mode_transport,
-    noConteneur: x.no_conteneur,
-    portEntree: x.port_entree,
+    dateEcheance: x.date_echeance ?? undefined,
+    dateDedouanement: x.date_dedouanement ?? undefined,
+    modeTransport: x.mode_transport ?? undefined,
+    noConteneur: x.no_conteneur ?? undefined,
+    portEntree: x.port_entree ?? undefined,
     poidsTotal: x.poids_total ? Number(x.poids_total) : undefined,
-    notes: x.notes,
+    notes: x.notes ?? undefined,
   };
-}
-
-function syncFournisseurStats(
-  df: SLTTState["dossierFournisseurs"],
-  providers: Fournisseur[],
-): Fournisseur[] {
-  return providers.map((f) => {
-    const related = df.filter((d) => d.fournisseurId === f.id);
-    return {
-      ...f,
-      nbDossiers: related.length,
-      montantTotal: related.reduce((sum, d) => sum + d.montantReel, 0),
-    };
-  });
 }
 
 export interface DossiersSlice {
@@ -81,7 +70,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
   addDossier: async (input) => {
     const seq = get().dossierSeq;
     const year = new Date().getFullYear();
-    const reference = `SLTT-TR-${year}-${pad(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
+    const prefix = resolveDossierReferencePrefix(get().societes);
+    const reference = `${prefix}-TR-${year}-${pad(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
     const statut: DossierStatut = DOSSIER_STATUT_EN_COURS;
 
     const { data, error } = await supabase

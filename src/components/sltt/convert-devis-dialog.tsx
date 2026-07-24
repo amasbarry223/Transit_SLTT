@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useStore, type Devis } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,10 +50,10 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
         });
         onConverted(dossier.id);
       }
-    } catch (e: any) {
+    } catch (e) {
       toast({
         title: "Erreur",
-        description: e.message || "Impossible de convertir le devis",
+        description: getErrorMessage(e, "Impossible de convertir le devis"),
         variant: "destructive",
       });
     } finally {

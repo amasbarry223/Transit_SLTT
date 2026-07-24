@@ -37,7 +37,7 @@ type ClasseurTabProps = {
   classeurTotals: ClasseurTotals;
   classeurPeriodFiltered?: boolean;
   clientAuditHistory: AuditEntry[];
-  onExportCsv: () => void;
+  onExportExcel: () => void;
   onPrint: () => void;
   onRowClick: (entry: ClasseurEntry) => void;
 };
@@ -50,7 +50,7 @@ export function ClasseurTab({
   classeurTotals,
   classeurPeriodFiltered = false,
   clientAuditHistory,
-  onExportCsv,
+  onExportExcel,
   onPrint,
   onRowClick,
 }: ClasseurTabProps) {
@@ -117,11 +117,11 @@ export function ClasseurTab({
             variant="outline"
             size="sm"
             className="h-10"
-            onClick={onExportCsv}
+            onClick={onExportExcel}
             disabled={classeurFiltered.length === 0}
           >
             <Download className="size-4" />
-            Export CSV
+            Export Excel
           </Button>
           <Button
             variant="outline"

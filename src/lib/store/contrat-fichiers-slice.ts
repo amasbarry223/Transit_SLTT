@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { ContratFichier } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
+import type { ContratFichierRow } from "@/lib/db-rows";
 
 interface AddContratFichierInput {
   contratId: string;
@@ -11,7 +12,7 @@ interface AddContratFichierInput {
   dataUrl: string;
 }
 
-export function mapContratFichierFromDb(x: any): ContratFichier {
+export function mapContratFichierFromDb(x: ContratFichierRow): ContratFichier {
   return {
     id: x.id,
     contratId: x.contrat_id,

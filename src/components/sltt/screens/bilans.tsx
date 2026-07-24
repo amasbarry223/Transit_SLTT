@@ -15,7 +15,7 @@ import {
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatFCFACompact, formatDateShort, parseLocalDate } from "@/lib/format";
-import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
@@ -370,7 +370,7 @@ export function BilansScreen() {
     }
   }
 
-  function handleExportExcel() {
+  async function handleExportExcel() {
     if (recapParClient.length === 0) {
       toast({
         title: "Rien à exporter",
@@ -379,18 +379,22 @@ export function BilansScreen() {
       });
       return;
     }
-    exportToCSV(
-      `bilans-${periode}-${mois}`,
-      [
-        { header: "Client", accessor: (r) => r.client },
-        { header: "Investi (FCFA)", accessor: (r) => r.investi },
-        { header: "Encaissé (FCFA)", accessor: (r) => r.encaisse },
-        { header: "Reste à payer (FCFA)", accessor: (r) => r.reste },
-        { header: "Écart de règlement (FCFA)", accessor: (r) => r.ecart },
-      ],
-      recapParClient,
-      { module: "Comptabilité" },
-    );
+    try {
+      await exportToExcel(
+        `bilans-${periode}-${mois}`,
+        [
+          { header: "Client", accessor: (r) => r.client },
+          { header: "Investi (FCFA)", accessor: (r) => r.investi },
+          { header: "Encaissé (FCFA)", accessor: (r) => r.encaisse },
+          { header: "Reste à payer (FCFA)", accessor: (r) => r.reste },
+          { header: "Écart de règlement (FCFA)", accessor: (r) => r.ecart },
+        ],
+        recapParClient,
+        { module: "Comptabilité" },
+      );
+    } catch {
+      return;
+    }
     toast({
       title: "Export Excel généré",
       description: `${recapParClient.length} client${recapParClient.length !== 1 ? "s" : ""} exportés — ${periodeLabel}.`,

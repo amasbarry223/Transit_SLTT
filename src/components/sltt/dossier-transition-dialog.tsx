@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -189,10 +189,10 @@ export function TransitionDialog({
         noteFinale,
         date,
       );
-    } catch (e: any) {
+    } catch (e) {
       toast({
         title: "Erreur",
-        description: e.message || "Impossible de faire évoluer le statut du dossier.",
+        description: getErrorMessage(e, "Impossible de faire évoluer le statut du dossier."),
         variant: "destructive",
       });
       return;

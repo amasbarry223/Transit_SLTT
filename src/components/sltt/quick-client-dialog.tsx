@@ -5,6 +5,7 @@ import { UserPlus } from "lucide-react";
 import { useStore, type ClientInput } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { getErrorMessage } from "@/lib/utils";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,10 +43,10 @@ export function QuickClientButton({ onCreated }: Props) {
       onCreated(newClient.id);
       setOpen(false);
       reset();
-    } catch (e: any) {
+    } catch (e) {
       toast({
         title: "Erreur",
-        description: e.message || "Impossible de créer le client",
+        description: getErrorMessage(e, "Impossible de créer le client"),
         variant: "destructive",
       });
     } finally {

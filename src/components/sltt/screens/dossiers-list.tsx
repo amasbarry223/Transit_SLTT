@@ -19,7 +19,7 @@ import { calculerEcart, resteAPayer, type DossierStatut } from "@/lib/domain-typ
 import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
-import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -198,7 +198,7 @@ export function DossiersListScreen() {
     setPage(1);
   }
 
-  function handleExportExcel() {
+  async function handleExportExcel() {
     if (filtered.length === 0) {
       toast({
         title: "Rien à exporter",
@@ -207,33 +207,37 @@ export function DossiersListScreen() {
       });
       return;
     }
-    exportToCSV(
-      `dossiers-transit-${new Date().toISOString().slice(0, 10)}`,
-      [
-        { header: "Référence", accessor: (d) => d.reference },
-        { header: "Client", accessor: (d) => d.clientNom },
-        { header: "N° BL", accessor: (d) => d.bl },
-        { header: "N° camion", accessor: (d) => d.camion },
-        { header: "Nature marchandise", accessor: (d) => d.nature },
-        { header: "Droit de douane (FCFA)", accessor: (d) => d.droitDouane },
-        { header: "Frais circuit (FCFA)", accessor: (d) => d.fraisCircuit },
-        { header: "Frais prestation (FCFA)", accessor: (d) => d.fraisPrestation },
-        { header: "Montant investi (FCFA)", accessor: (d) => d.montantInvesti },
-        { header: "Montant payé (FCFA)", accessor: (d) => d.montantPaye },
-        {
-          header: "Reste à payer (FCFA)",
-          accessor: (d) => resteAPayer(d),
-        },
-        { header: "Marge (FCFA)", accessor: (d) => calculerEcart(d) },
-        { header: "Statut", accessor: (d) => d.statut },
-        { header: "Date", accessor: (d) => formatDateShort(d.date) },
-      ],
-      filtered,
-      { module: "Dossiers" },
-    );
+    try {
+      await exportToExcel(
+        `dossiers-transit-${new Date().toISOString().slice(0, 10)}`,
+        [
+          { header: "Référence", accessor: (d) => d.reference },
+          { header: "Client", accessor: (d) => d.clientNom },
+          { header: "N° BL", accessor: (d) => d.bl },
+          { header: "N° camion", accessor: (d) => d.camion },
+          { header: "Nature marchandise", accessor: (d) => d.nature },
+          { header: "Droit de douane (FCFA)", accessor: (d) => d.droitDouane },
+          { header: "Frais circuit (FCFA)", accessor: (d) => d.fraisCircuit },
+          { header: "Frais prestation (FCFA)", accessor: (d) => d.fraisPrestation },
+          { header: "Montant investi (FCFA)", accessor: (d) => d.montantInvesti },
+          { header: "Montant payé (FCFA)", accessor: (d) => d.montantPaye },
+          {
+            header: "Reste à payer (FCFA)",
+            accessor: (d) => resteAPayer(d),
+          },
+          { header: "Marge (FCFA)", accessor: (d) => calculerEcart(d) },
+          { header: "Statut", accessor: (d) => d.statut },
+          { header: "Date", accessor: (d) => formatDateShort(d.date) },
+        ],
+        filtered,
+        { module: "Dossiers" },
+      );
+    } catch {
+      return;
+    }
     toast({
       title: "Export Excel généré",
-      description: `${filtered.length} dossiers exportés en CSV.`,
+      description: `${filtered.length} dossiers exportés.`,
     });
   }
 

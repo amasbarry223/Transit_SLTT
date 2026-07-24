@@ -16,6 +16,7 @@ import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printDevis } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 
 import { Card } from "@/components/ui/card";
@@ -31,7 +32,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
 import { canTransitionDevis, DEVIS_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 
@@ -267,6 +268,8 @@ export function DevisDetailScreen() {
   const [confirmDelete,  setConfirmDelete]  = useState(false);
   const [confirmConvert, setConfirmConvert] = useState(false);
 
+  useUnsavedChangesWarning(isEditing);
+
   /* Edit form */
   const [fClientId,        setFClientId]        = useState("");
   const [fClientNom,       setFClientNom]       = useState("");
@@ -384,8 +387,8 @@ export function DevisDetailScreen() {
       await removeDevis(devis.id);
       toast({ title: "Devis supprimé", description: devis.reference });
       go("devis");
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de supprimer le devis", variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de supprimer le devis"), variant: "destructive" });
     }
   };
 

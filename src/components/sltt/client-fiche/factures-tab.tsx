@@ -19,19 +19,21 @@ import { TabEmptyState } from "./shared";
 
 type FacturesTabProps = {
   factures: Facture[];
-  onNewFacture: () => void;
+  onNewFacture?: () => void;
   onOpenFacture: (id: string) => void;
 };
 
 export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesTabProps) {
   return (
     <TabsContent value="factures" className="mt-6 space-y-3 focus-visible:outline-none">
-      <div className="flex justify-end">
-        <Button size="sm" onClick={onNewFacture}>
-          <Plus className="size-4" />
-          Nouvelle facture
-        </Button>
-      </div>
+      {onNewFacture && (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={onNewFacture}>
+            <Plus className="size-4" />
+            Nouvelle facture
+          </Button>
+        </div>
+      )}
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         {factures.length === 0 ? (
           <TabEmptyState label="Aucune facture pour ce client." />

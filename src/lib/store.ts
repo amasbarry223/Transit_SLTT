@@ -2,7 +2,6 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { useNav } from "@/lib/nav-store";
 import { supabase } from "@/lib/supabase";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import {
@@ -16,14 +15,62 @@ import {
   mapDossierFromDb,
   type DossiersSlice,
 } from "@/lib/store/dossiers-slice";
+import {
+  createTransporteursSlice,
+  mapTransporteurFromDb,
+  type TransporteursSlice,
+} from "@/lib/store/transporteurs-slice";
+import {
+  createSocietesSlice,
+  mapSocieteFromDb,
+  type SocietesSlice,
+} from "@/lib/store/societes-slice";
+import {
+  createUsersSlice,
+  mapProfileFromDb,
+  type UsersSlice,
+} from "@/lib/store/users-slice";
+import {
+  createClientsSlice,
+  mapClientFromDb,
+  type ClientsSlice,
+} from "@/lib/store/clients-slice";
+import {
+  createFournisseursSlice,
+  mapFournisseurFromDb,
+  mapDossierFournisseurFromDb,
+  type FournisseursSlice,
+} from "@/lib/store/fournisseurs-slice";
+import { syncFournisseurStats } from "@/lib/fournisseur-stats";
+import {
+  createContratsSlice,
+  mapContratFromDb,
+  mapDepenseFromDb,
+  mapContratPrestationFromDb,
+  type ContratsSlice,
+} from "@/lib/store/contrats-slice";
+import {
+  createDevisSlice,
+  mapDevisFromDb,
+  type DevisSlice,
+} from "@/lib/store/devis-slice";
 import { syncDossierPayeFromEcritures } from "@/lib/store/sync-helpers";
+import type {
+  EcritureRow,
+  StockItemRow,
+  MouvementRow,
+  BonSortieRow,
+  BonSortieCaisseRow,
+  SubDossierRow,
+  DossierFichierRow,
+  FactureRow,
+  ProfilePublicRow,
+} from "@/lib/db-rows";
 import { DEFAULT_PAIEMENT_MODE } from "@/lib/constants";
-import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncContratStats } from "@/lib/contrat-stats";
 import { computeIncrementalPaye, validatePaymentAmount } from "@/lib/payments";
-import { normalizePermissions, ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
-import { canTransitionDevis, canTransitionFacture } from "@/lib/status-flow";
+import { canTransitionFacture } from "@/lib/status-flow";
 import {
   insertAuditLog,
   mapAuditLogFromDb,
@@ -62,7 +109,6 @@ import {
   type DossierFournisseur,
   type DossierFournisseurInput,
   type Societe,
-  type SocieteInput,
   type Contrat,
   type ContratInput,
   type ContratStatut,
@@ -239,53 +285,7 @@ export interface UserInput {
 /* SUPABASE MAPPING HELPERS                                            */
 /* ------------------------------------------------------------------ */
 
-function mapClientFromDb(x: any): Client {
-  return {
-    id: x.id,
-    nom: x.nom,
-    type: x.type,
-    telephone: x.telephone,
-    email: x.email,
-    adresse: x.adresse,
-    nbDossiers: 0,
-    totalDu: 0,
-    totalPaye: 0,
-  };
-}
-
-function mapFournisseurFromDb(x: any): Fournisseur {
-  return {
-    id: x.id,
-    nom: x.nom,
-    type: x.type,
-    contact: x.contact,
-    telephone: x.telephone,
-    email: x.email || "",
-    adresse: x.adresse || "",
-    tarifContractuel: x.tarif_contractuel ? Number(x.tarif_contractuel) : undefined,
-    nbDossiers: 0,
-    montantTotal: 0,
-    statut: x.statut,
-  };
-}
-
-function mapDossierFournisseurFromDb(x: any): DossierFournisseur {
-  return {
-    id: x.id,
-    dossierId: x.dossier_id,
-    dossierRef: x.dossiers?.reference || undefined,
-    fournisseurId: x.fournisseur_id,
-    fournisseurNom: x.fournisseurs?.nom || "",
-    type: x.fournisseurs?.type || "Transport",
-    description: x.description,
-    montantBudgete: Number(x.montant_budgete),
-    montantReel: Number(x.montant_reel),
-    statut: x.statut,
-    date: x.date || new Date().toISOString().slice(0, 10),
-  };
-}
-
-function mapEcritureFromDb(x: any): Ecriture {
+function mapEcritureFromDb(x: EcritureRow): Ecriture {
   return {
     id: x.id,
     date: x.date,
@@ -302,7 +302,7 @@ function mapEcritureFromDb(x: any): Ecriture {
   };
 }
 
-function mapStockItemFromDb(x: any): StockItem {
+function mapStockItemFromDb(x: StockItemRow): StockItem {
   return {
     id: x.id,
     clientId: x.client_id || undefined,
@@ -320,7 +320,7 @@ function mapStockItemFromDb(x: any): StockItem {
   };
 }
 
-function mapMouvementFromDb(x: any): Mouvement {
+function mapMouvementFromDb(x: MouvementRow): Mouvement {
   return {
     id: x.id,
     stockId: x.stock_id || undefined,
@@ -337,7 +337,7 @@ function mapMouvementFromDb(x: any): Mouvement {
   };
 }
 
-function mapBonFromDb(x: any): BonSortie {
+function mapBonFromDb(x: BonSortieRow): BonSortie {
   return {
     id: x.id,
     reference: x.reference,
@@ -356,7 +356,7 @@ function mapBonFromDb(x: any): BonSortie {
   };
 }
 
-function mapBonSortieCaisseFromDb(x: any): BonSortieCaisse {
+function mapBonSortieCaisseFromDb(x: BonSortieCaisseRow): BonSortieCaisse {
   return {
     id: x.id,
     reference: x.reference,
@@ -366,7 +366,7 @@ function mapBonSortieCaisseFromDb(x: any): BonSortieCaisse {
     montantTotal: Number(x.montant_total),
     creePar: x.cree_par || undefined,
     creeLe: x.created_at,
-    lignes: (x.bons_sortie_caisse_lignes || []).map((l: any) => ({
+    lignes: (x.bons_sortie_caisse_lignes || []).map((l) => ({
       id: l.id,
       date: l.date,
       beneficiaire: l.beneficiaire,
@@ -376,74 +376,7 @@ function mapBonSortieCaisseFromDb(x: any): BonSortieCaisse {
   };
 }
 
-function mapSocieteFromDb(x: any): Societe {
-  return {
-    id: x.id,
-    nom: x.nom,
-    actif: x.actif,
-    logoUrl: x.logo_url || undefined,
-    adresse: x.adresse || undefined,
-    telephone: x.telephone || undefined,
-    rccm: x.rccm || undefined,
-    nif: x.nif || undefined,
-    afficherNomAvecLogo: x.afficher_nom_avec_logo ?? true,
-    signataireDg: x.signataire_dg || undefined,
-    signatairePdg: x.signataire_pdg || undefined,
-    isTransit: x.is_transit ?? undefined,
-  };
-}
-
-function mapContratFromDb(
-  x: any,
-): Omit<Contrat, "nbPrestations" | "nbPrestationsRealisees" | "totalDepenses"> {
-  return {
-    id: x.id,
-    reference: x.reference,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    objet: x.objet,
-    dateDebut: x.date_debut,
-    dateFin: x.date_fin || undefined,
-    montant: Number(x.montant),
-    statut: x.statut,
-    notes: x.notes || undefined,
-    creePar: x.cree_par || undefined,
-    creeLe: x.created_at,
-  };
-}
-
-function mapDepenseFromDb(x: any): Depense {
-  return {
-    id: x.id,
-    contratId: x.contrat_id,
-    societeId: x.societe_id,
-    libelle: x.libelle,
-    montant: Number(x.montant),
-    dateDepense: x.date_depense,
-    modePaiement: x.mode_paiement,
-    justificatifPath: x.justificatif_path || undefined,
-    note: x.note || undefined,
-    creePar: x.cree_par || undefined,
-  };
-}
-
-function mapContratPrestationFromDb(x: any): ContratPrestation {
-  return {
-    id: x.id,
-    contratId: x.contrat_id,
-    libelle: x.libelle,
-    description: x.description || undefined,
-    montant: x.montant != null ? Number(x.montant) : undefined,
-    statut: x.statut,
-    datePrevue: x.date_prevue || undefined,
-    dateRealisation: x.date_realisation || undefined,
-    creePar: x.cree_par || undefined,
-  };
-}
-
-function mapSubDossierFromDb(x: any): SubDossier {
+function mapSubDossierFromDb(x: SubDossierRow): SubDossier {
   return {
     id: x.id,
     dossierId: x.dossier_id,
@@ -453,7 +386,7 @@ function mapSubDossierFromDb(x: any): SubDossier {
   };
 }
 
-function mapFichierFromDb(x: any): DossierFichier {
+function mapFichierFromDb(x: DossierFichierRow): DossierFichier {
   return {
     id: x.id,
     dossierId: x.dossier_id,
@@ -466,43 +399,7 @@ function mapFichierFromDb(x: any): DossierFichier {
   };
 }
 
-function mapDevisFromDb(x: any): Devis {
-  return {
-    id: x.id,
-    reference: x.reference,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    nature: x.nature,
-    droitDouane: Number(x.droit_douane),
-    fraisCircuit: Number(x.frais_circuit),
-    fraisPrestation: Number(x.frais_prestation),
-    total: Number(x.total),
-    statut: x.statut,
-    dateCreation: x.date_creation,
-    dateValidite: x.date_validite,
-    notes: x.notes || undefined,
-  };
-}
-
-function mapTransporteurFromDb(x: any): Transporteur {
-  return {
-    id: x.id,
-    nom: x.nom,
-    contact: x.contact || "",
-    telephone: x.telephone,
-    email: x.email || undefined,
-    vehicule: x.vehicule,
-    immatriculation: x.immatriculation,
-    trajet: x.trajet || "",
-    capacite: x.capacite ? Number(x.capacite) : 0,
-    statut: x.statut,
-    nbDossiers: 0,
-    dateCreation: x.date_creation || new Date().toISOString().slice(0, 10),
-    notes: x.notes || undefined,
-  };
-}
-
-function mapFactureFromDb(x: any): Facture {
+function mapFactureFromDb(x: FactureRow): Facture {
   return {
     id: x.id,
     numero: x.numero,
@@ -522,31 +419,13 @@ function mapFactureFromDb(x: any): Facture {
     notes: x.notes,
     creePar: x.cree_par,
     creeLe: x.cree_le ?? x.created_at,
-    lignes: (x.facture_lignes || []).map((l: any) => ({
+    lignes: (x.facture_lignes || []).map((l) => ({
       id: l.id,
       description: l.description,
       quantite: Number(l.quantite),
       prixUnitaire: Number(l.prix_unitaire),
       montantHT: Number(l.montant_ht),
     })),
-  };
-}
-
-function mapProfileFromDb(x: any): User {
-  const role = x.role as UserRole;
-  const raw = Array.isArray(x.permissions) ? x.permissions : [];
-  const normalized = normalizePermissions(raw);
-  return {
-    id: x.id,
-    nom: x.nom,
-    email: x.email,
-    role,
-    permissions:
-      normalized.length > 0
-        ? normalized
-        : (ROLE_DEFAULT_PERMISSIONS[role] ?? []),
-    actif: x.actif,
-    derniereConnexion: x.derniere_connexion || "",
   };
 }
 
@@ -557,38 +436,6 @@ function mapProfileFromDb(x: any): User {
 function findStockForBon(stock: StockItem[], ref: { stockId?: string; marchandise: string }): StockItem | undefined {
   if (ref.stockId) return stock.find((s) => s.id === ref.stockId);
   return stock.find((s) => s.marchandise === ref.marchandise);
-}
-
-/** Seule transition de statut légitime pour un dossier — voir dossier-flow.ts */
-
-/** Retire l'apport d'une liste de DossierFournisseur des agrégats du Fournisseur parent (LOGIC-04). */
-function decrementFournisseurAgg(fournisseurs: Fournisseur[], removed: DossierFournisseur[]): Fournisseur[] {
-  if (removed.length === 0) return fournisseurs;
-  const deltaByFournisseur = new Map<string, { count: number; montant: number }>();
-  for (const df of removed) {
-    const prev = deltaByFournisseur.get(df.fournisseurId) ?? { count: 0, montant: 0 };
-    deltaByFournisseur.set(df.fournisseurId, { count: prev.count + 1, montant: prev.montant + df.montantReel });
-  }
-  return fournisseurs.map((f) => {
-    const delta = deltaByFournisseur.get(f.id);
-    if (!delta) return f;
-    return {
-      ...f,
-      nbDossiers: Math.max(0, f.nbDossiers - delta.count),
-      montantTotal: Math.max(0, f.montantTotal - delta.montant),
-    };
-  });
-}
-
-function syncFournisseurStats(df: DossierFournisseur[], providers: Fournisseur[]): Fournisseur[] {
-  return providers.map((p) => {
-    const pdf = df.filter((x) => x.fournisseurId === p.id);
-    return {
-      ...p,
-      nbDossiers: pdf.length,
-      montantTotal: pdf.reduce((sum, item) => sum + item.montantReel, 0),
-    };
-  });
 }
 
 type SequenceCounters = Pick<
@@ -664,28 +511,16 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
   };
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DossiersSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DossiersSlice, TransporteursSlice, SocietesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice {
   // Data
-  clients: Client[];
   ecritures: Ecriture[];
   stock: StockItem[];
   mouvements: Mouvement[];
   bons: BonSortie[];
-  users: User[];
-  /** Sous-ensemble sans email/permissions, visible par tous les authentifiés (profiles_public) — pour l'affichage seul (ex. "utilisateurs récents"), jamais pour des décisions de permission. */
-  usersPublic: Pick<User, "id" | "nom" | "role" | "actif" | "derniereConnexion">[];
   subDossiers: SubDossier[];
   fichiers: DossierFichier[];
   auditLogs: AuditEntry[];
-  devis: Devis[];
-  transporteurs: Transporteur[];
   factures: Facture[];
-  fournisseurs: Fournisseur[];
-  dossierFournisseurs: DossierFournisseur[];
-  societes: Societe[];
-  contrats: Contrat[];
-  depenses: Depense[];
-  contratPrestations: ContratPrestation[];
   bonsSortieCaisse: BonSortieCaisse[];
 
   // Counters for local reference fallback
@@ -726,16 +561,6 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Dossiers
     source?: AuditSourceRef,
   ) => Promise<void>;
 
-  // ---- Clients ----
-  addClient: (input: ClientInput) => Promise<Client>;
-  updateClient: (id: string, input: ClientInput) => Promise<void>;
-  getClient: (id: string) => Client | undefined;
-
-  // ---- Sociétés (identité légale — pas de création/suppression depuis l'UI) ----
-  updateSociete: (id: string, input: SocieteInput) => Promise<void>;
-  /** Envoie le fichier vers le bucket public societe-logos et renvoie son URL publique (ne persiste pas seule — combiner avec updateSociete). */
-  uploadSocieteLogo: (id: string, file: File) => Promise<string>;
-
   // ---- Comptabilité ----
   recordPayment: (
     ecritureId: string,
@@ -755,15 +580,6 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Dossiers
   addBon: (input: BonInput) => Promise<BonSortie>;
   validateBon: (id: string) => Promise<boolean>;
 
-  // ---- Users ----
-  addUser: (input: UserInput) => Promise<User>;
-  updateUser: (id: string, input: UserInput) => Promise<void>;
-  updateOwnProfile: (id: string, input: { nom: string; email: string }) => Promise<void>;
-  toggleUserActive: (id: string) => Promise<void>;
-  removeUser: (id: string) => Promise<void>;
-  resetUserPassword: (id: string, password: string) => Promise<void>;
-  updateLastLogin: (id: string) => Promise<void>;
-
   // ---- Sous-dossiers ----
   addSubDossier: (input: SubDossierInput) => Promise<SubDossier>;
   updateSubDossier: (id: string, nom: string, description?: string) => Promise<void>;
@@ -774,50 +590,12 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Dossiers
   deleteFichier: (id: string) => Promise<void>;
   deleteFichiersByDossier: (dossierId: string) => Promise<void>;
 
-  // ---- Devis ----
-  addDevis: (input: DevisInput) => Promise<Devis>;
-  updateDevis: (id: string, input: DevisInput) => Promise<void>;
-  updateDevisStatut: (id: string, statut: DevisStatut) => Promise<void>;
-  expireDevisObsoletes: () => Promise<void>;
-  convertDevisToDossier: (id: string, bl: string, camion: string) => Promise<Dossier | null>;
-  removeDevis: (id: string) => Promise<void>;
-
-  // ---- Transporteurs ----
-  addTransporteur: (input: TransporteurInput) => Promise<Transporteur>;
-  updateTransporteur: (id: string, input: TransporteurInput) => Promise<void>;
-  updateTransporteurStatut: (id: string, statut: TransporteurStatut) => Promise<void>;
-  removeTransporteur: (id: string) => Promise<void>;
-
   // ---- Factures ----
   addFacture: (input: FactureInput) => Promise<Facture>;
   updateFacture: (id: string, input: FactureInput) => Promise<void>;
   removeFacture: (id: string) => Promise<void>;
   updateFactureStatut: (id: string, statut: FactureStatut) => Promise<void>;
   recordFacturePaiement: (id: string, montant: number) => Promise<void>;
-
-  // ---- Fournisseurs ----
-  addFournisseur: (input: FournisseurInput) => Promise<Fournisseur>;
-  updateFournisseur: (id: string, input: FournisseurInput) => Promise<void>;
-  removeFournisseur: (id: string) => Promise<void>;
-  addDossierFournisseur: (input: DossierFournisseurInput) => Promise<DossierFournisseur>;
-  updateDossierFournisseur: (id: string, input: Partial<DossierFournisseurInput>) => Promise<void>;
-  removeDossierFournisseur: (id: string) => Promise<void>;
-
-  // ---- Contrats ----
-  addContrat: (input: ContratInput) => Promise<Contrat>;
-  updateContrat: (id: string, input: ContratInput) => Promise<void>;
-  updateContratStatut: (id: string, statut: ContratStatut) => Promise<void>;
-  removeContrat: (id: string) => Promise<void>;
-  getContrat: (id: string) => Contrat | undefined;
-
-  // ---- Dépenses ----
-  addDepense: (input: AddDepenseInput) => Promise<Depense>;
-  removeDepense: (id: string) => Promise<void>;
-
-  // ---- Prestations optionnelles ----
-  addContratPrestation: (input: ContratPrestationInput) => Promise<ContratPrestation>;
-  updateContratPrestation: (id: string, input: Partial<ContratPrestationInput>) => Promise<void>;
-  removeContratPrestation: (id: string) => Promise<void>;
 
   // ---- Bons de sortie de caisse (décaissement) ----
   addBonSortieCaisse: (input: BonSortieCaisseInput) => Promise<BonSortieCaisse>;
@@ -859,24 +637,20 @@ export const useStore = create<SLTTState>()(
       ...createContratFichiersSlice(set, get, api),
       ...createArchivesSlice(set, get, api),
       ...createDossiersSlice(set, get, api),
-      clients: [],
+      ...createTransporteursSlice(set, get, api),
+      ...createSocietesSlice(set, get, api),
+      ...createUsersSlice(set, get, api),
+      ...createClientsSlice(set, get, api),
+      ...createFournisseursSlice(set, get, api),
+      ...createContratsSlice(set, get, api),
+      ...createDevisSlice(set, get, api),
       ecritures: [],
       stock: [],
       mouvements: [],
       bons: [],
-      users: [],
-      usersPublic: [],
       subDossiers: [],
       fichiers: [],
-      devis: [],
-      transporteurs: [],
       factures: [],
-      fournisseurs: [],
-      dossierFournisseurs: [],
-      societes: [],
-      contrats: [],
-      depenses: [],
-      contratPrestations: [],
       bonsSortieCaisse: [],
       auditLogs: [],
       dataLoading: false,
@@ -925,7 +699,7 @@ export const useStore = create<SLTTState>()(
           // Vue optionnelle (migration 20260722) — tant qu'elle n'est pas encore
           // appliquée en base, on dégrade sur users (ou liste vide) plutôt que
           // de faire échouer tout le chargement des données.
-          let profilesPublic: any[] | null = null;
+          let profilesPublic: ProfilePublicRow[] | null = null;
           try {
             const { data, error } = await supabase.from("profiles_public").select("*");
             if (error) throw error;
@@ -949,12 +723,12 @@ export const useStore = create<SLTTState>()(
               users: (profiles || []).map(mapProfileFromDb),
               usersPublic: (
                 profilesPublic ?? (profiles || [])
-              ).map((x: any) => ({
+              ).map((x: ProfilePublicRow) => ({
                 id: x.id,
                 nom: x.nom,
                 role: x.role as UserRole,
                 actif: x.actif,
-                derniereConnexion: x.derniere_connexion,
+                derniereConnexion: x.derniere_connexion || "",
               })),
               societes: (societes || []).map(mapSocieteFromDb),
               loadError: null,
@@ -1066,100 +840,6 @@ export const useStore = create<SLTTState>()(
           auditLogs: [newLog, ...s.auditLogs],
           auditSeq: seq + 1,
         }));
-      },
-
-      // ---- Clients ----
-      addClient: async (input) => {
-        const seq = get().clientSeq;
-
-        
-        const { data, error } = await supabase
-          .from("clients")
-          .insert({
-            nom: input.nom,
-            type: input.type,
-            telephone: input.telephone,
-            email: input.email,
-            adresse: input.adresse,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        const newClient = mapClientFromDb(data);
-        set((s) => ({
-          clients: [newClient, ...s.clients],
-          clientSeq: seq + 1,
-        }));
-        await get().addAuditLog("Clients", "Création", `Client ${input.nom} créé`, newClient.id);
-        return newClient;
-
-      },
-
-      updateClient: async (id, input) => {
-        
-        const { error } = await supabase
-          .from("clients")
-          .update({
-            nom: input.nom,
-            type: input.type,
-            telephone: input.telephone,
-            email: input.email,
-            adresse: input.adresse,
-          })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          clients: s.clients.map((c) => (c.id === id ? { ...c, ...input } : c)),
-        }));
-        await get().addAuditLog("Clients", "Modification", `Client ${input.nom} mis à jour`, id);
-      },
-
-      getClient: (id) => get().clients.find((c) => c.id === id),
-
-      // ---- Sociétés ----
-      updateSociete: async (id, input) => {
-        const { error } = await supabase
-          .from("societes")
-          .update({
-            nom: input.nom,
-            logo_url: input.logoUrl || null,
-            adresse: input.adresse || null,
-            telephone: input.telephone || null,
-            rccm: input.rccm || null,
-            nif: input.nif || null,
-            signataire_dg: input.signataireDg || null,
-            signataire_pdg: input.signatairePdg || null,
-            // `?? true` (et non `|| true`) : false est une valeur valide et
-            // voulue ici, contrairement aux champs texte ci-dessus où vide
-            // doit devenir null.
-            afficher_nom_avec_logo: input.afficherNomAvecLogo ?? true,
-          })
-          .eq("id", id);
-        if (error) throw error;
-
-        set((s) => ({
-          societes: s.societes.map((soc) => (soc.id === id ? { ...soc, ...input } : soc)),
-        }));
-        await get().addAuditLog("Sociétés", "Modification", `Société ${input.nom} mise à jour`);
-      },
-
-      uploadSocieteLogo: async (id, file) => {
-        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
-        const path = `${id}/${Date.now()}-${safeName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("societe-logos")
-          .upload(path, file, { contentType: file.type || "image/png", upsert: false });
-        if (uploadError) throw uploadError;
-
-        // Bucket public (societe-logos) : URL stable, pas de signature à
-        // renouveler — nécessaire puisque le logo est référencé depuis des
-        // documents imprimés (fenêtres ouvertes hors session applicative).
-        const { data } = supabase.storage.from("societe-logos").getPublicUrl(path);
-        return data.publicUrl;
       },
 
       // ---- Comptabilité ----
@@ -1500,128 +1180,6 @@ export const useStore = create<SLTTState>()(
         return true;
       },
 
-      // ---- Users ----
-      addUser: async (input) => {
-        const seq = get().userSeq;
-        const permissions = normalizePermissions(input.permissions);
-
-        
-        const res = await fetchWithAuth("/api/admin/users", {
-          method: "POST",
-          body: JSON.stringify({
-            nom: input.nom,
-            email: input.email,
-            role: input.role,
-            permissions,
-            password: input.motDePasse,
-          }),
-        });
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || "Impossible de créer l'utilisateur.");
-
-        const newUser = mapProfileFromDb(payload.user);
-        set((s) => ({
-          users: [newUser, ...s.users],
-          userSeq: seq + 1,
-        }));
-        await get().addAuditLog("Utilisateurs", "Création", `Utilisateur ${input.nom} créé`);
-        return newUser;
-      },
-
-      updateUser: async (id, input) => {
-        const permissions = normalizePermissions(input.permissions);
-
-        
-        const res = await fetchWithAuth(`/api/admin/users/${id}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            nom: input.nom,
-            email: input.email,
-            role: input.role,
-            permissions,
-          }),
-        });
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || "Impossible de mettre à jour l'utilisateur.");
-      
-
-        set((s) => ({
-          users: s.users.map((u) =>
-            u.id === id ? { ...u, ...input, permissions } : u,
-          ),
-        }));
-        await get().addAuditLog("Utilisateurs", "Modification", `Utilisateur ${input.nom} mis à jour`);
-      },
-
-      toggleUserActive: async (id) => {
-        const user = get().users.find((u) => u.id === id);
-        if (!user) return;
-
-        const newStatus = !user.actif;
-
-        
-        const res = await fetchWithAuth(`/api/admin/users/${id}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            nom: user.nom,
-            email: user.email,
-            role: user.role,
-            permissions: user.permissions,
-            actif: newStatus,
-          }),
-        });
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || "Impossible de modifier le statut.");
-      
-
-        set((s) => ({
-          users: s.users.map((u) => (u.id === id ? { ...u, actif: newStatus } : u)),
-        }));
-        await get().addAuditLog("Utilisateurs", "Modification", `Statut actif de l'utilisateur ${user.nom} basculé à ${newStatus}`);
-      },
-
-      removeUser: async (id) => {
-        const user = get().users.find((u) => u.id === id);
-
-        
-        const res = await fetchWithAuth(`/api/admin/users/${id}`, { method: "DELETE" });
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || "Impossible de supprimer l'utilisateur.");
-      
-
-        set((s) => ({
-          users: s.users.filter((u) => u.id !== id),
-        }));
-
-        if (user) {
-          await get().addAuditLog("Utilisateurs", "Suppression", `Utilisateur ${user.nom} supprimé`);
-        }
-      },
-
-      resetUserPassword: async (id, password) => {
-        
-        const res = await fetchWithAuth(`/api/admin/users/${id}/password`, {
-          method: "POST",
-          body: JSON.stringify({ password }),
-        });
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || "Impossible de réinitialiser le mot de passe.");
-      },
-
-      updateLastLogin: async (id) => {
-        
-        await supabase
-          .from("profiles")
-          .update({ derniere_connexion: new Date().toISOString() })
-          .eq("id", id);
-      
-        set((s) => ({
-          users: s.users.map((u) =>
-            u.id === id ? { ...u, derniereConnexion: new Date().toISOString() } : u
-          ),
-        }));
-      },
-
       // ---- Sous-dossiers ----
       addSubDossier: async (input) => {
         const seq = get().subDossierSeq;
@@ -1751,278 +1309,6 @@ export const useStore = create<SLTTState>()(
         }));
       },
 
-      // ---- Devis ----
-      addDevis: async (input) => {
-        const seq = get().devisSeq;
-        const year = new Date().getFullYear();
-        const reference = `DEVIS-${year}-${pad(seq, 4)}`;
-
-        const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
-
-        
-        const { data, error } = await supabase
-          .from("devis")
-          .insert({
-            reference,
-            client_id: input.clientId,
-            nature: input.nature,
-            droit_douane: input.droitDouane,
-            frais_circuit: input.fraisCircuit,
-            frais_prestation: input.fraisPrestation,
-            total,
-            statut: "Brouillon",
-            date_validite: input.dateValidite,
-            notes: input.notes,
-          })
-          .select("*, clients(nom)")
-          .single();
-
-        if (error) throw error;
-        const newDevis = mapDevisFromDb(data);
-        set((s) => ({
-          devis: [newDevis, ...s.devis],
-          devisSeq: seq + 1,
-        }));
-        await get().addAuditLog("Devis", "Création", `Devis ${reference} créé — Client ${newDevis.clientNom}`);
-        return newDevis;
-
-      },
-
-      updateDevis: async (id, input) => {
-        const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
-
-        
-        const { error } = await supabase
-          .from("devis")
-          .update({
-            client_id: input.clientId,
-            nature: input.nature,
-            droit_douane: input.droitDouane,
-            frais_circuit: input.fraisCircuit,
-            frais_prestation: input.fraisPrestation,
-            total,
-            date_validite: input.dateValidite,
-            notes: input.notes,
-          })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        const existing = get().devis.find((d) => d.id === id);
-        set((s) => ({
-          devis: s.devis.map((d) =>
-            d.id === id
-              ? {
-                  ...d,
-                  ...input,
-                  total,
-                }
-              : d
-          ),
-        }));
-        if (existing) {
-          await get().addAuditLog("Devis", "Modification", `Devis ${existing.reference} modifié`);
-        }
-      },
-
-      updateDevisStatut: async (id, statut) => {
-        const existingBefore = get().devis.find((d) => d.id === id);
-        if (existingBefore && !canTransitionDevis(existingBefore.statut, statut)) {
-          throw new Error(`Transition non autorisée : ${existingBefore.statut} → ${statut}.`);
-        }
-
-        const { error } = await supabase
-          .from("devis")
-          .update({ statut })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        const existing = get().devis.find((d) => d.id === id);
-        set((s) => ({
-          devis: s.devis.map((d) => (d.id === id ? { ...d, statut } : d)),
-        }));
-        if (existing) {
-          await get().addAuditLog("Devis", "Modification", `Devis ${existing.reference} → ${statut}`);
-        }
-      },
-
-      expireDevisObsoletes: async () => {
-        const today = new Date().toISOString().slice(0, 10);
-        const obsoletes = get().devis.filter(
-          (d) => d.dateValidite < today && d.statut !== "Accepté" && d.statut !== "Refusé" && d.statut !== "Expiré"
-        );
-
-        if (obsoletes.length === 0) return;
-
-        
-        await supabase
-          .from("devis")
-          .update({ statut: "Expiré" })
-          .in("id", obsoletes.map((o) => o.id));
-      
-
-        set((s) => ({
-          devis: s.devis.map((d) =>
-            d.dateValidite < today && d.statut !== "Accepté" && d.statut !== "Refusé"
-              ? { ...d, statut: "Expiré" as DevisStatut }
-              : d
-          ),
-        }));
-        await get().addAuditLog(
-          "Devis",
-          "Modification",
-          `${obsoletes.length} devis expiré${obsoletes.length !== 1 ? "s" : ""} automatiquement`,
-        );
-      },
-      convertDevisToDossier: async (id, bl, camion) => {
-        const dev = get().devis.find((d) => d.id === id);
-        if (!dev || dev.dossierId) return null; // déjà converti — pas de doublon
-        if (dev.statut !== "Accepté") {
-          throw new Error("Seul un devis Accepté peut être converti en dossier.");
-        }
-
-        const inputDossier: DossierInput = {
-          clientId: dev.clientId,
-          clientNom: dev.clientNom,
-          nature: dev.nature || `Devis ${dev.reference} : ${dev.notes || "transit"}`,
-          bl,
-          camion,
-          date: new Date().toISOString().slice(0, 10),
-          droitDouane: dev.droitDouane,
-          fraisCircuit: dev.fraisCircuit,
-          fraisPrestation: dev.fraisPrestation,
-          montantInvesti: dev.total,
-          statut: "En cours",
-          notes: dev.notes,
-        };
-
-        const newDossier = await get().addDossier(inputDossier);
-
-        // Update the devis status and link it to the new dossier
-        
-        const { error } = await supabase
-          .from("devis")
-          .update({ statut: "Accepté", dossier_id: newDossier.id })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          devis: s.devis.map((d) =>
-            d.id === id ? { ...d, statut: "Accepté", dossierId: newDossier.id } : d
-          ),
-        }));
-
-        await get().addAuditLog(
-          "Devis",
-          "Validation",
-          `Devis ${dev.reference} converti en dossier ${newDossier.reference}`,
-        );
-        return newDossier;
-      },
-
-      removeDevis: async (id) => {
-        const existing = get().devis.find((d) => d.id === id);
-        const { error } = await supabase.from("devis").delete().eq("id", id);
-        if (error) throw error;
-
-        set((s) => ({
-          devis: s.devis.filter((d) => d.id !== id),
-        }));
-        if (existing) {
-          await get().addAuditLog("Devis", "Suppression", `Devis ${existing.reference} supprimé`);
-        }
-      },
-
-      // ---- Transporteurs ----
-      addTransporteur: async (input) => {
-        const seq = get().transporteurSeq;
-
-        
-        const { data, error } = await supabase
-          .from("transporteurs")
-          .insert({
-            nom: input.nom,
-            contact: input.contact,
-            telephone: input.telephone,
-            email: input.email,
-            vehicule: input.vehicule,
-            immatriculation: input.immatriculation,
-            trajet: input.trajet,
-            capacite: input.capacite,
-            statut: input.statut,
-            notes: input.notes,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        const newTr = mapTransporteurFromDb(data);
-        set((s) => ({
-          transporteurs: [newTr, ...s.transporteurs],
-          transporteurSeq: seq + 1,
-        }));
-        await get().addAuditLog("Transporteurs", "Création", `Transporteur ${input.nom} ajouté`);
-        return newTr;
-
-      },
-
-      updateTransporteur: async (id, input) => {
-        
-        const { error } = await supabase
-          .from("transporteurs")
-          .update({
-            nom: input.nom,
-            contact: input.contact,
-            telephone: input.telephone,
-            email: input.email,
-            vehicule: input.vehicule,
-            immatriculation: input.immatriculation,
-            trajet: input.trajet,
-            capacite: input.capacite,
-            statut: input.statut,
-            notes: input.notes,
-          })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, ...input } : t)),
-        }));
-        await get().addAuditLog("Transporteurs", "Modification", `Transporteur ${input.nom} mis à jour`);
-      },
-
-      updateTransporteurStatut: async (id, statut) => {
-        
-        const { error } = await supabase
-          .from("transporteurs")
-          .update({ statut })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, statut } : t)),
-        }));
-      },
-
-      removeTransporteur: async (id) => {
-        const trans = get().transporteurs.find((t) => t.id === id);
-        
-        const { error } = await supabase.from("transporteurs").delete().eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          transporteurs: s.transporteurs.filter((t) => t.id !== id),
-        }));
-
-        if (trans) {
-          await get().addAuditLog("Transporteurs", "Suppression", `Transporteur ${trans.nom} supprimé`);
-        }
-      },
 
       // ---- Factures ----
       addFacture: async (input) => {
@@ -2268,445 +1554,6 @@ export const useStore = create<SLTTState>()(
         );
       },
 
-      updateOwnProfile: async (id, input) => {
-        const trimmedNom = input.nom.trim();
-        const trimmedEmail = input.email.trim();
-        if (!trimmedNom) throw new Error("Le nom est requis.");
-        if (!trimmedEmail) throw new Error("L'e-mail est requis.");
-
-        const existing = get().users.find((u) => u.id === id);
-        if (!existing) throw new Error("Utilisateur introuvable.");
-
-        
-        const { error } = await supabase
-          .from("profiles")
-          .update({ nom: trimmedNom, email: trimmedEmail })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          users: s.users.map((u) =>
-            u.id === id ? { ...u, nom: trimmedNom, email: trimmedEmail } : u,
-          ),
-        }));
-
-        useNav.getState().setCurrentUserName(trimmedNom);
-        await get().addAuditLog("Utilisateurs", "Modification", `Profil de ${trimmedNom} mis à jour`);
-      },
-
-      // ---- Fournisseurs ----
-      addFournisseur: async (input) => {
-        const seq = get().fournisseurSeq;
-
-        
-        const { data, error } = await supabase
-          .from("fournisseurs")
-          .insert({
-            nom: input.nom,
-            type: input.type,
-            contact: input.contact,
-            telephone: input.telephone,
-            email: input.email,
-            adresse: input.adresse,
-            tarif_contractuel: input.tarifContractuel,
-            statut: input.statut || "Actif",
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        const newFourn = mapFournisseurFromDb(data);
-        set((s) => ({
-          fournisseurs: [newFourn, ...s.fournisseurs],
-          fournisseurSeq: seq + 1,
-        }));
-        await get().addAuditLog("Fournisseurs", "Création", `Fournisseur ${input.nom} créé`);
-        return newFourn;
-
-      },
-      updateFournisseur: async (id, input) => {
-        
-        const { error } = await supabase
-          .from("fournisseurs")
-          .update({
-            nom: input.nom,
-            type: input.type,
-            contact: input.contact,
-            telephone: input.telephone,
-            email: input.email,
-            adresse: input.adresse,
-            tarif_contractuel: input.tarifContractuel,
-            statut: input.statut,
-          })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
-        }));
-        await get().addAuditLog("Fournisseurs", "Modification", `Fournisseur ${input.nom} mis à jour`);
-      },
-
-      removeFournisseur: async (id) => {
-        const fourn = get().fournisseurs.find((f) => f.id === id);
-        
-        const { error } = await supabase.from("fournisseurs").delete().eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => ({
-          fournisseurs: s.fournisseurs.filter((f) => f.id !== id),
-          dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.fournisseurId !== id),
-        }));
-
-        if (fourn) {
-          await get().addAuditLog("Fournisseurs", "Suppression", `Fournisseur ${fourn.nom} supprimé`);
-        }
-      },
-
-      addDossierFournisseur: async (input) => {
-        const seq = get().dossierFournisseurSeq;
-
-        
-        const { data, error } = await supabase
-          .from("dossier_fournisseurs")
-          .insert({
-            dossier_id: input.dossierId,
-            fournisseur_id: input.fournisseurId,
-            description: input.description,
-            montant_budgete: input.montantBudgete,
-            montant_reel: input.montantReel,
-            statut: input.statut || "En attente",
-            date: input.date,
-          })
-          .select("*, fournisseurs(nom, type), dossiers(reference)")
-          .single();
-
-        if (error) throw error;
-        const newDf = mapDossierFournisseurFromDb(data);
-        set((s) => {
-          const updatedDf = [newDf, ...s.dossierFournisseurs];
-          return {
-            dossierFournisseurs: updatedDf,
-            dossierFournisseurSeq: seq + 1,
-            fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
-          };
-        });
-        return newDf;
-
-      },
-
-      updateDossierFournisseur: async (id, input) => {
-        
-        const { error } = await supabase
-          .from("dossier_fournisseurs")
-          .update({
-            dossier_id: input.dossierId,
-            fournisseur_id: input.fournisseurId,
-            description: input.description,
-            montant_budgete: input.montantBudgete,
-            montant_reel: input.montantReel,
-            statut: input.statut,
-            date: input.date,
-          })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => {
-          const updatedDf = s.dossierFournisseurs.map((df) => (df.id === id ? { ...df, ...input } : df));
-          return {
-            dossierFournisseurs: updatedDf,
-            fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
-          };
-        });
-      },
-
-      removeDossierFournisseur: async (id) => {
-        
-        const { error } = await supabase.from("dossier_fournisseurs").delete().eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => {
-          const updatedDf = s.dossierFournisseurs.filter((df) => df.id !== id);
-          return {
-            dossierFournisseurs: updatedDf,
-            fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
-          };
-        });
-      },
-
-      // ---- Contrats ----
-      addContrat: async (input) => {
-        const seq = get().contratSeq;
-        const year = new Date().getFullYear();
-        const reference = `CTR-${year}-${pad(seq, 4)}`;
-        const creePar = getConnectedUserName();
-
-        const { data, error } = await supabase
-          .from("contrats")
-          .insert({
-            reference,
-            societe_id: input.societeId,
-            client_id: input.clientId,
-            objet: input.objet,
-            date_debut: input.dateDebut,
-            date_fin: input.dateFin || null,
-            montant: input.montant,
-            statut: input.statut,
-            notes: input.notes || null,
-            cree_par: creePar,
-          })
-          .select("*, clients(nom), societes(nom)")
-          .single();
-
-        if (error) throw error;
-        const raw = mapContratFromDb(data);
-        set((s) => ({
-          contrats: syncContratStats(s.depenses, s.contratPrestations, [raw, ...s.contrats]),
-          contratSeq: seq + 1,
-        }));
-        await get().addAuditLog("Contrats", "Création", `Contrat ${reference} créé — ${input.clientNom}`);
-        return get().contrats.find((c) => c.id === raw.id)!;
-      },
-
-      updateContrat: async (id, input) => {
-        const { error } = await supabase
-          .from("contrats")
-          .update({
-            societe_id: input.societeId,
-            client_id: input.clientId,
-            objet: input.objet,
-            date_debut: input.dateDebut,
-            date_fin: input.dateFin || null,
-            montant: input.montant,
-            statut: input.statut,
-            notes: input.notes || null,
-          })
-          .eq("id", id);
-        if (error) throw error;
-
-        const existing = get().contrats.find((c) => c.id === id);
-        const societeChanged = !!existing && existing.societeId !== input.societeId;
-
-        // La société d'une dépense est dénormalisée depuis son contrat à la
-        // création (perf/simplicité de lecture) — si le contrat change de
-        // société, il faut recaler les dépenses déjà créées pour ne pas
-        // fausser silencieusement le Bénéfice par société.
-        if (societeChanged) {
-          const { error: depensesError } = await supabase
-            .from("depenses")
-            .update({ societe_id: input.societeId })
-            .eq("contrat_id", id);
-          if (depensesError) throw depensesError;
-        }
-
-        set((s) => ({
-          contrats: s.contrats.map((c) =>
-            c.id === id
-              ? { ...c, ...input, clientNom: input.clientNom }
-              : c,
-          ),
-          depenses: societeChanged
-            ? s.depenses.map((d) => (d.contratId === id ? { ...d, societeId: input.societeId } : d))
-            : s.depenses,
-        }));
-        if (existing) {
-          await get().addAuditLog(
-            "Contrats",
-            "Modification",
-            societeChanged
-              ? `Contrat ${existing.reference} modifié — société changée, dépenses liées recalées`
-              : `Contrat ${existing.reference} modifié`,
-          );
-        }
-      },
-
-      updateContratStatut: async (id, statut) => {
-        const { error } = await supabase.from("contrats").update({ statut }).eq("id", id);
-        if (error) throw error;
-        const existing = get().contrats.find((c) => c.id === id);
-        set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
-        if (existing) {
-          await get().addAuditLog("Contrats", "Modification", `Contrat ${existing.reference} → ${statut}`);
-        }
-      },
-
-      removeContrat: async (id) => {
-        const contrat = get().contrats.find((c) => c.id === id);
-        if (!contrat) return;
-
-        // Garde client-side — message clair AVANT l'appel réseau. La contrainte FK
-        // (NO ACTION sur depenses.contrat_id / contrat_prestations.contrat_id) est
-        // la garde de dernier recours côté DB en cas de course (2 onglets, etc.).
-        const depensesLiees = get().depenses.filter((d) => d.contratId === id).length;
-        const prestationsLiees = get().contratPrestations.filter((p) => p.contratId === id).length;
-        if (depensesLiees > 0 || prestationsLiees > 0) {
-          throw new Error(
-            `Impossible de supprimer le contrat ${contrat.reference} : il porte ${depensesLiees} dépense(s) et ${prestationsLiees} prestation(s). Retirez-les d'abord.`,
-          );
-        }
-
-        const fichiersLies = get().contratFichiers.filter((f) => f.contratId === id);
-        if (fichiersLies.length > 0) {
-          const { error: storageErr } = await supabase.storage
-            .from("contrat-fichiers")
-            .remove(fichiersLies.map((f) => f.storagePath));
-          if (storageErr) throw storageErr;
-          const { error: fichiersErr } = await supabase
-            .from("contrat_fichiers")
-            .delete()
-            .eq("contrat_id", id);
-          if (fichiersErr) throw fichiersErr;
-        }
-
-        const { error } = await supabase.from("contrats").delete().eq("id", id);
-        if (error) throw error;
-
-        set((s) => ({
-          contrats: s.contrats.filter((c) => c.id !== id),
-          contratFichiers: s.contratFichiers.filter((f) => f.contratId !== id),
-        }));
-        await get().addAuditLog("Contrats", "Suppression", `Contrat ${contrat.reference} supprimé`);
-      },
-
-      getContrat: (id) => get().contrats.find((c) => c.id === id),
-
-      // ---- Dépenses ----
-      addDepense: async (input) => {
-        const seq = get().depenseSeq;
-        const contrat = get().contrats.find((c) => c.id === input.contratId);
-        if (!contrat) throw new Error("Contrat introuvable.");
-        const creePar = getConnectedUserName();
-
-        let justificatifPath: string | undefined;
-        if (input.justificatifDataUrl && input.justificatifNom) {
-          const res = await fetch(input.justificatifDataUrl);
-          const blob = await res.blob();
-          const safeName = input.justificatifNom.replace(/[^\w.\-]+/g, "_");
-          justificatifPath = `${input.contratId}/depenses/${Date.now()}-${safeName}`;
-          const { error: uploadError } = await supabase.storage
-            .from("contrat-fichiers")
-            .upload(justificatifPath, blob, { contentType: blob.type || "application/octet-stream", upsert: false });
-          if (uploadError) throw uploadError;
-        }
-
-        const { data, error } = await supabase
-          .from("depenses")
-          .insert({
-            contrat_id: input.contratId,
-            societe_id: contrat.societeId,
-            libelle: input.libelle,
-            montant: input.montant,
-            date_depense: input.dateDepense,
-            mode_paiement: input.modePaiement,
-            justificatif_path: justificatifPath || null,
-            note: input.note || null,
-            cree_par: creePar,
-          })
-          .select()
-          .single();
-        if (error) throw error;
-
-        const newDepense = mapDepenseFromDb(data);
-        set((s) => {
-          const updatedDepenses = [newDepense, ...s.depenses];
-          return {
-            depenses: updatedDepenses,
-            depenseSeq: seq + 1,
-            contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
-          };
-        });
-        await get().addAuditLog(
-          "Dépenses",
-          "Création",
-          `Dépense "${input.libelle}" (${input.montant.toLocaleString("fr-FR")} FCFA) — contrat ${contrat.reference}`,
-        );
-        return newDepense;
-      },
-
-      removeDepense: async (id) => {
-        const depense = get().depenses.find((d) => d.id === id);
-        if (depense?.justificatifPath) {
-          await supabase.storage.from("contrat-fichiers").remove([depense.justificatifPath]);
-        }
-        const { error } = await supabase.from("depenses").delete().eq("id", id);
-        if (error) throw error;
-        set((s) => {
-          const updatedDepenses = s.depenses.filter((d) => d.id !== id);
-          return {
-            depenses: updatedDepenses,
-            contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
-          };
-        });
-        if (depense) {
-          await get().addAuditLog("Dépenses", "Suppression", `Dépense "${depense.libelle}" supprimée`);
-        }
-      },
-
-      // ---- Prestations optionnelles ----
-      addContratPrestation: async (input) => {
-        const seq = get().contratPrestationSeq;
-        const creePar = getConnectedUserName();
-        const { data, error } = await supabase
-          .from("contrat_prestations")
-          .insert({
-            contrat_id: input.contratId,
-            libelle: input.libelle,
-            description: input.description || null,
-            montant: input.montant ?? null,
-            statut: input.statut,
-            date_prevue: input.datePrevue || null,
-            date_realisation: input.dateRealisation || null,
-            cree_par: creePar,
-          })
-          .select()
-          .single();
-        if (error) throw error;
-
-        const newPrestation = mapContratPrestationFromDb(data);
-        set((s) => {
-          const updated = [newPrestation, ...s.contratPrestations];
-          return {
-            contratPrestations: updated,
-            contratPrestationSeq: seq + 1,
-            contrats: syncContratStats(s.depenses, updated, s.contrats),
-          };
-        });
-        return newPrestation;
-      },
-
-      updateContratPrestation: async (id, input) => {
-        const { error } = await supabase
-          .from("contrat_prestations")
-          .update({
-            libelle: input.libelle,
-            description: input.description,
-            montant: input.montant,
-            statut: input.statut,
-            date_prevue: input.datePrevue,
-            date_realisation: input.dateRealisation,
-          })
-          .eq("id", id);
-        if (error) throw error;
-
-        set((s) => {
-          const updated = s.contratPrestations.map((p) => (p.id === id ? { ...p, ...input } : p));
-          return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
-        });
-      },
-
-      removeContratPrestation: async (id) => {
-        const { error } = await supabase.from("contrat_prestations").delete().eq("id", id);
-        if (error) throw error;
-        set((s) => {
-          const updated = s.contratPrestations.filter((p) => p.id !== id);
-          return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
-        });
-      },
 
       // ---- Bons de sortie de caisse (décaissement — sans rapport avec le stock) ----
       addBonSortieCaisse: async (input) => {

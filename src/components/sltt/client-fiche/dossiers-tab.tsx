@@ -25,7 +25,7 @@ type DossiersTabProps = {
   dossierPages: number;
   onPageChange: (page: number) => void;
   onOpenDossier: (id: string) => void;
-  onCreateDossier: () => void;
+  onCreateDossier?: () => void;
 };
 
 export function DossiersTab({
@@ -44,10 +44,12 @@ export function DossiersTab({
           <TabEmptyState
             label="Aucun dossier pour ce client."
             action={
-              <Button size="sm" onClick={onCreateDossier}>
-                <Plus className="size-4" />
-                Créer un dossier
-              </Button>
+              onCreateDossier ? (
+                <Button size="sm" onClick={onCreateDossier}>
+                  <Plus className="size-4" />
+                  Créer un dossier
+                </Button>
+              ) : undefined
             }
           />
         ) : (

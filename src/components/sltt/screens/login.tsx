@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useNav } from "@/lib/nav-store";
 import { supabase } from "@/lib/supabase";
 import { insertAuditLog } from "@/lib/audit";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,8 +94,8 @@ export function LoginScreen() {
       });
 
       loginNav(profile.role, profile.nom, profile.id, rememberMe);
-    } catch (e: any) {
-      setError(e.message || "Une erreur est survenue lors de la connexion.");
+    } catch (e) {
+      setError(getErrorMessage(e, "Une erreur est survenue lors de la connexion."));
     } finally {
       setLoading(false);
     }

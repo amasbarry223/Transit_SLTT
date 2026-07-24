@@ -12,15 +12,9 @@ import {
   resolveSlttBrand,
   resolveSocieteDisplayNameById,
   resolveTransitSociete,
-  SLTT_SOCIETE_ID,
 } from "@/lib/societe-brand";
 
-export {
-  LEGACY_TRANSIT_SOCIETE_ID,
-  resolveSlttBrand,
-  resolveTransitSociete,
-  SLTT_SOCIETE_ID,
-};
+export { resolveSlttBrand };
 
 export type ClasseurType = "Dossier" | "Paiement" | "Facture";
 

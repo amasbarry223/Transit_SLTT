@@ -17,6 +17,7 @@ import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { InfoCallout } from "@/components/sltt/info-callout";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { TransitionDialog } from "@/components/sltt/dossier-transition-dialog";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,9 @@ function DossierFormInner() {
   const existing =
     isEdit && selectedId ? dossiers.find((d) => d.id === selectedId) : undefined;
 
-  const form = useDossierFormState({ existing, isEdit, dossierSeq });
+  const form = useDossierFormState({ existing, isEdit, dossierSeq, societes });
+
+  useUnsavedChangesWarning(form.isDirty);
 
   if (isEdit && selectedId && !existing) {
     return (

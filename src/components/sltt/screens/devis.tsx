@@ -26,9 +26,9 @@ import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { UI_LOAD_DELAY_MS } from "@/lib/constants";
-import { exportToCSV, printHTML, printInvoice, htmlEscape } from "@/lib/export";
+import { exportToExcel, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
@@ -395,8 +395,8 @@ export function DevisScreen() {
       }
       setFormOpen(false);
       setEditDevis(null);
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de sauvegarder le devis", variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de sauvegarder le devis"), variant: "destructive" });
     }
   }
 
@@ -404,8 +404,8 @@ export function DevisScreen() {
     try {
       await updateDevisStatut(d.id, toStatut);
       toast({ title: "Statut mis à jour", description: `${d.reference} → ${toStatut}` });
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de mettre à jour le statut", variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de mettre à jour le statut"), variant: "destructive" });
     }
   }
 
@@ -427,7 +427,7 @@ export function DevisScreen() {
     }, d.reference, resolveSlttBrand(societes));
   }
 
-  function handleExportCSV() {
+  async function handleExportExcel() {
     if (filtered.length === 0) {
       toast({
         title: "Rien à exporter",
@@ -436,24 +436,28 @@ export function DevisScreen() {
       });
       return;
     }
-    exportToCSV(
-      `devis-sltt-${new Date().toISOString().slice(0, 10)}`,
-      [
-        { header: "Référence",       accessor: (d: Devis) => d.reference },
-        { header: "Client",          accessor: (d: Devis) => d.clientNom },
-        { header: "Nature",          accessor: (d: Devis) => d.nature },
-        { header: "Droits douane",   accessor: (d: Devis) => d.droitDouane },
-        { header: "Frais circuit",   accessor: (d: Devis) => d.fraisCircuit },
-        { header: "Prestation SLTT", accessor: (d: Devis) => d.fraisPrestation },
-        { header: "Total estimé",    accessor: (d: Devis) => d.total },
-        { header: "Date création",   accessor: (d: Devis) => formatDateShort(d.dateCreation) },
-        { header: "Date validité",   accessor: (d: Devis) => formatDateShort(d.dateValidite) },
-        { header: "Statut",          accessor: (d: Devis) => d.statut },
-      ],
-      filtered,
-      { module: "Devis" },
-    );
-    toast({ title: "Export CSV généré", description: `${filtered.length} devis exportés.` });
+    try {
+      await exportToExcel(
+        `devis-sltt-${new Date().toISOString().slice(0, 10)}`,
+        [
+          { header: "Référence",       accessor: (d: Devis) => d.reference },
+          { header: "Client",          accessor: (d: Devis) => d.clientNom },
+          { header: "Nature",          accessor: (d: Devis) => d.nature },
+          { header: "Droits douane",   accessor: (d: Devis) => d.droitDouane },
+          { header: "Frais circuit",   accessor: (d: Devis) => d.fraisCircuit },
+          { header: "Prestation SLTT", accessor: (d: Devis) => d.fraisPrestation },
+          { header: "Total estimé",    accessor: (d: Devis) => d.total },
+          { header: "Date création",   accessor: (d: Devis) => formatDateShort(d.dateCreation) },
+          { header: "Date validité",   accessor: (d: Devis) => formatDateShort(d.dateValidite) },
+          { header: "Statut",          accessor: (d: Devis) => d.statut },
+        ],
+        filtered,
+        { module: "Devis" },
+      );
+    } catch {
+      return;
+    }
+    toast({ title: "Export Excel généré", description: `${filtered.length} devis exportés.` });
   }
 
   function handleExportPDF() {
@@ -579,7 +583,7 @@ export function DevisScreen() {
               <FileText className="size-4" />
             </Button>
             <Button variant="outline" size="icon" className="size-9 shrink-0"
-              onClick={handleExportCSV} disabled={filtered.length === 0} title="Exporter CSV">
+              onClick={handleExportExcel} disabled={filtered.length === 0} title="Exporter Excel">
               <FileSpreadsheet className="size-4" />
             </Button>
           </div>

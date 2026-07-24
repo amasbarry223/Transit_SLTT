@@ -32,7 +32,7 @@ import {
 } from "@/lib/classeur";
 import { resolveClasseurPrintBrand, resolveTransitSociete } from "@/lib/societe-brand";
 import { TOAST_COPY_RESET_MS } from "@/lib/constants";
-import { exportToCSV, printClasseur } from "@/lib/export";
+import { exportToExcel, printClasseur } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
@@ -67,6 +67,8 @@ export function ClientFicheScreen() {
   // rôle comme Agent de transit qui n'a que clients:read ne doit pas y
   // accéder via la fiche client.
   const canSeeCompta = usePermission("comptabilite:read");
+  const canWriteDossiers = usePermission("dossiers:write");
+  const canWriteFactures = usePermission("factures:write");
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
@@ -228,24 +230,40 @@ export function ClientFicheScreen() {
     window.open(`https://wa.me/${phone}?text=${encoded}`, "_blank");
   }
 
-  function handleExportClasseurCsv() {
+  async function handleExportClasseurExcel() {
     if (!client) return;
-    exportToCSV(
-      `classeur-${client.nom.replace(/\s+/g, "-").toLowerCase()}`,
-      [
-        { header: "Date", accessor: (r: (typeof classeurFiltered)[number]) => formatDateShort(r.date) },
-        { header: "Société", accessor: (r: (typeof classeurFiltered)[number]) => r.societeNom },
-        { header: "Type", accessor: (r: (typeof classeurFiltered)[number]) => r.type },
-        { header: "Référence", accessor: (r: (typeof classeurFiltered)[number]) => r.reference },
-        { header: "Libellé", accessor: (r: (typeof classeurFiltered)[number]) => r.libelle },
-        { header: "Débit", accessor: (r: (typeof classeurFiltered)[number]) => r.debit },
-        { header: "Crédit", accessor: (r: (typeof classeurFiltered)[number]) => r.credit },
-        { header: "Solde cumulé", accessor: (r: (typeof classeurFiltered)[number]) => r.soldeCumule },
-        { header: "Statut", accessor: (r: (typeof classeurFiltered)[number]) => r.statut },
-      ],
-      classeurFiltered,
-      { module: "Clients" },
-    );
+    if (classeurFiltered.length === 0) {
+      toast({
+        title: "Rien à exporter",
+        description: "Aucune écriture ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      await exportToExcel(
+        `classeur-${client.nom.replace(/\s+/g, "-").toLowerCase()}`,
+        [
+          { header: "Date", accessor: (r: (typeof classeurFiltered)[number]) => formatDateShort(r.date) },
+          { header: "Société", accessor: (r: (typeof classeurFiltered)[number]) => r.societeNom },
+          { header: "Type", accessor: (r: (typeof classeurFiltered)[number]) => r.type },
+          { header: "Référence", accessor: (r: (typeof classeurFiltered)[number]) => r.reference },
+          { header: "Libellé", accessor: (r: (typeof classeurFiltered)[number]) => r.libelle },
+          { header: "Débit", accessor: (r: (typeof classeurFiltered)[number]) => r.debit },
+          { header: "Crédit", accessor: (r: (typeof classeurFiltered)[number]) => r.credit },
+          { header: "Solde cumulé", accessor: (r: (typeof classeurFiltered)[number]) => r.soldeCumule },
+          { header: "Statut", accessor: (r: (typeof classeurFiltered)[number]) => r.statut },
+        ],
+        classeurFiltered,
+        { module: "Clients" },
+      );
+    } catch {
+      return;
+    }
+    toast({
+      title: "Export Excel généré",
+      description: `${classeurFiltered.length} écriture${classeurFiltered.length !== 1 ? "s" : ""} exportée${classeurFiltered.length !== 1 ? "s" : ""}.`,
+    });
   }
 
   function handlePrintClasseur() {
@@ -384,7 +402,7 @@ export function ClientFicheScreen() {
         client={client}
         totalDu={totalDu}
         onEdit={canWrite ? openEditDialog : undefined}
-        onNewDossier={() => openDossier(null, "create")}
+        onNewDossier={canWriteDossiers ? () => openDossier(null, "create") : undefined}
         onRelance={openRelanceDialog}
       />
 
@@ -495,7 +513,7 @@ export function ClientFicheScreen() {
           classeurTotals={classeurTotals}
           classeurPeriodFiltered={classeurPeriodFiltered}
           clientAuditHistory={clientAuditHistory}
-          onExportCsv={handleExportClasseurCsv}
+          onExportExcel={handleExportClasseurExcel}
           onPrint={handlePrintClasseur}
           onRowClick={openClasseurSuivi}
         />

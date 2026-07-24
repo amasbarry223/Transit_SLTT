@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { Archive, TypeDocument } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
+import type { ArchiveRow } from "@/lib/db-rows";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 
 interface AddArchiveInput {
@@ -17,7 +18,7 @@ interface AddArchiveInput {
   societeId?: string;
 }
 
-export function mapArchiveFromDb(x: any): Archive {
+export function mapArchiveFromDb(x: ArchiveRow): Archive {
   return {
     id: x.id,
     nom: x.nom,

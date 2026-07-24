@@ -416,7 +416,6 @@ function SocieteCard({
                 {uploadingLogo ? (
                   <Loader2 className="size-5 animate-spin text-slate-400" />
                 ) : values.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- logo distant (Supabase Storage), pas un asset local optimisable par next/image
                   <img src={values.logoUrl} alt="" className="size-full object-contain" />
                 ) : (
                   <ImagePlus className="size-5 text-slate-300 dark:text-slate-600" />

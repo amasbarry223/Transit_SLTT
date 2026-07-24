@@ -125,18 +125,3 @@ export async function insertAuditLog(params: {
     return null;
   }
 }
-
-/** Journalise un export CSV/Excel sans bloquer l'UI. */
-export function logExportAudit(
-  module: AuditModule,
-  filename: string,
-  rowCount: number,
-  userName: string,
-): void {
-  void insertAuditLog({
-    module,
-    action: "Export",
-    detail: `Export ${filename} — ${rowCount} ligne${rowCount !== 1 ? "s" : ""}`,
-    userName,
-  });
-}

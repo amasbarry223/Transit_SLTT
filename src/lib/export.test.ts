@@ -1,103 +1,195 @@
+import ExcelJS from "exceljs";
+
 import { describe, expect, it } from "vitest";
-import { buildCsvBlob, shouldShowTva } from "./export";
 
-interface TransporteurRow {
-  nom: string;
-  contact: string;
-  telephone: string;
-  vehicule: string;
-  statut: string;
+import { shouldShowTva } from "./export";
+
+import {
+
+  normalizeExportCell,
+
+  normalizeExportRows,
+
+} from "./export/normalize-export-cell";
+
+import { buildXlsxBuffer, sanitizeExcelCell } from "./export/xlsx-builder";
+
+
+
+function isValidXlsxBytes(bytes: Uint8Array): boolean {
+
+  return bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b;
+
 }
 
-const columns = [
-  { header: "Société", accessor: (t: TransporteurRow) => t.nom },
-  { header: "Contact", accessor: (t: TransporteurRow) => t.contact },
-  { header: "Téléphone", accessor: (t: TransporteurRow) => t.telephone },
-  { header: "Véhicule", accessor: (t: TransporteurRow) => t.vehicule },
-  { header: "Statut", accessor: (t: TransporteurRow) => t.statut },
-];
 
-const sampleRows: TransporteurRow[] = [
-  {
-    nom: "Konaté Transport",
-    contact: "Mamadou Konaté",
-    telephone: "+223 76 12 34 56",
-    vehicule: "Semi-remorque",
-    statut: "Actif",
-  },
-  {
-    nom: "Golaine Tech",
-    contact: "Ibrahim Diarra",
-    telephone: "+223 66 98 77 44",
-    vehicule: "Camion",
-    statut: "Actif",
-  },
-];
 
-async function blobToBytes(blob: Blob): Promise<Uint8Array> {
-  const buffer = await blob.arrayBuffer();
-  return new Uint8Array(buffer);
-}
+describe("normalizeExportCell", () => {
 
-describe("buildCsvBlob", () => {
-  it("produit un blob non vide avec BOM UTF-8", async () => {
-    const blob = buildCsvBlob(columns, sampleRows);
-    expect(blob.size).toBeGreaterThan(0);
+  it("normalise null, undefined, NaN et booléens", () => {
 
-    const bytes = await blobToBytes(blob);
-    expect(bytes[0]).toBe(0xef);
-    expect(bytes[1]).toBe(0xbb);
-    expect(bytes[2]).toBe(0xbf);
+    expect(normalizeExportCell(null)).toBe("");
+
+    expect(normalizeExportCell(undefined)).toBe("");
+
+    expect(normalizeExportCell(Number.NaN)).toBe("");
+
+    expect(normalizeExportCell(true)).toBe("Oui");
+
+    expect(normalizeExportCell(false)).toBe("Non");
+
   });
 
-  it("contient sep=;, les en-têtes et les données", async () => {
-    const blob = buildCsvBlob(columns, sampleRows);
-    const text = new TextDecoder("utf-8").decode(await blob.arrayBuffer());
 
-    expect(text).toContain("sep=;");
-    expect(text).toContain("Société");
-    expect(text).toContain("Contact");
-    expect(text).toContain("Konaté Transport");
-    expect(text).toContain("Golaine Tech");
-    expect(text).toContain("Semi-remorque");
+
+  it("normalise les dates et conserve les nombres finis", () => {
+
+    expect(normalizeExportCell(new Date("2026-07-23T12:00:00Z"))).toBe(
+
+      "2026-07-23",
+
+    );
+
+    expect(normalizeExportCell(42)).toBe(42);
+
   });
 
-  it("retourne uniquement l'en-tête si aucune ligne de données", async () => {
-    const blob = buildCsvBlob(columns, []);
-    const text = new TextDecoder("utf-8").decode(await blob.arrayBuffer());
 
-    expect(text).toContain("sep=;");
-    expect(text).toContain("Société");
-    expect(text).not.toContain("Konaté Transport");
+
+  it("normalise les lignes avec padding de colonnes", () => {
+
+    expect(normalizeExportRows([[null, true], ["x"]], 3)).toEqual([
+
+      ["", "Oui", ""],
+
+      ["x", "", ""],
+
+    ]);
+
   });
 
-  it("neutralise l'injection de formule Excel (=, +, -, @)", async () => {
-    const rows: TransporteurRow[] = [
-      {
-        nom: "=CMD(calc)",
-        contact: "+223 00 00 00",
-        telephone: "-1+1",
-        vehicule: "@SUM(A1)",
-        statut: "Actif",
-      },
-    ];
-    const blob = buildCsvBlob(columns, rows);
-    const text = new TextDecoder("utf-8").decode(await blob.arrayBuffer());
-
-    expect(text).toContain("'=CMD(calc)");
-    expect(text).toContain("'+223 00 00 00");
-    expect(text).toContain("'-1+1");
-    expect(text).toContain("'@SUM(A1)");
-    expect(text).not.toMatch(/;=CMD/);
-  });
 });
+
+
+
+describe("sanitizeExcelCell", () => {
+
+  it("neutralise l'injection de formule Excel (=, +, -, @)", () => {
+
+    expect(sanitizeExcelCell("=CMD(calc)")).toBe("'=CMD(calc)");
+
+    expect(sanitizeExcelCell("+223 00 00 00")).toBe("'+223 00 00 00");
+
+    expect(sanitizeExcelCell("-1+1")).toBe("'-1+1");
+
+    expect(sanitizeExcelCell("@SUM(A1)")).toBe("'@SUM(A1)");
+
+  });
+
+
+
+  it("conserve les nombres finis", () => {
+
+    expect(sanitizeExcelCell(42)).toBe(42);
+
+    expect(sanitizeExcelCell(0)).toBe(0);
+
+  });
+
+});
+
+
+
+describe("buildXlsxBuffer", () => {
+
+  const headers = ["Société", "Contact", "Montant"];
+
+  const rows: (string | number)[][] = [
+
+    ["Konaté Transport", "Mamadou Konaté", 150000],
+
+    ["Golaine Tech", "Ibrahim Diarra", 82000],
+
+  ];
+
+
+
+  it("produit un buffer non vide avec signature ZIP PK", async () => {
+
+    const buffer = await buildXlsxBuffer(headers, rows);
+
+    expect(buffer.length).toBeGreaterThan(0);
+
+    expect(isValidXlsxBytes(buffer)).toBe(true);
+
+  });
+
+
+
+  it("contient les en-têtes et les données", async () => {
+
+    const buffer = await buildXlsxBuffer(headers, rows);
+
+    const workbook = new ExcelJS.Workbook();
+
+    await workbook.xlsx.load(buffer);
+
+
+
+    const sheet = workbook.getWorksheet("Export");
+
+    expect(sheet).toBeDefined();
+
+    expect(sheet?.getCell("A1").value).toBe("Société");
+
+    expect(sheet?.getCell("B1").value).toBe("Contact");
+
+    expect(sheet?.getCell("A2").value).toBe("Konaté Transport");
+
+    expect(sheet?.getCell("B2").value).toBe("Mamadou Konaté");
+
+    expect(sheet?.getCell("C2").value).toBe(150000);
+
+  });
+
+
+
+  it("neutralise les formules dans les cellules exportées", async () => {
+
+    const buffer = await buildXlsxBuffer(["Nom"], [["=CMD(calc)"]]);
+
+    const workbook = new ExcelJS.Workbook();
+
+    await workbook.xlsx.load(buffer);
+
+
+
+    const sheet = workbook.getWorksheet("Export");
+
+    expect(sheet?.getCell("A2").value).toBe("'=CMD(calc)");
+
+  });
+
+});
+
+
 
 describe("shouldShowTva", () => {
+
   it("masque la ligne TVA quand le taux est 0 (F2 — TVA optionnelle)", () => {
+
     expect(shouldShowTva(0)).toBe(false);
+
   });
 
+
+
   it("affiche la ligne TVA pour un taux positif", () => {
+
     expect(shouldShowTva(18)).toBe(true);
+
   });
+
 });
+
+

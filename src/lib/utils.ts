@@ -19,3 +19,10 @@ export function isNavActive(currentView: ViewKey, itemKey: ViewKey): boolean {
   if (itemKey === "clients" && currentView === "client-fiche") return true;
   return currentView === itemKey;
 }
+
+/** Message d'erreur affichable depuis une valeur `catch` non typée. */
+export function getErrorMessage(e: unknown, fallback = "Une erreur inconnue est survenue"): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e === "string" && e) return e;
+  return fallback;
+}

@@ -18,6 +18,7 @@ import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { getErrorMessage } from "@/lib/utils";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { shouldShowTva } from "@/lib/export";
@@ -147,10 +148,10 @@ function FactureFormModal({
       });
       onClose();
       go("facture-detail", { id: f.id });
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Erreur",
-        description: err.message || "Impossible de créer la facture",
+        description: getErrorMessage(err, "Impossible de créer la facture"),
         variant: "destructive",
       });
     }
@@ -436,10 +437,10 @@ export function FacturesScreen() {
     try {
       await removeFacture(deleteTarget.id);
       toast({ title: "Facture supprimée", description: deleteTarget.numero });
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Erreur",
-        description: err.message || "Impossible de supprimer la facture",
+        description: getErrorMessage(err, "Impossible de supprimer la facture"),
         variant: "destructive",
       });
     }

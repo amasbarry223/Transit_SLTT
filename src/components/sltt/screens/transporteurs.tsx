@@ -11,7 +11,7 @@ import {
 import { useStore } from "@/lib/store";
 import type { Transporteur, TransporteurInput, TransporteurStatut } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
-import { exportToCSV, printHTML, htmlEscape } from "@/lib/export";
+import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { UI_LOAD_DELAY_MS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
@@ -58,7 +58,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { TablePagination } from "@/components/sltt/table-pagination";
 
 /* ------------------------------------------------------------------ */
@@ -404,12 +404,12 @@ export function TransporteursScreen() {
     try {
       await updateTransporteurStatut(t.id, next);
       toast({ title: `Transporteur ${next === "Actif" ? "activé" : "désactivé"}`, description: t.nom });
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message || "Impossible de modifier le statut", variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de modifier le statut"), variant: "destructive" });
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportExcel = async () => {
     if (filtered.length === 0) {
       toast({
         title: "Rien à exporter",
@@ -418,19 +418,23 @@ export function TransporteursScreen() {
       });
       return;
     }
-    exportToCSV(`transporteurs-sltt-${new Date().toISOString().slice(0, 10)}`, [
-      { header: "Société",         accessor: (t: Transporteur) => t.nom },
-      { header: "Contact",         accessor: (t: Transporteur) => t.contact },
-      { header: "Téléphone",       accessor: (t: Transporteur) => t.telephone },
-      { header: "Email",           accessor: (t: Transporteur) => t.email ?? "" },
-      { header: "Véhicule",        accessor: (t: Transporteur) => t.vehicule },
-      { header: "Immatriculation", accessor: (t: Transporteur) => t.immatriculation },
-      { header: "Trajet",          accessor: (t: Transporteur) => t.trajet },
-      { header: "Capacité (t)",    accessor: (t: Transporteur) => t.capacite },
-      { header: "Dossiers",        accessor: (t: Transporteur) => t.nbDossiers },
-      { header: "Statut",          accessor: (t: Transporteur) => t.statut },
-      { header: "Date ajout",      accessor: (t: Transporteur) => formatDateShort(t.dateCreation) },
-    ], filtered, { module: "Transporteurs" });
+    try {
+      await exportToExcel(`transporteurs-sltt-${new Date().toISOString().slice(0, 10)}`, [
+        { header: "Société",         accessor: (t: Transporteur) => t.nom },
+        { header: "Contact",         accessor: (t: Transporteur) => t.contact },
+        { header: "Téléphone",       accessor: (t: Transporteur) => t.telephone },
+        { header: "Email",           accessor: (t: Transporteur) => t.email ?? "" },
+        { header: "Véhicule",        accessor: (t: Transporteur) => t.vehicule },
+        { header: "Immatriculation", accessor: (t: Transporteur) => t.immatriculation },
+        { header: "Trajet",          accessor: (t: Transporteur) => t.trajet },
+        { header: "Capacité (t)",    accessor: (t: Transporteur) => t.capacite },
+        { header: "Dossiers",        accessor: (t: Transporteur) => t.nbDossiers },
+        { header: "Statut",          accessor: (t: Transporteur) => t.statut },
+        { header: "Date ajout",      accessor: (t: Transporteur) => formatDateShort(t.dateCreation) },
+      ], filtered, { module: "Transporteurs" });
+    } catch {
+      return;
+    }
     toast({ title: "Export Excel généré", description: `${filtered.length} transporteur${filtered.length !== 1 ? "s" : ""} exporté${filtered.length !== 1 ? "s" : ""}.` });
   };
 
@@ -546,7 +550,7 @@ export function TransporteursScreen() {
                   <FileText className="size-4" />
                 </Button>
                 <Button variant="outline" size="icon" className="size-9 shrink-0"
-                  onClick={handleExportCSV} disabled={filtered.length === 0} title="Exporter Excel">
+                  onClick={handleExportExcel} disabled={filtered.length === 0} title="Exporter Excel">
                   <FileSpreadsheet className="size-4" />
                 </Button>
               </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Dossier, DossierStatut } from "@/lib/domain-types";
+import type { Dossier, DossierStatut, Societe } from "@/lib/domain-types";
 import { calculerEcart, resteAPayer } from "@/lib/domain-types";
 import { parseAmount } from "@/lib/format";
 import { getNextTransition } from "@/components/sltt/dossier-transition-dialog";
+import { resolveDossierReferencePrefix } from "@/lib/societe-brand";
 
 export const WIZARD_STEPS = [
   { id: 1, label: "Identité", hint: "Client, BL, camion, nature" },
@@ -26,9 +27,10 @@ type UseDossierFormStateOptions = {
   existing?: Dossier;
   isEdit: boolean;
   dossierSeq: number;
+  societes: Societe[];
 };
 
-export function useDossierFormState({ existing, isEdit, dossierSeq }: UseDossierFormStateOptions) {
+export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: UseDossierFormStateOptions) {
   const [clientId, setClientId] = useState<string>(existing?.clientId ?? "");
   const [nature, setNature] = useState<string>(existing?.nature ?? "");
   const [bl, setBl] = useState<string>(existing?.bl ?? "");
@@ -76,7 +78,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq }: UseDossier
 
   const reference =
     existing?.reference ??
-    `SLTT-TR-${new Date().getFullYear()}-${String(dossierSeq).padStart(4, "0")}`;
+    `${resolveDossierReferencePrefix(societes)}-TR-${new Date().getFullYear()}-${String(dossierSeq).padStart(4, "0")}`;
 
   const isDirty = useMemo(() => {
     if (!isEdit) {

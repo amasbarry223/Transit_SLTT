@@ -44,6 +44,11 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  webpack: (config, { dev }) => {
+    // Évite les erreurs 500 ENOSPC quand le disque C: est quasi plein (cache webpack).
+    if (dev) config.cache = false;
+    return config;
+  },
   async headers() {
     return [
       {
