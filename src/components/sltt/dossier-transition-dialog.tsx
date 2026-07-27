@@ -236,8 +236,8 @@ export function TransitionDialog({
             reste > 0 ? (
               <>
                 <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-sm">
-                  <span className="text-amber-700">Reste à payer : </span>
-                  <span className="font-bold text-amber-900">
+                  <span className="text-amber-700 dark:text-amber-300">Reste à payer : </span>
+                  <span className="font-bold text-amber-900 dark:text-amber-200">
                     {formatFCFA(reste)}
                   </span>
                 </div>
@@ -290,8 +290,8 @@ export function TransitionDialog({
               </>
             ) : (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-3 text-sm">
-                <span className="text-emerald-700 font-medium">Dossier déjà soldé.</span>
-                <span className="text-emerald-800"> Aucun paiement supplémentaire requis.</span>
+                <span className="text-emerald-700 dark:text-emerald-300 font-medium">Dossier déjà soldé.</span>
+                <span className="text-emerald-800 dark:text-emerald-300"> Aucun paiement supplémentaire requis.</span>
               </div>
             )
           )}

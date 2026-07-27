@@ -324,6 +324,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
         contrats: syncContratStats(s.depenses, updated, s.contrats),
       };
     });
+    await get().addAuditLog("Contrats", "Création", `Prestation "${newPrestation.libelle}" ajoutée`);
     return newPrestation;
   },
 
@@ -345,14 +346,19 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       const updated = s.contratPrestations.map((p) => (p.id === id ? { ...p, ...input } : p));
       return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
     });
+    await get().addAuditLog("Contrats", "Modification", `Prestation "${input.libelle}" modifiée`);
   },
 
   removeContratPrestation: async (id) => {
+    const prestation = get().contratPrestations.find((p) => p.id === id);
     const { error } = await supabase.from("contrat_prestations").delete().eq("id", id);
     if (error) throw error;
     set((s) => {
       const updated = s.contratPrestations.filter((p) => p.id !== id);
       return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
     });
+    if (prestation) {
+      await get().addAuditLog("Contrats", "Suppression", `Prestation "${prestation.libelle}" supprimée`);
+    }
   },
 });

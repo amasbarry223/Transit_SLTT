@@ -52,12 +52,12 @@ export function PermissionMatrix({ selection, onChange, disabled }: PermissionMa
                 <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                   {permModule.label}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   {activeCount}/{moduleKeys.length}
                 </span>
               </div>
               <label
-                className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-500"
+                className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Checkbox

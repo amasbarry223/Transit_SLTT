@@ -22,6 +22,10 @@ import type {
   FactureStatut,
   TypeDocument,
   DossierStatut,
+  DocumentCategorie,
+  DocumentEntityType,
+  OcrJobStatus,
+  OcrTargetForm,
 } from "@/lib/domain-types";
 
 type NamedRelation = { nom: string } | null;
@@ -311,6 +315,8 @@ export interface ProfilePublicRow {
 export interface DossierRow {
   id: string;
   reference: string;
+  societe_id: string;
+  societes?: NamedRelation;
   client_id: string;
   clients?: NamedRelation;
   bl: string;
@@ -346,6 +352,60 @@ export interface ArchiveRow {
   societe_id: string | null;
   cree_par: string | null;
   created_at: string;
+}
+
+export interface DocumentRow {
+  id: string;
+  nom: string;
+  categorie: DocumentCategorie;
+  mime_type: string;
+  taille: number | string;
+  dossier_id: string | null;
+  facture_id: string | null;
+  client_id: string | null;
+  societe_id: string | null;
+  entity_type: DocumentEntityType | null;
+  entity_id: string | null;
+  current_version: number | string;
+  cree_par: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentVersionRow {
+  id: string;
+  document_id: string;
+  version: number | string;
+  storage_path: string;
+  taille: number | string;
+  mime_type: string;
+  checksum: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface OcrJobRow {
+  id: string;
+  document_id: string;
+  document_version_id: string;
+  status: OcrJobStatus;
+  provider: string;
+  raw_text: string | null;
+  error_message: string | null;
+  target_form: OcrTargetForm;
+  created_by: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface OcrFieldRow {
+  id: string;
+  ocr_job_id: string;
+  field_key: string;
+  field_value: string | null;
+  confidence: number | string | null;
+  bbox: unknown;
+  validated_value: string | null;
 }
 
 export interface ContratFichierRow {

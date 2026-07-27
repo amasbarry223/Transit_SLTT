@@ -164,6 +164,11 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
       };
     });
+    await get().addAuditLog(
+      "Fournisseurs",
+      "Création",
+      `Lien fournisseur ${newDf.fournisseurNom} ↔ dossier ${newDf.dossierRef ?? newDf.dossierId} créé`,
+    );
     return newDf;
   },
 
@@ -189,9 +194,11 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
       };
     });
+    await get().addAuditLog("Fournisseurs", "Modification", `Lien fournisseur ↔ dossier modifié`);
   },
 
   removeDossierFournisseur: async (id) => {
+    const target = get().dossierFournisseurs.find((df) => df.id === id);
     const { error } = await supabase.from("dossier_fournisseurs").delete().eq("id", id);
     if (error) throw error;
 
@@ -202,5 +209,12 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
       };
     });
+    if (target) {
+      await get().addAuditLog(
+        "Fournisseurs",
+        "Suppression",
+        `Lien fournisseur ${target.fournisseurNom} ↔ dossier ${target.dossierRef ?? target.dossierId} supprimé`,
+      );
+    }
   },
 });

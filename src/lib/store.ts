@@ -11,6 +11,17 @@ import {
 } from "@/lib/store/contrat-fichiers-slice";
 import { createArchivesSlice, mapArchiveFromDb, type ArchivesSlice } from "@/lib/store/archives-slice";
 import {
+  createDocumentsSlice,
+  mapDocumentFromDb,
+  mapDocumentVersionFromDb,
+  mapOcrJobFromDb,
+  type DocumentsSlice,
+} from "@/lib/store/documents-slice";
+import {
+  createExcelWorkbooksSlice,
+  type ExcelWorkbooksSlice,
+} from "@/lib/store/excel-workbooks-slice";
+import {
   createDossiersSlice,
   mapDossierFromDb,
   type DossiersSlice,
@@ -194,6 +205,7 @@ export interface FactureInput {
 }
 
 export interface DossierInput {
+  societeId: string;
   clientId: string;
   clientNom: string;
   nature: string;
@@ -511,7 +523,7 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
   };
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DossiersSlice, TransporteursSlice, SocietesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice {
   // Data
   ecritures: Ecriture[];
   stock: StockItem[];
@@ -548,9 +560,12 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Dossiers
   // Supabase sync
   dataLoading: boolean;
   loadError: string | null;
+  /** Échec non bloquant d'une des requêtes secondaires (stock, bons, devis, contrats…) : les données core ont chargé mais certains écrans peuvent être incomplets/obsolètes. */
+  partialLoadWarning: string | null;
   lastSyncedAt: number | null;
   fetchData: () => Promise<void>;
   clearLoadError: () => void;
+  clearPartialLoadWarning: () => void;
 
   // ---- Audit ----
   addAuditLog: (
@@ -570,6 +585,18 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Dossiers
     note: string,
   ) => Promise<void>;
   addEcriture: (e: Omit<Ecriture, "id">) => Promise<Ecriture>;
+  /** Patch partiel écriture (classeur éditable). */
+  patchEcriture: (
+    id: string,
+    patch: { note?: string; montantInvesti?: number; montantPaye?: number },
+  ) => Promise<void>;
+  /** Patch montants / libellé dossier (classeur éditable). */
+  patchDossierClasseur: (
+    id: string,
+    patch: { montantInvesti?: number; montantPaye?: number; nature?: string; bl?: string },
+  ) => Promise<void>;
+  /** Fixe le montant payé d'une facture (classeur — crédit). */
+  patchFactureMontantPaye: (id: string, montantPaye: number) => Promise<void>;
 
   // ---- Stock ----
   addStockItem: (input: StockItemInput) => Promise<StockItem>;
@@ -636,6 +663,8 @@ export const useStore = create<SLTTState>()(
     (set, get, api) => ({
       ...createContratFichiersSlice(set, get, api),
       ...createArchivesSlice(set, get, api),
+      ...createDocumentsSlice(set, get, api),
+      ...createExcelWorkbooksSlice(set, get, api),
       ...createDossiersSlice(set, get, api),
       ...createTransporteursSlice(set, get, api),
       ...createSocietesSlice(set, get, api),
@@ -655,13 +684,15 @@ export const useStore = create<SLTTState>()(
       auditLogs: [],
       dataLoading: false,
       loadError: null,
+      partialLoadWarning: null,
       lastSyncedAt: null,
       ...INITIAL_SEQUENCES,
 
       clearLoadError: () => set({ loadError: null }),
+      clearPartialLoadWarning: () => set({ partialLoadWarning: null }),
 
       fetchData: async () => {
-        set({ dataLoading: true, loadError: null });
+        set({ dataLoading: true, loadError: null, partialLoadWarning: null });
         try {
           // Sans JWT, le RLS renvoie [] (HTTP 200) — pas d'erreur visible.
           const {
@@ -677,7 +708,7 @@ export const useStore = create<SLTTState>()(
 
           const coreResults = await Promise.all([
             supabase.from("clients").select("*"),
-            supabase.from("dossiers").select("*, clients(nom)"),
+            supabase.from("dossiers").select("*, clients(nom), societes(nom)"),
             supabase.from("ecritures").select("*, clients(nom), societes(nom)"),
             supabase.from("factures").select("*, facture_lignes(*), clients(nom), societes(nom)"),
             supabase.from("profiles").select("*"),
@@ -757,11 +788,18 @@ export const useStore = create<SLTTState>()(
             supabase.from("bons_sortie_caisse").select("*, bons_sortie_caisse_lignes(*), societes(nom)"),
             supabase.from("audit_logs").select("*").order("date", { ascending: false }),
             supabase.from("archives").select("*"),
+            supabase.from("documents").select("*").order("created_at", { ascending: false }),
+            supabase.from("document_versions").select("*").order("created_at", { ascending: false }),
+            supabase.from("ocr_jobs").select("*").order("created_at", { ascending: false }),
           ]);
 
           const secondaryError = secondaryResults.find((r) => r.error)?.error;
           if (secondaryError) {
             console.warn("[SLTT] Chargement secondaire partiel:", secondaryError);
+            set({
+              partialLoadWarning:
+                "Certaines données (stock, bons, devis, contrats, archives…) n'ont pas pu être chargées. Elles peuvent être incomplètes ou obsolètes.",
+            });
           }
 
           const [
@@ -781,6 +819,9 @@ export const useStore = create<SLTTState>()(
             { data: bonsSortieCaisse },
             { data: auditLogs },
             { data: archives },
+            { data: documents },
+            { data: documentVersions },
+            { data: ocrJobs },
           ] = secondaryResults;
 
           const mappedFournisseurs = (fournisseurs || []).map(mapFournisseurFromDb);
@@ -808,6 +849,9 @@ export const useStore = create<SLTTState>()(
               bonsSortieCaisse: (bonsSortieCaisse || []).map(mapBonSortieCaisseFromDb),
               auditLogs: (auditLogs || []).map(mapAuditLogFromDb),
               archives: (archives || []).map(mapArchiveFromDb),
+              documents: (documents || []).map(mapDocumentFromDb),
+              documentVersions: (documentVersions || []).map(mapDocumentVersionFromDb),
+              ocrJobs: (ocrJobs || []).map((j) => mapOcrJobFromDb(j)),
               clients: syncClientStats(s.dossiers, s.factures, s.ecritures, s.clients),
               lastSyncedAt: Date.now(),
             };
@@ -988,6 +1032,117 @@ export const useStore = create<SLTTState>()(
           { sourceType: "ecriture", sourceId: newEcriture.id },
         );
         return newEcriture;
+      },
+
+      patchEcriture: async (id, patch) => {
+        const existing = get().ecritures.find((e) => e.id === id);
+        if (!existing) throw new Error("Écriture introuvable");
+        const payload: Record<string, unknown> = {};
+        if (patch.note !== undefined) payload.note = patch.note;
+        if (patch.montantInvesti !== undefined) payload.montant_investi = Math.max(0, patch.montantInvesti);
+        if (patch.montantPaye !== undefined) payload.montant_paye = Math.max(0, patch.montantPaye);
+
+        const { error } = await supabase.from("ecritures").update(payload).eq("id", id);
+        if (error) throw error;
+
+        set((s) => {
+          const updatedEcritures = s.ecritures.map((e) =>
+            e.id === id
+              ? {
+                  ...e,
+                  note: patch.note ?? e.note,
+                  montantInvesti: patch.montantInvesti ?? e.montantInvesti,
+                  montantPaye: patch.montantPaye ?? e.montantPaye,
+                }
+              : e,
+          );
+          return {
+            ecritures: updatedEcritures,
+            clients: syncClientStats(s.dossiers, s.factures, updatedEcritures, s.clients),
+          };
+        });
+
+        await get().addAuditLog(
+          "Comptabilité",
+          "Modification",
+          `Écriture ${id.slice(0, 8)} modifiée (classeur)`,
+          existing.clientId,
+          { sourceType: "ecriture", sourceId: id },
+        );
+      },
+
+      patchDossierClasseur: async (id, patch) => {
+        const existing = get().dossiers.find((d) => d.id === id);
+        if (!existing) throw new Error("Dossier introuvable");
+        const payload: Record<string, unknown> = {};
+        if (patch.montantInvesti !== undefined) payload.montant_investi = Math.max(0, patch.montantInvesti);
+        if (patch.montantPaye !== undefined) payload.montant_paye = Math.max(0, patch.montantPaye);
+        if (patch.nature !== undefined) payload.nature = patch.nature;
+        if (patch.bl !== undefined) payload.bl = patch.bl;
+
+        const { error } = await supabase.from("dossiers").update(payload).eq("id", id);
+        if (error) throw error;
+
+        set((s) => {
+          const updatedDossiers = s.dossiers.map((d) =>
+            d.id === id
+              ? {
+                  ...d,
+                  montantInvesti: patch.montantInvesti ?? d.montantInvesti,
+                  montantPaye: patch.montantPaye ?? d.montantPaye,
+                  nature: patch.nature ?? d.nature,
+                  bl: patch.bl ?? d.bl,
+                }
+              : d,
+          );
+          return {
+            dossiers: updatedDossiers,
+            clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+          };
+        });
+
+        await get().addAuditLog(
+          "Dossiers",
+          "Modification",
+          `Dossier ${existing.reference} modifié (classeur)`,
+          existing.clientId,
+          { sourceType: "dossier", sourceId: id },
+        );
+      },
+
+      patchFactureMontantPaye: async (id, montantPaye) => {
+        const fact = get().factures.find((f) => f.id === id);
+        if (!fact) throw new Error("Facture introuvable");
+        if (fact.statut === "Annulée" || fact.statut === "Brouillon") {
+          throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
+        }
+        const paye = Math.max(0, Math.min(fact.montantTTC, montantPaye));
+        const newStatut: FactureStatut =
+          paye >= fact.montantTTC ? "Soldée" : paye > 0 ? "Partielle" : fact.statut === "Soldée" ? "Envoyée" : fact.statut;
+
+        const { error } = await supabase
+          .from("factures")
+          .update({ montant_paye: paye, statut: newStatut })
+          .eq("id", id);
+        if (error) throw error;
+
+        set((s) => {
+          const updatedFactures = s.factures.map((f) =>
+            f.id === id ? { ...f, montantPaye: paye, statut: newStatut } : f,
+          );
+          return {
+            factures: updatedFactures,
+            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+          };
+        });
+
+        await get().addAuditLog(
+          "Factures",
+          "Modification",
+          `Paiement facture ${fact.numero} ajusté (classeur) → ${paye.toLocaleString("fr-FR")} FCFA`,
+          fact.clientId,
+          { sourceType: "facture", sourceId: id },
+        );
       },
 
       // ---- Stock ----
@@ -1201,36 +1356,42 @@ export const useStore = create<SLTTState>()(
           subDossiers: [newSd, ...s.subDossiers],
           subDossierSeq: seq + 1,
         }));
+        await get().addAuditLog("Dossiers", "Création", `Sous-dossier "${newSd.nom}" créé`);
         return newSd;
 
       },
 
       updateSubDossier: async (id, nom, description) => {
-        
+
         const { error } = await supabase
           .from("sub_dossiers")
           .update({ nom, description })
           .eq("id", id);
         if (error) throw error;
-      
+
 
         set((s) => ({
           subDossiers: s.subDossiers.map((sd) =>
             sd.id === id ? { ...sd, nom, description } : sd
           ),
         }));
+        await get().addAuditLog("Dossiers", "Modification", `Sous-dossier "${nom}" modifié`);
       },
 
       deleteSubDossier: async (id) => {
-        
+        const subDossier = get().subDossiers.find((sd) => sd.id === id);
+
         const { error } = await supabase.from("sub_dossiers").delete().eq("id", id);
         if (error) throw error;
-      
+
 
         set((s) => ({
           subDossiers: s.subDossiers.filter((sd) => sd.id !== id),
           fichiers: s.fichiers.filter((f) => f.sousDossierId !== id),
         }));
+        if (subDossier) {
+          await get().addAuditLog("Dossiers", "Suppression", `Sous-dossier "${subDossier.nom}" supprimé`);
+        }
       },
 
       // ---- Fichiers ----
@@ -1280,6 +1441,7 @@ export const useStore = create<SLTTState>()(
           fichiers: [newFile, ...s.fichiers],
           fichierSeq: seq + 1,
         }));
+        await get().addAuditLog("Dossiers", "Création", `Fichier "${newFile.nom}" ajouté`);
         return newFile;
 
       },
@@ -1389,6 +1551,7 @@ export const useStore = create<SLTTState>()(
       },
 
       updateFacture: async (id, input) => {
+        const existing = get().factures.find((f) => f.id === id);
         const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
         const TVA = Math.round(HT * (input.tauxTVA / 100));
         const TTC = HT + TVA;
@@ -1452,6 +1615,15 @@ export const useStore = create<SLTTState>()(
             clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
           };
         });
+        if (existing) {
+          await get().addAuditLog(
+            "Factures",
+            "Modification",
+            `Facture ${existing.numero} modifiée`,
+            input.clientId,
+            { sourceType: "facture", sourceId: id },
+          );
+        }
       },
 
       removeFacture: async (id) => {

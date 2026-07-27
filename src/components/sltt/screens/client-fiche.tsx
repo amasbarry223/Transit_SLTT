@@ -31,8 +31,9 @@ import {
   type ClasseurFilters,
 } from "@/lib/classeur";
 import { resolveClasseurPrintBrand, resolveTransitSociete } from "@/lib/societe-brand";
-import { TOAST_COPY_RESET_MS } from "@/lib/constants";
+import { TOAST_COPY_RESET_MS, DEFAULT_PAIEMENT_MODE } from "@/lib/constants";
 import { exportToExcel, printClasseur } from "@/lib/export";
+import { parseClasseurXlsx, planClasseurImport } from "@/lib/classeur-import";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
@@ -67,6 +68,7 @@ export function ClientFicheScreen() {
   // rôle comme Agent de transit qui n'a que clients:read ne doit pas y
   // accéder via la fiche client.
   const canSeeCompta = usePermission("comptabilite:read");
+  const canWriteCompta = usePermission("comptabilite:write");
   const canWriteDossiers = usePermission("dossiers:write");
   const canWriteFactures = usePermission("factures:write");
   const clients = useStore((s) => s.clients);
@@ -79,6 +81,10 @@ export function ClientFicheScreen() {
   const societes = useStore((s) => s.societes);
   const auditLogs = useStore((s) => s.auditLogs);
   const updateClient = useStore((s) => s.updateClient);
+  const patchDossierClasseur = useStore((s) => s.patchDossierClasseur);
+  const patchEcriture = useStore((s) => s.patchEcriture);
+  const patchFactureMontantPaye = useStore((s) => s.patchFactureMontantPaye);
+  const addEcriture = useStore((s) => s.addEcriture);
 
   const [activeTab, setActiveTab] = useState<FicheTab>(() => (canSeeCompta ? "classeur" : "dossiers"));
   const visibleFicheTabs = useMemo(
@@ -147,6 +153,76 @@ export function ClientFicheScreen() {
       cancelled = true;
     };
   }, [selectedId]);
+
+  function refreshClasseurSql() {
+    if (!selectedId) return;
+    // Invalide le cache SQL pour retomber sur le journal client (à jour via store)
+    // puis recharger la vue.
+    setSqlJournal(null);
+    fetchClasseurMouvements(selectedId).then((rows) => {
+      if (rows) setSqlJournal({ clientId: selectedId, rows });
+    });
+  }
+
+  async function handleImportClasseurExcel(file: File) {
+    if (!client) return;
+    try {
+      const buf = await file.arrayBuffer();
+      const imported = await parseClasseurXlsx(buf);
+      const plan = planClasseurImport(imported, classeurJournal);
+
+      let applied = 0;
+      for (const u of plan.updates) {
+        if (u.sourceType === "Dossier" && canWriteDossiers) {
+          await patchDossierClasseur(u.sourceId, {
+            montantInvesti: u.debit,
+            montantPaye: u.credit,
+          });
+          applied++;
+        } else if (u.sourceType === "Paiement" && canWriteCompta) {
+          await patchEcriture(u.sourceId, {
+            montantInvesti: u.debit,
+            montantPaye: u.credit,
+            note: u.libelle,
+          });
+          applied++;
+        } else if (u.sourceType === "Facture" && canWriteFactures && u.credit != null) {
+          await patchFactureMontantPaye(u.sourceId, u.credit);
+          applied++;
+        }
+      }
+
+      // Lignes Paiement sans match → création d'écriture libre si permission
+      if (canWriteCompta) {
+        for (const row of plan.unmatched) {
+          if (row.type !== "Paiement" && row.type !== "all") continue;
+          if (row.debit === 0 && row.credit === 0) continue;
+          await addEcriture({
+            date: row.date,
+            clientId: client.id,
+            clientNom: client.nom,
+            montantInvesti: row.debit,
+            montantPaye: row.credit,
+            modePaiement: DEFAULT_PAIEMENT_MODE,
+            note: row.libelle || `Import Excel · ${row.reference}`,
+          });
+          applied++;
+        }
+      }
+
+      refreshClasseurSql();
+      toast({
+        title: "Import Excel terminé",
+        description: `${applied} ligne(s) appliquée(s)${plan.unmatched.length ? ` · ${plan.unmatched.length} non appariée(s)` : ""}.`,
+      });
+    } catch (e) {
+      toast({
+        title: "Import impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+    }
+  }
 
   const classeurJournal =
     sqlJournal?.clientId === selectedId ? sqlJournal.rows : clientSideJournal;
@@ -413,7 +489,7 @@ export function ClientFicheScreen() {
             <p className="text-sm font-medium text-amber-900 dark:text-amber-400">
               Solde impayé : {formatFCFA(totalDu)}
             </p>
-            <p className="mt-0.5 text-xs text-amber-800/80">
+            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300/80">
               {pendingCount} mouvement{pendingCount !== 1 ? "s" : ""} en attente de règlement — voir le
               détail dans le Classeur.
             </p>
@@ -506,16 +582,23 @@ export function ClientFicheScreen() {
 
         {canSeeCompta && (
         <ClasseurTab
+          clientId={client.id}
+          clientNom={client.nom}
+          journalEntries={classeurJournal}
           classeurFilters={classeurFilters}
           onFiltersChange={setClasseurFilters}
           classeurSocieteOptions={classeurSocieteOptions}
           classeurFiltered={classeurFiltered}
           classeurTotals={classeurTotals}
+          isSyncing={sqlJournal?.clientId !== selectedId}
           classeurPeriodFiltered={classeurPeriodFiltered}
           clientAuditHistory={clientAuditHistory}
           onExportExcel={handleExportClasseurExcel}
+          onImportExcel={handleImportClasseurExcel}
           onPrint={handlePrintClasseur}
           onRowClick={openClasseurSuivi}
+          onGridDataChanged={refreshClasseurSql}
+          canImport={canWriteCompta || canWriteDossiers || canWriteFactures}
         />
         )}
 

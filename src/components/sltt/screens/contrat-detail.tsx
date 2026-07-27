@@ -23,7 +23,7 @@ import {
   type ContratPrestationStatut,
 } from "@/lib/store";
 import type { PaiementMode } from "@/lib/domain-types";
-import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
@@ -72,14 +72,6 @@ const CONTRAT_STATUT_TONE: Record<ContratStatut, "emerald" | "slate" | "amber"> 
   Clôturé: "slate",
   Suspendu: "amber",
 };
-/** Couleur de l'accent latéral de la carte résumé — même sémantique que CONTRAT_STATUT_TONE,
- * alignée sur le en-tête de facture-detail.tsx (carte à bordure gauche colorée). */
-const CONTRAT_STATUT_BORDER: Record<ContratStatut, string> = {
-  Actif: "border-emerald-600",
-  Clôturé: "border-slate-400",
-  Suspendu: "border-amber-500",
-};
-
 const PRESTATION_STATUTS: ContratPrestationStatut[] = ["Prévue", "Réalisée", "Annulée"];
 const PRESTATION_STATUT_TONE: Record<ContratPrestationStatut, "blue" | "emerald" | "red"> = {
   Prévue: "blue",
@@ -226,7 +218,7 @@ export function ContratDetailScreen() {
       </button>
 
       <Card className="overflow-hidden border-border/80 shadow-sm">
-        <div className={cn("flex border-l-4", CONTRAT_STATUT_BORDER[contrat.statut])}>
+        <div className="flex">
           <div className="flex-1 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
@@ -296,7 +288,7 @@ export function ContratDetailScreen() {
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Montant du contrat</p>
-                <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700">
+                <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700 dark:text-blue-300">
                   {formatFCFA(contrat.montant, false)}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-400">FCFA</p>
@@ -388,42 +380,79 @@ export function ContratDetailScreen() {
                 <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucune dépense enregistrée</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-              <Table aria-label="Dépenses du contrat">
-                <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Libellé</TableHead>
-                    <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Date</TableHead>
-                    <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Mode</TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs uppercase text-slate-500 dark:text-slate-400">Montant</TableHead>
-                    {canWrite && <TableHead className="h-10 px-4" />}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <>
+                <div className="space-y-3 p-4 md:hidden">
                   {contratDepenses.map((d) => (
-                    <TableRow key={d.id} className="border-b border-border">
-                      <TableCell className="px-4 py-3">{d.libelle}</TableCell>
-                      <TableCell className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatDateShort(d.dateDepense)}</TableCell>
-                      <TableCell className="px-4 py-3 text-slate-600 dark:text-slate-300">{d.modePaiement}</TableCell>
-                      <TableCell className="px-4 py-3 text-right tabular-nums font-medium">{formatFCFA(d.montant)}</TableCell>
+                    <Card key={d.id} className="border-border/80 p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-medium text-slate-800 dark:text-slate-200">{d.libelle}</p>
+                        <p className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                          {formatFCFA(d.montant)}
+                        </p>
+                      </div>
+                      <dl className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
+                          <dd className="tabular-nums text-slate-600 dark:text-slate-300">{formatDateShort(d.dateDepense)}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-xs text-slate-500 dark:text-slate-400">Mode</dt>
+                          <dd className="text-slate-600 dark:text-slate-300">{d.modePaiement}</dd>
+                        </div>
+                      </dl>
                       {canWrite && (
-                        <TableCell className="px-4 py-3 text-right">
+                        <div className="mt-3 flex justify-end border-t border-border pt-3">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-9 text-slate-400 hover:text-red-600"
+                            className="size-11 text-slate-400 hover:text-red-600"
                             aria-label={`Supprimer la dépense ${d.libelle}`}
                             onClick={() => setDepenseToDelete({ id: d.id, libelle: d.libelle })}
                           >
                             <Trash2 className="size-4" />
                           </Button>
-                        </TableCell>
+                        </div>
                       )}
-                    </TableRow>
+                    </Card>
                   ))}
-                </TableBody>
-              </Table>
-              </div>
+                </div>
+                <div className="hidden overflow-x-auto md:block">
+                <Table aria-label="Dépenses du contrat">
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
+                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Libellé</TableHead>
+                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Date</TableHead>
+                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Mode</TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs uppercase text-slate-500 dark:text-slate-400">Montant</TableHead>
+                      {canWrite && <TableHead className="h-10 px-4" />}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contratDepenses.map((d) => (
+                      <TableRow key={d.id} className="border-b border-border">
+                        <TableCell className="px-4 py-3">{d.libelle}</TableCell>
+                        <TableCell className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatDateShort(d.dateDepense)}</TableCell>
+                        <TableCell className="px-4 py-3 text-slate-600 dark:text-slate-300">{d.modePaiement}</TableCell>
+                        <TableCell className="px-4 py-3 text-right tabular-nums font-medium">{formatFCFA(d.montant)}</TableCell>
+                        {canWrite && (
+                          <TableCell className="px-4 py-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9 text-slate-400 hover:text-red-600"
+                              aria-label={`Supprimer la dépense ${d.libelle}`}
+                              onClick={() => setDepenseToDelete({ id: d.id, libelle: d.libelle })}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                </div>
+              </>
             )}
           </Card>
         </TabsContent>
@@ -448,33 +477,28 @@ export function ContratDetailScreen() {
                 <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucune prestation optionnelle</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-              <Table aria-label="Prestations optionnelles du contrat">
-                <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Libellé</TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs uppercase text-slate-500 dark:text-slate-400">Montant</TableHead>
-                    <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Statut</TableHead>
-                    {canWrite && <TableHead className="h-10 px-4" />}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <>
+                <div className="space-y-3 p-4 md:hidden">
                   {contratPrestations.map((p) => (
-                    <TableRow key={p.id} className="border-b border-border">
-                      <TableCell className="px-4 py-3">
-                        <p className="font-medium text-slate-800 dark:text-slate-200">{p.libelle}</p>
-                        {p.description && <p className="text-xs text-slate-500 dark:text-slate-400">{p.description}</p>}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-right tabular-nums">
-                        {p.montant != null ? formatFCFA(p.montant) : "—"}
-                      </TableCell>
-                      <TableCell className="px-4 py-3">
+                    <Card key={p.id} className="border-border/80 p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-800 dark:text-slate-200">{p.libelle}</p>
+                          {p.description && (
+                            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{p.description}</p>
+                          )}
+                        </div>
+                        <p className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                          {p.montant != null ? formatFCFA(p.montant) : "—"}
+                        </p>
+                      </div>
+                      <div className="mt-3">
                         {canWrite ? (
                           <Select
                             value={p.statut}
                             onValueChange={(v) => updateContratPrestation(p.id, { statut: v as ContratPrestationStatut })}
                           >
-                            <SelectTrigger className="h-8 w-36">
+                            <SelectTrigger className="h-9 w-full">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -488,38 +512,107 @@ export function ContratDetailScreen() {
                         ) : (
                           <ToneBadge tone={PRESTATION_STATUT_TONE[p.statut]}>{p.statut}</ToneBadge>
                         )}
-                      </TableCell>
+                      </div>
                       {canWrite && (
-                        <TableCell className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1">
-                            {p.statut === "Réalisée" && p.montant != null && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-primary"
-                                onClick={() => handleFacturer(p)}
-                              >
-                                <Receipt className="size-3.5" />
-                                Facturer
-                              </Button>
-                            )}
+                        <div className="mt-3 flex items-center justify-end gap-1 border-t border-border pt-3">
+                          {p.statut === "Réalisée" && p.montant != null && (
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="size-9 text-slate-400 hover:text-red-600"
-                              aria-label={`Supprimer la prestation ${p.libelle}`}
-                              onClick={() => setPrestationToDelete({ id: p.id, libelle: p.libelle })}
+                              size="sm"
+                              className="text-primary"
+                              onClick={() => handleFacturer(p)}
                             >
-                              <Trash2 className="size-4" />
+                              <Receipt className="size-3.5" />
+                              Facturer
                             </Button>
-                          </div>
-                        </TableCell>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-11 text-slate-400 hover:text-red-600"
+                            aria-label={`Supprimer la prestation ${p.libelle}`}
+                            onClick={() => setPrestationToDelete({ id: p.id, libelle: p.libelle })}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
                       )}
-                    </TableRow>
+                    </Card>
                   ))}
-                </TableBody>
-              </Table>
-              </div>
+                </div>
+                <div className="hidden overflow-x-auto md:block">
+                <Table aria-label="Prestations optionnelles du contrat">
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
+                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Libellé</TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs uppercase text-slate-500 dark:text-slate-400">Montant</TableHead>
+                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Statut</TableHead>
+                      {canWrite && <TableHead className="h-10 px-4" />}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contratPrestations.map((p) => (
+                      <TableRow key={p.id} className="border-b border-border">
+                        <TableCell className="px-4 py-3">
+                          <p className="font-medium text-slate-800 dark:text-slate-200">{p.libelle}</p>
+                          {p.description && <p className="text-xs text-slate-500 dark:text-slate-400">{p.description}</p>}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-right tabular-nums">
+                          {p.montant != null ? formatFCFA(p.montant) : "—"}
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
+                          {canWrite ? (
+                            <Select
+                              value={p.statut}
+                              onValueChange={(v) => updateContratPrestation(p.id, { statut: v as ContratPrestationStatut })}
+                            >
+                              <SelectTrigger className="h-8 w-36">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {PRESTATION_STATUTS.map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {s}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <ToneBadge tone={PRESTATION_STATUT_TONE[p.statut]}>{p.statut}</ToneBadge>
+                          )}
+                        </TableCell>
+                        {canWrite && (
+                          <TableCell className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              {p.statut === "Réalisée" && p.montant != null && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-primary"
+                                  onClick={() => handleFacturer(p)}
+                                >
+                                  <Receipt className="size-3.5" />
+                                  Facturer
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-9 text-slate-400 hover:text-red-600"
+                                aria-label={`Supprimer la prestation ${p.libelle}`}
+                                onClick={() => setPrestationToDelete({ id: p.id, libelle: p.libelle })}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                </div>
+              </>
             )}
           </Card>
         </TabsContent>
@@ -670,7 +763,7 @@ function ContratFormModal({
       objet: objet.trim(),
       dateDebut,
       dateFin: dateFin || undefined,
-      montant: Number(montant) || 0,
+      montant: parseAmount(montant),
       statut,
       notes: notes.trim() || undefined,
     });
@@ -824,7 +917,7 @@ function DepenseFormModal({
     if (!canSubmit) return;
     onSubmit({
       libelle: libelle.trim(),
-      montant: Number(montant),
+      montant: parseAmount(montant),
       dateDepense: date,
       modePaiement: mode,
       note: note.trim() || undefined,
@@ -939,7 +1032,7 @@ function PrestationFormModal({
     onSubmit({
       libelle: libelle.trim(),
       description: description.trim() || undefined,
-      montant: montant ? Number(montant) : undefined,
+      montant: montant ? parseAmount(montant) : undefined,
       statut,
       datePrevue: datePrevue || undefined,
     });

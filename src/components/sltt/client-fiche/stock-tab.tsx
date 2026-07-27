@@ -44,27 +44,27 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage }: St
                   <p className="font-medium text-slate-900 dark:text-slate-100">{item.marchandise}</p>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Quantité</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
                         {item.quantite} {item.unite}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Dépositaire</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Dépositaire</dt>
                       <dd className="text-slate-700 dark:text-slate-300">{item.depositaire}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Commercial</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Commercial</dt>
                       <dd className="text-slate-700 dark:text-slate-300">{item.commercial}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Payé</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
                       <dd className="tabular-nums text-emerald-700 dark:text-emerald-400">
                         {formatFCFA(item.sommePayee)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Reste</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Reste</dt>
                       <dd className="tabular-nums text-amber-700 dark:text-amber-400">
                         {formatFCFA(item.resteAPayer)}
                       </dd>
@@ -77,22 +77,22 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage }: St
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Qté
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
                       Dépositaire
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Commercial
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Payé
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Reste
                     </TableHead>
                   </TableRow>
@@ -106,10 +106,10 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage }: St
                       </TableCell>
                       <TableCell className="hidden px-4 py-3.5 sm:table-cell">{item.depositaire}</TableCell>
                       <TableCell className="hidden px-4 py-3.5 md:table-cell">{item.commercial}</TableCell>
-                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-emerald-700">
+                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
                         {formatFCFA(item.sommePayee)}
                       </TableCell>
-                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-amber-700">
+                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-amber-700 dark:text-amber-300">
                         {formatFCFA(item.resteAPayer)}
                       </TableCell>
                     </TableRow>
@@ -119,7 +119,7 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage }: St
             </div>
             {clientMouvements.length > 0 && (
               <div className="border-t border-border px-4 py-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Derniers mouvements
                 </p>
                 <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">

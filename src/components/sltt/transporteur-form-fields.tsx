@@ -133,7 +133,7 @@ export function TransporteurFormStepper({
                     "flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all",
                     done && "border-primary bg-primary text-white",
                     active && "border-primary bg-primary text-white ring-4 ring-primary/20",
-                    !done && !active && reachable && "border-slate-200 bg-white text-slate-500 hover:border-primary/40 dark:border-slate-700 dark:bg-slate-900",
+                    !done && !active && reachable && "border-slate-200 bg-white text-slate-500 dark:text-slate-400 hover:border-primary/40 dark:border-slate-700 dark:bg-slate-900",
                     !reachable && "cursor-default border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900/50",
                   )}
                   title={step.label}
@@ -354,7 +354,7 @@ export function TransporteurFormFields({
                         "rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
                         values.capacite === t
                           ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-slate-500 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
+                          : "border-border text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
                       )}
                     >
                       {t} t
@@ -387,7 +387,7 @@ export function TransporteurFormFields({
                       "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
                       values.trajet === t
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-slate-500 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
+                        : "border-border text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
                     )}
                   >
                     {t}

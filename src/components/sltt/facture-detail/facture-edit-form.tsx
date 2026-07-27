@@ -40,8 +40,8 @@ export function FactureEditForm({
   } = editState;
 
   return (
-    <Card className="overflow-hidden border-blue-200 shadow-md">
-      <div className="border-b border-blue-100 bg-blue-50/80 px-5 py-4 dark:border-blue-900 dark:bg-blue-950/30">
+    <Card className="overflow-hidden border-primary/20 shadow-md">
+      <div className="border-b border-primary/20 bg-primary/5 px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
             <Pencil className="size-3.5 text-white" />
@@ -60,12 +60,13 @@ export function FactureEditForm({
       <div className="space-y-6 p-6">
         <div className="grid gap-5 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Date d'émission</Label>
-            <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="h-10" />
+            <Label htmlFor="edit-facture-date" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Date d'émission</Label>
+            <Input id="edit-facture-date" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="h-10" />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Date d'échéance</Label>
+            <Label htmlFor="edit-facture-date-echeance" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Date d'échéance</Label>
             <Input
+              id="edit-facture-date-echeance"
               type="date"
               value={editDateEcheance}
               onChange={(e) => setEditDateEcheance(e.target.value)}
@@ -73,8 +74,9 @@ export function FactureEditForm({
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Société</Label>
+            <Label htmlFor="edit-facture-societe" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Société</Label>
             <select
+              id="edit-facture-societe"
               value={editSocieteId}
               onChange={(e) => setEditSocieteId(e.target.value)}
               className="h-10 w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -88,7 +90,7 @@ export function FactureEditForm({
         </div>
 
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
-          <Label htmlFor="edit-tva-switch" className="text-xs font-bold uppercase tracking-wide text-slate-500">
+          <Label htmlFor="edit-tva-switch" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Appliquer la TVA ({DEFAULT_TVA_RATE} %)
           </Label>
           <Switch id="edit-tva-switch" checked={editTvaOn} onCheckedChange={setEditTvaOn} />
@@ -96,7 +98,7 @@ export function FactureEditForm({
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Lignes de facturation</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lignes de facturation</p>
             <button
               onClick={() => setEditLignes((l) => [...l, { description: "", quantite: "1", prixUnitaire: "" }])}
               className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400"
@@ -175,8 +177,9 @@ export function FactureEditForm({
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs font-bold uppercase tracking-wide text-slate-500">Notes</Label>
+          <Label htmlFor="edit-facture-notes" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</Label>
           <Textarea
+            id="edit-facture-notes"
             value={editNotes}
             onChange={(e) => setEditNotes(e.target.value)}
             rows={3}

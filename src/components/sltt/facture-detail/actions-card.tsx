@@ -50,7 +50,7 @@ export function ActionsCard({
         {canRecordPaiement && (
           <Button
             variant="outline"
-            className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+            className="w-full justify-start gap-2.5 font-medium text-emerald-700 dark:text-emerald-300 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
             onClick={onShowPaiement}
           >
             <CreditCard className="size-4" /> Enregistrer un paiement
@@ -59,7 +59,7 @@ export function ActionsCard({
         {dossier && (
           <Button
             variant="outline"
-            className="w-full justify-start gap-2.5 font-medium text-indigo-700 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
+            className="w-full justify-start gap-2.5 font-medium text-indigo-700 dark:text-indigo-300 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
             onClick={() => onOpenDossier(dossier.id)}
           >
             <FolderKanban className="size-4" /> Voir le dossier lié

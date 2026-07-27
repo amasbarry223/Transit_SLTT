@@ -84,7 +84,7 @@ export function ClientProfileCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:bg-amber-950/40"
+                className="h-9 border-amber-200 text-amber-700 dark:text-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-300 dark:bg-amber-950/40"
                 onClick={onRelance}
               >
                 <BellRing className="size-4" />

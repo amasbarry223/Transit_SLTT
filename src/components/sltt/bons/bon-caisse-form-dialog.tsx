@@ -225,7 +225,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
 
           <div className="flex items-center justify-between rounded-xl border border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-3">
             <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Total</span>
-            <span className="text-base font-bold tabular-nums text-blue-700">{formatFCFA(caisseTotalSaisi)}</span>
+            <span className="text-base font-bold tabular-nums text-blue-700 dark:text-blue-300">{formatFCFA(caisseTotalSaisi)}</span>
           </div>
         </div>
 

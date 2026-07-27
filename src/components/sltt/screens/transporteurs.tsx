@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Plus, Search, FileText, FileSpreadsheet, Pencil, Trash2,
-  Truck, FolderKanban, Package,
+  Truck, Package,
   Phone, Mail, MapPin, ArrowUpDown, MoreHorizontal, PowerOff,
   Power, Loader2, ChevronLeft, ChevronRight,
 } from "lucide-react";
@@ -13,13 +13,13 @@ import type { Transporteur, TransporteurInput, TransporteurStatut } from "@/lib/
 import { formatDateShort } from "@/lib/format";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
-import { UI_LOAD_DELAY_MS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { ActifStatutBadge } from "@/components/sltt/status-badge";
 import {
   TransporteurFormFields,
@@ -38,7 +38,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -67,7 +66,7 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 
 const PAGE_SIZE = 8;
 
-type SortKey = "date-desc" | "date-asc" | "nom" | "trajet" | "capacite-desc" | "capacite-asc" | "dossiers-desc" | "statut";
+type SortKey = "date-desc" | "date-asc" | "nom" | "trajet" | "capacite-desc" | "capacite-asc" | "statut";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "date-desc",     label: "Date d'ajout (récent)" },
@@ -76,29 +75,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "trajet",        label: "Trajet A → Z" },
   { value: "capacite-desc", label: "Capacité (décroissante)" },
   { value: "capacite-asc",  label: "Capacité (croissante)" },
-  { value: "dossiers-desc", label: "Dossiers traités" },
   { value: "statut",        label: "Statut" },
 ];
-
-/* ------------------------------------------------------------------ */
-/* Skeleton                                                             */
-/* ------------------------------------------------------------------ */
-
-function TransporteursTableSkeleton() {
-  return (
-    <div className="divide-y divide-border">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3.5">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="hidden h-4 w-28 sm:block" />
-          <Skeleton className="hidden h-4 w-24 md:block" />
-          <Skeleton className="ml-auto h-5 w-14 rounded-full" />
-          <Skeleton className="h-7 w-8 rounded" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Pagination                                                           */
@@ -233,11 +211,6 @@ function TransporteurFormModal({
                     {target.vehicule}
                   </span>
                   <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{target.immatriculation}</span>
-                  {target.nbDossiers > 0 && (
-                    <span className="text-xs text-slate-400 dark:text-slate-500">
-                      · {target.nbDossiers} dossier{target.nbDossiers > 1 ? "s" : ""} traité{target.nbDossiers > 1 ? "s" : ""}
-                    </span>
-                  )}
                 </div>
               )}
             </div>
@@ -265,7 +238,7 @@ function TransporteurFormModal({
 
           <DialogFooter className="flex-col gap-3 border-t border-border/60 bg-slate-50/60 px-6 py-4 dark:bg-slate-800/40 sm:flex-row sm:justify-between">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
-              <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-slate-500">
+              <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-slate-500 dark:text-slate-400">
                 Annuler
               </Button>
               <span className="text-xs text-slate-400 dark:text-slate-500">
@@ -319,12 +292,6 @@ export function TransporteursScreen() {
   const updateTransporteurStatut    = useStore((s) => s.updateTransporteurStatut);
   const removeTransporteur          = useStore((s) => s.removeTransporteur);
 
-  const [isLoaded, setIsLoaded]     = useState(false);
-  useEffect(() => {
-    const loadTimer = setTimeout(() => setIsLoaded(true), UI_LOAD_DELAY_MS);
-    return () => clearTimeout(loadTimer);
-  }, []);
-
   // Filters
   const [search,        setSearch]        = useState("");
   const [vehiculeFilter, setVehiculeFilter] = useState("all");
@@ -345,10 +312,9 @@ export function TransporteursScreen() {
   );
 
   /* ---- KPIs ---- */
-  const { actifs, inactifs, totalDossiers, capaciteTotal } = useMemo(() => {
+  const { actifs, inactifs, capaciteTotal } = useMemo(() => {
     let actifs = 0;
     let inactifs = 0;
-    let totalDossiers = 0;
     let capaciteTotal = 0;
     for (const t of transporteurs) {
       if (t.statut === "Actif") {
@@ -357,9 +323,8 @@ export function TransporteursScreen() {
       } else {
         inactifs++;
       }
-      totalDossiers += t.nbDossiers;
     }
-    return { actifs, inactifs, totalDossiers, capaciteTotal };
+    return { actifs, inactifs, capaciteTotal };
   }, [transporteurs]);
 
   /* ---- Filtered & sorted ---- */
@@ -378,7 +343,6 @@ export function TransporteursScreen() {
         case "trajet":        return a.trajet.localeCompare(b.trajet, "fr");
         case "capacite-desc": return b.capacite - a.capacite;
         case "capacite-asc":  return a.capacite - b.capacite;
-        case "dossiers-desc": return b.nbDossiers - a.nbDossiers;
         case "statut":        return a.statut.localeCompare(b.statut);
         default: return 0;
       }
@@ -428,7 +392,6 @@ export function TransporteursScreen() {
         { header: "Immatriculation", accessor: (t: Transporteur) => t.immatriculation },
         { header: "Trajet",          accessor: (t: Transporteur) => t.trajet },
         { header: "Capacité (t)",    accessor: (t: Transporteur) => t.capacite },
-        { header: "Dossiers",        accessor: (t: Transporteur) => t.nbDossiers },
         { header: "Statut",          accessor: (t: Transporteur) => t.statut },
         { header: "Date ajout",      accessor: (t: Transporteur) => formatDateShort(t.dateCreation) },
       ], filtered, { module: "Transporteurs" });
@@ -446,7 +409,6 @@ export function TransporteursScreen() {
         <td>${htmlEscape(t.vehicule)}<br><small style="font-family:monospace">${htmlEscape(t.immatriculation)}</small></td>
         <td>${htmlEscape(t.trajet)}</td>
         <td class="num">${t.capacite} t</td>
-        <td class="num">${t.nbDossiers}</td>
         <td><span class="badge" style="${t.statut === "Actif" ? "background:#d1fae5;color:#065f46" : "background:#f1f5f9;color:#64748b"}">${htmlEscape(t.statut)}</span></td>
       </tr>`).join("");
     printHTML("Liste des transporteurs", `
@@ -455,7 +417,7 @@ export function TransporteursScreen() {
       <table>
         <thead><tr>
           <th>Société</th><th>Contact</th><th>Véhicule</th>
-          <th>Trajet</th><th class="num">Capacité</th><th class="num">Dossiers</th><th>Statut</th>
+          <th>Trajet</th><th class="num">Capacité</th><th>Statut</th>
         </tr></thead>
         <tbody>${rowsHTML}</tbody>
       </table>`, resolvePrintHTMLBrand(societes));
@@ -478,7 +440,6 @@ export function TransporteursScreen() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard label="Actifs"          value={String(actifs)}           icon={Truck}        tone="emerald" sublabel="disponibles pour missions" />
         <KpiCard label="Inactifs"        value={String(inactifs)}         icon={PowerOff}     tone="amber"   sublabel="en maintenance ou suspendus" />
-        <KpiCard label="Dossiers traités" value={String(totalDossiers)}   icon={FolderKanban} tone="blue"    sublabel="au total sur tous partenaires" />
         <KpiCard label="Capacité totale" value={`${capaciteTotal} t`}     icon={Package}      tone="indigo"  sublabel="des transporteurs actifs" />
       </div>
 
@@ -487,10 +448,10 @@ export function TransporteursScreen() {
         <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 px-4 py-3">
           <Truck className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
-            <p className="text-sm font-medium text-amber-900">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
               {inactifs} transporteur{inactifs > 1 ? "s" : ""} inactif{inactifs > 1 ? "s" : ""}
             </p>
-            <p className="mt-0.5 text-xs text-amber-800/80">
+            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300/80">
               Ces partenaires ne peuvent pas recevoir de nouvelles missions.
             </p>
           </div>
@@ -583,25 +544,23 @@ export function TransporteursScreen() {
               </span>
             </div>
 
-            {!isLoaded ? (
-              <TransporteursTableSkeleton />
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-                  <Truck className="size-7" />
-                </div>
-                <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Aucun transporteur trouvé</h3>
-                <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-                  {hasActiveFilters
+            {filtered.length === 0 ? (
+              <EmptyState
+                icon={Truck}
+                title="Aucun transporteur trouvé"
+                description={
+                  hasActiveFilters
                     ? "Modifiez vos filtres ou ajoutez un nouveau partenaire."
-                    : "Commencez par enregistrer votre premier transporteur partenaire."}
-                </p>
-                {!hasActiveFilters && canWrite && (
-                  <Button className="mt-5" onClick={() => setInlineForm({ mode: "add" })}>
-                    <Plus className="size-4" /> Nouveau transporteur
-                  </Button>
-                )}
-              </div>
+                    : "Commencez par enregistrer votre premier transporteur partenaire."
+                }
+                action={
+                  !hasActiveFilters && canWrite ? (
+                    <Button onClick={() => setInlineForm({ mode: "add" })}>
+                      <Plus className="size-4" /> Nouveau transporteur
+                    </Button>
+                  ) : undefined
+                }
+              />
             ) : (
               <>
                 <div className="space-y-3 p-4 md:hidden">
@@ -626,22 +585,22 @@ export function TransporteursScreen() {
                         </div>
                         <dl className="mt-3 space-y-1.5 text-sm">
                           <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Véhicule</dt>
+                            <dt className="text-xs text-slate-500 dark:text-slate-400">Véhicule</dt>
                             <dd className="text-right text-slate-700 dark:text-slate-300">
-                              {t.vehicule} <span className="font-mono text-xs text-slate-500">{t.immatriculation}</span>
+                              {t.vehicule} <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{t.immatriculation}</span>
                             </dd>
                           </div>
                           <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Téléphone</dt>
+                            <dt className="text-xs text-slate-500 dark:text-slate-400">Téléphone</dt>
                             <dd className="font-mono text-xs text-slate-700 dark:text-slate-300">{t.telephone}</dd>
                           </div>
                           <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Trajet</dt>
+                            <dt className="text-xs text-slate-500 dark:text-slate-400">Trajet</dt>
                             <dd className="truncate text-right text-slate-700 dark:text-slate-300">{t.trajet}</dd>
                           </div>
                           <div className="flex justify-between gap-3">
-                            <dt className="text-xs text-slate-500">Capacité / Dossiers</dt>
-                            <dd className="tabular-nums text-slate-700 dark:text-slate-300">{t.capacite} t · {t.nbDossiers}</dd>
+                            <dt className="text-xs text-slate-500 dark:text-slate-400">Capacité</dt>
+                            <dd className="tabular-nums text-slate-700 dark:text-slate-300">{t.capacite} t</dd>
                           </div>
                         </dl>
                         {canWrite && (
@@ -689,7 +648,6 @@ export function TransporteursScreen() {
                         <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Véhicule</TableHead>
                         <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">Trajet</TableHead>
                         <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">Capacité</TableHead>
-                        <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">Dossiers</TableHead>
                         <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</TableHead>
                         <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</TableHead>
                       </TableRow>
@@ -734,9 +692,6 @@ export function TransporteursScreen() {
                             <TableCell className="hidden px-4 py-3.5 text-right tabular-nums lg:table-cell">
                               <span className="font-medium text-slate-700 dark:text-slate-300">{t.capacite} t</span>
                             </TableCell>
-                            <TableCell className="hidden px-4 py-3.5 text-right tabular-nums lg:table-cell">
-                              <span className="font-semibold text-slate-700 dark:text-slate-300">{t.nbDossiers}</span>
-                            </TableCell>
                             <TableCell className="px-4 py-3.5">
                               <div className="flex flex-col gap-1">
                                 <ActifStatutBadge statut={t.statut} />
@@ -776,7 +731,7 @@ export function TransporteursScreen() {
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
-                                          className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+                                          className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
                                           onClick={() => { setDeleteTarget(t); setInlineForm(null); }}
                                         >
                                           <Trash2 className="mr-2 size-3.5" /> Supprimer

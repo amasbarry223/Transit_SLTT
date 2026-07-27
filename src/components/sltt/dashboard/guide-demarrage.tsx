@@ -106,7 +106,7 @@ export function GuideDemarrage({
   }
 
   return (
-    <Card className="gap-0 border-blue-200/70 bg-blue-50/40 p-0 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+    <Card className="gap-0 border-primary/20 bg-primary/5 p-0 shadow-sm">
       <div className="flex items-center justify-between gap-2 px-5 pt-4">
         <div className="flex items-center gap-2">
           <Compass className="size-4 text-blue-600 dark:text-blue-400" />

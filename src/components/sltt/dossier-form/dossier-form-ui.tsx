@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId, isValidElement, cloneElement, type ReactElement } from "react";
 import { ChevronDown, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -105,21 +105,47 @@ export function CollapsibleSection({
 }
 
 export function FormField({
+  id,
   label,
   required,
   error,
   hint,
   children,
 }: {
+  /** Pass an id when `children` isn't a single labelable control (e.g. a wrapper
+   * div around a Select/button group) — wire that same id onto the real control
+   * yourself, as done in transporteur-form-fields.tsx / client-form-fields.tsx. */
+  id?: string;
   label: string;
   required?: boolean;
   error?: string;
   hint?: string;
   children: React.ReactNode;
 }) {
+  const errorId = useId();
+  const generatedId = useId();
+  const fieldId = id ?? generatedId;
+  const control =
+    !id && isValidElement(children)
+      ? cloneElement(
+          children as ReactElement<{
+            id?: string;
+            "aria-describedby"?: string;
+            "aria-invalid"?: boolean;
+          }>,
+          {
+            id: fieldId,
+            ...(error ? { "aria-describedby": errorId, "aria-invalid": true } : {}),
+          },
+        )
+      : children;
+
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+      <Label
+        htmlFor={fieldId}
+        className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300"
+      >
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}
         {hint && (
@@ -138,8 +164,12 @@ export function FormField({
           </Tooltip>
         )}
       </Label>
-      {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {control}
+      {error && (
+        <p id={errorId} role="alert" className="text-xs text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -156,8 +186,8 @@ export function SummaryRow({
   if (tone === "amber") {
     return (
       <div className="flex items-center justify-between py-3 first:pt-0">
-        <span className="text-sm font-medium text-amber-700">{label}</span>
-        <span className="text-sm font-semibold tabular-nums text-amber-700">{value}</span>
+        <span className="text-sm font-medium text-amber-700 dark:text-amber-300">{label}</span>
+        <span className="text-sm font-semibold tabular-nums text-amber-700 dark:text-amber-300">{value}</span>
       </div>
     );
   }

@@ -11,6 +11,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Users,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
@@ -21,6 +22,7 @@ import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { EcartValue } from "@/components/sltt/status-badge";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
@@ -211,6 +213,14 @@ export function BilansScreen() {
   const [sortKey, setSortKey] = useState<SortKey>("reste");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  const theme = useNav((s) => s.theme);
+  const isDark = theme === "dark";
+  // Recharts SVG props n'héritent pas des classes `dark:` (voir dashboard.tsx) —
+  // ces couleurs doivent être calculées explicitement selon le thème.
+  const gridColor = isDark ? "#1E293B" : "#E2E8F0";
+  const tickColor = isDark ? "#94A3B8" : "#64748B";
+  const barCursorFill = isDark ? "rgba(30,41,59,0.5)" : "rgba(241,245,249,0.6)";
+
   const allEcritures = useStore((s) => s.ecritures);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
@@ -371,7 +381,7 @@ export function BilansScreen() {
   }
 
   async function handleExportExcel() {
-    if (recapParClient.length === 0) {
+    if (sortedRecap.length === 0) {
       toast({
         title: "Rien à exporter",
         description: "Aucune écriture pour la période sélectionnée.",
@@ -389,7 +399,7 @@ export function BilansScreen() {
           { header: "Reste à payer (FCFA)", accessor: (r) => r.reste },
           { header: "Écart de règlement (FCFA)", accessor: (r) => r.ecart },
         ],
-        recapParClient,
+        sortedRecap,
         { module: "Comptabilité" },
       );
     } catch {
@@ -397,12 +407,12 @@ export function BilansScreen() {
     }
     toast({
       title: "Export Excel généré",
-      description: `${recapParClient.length} client${recapParClient.length !== 1 ? "s" : ""} exportés — ${periodeLabel}.`,
+      description: `${sortedRecap.length} client${sortedRecap.length !== 1 ? "s" : ""} exportés — ${periodeLabel}.`,
     });
   }
 
   function handleExportPDF() {
-    const rowsHTML = recapParClient
+    const rowsHTML = sortedRecap
       .map(
         (r) => `<tr>
           <td>${htmlEscape(r.client)}</td>
@@ -576,25 +586,25 @@ export function BilansScreen() {
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#E2E8F0"
+                stroke={gridColor}
                 vertical={false}
               />
               <XAxis
                 dataKey="periode"
-                tick={{ fontSize: 12, fill: "#64748B" }}
+                tick={{ fontSize: 12, fill: tickColor }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={(v) => formatFCFACompact(Number(v))}
-                tick={{ fontSize: 12, fill: "#64748B" }}
+                tick={{ fontSize: 12, fill: tickColor }}
                 axisLine={false}
                 tickLine={false}
                 width={56}
               />
               <Tooltip
                 content={<ChartTooltip />}
-                cursor={{ fill: "rgba(241,245,249,0.6)" }}
+                cursor={{ fill: barCursorFill }}
               />
               <Legend
                 wrapperStyle={{ fontSize: 12 }}
@@ -629,119 +639,155 @@ export function BilansScreen() {
               {recapParClient.length} client{recapParClient.length !== 1 ? "s" : ""} · {periodeLabel}
             </span>
           </div>
-          <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border">
-                <SortableHead
-                  col="client"
-                  label="Client"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={toggleSort}
-                  align="left"
-                />
-                <SortableHead
-                  col="investi"
-                  label="Investi"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={toggleSort}
-                />
-                <SortableHead
-                  col="encaisse"
-                  label="Encaissé"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={toggleSort}
-                />
-                <SortableHead
-                  col="reste"
-                  label={<GlossaryLabel term="resteAPayer" short />}
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={toggleSort}
-                />
-                <SortableHead
-                  col="ecart"
-                  label={<GlossaryLabel term="ecartReglement" short />}
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={toggleSort}
-                />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedRecap.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-12 text-center text-sm text-slate-500 dark:text-slate-400"
-                  >
-                    Aucune écriture pour cette période.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedRecap.map((r) => (
-                  <TableRow
-                    key={r.client}
-                    className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
-                  >
-                    <TableCell className="font-medium text-slate-700 dark:text-slate-300">
-                      {r.client}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-slate-700 dark:text-slate-300">
-                      {formatFCFA(r.investi)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
-                      {formatFCFA(r.encaisse)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums text-amber-600 dark:text-amber-400">
-                      {formatFCFA(r.reste)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <EcartValue value={r.ecart} />
-                    </TableCell>
+          {sortedRecap.length === 0 ? (
+            <EmptyState icon={Users} title="Aucune écriture pour cette période." />
+          ) : (
+            <>
+              <div className="space-y-3 md:hidden">
+                {sortedRecap.map((r) => (
+                  <Card key={r.client} className="border-border/80 p-4 shadow-sm">
+                    <p className="font-medium text-slate-800 dark:text-slate-200">{r.client}</p>
+                    <dl className="mt-2 space-y-1 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Investi</dt>
+                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(r.investi)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Encaissé</dt>
+                        <dd className="tabular-nums text-emerald-600 dark:text-emerald-400">{formatFCFA(r.encaisse)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400"><GlossaryLabel term="resteAPayer" short /></dt>
+                        <dd className="font-medium tabular-nums text-amber-600 dark:text-amber-400">{formatFCFA(r.reste)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400"><GlossaryLabel term="ecartReglement" short /></dt>
+                        <dd><EcartValue value={r.ecart} /></dd>
+                      </div>
+                    </dl>
+                  </Card>
+                ))}
+                {hasData && (
+                  <Card className="border-border/80 bg-slate-50 p-4 shadow-sm dark:bg-slate-800">
+                    <p className="font-bold text-slate-900 dark:text-slate-100">Total</p>
+                    <dl className="mt-2 space-y-1 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Investi</dt>
+                        <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.investi)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Encaissé</dt>
+                        <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.encaisse)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Reste</dt>
+                        <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.reste)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Écart</dt>
+                        <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.ecart)}</dd>
+                      </div>
+                    </dl>
+                  </Card>
+                )}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <SortableHead
+                      col="client"
+                      label="Client"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={toggleSort}
+                      align="left"
+                    />
+                    <SortableHead
+                      col="investi"
+                      label="Investi"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={toggleSort}
+                    />
+                    <SortableHead
+                      col="encaisse"
+                      label="Encaissé"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={toggleSort}
+                    />
+                    <SortableHead
+                      col="reste"
+                      label={<GlossaryLabel term="resteAPayer" short />}
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={toggleSort}
+                    />
+                    <SortableHead
+                      col="ecart"
+                      label={<GlossaryLabel term="ecartReglement" short />}
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={toggleSort}
+                    />
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-            {hasData && (
-              <TableFooter>
-                <TableRow className="border-0 bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <TableCell className="font-bold text-slate-900 dark:text-slate-100">
-                    Total
-                  </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
-                    {formatFCFA(recapTotaux.investi)}
-                  </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
-                    {formatFCFA(recapTotaux.encaisse)}
-                  </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
-                    {formatFCFA(recapTotaux.reste)}
-                  </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
-                    {formatFCFA(recapTotaux.ecart)}
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            )}
-          </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {sortedRecap.map((r) => (
+                    <TableRow
+                      key={r.client}
+                      className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                    >
+                      <TableCell className="font-medium text-slate-700 dark:text-slate-300">
+                        {r.client}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-slate-700 dark:text-slate-300">
+                        {formatFCFA(r.investi)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {formatFCFA(r.encaisse)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums text-amber-600 dark:text-amber-400">
+                        {formatFCFA(r.reste)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <EcartValue value={r.ecart} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                {hasData && (
+                  <TableFooter>
+                    <TableRow className="border-0 bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <TableCell className="font-bold text-slate-900 dark:text-slate-100">
+                        Total
+                      </TableCell>
+                      <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                        {formatFCFA(recapTotaux.investi)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                        {formatFCFA(recapTotaux.encaisse)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                        {formatFCFA(recapTotaux.reste)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                        {formatFCFA(recapTotaux.ecart)}
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                )}
+              </Table>
+              </div>
+            </>
+          )}
         </Card>
 
         <Card className="p-5 shadow-sm border-border/80 lg:col-span-1 gap-4">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Répartition</h2>
           {pieTotal === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-                <Percent className="size-6" />
-              </div>
-              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                Aucune donnée pour cette période.
-              </p>
-            </div>
+            <EmptyState icon={Percent} title="Aucune donnée pour cette période." />
           ) : (
             <>
               <div className="relative h-56 w-full">

@@ -49,31 +49,31 @@ export function BonsTab({
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Date</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
                         {formatDateShort(b.date)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Marchandise</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Marchandise</dt>
                       <dd className="truncate text-right text-slate-700 dark:text-slate-300">
                         {b.marchandise}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Quantité</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
                         {b.quantite} {b.unite}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Motif</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
                       <dd>
                         <ToneBadge tone={BON_MOTIF_TONE[b.motif]}>{b.motif}</ToneBadge>
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Montant</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
                       <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">
                         {formatFCFA(b.montant)}
                       </dd>

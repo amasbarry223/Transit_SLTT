@@ -17,7 +17,7 @@ export function AlertesCard({
         <AlertTriangle className="size-4 text-amber-500" />
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Alertes</h2>
         {alertes.length > 0 && (
-          <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold leading-none text-white">
+          <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-semibold leading-none text-white">
             {alertes.length}
           </span>
         )}

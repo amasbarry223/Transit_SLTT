@@ -101,7 +101,7 @@ export function PaiementDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="paiement-montant" className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            <Label htmlFor="paiement-montant" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Montant reçu (FCFA)
             </Label>
             <Input
@@ -121,7 +121,7 @@ export function PaiementDialog({
                   key={pct}
                   type="button"
                   onClick={() => setMontant(String(Math.round((reste * pct) / 100)))}
-                  className="rounded-lg border border-border/60 px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-slate-800"
+                  className="rounded-lg border border-border/60 px-2.5 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-slate-800"
                 >
                   {pct}%
                 </button>
@@ -129,7 +129,7 @@ export function PaiementDialog({
               <button
                 type="button"
                 onClick={() => setMontant(String(reste))}
-                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/40"
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/40"
               >
                 Solde
               </button>

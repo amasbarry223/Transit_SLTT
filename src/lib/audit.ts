@@ -24,9 +24,10 @@ export type AuditModule =
   | "Contrats"
   | "Dépenses"
   | "Sociétés"
-  | "Archives";
+  | "Archives"
+  | "Documents";
 
-export type AuditSourceType = "dossier" | "ecriture" | "facture";
+export type AuditSourceType = "dossier" | "ecriture" | "facture" | "document";
 
 export type AuditSourceRef = {
   sourceType: AuditSourceType;

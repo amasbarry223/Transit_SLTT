@@ -17,7 +17,7 @@ export function syncClientStats(
       nbDossiers: cd.length,
       totalPaye:
         cd.reduce((s, d) => s + d.montantPaye, 0) +
-        cf.reduce((s, f) => s + f.montantPaye, 0) +
+        cf.filter((f) => f.statut !== "Annulée").reduce((s, f) => s + f.montantPaye, 0) +
         ce.reduce((s, e) => s + e.montantPaye, 0),
       totalDu:
         cd.reduce((s, d) => s + resteAPayer(d), 0) +

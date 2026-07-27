@@ -71,7 +71,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn, getInitials } from "@/lib/utils";
+import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
 import { TablePagination } from "@/components/sltt/table-pagination";
 
 const USERS_PAGE_SIZE = 5;
@@ -279,6 +279,9 @@ function UserFormModal({
   const [showPwd, setShowPwd] = useState(false);
   const [showResetPwd, setShowResetPwd] = useState(false);
   const { toast } = useToast();
+  const currentUser = useCurrentUser();
+  const isEditingSelf = mode === "edit" && editingUserId === currentUser?.id;
+  const isDemotingSelf = isEditingSelf && initialState.role === "Administrateur" && form.role !== "Administrateur";
 
   const permCount = permissionsFromSelection(form.perms).length;
   const selectableRoles = isCurrentActorAdmin ? allRoles : allRoles.filter((r) => r !== "Administrateur");
@@ -329,7 +332,7 @@ function UserFormModal({
       <DialogContent className="flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="space-y-3 border-b border-border bg-gradient-to-br from-slate-50 to-white px-6 py-5 dark:from-slate-900 dark:to-slate-950">
           <div className="flex items-center gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-lg font-bold text-white shadow-md">
+            <div className={cn("flex size-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-md", USER_AVATAR_GRADIENT)}>
               {form.nom ? getInitials(form.nom) : <UserPlus className="size-5" />}
             </div>
             <div className="min-w-0 flex-1">
@@ -349,7 +352,7 @@ function UserFormModal({
           {mode === "create" ? (
             <>
               <div className="border-b border-border px-6 py-3">
-                <div className="flex items-center justify-between text-xs text-slate-500">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>Étape {createStep} sur 2 — {createStep === 1 ? "Identité" : "Rôle et accès"}</span>
                 </div>
                 <div className="mt-2 flex gap-2">
@@ -551,6 +554,11 @@ function UserFormModal({
                     Le rôle pré-remplit les permissions — vous pourrez les ajuster à l'étape suivante.
                   </p>
                   <RolePicker value={form.role} onChange={applyRole} roles={selectableRoles} />
+                  {isDemotingSelf && (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                      Vous modifiez votre propre rôle : en enregistrant, vous perdrez immédiatement l&apos;accès aux écrans réservés aux administrateurs.
+                    </p>
+                  )}
                 </div>
               </TabsContent>
 
@@ -887,7 +895,7 @@ export function UsersTab() {
           { label: "Inactifs", value: stats.inactifs, tone: "text-slate-500 dark:text-slate-400" },
         ].map((kpi) => (
           <Card key={kpi.label} className="border-border/80 px-4 py-3 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{kpi.label}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{kpi.label}</p>
             <p className={cn("mt-1 text-2xl font-bold tabular-nums", kpi.tone)}>{kpi.value}</p>
           </Card>
         ))}
@@ -929,7 +937,7 @@ export function UsersTab() {
                 <Card key={u.id} className="border-border/80 p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-xs font-bold text-white">
+                      <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white", USER_AVATAR_GRADIENT)}>
                         {getInitials(u.nom)}
                       </div>
                       <div className="min-w-0">
@@ -962,7 +970,7 @@ export function UsersTab() {
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex items-start justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Rôle</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Rôle</dt>
                       <dd className="flex flex-wrap justify-end gap-1.5">
                         <ToneBadge tone={roleTone[u.role]}>{u.role}</ToneBadge>
                         {isCustomPermissionSet(u.role, u.permissions) && (
@@ -971,7 +979,7 @@ export function UsersTab() {
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Statut</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Statut</dt>
                       <dd className="flex items-center gap-2">
                         <Switch
                           checked={u.actif}
@@ -1001,7 +1009,7 @@ export function UsersTab() {
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Dernière connexion</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Dernière connexion</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(u.derniereConnexion)}</dd>
                     </div>
                   </dl>
@@ -1012,16 +1020,16 @@ export function UsersTab() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-white hover:bg-white dark:bg-slate-950 dark:hover:bg-slate-950">
-                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">Utilisateur</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rôle</TableHead>
-                    <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-slate-500 md:table-cell">
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Utilisateur</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Rôle</TableHead>
+                    <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Modules
                     </TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">Statut</TableHead>
-                    <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-slate-500 lg:table-cell">
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</TableHead>
+                    <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
                       Dernière connexion
                     </TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -1034,7 +1042,7 @@ export function UsersTab() {
                     >
                       <TableCell className="py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-xs font-bold text-white">
+                          <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white", USER_AVATAR_GRADIENT)}>
                             {getInitials(u.nom)}
                           </div>
                           <div className="min-w-0">
@@ -1101,7 +1109,7 @@ export function UsersTab() {
                           </ToneBadge>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden py-3.5 tabular-nums text-sm text-slate-500 lg:table-cell">
+                      <TableCell className="hidden py-3.5 tabular-nums text-sm text-slate-500 dark:text-slate-400 lg:table-cell">
                         {formatDateShort(u.derniereConnexion)}
                       </TableCell>
                       <TableCell className="py-3.5">

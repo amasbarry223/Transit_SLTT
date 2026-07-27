@@ -27,7 +27,6 @@ import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { cn, getErrorMessage } from "@/lib/utils";
-import { UI_LOAD_DELAY_MS } from "@/lib/constants";
 import { exportToExcel, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
@@ -45,7 +44,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -89,8 +87,8 @@ import { TablePagination } from "@/components/sltt/table-pagination";
 const PAGE_SIZE = 8;
 
 const NEXT_STATUT: Partial<Record<DevisStatut, { to: DevisStatut; label: string; colorClass: string; bgClass: string }>> = {
-  Brouillon: { to: "Envoyé",  label: "→ Envoyer",   colorClass: "text-blue-700",    bgClass: "bg-blue-50 dark:bg-blue-950/40" },
-  Envoyé:    { to: "Accepté", label: "→ Accepter",  colorClass: "text-emerald-700", bgClass: "bg-emerald-50 dark:bg-emerald-950/40" },
+  Brouillon: { to: "Envoyé",  label: "→ Envoyer",   colorClass: "text-blue-700 dark:text-blue-300",    bgClass: "bg-blue-50 dark:bg-blue-950/40" },
+  Envoyé:    { to: "Accepté", label: "→ Accepter",  colorClass: "text-emerald-700 dark:text-emerald-300", bgClass: "bg-emerald-50 dark:bg-emerald-950/40" },
 };
 
 type SortKey = "date-desc" | "date-asc" | "reference" | "client" | "montant-desc" | "montant-asc" | "validite-asc" | "statut";
@@ -105,27 +103,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "validite-asc", label: "Validité (proche d'abord)" },
   { value: "statut",       label: "Statut" },
 ];
-
-/* ------------------------------------------------------------------ */
-/* Skeleton                                                            */
-/* ------------------------------------------------------------------ */
-
-function DevisTableSkeleton() {
-  return (
-    <div className="divide-y divide-border">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3.5">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="hidden h-4 w-32 md:block" />
-          <Skeleton className="hidden h-4 w-24 lg:block" />
-          <Skeleton className="ml-auto h-5 w-16 rounded-full" />
-          <Skeleton className="h-7 w-8 rounded" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Pagination                                                          */
@@ -236,8 +213,8 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
 
           {total > 0 && (
             <div className="flex items-center justify-between rounded-lg bg-blue-50 dark:bg-blue-950/40 px-4 py-2.5 text-sm">
-              <span className="font-medium text-blue-700">Total estimé</span>
-              <span className="font-bold tabular-nums text-blue-900">{formatFCFA(total)}</span>
+              <span className="font-medium text-blue-700 dark:text-blue-300">Total estimé</span>
+              <span className="font-bold tabular-nums text-blue-900 dark:text-blue-200">{formatFCFA(total)}</span>
             </div>
           )}
 
@@ -283,12 +260,6 @@ export function DevisScreen() {
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
   const expireDevisObsoletes = useStore((s) => s.expireDevisObsoletes);
   const removeDevis = useStore((s) => s.removeDevis);
-
-  const [isLoaded, setIsLoaded] = useState(false);
-  useEffect(() => {
-    const loadTimer = setTimeout(() => setIsLoaded(true), UI_LOAD_DELAY_MS);
-    return () => clearTimeout(loadTimer);
-  }, []);
 
   // LM-06: expirer les devis obsolètes au montage du composant
   useEffect(() => {
@@ -616,9 +587,7 @@ export function DevisScreen() {
           </span>
         </div>
 
-        {!isLoaded ? (
-          <DevisTableSkeleton />
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
             title="Aucun devis trouvé"
@@ -660,7 +629,7 @@ export function DevisScreen() {
                         <DevisStatutBadge statut={d.statut} />
                         {d.dossierId ? (
                           <button
-                            className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
+                            className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
                             onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
                           >
                             <FolderKanban className="size-3" /> Dossier
@@ -677,15 +646,15 @@ export function DevisScreen() {
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Nature</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Nature</dt>
                         <dd className="truncate text-right text-slate-700 dark:text-slate-300">{d.nature}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Total estimé</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Total estimé</dt>
                         <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(d.total)}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Validité</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Validité</dt>
                         <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.dateValidite)}</dd>
                       </div>
                     </dl>
@@ -696,7 +665,7 @@ export function DevisScreen() {
                       <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Voir" onClick={() => handleOpenDevis(d)}>
                         <Eye className="size-4" />
                       </Button>
-                      {canWrite && (
+                      {canWrite && !d.dossierId && d.statut !== "Accepté" && (
                         <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Modifier" onClick={() => handleOpenEdit(d)}>
                           <Pencil className="size-4" />
                         </Button>
@@ -721,7 +690,7 @@ export function DevisScreen() {
                             </DropdownMenuItem>
                           ) : canWrite && d.statut === "Accepté" && (
                             <DropdownMenuItem
-                              className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
+                              className="text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-950/40 focus:text-emerald-800"
                               onClick={() => setConvertTarget(d)}
                             >
                               <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
@@ -729,7 +698,7 @@ export function DevisScreen() {
                           )}
                           {canWrite && (
                             <DropdownMenuItem
-                              className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+                              className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
                               onClick={() => setDeleteTarget(d)}
                             >
                               <Trash2 className="mr-2 size-3.5" /> Supprimer
@@ -808,7 +777,7 @@ export function DevisScreen() {
                             <DevisStatutBadge statut={d.statut} />
                             {d.dossierId ? (
                               <button
-                                className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
+                                className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
                                 onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
                               >
                                 <FolderKanban className="size-3" /> Dossier créé
@@ -832,7 +801,7 @@ export function DevisScreen() {
                             >
                               <Eye className="size-4" />
                             </Button>
-                            {canWrite && (
+                            {canWrite && !d.dossierId && d.statut !== "Accepté" && (
                               <Button
                                 variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
                                 title="Modifier" onClick={() => handleOpenEdit(d)}
@@ -860,7 +829,7 @@ export function DevisScreen() {
                                   </DropdownMenuItem>
                                 ) : canWrite && d.statut === "Accepté" && (
                                   <DropdownMenuItem
-                                    className="text-emerald-700 focus:bg-emerald-50 dark:bg-emerald-950/40 focus:text-emerald-800"
+                                    className="text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-950/40 focus:text-emerald-800"
                                     onClick={() => setConvertTarget(d)}
                                   >
                                     <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
@@ -868,7 +837,7 @@ export function DevisScreen() {
                                 )}
                                 {canWrite && (
                                   <DropdownMenuItem
-                                    className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+                                    className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
                                     onClick={() => setDeleteTarget(d)}
                                   >
                                     <Trash2 className="mr-2 size-3.5" /> Supprimer

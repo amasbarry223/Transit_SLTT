@@ -61,6 +61,8 @@ import type {
 const baseDossier: Dossier = {
   id: "d1",
   reference: "SLTT-TR-2026-0001",
+  societeId: "22222222-2222-2222-2222-222222222222",
+  societeNom: "SLTT",
   clientId: "c1",
   clientNom: "Golaine Tech",
   bl: "BL-1",

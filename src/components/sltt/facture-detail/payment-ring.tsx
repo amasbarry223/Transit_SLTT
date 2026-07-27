@@ -40,7 +40,7 @@ export function PaymentRing({ pct, reste, isEchue }: { pct: number; reste: numbe
         <p
           className={cn(
             "mt-0.5 text-xl font-extrabold tabular-nums leading-tight",
-            reste === 0 ? "text-emerald-600" : isEchue ? "text-red-600" : "text-amber-700",
+            reste === 0 ? "text-emerald-600" : isEchue ? "text-red-600" : "text-amber-700 dark:text-amber-300",
           )}
         >
           {formatFCFA(reste)}

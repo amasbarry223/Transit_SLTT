@@ -5,12 +5,38 @@ import type { SLTTState } from "@/lib/store";
 import type { ArchiveRow } from "@/lib/db-rows";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 
+const ARCHIVES_ALLOWED_MIME = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+
+/** Déduit un MIME fiable (certains navigateurs laissent file.type vide). */
+export function resolveArchiveMimeType(file: { name: string; type?: string }): string {
+  if (file.type && file.type !== "application/octet-stream") return file.type;
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  const byExt: Record<string, string> = {
+    pdf: "application/pdf",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  };
+  return byExt[ext || ""] || file.type || "application/octet-stream";
+}
+
 interface AddArchiveInput {
   nom: string;
   typeDocument: TypeDocument;
   taille: number;
   type: string;
-  dataUrl: string;
+  /** Fichier brut — évite le round-trip dataURL → fetch() qui échoue sur gros fichiers. */
+  file: Blob;
   dossierId?: string;
   factureId?: string;
   depenseId?: string;
@@ -48,15 +74,20 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
   addArchive: async (input) => {
     const creePar = getConnectedUserName();
-    const res = await fetch(input.dataUrl);
-    const blob = await res.blob();
+    const contentType = resolveArchiveMimeType({ name: input.nom, type: input.type || input.file.type });
+    if (!ARCHIVES_ALLOWED_MIME.has(contentType)) {
+      throw new Error(
+        `Type de fichier non accepté (${contentType || "inconnu"}). Formats : PDF, JPEG, PNG, WebP, Word.`,
+      );
+    }
+
     const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
     const month = new Date().toISOString().slice(0, 7);
     const path = `${month}/${Date.now()}-${safeName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("archives")
-      .upload(path, blob, { contentType: blob.type || "application/octet-stream", upsert: false });
+      .upload(path, input.file, { contentType, upsert: false });
     if (uploadError) throw uploadError;
 
     const { data, error } = await supabase
@@ -65,7 +96,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
         nom: input.nom,
         type_document: input.typeDocument,
         taille: input.taille,
-        mime_type: input.type,
+        mime_type: contentType,
         storage_path: path,
         dossier_id: input.dossierId || null,
         facture_id: input.factureId || null,

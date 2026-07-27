@@ -73,7 +73,7 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/sltt/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn, getInitials } from "@/lib/utils";
+import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
 
 type ParamTab = "users" | "societes" | "profile" | "security" | "audit" | "preferences";
 
@@ -177,7 +177,7 @@ function ProfileTabForm({
       <Card className="p-6 shadow-sm border-border/80">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="flex items-center gap-4">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-bold">
+            <div className={cn("flex size-16 shrink-0 items-center justify-center rounded-full text-white text-xl font-bold", USER_AVATAR_GRADIENT)}>
               {getInitials(pNom || currentUserName)}
             </div>
             <div>
@@ -416,7 +416,7 @@ function SocieteCard({
                 {uploadingLogo ? (
                   <Loader2 className="size-5 animate-spin text-slate-400" />
                 ) : values.logoUrl ? (
-                  <img src={values.logoUrl} alt="" className="size-full object-contain" />
+                  <img src={values.logoUrl} alt="Aperçu du logo de la société" className="size-full object-contain" />
                 ) : (
                   <ImagePlus className="size-5 text-slate-300 dark:text-slate-600" />
                 )}
@@ -804,15 +804,15 @@ function AuditTab() {
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Module</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Module</dt>
                       <dd><ToneBadge tone="slate">{row.module}</ToneBadge></dd>
                     </div>
                     <div className="flex items-start justify-between gap-3">
-                      <dt className="shrink-0 text-xs text-slate-500">Détail</dt>
+                      <dt className="shrink-0 text-xs text-slate-500 dark:text-slate-400">Détail</dt>
                       <dd className="text-right text-slate-700 dark:text-slate-300">{row.detail}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">IP</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">IP</dt>
                       <dd className="font-mono text-xs text-slate-500 dark:text-slate-400">{row.ip}</dd>
                     </div>
                   </dl>
@@ -1030,9 +1030,9 @@ function PreferencesTab() {
         </Button>
       </Card>
 
-      <Card className="p-6 shadow-sm border-border/80 border-red-200/60">
+      <Card className="p-6 shadow-sm border-destructive/20">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
             <AlertTriangle className="size-5" />
           </div>
           <div className="min-w-0 flex-1">

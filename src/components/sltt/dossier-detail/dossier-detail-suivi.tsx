@@ -60,7 +60,7 @@ export function DossierDetailSuivi({
       <section className="space-y-4">
         <div>
           <h2 className="text-base font-semibold">Paiements enregistrés</h2>
-          <p className="text-xs text-slate-500">Écritures comptables liées à {dossier.reference}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Écritures comptables liées à {dossier.reference}</p>
         </div>
         <Card className="border-border/80 p-6 shadow-sm">
           {ecritures.length === 0 ? (
@@ -94,7 +94,7 @@ export function DossierDetailSuivi({
                       <TableRow key={e.id}>
                         <TableCell className="tabular-nums">{formatDateShort(e.date)}</TableCell>
                         <TableCell className="text-right tabular-nums">{formatFCFA(e.montantInvesti)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-emerald-700">{formatFCFA(e.montantPaye)}</TableCell>
+                        <TableCell className="text-right tabular-nums text-emerald-700 dark:text-emerald-300">{formatFCFA(e.montantPaye)}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           {resteE > 0 ? formatFCFA(resteE) : "—"}
                         </TableCell>
@@ -117,7 +117,7 @@ export function DossierDetailSuivi({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold">Factures liées</h2>
-            <p className="text-xs text-slate-500">Factures client émises pour ce dossier</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Factures client émises pour ce dossier</p>
           </div>
           <Button variant="outline" size="sm" onClick={onNewFacture}>
             <ReceiptIcon className="size-4" />
@@ -155,10 +155,10 @@ export function DossierDetailSuivi({
                       className="cursor-pointer"
                       onClick={() => onOpenFacture(f.id)}
                     >
-                      <TableCell className="font-mono text-xs font-semibold text-blue-700">{f.numero}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">{f.numero}</TableCell>
                       <TableCell className="tabular-nums">{formatDateShort(f.date)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatFCFA(f.montantTTC)}</TableCell>
-                      <TableCell className="text-right tabular-nums text-emerald-700">{formatFCFA(f.montantPaye)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-emerald-700 dark:text-emerald-300">{formatFCFA(f.montantPaye)}</TableCell>
                       <TableCell>
                         <FactureStatutBadge statut={f.statut} />
                       </TableCell>
@@ -177,7 +177,7 @@ export function DossierDetailSuivi({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold">Prestataires & transporteurs</h2>
-            <p className="text-xs text-slate-500">Coûts de sous-traitance imputés au dossier</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Coûts de sous-traitance imputés au dossier</p>
           </div>
           {canWrite && (
           <Button size="sm" onClick={onAddFournisseur}>
@@ -240,7 +240,7 @@ export function DossierDetailSuivi({
       <section className="space-y-4">
         <div>
           <h2 className="text-base font-semibold">Historique d&apos;activité</h2>
-          <p className="text-xs text-slate-500">Journal des actions sur ce dossier</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Journal des actions sur ce dossier</p>
         </div>
         <Card className="border-border/80 p-6 shadow-sm">
           {auditLogs.length === 0 ? (
@@ -250,13 +250,13 @@ export function DossierDetailSuivi({
               {auditLogs.map((a) => (
                 <div key={a.id} className="flex items-start gap-3 py-3.5">
                   <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                    <Clock className="size-3.5 text-slate-500" />
+                    <Clock className="size-3.5 text-slate-500 dark:text-slate-400" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{a.action}</p>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{a.detail}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{a.detail}</p>
                   </div>
-                  <div className="shrink-0 text-right text-xs text-slate-500">
+                  <div className="shrink-0 text-right text-xs text-slate-500 dark:text-slate-400">
                     <p>{formatDateShort(a.date.slice(0, 10))}</p>
                     <p className="mt-0.5">{a.user}</p>
                   </div>

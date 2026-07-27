@@ -5,6 +5,7 @@ export { printHTML } from "./print-document";
 export { exportToExcel } from "./excel-export";
 
 export {
+  buildBonSortieCaisseHTML,
   printBonSortieCaisseModule,
   printClasseur,
   printClients,

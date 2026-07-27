@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import type { DevisRow } from "@/lib/db-rows";
 
 function pad(n: number, len: number): string {
@@ -164,7 +165,13 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       throw new Error("Seul un devis Accepté peut être converti en dossier.");
     }
 
+    const transit = resolveTransitSociete(get().societes);
+    if (!transit) {
+      throw new Error("Aucune société transit configurée. Renseignez-la dans Paramètres > Sociétés.");
+    }
+
     const inputDossier: DossierInput = {
+      societeId: transit.id,
       clientId: dev.clientId,
       clientNom: dev.clientNom,
       nature: dev.nature || `Devis ${dev.reference} : ${dev.notes || "transit"}`,

@@ -136,17 +136,25 @@ export const useNav = create<NavState>()(
         })),
 
       logout: async () => {
-        try {
-          if (isSupabaseConfigured) {
-            await supabase.auth.signOut();
-          }
-        } catch { /* ignore */ }
+        // Libérer l'UI immédiatement — ne jamais bloquer sur le réseau Auth.
         set({
           ...LOGGED_OUT,
           view: "dashboard",
           selectedId: null,
           dossierFormMode: "create",
         });
+
+        if (!isSupabaseConfigured) return;
+
+        // 1) Session locale (sans fetch) — évite "Failed to fetch" bloquant.
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch {
+          /* ignore */
+        }
+
+        // 2) Révocation serveur en best-effort (hors ligne / CORS / CSP).
+        void supabase.auth.signOut({ scope: "global" }).catch(() => undefined);
       },
 
       touchActivity: () => set({ lastActivityAt: Date.now() }),

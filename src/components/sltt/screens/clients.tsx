@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Card } from "@/components/ui/card";
@@ -68,38 +69,6 @@ function avatarGradient(type: ClientType): string {
   return type === "Entreprise"
     ? "from-blue-600 to-indigo-700"
     : "from-slate-600 to-slate-800";
-}
-
-function EmptyState({
-  hasQuery,
-  onCreate,
-  canCreate = true,
-}: {
-  hasQuery: boolean;
-  onCreate: () => void;
-  canCreate?: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-        <Users className="size-7" />
-      </div>
-      <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
-        {hasQuery ? "Aucun résultat" : "Aucun client enregistré"}
-      </h3>
-      <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-        {hasQuery
-          ? "Essayez un autre terme de recherche ou modifiez les filtres."
-          : "Commencez par ajouter votre premier client à l'annuaire."}
-      </p>
-      {!hasQuery && canCreate && (
-        <Button className="mt-5" onClick={onCreate}>
-          <UserPlus className="size-4" />
-          Créer votre premier client
-        </Button>
-      )}
-    </div>
-  );
 }
 
 export function ClientsScreen() {
@@ -267,7 +236,11 @@ export function ClientsScreen() {
           <Printer className="size-4" />
           Imprimer la liste
         </Button>
-        <Button onClick={openCreateDialog} disabled={!canWrite}>
+        <Button
+          onClick={openCreateDialog}
+          disabled={!canWrite}
+          title={!canWrite ? "Vous n'avez pas la permission de créer un client." : undefined}
+        >
           <UserPlus className="size-4" />
           Nouveau client
         </Button>
@@ -379,7 +352,23 @@ export function ClientsScreen() {
       {/* Tableau */}
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         {filtered.length === 0 ? (
-          <EmptyState hasQuery={hasActiveFilters} onCreate={openCreateDialog} canCreate={canWrite} />
+          <EmptyState
+            icon={Users}
+            title={hasActiveFilters ? "Aucun résultat" : "Aucun client enregistré"}
+            description={
+              hasActiveFilters
+                ? "Essayez un autre terme de recherche ou modifiez les filtres."
+                : "Commencez par ajouter votre premier client à l'annuaire."
+            }
+            action={
+              !hasActiveFilters && canWrite ? (
+                <Button onClick={openCreateDialog}>
+                  <UserPlus className="size-4" />
+                  Créer votre premier client
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="space-y-3 p-4 md:hidden">
@@ -433,18 +422,18 @@ export function ClientsScreen() {
                   <dl className="mt-3 space-y-1.5 text-sm">
                     {c.telephone && (
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Téléphone</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Téléphone</dt>
                         <dd className="font-mono text-xs text-slate-700 dark:text-slate-300">{c.telephone}</dd>
                       </div>
                     )}
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Dossiers</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Dossiers</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
                         {c.nbDossiers}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Total dû</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Total dû</dt>
                       <dd className="tabular-nums">
                         {c.totalDu > 0 ? (
                           <span className="font-semibold text-amber-600 dark:text-amber-400">

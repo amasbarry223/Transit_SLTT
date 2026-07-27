@@ -15,9 +15,11 @@ import {
   CircleCheck,
   Receipt,
   Info,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
+import { exportToExcel } from "@/lib/export";
 import { resolveTransitSociete, SLTT_SOCIETE_ID } from "@/lib/societe-brand";
 import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
@@ -304,12 +306,57 @@ export function ComptabiliteScreen() {
     resetNewEcriture();
   }
 
+  async function handleExportExcel() {
+    if (filtered.length === 0) {
+      toast({
+        title: "Rien à exporter",
+        description: "Aucune écriture ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      await exportToExcel(
+        `comptabilite-ecritures-${new Date().toISOString().slice(0, 10)}`,
+        [
+          { header: "Date", accessor: (e: Ecriture) => formatDateShort(e.date) },
+          { header: "Client", accessor: (e: Ecriture) => e.clientNom },
+          { header: "Société", accessor: (e: Ecriture) => e.societeNom ?? "" },
+          { header: "Investi (FCFA)", accessor: (e: Ecriture) => e.montantInvesti },
+          { header: "Payé (FCFA)", accessor: (e: Ecriture) => e.montantPaye },
+          { header: "Reste dû (FCFA)", accessor: (e: Ecriture) => resteAPayer(e) },
+          { header: "Écart (FCFA)", accessor: (e: Ecriture) => e.montantPaye - e.montantInvesti },
+          { header: "Mode de paiement", accessor: (e: Ecriture) => e.modePaiement },
+          { header: "Statut", accessor: (e: Ecriture) => deriveStatut(e) },
+        ],
+        filtered,
+        { module: "Comptabilité" },
+      );
+    } catch {
+      return;
+    }
+    toast({
+      title: "Export Excel généré",
+      description: `${filtered.length} écriture${filtered.length !== 1 ? "s" : ""} exportée${filtered.length !== 1 ? "s" : ""}.`,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Comptabilité"
         description="Suivi interne des paiements — dossiers de transit et entreposage par société"
       >
+        <Button
+          variant="outline"
+          onClick={handleExportExcel}
+          disabled={filtered.length === 0}
+          title="Exporter en Excel"
+          aria-label="Exporter en Excel"
+        >
+          <FileSpreadsheet className="size-4" />
+          <span className="hidden sm:inline">Excel</span>
+        </Button>
         {canWrite && (
           <Button
             onClick={() => {
@@ -339,9 +386,9 @@ export function ComptabiliteScreen() {
         <p>
           <strong>Où enregistrer un paiement ?</strong> Dossier transit → transition « Soldé » sur la fiche dossier ;
           facture client → module{" "}
-          <button onClick={() => go("factures")} className="font-semibold underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-100">
+          <Button variant="link" className="h-auto p-0 font-semibold" onClick={() => go("factures")}>
             Factures
-          </button>
+          </Button>
           ; paiement autonome sans dossier → écriture ici. Les trois canaux sont indépendants.
         </p>
       </div>
@@ -545,19 +592,19 @@ export function ComptabiliteScreen() {
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Société</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
                         <dd><SocieteBadge societeNom={e.societeNom} size="sm" /></dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Investi</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Investi</dt>
                         <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(e.montantInvesti)}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Payé</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
                         <dd className="tabular-nums text-emerald-600 dark:text-emerald-400">{formatFCFA(e.montantPaye)}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Reste dû</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Reste dû</dt>
                         <dd className="tabular-nums">
                           {solde ? (
                             <span className="font-medium text-emerald-600 dark:text-emerald-400">Soldé</span>
@@ -567,7 +614,7 @@ export function ComptabiliteScreen() {
                         </dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Mode</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Mode</dt>
                         <dd className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                           <ModeIcon className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                           {e.modePaiement}

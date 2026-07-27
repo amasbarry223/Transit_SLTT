@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, FileText, Search, Banknote, Wallet, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Plus, FileText, Search, Banknote, Wallet, Trash2, Loader2, AlertTriangle, Printer } from "lucide-react";
 import type { BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { printBonSortieCaisseModule } from "@/lib/export";
+import { buildBonSortieCaisseHTML, type BonSortieCaisseModuleData } from "@/lib/export";
+import { requirePrintHTMLBrand } from "@/lib/societe-brand";
 import { KpiCard } from "@/components/sltt/kpi-card";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -23,11 +25,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TabsContent } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type BonCaisseTabProps = {
+  bons: BonSortieCaisse[];
   canWriteCaisse: boolean;
   onOpenCreateDialog: () => void;
 };
+
+type PreviewState =
+  | { status: "closed" }
+  | { status: "loading"; reference: string }
+  | { status: "ready"; reference: string; html: string; montantTotal: number }
+  | { status: "error"; reference: string; message: string };
 
 function beneficiairesSummary(bon: BonSortieCaisse): string {
   if (bon.lignes.length === 0) return "—";
@@ -35,13 +52,14 @@ function beneficiairesSummary(bon: BonSortieCaisse): string {
   return bon.lignes.length > 1 ? `${first} +${bon.lignes.length - 1}` : first;
 }
 
-export function BonCaisseTab({ canWriteCaisse, onOpenCreateDialog }: BonCaisseTabProps) {
+export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCreateDialog }: BonCaisseTabProps) {
   const { toast } = useToast();
-  const bonsSortieCaisse = useStore((state) => state.bonsSortieCaisse);
   const removeBonSortieCaisse = useStore((state) => state.removeBonSortieCaisse);
   const societes = useStore((state) => state.societes);
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
   const [caisseSearch, setCaisseSearch] = useState("");
+  const [preview, setPreview] = useState<PreviewState>({ status: "closed" });
 
   const { target: caisseDeleteTarget, setTarget: setCaisseDeleteTarget, confirm: handleDeleteCaisse } =
     useDeleteConfirm<BonSortieCaisse>(
@@ -73,34 +91,120 @@ export function BonCaisseTab({ canWriteCaisse, onOpenCreateDialog }: BonCaisseTa
     );
   }, [bonsSortieCaisse, caisseSearch]);
 
-  function handlePrintCaisse(bon: BonSortieCaisse) {
+  function buildCaissePrintData(bon: BonSortieCaisse): BonSortieCaisseModuleData | null {
     const societe = societes.find((item) => item.id === bon.societeId);
-    printBonSortieCaisseModule({
+    const brand = societe
+      ? {
+          name: societe.nom,
+          logoUrl: societe.logoUrl,
+          afficherNomAvecLogo: societe.afficherNomAvecLogo,
+          legal: {
+            adresse: societe.adresse,
+            telephone: societe.telephone,
+            rccm: societe.rccm,
+            nif: societe.nif,
+          },
+        }
+      : bon.societeNom.trim()
+        ? { name: bon.societeNom }
+        : null;
+
+    if (!requirePrintHTMLBrand(brand, "ce bon de sortie de caisse")) {
+      return null;
+    }
+
+    return {
       reference: bon.reference,
       date: bon.date,
-      societeNom: bon.societeNom,
+      societeNom: brand.name!,
       logoUrl: societe?.logoUrl,
       afficherNomAvecLogo: societe?.afficherNomAvecLogo,
-      legal: societe && {
-        adresse: societe.adresse,
-        telephone: societe.telephone,
-        rccm: societe.rccm,
-        nif: societe.nif,
-      },
+      legal: societe
+        ? {
+            adresse: societe.adresse,
+            telephone: societe.telephone,
+            rccm: societe.rccm,
+            nif: societe.nif,
+          }
+        : undefined,
       lignes: bon.lignes,
       montantTotal: bon.montantTotal,
       signataireDg: societe?.signataireDg,
       signatairePdg: societe?.signatairePdg,
-    });
+    };
   }
 
-  function handlePrintCaisseWithToast(bon: BonSortieCaisse) {
-    handlePrintCaisse(bon);
-    toast({
-      title: "Bon prêt à imprimer",
-      description: `${bon.reference} — ${formatFCFA(bon.montantTotal)}.`,
-    });
+  function handleOpenPreview(bon: BonSortieCaisse) {
+    setPreview({ status: "loading", reference: bon.reference });
+
+    if (bon.lignes.length === 0) {
+      setPreview({
+        status: "error",
+        reference: bon.reference,
+        message: "Aucune ligne à imprimer sur ce bon.",
+      });
+      toast({
+        title: "Document introuvable",
+        description: "Ce bon de sortie de caisse n'a aucune ligne.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const data = buildCaissePrintData(bon);
+    if (!data) {
+      // requirePrintHTMLBrand a déjà alerté l'utilisateur.
+      setPreview({
+        status: "error",
+        reference: bon.reference,
+        message:
+          "Société introuvable — configurez-la dans Paramètres > Sociétés, puis réessayez.",
+      });
+      return;
+    }
+
+    try {
+      const html = buildBonSortieCaisseHTML(data);
+      setPreview({
+        status: "ready",
+        reference: bon.reference,
+        html,
+        montantTotal: bon.montantTotal,
+      });
+      toast({
+        title: "Aperçu prêt",
+        description: `${bon.reference} — ${formatFCFA(bon.montantTotal)}.`,
+      });
+    } catch {
+      setPreview({
+        status: "error",
+        reference: bon.reference,
+        message: "Impossible de générer le document. Réessayez.",
+      });
+      toast({
+        title: "Erreur",
+        description: "La génération du bon a échoué.",
+        variant: "destructive",
+      });
+    }
   }
+
+  function handlePrintFromPreview() {
+    const frame = previewIframeRef.current;
+    const win = frame?.contentWindow;
+    if (!win) {
+      toast({
+        title: "Impression impossible",
+        description: "L'aperçu n'est pas encore chargé.",
+        variant: "destructive",
+      });
+      return;
+    }
+    win.focus();
+    win.print();
+  }
+
+  const previewOpen = preview.status !== "closed";
 
   return (
     <>
@@ -147,23 +251,27 @@ export function BonCaisseTab({ canWriteCaisse, onOpenCreateDialog }: BonCaisseTa
           </div>
 
           {filteredCaisse.length === 0 ? (
-            <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-                <Banknote className="size-7" />
-              </div>
-              <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Aucune sortie de caisse</h3>
-              <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-                {caisseSearch
+            <EmptyState
+              illustration={
+                <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                  <Banknote className="size-5" />
+                </div>
+              }
+              title="Aucune sortie de caisse"
+              description={
+                caisseSearch
                   ? "Modifiez votre recherche ou enregistrez une nouvelle sortie."
-                  : "Enregistrez un décaissement (honoraires, frais divers…)."}
-              </p>
-              {!caisseSearch && canWriteCaisse && (
-                <Button className="mt-5" onClick={onOpenCreateDialog}>
-                  <Plus className="size-4" />
-                  Nouvelle sortie de caisse
-                </Button>
-              )}
-            </div>
+                  : "Enregistrez un décaissement (honoraires, frais divers…)."
+              }
+              action={
+                !caisseSearch && canWriteCaisse ? (
+                  <Button onClick={onOpenCreateDialog}>
+                    <Plus className="size-4" />
+                    Nouvelle sortie de caisse
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <>
               <div className="space-y-3 p-4 md:hidden">
@@ -172,7 +280,7 @@ export function BonCaisseTab({ canWriteCaisse, onOpenCreateDialog }: BonCaisseTa
                     key={bon.id}
                     bon={bon}
                     canWriteCaisse={canWriteCaisse}
-                    onPrint={handlePrintCaisseWithToast}
+                    onPrint={handleOpenPreview}
                     onDelete={setCaisseDeleteTarget}
                   />
                 ))}
@@ -210,7 +318,7 @@ export function BonCaisseTab({ canWriteCaisse, onOpenCreateDialog }: BonCaisseTa
                         key={bon.id}
                         bon={bon}
                         canWriteCaisse={canWriteCaisse}
-                        onPrint={handlePrintCaisseWithToast}
+                        onPrint={handleOpenPreview}
                         onDelete={setCaisseDeleteTarget}
                       />
                     ))}
@@ -221,6 +329,63 @@ export function BonCaisseTab({ canWriteCaisse, onOpenCreateDialog }: BonCaisseTa
           )}
         </Card>
       </TabsContent>
+
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(open) => {
+          if (!open) setPreview({ status: "closed" });
+        }}
+      >
+        <DialogContent className="flex max-h-[90vh] w-[min(100%,880px)] max-w-[880px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[880px]">
+          <DialogHeader className="border-b border-border px-6 py-4">
+            <DialogTitle>
+              Aperçu — {preview.status !== "closed" ? preview.reference : "Bon de caisse"}
+            </DialogTitle>
+            <DialogDescription>
+              Vérifiez le document puis imprimez ou enregistrez-le en PDF.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="min-h-[420px] flex-1 bg-slate-100 dark:bg-slate-900">
+            {preview.status === "loading" && (
+              <div className="flex h-[420px] flex-col items-center justify-center gap-3 text-slate-500">
+                <Loader2 className="size-6 animate-spin text-primary" />
+                <p className="text-sm">Génération de l&apos;aperçu…</p>
+              </div>
+            )}
+            {preview.status === "error" && (
+              <div className="flex h-[420px] flex-col items-center justify-center gap-3 px-6 text-center">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                  <AlertTriangle className="size-5" />
+                </div>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Document introuvable</p>
+                <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">{preview.message}</p>
+              </div>
+            )}
+            {preview.status === "ready" && (
+              <iframe
+                ref={previewIframeRef}
+                title={`Aperçu ${preview.reference}`}
+                srcDoc={preview.html}
+                className="h-[min(60vh,560px)] w-full border-0 bg-white"
+              />
+            )}
+          </div>
+
+          <DialogFooter className="border-t border-border px-6 py-4 sm:justify-between">
+            <Button variant="outline" onClick={() => setPreview({ status: "closed" })}>
+              Fermer
+            </Button>
+            <Button
+              disabled={preview.status !== "ready"}
+              onClick={handlePrintFromPreview}
+            >
+              <Printer className="size-4" />
+              Imprimer / Enregistrer en PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDeleteDialog
         open={!!caisseDeleteTarget}
@@ -257,17 +422,17 @@ function CaisseMobileCard({
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Date</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
           <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(bon.date)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Motif</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
           <dd className="truncate text-right text-slate-700 dark:text-slate-300">
             {bon.lignes.map((ligne) => ligne.motif).join(", ")}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Montant</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
           <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(bon.montantTotal)}</dd>
         </div>
       </dl>
@@ -275,8 +440,8 @@ function CaisseMobileCard({
         <Button
           variant="ghost"
           size="icon"
-          className="size-9 text-slate-500 dark:text-slate-400 hover:text-primary"
-          aria-label={`Imprimer ${bon.reference}`}
+          className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+          aria-label={`Aperçu PDF ${bon.reference}`}
           title="PDF / Imprimer"
           onClick={() => onPrint(bon)}
         >
@@ -286,7 +451,7 @@ function CaisseMobileCard({
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 text-slate-400 hover:text-red-600"
+            className="size-11 text-slate-400 hover:text-red-600"
             aria-label={`Supprimer ${bon.reference}`}
             title="Supprimer"
             onClick={() => onDelete(bon)}
@@ -338,7 +503,7 @@ function CaisseTableRow({
             variant="ghost"
             size="icon"
             className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
-            aria-label={`Imprimer ${bon.reference}`}
+            aria-label={`Aperçu PDF ${bon.reference}`}
             title="PDF / Imprimer"
             onClick={() => onPrint(bon)}
           >

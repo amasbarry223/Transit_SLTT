@@ -171,26 +171,26 @@ export function MouvementsTab({
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Société</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
                         <dd><SocieteBadge societeNom={m.societeNom} size="sm" /></dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Quantité</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
                         <dd className="tabular-nums text-slate-700 dark:text-slate-300">{m.quantite} {m.unite}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500">Responsable</dt>
+                        <dt className="text-xs text-slate-500 dark:text-slate-400">Responsable</dt>
                         <dd className="text-slate-700 dark:text-slate-300">{m.responsable}</dd>
                       </div>
                       {hasBon && (
                         <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500">Bon lié</dt>
+                          <dt className="text-xs text-slate-500 dark:text-slate-400">Bon lié</dt>
                           <dd className="font-mono text-xs text-primary">{m.bonRef}</dd>
                         </div>
                       )}
                       {m.motif && (
                         <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500">Motif</dt>
+                          <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
                           <dd className="text-right text-slate-700 dark:text-slate-300">{m.motif}</dd>
                         </div>
                       )}

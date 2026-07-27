@@ -109,7 +109,7 @@ function VerticalStepper({
     return (
       <div className={cn(
         "flex items-center gap-2.5 rounded-xl p-3",
-        statut === "Refusé" ? "bg-red-50 dark:bg-red-950/40 text-red-700" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700",
+        statut === "Refusé" ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
       )}>
         <Icon className="size-5 shrink-0" />
         <div>
@@ -165,11 +165,15 @@ function VerticalStepper({
             <div className={cn("pt-1.5", !isLast && "pb-5")}>
               <p className={cn(
                 "text-sm font-semibold leading-tight",
-                current ? "text-blue-700" : done ? "text-emerald-700" : "text-slate-400 dark:text-slate-500",
+                current
+                  ? "text-blue-700 dark:text-blue-300"
+                  : done
+                    ? "text-emerald-700 dark:text-emerald-300"
+                    : "text-slate-400 dark:text-slate-500",
               )}>
                 {s}
                 {current && (
-                  <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                  <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">
                     Actuel
                   </span>
                 )}
@@ -329,7 +333,17 @@ export function DevisDetailScreen() {
   };
 
   const handleSave = () => {
-    if (!devis || !canEditContent || !fClientId || !fNature.trim() || !fDateValidite) return;
+    if (!devis) return;
+    if (!canEditContent) {
+      toast({
+        title: "Modification impossible",
+        description: "Ce devis a été accepté ou converti en dossier entre-temps : il n'est plus modifiable.",
+        variant: "destructive",
+      });
+      setIsEditing(false);
+      return;
+    }
+    if (!fClientId || !fNature.trim() || !fDateValidite) return;
     updateDevis(devis.id, {
       clientId: fClientId, clientNom: fClientNom, nature: fNature,
       droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp,
@@ -407,10 +421,10 @@ export function DevisDetailScreen() {
       </button>
 
       {/* ════════════════════════════════════════════════════════════
-          SUMMARY CARD — fond blanc, bordure bleue gauche
+          SUMMARY CARD — le statut est déjà porté par DevisStatutBadge
       ════════════════════════════════════════════════════════════ */}
       <Card className="border-border/80 shadow-sm overflow-hidden">
-        <div className="flex border-l-4 border-blue-600">
+        <div className="flex">
           <div className="flex-1 p-5 sm:p-6">
             {/* Top row: reference + total */}
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -421,7 +435,7 @@ export function DevisDetailScreen() {
                   {devis.dossierId && (
                     <button
                       onClick={() => openDossierDetail(devis.dossierId!)}
-                      className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                      className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-100"
                     >
                       <FileCheck2 className="size-3" /> Dossier créé
                     </button>
@@ -436,7 +450,7 @@ export function DevisDetailScreen() {
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total estimé</p>
-                <p className="mt-0.5 text-3xl font-extrabold tabular-nums text-blue-700 leading-tight">
+                <p className="mt-0.5 text-3xl font-extrabold tabular-nums text-blue-700 dark:text-blue-300 leading-tight">
                   {formatFCFA(devis.total, false)}
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">FCFA</p>
@@ -464,13 +478,13 @@ export function DevisDetailScreen() {
                   )}
                   {devis.dossierId ? (
                     <Button size="sm" variant="outline"
-                      className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+                      className="gap-2 text-emerald-700 dark:text-emerald-300 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                       onClick={() => openDossierDetail(devis.dossierId!)}>
                       <FileCheck2 className="size-4" /> Voir le dossier
                     </Button>
                   ) : canWrite && devis.statut === "Accepté" ? (
                     <Button size="sm" variant="outline"
-                      className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+                      className="gap-2 text-emerald-700 dark:text-emerald-300 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                       onClick={() => { setConfirmConvert(true); setConfirmDelete(false); }}>
                       <FileCheck2 className="size-4" /> Convertir en dossier
                     </Button>
@@ -501,7 +515,7 @@ export function DevisDetailScreen() {
                       })}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+                        className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
                         onClick={() => { setConfirmDelete(true); setConfirmConvert(false); }}
                       >
                         <Trash2 className="mr-2 size-3.5" /> Supprimer
@@ -610,13 +624,13 @@ export function DevisDetailScreen() {
                 )}
                 {devis.dossierId ? (
                   <Button variant="outline"
-                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 dark:text-emerald-300 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                     onClick={() => openDossierDetail(devis.dossierId!)}>
                     <FileCheck2 className="size-4" /> Voir le dossier
                   </Button>
                 ) : canWrite && devis.statut === "Accepté" ? (
                   <Button variant="outline"
-                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
+                    className="w-full justify-start gap-2.5 font-medium text-emerald-700 dark:text-emerald-300 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40"
                     onClick={() => { setConfirmConvert(true); setConfirmDelete(false); }}>
                     <FileCheck2 className="size-4" /> Convertir en dossier
                   </Button>
@@ -641,13 +655,13 @@ export function DevisDetailScreen() {
           EDIT MODE — formulaire inline
       ════════════════════════════════════════════════════════════ */}
       {isEditing && (
-        <Card className="border-blue-200 shadow-md overflow-hidden">
-          <div className="border-b border-blue-100 dark:border-blue-900 bg-blue-50/80 dark:bg-blue-950/30 px-5 py-4">
+        <Card className="border-primary/20 shadow-md overflow-hidden">
+          <div className="border-b border-primary/20 bg-primary/5 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
                 <Pencil className="size-3.5 text-white" />
               </div>
-              <h2 className="text-sm font-bold text-blue-900">Modifier le devis — {devis.reference}</h2>
+              <h2 className="text-sm font-bold text-blue-900 dark:text-blue-200">Modifier le devis — {devis.reference}</h2>
             </div>
           </div>
 
@@ -696,8 +710,8 @@ export function DevisDetailScreen() {
               </div>
               {editTotal > 0 && (
                 <div className="flex items-center justify-between rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 px-4 py-3">
-                  <span className="text-sm font-bold text-blue-800">Total estimé</span>
-                  <span className="text-lg font-extrabold tabular-nums text-blue-900">{formatFCFA(editTotal)}</span>
+                  <span className="text-sm font-bold text-blue-800 dark:text-blue-300">Total estimé</span>
+                  <span className="text-lg font-extrabold tabular-nums text-blue-900 dark:text-blue-200">{formatFCFA(editTotal)}</span>
                 </div>
               )}
             </div>
@@ -747,19 +761,19 @@ export function DevisDetailScreen() {
           Suppression — zone danger inline
       ════════════════════════════════════════════════════════════ */}
       {confirmDelete && !isEditing && (
-        <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50/60 dark:bg-red-950/30 p-6 shadow-sm">
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 shadow-sm">
           <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 border border-red-200">
-              <AlertTriangle className="size-6 text-red-700" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 border border-destructive/20">
+              <AlertTriangle className="size-6 text-red-700 dark:text-red-300" />
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-bold text-red-900">Supprimer définitivement ce devis ?</h3>
-              <p className="mt-1 text-sm text-red-800/80 leading-relaxed">
+              <h3 className="text-base font-bold text-red-900 dark:text-red-200">Supprimer définitivement ce devis ?</h3>
+              <p className="mt-1 text-sm text-red-800 dark:text-red-300/80 leading-relaxed">
                 Le devis <strong>{devis.reference}</strong> ({devis.clientNom} · {formatFCFA(devis.total)})
                 sera supprimé de façon permanente et irréversible.
               </p>
               {devis.dossierId && (
-                <p className="mt-2 text-sm font-medium text-red-900 leading-relaxed">
+                <p className="mt-2 text-sm font-medium text-red-900 dark:text-red-200 leading-relaxed">
                   ⚠ Ce devis est à l'origine du dossier associé — le dossier n'est pas supprimé, mais son devis d'origine disparaîtra de l'historique.
                 </p>
               )}

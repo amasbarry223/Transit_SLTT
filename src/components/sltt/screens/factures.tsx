@@ -3,14 +3,31 @@
 import * as React from "react";
 import {
   Plus, Search, Receipt, TrendingUp, Clock, CheckCircle2,
-  ArrowRight, Trash2, Eye, Send, X, ChevronDown, Info,
+  ArrowRight, Trash2, Eye, Send, X, Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { PageHeader } from "@/components/sltt/page-header";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { InfoCallout } from "@/components/sltt/info-callout";
 import { useStore, type Facture, type FactureStatut, type FactureInput } from "@/lib/store";
@@ -171,38 +188,36 @@ function FactureFormModal({
           <div className="grid grid-cols-1 gap-4 px-6 py-5 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Dossier lié (optionnel)</Label>
-              <div className="relative">
-                <select
-                  value={dossierId}
-                  onChange={(e) => handleDossierChange(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                >
-                  <option value="">— Aucun dossier —</option>
+              <Select value={dossierId || "none"} onValueChange={(v) => handleDossierChange(v === "none" ? "" : v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Aucun dossier —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Aucun dossier —</SelectItem>
                   {dossiers.map((d) => (
-                    <option key={d.id} value={d.id}>{d.reference} · {d.clientNom}</option>
+                    <SelectItem key={d.id} value={d.id}>{d.reference} · {d.clientNom}</SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-              </div>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Client *</Label>
-              <div className="relative">
-                <select
-                  value={clientId}
-                  onChange={(e) => handleClientChange(e.target.value)}
-                  required
-                  disabled={!!dossierId}
-                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <option value="">Sélectionner un client</option>
+              <Select
+                value={clientId || "none"}
+                onValueChange={(v) => handleClientChange(v === "none" ? "" : v)}
+                disabled={!!dossierId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sélectionner un client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sélectionner un client</SelectItem>
                   {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nom}</option>
+                    <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-              </div>
+                </SelectContent>
+              </Select>
               {dossierId && (
                 <p className="text-[11px] text-slate-400 dark:text-slate-500">
                   Verrouillé sur le client du dossier lié.
@@ -212,19 +227,17 @@ function FactureFormModal({
 
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Société (optionnel)</Label>
-              <div className="relative">
-                <select
-                  value={societeId}
-                  onChange={(e) => setSocieteId(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                >
-                  <option value="">— Aucune (transit) —</option>
+              <Select value={societeId || "none"} onValueChange={(v) => setSocieteId(v === "none" ? "" : v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Aucune (transit) —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Aucune (transit) —</SelectItem>
                   {societes.map((s) => (
-                    <option key={s.id} value={s.id}>{s.nom}</option>
+                    <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-              </div>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -332,7 +345,7 @@ function FactureFormModal({
                 )}
                 <div className="mt-3 flex justify-between border-t border-border/60 pt-3 font-semibold text-slate-900 dark:text-slate-100">
                   <span>Total TTC</span>
-                  <span className="text-base tabular-nums text-blue-700">{formatFCFA(montantTTC)}</span>
+                  <span className="text-base tabular-nums text-blue-700 dark:text-blue-300">{formatFCFA(montantTTC)}</span>
                 </div>
               </div>
             </div>
@@ -503,9 +516,9 @@ export function FacturesScreen() {
       <InfoCallout>
         Ce module émet des documents facturables au client (avec TVA). Pour un suivi interne de
         paiement sans facture, utilisez{" "}
-        <button onClick={() => go("comptabilite")} className="font-semibold underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-100">
+        <Button variant="link" className="h-auto p-0 font-semibold" onClick={() => go("comptabilite")}>
           le module Comptabilité
-        </button>
+        </Button>
         . Les deux totaux sont indépendants et ne se recoupent pas automatiquement.
       </InfoCallout>
 
@@ -579,101 +592,101 @@ export function FacturesScreen() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border/80 bg-white dark:bg-slate-900 shadow-sm">
-        {/* Labels */}
-        <div className="grid grid-cols-[1.3fr_1.3fr_1fr_80px_90px_110px_110px_100px_auto] gap-x-3 border-b border-border/50 bg-slate-50/70 px-5 py-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          <span>N° Facture</span>
-          <span>Client</span>
-          <span>Société</span>
-          <span>Date</span>
-          <span>Échéance</span>
-          <span className="text-right">Montant TTC</span>
-          <span className="text-right">Payé</span>
-          <span>Statut</span>
-          <span />
+      <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+          <Receipt className="size-4 text-slate-400 dark:text-slate-500" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des factures</h2>
+          <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+            {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
+          </span>
         </div>
 
-        <div className="divide-y divide-border/40">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Receipt className="size-10 text-slate-200 dark:text-slate-700" />
-              <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
-                {factures.length === 0 ? "Aucune facture créée" : "Aucun résultat"}
-              </p>
-              {factures.length === 0 && canWrite && (
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowForm(true)}>
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={Receipt}
+            title={factures.length === 0 ? "Aucune facture créée" : "Aucun résultat"}
+            action={
+              factures.length === 0 && canWrite ? (
+                <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
                   <Plus className="mr-1.5 size-3.5" /> Créer la première facture
                 </Button>
-              )}
-            </div>
-          ) : (
-            paged.map((f) => {
-              const isEchue = f.statut !== "Soldée" && f.statut !== "Annulée" && f.dateEcheance < new Date().toISOString().slice(0, 10);
-              return (
-                <div
+              ) : undefined
+            }
+          />
+        ) : (
+          <>
+            <div className="space-y-3 p-4 md:hidden">
+              {paged.map((f) => (
+                <FactureMobileCard
                   key={f.id}
-                  className="grid grid-cols-[1.3fr_1.3fr_1fr_80px_90px_110px_110px_100px_auto] items-center gap-x-3 px-5 py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
-                >
-                  <button
-                    onClick={() => go("facture-detail", { id: f.id })}
-                    className="flex items-center gap-1.5 font-mono text-[12px] font-semibold text-blue-700 hover:underline"
-                  >
-                    {f.numero}
-                  </button>
-                  <p className="truncate text-xs text-slate-700 dark:text-slate-300">{f.clientNom}</p>
-                  <div>
-                    <SocieteBadge societeNom={f.societeNom} size="sm" />
-                  </div>
-                  <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(f.date)}</p>
-                  <p className={`text-xs tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
-                    {formatDateShort(f.dateEcheance)}
-                  </p>
-                  <p className="text-right text-xs font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(f.montantTTC)}</p>
-                  <p className="text-right text-xs tabular-nums text-emerald-700">{formatFCFA(f.montantPaye)}</p>
-                  <FactureStatutBadge statut={f.statut} />
-                  <div className="flex items-center gap-1">
-                    <button
-                      title="Voir / Imprimer"
-                      onClick={() => go("facture-detail", { id: f.id })}
-                      className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
-                    >
-                      <Eye className="size-3.5" />
-                    </button>
-                    {canWrite && f.statut === "Brouillon" && (
-                      <button
-                        title="Marquer comme envoyée"
-                        onClick={() => updateFactureStatut(f.id, "Envoyée")}
-                        className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
-                      >
-                        <Send className="size-3.5" />
-                      </button>
-                    )}
-                    {canWrite && (
-                    <button
-                      title="Supprimer"
-                      onClick={() => setDeleteTarget(f)}
-                      className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                  facture={f}
+                  canWrite={canWrite}
+                  onView={() => go("facture-detail", { id: f.id })}
+                  onMarkEnvoyee={() => updateFactureStatut(f.id, "Envoyée")}
+                  onDelete={() => setDeleteTarget(f)}
+                />
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
+              <Table aria-label="Liste des factures">
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      N° Facture
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Client
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Société
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Date
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Échéance
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Montant TTC
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Payé
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Statut
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((f) => (
+                    <FactureTableRow
+                      key={f.id}
+                      facture={f}
+                      canWrite={canWrite}
+                      onView={() => go("facture-detail", { id: f.id })}
+                      onMarkEnvoyee={() => updateFactureStatut(f.id, "Envoyée")}
+                      onDelete={() => setDeleteTarget(f)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-        <TablePagination
-          startIdx={startIdx}
-          endIdx={endIdx}
-          totalItems={filtered.length}
-          itemLabel={`facture${filtered.length !== 1 ? "s" : ""}`}
-          page={safePage}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
-      </div>
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={filtered.length}
+              itemLabel={`facture${filtered.length !== 1 ? "s" : ""}`}
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </>
+        )}
+      </Card>
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
@@ -683,5 +696,167 @@ export function FacturesScreen() {
         onConfirm={handleDelete}
       />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* LISTE — carte mobile / ligne de table                              */
+/* ------------------------------------------------------------------ */
+
+function isFactureEchue(f: Facture): boolean {
+  return (
+    f.statut !== "Soldée" &&
+    f.statut !== "Annulée" &&
+    f.dateEcheance < new Date().toISOString().slice(0, 10)
+  );
+}
+
+interface FactureRowProps {
+  facture: Facture;
+  canWrite: boolean;
+  onView: () => void;
+  onMarkEnvoyee: () => void;
+  onDelete: () => void;
+}
+
+function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete }: FactureRowProps) {
+  const isEchue = isFactureEchue(f);
+
+  return (
+    <Card className="border-border/80 p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <button
+            onClick={onView}
+            className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300 hover:underline"
+          >
+            {f.numero}
+          </button>
+          <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{f.clientNom}</p>
+        </div>
+        <FactureStatutBadge statut={f.statut} />
+      </div>
+      <dl className="mt-3 space-y-1.5 text-sm">
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
+          <dd><SocieteBadge societeNom={f.societeNom} size="sm" /></dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
+          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(f.date)}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Échéance</dt>
+          <dd className={`tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-700 dark:text-slate-300"}`}>
+            {formatDateShort(f.dateEcheance)}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Montant TTC</dt>
+          <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(f.montantTTC)}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
+          <dd className="tabular-nums text-emerald-700 dark:text-emerald-300">{formatFCFA(f.montantPaye)}</dd>
+        </div>
+      </dl>
+      <div
+        className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          title="Voir / Imprimer"
+          onClick={onView}
+          className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+        >
+          <Eye className="size-4" />
+        </button>
+        {canWrite && f.statut === "Brouillon" && (
+          <button
+            title="Marquer comme envoyée"
+            onClick={onMarkEnvoyee}
+            className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
+          >
+            <Send className="size-4" />
+          </button>
+        )}
+        {canWrite && (
+          <button
+            title="Supprimer"
+            onClick={onDelete}
+            className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete }: FactureRowProps) {
+  const isEchue = isFactureEchue(f);
+
+  return (
+    <TableRow className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
+      <TableCell className="px-4 py-3.5">
+        <button
+          onClick={onView}
+          className="flex items-center gap-1.5 font-mono text-xs font-semibold text-blue-700 dark:text-blue-300 hover:underline"
+        >
+          {f.numero}
+        </button>
+      </TableCell>
+      <TableCell className="max-w-[180px] px-4 py-3.5">
+        <p className="truncate text-xs text-slate-700 dark:text-slate-300">{f.clientNom}</p>
+      </TableCell>
+      <TableCell className="px-4 py-3.5">
+        <SocieteBadge societeNom={f.societeNom} size="sm" />
+      </TableCell>
+      <TableCell className="px-4 py-3.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">
+        {formatDateShort(f.date)}
+      </TableCell>
+      <TableCell className={`px-4 py-3.5 text-xs tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
+        {formatDateShort(f.dateEcheance)}
+      </TableCell>
+      <TableCell className="px-4 py-3.5 text-right text-xs font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+        {formatFCFA(f.montantTTC)}
+      </TableCell>
+      <TableCell className="px-4 py-3.5 text-right text-xs tabular-nums text-emerald-700 dark:text-emerald-300">
+        {formatFCFA(f.montantPaye)}
+      </TableCell>
+      <TableCell className="px-4 py-3.5">
+        <FactureStatutBadge statut={f.statut} />
+      </TableCell>
+      <TableCell className="px-4 py-3.5">
+        <div className="flex items-center justify-end gap-1">
+          <button
+            title="Voir / Imprimer"
+            onClick={onView}
+            className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+          >
+            <Eye className="size-3.5" />
+          </button>
+          {canWrite && f.statut === "Brouillon" && (
+            <button
+              title="Marquer comme envoyée"
+              onClick={onMarkEnvoyee}
+              className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
+            >
+              <Send className="size-3.5" />
+            </button>
+          )}
+          {canWrite && (
+            <button
+              title="Supprimer"
+              onClick={onDelete}
+              className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }

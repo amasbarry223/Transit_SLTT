@@ -45,7 +45,7 @@ export function SubDossierCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{sd.nom}</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             <GlossaryLabel term="sousDossier" showIcon={false} className="text-xs" /> ·{" "}
             {fichiers.length} fichier{fichiers.length !== 1 ? "s" : ""}
           </p>

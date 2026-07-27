@@ -19,7 +19,7 @@ export function VerticalStepper({
     const cfg = STATUT_CONFIG.Annulée;
     const Icon = cfg.icon;
     return (
-      <div className="flex items-center gap-2.5 rounded-xl bg-red-50 p-3 text-red-700 dark:bg-red-950/40">
+      <div className="flex items-center gap-2.5 rounded-xl bg-red-50 p-3 text-red-700 dark:text-red-300 dark:bg-red-950/40">
         <Icon className="size-5 shrink-0" />
         <div>
           <p className="text-sm font-bold">Annulée</p>
@@ -51,6 +51,7 @@ export function VerticalStepper({
                 onClick={() => clickable && onSelect(s)}
                 disabled={!clickable}
                 title={clickable ? `Passer à ${s}` : s}
+                aria-label={clickable ? `Passer à ${s}` : s}
                 className={cn(
                   "flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-all",
                   done
@@ -78,15 +79,15 @@ export function VerticalStepper({
                 className={cn(
                   "text-sm font-semibold leading-tight",
                   current
-                    ? "text-blue-700"
+                    ? "text-blue-700 dark:text-blue-300"
                     : done
-                      ? "text-emerald-700"
+                      ? "text-emerald-700 dark:text-emerald-300"
                       : "text-slate-400 dark:text-slate-500",
                 )}
               >
                 {s}
                 {current && (
-                  <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                  <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">
                     Actuel
                   </span>
                 )}
@@ -98,7 +99,7 @@ export function VerticalStepper({
                     ? "text-blue-500"
                     : done
                       ? "text-emerald-500"
-                      : "text-slate-300 dark:text-slate-600",
+                      : "text-slate-500 dark:text-slate-400",
                 )}
               >
                 {cfg.desc}

@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { useDossierFormState } from "@/components/sltt/dossier-form/use-dossier-form-state";
 import { DossierAmountsSection } from "@/components/sltt/dossier-form/dossier-amounts-section";
 import {
@@ -52,7 +52,7 @@ export function DossierFormScreen() {
 }
 
 function DossierFormInner() {
-  const { selectedId, dossierFormMode, go } = useNav();
+  const { selectedId, dossierFormMode, go, selectedSocieteId } = useNav();
   const { toast } = useToast();
   const canWrite = usePermission("dossiers:write");
   const canTransition = usePermission("dossiers:transition");
@@ -68,7 +68,13 @@ function DossierFormInner() {
   const existing =
     isEdit && selectedId ? dossiers.find((d) => d.id === selectedId) : undefined;
 
-  const form = useDossierFormState({ existing, isEdit, dossierSeq, societes });
+  const form = useDossierFormState({
+    existing,
+    isEdit,
+    dossierSeq,
+    societes,
+    defaultSocieteId: selectedSocieteId ?? undefined,
+  });
 
   useUnsavedChangesWarning(form.isDirty);
 
@@ -97,6 +103,7 @@ function DossierFormInner() {
   function handleFieldBlur(field: keyof typeof form.errors) {
     form.setTouched((p) => ({ ...p, [field]: true }));
     const values: Record<keyof typeof form.errors, string> = {
+      societeId: form.societeId,
       clientId: form.clientId,
       nature: form.nature,
       bl: form.bl,
@@ -114,7 +121,7 @@ function DossierFormInner() {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!canWrite) {
       toast({
         title: "Action non autorisée",
@@ -133,14 +140,22 @@ function DossierFormInner() {
     }
     const clientNom = clients.find((c) => c.id === form.clientId)?.nom ?? "";
     const input = form.buildSaveInput(clientNom);
-    if (isEdit && selectedId) {
-      updateDossier(selectedId, input);
-      toast({ title: "Succès", description: "Dossier mis à jour." });
-    } else {
-      addDossier(input);
-      toast({ title: "Succès", description: "Dossier créé avec succès." });
+    try {
+      if (isEdit && selectedId) {
+        await updateDossier(selectedId, input);
+        toast({ title: "Succès", description: "Dossier mis à jour." });
+      } else {
+        await addDossier(input);
+        toast({ title: "Succès", description: "Dossier créé avec succès." });
+      }
+      go("dossiers");
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: getErrorMessage(err, "Impossible d'enregistrer le dossier."),
+        variant: "destructive",
+      });
     }
-    go("dossiers");
   }
 
   function handlePdf() {
@@ -232,7 +247,7 @@ function DossierFormInner() {
       )}
 
       {form.isDirty && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:bg-amber-950/40">
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:text-amber-300 dark:bg-amber-950/40">
           <AlertTriangle className="size-4 shrink-0 text-amber-500" />
           Modifications non enregistrées — pensez à sauvegarder.
         </div>
@@ -245,6 +260,8 @@ function DossierFormInner() {
           {form.showStep(1) && (
             <DossierIdentityStep
               clients={clients}
+              societes={societes}
+              societeId={form.societeId}
               clientId={form.clientId}
               nature={form.nature}
               bl={form.bl}
@@ -252,6 +269,7 @@ function DossierFormInner() {
               date={form.date}
               errors={form.errors}
               touched={form.touched}
+              onSocieteIdChange={form.setSocieteId}
               onClientIdChange={form.setClientId}
               onNatureChange={form.setNature}
               onBlChange={form.setBl}

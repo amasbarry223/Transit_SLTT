@@ -282,6 +282,7 @@ export function FactureDetailScreen() {
           <AlertDialogFooter>
             <AlertDialogCancel>Retour</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 await handleStatutClick("Annulée");
                 setConfirmAnnuler(false);

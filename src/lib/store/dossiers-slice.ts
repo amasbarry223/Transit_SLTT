@@ -26,6 +26,8 @@ export function mapDossierFromDb(x: DossierRow): Dossier {
   return {
     id: x.id,
     reference: x.reference,
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom || "—",
     clientId: x.client_id,
     clientNom: x.clients?.nom || "—",
     bl: x.bl,
@@ -70,7 +72,9 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
   addDossier: async (input) => {
     const seq = get().dossierSeq;
     const year = new Date().getFullYear();
-    const prefix = resolveDossierReferencePrefix(get().societes);
+    const societe = get().societes.find((item) => item.id === input.societeId);
+    const prefix =
+      societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
     const reference = `${prefix}-TR-${year}-${pad(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
     const statut: DossierStatut = DOSSIER_STATUT_EN_COURS;
 
@@ -78,6 +82,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       .from("dossiers")
       .insert({
         reference,
+        societe_id: input.societeId,
         client_id: input.clientId,
         bl: input.bl,
         camion: input.camion,
@@ -97,7 +102,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         poids_total: input.poidsTotal,
         notes: input.notes,
       })
-      .select("*, clients(nom)")
+      .select("*, clients(nom), societes(nom)")
       .single();
 
     if (error) throw error;
@@ -124,10 +129,15 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const existing = get().dossiers.find((d) => d.id === id);
     // Le statut ne se change que via transitionDossier (flux guidé).
     const statut = existing?.statut ?? input.statut;
+    const societeNom =
+      get().societes.find((item) => item.id === input.societeId)?.nom ||
+      existing?.societeNom ||
+      "—";
 
     const { error } = await supabase
       .from("dossiers")
       .update({
+        societe_id: input.societeId,
         client_id: input.clientId,
         bl: input.bl,
         camion: input.camion,
@@ -150,7 +160,11 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     if (error) throw error;
 
     set((s) => {
-      const updatedDossiers = s.dossiers.map((d) => (d.id === id ? { ...d, ...input, statut } : d));
+      const updatedDossiers = s.dossiers.map((d) =>
+        d.id === id
+          ? { ...d, ...input, statut, societeId: input.societeId, societeNom }
+          : d,
+      );
       return {
         dossiers: updatedDossiers,
         clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),

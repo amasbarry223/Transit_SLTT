@@ -51,22 +51,22 @@ export function AdminPanel({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-slate-50/80 p-4 dark:bg-slate-900/50">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Dossiers actifs</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Dossiers actifs</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{dossiersCount}</p>
         </div>
         <div className="rounded-lg border border-border bg-slate-50/80 p-4 dark:bg-slate-900/50">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Clients</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Clients</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{clientsCount}</p>
         </div>
         <div className="rounded-lg border border-border bg-slate-50/80 p-4 dark:bg-slate-900/50">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Alertes critiques</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Alertes critiques</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-red-600">{critical.length}</p>
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Alertes prioritaires</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Alertes prioritaires</p>
           {critical.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">Aucune alerte critique.</p>
           ) : (
@@ -93,7 +93,7 @@ export function AdminPanel({
           )}
         </div>
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Utilisateurs récents</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Utilisateurs récents</p>
           {recentUsers.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">Aucun utilisateur enregistré.</p>
           ) : (
@@ -104,7 +104,7 @@ export function AdminPanel({
                   className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
                 >
                   <span className="font-medium text-slate-900 dark:text-slate-100">{u.nom}</span>
-                  <span className="text-xs text-slate-500">{u.role}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{u.role}</span>
                 </li>
               ))}
             </ul>

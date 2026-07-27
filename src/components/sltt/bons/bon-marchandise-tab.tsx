@@ -107,10 +107,10 @@ export function BonMarchandiseTab({
         <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 px-4 py-3">
           <FilePen className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
-            <p className="text-sm font-medium text-amber-900">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
               {filters.stats.brouillons} bon{filters.stats.brouillons > 1 ? "s" : ""} en brouillon
             </p>
-            <p className="mt-0.5 text-xs text-amber-800/80">
+            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300/80">
               Finalisez ou validez les bons en attente pour mettre à jour le stock.
             </p>
           </div>
@@ -333,33 +333,33 @@ function BonMobileCard({
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Date</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
           <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(bon.date)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Société</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
           <dd>
             <SocieteBadge societeNom={bon.societeNom} size="sm" />
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Marchandise</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Marchandise</dt>
           <dd className="truncate text-right text-slate-700 dark:text-slate-300">{bon.marchandise}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Motif</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
           <dd>
             <ToneBadge tone={BON_MOTIF_TONE[bon.motif]}>{bon.motif}</ToneBadge>
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Quantité</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
           <dd className="tabular-nums text-slate-700 dark:text-slate-300">
             {bon.quantite} {bon.unite}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Montant</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
           <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(bon.montant)}</dd>
         </div>
       </dl>
@@ -368,7 +368,7 @@ function BonMobileCard({
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 text-amber-600 dark:text-amber-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+            className="size-11 text-amber-600 dark:text-amber-400 hover:text-emerald-600 dark:hover:text-emerald-400"
             aria-label={`Valider ${bon.reference}`}
             title="Valider le bon"
             disabled={validatingIds.has(bon.id)}
@@ -380,7 +380,7 @@ function BonMobileCard({
         <Button
           variant="ghost"
           size="icon"
-          className="size-9 text-slate-500 dark:text-slate-400 hover:text-primary"
+          className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
           aria-label={`Visualiser ${bon.reference}`}
           title="Visualiser"
           onClick={() => onView(bon.reference)}
@@ -390,7 +390,7 @@ function BonMobileCard({
         <Button
           variant="ghost"
           size="icon"
-          className="size-9 text-slate-500 dark:text-slate-400 hover:text-primary"
+          className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
           aria-label={`Imprimer ${bon.reference}`}
           title="PDF / Imprimer"
           onClick={() => onPrint(bon.reference)}

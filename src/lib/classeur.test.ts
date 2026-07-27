@@ -43,6 +43,8 @@ describe("buildClasseurJournal", () => {
       {
         id: "d1",
         clientId: "c1",
+        societeId: SLTT_ID,
+        societeNom: "SLTT",
         reference: "DOS-001",
         date: "2026-01-10",
         nature: "Import",
@@ -54,6 +56,8 @@ describe("buildClasseurJournal", () => {
       {
         id: "d2",
         clientId: "c1",
+        societeId: SLTT_ID,
+        societeNom: "SLTT",
         reference: "DOS-002",
         date: "2026-01-05",
         nature: "Export",
@@ -185,6 +189,8 @@ describe("computeClasseurTotals", () => {
         {
           id: "d1",
           clientId: "c1",
+          societeId: SLTT_ID,
+          societeNom: "SLTT",
           reference: "DOS-001",
           date: "2026-01-01",
           nature: "Transit",

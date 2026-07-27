@@ -5,15 +5,16 @@ import type { Dossier, DossierStatut, Societe } from "@/lib/domain-types";
 import { calculerEcart, resteAPayer } from "@/lib/domain-types";
 import { parseAmount } from "@/lib/format";
 import { getNextTransition } from "@/components/sltt/dossier-transition-dialog";
-import { resolveDossierReferencePrefix } from "@/lib/societe-brand";
+import { resolveDossierReferencePrefix, resolveTransitSociete } from "@/lib/societe-brand";
 
 export const WIZARD_STEPS = [
-  { id: 1, label: "Identité", hint: "Client, BL, camion, nature" },
+  { id: 1, label: "Identité", hint: "Société, client, BL, camion, nature" },
   { id: 2, label: "Montants", hint: "Droits, frais, marge" },
   { id: 3, label: "Suivi", hint: "Dates, transport, notes" },
 ] as const;
 
 export type DossierFormErrors = {
+  societeId?: string;
   clientId?: string;
   nature?: string;
   bl?: string;
@@ -28,9 +29,24 @@ type UseDossierFormStateOptions = {
   isEdit: boolean;
   dossierSeq: number;
   societes: Societe[];
+  /** Défaut à la création (filtre nav ou société transit). */
+  defaultSocieteId?: string;
 };
 
-export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: UseDossierFormStateOptions) {
+export function useDossierFormState({
+  existing,
+  isEdit,
+  dossierSeq,
+  societes,
+  defaultSocieteId,
+}: UseDossierFormStateOptions) {
+  const initialSocieteId =
+    existing?.societeId ??
+    defaultSocieteId ??
+    resolveTransitSociete(societes)?.id ??
+    "";
+
+  const [societeId, setSocieteId] = useState<string>(initialSocieteId);
   const [clientId, setClientId] = useState<string>(existing?.clientId ?? "");
   const [nature, setNature] = useState<string>(existing?.nature ?? "");
   const [bl, setBl] = useState<string>(existing?.bl ?? "");
@@ -76,13 +92,17 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
     [iN, montantPaye],
   );
 
+  const selectedSociete = societes.find((item) => item.id === societeId);
+  const referencePrefix =
+    selectedSociete?.nom?.trim() || resolveDossierReferencePrefix(societes);
   const reference =
     existing?.reference ??
-    `${resolveDossierReferencePrefix(societes)}-TR-${new Date().getFullYear()}-${String(dossierSeq).padStart(4, "0")}`;
+    `${referencePrefix}-TR-${new Date().getFullYear()}-${String(dossierSeq).padStart(4, "0")}`;
 
   const isDirty = useMemo(() => {
     if (!isEdit) {
       return !!(
+        societeId ||
         clientId ||
         nature.trim() ||
         bl.trim() ||
@@ -95,6 +115,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
     }
     if (!existing) return false;
     return (
+      societeId !== existing.societeId ||
       clientId !== existing.clientId ||
       nature !== existing.nature ||
       bl !== existing.bl ||
@@ -115,6 +136,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
   }, [
     isEdit,
     existing,
+    societeId,
     clientId,
     nature,
     bl,
@@ -135,6 +157,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
 
   function validateField(field: keyof DossierFormErrors, value: string) {
     const msg: Record<string, string> = {
+      societeId: "La société est obligatoire.",
       clientId: "Le client est obligatoire.",
       bl: "Le numéro de BL est obligatoire.",
       camion: "Le numéro de camion est obligatoire.",
@@ -149,6 +172,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
 
   function validate(): boolean {
     const errs: DossierFormErrors = {};
+    if (!societeId) errs.societeId = "La société est obligatoire.";
     if (!clientId) errs.clientId = "Le client est obligatoire.";
     if (!bl.trim()) errs.bl = "Le numéro de BL est obligatoire.";
     if (!camion.trim()) errs.camion = "Le numéro de camion est obligatoire.";
@@ -160,6 +184,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
 
   function validateStep1(): boolean {
     const next: DossierFormErrors = {};
+    if (!societeId) next.societeId = "La société est obligatoire.";
     if (!clientId) next.clientId = "Le client est obligatoire.";
     if (!nature.trim()) next.nature = "La nature est obligatoire.";
     if (!bl.trim()) next.bl = "Le n° de BL est obligatoire.";
@@ -167,6 +192,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
     if (!date) next.date = "La date est obligatoire.";
     setErrors((p) => ({ ...p, ...next }));
     setTouched({
+      societeId: true,
       clientId: true,
       nature: true,
       bl: true,
@@ -187,6 +213,7 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
 
   function buildSaveInput(clientNom: string) {
     return {
+      societeId,
       clientId,
       clientNom,
       nature,
@@ -209,6 +236,8 @@ export function useDossierFormState({ existing, isEdit, dossierSeq, societes }: 
   }
 
   return {
+    societeId,
+    setSocieteId,
     clientId,
     setClientId,
     nature,

@@ -47,24 +47,24 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
                   onClick={() => onOpenFacture(f.id)}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-mono text-xs font-semibold text-blue-700">{f.numero}</p>
+                    <p className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">{f.numero}</p>
                     <FactureStatutBadge statut={f.statut} />
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Date</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
                         {formatDateShort(f.date)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Montant TTC</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Montant TTC</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
                         {formatFCFA(f.montantTTC)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Payé</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
                       <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
                         {formatFCFA(f.montantPaye)}
                       </dd>
@@ -101,7 +101,7 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
                       className="cursor-pointer border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
                       onClick={() => onOpenFacture(f.id)}
                     >
-                      <TableCell className="px-4 py-3.5 font-mono text-xs font-semibold text-blue-700">
+                      <TableCell className="px-4 py-3.5 font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">
                         {f.numero}
                       </TableCell>
                       <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
@@ -110,7 +110,7 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
                       <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
                         {formatFCFA(f.montantTTC)}
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 md:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 dark:text-emerald-300 md:table-cell">
                         {formatFCFA(f.montantPaye)}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">

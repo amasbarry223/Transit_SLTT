@@ -22,6 +22,7 @@ import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { PageHeader } from "@/components/sltt/page-header";
+import { EmptyState } from "@/components/sltt/empty-state";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
@@ -55,6 +56,7 @@ import { cn } from "@/lib/utils";
 import type { Dossier } from "@/lib/domain-types";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { ListFilters } from "@/components/sltt/list-filters";
+import { SocieteBadge, SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 
 const PAGE_SIZE = 8;
 
@@ -90,7 +92,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 
 export function DossiersListScreen() {
-  const { openDossier, openDossierDetail } = useNav();
+  const { openDossier, openDossierDetail, selectedSocieteId } = useNav();
   const { toast } = useToast();
   const canWrite = usePermission("dossiers:write");
   const canTransition = usePermission("dossiers:transition");
@@ -122,6 +124,7 @@ export function DossiersListScreen() {
 
   const filtered = useMemo(() => {
     const list = dossiers.filter((d) => {
+      if (selectedSocieteId && d.societeId !== selectedSocieteId) return false;
       if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
@@ -153,7 +156,7 @@ export function DossiersListScreen() {
         default: return 0;
       }
     });
-  }, [dossiers, search, clientFilter, statutFilter, nonSoldeOnly, periode, yearFilter, sortBy, refDate]);
+  }, [dossiers, selectedSocieteId, search, clientFilter, statutFilter, nonSoldeOnly, periode, yearFilter, sortBy, refDate]);
 
   // Les KPI reflètent les filtres actifs (comme le tableau juste en dessous),
   // pas l'ensemble des dossiers — sinon les chiffres semblent contredire ce
@@ -212,6 +215,7 @@ export function DossiersListScreen() {
         `dossiers-transit-${new Date().toISOString().slice(0, 10)}`,
         [
           { header: "Référence", accessor: (d) => d.reference },
+          { header: "Société", accessor: (d) => d.societeNom },
           { header: "Client", accessor: (d) => d.clientNom },
           { header: "N° BL", accessor: (d) => d.bl },
           { header: "N° camion", accessor: (d) => d.camion },
@@ -360,6 +364,7 @@ export function DossiersListScreen() {
         onClear={hasActiveFilters ? clearFilters : undefined}
         advanced={
           <>
+          <SocieteFilterSelect className="w-full sm:w-44" />
           <Select
             value={clientFilter}
             onValueChange={(v) => {
@@ -506,28 +511,23 @@ export function DossiersListScreen() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-              <FolderKanban className="size-7" />
-            </div>
-            <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Aucun dossier trouvé
-            </h3>
-            <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-              {hasActiveFilters
+          <EmptyState
+            icon={FolderKanban}
+            title="Aucun dossier trouvé"
+            description={
+              hasActiveFilters
                 ? "Modifiez vos filtres ou créez un nouveau dossier."
-                : "Commencez par enregistrer votre premier dossier de transit."}
-            </p>
-            {!hasActiveFilters && canWrite && (
-              <Button
-                className="mt-5"
-                onClick={() => openDossier(null, "create")}
-              >
-                <Plus className="size-4" />
-                Créer votre premier dossier
-              </Button>
-            )}
-          </div>
+                : "Commencez par enregistrer votre premier dossier de transit."
+            }
+            action={
+              !hasActiveFilters && canWrite ? (
+                <Button onClick={() => openDossier(null, "create")}>
+                  <Plus className="size-4" />
+                  Créer votre premier dossier
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="space-y-3 p-4 md:hidden">
@@ -542,15 +542,18 @@ export function DossiersListScreen() {
                       <p className="font-medium text-slate-900 dark:text-slate-100">{d.reference}</p>
                       <p className="truncate text-sm text-slate-600 dark:text-slate-300">{d.clientNom}</p>
                     </div>
-                    <DossierStatutBadge statut={d.statut} />
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <SocieteBadge societeNom={d.societeNom} size="sm" />
+                      <DossierStatutBadge statut={d.statut} />
+                    </div>
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Date</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.date)}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">
                         <GlossaryLabel term="margeDossier" short className="text-xs" />
                       </dt>
                       <dd><EcartValue value={calculerEcart(d)} /></dd>
@@ -565,6 +568,9 @@ export function DossiersListScreen() {
                   <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Référence
+                    </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                      Société
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
@@ -620,6 +626,9 @@ export function DossiersListScreen() {
                           <p className="font-medium text-slate-900 dark:text-slate-100">
                             {d.reference}
                           </p>
+                        </TableCell>
+                        <TableCell className="hidden px-4 py-3.5 md:table-cell">
+                          <SocieteBadge societeNom={d.societeNom} size="sm" />
                         </TableCell>
                         <TableCell className="max-w-[180px] px-4 py-3.5">
                           <p className="truncate font-medium text-slate-700 dark:text-slate-300">

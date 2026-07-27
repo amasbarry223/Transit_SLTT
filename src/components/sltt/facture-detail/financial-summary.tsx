@@ -34,12 +34,12 @@ export function FinancialSummary({
   return (
     <div className="space-y-2 p-5">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-slate-500">Sous-total HT</span>
+        <span className="text-slate-500 dark:text-slate-400">Sous-total HT</span>
         <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(ht)}</span>
       </div>
       {shouldShowTva(tva) && (
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">TVA {tva}%</span>
+          <span className="text-slate-500 dark:text-slate-400">TVA {tva}%</span>
           <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(tvaAmt)}</span>
         </div>
       )}
@@ -55,7 +55,7 @@ export function FinancialSummary({
           </div>
           <div className="flex items-center justify-between border-t border-border/50 pt-2 text-sm font-bold">
             <span className="text-slate-700 dark:text-slate-300">Reste à payer</span>
-            <span className={cn("tabular-nums", reste > 0 ? "text-amber-700" : "text-emerald-600")}>
+            <span className={cn("tabular-nums", reste > 0 ? "text-amber-700 dark:text-amber-300" : "text-emerald-600")}>
               {formatFCFA(reste)}
             </span>
           </div>

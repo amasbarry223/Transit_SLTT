@@ -7,8 +7,7 @@ import {
   Save,
   Truck,
 } from "lucide-react";
-import type { Client } from "@/lib/domain-types";
-import type { DossierStatut } from "@/lib/domain-types";
+import type { Client, DossierStatut, Societe } from "@/lib/domain-types";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { TRANSITION_META, type TransitionType } from "@/components/sltt/dossier-transition-dialog";
@@ -57,6 +56,8 @@ export function DossierWizardProgress({ wizardStep }: DossierWizardProgressProps
 
 type DossierIdentityStepProps = {
   clients: Client[];
+  societes: Societe[];
+  societeId: string;
   clientId: string;
   nature: string;
   bl: string;
@@ -64,6 +65,7 @@ type DossierIdentityStepProps = {
   date: string;
   errors: DossierFormErrors;
   touched: Record<string, boolean>;
+  onSocieteIdChange: (value: string) => void;
   onClientIdChange: (value: string) => void;
   onNatureChange: (value: string) => void;
   onBlChange: (value: string) => void;
@@ -76,6 +78,8 @@ type DossierIdentityStepProps = {
 
 export function DossierIdentityStep({
   clients,
+  societes,
+  societeId,
   clientId,
   nature,
   bl,
@@ -83,6 +87,7 @@ export function DossierIdentityStep({
   date,
   errors,
   touched,
+  onSocieteIdChange,
   onClientIdChange,
   onNatureChange,
   onBlChange,
@@ -98,10 +103,38 @@ export function DossierIdentityStep({
         icon={<FolderKanban className="size-4" />}
         tone="blue"
         title="Informations générales"
-        description="Client et caractéristiques de la marchandise"
+        description="Société, client et caractéristiques de la marchandise"
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Client" required error={errors.clientId}>
+        <FormField id="dossier-societe-select" label="Société" required error={errors.societeId}>
+          <Select
+            value={societeId}
+            onValueChange={(v) => {
+              onSocieteIdChange(v);
+              onTouch("societeId");
+              onValidateField("societeId", v);
+            }}
+          >
+            <SelectTrigger
+              id="dossier-societe-select"
+              className={cn("h-10 w-full", errors.societeId && "border-red-400")}
+              aria-label="Sélectionner une société"
+            >
+              <SelectValue placeholder="Sélectionner une société" />
+            </SelectTrigger>
+            <SelectContent>
+              {societes
+                .filter((s) => s.actif)
+                .map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.nom}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+
+        <FormField id="dossier-client-select" label="Client" required error={errors.clientId}>
           <div className="flex gap-2">
             <Select
               value={clientId}
@@ -112,6 +145,7 @@ export function DossierIdentityStep({
               }}
             >
               <SelectTrigger
+                id="dossier-client-select"
                 className={cn("h-10 w-full", errors.clientId && "border-red-400")}
                 aria-label="Sélectionner un client"
               >
@@ -229,9 +263,9 @@ export function DossierTransportSection({
       badge={isEdit ? undefined : "Optionnel"}
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Mode de transport">
+        <FormField id="dossier-mode-transport" label="Mode de transport">
           <Select value={modeTransport} onValueChange={onModeTransportChange}>
-            <SelectTrigger className="h-10">
+            <SelectTrigger id="dossier-mode-transport" className="h-10">
               <SelectValue placeholder="Sélectionner…" />
             </SelectTrigger>
             <SelectContent>

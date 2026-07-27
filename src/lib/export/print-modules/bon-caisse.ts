@@ -32,10 +32,11 @@ export interface BonSortieCaisseModuleData {
   signatairePdg?: string;
 }
 
-export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): void {
+/** Construit le HTML complet du bon de sortie de caisse (aperçu iframe ou fenêtre d'impression). */
+export function buildBonSortieCaisseHTML(data: BonSortieCaisseModuleData): string {
   const logoUrl = resolveLogoUrl(data.logoUrl);
   const logoImg = logoUrl
-    ? `<img src="${logoUrl}" alt="${htmlEscape(data.societeNom)}" class="brand-logo">`
+    ? `<img src="${logoUrl}" alt="${htmlEscape(data.societeNom)}" class="brand-logo" onerror="this.style.display='none'">`
     : "";
   const footerLegal = buildLegalLine(data.legal);
   const fmtD = (iso: string) =>
@@ -49,11 +50,7 @@ export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): voi
       <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${fmtFCFA(l.montant)}</td>
     </tr>`).join("");
 
-  const win = window.open("", "_blank", "width=880,height=760");
-  if (!win) { warnPopupBlocked(); return; }
-  win.opener = null;
-
-  win.document.write(`<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -137,7 +134,20 @@ table { width: 100%; border-collapse: collapse; }
   ${footerLegal ? `<div class="footer">${footerLegal}</div>` : ""}
 </div>
 </body>
-</html>`);
+</html>`;
+}
+
+/** Ouvre une fenêtre dédiée et déclenche l'impression (compat). Préférer l'aperçu intégré. */
+export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): boolean {
+  const html = buildBonSortieCaisseHTML(data);
+  const win = window.open("", "_blank", "width=880,height=760");
+  if (!win) {
+    warnPopupBlocked();
+    return false;
+  }
+  win.opener = null;
+  win.document.write(html);
   win.document.close();
   triggerPrint(win);
+  return true;
 }

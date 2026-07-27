@@ -145,11 +145,11 @@ export function FileDropZone({
                 className="flex items-center gap-3 rounded-lg border border-border bg-white px-3 py-2.5 dark:bg-slate-900"
               >
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
-                  <Icon className="size-3.5 text-slate-500" />
+                  <Icon className="size-3.5 text-slate-500 dark:text-slate-400" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{f.nom}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {formatFileSize(f.taille)} · {formatDateShort(f.dateUpload)}
                   </p>
                 </div>

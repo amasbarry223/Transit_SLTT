@@ -61,6 +61,7 @@ export const createContratFichiersSlice: StateCreator<SLTTState, [], [], Contrat
 
     const newFile = mapContratFichierFromDb(data);
     set((s) => ({ contratFichiers: [newFile, ...s.contratFichiers], contratFichierSeq: seq + 1 }));
+    await get().addAuditLog("Contrats", "Création", `Fichier "${newFile.nom}" ajouté`);
     return newFile;
   },
 

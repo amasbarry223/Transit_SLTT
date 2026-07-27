@@ -23,7 +23,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self' ${supabaseOrigin} ${supabaseWsOrigin}`,
+  `connect-src 'self' ${supabaseOrigin} ${supabaseWsOrigin} blob:`,
+  "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -44,6 +45,22 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  transpilePackages: [
+    "@univerjs/presets",
+    "@univerjs/preset-sheets-core",
+    "@univerjs/core",
+    "@univerjs/design",
+    "@univerjs/engine-render",
+    "@univerjs/engine-formula",
+    "@univerjs/sheets",
+    "@univerjs/sheets-ui",
+    "@univerjs/sheets-formula",
+    "@univerjs/sheets-formula-ui",
+    "@univerjs/sheets-numfmt",
+    "@univerjs/sheets-numfmt-ui",
+    "@univerjs/docs",
+    "@univerjs/docs-ui",
+  ],
   webpack: (config, { dev }) => {
     // Évite les erreurs 500 ENOSPC quand le disque C: est quasi plein (cache webpack).
     if (dev) config.cache = false;

@@ -8,10 +8,8 @@ import { mapAuditLogFromDb, type AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
 import { supabase } from "@/lib/supabase";
 import {
-  LEGACY_TRANSIT_SOCIETE_ID,
   resolveSlttBrand,
   resolveSocieteDisplayNameById,
-  resolveTransitSociete,
 } from "@/lib/societe-brand";
 
 export { resolveSlttBrand };
@@ -33,10 +31,6 @@ export interface ClasseurEntry {
   credit: number;
   statut: string;
   soldeCumule: number;
-}
-
-function transitSocieteId(societes: Societe[]): string {
-  return resolveTransitSociete(societes)?.id ?? LEGACY_TRANSIT_SOCIETE_ID;
 }
 
 function buildDossierLibelle(d: Dossier): string {
@@ -61,8 +55,6 @@ export function buildClasseurJournal(
   factures: Facture[],
   societes: Societe[],
 ): ClasseurEntry[] {
-  const slttId = transitSocieteId(societes);
-  const slttNom = resolveSocieteDisplayNameById(societes, slttId, "SLTT");
   const unsorted: Omit<ClasseurEntry, "soldeCumule">[] = [];
 
   for (const d of dossiers) {
@@ -71,8 +63,8 @@ export function buildClasseurJournal(
       id: `dossier-${d.id}`,
       sourceId: d.id,
       date: d.date,
-      societeId: slttId,
-      societeNom: slttNom,
+      societeId: d.societeId,
+      societeNom: resolveEntrySocieteNom(societes, d.societeId, d.societeNom),
       type: "Dossier",
       reference: d.reference,
       libelle: buildDossierLibelle(d),

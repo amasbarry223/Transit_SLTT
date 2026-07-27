@@ -171,25 +171,25 @@ export function StockCard({
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Société</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
           <dd><SocieteBadge societeNom={item.societeNom} size="sm" /></dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Quantité</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
           <dd className="tabular-nums font-semibold text-slate-900 dark:text-slate-100">
             {item.quantite} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{item.unite}</span>
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Commercial</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Commercial</dt>
           <dd className="text-slate-700 dark:text-slate-300">{item.commercial}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Payé</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
           <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(item.sommePayee)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500">Reste dû</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">Reste dû</dt>
           <dd className="tabular-nums text-amber-600 dark:text-amber-400">{formatFCFA(item.resteAPayer)}</dd>
         </div>
       </dl>

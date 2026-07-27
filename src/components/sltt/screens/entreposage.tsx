@@ -190,11 +190,11 @@ export function EntreposageScreen() {
         <div className="flex items-start gap-3 rounded-xl border border-red-200/80 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/30 px-4 py-3">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-600 dark:text-red-400" />
           <div>
-            <p className="text-sm font-medium text-red-900">
+            <p className="text-sm font-medium text-red-900 dark:text-red-200">
               {alertesStockFaible} article{alertesStockFaible > 1 ? "s" : ""} en
               stock faible
             </p>
-            <p className="mt-0.5 text-xs text-red-700/80">
+            <p className="mt-0.5 text-xs text-red-700 dark:text-red-300/80">
               Pensez à réapprovisionner ou à enregistrer une entrée de marchandise.
             </p>
           </div>

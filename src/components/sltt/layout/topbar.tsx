@@ -44,7 +44,7 @@ import { Badge } from "@/components/ui/badge";
 import { CommandPalette } from "./command-palette";
 import { BreadcrumbNav } from "./breadcrumb-nav";
 import { NavList } from "./nav-list";
-import { getInitials } from "@/lib/utils";
+import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
@@ -183,7 +183,7 @@ export function Topbar() {
               <Bell className="size-5" />
               {hasUnread && (
                 <span className="absolute right-1.5 top-1.5 flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
+                  <span className="absolute inline-flex size-full animate-ping motion-reduce:animate-none rounded-full bg-red-400 opacity-75" />
                   <span className="relative inline-flex size-2 rounded-full bg-red-500" />
                 </span>
               )}
@@ -251,7 +251,7 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
               <Avatar className="size-8 border border-border">
-                <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-800 text-xs font-semibold text-white">
+                <AvatarFallback className={cn("text-xs font-semibold text-white", USER_AVATAR_GRADIENT)}>
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -275,7 +275,7 @@ export function Topbar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setLogoutConfirm(true)}
-              className="text-red-600 focus:bg-red-50 dark:bg-red-950/40 focus:text-red-700"
+              className="text-red-600 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
             >
               Se déconnecter
             </DropdownMenuItem>
@@ -374,7 +374,7 @@ export function Topbar() {
           {/* User info en bas du drawer */}
           <div className="absolute bottom-0 left-0 right-0 border-t border-border p-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-sm font-semibold text-white shrink-0">
+              <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white", USER_AVATAR_GRADIENT)}>
                 {initials}
               </div>
               <div className="min-w-0">

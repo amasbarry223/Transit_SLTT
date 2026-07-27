@@ -17,24 +17,24 @@ export function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
 
   return (
     <>
-      <div className="space-y-2 p-4 sm:hidden">
+      <div className="space-y-2 p-4 md:hidden">
         {lignes.map((l) => (
           <div key={l.id} className="rounded-lg border border-border/60 p-3">
             <p className="font-medium text-slate-800 dark:text-slate-200">{l.description}</p>
-            <dl className="mt-1.5 space-y-1 text-xs">
+            <dl className="mt-1.5 space-y-1">
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Qté × P.U. HT</dt>
-                <dd className="tabular-nums text-slate-600 dark:text-slate-300">{l.quantite} × {formatFCFA(l.prixUnitaire)}</dd>
+                <dt className="text-xs text-slate-400">Qté × P.U. HT</dt>
+                <dd className="text-sm tabular-nums text-slate-600 dark:text-slate-300">{l.quantite} × {formatFCFA(l.prixUnitaire)}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Total HT</dt>
-                <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(l.montantHT)}</dd>
+                <dt className="text-xs text-slate-400">Total HT</dt>
+                <dd className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(l.montantHT)}</dd>
               </div>
             </dl>
           </div>
         ))}
       </div>
-      <div className="hidden overflow-x-auto sm:block">
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/60 bg-slate-50/80 dark:bg-slate-800/50">
@@ -56,7 +56,7 @@ export function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
             {lignes.map((l, i) => (
               <tr key={l.id} className={cn(i % 2 === 1 && "bg-slate-50/40 dark:bg-slate-800/20")}>
                 <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-200">{l.description}</td>
-                <td className="px-3 py-3 text-center tabular-nums text-slate-500">{l.quantite}</td>
+                <td className="px-3 py-3 text-center tabular-nums text-slate-500 dark:text-slate-400">{l.quantite}</td>
                 <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
                   {formatFCFA(l.prixUnitaire)}
                 </td>

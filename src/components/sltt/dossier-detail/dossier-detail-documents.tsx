@@ -8,9 +8,11 @@ import { EmptyState } from "@/components/sltt/empty-state";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { FileDropZone } from "./file-drop-zone";
 import { SubDossierCard } from "./sub-dossier-card";
+import { DossierDocumentsPanel } from "@/components/sltt/documents/dossier-documents-panel";
 
 export function DossierDetailDocuments({
   dossierId,
+  clientId,
   dossierFichiers,
   subDossiers,
   fichiersBySubDossier,
@@ -20,8 +22,10 @@ export function DossierDetailDocuments({
   addFichier,
   deleteFichier,
   canWrite = true,
+  onStartOcr,
 }: {
   dossierId: string;
+  clientId?: string;
   dossierFichiers: DossierFichier[];
   subDossiers: SubDossier[];
   fichiersBySubDossier: Map<string, DossierFichier[]>;
@@ -31,6 +35,7 @@ export function DossierDetailDocuments({
   addFichier: (input: FichierInput) => void;
   deleteFichier: (id: string) => Promise<void>;
   canWrite?: boolean;
+  onStartOcr?: (documentId: string) => void;
 }) {
   return (
     <div className="space-y-8">
@@ -40,8 +45,29 @@ export function DossierDetailDocuments({
             <FileText className="size-4" />
           </div>
           <div>
-            <h2 className="text-base font-semibold">Fichiers joints</h2>
-            <p className="text-xs text-slate-500">Scannez ou déposez les documents liés à ce dossier (PDF, images…)</p>
+            <h2 className="text-base font-semibold">Documents versionnés</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Upload PDF/images avec historique de versions et OCR
+            </p>
+          </div>
+        </div>
+        <DossierDocumentsPanel
+          dossierId={dossierId}
+          clientId={clientId}
+          onStartOcr={onStartOcr}
+        />
+      </Card>
+
+      <Card className="border-border/80 p-6 shadow-sm">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <FileText className="size-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold">Fichiers joints (legacy)</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Scannez ou déposez les documents liés à ce dossier (PDF, images…)
+            </p>
           </div>
         </div>
         <FileDropZone
@@ -59,13 +85,15 @@ export function DossierDetailDocuments({
             <h2 className="text-base font-semibold">
               <GlossaryLabel term="sousDossier" showIcon={false} /> ({subDossiers.length})
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">Classez vos pièces par thème : douane, livraison, BL…</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Classez vos pièces par thème : douane, livraison, BL…
+            </p>
           </div>
           {canWrite && (
-          <Button onClick={onCreateSubDossier}>
-            <FolderPlus className="size-4" />
-            Nouveau sous-dossier
-          </Button>
+            <Button onClick={onCreateSubDossier}>
+              <FolderPlus className="size-4" />
+              Nouveau sous-dossier
+            </Button>
           )}
         </div>
 

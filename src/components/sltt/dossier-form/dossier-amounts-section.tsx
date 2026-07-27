@@ -74,8 +74,8 @@ export function DossierAmountsSection({
             className={cn(
               "flex items-center justify-between gap-4 rounded-lg border px-4 py-3",
               ecart >= 0
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40"
-                : "border-red-200 bg-red-50 text-red-700 dark:bg-red-950/40",
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:text-emerald-300 dark:bg-emerald-950/40"
+                : "border-red-200 bg-red-50 text-red-700 dark:text-red-300 dark:bg-red-950/40",
             )}
           >
             <div className="min-w-0">

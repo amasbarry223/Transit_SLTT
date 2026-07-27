@@ -34,6 +34,8 @@ export interface Client {
 export interface Dossier {
   id: string;
   reference: string;
+  societeId: string;
+  societeNom: string;
   clientId: string;
   clientNom: string;
   bl: string;
@@ -266,7 +268,7 @@ export interface Societe {
   id: string;
   nom: string;
   actif: boolean;
-  /** true = société porteuse du transit (dossiers, devis sans societe_id en base). */
+  /** true = société porteuse du transit (devis sans societe_id en base). */
   isTransit?: boolean;
   /** Chemin public du logo affiché sur les documents imprimés de la société (ex. bons de sortie). */
   logoUrl?: string;
@@ -358,6 +360,79 @@ export interface ContratFichier {
 }
 
 export type TypeDocument = "BL" | "DAU" | "Facture" | "Reçu" | "Contrat" | "Autre";
+
+/** Catégories du module Documents (étend TypeDocument + SYDONIA). */
+export type DocumentCategorie =
+  | "BL"
+  | "DAU"
+  | "Facture"
+  | "Reçu"
+  | "SYDONIA"
+  | "Contrat"
+  | "Autre";
+
+export type DocumentEntityType = "dossier" | "facture" | "ecriture";
+
+export type OcrJobStatus = "pending" | "processing" | "done" | "failed" | "validated";
+
+export type OcrTargetForm = "dossier" | "facture" | "paiement";
+
+export interface DocumentVersion {
+  id: string;
+  documentId: string;
+  version: number;
+  storagePath: string;
+  taille: number;
+  mimeType: string;
+  checksum?: string;
+  uploadedBy?: string;
+  createdAt: string;
+}
+
+export interface SlttDocument {
+  id: string;
+  nom: string;
+  categorie: DocumentCategorie;
+  mimeType: string;
+  taille: number;
+  dossierId?: string;
+  factureId?: string;
+  clientId?: string;
+  societeId?: string;
+  entityType?: DocumentEntityType;
+  entityId?: string;
+  currentVersion: number;
+  creePar?: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Versions chargées à la demande (liste légère = vide). */
+  versions?: DocumentVersion[];
+}
+
+export interface OcrField {
+  id: string;
+  ocrJobId: string;
+  fieldKey: string;
+  fieldValue?: string;
+  confidence?: number;
+  bbox?: unknown;
+  validatedValue?: string;
+}
+
+export interface OcrJob {
+  id: string;
+  documentId: string;
+  documentVersionId: string;
+  status: OcrJobStatus;
+  provider: string;
+  rawText?: string;
+  errorMessage?: string;
+  targetForm: OcrTargetForm;
+  createdBy?: string;
+  createdAt: string;
+  completedAt?: string;
+  fields?: OcrField[];
+}
 
 /**
  * Document archivé (module Archives) — bucket `archives` privé, storagePath

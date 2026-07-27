@@ -31,7 +31,7 @@ function AmountRow({
         className={cn(
           "text-sm font-semibold tabular-nums",
           tone === "emerald" && "text-emerald-700 dark:text-emerald-400",
-          tone === "amber" && "text-amber-700",
+          tone === "amber" && "text-amber-700 dark:text-amber-300",
           tone === "red" && "text-red-600 dark:text-red-400",
           !tone && "text-slate-900 dark:text-slate-100",
         )}
@@ -72,7 +72,7 @@ export function DossierDetailOverview({
           const meta = TRANSITION_META[nextTransition];
           const Icon = meta.icon;
           return (
-            <Card className={cn("border-l-4 p-5 shadow-sm", meta.borderClass)}>
+            <Card className="border-border/80 p-5 shadow-sm">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
                   <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", meta.bgClass, meta.colorClass)}>
@@ -96,7 +96,7 @@ export function DossierDetailOverview({
           );
         })()
       ) : (
-        <Card className="border-l-4 border-l-emerald-500 p-5 shadow-sm">
+        <Card className="border-border/80 p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
               <CheckCircle2 className="size-5" />
@@ -143,7 +143,7 @@ export function DossierDetailOverview({
         >
           <div>
             <h2 className="text-base font-semibold">Détail des montants</h2>
-            <p className="mt-0.5 text-xs text-slate-500">Douane, circuit, prestation et marge</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Douane, circuit, prestation et marge</p>
           </div>
           {amountsOpen ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
         </button>
@@ -157,7 +157,7 @@ export function DossierDetailOverview({
             <AmountRow label="Montant payé" value={dossier.montantPaye} tone="emerald" />
             <AmountRow label="Reste à payer" value={reste} tone={reste > 0 ? "amber" : "emerald"} />
             <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
-              <span className="text-sm text-slate-500">Marge calculée</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">Marge calculée</span>
               <EcartValue value={ecart} />
             </div>
             <p className="mt-1 text-xs text-slate-400">Prestation − (Douane + Circuit)</p>

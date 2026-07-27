@@ -56,6 +56,7 @@ import { DossierDetailHero } from "@/components/sltt/dossier-detail/dossier-deta
 import { DossierDetailOverview } from "@/components/sltt/dossier-detail/dossier-detail-overview";
 import { DossierDetailDocuments } from "@/components/sltt/dossier-detail/dossier-detail-documents";
 import { DossierDetailSuivi } from "@/components/sltt/dossier-detail/dossier-detail-suivi";
+import { OcrReviewDialog } from "@/components/sltt/documents/ocr-review-dialog";
 
 export function DossierDetailScreen() {
   const { selectedId, go, openDossier } = useNav();
@@ -94,6 +95,7 @@ export function DossierDetailScreen() {
 
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [ocrDocumentId, setOcrDocumentId] = useState<string | null>(null);
   const [subDossierDialogOpen, setSubDossierDialogOpen] = useState(false);
   const [subDossierEditId, setSubDossierEditId] = useState<string | null>(null);
   const [subDossierName, setSubDossierName] = useState("");
@@ -184,14 +186,20 @@ export function DossierDetailScreen() {
     : null;
   echeanceDate?.setHours(0, 0, 0, 0);
   const joursRestants = echeanceDate ? calculateDaysUntil(echeanceDate, today) : null;
-  const echeanceDepassee = isEcheanceDepassee(joursRestants);
-  const echeanceImminente = isEcheanceImminente(joursRestants);
+  // Dossier Soldé = clos : une échéance dépassée après clôture ne signale plus
+  // rien d'actionnable (pas de surestaries à venir sur un dossier déjà réglé).
+  const echeanceDepassee = currentDossier.statut !== "Soldé" && isEcheanceDepassee(joursRestants);
+  const echeanceImminente = currentDossier.statut !== "Soldé" && isEcheanceImminente(joursRestants);
 
   function openCreateSubDossier() {
     setSubDossierEditId(null);
     setSubDossierName("");
     setSubDossierDescription("");
     setSubDossierDialogOpen(true);
+  }
+
+  function handleStartOcr(documentId: string) {
+    setOcrDocumentId(documentId);
   }
 
   function openEditSubDossier(subDossier: SubDossier) {
@@ -391,6 +399,7 @@ export function DossierDetailScreen() {
         <TabsContent value="documents">
           <DossierDetailDocuments
             dossierId={currentDossier.id}
+            clientId={currentDossier.clientId}
             dossierFichiers={dossierFichiers}
             subDossiers={subDossiers}
             fichiersBySubDossier={fichiersBySubDossier}
@@ -400,6 +409,7 @@ export function DossierDetailScreen() {
             addFichier={addFichier}
             deleteFichier={deleteFichier}
             canWrite={canWrite}
+            onStartOcr={handleStartOcr}
           />
         </TabsContent>
 
@@ -427,6 +437,14 @@ export function DossierDetailScreen() {
           onOpenChange={setTransitionOpen}
         />
       )}
+
+      <OcrReviewDialog
+        open={!!ocrDocumentId}
+        onOpenChange={(o) => !o && setOcrDocumentId(null)}
+        documentId={ocrDocumentId}
+        existingDossierId={currentDossier.id}
+        defaultClientId={currentDossier.clientId}
+      />
 
       <Dialog open={subDossierDialogOpen} onOpenChange={setSubDossierDialogOpen}>
         <DialogContent className="sm:max-w-md">

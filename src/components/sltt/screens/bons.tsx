@@ -9,6 +9,7 @@ import { formatDateShort, formatFCFA } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { PageHeader } from "@/components/sltt/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -51,6 +52,14 @@ export function BonsScreen() {
   const bons = useMemo(
     () => (selectedSocieteId ? allBons.filter((bon) => bon.societeId === selectedSocieteId) : allBons),
     [allBons, selectedSocieteId],
+  );
+
+  const bonsCaisse = useMemo(
+    () =>
+      selectedSocieteId
+        ? bonsSortieCaisse.filter((bon) => bon.societeId === selectedSocieteId)
+        : bonsSortieCaisse,
+    [bonsSortieCaisse, selectedSocieteId],
   );
 
   const nextReference = `BS-${new Date().getFullYear()}-${String(bonSeq).padStart(4, "0")}`;
@@ -185,17 +194,14 @@ export function BonsScreen() {
         onValueChange={(value) => setActiveTab(value as "marchandise" | "caisse")}
         className="gap-5"
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 space-y-1">
-            <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">{currentTab.description}</p>
-          </div>
+        <PageHeader title="Bons de sortie" description={currentTab.description}>
           {(activeTab === "caisse" ? canWriteCaisse : canWrite) && (
             <Button onClick={currentTab.onCreate} className="shrink-0 self-start">
               <Plus className="size-4" />
               {currentTab.cta}
             </Button>
           )}
-        </div>
+        </PageHeader>
 
         <TabsList
           className={cn(
@@ -276,7 +282,7 @@ export function BonsScreen() {
                   "dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-300",
                 )}
               >
-                {bonsSortieCaisse.length}
+                {bonsCaisse.length}
               </span>
             </span>
           </TabsTrigger>
@@ -292,7 +298,7 @@ export function BonsScreen() {
           onPrint={handlePrint}
         />
 
-        <BonCaisseTab canWriteCaisse={canWriteCaisse} onOpenCreateDialog={() => setCaisseDialogOpen(true)} />
+        <BonCaisseTab bons={bonsCaisse} canWriteCaisse={canWriteCaisse} onOpenCreateDialog={() => setCaisseDialogOpen(true)} />
       </Tabs>
 
       <BonFormDialog

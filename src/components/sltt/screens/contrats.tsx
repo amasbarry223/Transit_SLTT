@@ -13,7 +13,7 @@ import {
 import { useStore, type ContratInput, type ContratStatut } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
-import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
@@ -240,21 +240,21 @@ export function ContratsScreen() {
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Société</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
                       <dd><SocieteBadge societeNom={c.societeNom} size="sm" /></dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Montant</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
                       <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(c.montant)}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Prestations</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Prestations</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">
                         {c.nbPrestationsRealisees}/{c.nbPrestations}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500">Début</dt>
+                      <dt className="text-xs text-slate-500 dark:text-slate-400">Début</dt>
                       <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(c.dateDebut)}</dd>
                     </div>
                   </dl>
@@ -381,7 +381,7 @@ function ContratFormModal({
       objet: objet.trim(),
       dateDebut,
       dateFin: dateFin || undefined,
-      montant: Number(montant) || 0,
+      montant: parseAmount(montant),
       statut,
       notes: notes.trim() || undefined,
     });

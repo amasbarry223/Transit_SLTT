@@ -17,7 +17,15 @@ export {
   PRINT_FALLBACK_MS,
 } from "./api.constants";
 
-export { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from "./validation.constants";
+export {
+  MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
+  DOC_MAX_FILE_MB,
+  DOC_MAX_FILE_BYTES,
+  DOC_ACCEPTED_MIME_TYPES,
+  DOC_ACCEPTED_EXTENSIONS,
+  OCR_LOW_CONFIDENCE_THRESHOLD,
+} from "./validation.constants";
 
 export {
   TOAST_COPY_RESET_MS,

@@ -35,8 +35,10 @@ export function AppShell() {
   const go = useNav((s) => s.go);
   const dataLoading = useStore((s) => s.dataLoading);
   const loadError = useStore((s) => s.loadError);
+  const partialLoadWarning = useStore((s) => s.partialLoadWarning);
   const fetchData = useStore((s) => s.fetchData);
   const clearLoadError = useStore((s) => s.clearLoadError);
+  const clearPartialLoadWarning = useStore((s) => s.clearPartialLoadWarning);
   // Dernier rempart de permission : la sidebar/le breadcrumb/la palette de
   // commandes filtrent déjà ce qu'ils proposent, mais une URL tapée à la
   // main ou un état restauré peut viser une vue interdite — on ne rend
@@ -65,6 +67,22 @@ export function AppShell() {
                 Réessayer
               </Button>
               <Button size="sm" variant="ghost" onClick={clearLoadError}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        )}
+        {!loadError && partialLoadWarning && !dataLoading && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2.5 dark:border-amber-900/60 dark:bg-amber-950/40">
+            <div className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>{partialLoadWarning}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => { clearPartialLoadWarning(); fetchData(); }}>
+                Réessayer
+              </Button>
+              <Button size="sm" variant="ghost" onClick={clearPartialLoadWarning}>
                 Fermer
               </Button>
             </div>

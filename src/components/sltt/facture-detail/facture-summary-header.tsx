@@ -71,7 +71,7 @@ export function FactureSummaryHeader({
 }) {
   return (
     <Card className="overflow-hidden border-border/80 shadow-sm">
-      <div className="flex border-l-4 border-blue-600">
+      <div className="flex">
         <div className="flex-1 p-5 sm:p-6">
           {factureBrand && <FactureDocumentHeader brand={factureBrand} />}
           <div className={cn("flex flex-wrap items-start justify-between gap-4", factureBrand && "mt-4")}>
@@ -106,7 +106,7 @@ export function FactureSummaryHeader({
             </div>
             <div className="shrink-0 text-right">
               <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Total TTC</p>
-              <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700">
+              <p className="mt-0.5 text-3xl font-extrabold tabular-nums leading-tight text-blue-700 dark:text-blue-300">
                 {formatFCFA(facture.montantTTC, false)}
               </p>
               <p className="mt-0.5 text-xs text-slate-400">FCFA</p>
@@ -157,7 +157,7 @@ export function FactureSummaryHeader({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="gap-2 text-indigo-700 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
+                    className="gap-2 text-indigo-700 dark:text-indigo-300 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
                     onClick={() => onOpenDossier(dossier.id)}
                   >
                     <FolderKanban className="size-4" /> Voir le dossier

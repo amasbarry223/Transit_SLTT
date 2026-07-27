@@ -60,11 +60,19 @@ function AppRootInner() {
     let cancelled = false;
 
     async function applyProfile(userId: string) {
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("id, nom, role, actif")
         .eq("id", userId)
         .maybeSingle();
+
+      // Erreur réseau / temporaire : ne pas forcer un logout (évite boucle signOut).
+      if (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[SLTT] Lecture profil:", error.message);
+        }
+        return false;
+      }
 
       if (!profile || profile.actif === false) {
         await logoutRef.current();
@@ -79,9 +87,17 @@ function AppRootInner() {
       try {
         const {
           data: { session },
+          error: sessionError,
         } = await supabase.auth.getSession();
 
         if (cancelled) return;
+
+        if (sessionError) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[SLTT] getSession:", sessionError.message);
+          }
+          return;
+        }
 
         if (!session?.user) {
           if (useNav.getState().isAuthenticated) {
@@ -92,10 +108,10 @@ function AppRootInner() {
 
         await applyProfile(session.user.id);
       } catch (e) {
-        console.error("[SLTT] Sync session Auth:", e);
-        if (useNav.getState().isAuthenticated) {
-          await logoutRef.current();
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[SLTT] Sync session Auth:", e);
         }
+        // Ne pas logout ici : une coupure réseau ne doit pas éjecter l'utilisateur.
       } finally {
         if (!cancelled) setAuthReady(true);
       }

@@ -88,6 +88,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   updateTransporteurStatut: async (id, statut) => {
+    const transporteur = get().transporteurs.find((t) => t.id === id);
     const { error } = await supabase
       .from("transporteurs")
       .update({ statut })
@@ -97,6 +98,9 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     set((s) => ({
       transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, statut } : t)),
     }));
+    if (transporteur) {
+      await get().addAuditLog("Transporteurs", "Modification", `Transporteur ${transporteur.nom} → ${statut}`);
+    }
   },
 
   removeTransporteur: async (id) => {

@@ -19,7 +19,8 @@ import { formatDateShort } from "@/lib/format";
 import { formatFileSize, getFileIconMeta } from "@/lib/file-utils";
 import { matchesQuery } from "@/lib/search-filter";
 import { deriveClientIdFromRattachement } from "@/lib/archives-utils";
-import { cn } from "@/lib/utils";
+import { resolveTransitSociete } from "@/lib/societe-brand";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission, useHasRole } from "@/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -193,6 +194,9 @@ function useUnifiedDocs(): UnifiedDoc[] {
   return useMemo(() => {
     const clientNom = (id?: string) => clients.find((c) => c.id === id)?.nom ?? "";
     const societeNom = (id?: string) => societes.find((s) => s.id === id)?.nom ?? "";
+    // Les dossiers de transit n'ont pas de societeId propre : ils appartiennent
+    // toujours à la société marquée is_transit (cf. resolveTransitSociete).
+    const transitSociete = resolveTransitSociete(societes);
 
     const fromArchives: UnifiedDoc[] = archives.map((a) => {
       let category: RattachementKind = "libre";
@@ -250,7 +254,8 @@ function useUnifiedDocs(): UnifiedDoc[] {
         mimeType: f.type,
         dataUrl: f.dataUrl,
         clientNom: d?.clientNom ?? "",
-        societeNom: "",
+        societeId: transitSociete?.id,
+        societeNom: transitSociete?.nom ?? "",
         rattachement: d ? `Dossier ${d.reference}` : "Dossier",
         date: f.dateUpload,
         canDelete: true,
@@ -357,13 +362,6 @@ function ArchiveUploadDialog({
     }
     setSaving(true);
     try {
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target?.result as string);
-        reader.onerror = () => reject(new Error("Lecture du fichier impossible."));
-        reader.readAsDataURL(file);
-      });
-
       const derivedClientId = deriveClientIdFromRattachement(
         rattachementKind,
         rattachementId,
@@ -376,7 +374,7 @@ function ArchiveUploadDialog({
         typeDocument,
         taille: file.size,
         type: file.type || "application/octet-stream",
-        dataUrl,
+        file,
         dossierId: rattachementKind === "dossier" ? rattachementId || undefined : undefined,
         factureId: rattachementKind === "facture" ? rattachementId || undefined : undefined,
         depenseId: rattachementKind === "depense" ? rattachementId || undefined : undefined,
@@ -390,7 +388,7 @@ function ArchiveUploadDialog({
     } catch (e) {
       toast({
         title: "Échec de l'archivage",
-        description: e instanceof Error ? e.message : "Erreur inattendue.",
+        description: getErrorMessage(e, "Erreur inattendue."),
         variant: "destructive",
       });
     } finally {
