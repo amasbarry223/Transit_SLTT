@@ -243,28 +243,11 @@ export function ExcelWorkbookPanel({
         univerAPI.createWorkbook(ensureGrandLivreCapacity(initialData));
         univerApiRef.current = univerAPI as unknown as UniverApiLike;
 
-        // Zoom normal + layout après premier paint
+        // Recalcul layout après paint (évite canvas à hauteur 0).
+        // Ne pas appeler sheet.zoom/setZoomRatio : nécessite SheetsZoomRenderController
+        // non fourni par le preset core.
         requestAnimationFrame(() => {
-          if (cancelled) return;
-          try {
-            const sheet = (
-              univerAPI as unknown as {
-                getActiveWorkbook?: () => {
-                  getActiveSheet?: () => {
-                    zoom?: (ratio: number) => void;
-                    setZoomRatio?: (ratio: number) => void;
-                  } | null;
-                } | null;
-              }
-            )
-              .getActiveWorkbook?.()
-              ?.getActiveSheet?.();
-            sheet?.setZoomRatio?.(1);
-            sheet?.zoom?.(1);
-          } catch {
-            // ignore
-          }
-          nudgeUniverLayout(host);
+          if (!cancelled) nudgeUniverLayout(host);
         });
 
         resizeRo = new ResizeObserver(() => {
