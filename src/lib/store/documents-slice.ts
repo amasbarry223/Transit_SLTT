@@ -139,6 +139,8 @@ export interface DocumentsSlice {
       fields?: Array<{ fieldKey: string; fieldValue?: string; confidence?: number }>;
     },
   ) => Promise<OcrJob>;
+  /** Marque un job en échec de façon fiable (update directe, sans RPC). */
+  failOcrJob: (jobId: string, errorMessage: string) => Promise<void>;
   validateOcrFields: (
     jobId: string,
     validated: Record<string, string>,
@@ -226,15 +228,21 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     const existing = get().documents.find((d) => d.id === documentId);
     if (!existing) throw new Error("Document introuvable");
 
-    const nextVersion = existing.currentVersion + 1;
     const userId = currentUserId();
+    const { data: nextVersionRaw, error: verErr } = await supabase.rpc(
+      "next_document_version",
+      { p_document_id: documentId },
+    );
+    if (verErr) throw verErr;
+    const nextVersion = Number(nextVersionRaw) || existing.currentVersion + 1;
+
     const blob = await dataUrlToBlob(file.dataUrl);
     const checksum = await sha256Hex(blob);
     const path = buildDocumentStoragePath(documentId, nextVersion, file.nom);
 
     await uploadDocumentBlob(path, blob, file.mimeType);
 
-    const { data: verRow, error: verError } = await supabase
+    const { data: verRow, error: insertVerError } = await supabase
       .from("document_versions")
       .insert({
         document_id: documentId,
@@ -247,9 +255,9 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
       })
       .select()
       .single();
-    if (verError) {
+    if (insertVerError) {
       await removeDocumentStoragePaths([path]);
-      throw verError;
+      throw insertVerError;
     }
 
     const { error: updError } = await supabase
@@ -337,8 +345,9 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
   deleteDocument: async (id) => {
     const doc = get().documents.find((d) => d.id === id);
-    const versions = get().documentVersions.filter((v) => v.documentId === id);
-    const paths = versions.map((v) => v.storagePath);
+    // Toujours recharger les versions depuis la DB pour éviter les orphelins storage.
+    const versions = await get().getDocumentVersions(id);
+    const paths = versions.map((v) => v.storagePath).filter(Boolean);
 
     const { error } = await supabase.from("documents").delete().eq("id", id);
     if (error) throw error;
@@ -414,61 +423,170 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   },
 
   updateOcrJobResult: async (jobId, result) => {
-    const payload: Record<string, unknown> = {
-      status: result.status,
-      raw_text: result.rawText ?? null,
-      error_message: result.errorMessage ?? null,
-    };
-    if (result.status === "done" || result.status === "failed" || result.status === "validated") {
-      payload.completed_at = new Date().toISOString();
+    // Statut simple (processing / failed) : update directe — plus fiable que la RPC.
+    if (
+      (result.status === "processing" || result.status === "failed") &&
+      !result.fields
+    ) {
+      const payload: Record<string, unknown> = {
+        status: result.status,
+        error_message: result.errorMessage ?? null,
+      };
+      if (result.rawText !== undefined) payload.raw_text = result.rawText;
+      if (result.status === "failed") {
+        payload.completed_at = new Date().toISOString();
+      }
+
+      const { data, error } = await supabase
+        .from("ocr_jobs")
+        .update(payload)
+        .eq("id", jobId)
+        .select()
+        .single();
+      if (error) throw error;
+
+      const job = mapOcrJobFromDb(data as OcrJobRow);
+      set((s) => ({
+        ocrJobs: s.ocrJobs.map((j) =>
+          j.id === jobId ? { ...job, fields: j.fields } : j,
+        ),
+      }));
+      return job;
     }
 
-    const { data, error } = await supabase
-      .from("ocr_jobs")
-      .update(payload)
-      .eq("id", jobId)
-      .select()
-      .single();
-    if (error) throw error;
+    const fieldsPayload =
+      result.fields?.map((f) => ({
+        field_key: f.fieldKey,
+        field_value: f.fieldValue ?? null,
+        confidence: f.confidence ?? null,
+      })) ?? null;
+
+    const { data, error } = await supabase.rpc("replace_ocr_job_fields", {
+      p_job_id: jobId,
+      p_status: result.status,
+      p_raw_text: result.rawText ?? null,
+      p_error_message: result.errorMessage ?? null,
+      p_fields: fieldsPayload,
+    });
+
+    // Fallback non-atomique si la RPC n'est pas encore déployée.
+    if (error) {
+      const payload: Record<string, unknown> = {
+        status: result.status,
+        raw_text: result.rawText ?? null,
+        error_message: result.errorMessage ?? null,
+      };
+      if (
+        result.status === "done" ||
+        result.status === "failed" ||
+        result.status === "validated"
+      ) {
+        payload.completed_at = new Date().toISOString();
+      }
+
+      const { data: jobData, error: updErr } = await supabase
+        .from("ocr_jobs")
+        .update(payload)
+        .eq("id", jobId)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+
+      let fields: OcrField[] | undefined;
+      if (result.fields) {
+        await supabase.from("ocr_fields").delete().eq("ocr_job_id", jobId);
+        if (result.fields.length > 0) {
+          const { data: fieldRows, error: fieldError } = await supabase
+            .from("ocr_fields")
+            .insert(
+              result.fields.map((f) => ({
+                ocr_job_id: jobId,
+                field_key: f.fieldKey,
+                field_value: f.fieldValue ?? null,
+                confidence: f.confidence ?? null,
+              })),
+            )
+            .select();
+          if (fieldError) throw fieldError;
+          fields = (fieldRows || []).map((r) => mapOcrFieldFromDb(r as OcrFieldRow));
+        } else {
+          fields = [];
+        }
+      }
+
+      const job = mapOcrJobFromDb(jobData as OcrJobRow, fields);
+      set((s) => ({
+        ocrJobs: s.ocrJobs.map((j) =>
+          j.id === jobId ? { ...job, fields: fields ?? j.fields } : j,
+        ),
+      }));
+      return job;
+    }
 
     let fields: OcrField[] | undefined;
     if (result.fields) {
-      await supabase.from("ocr_fields").delete().eq("ocr_job_id", jobId);
-      if (result.fields.length > 0) {
-        const { data: fieldRows, error: fieldError } = await supabase
-          .from("ocr_fields")
-          .insert(
-            result.fields.map((f) => ({
-              ocr_job_id: jobId,
-              field_key: f.fieldKey,
-              field_value: f.fieldValue ?? null,
-              confidence: f.confidence ?? null,
-            })),
-          )
-          .select();
-        if (fieldError) throw fieldError;
-        fields = (fieldRows || []).map((r) => mapOcrFieldFromDb(r as OcrFieldRow));
-      } else {
-        fields = [];
-      }
+      const { data: fieldRows } = await supabase
+        .from("ocr_fields")
+        .select("*")
+        .eq("ocr_job_id", jobId);
+      fields = (fieldRows || []).map((r) => mapOcrFieldFromDb(r as OcrFieldRow));
     }
 
     const job = mapOcrJobFromDb(data as OcrJobRow, fields);
     set((s) => ({
-      ocrJobs: s.ocrJobs.map((j) => (j.id === jobId ? { ...job, fields: fields ?? j.fields } : j)),
+      ocrJobs: s.ocrJobs.map((j) =>
+        j.id === jobId ? { ...job, fields: fields ?? j.fields } : j,
+      ),
     }));
     return job;
+  },
+
+  failOcrJob: async (jobId, errorMessage) => {
+    const completedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("ocr_jobs")
+      .update({
+        status: "failed",
+        error_message: errorMessage.slice(0, 2000),
+        completed_at: completedAt,
+      })
+      .eq("id", jobId);
+    if (error) throw error;
+
+    set((s) => ({
+      ocrJobs: s.ocrJobs.map((j) =>
+        j.id === jobId
+          ? {
+              ...j,
+              status: "failed",
+              errorMessage: errorMessage.slice(0, 2000),
+              completedAt,
+            }
+          : j,
+      ),
+    }));
   },
 
   validateOcrFields: async (jobId, validated) => {
     const entries = Object.entries(validated);
     for (const [fieldKey, value] of entries) {
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("ocr_fields")
         .update({ validated_value: value })
         .eq("ocr_job_id", jobId)
-        .eq("field_key", fieldKey);
+        .eq("field_key", fieldKey)
+        .select("id");
       if (error) throw error;
+      if (!updated?.length) {
+        const { error: insErr } = await supabase.from("ocr_fields").insert({
+          ocr_job_id: jobId,
+          field_key: fieldKey,
+          field_value: value,
+          validated_value: value,
+          confidence: null,
+        });
+        if (insErr) throw insErr;
+      }
     }
 
     const { error } = await supabase
@@ -480,14 +598,27 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     set((s) => ({
       ocrJobs: s.ocrJobs.map((j) => {
         if (j.id !== jobId) return j;
-        return {
-          ...j,
-          status: "validated",
-          completedAt: new Date().toISOString(),
-          fields: (j.fields || []).map((f) => ({
+        const keys = new Set((j.fields || []).map((f) => f.fieldKey));
+        const fields = [
+          ...(j.fields || []).map((f) => ({
             ...f,
             validatedValue: validated[f.fieldKey] ?? f.validatedValue,
           })),
+          ...Object.entries(validated)
+            .filter(([k]) => !keys.has(k))
+            .map(([fieldKey, fieldValue]) => ({
+              id: `local-${fieldKey}`,
+              ocrJobId: jobId,
+              fieldKey,
+              fieldValue,
+              validatedValue: fieldValue,
+            })),
+        ];
+        return {
+          ...j,
+          status: "validated" as const,
+          completedAt: new Date().toISOString(),
+          fields,
         };
       }),
     }));

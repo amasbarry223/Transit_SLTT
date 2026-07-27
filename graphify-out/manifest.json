@@ -25,13 +25,13 @@
     "semantic_hash": ""
   },
   "next.config.ts": {
-    "mtime": 1785177294.8850791,
-    "ast_hash": "1fba9795c8fc816b8b894d1ce9331185",
+    "mtime": 1785178179.3627913,
+    "ast_hash": "8e57ff38b0f9872ff886ff350f32c60c",
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1785173894.9464252,
-    "ast_hash": "af47c783f76df30764557a831a1dd4d0",
+    "mtime": 1785182794.9450438,
+    "ast_hash": "76ad1dad3b60755df16c3290141e666c",
     "semantic_hash": ""
   },
   "postcss.config.mjs": {
@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/app-root.tsx": {
-    "mtime": 1785177793.4093747,
-    "ast_hash": "9f15ef301b3db27f8e75ab488df54607",
+    "mtime": 1785178444.6810415,
+    "ast_hash": "04716bc04ce41fa0563fba7c1a61e871",
     "semantic_hash": ""
   },
   "src/components/sltt/bons/bon-caisse-form-dialog.tsx": {
@@ -675,8 +675,8 @@
     "semantic_hash": ""
   },
   "src/lib/domain-types.ts": {
-    "mtime": 1785169651.7703755,
-    "ast_hash": "03c99de9d2e36b9984f92cade88bf729",
+    "mtime": 1785180297.1998272,
+    "ast_hash": "90d83462d9622f1f92c9a495bf27e624",
     "semantic_hash": ""
   },
   "src/lib/dossier-flow.test.ts": {
@@ -790,8 +790,8 @@
     "semantic_hash": ""
   },
   "src/lib/store.ts": {
-    "mtime": 1785177010.625958,
-    "ast_hash": "5888e95627918477f7c4527935d386c7",
+    "mtime": 1785179846.056298,
+    "ast_hash": "e6bd54732db813a395e81ff71ddca8e3",
     "semantic_hash": ""
   },
   "src/lib/store/archives-slice.ts": {
@@ -1280,7 +1280,7 @@
     "semantic_hash": ""
   },
   "src/components/sltt/client-fiche/classeur-tab.tsx": {
-    "mtime": 1785177124.2311218,
+    "mtime": 1785181146.6771705,
     "ast_hash": "a9cef24af2e5c1c130531c46d7de71d7",
     "semantic_hash": ""
   },
@@ -1715,13 +1715,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/documents/ocr-review-dialog.tsx": {
-    "mtime": 1785171896.0317216,
-    "ast_hash": "cd77330c3ffa2ddc86c041a5ad93a477",
+    "mtime": 1785182447.6932182,
+    "ast_hash": "5dac32ef29f60e9b89b259a9ecbbee4b",
     "semantic_hash": ""
   },
   "src/lib/classeur-import.ts": {
-    "mtime": 1785167457.471707,
-    "ast_hash": "735daeb65a9bb7cf3363adc781fe8e61",
+    "mtime": 1785182909.5263834,
+    "ast_hash": "fb95a745db1c4cba877ec44124f8cdbd",
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/mappers/dossier-mapper.ts": {
@@ -1730,8 +1730,8 @@
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/pdf-rasterize.ts": {
-    "mtime": 1785167154.8294413,
-    "ast_hash": "5594b835c179b0788f2084db9f6da7c4",
+    "mtime": 1785182447.497605,
+    "ast_hash": "a1a8b5eb038ac650219168f7cc59ca22",
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/preprocess.ts": {
@@ -1745,23 +1745,23 @@
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/run-ocr.ts": {
-    "mtime": 1785167163.8168557,
-    "ast_hash": "f75dd1ccc6bfb5d2feb3bff26dcefecd",
+    "mtime": 1785179628.6318476,
+    "ast_hash": "fd29104e616bc3bc4dfbefdfea1bc26b",
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/tesseract-provider.ts": {
-    "mtime": 1785167163.7269807,
-    "ast_hash": "e12a3aa49e2ca5ac8c569524c4b15263",
+    "mtime": 1785182790.714151,
+    "ast_hash": "83a7c7169122d46015c740007c307fe0",
     "semantic_hash": ""
   },
   "src/lib/documents/storage.ts": {
-    "mtime": 1785166969.9303882,
-    "ast_hash": "bdafdc91762fa61ed7ba09b7a6420e59",
+    "mtime": 1785179949.8242302,
+    "ast_hash": "3a24b904308dbc845253f32f010a2945",
     "semantic_hash": ""
   },
   "src/lib/store/documents-slice.ts": {
-    "mtime": 1785166970.3290806,
-    "ast_hash": "9fc1501b27a26f7b8b475f8af0d5cafe",
+    "mtime": 1785180470.7223673,
+    "ast_hash": "d727743ab69574fc45cdd3c0f59511ab",
     "semantic_hash": ""
   },
   "src/types/heic2any.d.ts": {
@@ -1790,18 +1790,18 @@
     "semantic_hash": ""
   },
   "src/components/sltt/excel/excel-workbook.tsx": {
-    "mtime": 1785177329.027865,
-    "ast_hash": "75144431711451e2836a2a02baa81900",
+    "mtime": 1785181400.3760574,
+    "ast_hash": "d33791e6d07b3cd43a79765560768386",
     "semantic_hash": ""
   },
   "src/lib/excel/sltt-bridge.ts": {
-    "mtime": 1785176913.8241525,
-    "ast_hash": "eeac3c57f6053bc159fac97eebb9a6c2",
+    "mtime": 1785181314.0123036,
+    "ast_hash": "27fef33b182c5abbfb80dc3183c95183",
     "semantic_hash": ""
   },
   "src/lib/excel/template.ts": {
-    "mtime": 1785176902.398793,
-    "ast_hash": "03cf0542b748d701fa3cabaef4c89d6e",
+    "mtime": 1785181344.3368685,
+    "ast_hash": "4ef14f748ff318af86f51776d4dd4369",
     "semantic_hash": ""
   },
   "src/lib/excel/types.ts": {
@@ -1810,18 +1810,43 @@
     "semantic_hash": ""
   },
   "src/lib/excel/workbook-io.ts": {
-    "mtime": 1785176913.881351,
-    "ast_hash": "88872f101ecb5e4775ad5467f0fac486",
+    "mtime": 1785179931.5707579,
+    "ast_hash": "48ba39825215c47375774ec057e1c85f",
     "semantic_hash": ""
   },
   "src/lib/store/excel-workbooks-slice.ts": {
-    "mtime": 1785176947.4816246,
-    "ast_hash": "528ea4e749958a597010e4757d400520",
+    "mtime": 1785179445.4513962,
+    "ast_hash": "2572626dc47498ab50e53398df2ab755",
     "semantic_hash": ""
   },
   "supabase/migrations/20260732_excel_workbooks.sql": {
     "mtime": 1785173435.0974443,
     "ast_hash": "230c494238da225be0ef0c463e180303",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260802_ocr_excel_hardening.sql": {
+    "mtime": 1785179975.1768684,
+    "ast_hash": "9ba9aac360eb21d8da46f86fed879da7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260803_migrate_legacy_dossier_fichiers.sql": {
+    "mtime": 1785179949.3964603,
+    "ast_hash": "17f57b8b7c656710390950040ff1cfda",
+    "semantic_hash": ""
+  },
+  "scripts/sync-ocr-assets.mjs": {
+    "mtime": 1785182795.0901442,
+    "ast_hash": "cbff5a902ed945adad14c6241d025580",
+    "semantic_hash": ""
+  },
+  "src/lib/classeur-import.test.ts": {
+    "mtime": 1785182888.8396282,
+    "ast_hash": "0e1972d8224c506914f5e240a14b311d",
+    "semantic_hash": ""
+  },
+  "src/lib/store/documents-ocr-fail.test.ts": {
+    "mtime": 1785180727.8104813,
+    "ast_hash": "8631e39212f66acb840c9bc50b61a351",
     "semantic_hash": ""
   }
 }

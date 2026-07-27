@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, ScanText, AlertTriangle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { DossierInput } from "@/lib/store";
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import { runOcrOnStoragePath } from "@/lib/documents/ocr/run-ocr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +81,9 @@ export function OcrReviewDialog({
   defaultClientId?: string;
 }) {
   const { toast } = useToast();
+  const canWriteDocs = usePermission("documents:write");
+  const canWriteDossiers = usePermission("dossiers:write");
+  const canValidate = canWriteDocs && canWriteDossiers;
   const documents = useStore((s) => s.documents);
   const documentVersions = useStore((s) => s.documentVersions);
   const clients = useStore((s) => s.clients);
@@ -87,6 +91,7 @@ export function OcrReviewDialog({
   const societes = useStore((s) => s.societes);
   const createOcrJob = useStore((s) => s.createOcrJob);
   const updateOcrJobResult = useStore((s) => s.updateOcrJobResult);
+  const failOcrJob = useStore((s) => s.failOcrJob);
   const validateOcrFields = useStore((s) => s.validateOcrFields);
   const linkDocumentToDossier = useStore((s) => s.linkDocumentToDossier);
   const getDocumentVersions = useStore((s) => s.getDocumentVersions);
@@ -103,6 +108,31 @@ export function OcrReviewDialog({
   const [confidence, setConfidence] = useState<Record<string, number>>({});
   const [form, setForm] = useState<FormState>(() => emptyForm({ clientId: defaultClientId || "" }));
   const [ocrError, setOcrError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  /** Job OCR de la course en cours — survivit aux re-renders / abort. */
+  const activeJobIdRef = useRef<string | null>(null);
+
+  const markJobFailed = useCallback(
+    async (jobId: string | null | undefined, message: string) => {
+      if (!jobId) return;
+      try {
+        await failOcrJob(jobId, message);
+      } catch (err) {
+        console.warn("[OCR] failOcrJob échoué, retry updateOcrJobResult:", err);
+        await updateOcrJobResult(jobId, {
+          status: "failed",
+          errorMessage: message,
+        }).catch((e) => {
+          console.error("[OCR] Impossible de marquer le job failed:", e);
+        });
+      }
+    },
+    [failOcrJob, updateOcrJobResult],
+  );
+  const markJobFailedRef = useRef(markJobFailed);
+  useEffect(() => {
+    markJobFailedRef.current = markJobFailed;
+  });
 
   const lowFields = useMemo(
     () =>
@@ -129,21 +159,58 @@ export function OcrReviewDialog({
 
   const runOcr = useCallback(async () => {
     if (!doc) return;
+
+    // Annuler la course précédente (sans toast).
+    const previousJobId = activeJobIdRef.current;
+    abortRef.current?.abort();
+    if (previousJobId) {
+      activeJobIdRef.current = null;
+      void markJobFailed(previousJobId, "OCR annulé (relance)");
+    }
+
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setRunning(true);
     setOcrError(null);
     setConfidence({});
     setJobId(null);
     setPreviewUrl(null);
     setForm(emptyForm({ clientId: defaultClientId || "" }));
+
+    let currentJobId: string | null = null;
+
     try {
       const version = await loadPreview();
       if (!version) throw new Error("Version document introuvable");
+      if (ac.signal.aborted) return;
 
       const job = await createOcrJob(doc.id, "dossier");
+      currentJobId = job.id;
+      activeJobIdRef.current = job.id;
       setJobId(job.id);
-      await updateOcrJobResult(job.id, { status: "processing" });
 
-      const result = await runOcrOnStoragePath(version.storagePath, doc.mimeType);
+      await updateOcrJobResult(job.id, { status: "processing" });
+      if (ac.signal.aborted) {
+        if (activeJobIdRef.current === currentJobId) {
+          activeJobIdRef.current = null;
+          await markJobFailed(currentJobId, "OCR annulé");
+        }
+        return;
+      }
+
+      const result = await runOcrOnStoragePath(
+        version.storagePath,
+        doc.mimeType,
+        ac.signal,
+      );
+      if (ac.signal.aborted) {
+        if (activeJobIdRef.current === currentJobId) {
+          activeJobIdRef.current = null;
+          await markJobFailed(currentJobId, "OCR annulé");
+        }
+        return;
+      }
 
       await updateOcrJobResult(job.id, {
         status: "done",
@@ -181,11 +248,22 @@ export function OcrReviewDialog({
             next.refDouaniere = v;
             break;
           case "client_nom": {
-            const match = clients.find(
-              (c) => c.nom.toLowerCase() === v.toLowerCase() ||
-                c.nom.toLowerCase().includes(v.toLowerCase()),
-            );
-            if (match) next.clientId = match.id;
+            const needle = v.trim().toLowerCase();
+            if (!needle) break;
+            const exact = clients.find((c) => c.nom.toLowerCase() === needle);
+            const scored = exact
+              ? exact
+              : clients
+                  .map((c) => {
+                    const nom = c.nom.toLowerCase();
+                    if (nom === needle) return { c, score: 3 };
+                    if (nom.startsWith(needle) || needle.startsWith(nom)) return { c, score: 2 };
+                    if (needle.length >= 4 && nom.includes(needle)) return { c, score: 1 };
+                    return { c, score: 0 };
+                  })
+                  .filter((x) => x.score > 0)
+                  .sort((a, b) => b.score - a.score)[0]?.c;
+            if (scored) next.clientId = scored.id;
             break;
           }
           default:
@@ -204,41 +282,87 @@ export function OcrReviewDialog({
         }
       }
 
+      if (ac.signal.aborted) {
+        if (activeJobIdRef.current === currentJobId) {
+          activeJobIdRef.current = null;
+          await markJobFailed(currentJobId, "OCR annulé");
+        }
+        return;
+      }
       setConfidence(conf);
       setForm(next);
     } catch (e) {
+      const isAbort =
+        ac.signal.aborted ||
+        (e instanceof DOMException && e.name === "AbortError") ||
+        (e instanceof Error && e.name === "AbortError");
+
+      if (isAbort) {
+        // Ne pas écraser un job déjà repris par une nouvelle course.
+        if (currentJobId && activeJobIdRef.current === currentJobId) {
+          activeJobIdRef.current = null;
+          await markJobFailed(currentJobId, "OCR annulé");
+        }
+        return;
+      }
+
       const message = e instanceof Error ? e.message : "OCR échoué";
       setOcrError(message);
-      if (jobId) {
-        await updateOcrJobResult(jobId, { status: "failed", errorMessage: message }).catch(
-          () => undefined,
-        );
+      if (currentJobId && activeJobIdRef.current === currentJobId) {
+        activeJobIdRef.current = null;
+        await markJobFailed(currentJobId, message);
+      } else if (currentJobId) {
+        await markJobFailed(currentJobId, message);
       }
       toast({ title: "OCR échoué", description: message, variant: "destructive" });
     } finally {
-      setRunning(false);
+      if (abortRef.current === ac) {
+        setRunning(false);
+      }
     }
   }, [
     doc,
     loadPreview,
     createOcrJob,
     updateOcrJobResult,
+    markJobFailed,
     defaultClientId,
     existingDossierId,
     dossiers,
     clients,
-    jobId,
     toast,
   ]);
 
+  const runOcrRef = useRef(runOcr);
+  useEffect(() => {
+    runOcrRef.current = runOcr;
+  });
+
+  // Démarrage OCR : délai anti Strict Mode (cleanup avant fire → une seule course).
   useEffect(() => {
     if (!open || !documentId) return;
-    // Différer hors du corps synchrone de l'effet (règle react-hooks/set-state-in-effect).
+    let cancelled = false;
     const timer = window.setTimeout(() => {
-      void runOcr();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [open, documentId, runOcr]);
+      if (!cancelled) void runOcrRef.current();
+    }, 80);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      abortRef.current?.abort();
+      // Pas de markJobFailed ici — géré à la fermeture dialog / catch abort propriétaire.
+    };
+  }, [open, documentId]);
+
+  // Fermeture réelle du dialog → job en failed.
+  useEffect(() => {
+    if (open) return;
+    abortRef.current?.abort();
+    const jobId = activeJobIdRef.current;
+    if (jobId) {
+      activeJobIdRef.current = null;
+      void markJobFailedRef.current(jobId, "OCR annulé (fermeture dialog)");
+    }
+  }, [open]);
 
   function fieldClass(key: string) {
     const c = confidence[key];
@@ -251,6 +375,15 @@ export function OcrReviewDialog({
 
   async function handleValidate() {
     if (!doc) return;
+    if (!canValidate) {
+      toast({
+        title: "Permission insuffisante",
+        description:
+          "La validation OCR nécessite documents:write et dossiers:write.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!form.clientId) {
       toast({
         title: "Client requis",
@@ -265,14 +398,25 @@ export function OcrReviewDialog({
     setSaving(true);
     try {
       const montant = Number(form.montantInvesti) || 0;
-      const notesParts = [
+      const ocrNoteBits = [
         form.notes.trim(),
         form.refDouaniere.trim() ? `Réf. douanière : ${form.refDouaniere.trim()}` : "",
       ].filter(Boolean);
+      const ocrNotesBlock = ocrNoteBits.join("\n");
 
       if (existingDossierId) {
         const existing = dossiers.find((d) => d.id === existingDossierId);
         if (!existing) throw new Error("Dossier introuvable");
+        // Fusion notes : préserver l'historique, jamais remplacer aveuglément.
+        const existingNotes = (existing.notes || "").trim();
+        let mergedNotes = existingNotes;
+        if (ocrNotesBlock) {
+          if (!existingNotes) {
+            mergedNotes = ocrNotesBlock;
+          } else if (!existingNotes.includes(ocrNotesBlock)) {
+            mergedNotes = `${existingNotes}\n${ocrNotesBlock}`;
+          }
+        }
         const input: DossierInput = {
           societeId: existing.societeId,
           clientId: existing.clientId,
@@ -292,7 +436,7 @@ export function OcrReviewDialog({
           fraisPrestation: existing.fraisPrestation,
           montantInvesti: montant || existing.montantInvesti,
           statut: existing.statut,
-          notes: notesParts.join("\n") || existing.notes,
+          notes: mergedNotes || undefined,
         };
         await updateDossier(existingDossierId, input);
         await linkDocumentToDossier(doc.id, existingDossierId);
@@ -314,7 +458,7 @@ export function OcrReviewDialog({
           fraisPrestation: 0,
           montantInvesti: montant,
           statut: DOSSIER_STATUT_EN_COURS,
-          notes: notesParts.join("\n") || undefined,
+          notes: ocrNotesBlock || undefined,
         };
         const created = await addDossier(input);
         await linkDocumentToDossier(doc.id, created.id);
@@ -462,13 +606,21 @@ export function OcrReviewDialog({
         </div>
 
         <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
+          {!canValidate && (
+            <p className="mr-auto max-w-sm text-xs text-amber-700 dark:text-amber-400">
+              Validation désactivée : droits dossiers:write manquants.
+            </p>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
           <Button variant="outline" onClick={() => void runOcr()} disabled={running || saving}>
             Relancer OCR
           </Button>
-          <Button onClick={() => void handleValidate()} disabled={running || saving}>
+          <Button
+            onClick={() => void handleValidate()}
+            disabled={running || saving || !canValidate}
+          >
             {saving && <Loader2 className="size-4 animate-spin" />}
             Valider et enregistrer
           </Button>

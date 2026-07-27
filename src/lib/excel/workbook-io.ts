@@ -22,12 +22,11 @@ function downloadBlob(blob: Blob, filename: string): void {
   }, 4000);
 }
 
-/** Export simple : GrandLivre (+ feuille Notes vide) vers .xlsx téléchargeable. */
-export async function exportGrandLivreToXlsx(
+/** Construit un Blob .xlsx GrandLivre (sans téléchargement) — filet Storage. */
+export async function buildGrandLivreXlsxBlob(
   rows: GrandLivreRow[],
-  filename: string,
   notesHint = "Notes & calculs libres",
-): Promise<void> {
+): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
   const sheet = wb.addWorksheet(GRAND_LIVRE_SHEET_NAME);
   sheet.addRow([...GRAND_LIVRE_HEADERS]);
@@ -53,65 +52,39 @@ export async function exportGrandLivreToXlsx(
     ]);
   }
 
-  sheet.columns = [
-    { width: 12 },
-    { width: 16 },
-    { width: 12 },
-    { width: 16 },
-    { width: 28 },
-    { width: 14 },
-    { width: 14 },
-    { width: 12 },
-    { width: 14 },
-  ];
-
   const notes = wb.addWorksheet(NOTES_SHEET_NAME);
   notes.addRow([notesHint]);
 
   const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
+  return new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+}
+
+/** Export simple : GrandLivre (+ feuille Notes vide) vers .xlsx téléchargeable. */
+export async function exportGrandLivreToXlsx(
+  rows: GrandLivreRow[],
+  filename: string,
+  notesHint = "Notes & calculs libres",
+): Promise<void> {
+  const blob = await buildGrandLivreXlsxBlob(rows, notesHint);
   downloadBlob(blob, filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`);
 }
 
-/** Parse un .xlsx (1re feuille ou GrandLivre) en lignes. */
+/** Parse un .xlsx via le parseur classeur unifié (mêmes en-têtes que Grand livre). */
 export async function parseXlsxToGrandLivreRows(file: ArrayBuffer): Promise<GrandLivreRow[]> {
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(file);
-  const sheet =
-    wb.getWorksheet(GRAND_LIVRE_SHEET_NAME) ||
-    wb.worksheets[0];
-  if (!sheet) return [];
-
-  const rows: GrandLivreRow[] = [];
-  sheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return;
-    const vals = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => {
-      const v = row.getCell(c).value;
-      if (v == null) return "";
-      if (typeof v === "object" && v !== null && "result" in v) {
-        return String((v as { result: unknown }).result ?? "");
-      }
-      if (v instanceof Date) return v.toISOString().slice(0, 10);
-      return String(v);
-    });
-    const reference = vals[3].trim();
-    const libelle = vals[4].trim();
-    const debit = Number(String(vals[5]).replace(/\s/g, "").replace(",", ".")) || 0;
-    const credit = Number(String(vals[6]).replace(/\s/g, "").replace(",", ".")) || 0;
-    if (!reference && !libelle && !debit && !credit) return;
-    rows.push({
-      date: vals[0],
-      societeNom: vals[1],
-      type: vals[2],
-      reference,
-      libelle,
-      debit,
-      credit,
-      statut: vals[7],
-      solde: Number(String(vals[8]).replace(/\s/g, "").replace(",", ".")) || 0,
-    });
-  });
-  return rows;
+  const { parseClasseurXlsx } = await import("@/lib/classeur-import");
+  const imported = await parseClasseurXlsx(file);
+  return imported.map((r) => ({
+    sheetRow: r.rowNumber,
+    date: r.date,
+    societeNom: r.societeNom,
+    type: r.type === "all" ? "Paiement" : r.type,
+    reference: r.reference,
+    libelle: r.libelle,
+    debit: r.debit,
+    credit: r.credit,
+    statut: r.statut,
+    solde: 0,
+  }));
 }

@@ -15,6 +15,7 @@ import {
   mapDocumentFromDb,
   mapDocumentVersionFromDb,
   mapOcrJobFromDb,
+  mapOcrFieldFromDb,
   type DocumentsSlice,
 } from "@/lib/store/documents-slice";
 import {
@@ -791,6 +792,7 @@ export const useStore = create<SLTTState>()(
             supabase.from("documents").select("*").order("created_at", { ascending: false }),
             supabase.from("document_versions").select("*").order("created_at", { ascending: false }),
             supabase.from("ocr_jobs").select("*").order("created_at", { ascending: false }),
+            supabase.from("ocr_fields").select("*"),
           ]);
 
           const secondaryError = secondaryResults.find((r) => r.error)?.error;
@@ -822,6 +824,7 @@ export const useStore = create<SLTTState>()(
             { data: documents },
             { data: documentVersions },
             { data: ocrJobs },
+            { data: ocrFields },
           ] = secondaryResults;
 
           const mappedFournisseurs = (fournisseurs || []).map(mapFournisseurFromDb);
@@ -851,7 +854,18 @@ export const useStore = create<SLTTState>()(
               archives: (archives || []).map(mapArchiveFromDb),
               documents: (documents || []).map(mapDocumentFromDb),
               documentVersions: (documentVersions || []).map(mapDocumentVersionFromDb),
-              ocrJobs: (ocrJobs || []).map((j) => mapOcrJobFromDb(j)),
+              ocrJobs: (() => {
+                const fieldsByJob = new Map<string, ReturnType<typeof mapOcrFieldFromDb>[]>();
+                for (const raw of ocrFields || []) {
+                  const f = mapOcrFieldFromDb(raw);
+                  const list = fieldsByJob.get(f.ocrJobId) || [];
+                  list.push(f);
+                  fieldsByJob.set(f.ocrJobId, list);
+                }
+                return (ocrJobs || []).map((j) =>
+                  mapOcrJobFromDb(j, fieldsByJob.get(j.id) || []),
+                );
+              })(),
               clients: syncClientStats(s.dossiers, s.factures, s.ecritures, s.clients),
               lastSyncedAt: Date.now(),
             };

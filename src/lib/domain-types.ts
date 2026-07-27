@@ -375,6 +375,7 @@ export type DocumentEntityType = "dossier" | "facture" | "ecriture";
 
 export type OcrJobStatus = "pending" | "processing" | "done" | "failed" | "validated";
 
+/** Formulaire cible OCR. Seul « dossier » est branché côté UI/mapper pour l’instant. */
 export type OcrTargetForm = "dossier" | "facture" | "paiement";
 
 export interface DocumentVersion {

@@ -4,8 +4,8 @@ const MAX_PAGES = 5;
 
 export async function rasterizePdfToBlobs(pdfBlob: Blob): Promise<Blob[]> {
   const pdfjs = await import("pdfjs-dist");
-  // Worker CDN — évite la config webpack Next pour le worker local.
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+  // Worker servi en local (/public) — compatible CSP worker-src 'self'.
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
   const data = new Uint8Array(await pdfBlob.arrayBuffer());
   const doc = await pdfjs.getDocument({ data }).promise;

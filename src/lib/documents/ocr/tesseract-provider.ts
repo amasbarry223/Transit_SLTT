@@ -3,6 +3,20 @@ import { preprocessImageBlob } from "./preprocess";
 import { rasterizePdfToBlobs } from "./pdf-rasterize";
 import { mapDossierFieldsFromText } from "./mappers/dossier-mapper";
 
+/**
+ * Chemins locaux (/public/ocr) — compatibles CSP (pas de CDN jsDelivr).
+ * Assets synchronisés via `npm run sync:ocr-assets`.
+ */
+const OCR_WORKER_OPTIONS = {
+  workerPath: "/ocr/worker.min.js",
+  corePath: "/ocr",
+  langPath: "/ocr/lang",
+  // workerBlobURL + importScripts('/ocr/worker...') reste same-origin.
+  workerBlobURL: true,
+  gzip: true,
+  logger: () => undefined,
+} as const;
+
 export class TesseractOcrProvider implements OcrProvider {
   readonly name = "tesseract";
 
@@ -27,7 +41,7 @@ export class TesseractOcrProvider implements OcrProvider {
 
     for (const img of images) {
       const result = await Tesseract.recognize(img, "fra+eng", {
-        logger: () => undefined,
+        ...OCR_WORKER_OPTIONS,
       });
       texts.push(result.data.text || "");
       meanConfidence += (result.data.confidence || 0) / 100;

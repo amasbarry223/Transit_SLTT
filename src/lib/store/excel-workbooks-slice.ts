@@ -5,6 +5,7 @@ import type { ExcelWorkbook, ExcelWorkbookRow } from "@/lib/excel/types";
 import { useNav } from "@/lib/nav-store";
 
 const BUCKET = "excel-workbooks";
+const SNAPSHOT_MAX_BYTES = 800_000;
 
 export function mapExcelWorkbookFromDb(x: ExcelWorkbookRow): ExcelWorkbook {
   return {
@@ -34,6 +35,8 @@ export interface ExcelWorkbooksSlice {
     societeId?: string | null;
     snapshotJson: Record<string, unknown>;
     xlsxBlob?: Blob | null;
+    /** Si true, pas d'entrée d'audit (autosave). */
+    silent?: boolean;
   }) => Promise<ExcelWorkbook>;
   getSignedExcelWorkbookUrl: (storagePath: string) => Promise<string>;
 }
@@ -71,13 +74,30 @@ export const createExcelWorkbooksSlice: StateCreator<
     const nextVersion = existing ? existing.version + 1 : 1;
     const nom = existing?.nom || `Classeur ${input.clientNom}`;
 
+    // Limite snapshot JSON ~800 Ko — au-delà, exige un xlsx Storage.
+    let snapshot = input.snapshotJson;
+    let xlsxBlob = input.xlsxBlob ?? null;
+    const size = new Blob([JSON.stringify(snapshot)]).size;
+    if (size > SNAPSHOT_MAX_BYTES) {
+      if (!xlsxBlob) {
+        throw new Error(
+          "Classeur trop volumineux : fournissez un export .xlsx pour le secours Storage.",
+        );
+      }
+      snapshot = {
+        truncated: true,
+        name: snapshot.name,
+        id: snapshot.id,
+      };
+    }
+
     let storagePath = existing?.storagePath ?? null;
-    if (input.xlsxBlob) {
+    if (xlsxBlob) {
       const safe = input.clientNom.replace(/[^\w.\-]+/g, "_").slice(0, 40);
       const path = `${input.clientId}/v${nextVersion}-${Date.now()}-${safe}.xlsx`;
       const { error: upErr } = await supabase.storage
         .from(BUCKET)
-        .upload(path, input.xlsxBlob, {
+        .upload(path, xlsxBlob, {
           contentType:
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           upsert: false,
@@ -86,15 +106,11 @@ export const createExcelWorkbooksSlice: StateCreator<
       storagePath = path;
     }
 
-    // Limite snapshot JSON ~800 Ko pour éviter de gonfler la ligne PG
-    let snapshot = input.snapshotJson;
-    try {
-      const size = new Blob([JSON.stringify(snapshot)]).size;
-      if (size > 800_000) {
-        snapshot = { truncated: true, name: snapshot.name, id: snapshot.id };
-      }
-    } catch {
-      // ignore
+    // Truncated sans storage = perte de données — refuser.
+    if ((snapshot as { truncated?: boolean }).truncated && !storagePath) {
+      throw new Error(
+        "Impossible d'enregistrer un snapshot tronqué sans fichier Storage.",
+      );
     }
 
     if (existing) {
@@ -118,12 +134,15 @@ export const createExcelWorkbooksSlice: StateCreator<
           w.id === mapped.id ? mapped : w,
         ),
       }));
-      await get().addAuditLog(
-        "Comptabilité",
-        "Modification",
-        `Classeur Excel « ${nom} » enregistré (v${nextVersion})`,
-        input.clientId,
-      );
+      // Audit uniquement sur save manuel (pas autosave silencieux) — géré par l'appelant via silent.
+      if (!input.silent) {
+        await get().addAuditLog(
+          "Comptabilité",
+          "Modification",
+          `Classeur Excel « ${nom} » enregistré (v${nextVersion})`,
+          input.clientId,
+        );
+      }
       return mapped;
     }
 
@@ -143,12 +162,14 @@ export const createExcelWorkbooksSlice: StateCreator<
     if (error) throw error;
     const mapped = mapExcelWorkbookFromDb(data as ExcelWorkbookRow);
     set((s) => ({ excelWorkbooks: [mapped, ...s.excelWorkbooks] }));
-    await get().addAuditLog(
-      "Comptabilité",
-      "Création",
-      `Classeur Excel « ${nom} » créé`,
-      input.clientId,
-    );
+    if (!input.silent) {
+      await get().addAuditLog(
+        "Comptabilité",
+        "Création",
+        `Classeur Excel « ${nom} » créé`,
+        input.clientId,
+      );
+    }
     return mapped;
   },
 

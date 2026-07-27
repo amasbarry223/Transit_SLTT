@@ -29,6 +29,19 @@ export async function getSignedDocumentUrl(
   storagePath: string,
   expiresIn = 3600,
 ): Promise<string> {
+  // Pont legacy : fichiers encore dans dossier_fichiers (data_url / bucket public).
+  if (storagePath.startsWith("legacy/dossier_fichiers/")) {
+    const id = storagePath.split("/")[2];
+    if (id) {
+      const { data } = await supabase
+        .from("dossier_fichiers")
+        .select("data_url")
+        .eq("id", id)
+        .maybeSingle();
+      if (data?.data_url) return data.data_url as string;
+    }
+  }
+
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(storagePath, expiresIn);
