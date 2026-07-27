@@ -1,7 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
-  Bold,
   Download,
   Upload,
   Save,
@@ -10,13 +10,47 @@ import {
   Maximize2,
   Minimize2,
   Loader2,
+  FileSpreadsheet,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type ExcelSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
+function QuickBtn({
+  children,
+  onClick,
+  disabled,
+  title,
+  variant = "default",
+  className,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  title?: string;
+  variant?: "default" | "primary" | "accent";
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "sltt-excel-quickbar__btn",
+        variant === "primary" && "sltt-excel-quickbar__btn--primary",
+        variant === "accent" && "sltt-excel-quickbar__btn--accent",
+        className,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function ExcelToolbar({
+  clientNom,
   canWrite,
   saveStatus,
   fullscreen,
@@ -26,9 +60,9 @@ export function ExcelToolbar({
   onExport,
   onRefreshFromSltt,
   onApplyToSltt,
-  onBold,
   busy = false,
 }: {
+  clientNom: string;
   canWrite: boolean;
   saveStatus: ExcelSaveStatus;
   fullscreen: boolean;
@@ -38,7 +72,6 @@ export function ExcelToolbar({
   onExport: () => void;
   onRefreshFromSltt: () => void;
   onApplyToSltt: () => void;
-  onBold?: () => void;
   busy?: boolean;
 }) {
   const statusLabel =
@@ -47,132 +80,101 @@ export function ExcelToolbar({
       : saveStatus === "saved"
         ? "Enregistré"
         : saveStatus === "dirty"
-          ? "Modifications non enregistrées"
+          ? "Non enregistré"
           : saveStatus === "error"
-            ? "Erreur d'enregistrement"
+            ? "Erreur"
             : "À jour";
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-border bg-slate-50/90 px-3 py-2 dark:bg-slate-900/80">
-      <div className="flex flex-wrap items-center gap-1">
-        {canWrite && (
-          <>
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              className="h-8"
+    <>
+      <div className="sltt-excel-titlebar">
+        <div className="sltt-excel-titlebar__brand">
+          <FileSpreadsheet className="size-4" aria-hidden />
+          <span>Excel</span>
+        </div>
+        <div className="sltt-excel-titlebar__doc" title={`Classeur ${clientNom}`}>
+          Classeur {clientNom} — SLTT
+        </div>
+        <div className="sltt-excel-titlebar__actions">
+          <span
+            className={cn(
+              "sltt-excel-titlebar__status",
+              saveStatus === "dirty" && "is-dirty",
+              saveStatus === "error" && "is-error",
+            )}
+          >
+            {statusLabel}
+          </span>
+          <button
+            type="button"
+            className="sltt-excel-titlebar__btn"
+            title={fullscreen ? "Quitter le plein écran" : "Plein écran"}
+            onClick={onToggleFullscreen}
+          >
+            {fullscreen ? (
+              <Minimize2 className="size-3.5" />
+            ) : (
+              <Maximize2 className="size-3.5" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="sltt-excel-quickbar">
+        <div className="sltt-excel-quickbar__group">
+          {canWrite && (
+            <QuickBtn
+              variant="primary"
               disabled={busy || saveStatus === "saving"}
               onClick={onSave}
+              title="Enregistrer le classeur"
             >
               {saveStatus === "saving" ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (
                 <Save className="size-3.5" />
               )}
-              Enregistrer
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8"
-              disabled={busy}
-              onClick={onImport}
-              title="Importer un fichier .xlsx"
-            >
+              <span>Enregistrer</span>
+            </QuickBtn>
+          )}
+          {canWrite && (
+            <QuickBtn disabled={busy} onClick={onImport} title="Importer un fichier .xlsx">
               <Upload className="size-3.5" />
               <span className="hidden sm:inline">Importer</span>
-            </Button>
-          </>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8"
-          disabled={busy}
-          onClick={onExport}
-        >
-          <Download className="size-3.5" />
-          <span className="hidden sm:inline">Exporter</span>
-        </Button>
-      </div>
-
-      <div className="mx-1 hidden h-5 w-px bg-border sm:block" />
-
-      <div className="flex flex-wrap items-center gap-1">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8"
-          disabled={busy}
-          onClick={onRefreshFromSltt}
-          title="Injecter le journal SLTT dans GrandLivre"
-        >
-          <RefreshCw className="size-3.5" />
-          <span className="hidden md:inline">Actualiser depuis SLTT</span>
-          <span className="md:hidden">Actualiser</span>
-        </Button>
-        {canWrite && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 border-primary/40 text-primary"
-            disabled={busy}
-            onClick={onApplyToSltt}
-            title="Écrire GrandLivre vers dossiers / écritures / factures"
-          >
-            <UploadCloud className="size-3.5" />
-            <span className="hidden md:inline">Appliquer vers SLTT</span>
-            <span className="md:hidden">Appliquer</span>
-          </Button>
-        )}
-        {canWrite && onBold && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 px-0"
-            disabled={busy}
-            onClick={onBold}
-            title="Gras"
-          >
-            <Bold className="size-3.5" />
-          </Button>
-        )}
-      </div>
-
-      <div className="ml-auto flex items-center gap-2">
-        <span
-          className={cn(
-            "text-[11px] tabular-nums",
-            saveStatus === "error"
-              ? "text-destructive"
-              : saveStatus === "dirty"
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-slate-500",
+            </QuickBtn>
           )}
-        >
-          {statusLabel}
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 px-0"
-          onClick={onToggleFullscreen}
-          title={fullscreen ? "Quitter le plein écran" : "Plein écran"}
-        >
-          {fullscreen ? (
-            <Minimize2 className="size-3.5" />
-          ) : (
-            <Maximize2 className="size-3.5" />
+          <QuickBtn disabled={busy} onClick={onExport} title="Exporter en .xlsx">
+            <Download className="size-3.5" />
+            <span className="hidden sm:inline">Exporter</span>
+          </QuickBtn>
+        </div>
+
+        <div className="sltt-excel-quickbar__sep hidden sm:block" />
+
+        <div className="sltt-excel-quickbar__group">
+          <QuickBtn
+            disabled={busy}
+            onClick={onRefreshFromSltt}
+            title="Injecter le journal SLTT dans GrandLivre"
+          >
+            <RefreshCw className="size-3.5" />
+            <span className="hidden md:inline">Actualiser depuis SLTT</span>
+            <span className="md:hidden">Actualiser</span>
+          </QuickBtn>
+          {canWrite && (
+            <QuickBtn
+              variant="accent"
+              disabled={busy}
+              onClick={onApplyToSltt}
+              title="Écrire GrandLivre vers dossiers / écritures / factures"
+            >
+              <UploadCloud className="size-3.5" />
+              <span className="hidden md:inline">Appliquer vers SLTT</span>
+              <span className="md:hidden">Appliquer</span>
+            </QuickBtn>
           )}
-        </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -70,14 +70,14 @@ export function ClasseurTab({
 
   return (
     <TabsContent value="classeur" className="mt-6 space-y-4 focus-visible:outline-none">
-      <div className="inline-flex rounded-lg border border-border bg-slate-50 p-1 dark:bg-slate-900">
+      <div className="inline-flex overflow-hidden rounded-md border border-[#c8c8c8] bg-[#f3f3f3] p-0.5 shadow-sm">
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            "inline-flex items-center gap-2 rounded px-3 py-1.5 text-[13px] font-medium transition-colors",
             viewMode === "grand-livre"
-              ? "bg-white text-primary shadow-sm dark:bg-slate-800"
-              : "text-slate-600 hover:text-slate-900 dark:text-slate-400",
+              ? "bg-white text-[#185c37] shadow-sm ring-1 ring-[#d0d0d0]"
+              : "text-[#605e5c] hover:bg-white/70 hover:text-[#323130]",
           )}
           onClick={() => setViewMode("grand-livre")}
         >
@@ -87,10 +87,10 @@ export function ClasseurTab({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            "inline-flex items-center gap-2 rounded px-3 py-1.5 text-[13px] font-semibold transition-colors",
             viewMode === "excel"
-              ? "bg-white text-primary shadow-sm dark:bg-slate-800"
-              : "text-slate-600 hover:text-slate-900 dark:text-slate-400",
+              ? "bg-[#217346] text-white shadow-sm"
+              : "text-[#605e5c] hover:bg-white/70 hover:text-[#217346]",
           )}
           onClick={() => setViewMode("excel")}
         >

@@ -1280,8 +1280,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/client-fiche/classeur-tab.tsx": {
-    "mtime": 1785181146.6771705,
-    "ast_hash": "a9cef24af2e5c1c130531c46d7de71d7",
+    "mtime": 1785184413.2485354,
+    "ast_hash": "cfd5e724d53220824411cd8c57be72bf",
     "semantic_hash": ""
   },
   "src/components/sltt/client-fiche/client-profile-card.tsx": {
@@ -1780,8 +1780,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/excel/excel-toolbar.tsx": {
-    "mtime": 1785176947.860222,
-    "ast_hash": "7ebeb86d9ff307af20b5d1ff49ebde0f",
+    "mtime": 1785184591.975408,
+    "ast_hash": "ca21dee38bb83ea2b3e49524bb629382",
     "semantic_hash": ""
   },
   "src/components/sltt/excel/excel-workbook-lazy.tsx": {
@@ -1790,8 +1790,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/excel/excel-workbook.tsx": {
-    "mtime": 1785181400.3760574,
-    "ast_hash": "d33791e6d07b3cd43a79765560768386",
+    "mtime": 1785184411.5306325,
+    "ast_hash": "5cb6ccfce32faf116289139e414dfea8",
     "semantic_hash": ""
   },
   "src/lib/excel/sltt-bridge.ts": {
@@ -1847,6 +1847,11 @@
   "src/lib/store/documents-ocr-fail.test.ts": {
     "mtime": 1785180727.8104813,
     "ast_hash": "8631e39212f66acb840c9bc50b61a351",
+    "semantic_hash": ""
+  },
+  "src/lib/excel/excel-theme.ts": {
+    "mtime": 1785184321.2707844,
+    "ast_hash": "8c4f9e97f50f3cd99e7e83aa83b212ab",
     "semantic_hash": ""
   }
 }

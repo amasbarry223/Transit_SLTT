@@ -1,0 +1,312 @@
+/* Skin « vrai Excel » autour d'Univer — scoped .sltt-excel-shell */
+
+.sltt-excel-shell {
+  --excel-green: #217346;
+  --excel-green-dark: #185c37;
+  --excel-green-mid: #2e8b57;
+  --excel-ribbon: #f3f3f3;
+  --excel-border: #d4d4d4;
+  --excel-grid-line: #d0d0d0;
+  --excel-header-bg: #e6e6e6;
+  font-family: "Segoe UI", Calibri, Candara, "Segoe UI Variable", system-ui, sans-serif;
+  background: #fff;
+  border: 1px solid var(--excel-border);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 8px 28px -12px rgba(33, 115, 70, 0.28);
+}
+
+.sltt-excel-shell.sltt-excel-shell--fullscreen {
+  border-radius: 8px;
+  border-width: 2px;
+  border-color: var(--excel-green);
+}
+
+/* Title bar type Excel */
+.sltt-excel-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 36px;
+  padding: 0 0.75rem;
+  background: linear-gradient(180deg, #2d8a55 0%, var(--excel-green) 55%, var(--excel-green-dark) 100%);
+  color: #fff;
+}
+
+.sltt-excel-titlebar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.sltt-excel-titlebar__brand svg {
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+.sltt-excel-titlebar__doc {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 500;
+  opacity: 0.95;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sltt-excel-titlebar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sltt-excel-titlebar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  height: 26px;
+  padding: 0 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.sltt-excel-titlebar__btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.sltt-excel-titlebar__btn:active:not(:disabled) {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.sltt-excel-titlebar__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sltt-excel-titlebar__btn--solid {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.sltt-excel-titlebar__btn--solid:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.sltt-excel-titlebar__status {
+  margin-left: 0.25rem;
+  padding: 0 0.4rem;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.sltt-excel-titlebar__status.is-dirty {
+  color: #ffe08a;
+  opacity: 1;
+}
+
+.sltt-excel-titlebar__status.is-error {
+  color: #ffb4b4;
+  opacity: 1;
+}
+
+/* Bandeau actions SLTT (sous la title bar) */
+.sltt-excel-quickbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 34px;
+  padding: 0.35rem 0.65rem;
+  background: linear-gradient(180deg, #fafafa 0%, var(--excel-ribbon) 100%);
+  border-bottom: 1px solid var(--excel-border);
+}
+
+.sltt-excel-quickbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sltt-excel-quickbar__sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 0.2rem;
+  background: #cfcfcf;
+}
+
+.sltt-excel-quickbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 26px;
+  padding: 0 0.55rem;
+  border: 1px solid #c8c8c8;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+  color: #323130;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.sltt-excel-quickbar__btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fff 0%, #e8f2ec 100%);
+  border-color: var(--excel-green-mid);
+  box-shadow: 0 0 0 1px rgba(33, 115, 70, 0.12);
+}
+
+.sltt-excel-quickbar__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sltt-excel-quickbar__btn--primary {
+  border-color: var(--excel-green);
+  background: linear-gradient(180deg, #2e8b57 0%, var(--excel-green) 100%);
+  color: #fff;
+}
+
+.sltt-excel-quickbar__btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #34965f 0%, var(--excel-green-dark) 100%);
+  border-color: var(--excel-green-dark);
+  box-shadow: none;
+}
+
+.sltt-excel-quickbar__btn--accent {
+  border-color: #9ec9b0;
+  color: var(--excel-green-dark);
+  background: linear-gradient(180deg, #f4fbf7 0%, #e5f3eb 100%);
+}
+
+/* Zone canvas — CRITIQUE : hauteur réelle pour Univer */
+.sltt-excel-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 480px;
+  height: min(68vh, 720px);
+  background: #fff;
+  overflow: hidden;
+}
+
+.sltt-excel-shell--fullscreen .sltt-excel-viewport {
+  height: calc(100dvh - 7.5rem);
+  min-height: 0;
+}
+
+.sltt-excel-host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+}
+
+/* Forcer le layout Univer à remplir le host (évite grille blanche / zoom absurde) */
+.sltt-excel-host > div {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.sltt-excel-host > div > * {
+  min-height: 0;
+}
+
+/* Zone de rendu feuille : prend tout l'espace restant sous ruban / barre formule */
+.sltt-excel-host [class*="render-container"],
+.sltt-excel-host [class*="sheet-container"],
+.sltt-excel-host [class*="canvas-container"],
+.sltt-excel-host [class*="workbook-container"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+/* Overlay chargement */
+.sltt-excel-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--excel-green-dark);
+  font-size: 13px;
+  backdrop-filter: blur(2px);
+}
+
+.sltt-excel-overlay--error {
+  color: #b91c1c;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+/* Status bar bas (sous Univer) — rappel contexte SLTT */
+.sltt-excel-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 24px;
+  padding: 0 0.65rem;
+  background: #f3f3f3;
+  border-top: 1px solid var(--excel-border);
+  color: #605e5c;
+  font-size: 11px;
+}
+
+.sltt-excel-statusbar__ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sltt-excel-statusbar__ready::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--excel-green);
+  box-shadow: 0 0 0 2px rgba(33, 115, 70, 0.2);
+}
+
+@media (max-width: 640px) {
+  .sltt-excel-titlebar__doc {
+    display: none;
+  }
+
+  .sltt-excel-titlebar__btn span.label {
+    display: none;
+  }
+
+  .sltt-excel-viewport {
+    height: 55vh;
+    min-height: 360px;
+  }
+}

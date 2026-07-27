@@ -22,8 +22,10 @@ import {
   buildGrandLivreXlsxBlob,
 } from "@/lib/excel/workbook-io";
 import { ExcelToolbar, type ExcelSaveStatus } from "./excel-toolbar";
+import { excelTheme } from "@/lib/excel/excel-theme";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
+import "./excel-skin.css";
 
 const SNAPSHOT_MAX_BYTES = 800_000;
 const AUTOSAVE_MS = 4000;
@@ -128,13 +130,18 @@ export function ExcelWorkbookPanel({
     }, AUTOSAVE_MS);
   }
 
-  // Boot Univer — uniquement quand le conteneur a une largeur réelle
-  // (évite "column width is less than 0" si le layout n'est pas prêt).
+  // Boot Univer — attendre largeur ET hauteur réelles
+  // (sinon grille blanche + zoom aberrant type 333%).
   useEffect(() => {
     let cancelled = false;
+    let resizeRo: ResizeObserver | null = null;
 
-    function waitForContainerWidth(el: HTMLElement, timeoutMs = 5000): Promise<void> {
-      if (el.clientWidth > 0) return Promise.resolve();
+    function isContainerReady(el: HTMLElement) {
+      return el.clientWidth >= 80 && el.clientHeight >= 200;
+    }
+
+    function waitForContainer(el: HTMLElement, timeoutMs = 8000): Promise<void> {
+      if (isContainerReady(el)) return Promise.resolve();
       return new Promise((resolve, reject) => {
         let settled = false;
         const finish = (ok: boolean) => {
@@ -143,21 +150,32 @@ export function ExcelWorkbookPanel({
           window.clearInterval(poll);
           ro.disconnect();
           if (ok) resolve();
-          else reject(new Error("Conteneur Excel sans largeur"));
+          else reject(new Error("Conteneur Excel trop petit (largeur/hauteur)"));
         };
         const started = Date.now();
         const ro = new ResizeObserver(() => {
-          if (el.clientWidth > 0) finish(true);
+          if (isContainerReady(el)) finish(true);
         });
         ro.observe(el);
         const poll = window.setInterval(() => {
           if (cancelled) {
-            finish(true); // abandon silencieux via cancelled check après
+            finish(true);
             return;
           }
-          if (el.clientWidth > 0) finish(true);
+          if (isContainerReady(el)) finish(true);
           else if (Date.now() - started > timeoutMs) finish(false);
         }, 50);
+      });
+    }
+
+    function nudgeUniverLayout(host: HTMLElement) {
+      // Force un recalcul de layout après paint (canvas / zoom).
+      window.dispatchEvent(new Event("resize"));
+      host.querySelectorAll("canvas").forEach((c) => {
+        const parent = c.parentElement;
+        if (parent && parent.clientHeight > 0) {
+          c.style.maxHeight = "100%";
+        }
       });
     }
 
@@ -167,7 +185,7 @@ export function ExcelWorkbookPanel({
       setReady(false);
 
       try {
-        await waitForContainerWidth(containerRef.current);
+        await waitForContainer(containerRef.current);
         if (cancelled || !containerRef.current) return;
 
         const [{ createUniver, LocaleType, mergeLocales }, { UniverSheetsCorePreset }, localeFr] =
@@ -179,8 +197,8 @@ export function ExcelWorkbookPanel({
         await import("@univerjs/preset-sheets-core/lib/index.css");
 
         if (cancelled || !containerRef.current) return;
-        if (containerRef.current.clientWidth <= 0) {
-          throw new Error("Conteneur Excel sans largeur");
+        if (!isContainerReady(containerRef.current)) {
+          throw new Error("Conteneur Excel trop petit (largeur/hauteur)");
         }
 
         const existing = await getExcelWorkbookForClient(clientId);
@@ -206,22 +224,53 @@ export function ExcelWorkbookPanel({
           initialData = ensureGrandLivreCapacity(initialData);
         }
 
-        if (cancelled || !containerRef.current || containerRef.current.clientWidth <= 0) return;
+        if (cancelled || !containerRef.current || !isContainerReady(containerRef.current)) return;
 
+        const host = containerRef.current;
         const { univerAPI } = createUniver({
+          theme: excelTheme,
           locale: LocaleType.FR_FR,
           locales: {
             [LocaleType.FR_FR]: mergeLocales(localeFr.default ?? localeFr),
           },
           presets: [
             UniverSheetsCorePreset({
-              container: containerRef.current,
+              container: host,
             }),
           ],
         });
 
         univerAPI.createWorkbook(ensureGrandLivreCapacity(initialData));
         univerApiRef.current = univerAPI as unknown as UniverApiLike;
+
+        // Zoom normal + layout après premier paint
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          try {
+            const sheet = (
+              univerAPI as unknown as {
+                getActiveWorkbook?: () => {
+                  getActiveSheet?: () => {
+                    zoom?: (ratio: number) => void;
+                    setZoomRatio?: (ratio: number) => void;
+                  } | null;
+                } | null;
+              }
+            )
+              .getActiveWorkbook?.()
+              ?.getActiveSheet?.();
+            sheet?.setZoomRatio?.(1);
+            sheet?.zoom?.(1);
+          } catch {
+            // ignore
+          }
+          nudgeUniverLayout(host);
+        });
+
+        resizeRo = new ResizeObserver(() => {
+          if (!cancelled) nudgeUniverLayout(host);
+        });
+        resizeRo.observe(host);
 
         if (restoreRows) {
           injectGrandLivre(
@@ -263,6 +312,8 @@ export function ExcelWorkbookPanel({
 
     return () => {
       cancelled = true;
+      resizeRo?.disconnect();
+      resizeRo = null;
       if (autosaveTimer.current) {
         clearTimeout(autosaveTimer.current);
         autosaveTimer.current = null;
@@ -555,37 +606,15 @@ export function ExcelWorkbookPanel({
     }
   }
 
-  function handleBold() {
-    try {
-      const api = univerApiRef.current as unknown as {
-        getActiveWorkbook: () => {
-          getActiveSheet: () => {
-            getSelection?: () => {
-              getActiveRange?: () => { setFontWeight: (w: "bold") => void } | null;
-            } | null;
-          } | null;
-        } | null;
-      };
-      const range = api
-        ?.getActiveWorkbook()
-        ?.getActiveSheet()
-        ?.getSelection?.()
-        ?.getActiveRange?.();
-      range?.setFontWeight("bold");
-      scheduleAutosave();
-    } catch {
-      // ignore
-    }
-  }
-
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-lg border border-border bg-white shadow-sm dark:bg-slate-950",
-        fullscreen && "fixed inset-2 z-50 rounded-xl border-2 border-primary/30",
+        "sltt-excel-shell flex flex-col",
+        fullscreen && "sltt-excel-shell--fullscreen fixed inset-2 z-50",
       )}
     >
       <ExcelToolbar
+        clientNom={clientNom}
         canWrite={canWrite}
         saveStatus={saveStatus}
         fullscreen={fullscreen}
@@ -595,7 +624,6 @@ export function ExcelWorkbookPanel({
         onExport={() => void handleExport()}
         onRefreshFromSltt={() => void handleRefreshFromSltt()}
         onApplyToSltt={() => void handleApplyToSltt()}
-        onBold={canWrite ? handleBold : undefined}
         busy={busy || !ready}
       />
 
@@ -611,22 +639,26 @@ export function ExcelWorkbookPanel({
         }}
       />
 
-      <div
-        className="relative min-h-[420px] flex-1"
-        style={{ height: fullscreen ? "calc(100vh - 6rem)" : 480 }}
-      >
+      <div className="sltt-excel-viewport">
         {!ready && !bootError && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-slate-950/80">
-            <Loader2 className="size-6 animate-spin text-primary" />
-            <span className="ml-2 text-sm text-slate-500">Chargement du classeur Excel…</span>
+          <div className="sltt-excel-overlay">
+            <Loader2 className="size-5 animate-spin" />
+            <span>Chargement du classeur Excel…</span>
           </div>
         )}
         {bootError && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center p-6 text-center text-sm text-destructive">
-            {bootError}
-          </div>
+          <div className="sltt-excel-overlay sltt-excel-overlay--error">{bootError}</div>
         )}
-        <div ref={containerRef} className="h-full w-full" />
+        <div ref={containerRef} className="sltt-excel-host" />
+      </div>
+
+      <div className="sltt-excel-statusbar">
+        <span className="sltt-excel-statusbar__ready">
+          {ready ? "Prêt" : bootError ? "Erreur" : "Chargement…"}
+        </span>
+        <span className="truncate text-[11px] text-[#605e5c]">
+          Feuilles GrandLivre · Notes — sync SLTT
+        </span>
       </div>
     </div>
   );
