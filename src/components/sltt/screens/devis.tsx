@@ -29,7 +29,7 @@ import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { exportToExcel, printHTML, printInvoice, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
-import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
+import { resolvePrintHTMLBrand, resolveTransitSociete } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
@@ -38,6 +38,8 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
+import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
+import type { Societe } from "@/lib/domain-types";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,11 +119,26 @@ interface DevisFormProps {
   open: boolean;
   devis: Devis | null;
   clients: { id: string; nom: string }[];
+  societes: Societe[];
+  defaultSocieteId?: string | null;
   onClose: () => void;
   onSave: (input: DevisInput) => void;
 }
 
-function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormProps) {
+function DevisFormDialog({
+  open,
+  devis,
+  clients,
+  societes,
+  defaultSocieteId,
+  onClose,
+  onSave,
+}: DevisFormProps) {
+  const transitId = resolveTransitSociete(societes)?.id ?? "";
+  const initialSociete =
+    devis?.societeId || defaultSocieteId || transitId || "";
+
+  const [societeId, setSocieteId] = useState(initialSociete);
   const [clientId, setClientId] = useState(devis?.clientId ?? "");
   const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
   const [nature, setNature] = useState(devis?.nature ?? "");
@@ -138,6 +155,7 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
   if (openKey !== prevOpenKey) {
     setPrevOpenKey(openKey);
     if (openKey !== null) {
+      setSocieteId(devis?.societeId || defaultSocieteId || transitId || "");
       setClientId(devis?.clientId ?? "");
       setClientNom(devis?.clientNom ?? "");
       setNature(devis?.nature ?? "");
@@ -153,7 +171,7 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
   const fc = parseAmount(fraisCircuit);
   const fp = parseAmount(fraisPrestation);
   const total = dd + fc + fp;
-  const valid = !!clientId && !!nature.trim() && !!dateValidite;
+  const valid = !!societeId && !!clientId && !!nature.trim() && !!dateValidite;
 
   function handleClientChange(id: string) {
     setClientId(id);
@@ -163,7 +181,17 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
 
   function handleSave() {
     if (!valid) return;
-    onSave({ clientId, clientNom, nature, droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp, dateValidite, notes: notes.trim() || undefined });
+    onSave({
+      societeId,
+      clientId,
+      clientNom,
+      nature,
+      droitDouane: dd,
+      fraisCircuit: fc,
+      fraisPrestation: fp,
+      dateValidite,
+      notes: notes.trim() || undefined,
+    });
   }
 
   return (
@@ -172,65 +200,128 @@ function DevisFormDialog({ open, devis, clients, onClose, onSave }: DevisFormPro
         <DialogHeader>
           <DialogTitle>{isEdit ? "Modifier le devis" : "Nouveau devis"}</DialogTitle>
           <DialogDescription>
-            {isEdit ? "Modifiez les informations du devis." : "Créez un devis client avant d'ouvrir un dossier."}
+            {isEdit
+              ? "Modifiez les informations du devis."
+              : "Créez un devis client avant d'ouvrir un dossier."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-1">
           <div className="space-y-2">
-            <Label>Client <span className="text-red-500">*</span></Label>
+            <Label>
+              Société <span className="text-red-500">*</span>
+            </Label>
+            <Select value={societeId || undefined} onValueChange={setSocieteId}>
+              <SelectTrigger aria-label="Sélectionner une société">
+                <SelectValue placeholder="Sélectionner une société" />
+              </SelectTrigger>
+              <SelectContent>
+                {societes
+                  .filter((s) => s.actif || s.id === societeId)
+                  .map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nom}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>
+              Client <span className="text-red-500">*</span>
+            </Label>
             <Select value={clientId} onValueChange={handleClientChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nom}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Nature de la marchandise <span className="text-red-500">*</span></Label>
-            <Input value={nature} onChange={(e) => setNature(e.target.value)} placeholder="ex. Matériaux de construction" />
+            <Label>
+              Nature de la marchandise <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              value={nature}
+              onChange={(e) => setNature(e.target.value)}
+              placeholder="ex. Matériaux de construction"
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-2">
               <Label className="text-xs">Droits douane (FCFA)</Label>
-              <Input value={droitDouane} onChange={(e) => setDroitDouane(e.target.value)} placeholder="0" className="text-right tabular-nums" />
+              <Input
+                value={droitDouane}
+                onChange={(e) => setDroitDouane(e.target.value)}
+                placeholder="0"
+                className="text-right tabular-nums"
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Frais circuit (FCFA)</Label>
-              <Input value={fraisCircuit} onChange={(e) => setFraisCircuit(e.target.value)} placeholder="0" className="text-right tabular-nums" />
+              <Input
+                value={fraisCircuit}
+                onChange={(e) => setFraisCircuit(e.target.value)}
+                placeholder="0"
+                className="text-right tabular-nums"
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Prestation SLTT (FCFA)</Label>
-              <Input value={fraisPrestation} onChange={(e) => setFraisPrestation(e.target.value)} placeholder="0" className="text-right tabular-nums" />
+              <Input
+                value={fraisPrestation}
+                onChange={(e) => setFraisPrestation(e.target.value)}
+                placeholder="0"
+                className="text-right tabular-nums"
+              />
             </div>
           </div>
 
           {total > 0 && (
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 dark:bg-blue-950/40 px-4 py-2.5 text-sm">
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm dark:bg-blue-950/40">
               <span className="font-medium text-blue-700 dark:text-blue-300">Total estimé</span>
-              <span className="font-bold tabular-nums text-blue-900 dark:text-blue-200">{formatFCFA(total)}</span>
+              <span className="font-bold tabular-nums text-blue-900 dark:text-blue-200">
+                {formatFCFA(total)}
+              </span>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label>Date de validité <span className="text-red-500">*</span></Label>
-            <Input type="date" value={dateValidite} onChange={(e) => setDateValidite(e.target.value)} className="sm:w-1/2" />
+            <Label>
+              Date de validité <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="date"
+              value={dateValidite}
+              onChange={(e) => setDateValidite(e.target.value)}
+              className="sm:w-1/2"
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Notes (facultatif)</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Conditions, remarques..." rows={2} />
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Conditions, remarques..."
+              rows={2}
+            />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
           <Button onClick={handleSave} disabled={!valid}>
             {isEdit ? "Enregistrer" : "Créer le devis"}
           </Button>
@@ -251,6 +342,7 @@ export function DevisScreen() {
   const openDevisDetail = useNav((s) => s.openDevisDetail);
   const go = useNav((s) => s.go);
   const selectedId = useNav((s) => s.selectedId);
+  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
 
   const devisList = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
@@ -301,23 +393,31 @@ export function DevisScreen() {
   }
 
   /* ---- KPIs ---- */
-  const totalDevis = devisList.length;
+  const scopedDevis = useMemo(
+    () =>
+      selectedSocieteId
+        ? devisList.filter((d) => d.societeId === selectedSocieteId)
+        : devisList,
+    [devisList, selectedSocieteId],
+  );
+
+  const totalDevis = scopedDevis.length;
   const { enAttente, acceptes, totalEstime } = useMemo(() => {
     let enAttente = 0;
     let acceptes = 0;
     let totalEstime = 0;
-    for (const d of devisList) {
+    for (const d of scopedDevis) {
       if (d.statut === "Envoyé") enAttente++;
       if (d.statut === "Accepté") acceptes++;
       if (d.statut !== "Refusé" && d.statut !== "Expiré") totalEstime += d.total;
     }
     return { enAttente, acceptes, totalEstime };
-  }, [devisList]);
+  }, [scopedDevis]);
 
   /* ---- Filters ---- */
   const filtered = useMemo(() => {
-    const list = devisList.filter((d) => {
-      if (!matchesQuery(d, ["reference", "clientNom", "nature"], search)) return false;
+    const list = scopedDevis.filter((d) => {
+      if (!matchesQuery(d, ["reference", "clientNom", "nature", "societeNom"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
       return true;
@@ -335,7 +435,7 @@ export function DevisScreen() {
         default: return 0;
       }
     });
-  }, [devisList, search, clientFilter, statutFilter, sortBy]);
+  }, [scopedDevis, search, clientFilter, statutFilter, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -413,6 +513,7 @@ export function DevisScreen() {
         [
           { header: "Référence",       accessor: (d: Devis) => d.reference },
           { header: "Client",          accessor: (d: Devis) => d.clientNom },
+          { header: "Société",         accessor: (d: Devis) => d.societeNom },
           { header: "Nature",          accessor: (d: Devis) => d.nature },
           { header: "Droits douane",   accessor: (d: Devis) => d.droitDouane },
           { header: "Frais circuit",   accessor: (d: Devis) => d.fraisCircuit },
@@ -436,6 +537,7 @@ export function DevisScreen() {
       <tr>
         <td>${htmlEscape(d.reference)}</td>
         <td>${htmlEscape(d.clientNom)}</td>
+        <td>${htmlEscape(d.societeNom)}</td>
         <td>${htmlEscape(d.nature)}</td>
         <td class="num">${formatFCFA(d.total, false)}</td>
         <td>${formatDateShort(d.dateValidite)}</td>
@@ -446,7 +548,7 @@ export function DevisScreen() {
       <div class="subtitle">${filtered.length} devis · ${formatDateShort(new Date())}</div>
       <table>
         <thead><tr>
-          <th>Référence</th><th>Client</th><th>Nature</th>
+          <th>Référence</th><th>Client</th><th>Société</th><th>Nature</th>
           <th class="num">Total estimé</th><th>Validité</th><th>Statut</th>
         </tr></thead>
         <tbody>${rowsHTML}</tbody>
@@ -514,6 +616,8 @@ export function DevisScreen() {
               ))}
             </SelectContent>
           </Select>
+
+          <SocieteFilterSelect className="h-10 w-full sm:w-52" />
 
           <Select value={statutFilter} onValueChange={(v) => { setStatutFilter(v as DevisStatut | "Tous"); setPage(1); }}>
             <SelectTrigger className="h-10 w-full sm:w-44">
@@ -624,6 +728,11 @@ export function DevisScreen() {
                       <div className="min-w-0">
                         <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">{d.reference}</p>
                         <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
+                        {d.societeNom && (
+                          <div className="mt-1">
+                            <SocieteBadge societeNom={d.societeNom} size="sm" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <DevisStatutBadge statut={d.statut} />
@@ -721,6 +830,9 @@ export function DevisScreen() {
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                      Société
+                    </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Nature marchandise
                     </TableHead>
@@ -758,6 +870,10 @@ export function DevisScreen() {
 
                         <TableCell className="max-w-[180px] px-4 py-3.5">
                           <p className="truncate font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
+                        </TableCell>
+
+                        <TableCell className="hidden px-4 py-3.5 lg:table-cell">
+                          <SocieteBadge societeNom={d.societeNom} size="sm" />
                         </TableCell>
 
                         <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
@@ -872,6 +988,8 @@ export function DevisScreen() {
         open={formOpen}
         devis={editDevis}
         clients={clients}
+        societes={societes}
+        defaultSocieteId={selectedSocieteId}
         onClose={() => { setFormOpen(false); setEditDevis(null); }}
         onSave={handleSaveForm}
       />

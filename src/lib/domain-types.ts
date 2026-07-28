@@ -268,7 +268,7 @@ export interface Societe {
   id: string;
   nom: string;
   actif: boolean;
-  /** true = société porteuse du transit (devis sans societe_id en base). */
+  /** true = société porteuse du transit. */
   isTransit?: boolean;
   /** Chemin public du logo affiché sur les documents imprimés de la société (ex. bons de sortie). */
   logoUrl?: string;
@@ -539,6 +539,8 @@ export interface Devis {
   reference: string;
   clientId: string;
   clientNom: string;
+  societeId: string;
+  societeNom: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;
@@ -555,6 +557,7 @@ export interface Devis {
 export interface DevisInput {
   clientId: string;
   clientNom: string;
+  societeId: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;

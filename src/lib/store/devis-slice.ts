@@ -16,6 +16,8 @@ export function mapDevisFromDb(x: DevisRow): Devis {
     reference: x.reference,
     clientId: x.client_id,
     clientNom: x.clients?.nom || "—",
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom || "—",
     nature: x.nature,
     droitDouane: Number(x.droit_douane),
     fraisCircuit: Number(x.frais_circuit),
@@ -25,6 +27,7 @@ export function mapDevisFromDb(x: DevisRow): Devis {
     dateCreation: x.date_creation,
     dateValidite: x.date_validite,
     notes: x.notes || undefined,
+    dossierId: x.dossier_id ?? undefined,
   };
 }
 
@@ -42,6 +45,9 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
   devis: [],
 
   addDevis: async (input) => {
+    if (!input.societeId?.trim()) {
+      throw new Error("La société est obligatoire pour créer un devis.");
+    }
     const seq = get().devisSeq;
     const year = new Date().getFullYear();
     const reference = `DEVIS-${year}-${pad(seq, 4)}`;
@@ -53,6 +59,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       .insert({
         reference,
         client_id: input.clientId,
+        societe_id: input.societeId,
         nature: input.nature,
         droit_douane: input.droitDouane,
         frais_circuit: input.fraisCircuit,
@@ -62,7 +69,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
         date_validite: input.dateValidite,
         notes: input.notes,
       })
-      .select("*, clients(nom)")
+      .select("*, clients(nom), societes(nom)")
       .single();
 
     if (error) throw error;
@@ -76,12 +83,20 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
   },
 
   updateDevis: async (id, input) => {
+    if (!input.societeId?.trim()) {
+      throw new Error("La société est obligatoire.");
+    }
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
+    const societeNom =
+      get().societes.find((s) => s.id === input.societeId)?.nom ||
+      get().devis.find((d) => d.id === id)?.societeNom ||
+      "—";
 
     const { error } = await supabase
       .from("devis")
       .update({
         client_id: input.clientId,
+        societe_id: input.societeId,
         nature: input.nature,
         droit_douane: input.droitDouane,
         frais_circuit: input.fraisCircuit,
@@ -100,6 +115,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
           ? {
               ...d,
               ...input,
+              societeNom,
               total,
             }
           : d
@@ -166,12 +182,13 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     }
 
     const transit = resolveTransitSociete(get().societes);
-    if (!transit) {
-      throw new Error("Aucune société transit configurée. Renseignez-la dans Paramètres > Sociétés.");
+    const societeId = dev.societeId || transit?.id;
+    if (!societeId) {
+      throw new Error("Aucune société configurée. Renseignez-la dans Paramètres > Sociétés.");
     }
 
     const inputDossier: DossierInput = {
-      societeId: transit.id,
+      societeId,
       clientId: dev.clientId,
       clientNom: dev.clientNom,
       nature: dev.nature || `Devis ${dev.reference} : ${dev.notes || "transit"}`,

@@ -340,13 +340,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/devis-detail.tsx": {
-    "mtime": 1784999713.1841416,
-    "ast_hash": "e455987e7efa66cae3ae66fb94226cfb",
+    "mtime": 1785202116.6825879,
+    "ast_hash": "f4512caaa7f759e263f2bd6a30d65320",
     "semantic_hash": ""
   },
   "src/components/sltt/screens/devis.tsx": {
-    "mtime": 1784998843.394497,
-    "ast_hash": "4ed84a729fa63928c41b23eb0f562c64",
+    "mtime": 1785202046.3835065,
+    "ast_hash": "08555d18fd915381bfdd4e6c28ecde46",
     "semantic_hash": ""
   },
   "src/components/sltt/screens/dossier-detail.tsx": {
@@ -675,8 +675,8 @@
     "semantic_hash": ""
   },
   "src/lib/domain-types.ts": {
-    "mtime": 1785180297.1998272,
-    "ast_hash": "90d83462d9622f1f92c9a495bf27e624",
+    "mtime": 1785201886.630828,
+    "ast_hash": "f26073771c5640f7756e1e5090b9e96c",
     "semantic_hash": ""
   },
   "src/lib/dossier-flow.test.ts": {
@@ -790,8 +790,8 @@
     "semantic_hash": ""
   },
   "src/lib/store.ts": {
-    "mtime": 1785196168.1893387,
-    "ast_hash": "c2888820b73b7414a20919f8df839555",
+    "mtime": 1785201905.9004269,
+    "ast_hash": "8897acd42838b8a0532fc234a72f28cd",
     "semantic_hash": ""
   },
   "src/lib/store/archives-slice.ts": {
@@ -1400,8 +1400,8 @@
     "semantic_hash": ""
   },
   "src/lib/db-rows.ts": {
-    "mtime": 1785169654.787019,
-    "ast_hash": "d612a5de369d289dd9eab12b4d8894f3",
+    "mtime": 1785201860.2994876,
+    "ast_hash": "68a6621405c3142a15b6c3851872ce40",
     "semantic_hash": ""
   },
   "src/components/sltt/dashboard/admin-panel.tsx": {
@@ -1650,8 +1650,8 @@
     "semantic_hash": ""
   },
   "src/lib/store/devis-slice.ts": {
-    "mtime": 1785169825.664262,
-    "ast_hash": "bf70f27bf8f301c0c109061b06f36af6",
+    "mtime": 1785201902.4604654,
+    "ast_hash": "41a5df979c2ff2662f97e84a3da473ed",
     "semantic_hash": ""
   },
   "src/lib/store/fournisseurs-slice.ts": {
@@ -1710,13 +1710,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/documents/dossier-documents-panel.tsx": {
-    "mtime": 1785199915.25199,
-    "ast_hash": "d16883dba8762045d863522980447952",
+    "mtime": 1785200418.9636421,
+    "ast_hash": "04d76343f880857a1653cb194f479fe8",
     "semantic_hash": ""
   },
   "src/components/sltt/documents/ocr-review-dialog.tsx": {
-    "mtime": 1785199954.7039797,
-    "ast_hash": "fb59115af86c98af0c5f6786fe21453a",
+    "mtime": 1785200444.6265311,
+    "ast_hash": "096068b52bbb3ef718577d90d1e5548b",
     "semantic_hash": ""
   },
   "src/lib/classeur-import.ts": {
@@ -1750,8 +1750,8 @@
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/tesseract-provider.ts": {
-    "mtime": 1785199519.0764687,
-    "ast_hash": "95f258e6041d468f52eb38b89be57f11",
+    "mtime": 1785200416.5682435,
+    "ast_hash": "bcd693ee60bae6249b9cf1aa9c1b3fa3",
     "semantic_hash": ""
   },
   "src/lib/documents/storage.ts": {
@@ -1927,6 +1927,16 @@
   "src/lib/documents/ocr/mappers/dossier-mapper.test.ts": {
     "mtime": 1785199856.9411495,
     "ast_hash": "4989aa85db6df9070fa8ea4899d48ac4",
+    "semantic_hash": ""
+  },
+  "src/lib/store/devis-slice.test.ts": {
+    "mtime": 1785201907.2529273,
+    "ast_hash": "e73489f2437dd86dad1218c07c70d467",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260806_devis_societe_id.sql": {
+    "mtime": 1785201766.7389777,
+    "ast_hash": "d51b364ac55365e312f5323f531c37e3",
     "semantic_hash": ""
   }
 }

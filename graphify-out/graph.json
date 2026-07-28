@@ -913,8 +913,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "package_dependencies_ag_grid_react",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 30,
+      "community_name": "csv-export.ts",
       "norm_label": "ag-grid-react"
     },
     {
@@ -924,8 +924,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "ag_grid_react",
-      "community": 22,
-      "community_name": "dependencies",
+      "community": 30,
+      "community_name": "csv-export.ts",
       "norm_label": "ag-grid-react"
     },
     {
@@ -979,8 +979,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "package_dependencies_cmdk",
-      "community": 124,
-      "community_name": "cmdk",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "cmdk"
     },
     {
@@ -990,8 +990,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "cmdk",
-      "community": 124,
-      "community_name": "cmdk",
+      "community": 22,
+      "community_name": "dependencies",
       "norm_label": "cmdk"
     },
     {
@@ -2475,8 +2475,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_form_dialog",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "bon-caisse-form-dialog.tsx"
     },
     {
@@ -2486,8 +2486,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_form_dialog_caisseligneform",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "caisseligneform"
     },
     {
@@ -2497,8 +2497,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_form_dialog_boncaisseformdialogprops",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "boncaisseformdialogprops"
     },
     {
@@ -2563,8 +2563,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_caisse_tab_boncaissetab",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "boncaissetab()"
     },
     {
@@ -2596,8 +2596,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_form_dialog",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "bon-form-dialog.tsx"
     },
     {
@@ -2607,8 +2607,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_form_dialog_bonformdialogprops",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "bonformdialogprops"
     },
     {
@@ -2618,8 +2618,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_form_dialog_bonformdialog",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "bonformdialog()"
     },
     {
@@ -2640,8 +2640,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_marchandise_tab",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "bon-marchandise-tab.tsx"
     },
     {
@@ -2651,8 +2651,8 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_marchandise_tab_bonmarchandisetabprops",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "bonmarchandisetabprops"
     },
     {
@@ -2662,8 +2662,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_components_sltt_bons_bon_marchandise_tab_bonmarchandisetab",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "bonmarchandisetab()"
     },
     {
@@ -2695,8 +2695,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "use-bon-filters.ts"
     },
     {
@@ -2706,8 +2706,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters_bon_motifs",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "bon_motifs"
     },
     {
@@ -2717,8 +2717,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters_bon_motif_tone",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "bon_motif_tone"
     },
     {
@@ -2728,8 +2728,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters_bon_statut_tone",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "bon_statut_tone"
     },
     {
@@ -2739,8 +2739,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_components_sltt_bons_use_bon_filters_usebonfilters",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "usebonfilters()"
     },
     {
@@ -2838,8 +2838,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_classeur_suivi_dialog_classeursuividialog",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "classeursuividialog()"
     },
     {
@@ -2893,8 +2893,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_client_profile_card",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "client-profile-card.tsx"
     },
     {
@@ -2904,8 +2904,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_client_profile_card_clientprofilecardprops",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "clientprofilecardprops"
     },
     {
@@ -2915,8 +2915,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_client_profile_card_clientprofilecard",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "clientprofilecard()"
     },
     {
@@ -2992,8 +2992,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "shared.tsx"
     },
     {
@@ -3003,8 +3003,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared_fichetab",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "fichetab"
     },
     {
@@ -3014,8 +3014,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared_fiche_tabs",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "fiche_tabs"
     },
     {
@@ -3025,8 +3025,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared_avatargradient",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "avatargradient()"
     },
     {
@@ -3036,8 +3036,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared_bon_motif_tone",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "bon_motif_tone"
     },
     {
@@ -3047,8 +3047,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared_bonstatuttone",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "bonstatuttone()"
     },
     {
@@ -3058,8 +3058,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared_classeur_statut_tone",
-      "community": 109,
-      "community_name": "contrat-detail.tsx",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "classeur_statut_tone"
     },
     {
@@ -3069,8 +3069,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_shared_classeurstatuttone",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "classeurstatuttone()"
     },
     {
@@ -3113,8 +3113,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_sltt_client_fiche_stock_tab_stocktab",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "stocktab()"
     },
     {
@@ -3146,8 +3146,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sltt_client_form_fields_clientformfieldsprops",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "clientformfieldsprops"
     },
     {
@@ -3157,8 +3157,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_sltt_client_form_fields_emptyclientform",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "emptyclientform()"
     },
     {
@@ -3179,8 +3179,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_confirm_delete_dialog",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "confirm-delete-dialog.tsx"
     },
     {
@@ -3190,8 +3190,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_components_sltt_confirm_delete_dialog_confirmdeletedialog",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "confirmdeletedialog()"
     },
     {
@@ -3223,8 +3223,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_components_sltt_convert_devis_dialog_convertdevisdialog",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "convertdevisdialog()"
     },
     {
@@ -3300,8 +3300,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "chart-tooltips.tsx"
     },
     {
@@ -3311,8 +3311,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips_charttooltippayload",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "charttooltippayload"
     },
     {
@@ -3322,8 +3322,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips_encaissementstooltip",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "encaissementstooltip()"
     },
     {
@@ -3333,8 +3333,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_chart_tooltips_ecartstooltip",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "ecartstooltip()"
     },
     {
@@ -3344,8 +3344,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_comptable_panel",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "comptable-panel.tsx"
     },
     {
@@ -3355,8 +3355,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_comptable_panel_comptablepanel",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "comptablepanel()"
     },
     {
@@ -3366,8 +3366,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_derniers_dossiers_card",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "derniers-dossiers-card.tsx"
     },
     {
@@ -3377,8 +3377,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_derniers_dossiers_card_derniersdossierscard",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "derniersdossierscard()"
     },
     {
@@ -3399,8 +3399,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_encaissements_chart_encaissementschart",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "encaissementschart()"
     },
     {
@@ -3454,8 +3454,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_marge_chart",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "marge-chart.tsx"
     },
     {
@@ -3465,8 +3465,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_components_sltt_dashboard_marge_chart_margechart",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "margechart()"
     },
     {
@@ -3531,8 +3531,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_sltt_documents_create_dossier_from_ocr_createdossierfromocrbutton",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "createdossierfromocrbutton()"
     },
     {
@@ -3586,8 +3586,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_documents_document_upload_zone",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "document-upload-zone.tsx"
     },
     {
@@ -3608,8 +3608,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_sltt_documents_document_upload_zone_guesscategorie",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "guesscategorie()"
     },
     {
@@ -3619,8 +3619,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_components_sltt_documents_document_upload_zone_isacceptedmime",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "isacceptedmime()"
     },
     {
@@ -3630,8 +3630,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_components_sltt_documents_document_upload_zone_maybeconvertheic",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "maybeconvertheic()"
     },
     {
@@ -3641,8 +3641,8 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "src_components_sltt_documents_document_upload_zone_readasdataurl",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "readasdataurl()"
     },
     {
@@ -3850,8 +3850,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_detail_dossier_detail_overview",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "dossier-detail-overview.tsx"
     },
     {
@@ -3861,8 +3861,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_detail_dossier_detail_overview_amountrow",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 21,
+      "community_name": "cn",
       "norm_label": "amountrow()"
     },
     {
@@ -3872,8 +3872,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_detail_dossier_detail_overview_dossierdetailoverview",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 21,
+      "community_name": "cn",
       "norm_label": "dossierdetailoverview()"
     },
     {
@@ -3938,8 +3938,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_detail_dossier_info_grid",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 21,
+      "community_name": "cn",
       "norm_label": "dossier-info-grid.tsx"
     },
     {
@@ -3949,8 +3949,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_detail_dossier_info_grid_infotile",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 21,
+      "community_name": "cn",
       "norm_label": "infotile()"
     },
     {
@@ -3960,8 +3960,8 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_detail_dossier_info_grid_dossierinfogrid",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 21,
+      "community_name": "cn",
       "norm_label": "dossierinfogrid()"
     },
     {
@@ -4092,8 +4092,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_form_ui_collapsiblesection",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "collapsiblesection()"
     },
     {
@@ -4103,8 +4103,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_form_dossier_form_ui_formfield",
-      "community": 0,
-      "community_name": "devis.tsx",
+      "community": 106,
+      "community_name": "UserRole",
       "norm_label": "formfield()"
     },
     {
@@ -4323,8 +4323,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_transition_dialog_transitiontype",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "transitiontype"
     },
     {
@@ -4345,8 +4345,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_transition_dialog_transition_meta",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "transition_meta"
     },
     {
@@ -4367,8 +4367,8 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_transition_dialog_transitiondialogprops",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 26,
+      "community_name": "UserRole",
       "norm_label": "transitiondialogprops"
     },
     {
@@ -4378,8 +4378,8 @@
       "source_location": "L127",
       "_origin": "ast",
       "id": "src_components_sltt_dossier_transition_dialog_transitiondialog",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "transitiondialog()"
     },
     {
@@ -4433,8 +4433,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_mouvements_tab",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "mouvements-tab.tsx"
     },
     {
@@ -4444,8 +4444,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_mouvements_tab_mouvementfilter",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "mouvementfilter"
     },
     {
@@ -4554,8 +4554,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_use_stock_movement_dialogs_sortie_motifs",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "sortie_motifs"
     },
     {
@@ -4565,8 +4565,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_entreposage_use_stock_movement_dialogs_sortiemotif",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "sortiemotif"
     },
     {
@@ -4697,8 +4697,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_actions_card",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "actions-card.tsx"
     },
     {
@@ -4708,8 +4708,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_actions_card_actionscard",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "actionscard()"
     },
     {
@@ -4730,8 +4730,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_edit_form_factureeditform",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "factureeditform()"
     },
     {
@@ -4741,8 +4741,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_statut_config",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "facture-statut-config.ts"
     },
     {
@@ -4752,8 +4752,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_statut_config_statutcfg",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "statutcfg"
     },
     {
@@ -4763,8 +4763,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_statut_config_statut_config",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "statut_config"
     },
     {
@@ -4774,8 +4774,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_statut_config_statut_flow",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "statut_flow"
     },
     {
@@ -4785,8 +4785,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_statut_config_statuts_all",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "statuts_all"
     },
     {
@@ -4796,8 +4796,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_facture_statut_config_next_statut",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "next_statut"
     },
     {
@@ -4851,8 +4851,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_info_row",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "info-row.tsx"
     },
     {
@@ -4862,8 +4862,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_info_row_inforow",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "inforow()"
     },
     {
@@ -4873,8 +4873,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_informations_card",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "informations-card.tsx"
     },
     {
@@ -4884,8 +4884,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_informations_card_informationscard",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "informationscard()"
     },
     {
@@ -4961,8 +4961,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_payment_ring",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "payment-ring.tsx"
     },
     {
@@ -4972,8 +4972,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_payment_ring_paymentring",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "paymentring()"
     },
     {
@@ -4983,8 +4983,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_pipeline_card",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "pipeline-card.tsx"
     },
     {
@@ -4994,8 +4994,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_pipeline_card_pipelinecard",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "pipelinecard()"
     },
     {
@@ -5005,8 +5005,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_suivi_paiement_card",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "suivi-paiement-card.tsx"
     },
     {
@@ -5016,8 +5016,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_suivi_paiement_card_suivipaiementcard",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "suivipaiementcard()"
     },
     {
@@ -5038,8 +5038,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_use_facture_edit_state_usefactureeditstate",
-      "community": 6,
-      "community_name": "use-toast.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "usefactureeditstate()"
     },
     {
@@ -5049,8 +5049,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_vertical_stepper",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "vertical-stepper.tsx"
     },
     {
@@ -5060,8 +5060,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_facture_detail_vertical_stepper_verticalstepper",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "verticalstepper()"
     },
     {
@@ -5115,8 +5115,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_info_callout",
-      "community": 21,
-      "community_name": "cn",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "info-callout.tsx"
     },
     {
@@ -5126,8 +5126,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_sltt_info_callout_infocallout",
-      "community": 21,
-      "community_name": "cn",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "infocallout()"
     },
     {
@@ -5181,8 +5181,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_app_shell",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "app-shell.tsx"
     },
     {
@@ -5192,8 +5192,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_components_sltt_layout_app_shell_appshell",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "appshell()"
     },
     {
@@ -5203,8 +5203,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_breadcrumb_nav",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "breadcrumb-nav.tsx"
     },
     {
@@ -5214,8 +5214,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sltt_layout_breadcrumb_nav_detail_parent",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "detail_parent"
     },
     {
@@ -5225,8 +5225,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_sltt_layout_breadcrumb_nav_breadcrumbnav",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "breadcrumbnav()"
     },
     {
@@ -5247,8 +5247,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_components_sltt_layout_command_palette_commandpalette",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "commandpalette()"
     },
     {
@@ -5280,8 +5280,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_layout_sidebar",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "sidebar.tsx"
     },
     {
@@ -5291,8 +5291,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_layout_sidebar_sidebar",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "sidebar()"
     },
     {
@@ -5324,8 +5324,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_components_sltt_layout_topbar_topbar",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "topbar()"
     },
     {
@@ -5335,8 +5335,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "list-filters.tsx"
     },
     {
@@ -5346,8 +5346,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters_filterchip",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "filterchip"
     },
     {
@@ -5357,8 +5357,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters_listfiltersprops",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "listfiltersprops"
     },
     {
@@ -5368,8 +5368,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_sltt_list_filters_listfilters",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "listfilters()"
     },
     {
@@ -5412,8 +5412,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_page_header",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "page-header.tsx"
     },
     {
@@ -5423,8 +5423,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_sltt_page_header_pageheader",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "pageheader()"
     },
     {
@@ -5511,8 +5511,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_sltt_quick_client_dialog_quickclientbutton",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "quickclientbutton()"
     },
     {
@@ -5665,8 +5665,8 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "src_components_sltt_screens_archives_unifieddoc",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "unifieddoc"
     },
     {
@@ -5720,8 +5720,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "bilans.tsx"
     },
     {
@@ -5731,8 +5731,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_periode",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "periode"
     },
     {
@@ -5742,8 +5742,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_sortkey",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "sortkey"
     },
     {
@@ -5753,8 +5753,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_sortdir",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "sortdir"
     },
     {
@@ -5764,8 +5764,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_periodes",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "periodes"
     },
     {
@@ -5797,8 +5797,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_chartpayloaditem",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "chartpayloaditem"
     },
     {
@@ -5808,8 +5808,8 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_charttooltip",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "charttooltip()"
     },
     {
@@ -5819,8 +5819,8 @@
       "source_location": "L133",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_piepayloaditem",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "piepayloaditem"
     },
     {
@@ -5830,8 +5830,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_pietooltip",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "pietooltip()"
     },
     {
@@ -5841,8 +5841,8 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bilans_sortablehead",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "sortablehead()"
     },
     {
@@ -5863,8 +5863,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bons",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "bons.tsx"
     },
     {
@@ -5874,8 +5874,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_sltt_screens_bons_bonsscreen",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "bonsscreen()"
     },
     {
@@ -6028,8 +6028,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_client_fiche",
-      "community": 10,
-      "community_name": "useStore",
+      "community": 6,
+      "community_name": "use-toast.ts",
       "norm_label": "client-fiche.tsx"
     },
     {
@@ -6039,8 +6039,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_sltt_screens_client_fiche_clientfichescreen",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "clientfichescreen()"
     },
     {
@@ -6105,8 +6105,8 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "src_components_sltt_screens_clients_clientsscreen",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "clientsscreen()"
     },
     {
@@ -6116,8 +6116,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "comptabilite.tsx"
     },
     {
@@ -6127,8 +6127,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_statutfilter",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "statutfilter"
     },
     {
@@ -6138,8 +6138,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_modeicon",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "modeicon"
     },
     {
@@ -6149,8 +6149,8 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_modeoptions",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "modeoptions"
     },
     {
@@ -6160,8 +6160,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_derivestatut",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "derivestatut()"
     },
     {
@@ -6171,8 +6171,8 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "src_components_sltt_screens_comptabilite_comptabilitescreen",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "comptabilitescreen()"
     },
     {
@@ -6182,8 +6182,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "contrat-detail.tsx"
     },
     {
@@ -6193,8 +6193,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_contrat_statuts",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "contrat_statuts"
     },
     {
@@ -6204,8 +6204,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_contrat_statut_tone",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "contrat_statut_tone"
     },
     {
@@ -6215,8 +6215,8 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_prestation_statuts",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "prestation_statuts"
     },
     {
@@ -6226,8 +6226,8 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_prestation_statut_tone",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "prestation_statut_tone"
     },
     {
@@ -6237,8 +6237,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_modes_paiement",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "modes_paiement"
     },
     {
@@ -6259,8 +6259,8 @@
       "source_location": "L687",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_contrattoinput",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "contrattoinput()"
     },
     {
@@ -6270,8 +6270,8 @@
       "source_location": "L711",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_inforow",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "inforow()"
     },
     {
@@ -6281,8 +6281,8 @@
       "source_location": "L720",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_contratformmodal",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "contratformmodal()"
     },
     {
@@ -6292,8 +6292,8 @@
       "source_location": "L872",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_depenseformmodal",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "depenseformmodal()"
     },
     {
@@ -6303,8 +6303,8 @@
       "source_location": "L998",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrat_detail_prestationformmodal",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "prestationformmodal()"
     },
     {
@@ -6358,8 +6358,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "src_components_sltt_screens_contrats_contratsscreen",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "contratsscreen()"
     },
     {
@@ -6410,7 +6410,7 @@
       "label": "StatutCfg",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L43",
+      "source_location": "L44",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statutcfg",
       "community": 107,
@@ -6421,7 +6421,7 @@
       "label": "STATUT_CONFIG",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L52",
+      "source_location": "L53",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statut_config",
       "community": 107,
@@ -6432,7 +6432,7 @@
       "label": "STATUT_FLOW",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L85",
+      "source_location": "L86",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statut_flow",
       "community": 107,
@@ -6443,7 +6443,7 @@
       "label": "STATUTS_ALL",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L86",
+      "source_location": "L87",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_statuts_all",
       "community": 107,
@@ -6454,7 +6454,7 @@
       "label": "NEXT_STATUT",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L88",
+      "source_location": "L89",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_next_statut",
       "community": 107,
@@ -6465,7 +6465,7 @@
       "label": "VerticalStepper()",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L97",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_verticalstepper",
       "community": 107,
@@ -6476,7 +6476,7 @@
       "label": "InfoRow()",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L199",
+      "source_location": "L200",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_inforow",
       "community": 107,
@@ -6487,7 +6487,7 @@
       "label": "FinancialBreakdown()",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L220",
+      "source_location": "L221",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_financialbreakdown",
       "community": 107,
@@ -6498,11 +6498,11 @@
       "label": "DevisDetailScreen()",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L254",
+      "source_location": "L255",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_detail_devisdetailscreen",
-      "community": 6,
-      "community_name": "use-toast.ts",
+      "community": 15,
+      "community_name": "comptabilite.tsx",
       "norm_label": "devisdetailscreen()"
     },
     {
@@ -6512,48 +6512,48 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "devis.tsx"
     },
     {
       "label": "NEXT_STATUT",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L89",
+      "source_location": "L91",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_next_statut",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "next_statut"
     },
     {
       "label": "SortKey",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L94",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_sortkey",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "sortkey"
     },
     {
       "label": "SORT_OPTIONS",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L96",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_sort_options",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "sort_options"
     },
     {
       "label": "DevisFormProps",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L116",
+      "source_location": "L118",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_devisformprops",
       "community": 108,
@@ -6564,7 +6564,7 @@
       "label": "DevisFormDialog()",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L124",
+      "source_location": "L128",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_devisformdialog",
       "community": 15,
@@ -6575,11 +6575,11 @@
       "label": "DevisScreen()",
       "file_type": "code",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L247",
+      "source_location": "L338",
       "_origin": "ast",
       "id": "src_components_sltt_screens_devis_devisscreen",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "devisscreen()"
     },
     {
@@ -6589,8 +6589,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_detail",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "dossier-detail.tsx"
     },
     {
@@ -6600,8 +6600,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_detail_dossierdetailscreen",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 59,
+      "community_name": "dashboard-metrics.ts",
       "norm_label": "dossierdetailscreen()"
     },
     {
@@ -6611,8 +6611,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_form",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "dossier-form.tsx"
     },
     {
@@ -6622,8 +6622,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossier_form_dossierformscreen",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "dossierformscreen()"
     },
     {
@@ -6644,8 +6644,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "dossiers-list.tsx"
     },
     {
@@ -6655,8 +6655,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list_statut_options",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "statut_options"
     },
     {
@@ -6666,8 +6666,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list_sortkey",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "sortkey"
     },
     {
@@ -6677,8 +6677,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "src_components_sltt_screens_dossiers_list_sort_options",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "sort_options"
     },
     {
@@ -6743,8 +6743,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_facture_detail",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "facture-detail.tsx"
     },
     {
@@ -6754,8 +6754,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_components_sltt_screens_facture_detail_facturedetailscreen",
-      "community": 6,
-      "community_name": "use-toast.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "facturedetailscreen()"
     },
     {
@@ -6875,8 +6875,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "fournisseurs.tsx"
     },
     {
@@ -6886,8 +6886,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_types",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "types"
     },
     {
@@ -6897,8 +6897,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_type_meta",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "type_meta"
     },
     {
@@ -6908,8 +6908,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_fournisseurtab",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "fournisseurtab"
     },
     {
@@ -6919,8 +6919,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_tab_meta",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "tab_meta"
     },
     {
@@ -6974,8 +6974,8 @@
       "source_location": "L546",
       "_origin": "ast",
       "id": "src_components_sltt_screens_fournisseurs_fournisseursscreen",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "fournisseursscreen()"
     },
     {
@@ -7018,8 +7018,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "parametres.tsx"
     },
     {
@@ -7029,8 +7029,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_paramtab",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "paramtab"
     },
     {
@@ -7040,8 +7040,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_actiontone",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "actiontone"
     },
     {
@@ -7051,8 +7051,8 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_tabs",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "tabs"
     },
     {
@@ -7084,8 +7084,8 @@
       "source_location": "L237",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_logo_accepted_types",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "logo_accepted_types"
     },
     {
@@ -7095,8 +7095,8 @@
       "source_location": "L239",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_societecard",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "societecard()"
     },
     {
@@ -7106,8 +7106,8 @@
       "source_location": "L502",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_societestab",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "societestab()"
     },
     {
@@ -7117,8 +7117,8 @@
       "source_location": "L526",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_securitytab",
-      "community": 101,
-      "community_name": "@radix-ui/react-avatar",
+      "community": 36,
+      "community_name": "parametres.tsx",
       "norm_label": "securitytab()"
     },
     {
@@ -7150,8 +7150,8 @@
       "source_location": "L1080",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_userstabbadge",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "userstabbadge()"
     },
     {
@@ -7161,8 +7161,8 @@
       "source_location": "L1089",
       "_origin": "ast",
       "id": "src_components_sltt_screens_parametres_parametresscreen",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "parametresscreen()"
     },
     {
@@ -7238,8 +7238,8 @@
       "source_location": "L287",
       "_origin": "ast",
       "id": "src_components_sltt_screens_transporteurs_transporteursscreen",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "transporteursscreen()"
     },
     {
@@ -7260,8 +7260,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_components_sltt_societe_filter_select_societefilterselect",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "societefilterselect()"
     },
     {
@@ -7271,8 +7271,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_sltt_societe_filter_select_societebadge",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "societebadge()"
     },
     {
@@ -7326,8 +7326,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_tonebadge",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "tonebadge()"
     },
     {
@@ -7348,8 +7348,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_dossier_statut_dot",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "dossier_statut_dot"
     },
     {
@@ -7370,8 +7370,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_dossierstatutbadge",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "dossierstatutbadge()"
     },
     {
@@ -7392,8 +7392,8 @@
       "source_location": "L120",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_stockstatutbadge",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "stockstatutbadge()"
     },
     {
@@ -7458,8 +7458,8 @@
       "source_location": "L188",
       "_origin": "ast",
       "id": "src_components_sltt_status_badge_ecartvalue",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "ecartvalue()"
     },
     {
@@ -7469,8 +7469,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sltt_status_quick_action",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "status-quick-action.tsx"
     },
     {
@@ -7480,8 +7480,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sltt_status_quick_action_statusquickaction",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "statusquickaction()"
     },
     {
@@ -7975,8 +7975,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alert-dialog.tsx"
     },
     {
@@ -7986,8 +7986,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialog",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialog()"
     },
     {
@@ -7997,8 +7997,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogtrigger",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogtrigger()"
     },
     {
@@ -8008,8 +8008,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogportal",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogportal()"
     },
     {
@@ -8030,8 +8030,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogcontent",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogcontent()"
     },
     {
@@ -8041,8 +8041,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogheader",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogheader()"
     },
     {
@@ -8052,8 +8052,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogfooter",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogfooter()"
     },
     {
@@ -8063,8 +8063,8 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogtitle",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogtitle()"
     },
     {
@@ -8074,8 +8074,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogdescription",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogdescription()"
     },
     {
@@ -8085,8 +8085,8 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogaction",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogaction()"
     },
     {
@@ -8096,8 +8096,8 @@
       "source_location": "L133",
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogcancel",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "alertdialogcancel()"
     },
     {
@@ -8151,8 +8151,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "badge.tsx"
     },
     {
@@ -8162,8 +8162,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_ui_badge_badgevariants",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "badgevariants"
     },
     {
@@ -8173,8 +8173,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 109,
+      "community_name": "contrat-detail.tsx",
       "norm_label": "badge()"
     },
     {
@@ -8195,8 +8195,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_ui_button_buttonvariants",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "buttonvariants"
     },
     {
@@ -8305,8 +8305,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_checkbox",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "checkbox.tsx"
     },
     {
@@ -8316,8 +8316,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_ui_checkbox_checkbox",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 10,
+      "community_name": "useStore",
       "norm_label": "checkbox()"
     },
     {
@@ -8899,8 +8899,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_separator",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "separator.tsx"
     },
     {
@@ -8910,8 +8910,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_ui_separator_separator",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "separator()"
     },
     {
@@ -9130,8 +9130,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_components_ui_table_tablefooter",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "tablefooter()"
     },
     {
@@ -9240,8 +9240,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_textarea",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "textarea.tsx"
     },
     {
@@ -9251,8 +9251,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_textarea_textarea",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 134,
+      "community_name": "parametres.tsx",
       "norm_label": "textarea()"
     },
     {
@@ -9449,8 +9449,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_benefice_par_societe",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "use-benefice-par-societe.ts"
     },
     {
@@ -9460,8 +9460,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_hooks_use_benefice_par_societe_beneficemensuel",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "beneficemensuel"
     },
     {
@@ -9471,8 +9471,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_hooks_use_benefice_par_societe_beneficeparsocieteentry",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "beneficeparsocieteentry"
     },
     {
@@ -9482,8 +9482,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_hooks_use_benefice_par_societe_usebeneficeparsociete",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "usebeneficeparsociete()"
     },
     {
@@ -9493,8 +9493,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_delete_confirm",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "use-delete-confirm.ts"
     },
     {
@@ -9504,8 +9504,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_hooks_use_delete_confirm_usedeleteconfirm",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "usedeleteconfirm()"
     },
     {
@@ -9537,8 +9537,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_permission",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "use-permission.ts"
     },
     {
@@ -9548,8 +9548,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_hooks_use_permission_useeffectivepermissionuser",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "useeffectivepermissionuser()"
     },
     {
@@ -9559,8 +9559,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_hooks_use_permission_usepermission",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "usepermission()"
     },
     {
@@ -9570,8 +9570,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_hooks_use_permission_usecanview",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "usecanview()"
     },
     {
@@ -9581,8 +9581,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_hooks_use_permission_usecanmanageusers",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "usecanmanageusers()"
     },
     {
@@ -9603,8 +9603,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "src_hooks_use_permission_usecurrentuser",
-      "community": 101,
-      "community_name": "@radix-ui/react-avatar",
+      "community": 36,
+      "community_name": "parametres.tsx",
       "norm_label": "usecurrentuser()"
     },
     {
@@ -9812,8 +9812,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_unsaved_changes_warning",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "use-unsaved-changes-warning.ts"
     },
     {
@@ -9823,8 +9823,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_hooks_use_unsaved_changes_warning_useunsavedchangeswarning",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "useunsavedchangeswarning()"
     },
     {
@@ -9834,8 +9834,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_use_visible_nav_items",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "use-visible-nav-items.ts"
     },
     {
@@ -9845,8 +9845,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_hooks_use_visible_nav_items_usevisiblenavitems",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "usevisiblenavitems()"
     },
     {
@@ -9856,8 +9856,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_api_fetch_auth",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "fetch-auth.ts"
     },
     {
@@ -9867,8 +9867,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_api_fetch_auth_fetchwithauth",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "fetchwithauth()"
     },
     {
@@ -9966,8 +9966,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_lib_app_navigation_useappnavigation",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "useappnavigation()"
     },
     {
@@ -10274,8 +10274,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_benefice_test",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "benefice.test.ts"
     },
     {
@@ -10285,8 +10285,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_benefice",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "benefice.ts"
     },
     {
@@ -10296,8 +10296,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_lib_benefice_filterbysocieteandperiode",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "filterbysocieteandperiode()"
     },
     {
@@ -10307,8 +10307,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_lib_benefice_computebenefice",
-      "community": 59,
-      "community_name": "dashboard-metrics.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "computebenefice()"
     },
     {
@@ -10813,8 +10813,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_api_constants",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "api.constants.ts"
     },
     {
@@ -10824,8 +10824,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "app.constants.ts"
     },
     {
@@ -10835,8 +10835,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_default_paiement_mode",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "default_paiement_mode"
     },
     {
@@ -10846,8 +10846,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_dossier_statut_en_cours",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "dossier_statut_en_cours"
     },
     {
@@ -10857,8 +10857,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_dossier_statut_dedouane",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "dossier_statut_dedouane"
     },
     {
@@ -10868,8 +10868,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_lib_constants_app_constants_dossier_statut_solde",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "dossier_statut_solde"
     },
     {
@@ -10879,8 +10879,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_index",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "index.ts"
     },
     {
@@ -10890,8 +10890,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_ui_constants",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "ui.constants.ts"
     },
     {
@@ -10901,8 +10901,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_lib_constants_ui_constants_chart_colors",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "chart_colors"
     },
     {
@@ -10912,8 +10912,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_constants_validation_constants",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "validation.constants.ts"
     },
     {
@@ -10923,8 +10923,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_constants_validation_constants_doc_accepted_mime_types",
-      "community": 30,
-      "community_name": "csv-export.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "doc_accepted_mime_types"
     },
     {
@@ -11242,8 +11242,8 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "src_lib_db_rows_stockitemrow",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "stockitemrow"
     },
     {
@@ -11253,8 +11253,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "src_lib_db_rows_mouvementrow",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "mouvementrow"
     },
     {
@@ -11371,18 +11371,18 @@
       "label": "TransporteurRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L251",
+      "source_location": "L254",
       "_origin": "ast",
       "id": "src_lib_db_rows_transporteurrow",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "transporteurrow"
     },
     {
       "label": "FactureLigneRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L266",
+      "source_location": "L269",
       "_origin": "ast",
       "id": "src_lib_db_rows_facturelignerow",
       "community": 17,
@@ -11393,18 +11393,18 @@
       "label": "FactureRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L274",
+      "source_location": "L277",
       "_origin": "ast",
       "id": "src_lib_db_rows_facturerow",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "facturerow"
     },
     {
       "label": "ProfileRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L297",
+      "source_location": "L300",
       "_origin": "ast",
       "id": "src_lib_db_rows_profilerow",
       "community": 27,
@@ -11415,7 +11415,7 @@
       "label": "ProfilePublicRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L307",
+      "source_location": "L310",
       "_origin": "ast",
       "id": "src_lib_db_rows_profilepublicrow",
       "community": 17,
@@ -11426,7 +11426,7 @@
       "label": "DossierRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L315",
+      "source_location": "L318",
       "_origin": "ast",
       "id": "src_lib_db_rows_dossierrow",
       "community": 4,
@@ -11437,18 +11437,18 @@
       "label": "ArchiveRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L341",
+      "source_location": "L344",
       "_origin": "ast",
       "id": "src_lib_db_rows_archiverow",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "archiverow"
     },
     {
       "label": "DocumentRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L357",
+      "source_location": "L360",
       "_origin": "ast",
       "id": "src_lib_db_rows_documentrow",
       "community": 45,
@@ -11459,7 +11459,7 @@
       "label": "DocumentVersionRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L375",
+      "source_location": "L378",
       "_origin": "ast",
       "id": "src_lib_db_rows_documentversionrow",
       "community": 17,
@@ -11470,7 +11470,7 @@
       "label": "OcrJobRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L387",
+      "source_location": "L390",
       "_origin": "ast",
       "id": "src_lib_db_rows_ocrjobrow",
       "community": 45,
@@ -11481,7 +11481,7 @@
       "label": "OcrFieldRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L401",
+      "source_location": "L404",
       "_origin": "ast",
       "id": "src_lib_db_rows_ocrfieldrow",
       "community": 17,
@@ -11492,7 +11492,7 @@
       "label": "ContratFichierRow",
       "file_type": "code",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L411",
+      "source_location": "L414",
       "_origin": "ast",
       "id": "src_lib_db_rows_contratfichierrow",
       "community": 27,
@@ -11756,7 +11756,7 @@
       "label": "assertNotAborted()",
       "file_type": "code",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L20",
+      "source_location": "L19",
       "_origin": "ast",
       "id": "src_lib_documents_ocr_tesseract_provider_assertnotaborted",
       "community": 54,
@@ -11764,10 +11764,21 @@
       "norm_label": "assertnotaborted()"
     },
     {
-      "label": "TesseractOcrProvider",
+      "label": "recognizeWithAbort()",
       "file_type": "code",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
       "source_location": "L24",
+      "_origin": "ast",
+      "id": "src_lib_documents_ocr_tesseract_provider_recognizewithabort",
+      "community": 54,
+      "community_name": "devis.tsx",
+      "norm_label": "recognizewithabort()"
+    },
+    {
+      "label": "TesseractOcrProvider",
+      "file_type": "code",
+      "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
+      "source_location": "L62",
       "_origin": "ast",
       "id": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider",
       "community": 54,
@@ -11778,7 +11789,7 @@
       "label": ".extract()",
       "file_type": "code",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L27",
+      "source_location": "L65",
       "_origin": "ast",
       "id": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider_extract",
       "community": 54,
@@ -11789,7 +11800,7 @@
       "label": "getDefaultOcrProvider()",
       "file_type": "code",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L105",
+      "source_location": "L126",
       "_origin": "ast",
       "id": "src_lib_documents_ocr_tesseract_provider_getdefaultocrprovider",
       "community": 54,
@@ -11836,8 +11847,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_lib_documents_storage_getsigneddocumenturl",
-      "community": 54,
-      "community_name": "devis.tsx",
+      "community": 45,
+      "community_name": "zustand",
       "norm_label": "getsigneddocumenturl()"
     },
     {
@@ -11880,8 +11891,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_domain_types",
-      "community": 45,
-      "community_name": "zustand",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "domain-types.ts"
     },
     {
@@ -11968,8 +11979,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_lib_domain_types_client",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "client"
     },
     {
@@ -11979,8 +11990,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_lib_domain_types_dossier",
-      "community": 132,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 26,
+      "community_name": "UserRole",
       "norm_label": "dossier"
     },
     {
@@ -11990,8 +12001,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "src_lib_domain_types_facturestatut",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "facturestatut"
     },
     {
@@ -12089,8 +12100,8 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "src_lib_domain_types_ecriture",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 4,
+      "community_name": "dossiers-slice.ts",
       "norm_label": "ecriture"
     },
     {
@@ -12100,8 +12111,8 @@
       "source_location": "L182",
       "_origin": "ast",
       "id": "src_lib_domain_types_stockitem",
-      "community": 13,
-      "community_name": "contrats.tsx",
+      "community": 9,
+      "community_name": "export.ts",
       "norm_label": "stockitem"
     },
     {
@@ -12111,8 +12122,8 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "src_lib_domain_types_mouvement",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "mouvement"
     },
     {
@@ -12122,8 +12133,8 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "src_lib_domain_types_bonsortie",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "bonsortie"
     },
     {
@@ -12133,8 +12144,8 @@
       "source_location": "L235",
       "_origin": "ast",
       "id": "src_lib_domain_types_sortiecaisseligne",
-      "community": 45,
-      "community_name": "zustand",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "sortiecaisseligne"
     },
     {
@@ -12166,8 +12177,8 @@
       "source_location": "L267",
       "_origin": "ast",
       "id": "src_lib_domain_types_societe",
-      "community": 134,
-      "community_name": "parametres.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "societe"
     },
     {
@@ -12232,8 +12243,8 @@
       "source_location": "L362",
       "_origin": "ast",
       "id": "src_lib_domain_types_typedocument",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "typedocument"
     },
     {
@@ -12331,8 +12342,8 @@
       "source_location": "L444",
       "_origin": "ast",
       "id": "src_lib_domain_types_archive",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "archive"
     },
     {
@@ -12353,8 +12364,8 @@
       "source_location": "L473",
       "_origin": "ast",
       "id": "src_lib_domain_types_depenseinput",
-      "community": 45,
-      "community_name": "zustand",
+      "community": 7,
+      "community_name": "domain-types.ts",
       "norm_label": "depenseinput"
     },
     {
@@ -12397,8 +12408,8 @@
       "source_location": "L506",
       "_origin": "ast",
       "id": "src_lib_domain_types_user",
-      "community": 36,
-      "community_name": "parametres.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "user"
     },
     {
@@ -12449,7 +12460,7 @@
       "label": "DevisInput",
       "file_type": "code",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L555",
+      "source_location": "L557",
       "_origin": "ast",
       "id": "src_lib_domain_types_devisinput",
       "community": 108,
@@ -12460,51 +12471,51 @@
       "label": "TransporteurStatut",
       "file_type": "code",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L566",
+      "source_location": "L569",
       "_origin": "ast",
       "id": "src_lib_domain_types_transporteurstatut",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "transporteurstatut"
     },
     {
       "label": "TypeVehicule",
       "file_type": "code",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L567",
+      "source_location": "L570",
       "_origin": "ast",
       "id": "src_lib_domain_types_typevehicule",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "typevehicule"
     },
     {
       "label": "Transporteur",
       "file_type": "code",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L569",
+      "source_location": "L572",
       "_origin": "ast",
       "id": "src_lib_domain_types_transporteur",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "transporteur"
     },
     {
       "label": "TransporteurInput",
       "file_type": "code",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L585",
+      "source_location": "L588",
       "_origin": "ast",
       "id": "src_lib_domain_types_transporteurinput",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "transporteurinput"
     },
     {
       "label": "calculerEcart()",
       "file_type": "code",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L599",
+      "source_location": "L602",
       "_origin": "ast",
       "id": "src_lib_domain_types_calculerecart",
       "community": 15,
@@ -12515,11 +12526,11 @@
       "label": "resteAPayer()",
       "file_type": "code",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L608",
+      "source_location": "L611",
       "_origin": "ast",
       "id": "src_lib_domain_types_resteapayer",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 35,
+      "community_name": "Dossier",
       "norm_label": "resteapayer()"
     },
     {
@@ -12584,8 +12595,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_echeance_utils",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 59,
+      "community_name": "dashboard-metrics.ts",
       "norm_label": "echeance-utils.ts"
     },
     {
@@ -12595,8 +12606,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_echeance_utils_calculatedaysuntil",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 59,
+      "community_name": "dashboard-metrics.ts",
       "norm_label": "calculatedaysuntil()"
     },
     {
@@ -12606,8 +12617,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_echeance_utils_isecheancedepassee",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 59,
+      "community_name": "dashboard-metrics.ts",
       "norm_label": "isecheancedepassee()"
     },
     {
@@ -12617,8 +12628,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_echeance_utils_isecheanceimminente",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 59,
+      "community_name": "dashboard-metrics.ts",
       "norm_label": "isecheanceimminente()"
     },
     {
@@ -12859,8 +12870,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_excel_types",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "types.ts"
     },
     {
@@ -12870,8 +12881,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_excel_types_excelworkbook",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "excelworkbook"
     },
     {
@@ -12881,8 +12892,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_lib_excel_types_excelworkbookrow",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "excelworkbookrow"
     },
     {
@@ -12969,8 +12980,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_export",
-      "community": 39,
-      "community_name": "@radix-ui/react-slot",
+      "community": 1,
+      "community_name": "entreposage.tsx",
       "norm_label": "export.ts"
     },
     {
@@ -12980,8 +12991,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_export_excel_export",
-      "community": 36,
-      "community_name": "parametres.tsx",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "excel-export.ts"
     },
     {
@@ -12991,8 +13002,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_column",
-      "community": 36,
-      "community_name": "parametres.tsx",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "column"
     },
     {
@@ -13002,8 +13013,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_sanitizefilename",
-      "community": 36,
-      "community_name": "parametres.tsx",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "sanitizefilename()"
     },
     {
@@ -13013,8 +13024,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_downloadblob",
-      "community": 36,
-      "community_name": "parametres.tsx",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "downloadblob()"
     },
     {
@@ -13024,8 +13035,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_isvalidxlsxbytes",
-      "community": 36,
-      "community_name": "parametres.tsx",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "isvalidxlsxbytes()"
     },
     {
@@ -13035,8 +13046,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "src_lib_export_excel_export_exporttoexcel",
-      "community": 36,
-      "community_name": "parametres.tsx",
+      "community": 39,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "exporttoexcel()"
     },
     {
@@ -13739,8 +13750,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_lib_format_formatfcfacompact",
-      "community": 12,
-      "community_name": "nav-store.ts",
+      "community": 57,
+      "community_name": "status-badge.tsx",
       "norm_label": "formatfcfacompact()"
     },
     {
@@ -13805,8 +13816,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_lib_fournisseur_stats_syncfournisseurstats",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 4,
+      "community_name": "dossiers-slice.ts",
       "norm_label": "syncfournisseurstats()"
     },
     {
@@ -13981,8 +13992,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_lib_nav_items_navitems",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 18,
+      "community_name": "contrat-fichiers-slice.ts",
       "norm_label": "navitems"
     },
     {
@@ -14058,8 +14069,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_lib_nav_store_usenav",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "usenav"
     },
     {
@@ -14256,8 +14267,8 @@
       "source_location": "L220",
       "_origin": "ast",
       "id": "src_lib_permissions_haspermission",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "haspermission()"
     },
     {
@@ -14267,8 +14278,8 @@
       "source_location": "L237",
       "_origin": "ast",
       "id": "src_lib_permissions_resolvepermissionuser",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "resolvepermissionuser()"
     },
     {
@@ -14355,8 +14366,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_search_filter",
-      "community": 107,
-      "community_name": "status-badge.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "search-filter.ts"
     },
     {
@@ -14366,8 +14377,8 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "src_lib_search_filter_matchesquery",
-      "community": 35,
-      "community_name": "Dossier",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "matchesquery()"
     },
     {
@@ -14454,8 +14465,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolvesocietedisplayname",
-      "community": 6,
-      "community_name": "use-toast.ts",
+      "community": 15,
+      "community_name": "comptabilite.tsx",
       "norm_label": "resolvesocietedisplayname()"
     },
     {
@@ -14476,8 +14487,8 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "src_lib_societe_brand_societetobrand",
-      "community": 6,
-      "community_name": "use-toast.ts",
+      "community": 15,
+      "community_name": "comptabilite.tsx",
       "norm_label": "societetobrand()"
     },
     {
@@ -14498,8 +14509,8 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolveclasseurprintbrand",
-      "community": 6,
-      "community_name": "use-toast.ts",
+      "community": 15,
+      "community_name": "comptabilite.tsx",
       "norm_label": "resolveclasseurprintbrand()"
     },
     {
@@ -14509,8 +14520,8 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolveslttbrand",
-      "community": 6,
-      "community_name": "use-toast.ts",
+      "community": 15,
+      "community_name": "comptabilite.tsx",
       "norm_label": "resolveslttbrand()"
     },
     {
@@ -14520,8 +14531,8 @@
       "source_location": "L124",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolveprinthtmlbrand",
-      "community": 15,
-      "community_name": "comptabilite.tsx",
+      "community": 5,
+      "community_name": "require-admin.ts",
       "norm_label": "resolveprinthtmlbrand()"
     },
     {
@@ -14531,8 +14542,8 @@
       "source_location": "L129",
       "_origin": "ast",
       "id": "src_lib_societe_brand_societetonebyid",
-      "community": 9,
-      "community_name": "export.ts",
+      "community": 3,
+      "community_name": "store.ts",
       "norm_label": "societetonebyid()"
     },
     {
@@ -14542,8 +14553,8 @@
       "source_location": "L134",
       "_origin": "ast",
       "id": "src_lib_societe_brand_resolveappshellbranding",
-      "community": 5,
-      "community_name": "require-admin.ts",
+      "community": 101,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "resolveappshellbranding()"
     },
     {
@@ -14663,8 +14674,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_status_flow_test",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "status-flow.test.ts"
     },
     {
@@ -14674,8 +14685,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_status_flow",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "status-flow.ts"
     },
     {
@@ -14685,8 +14696,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_lib_status_flow_devis_allowed_transitions",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "devis_allowed_transitions"
     },
     {
@@ -14696,8 +14707,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_lib_status_flow_facture_allowed_transitions",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "facture_allowed_transitions"
     },
     {
@@ -14707,8 +14718,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_status_flow_contrat_allowed_transitions",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "contrat_allowed_transitions"
     },
     {
@@ -14729,8 +14740,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_lib_status_flow_cantransitionfacture",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "cantransitionfacture()"
     },
     {
@@ -14740,8 +14751,8 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_lib_status_flow_cantransitioncontrat",
-      "community": 26,
-      "community_name": "UserRole",
+      "community": 108,
+      "community_name": "devis-slice.ts",
       "norm_label": "cantransitioncontrat()"
     },
     {
@@ -14751,8 +14762,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_actions_test",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "store-actions.test.ts"
     },
     {
@@ -14762,8 +14773,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_calls_remotestate_resetfake",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "{ calls, remotestate, resetfake }"
     },
     {
@@ -14773,8 +14784,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_basedossier",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "basedossier"
     },
     {
@@ -14784,8 +14795,8 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_baseclient",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "baseclient"
     },
     {
@@ -14795,8 +14806,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_seedstate",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "seedstate()"
     },
     {
@@ -14806,8 +14817,8 @@
       "source_location": "L218",
       "_origin": "ast",
       "id": "src_lib_store_actions_test_seedarchive",
-      "community": 104,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "seedarchive()"
     },
     {
@@ -14850,8 +14861,8 @@
       "source_location": "L244",
       "_origin": "ast",
       "id": "src_lib_store_clientinput",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "clientinput"
     },
     {
@@ -14872,8 +14883,8 @@
       "source_location": "L266",
       "_origin": "ast",
       "id": "src_lib_store_stockiteminput",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "stockiteminput"
     },
     {
@@ -15059,8 +15070,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_archives_slice",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "archives-slice.ts"
     },
     {
@@ -15070,8 +15081,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_lib_store_archives_slice_archives_allowed_mime",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "archives_allowed_mime"
     },
     {
@@ -15081,8 +15092,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_lib_store_archives_slice_resolvearchivemimetype",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "resolvearchivemimetype()"
     },
     {
@@ -15092,8 +15103,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_lib_store_archives_slice_addarchiveinput",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "addarchiveinput"
     },
     {
@@ -15103,8 +15114,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_lib_store_archives_slice_maparchivefromdb",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "maparchivefromdb()"
     },
     {
@@ -15114,8 +15125,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_lib_store_archives_slice_archivesslice",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "archivesslice"
     },
     {
@@ -15125,8 +15136,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "src_lib_store_archives_slice_createarchivesslice",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 24,
+      "community_name": "archives-slice.ts",
       "norm_label": "createarchivesslice()"
     },
     {
@@ -15213,8 +15224,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "clients-slice.ts"
     },
     {
@@ -15224,8 +15235,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice_mapclientfromdb",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "mapclientfromdb()"
     },
     {
@@ -15235,8 +15246,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice_clientsslice",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "clientsslice"
     },
     {
@@ -15246,8 +15257,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_lib_store_clients_slice_createclientsslice",
-      "community": 27,
-      "community_name": "domain-types.ts",
+      "community": 16,
+      "community_name": "store-actions.test.ts",
       "norm_label": "createclientsslice()"
     },
     {
@@ -15257,8 +15268,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_connected_user",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 26,
+      "community_name": "UserRole",
       "norm_label": "connected-user.ts"
     },
     {
@@ -15268,8 +15279,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_lib_store_connected_user_getconnectedusername",
-      "community": 47,
-      "community_name": "dossier-detail-overview.tsx",
+      "community": 26,
+      "community_name": "UserRole",
       "norm_label": "getconnectedusername()"
     },
     {
@@ -15405,6 +15416,17 @@
       "norm_label": "createcontratsslice()"
     },
     {
+      "label": "devis-slice.test.ts",
+      "file_type": "code",
+      "source_file": "src/lib/store/devis-slice.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_lib_store_devis_slice_test",
+      "community": 108,
+      "community_name": "devis-slice.ts",
+      "norm_label": "devis-slice.test.ts"
+    },
+    {
       "label": "devis-slice.ts",
       "file_type": "code",
       "source_file": "src/lib/store/devis-slice.ts",
@@ -15441,7 +15463,7 @@
       "label": "DevisSlice",
       "file_type": "code",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L31",
+      "source_location": "L34",
       "_origin": "ast",
       "id": "src_lib_store_devis_slice_devisslice",
       "community": 108,
@@ -15452,7 +15474,7 @@
       "label": "createDevisSlice()",
       "file_type": "code",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L41",
+      "source_location": "L44",
       "_origin": "ast",
       "id": "src_lib_store_devis_slice_createdevisslice",
       "community": 108,
@@ -15664,8 +15686,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_excel_workbooks_slice",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "excel-workbooks-slice.ts"
     },
     {
@@ -15675,8 +15697,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_lib_store_excel_workbooks_slice_mapexcelworkbookfromdb",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "mapexcelworkbookfromdb()"
     },
     {
@@ -15686,8 +15708,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_store_excel_workbooks_slice_currentuserid",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "currentuserid()"
     },
     {
@@ -15697,8 +15719,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_lib_store_excel_workbooks_slice_excelworkbooksslice",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "excelworkbooksslice"
     },
     {
@@ -15708,8 +15730,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "src_lib_store_excel_workbooks_slice_createexcelworkbooksslice",
-      "community": 1,
-      "community_name": "entreposage.tsx",
+      "community": 27,
+      "community_name": "domain-types.ts",
       "norm_label": "createexcelworkbooksslice()"
     },
     {
@@ -15961,8 +15983,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_stock_slice",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "stock-slice.ts"
     },
     {
@@ -15972,8 +15994,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_store_stock_slice_mapstockitemfromdb",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "mapstockitemfromdb()"
     },
     {
@@ -15983,8 +16005,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_store_stock_slice_mapmouvementfromdb",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "mapmouvementfromdb()"
     },
     {
@@ -15994,8 +16016,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_lib_store_stock_slice_stockslice",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "stockslice"
     },
     {
@@ -16005,8 +16027,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_lib_store_stock_slice_createstockslice",
-      "community": 7,
-      "community_name": "domain-types.ts",
+      "community": 29,
+      "community_name": "stock-slice.ts",
       "norm_label": "createstockslice()"
     },
     {
@@ -16126,8 +16148,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "transporteurs-slice.ts"
     },
     {
@@ -16137,8 +16159,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice_maptransporteurfromdb",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "maptransporteurfromdb()"
     },
     {
@@ -16148,8 +16170,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice_transporteursslice",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "transporteursslice"
     },
     {
@@ -16159,8 +16181,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_lib_store_transporteurs_slice_createtransporteursslice",
-      "community": 17,
-      "community_name": "contrat-stats.test.ts",
+      "community": 104,
+      "community_name": "domain-types.ts",
       "norm_label": "createtransporteursslice()"
     },
     {
@@ -18667,8 +18689,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_societe_brand_sltt_societe_id",
-      "community": 3,
-      "community_name": "store.ts",
+      "community": 13,
+      "community_name": "contrats.tsx",
       "norm_label": "sltt_societe_id"
     }
   ],
@@ -28654,7 +28676,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L71",
+      "source_location": "L73",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -28774,7 +28796,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L71",
+      "source_location": "L73",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -32200,7 +32222,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/documents/dossier-documents-panel.tsx",
-      "source_location": "L195",
+      "source_location": "L196",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_documents_dossier_documents_panel_dossierdocumentspanel",
@@ -32212,7 +32234,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/documents/dossier-documents-panel.tsx",
-      "source_location": "L196",
+      "source_location": "L197",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_documents_dossier_documents_panel_dossierdocumentspanel",
@@ -32224,7 +32246,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/documents/dossier-documents-panel.tsx",
-      "source_location": "L46",
+      "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_documents_dossier_documents_panel_dossierdocumentspanel",
@@ -32747,7 +32769,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/documents/ocr-review-dialog.tsx",
-      "source_location": "L112",
+      "source_location": "L111",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_documents_ocr_review_dialog_ocrreviewdialog",
@@ -32784,7 +32806,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/documents/ocr-review-dialog.tsx",
-      "source_location": "L305",
+      "source_location": "L283",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_documents_ocr_review_dialog_ocrreviewdialog",
@@ -32820,7 +32842,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/documents/ocr-review-dialog.tsx",
-      "source_location": "L609",
+      "source_location": "L582",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_documents_ocr_review_dialog_ocrreviewdialog",
@@ -54895,7 +54917,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L254",
+      "source_location": "L255",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54906,7 +54928,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L220",
+      "source_location": "L221",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54917,7 +54939,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L199",
+      "source_location": "L200",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54928,7 +54950,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L88",
+      "source_location": "L89",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54939,7 +54961,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L52",
+      "source_location": "L53",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54950,7 +54972,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L85",
+      "source_location": "L86",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54961,7 +54983,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L43",
+      "source_location": "L44",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54972,7 +54994,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L86",
+      "source_location": "L87",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -54983,11 +55005,35 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L97",
+      "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
       "target": "src_components_sltt_screens_devis_detail_verticalstepper",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis-detail.tsx",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis_detail",
+      "target": "src_components_sltt_societe_filter_select",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis-detail.tsx",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis_detail",
+      "target": "src_components_sltt_societe_filter_select_societebadge",
       "confidence_score": 1.0
     },
     {
@@ -55535,7 +55581,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L37",
+      "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -55547,7 +55593,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L37",
+      "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -55559,7 +55605,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L37",
+      "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail",
@@ -55632,7 +55678,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L110",
+      "source_location": "L111",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_verticalstepper",
@@ -55644,7 +55690,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L210",
+      "source_location": "L211",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_inforow",
@@ -55656,7 +55702,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L234",
+      "source_location": "L235",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_financialbreakdown",
@@ -55668,7 +55714,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L234",
+      "source_location": "L235",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_financialbreakdown",
@@ -55680,7 +55726,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L267",
+      "source_location": "L268",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55692,7 +55738,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L266",
+      "source_location": "L267",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55704,7 +55750,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L275",
+      "source_location": "L276",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55716,7 +55762,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L380",
+      "source_location": "L384",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55728,7 +55774,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L447",
+      "source_location": "L452",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55740,7 +55786,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L454",
+      "source_location": "L459",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55752,7 +55798,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L317",
+      "source_location": "L320",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55764,7 +55810,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L255",
+      "source_location": "L256",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55776,7 +55822,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L395",
+      "source_location": "L399",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55788,7 +55834,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L502",
+      "source_location": "L507",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55800,7 +55846,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L260",
+      "source_location": "L261",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55812,7 +55858,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis-detail.tsx",
-      "source_location": "L405",
+      "source_location": "L409",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_detail_devisdetailscreen",
@@ -55822,7 +55868,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L124",
+      "source_location": "L128",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55833,7 +55879,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L116",
+      "source_location": "L118",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55844,7 +55890,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L247",
+      "source_location": "L338",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55855,7 +55901,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L89",
+      "source_location": "L91",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55866,7 +55912,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L96",
+      "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55877,7 +55923,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L94",
+      "source_location": "L96",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55889,7 +55935,43 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L79",
+      "source_location": "L41",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis",
+      "target": "src_components_sltt_societe_filter_select",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L41",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis",
+      "target": "src_components_sltt_societe_filter_select_societebadge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L41",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis",
+      "target": "src_components_sltt_societe_filter_select_societefilterselect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L81",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55901,7 +55983,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L79",
+      "source_location": "L81",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55913,7 +55995,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55925,7 +56007,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55937,7 +56019,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L81",
+      "source_location": "L83",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55949,7 +56031,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L81",
+      "source_location": "L83",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55961,7 +56043,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L46",
+      "source_location": "L48",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55973,7 +56055,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L46",
+      "source_location": "L48",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55985,7 +56067,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -55997,7 +56079,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56009,7 +56091,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L42",
+      "source_location": "L44",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56021,7 +56103,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L42",
+      "source_location": "L44",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56033,7 +56115,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56045,7 +56127,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56057,7 +56139,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56069,7 +56151,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56081,7 +56163,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56093,7 +56175,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56105,7 +56187,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56117,7 +56199,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L72",
+      "source_location": "L74",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56129,7 +56211,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L72",
+      "source_location": "L74",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56141,7 +56223,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L72",
+      "source_location": "L74",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56153,7 +56235,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L72",
+      "source_location": "L74",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56165,7 +56247,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L72",
+      "source_location": "L74",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56177,7 +56259,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L72",
+      "source_location": "L74",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56189,7 +56271,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L44",
+      "source_location": "L46",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56201,7 +56283,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L44",
+      "source_location": "L46",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56213,7 +56295,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L45",
+      "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56225,7 +56307,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L45",
+      "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56237,7 +56319,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L48",
+      "source_location": "L50",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56249,7 +56331,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L48",
+      "source_location": "L50",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56261,7 +56343,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L48",
+      "source_location": "L50",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56273,7 +56355,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L48",
+      "source_location": "L50",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56285,7 +56367,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L48",
+      "source_location": "L50",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56297,7 +56379,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L48",
+      "source_location": "L50",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56309,7 +56391,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L55",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56321,7 +56403,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L55",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56333,7 +56415,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L55",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56345,7 +56427,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L55",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56357,7 +56439,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L55",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56369,7 +56451,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L55",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56381,7 +56463,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L55",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56393,7 +56475,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L47",
+      "source_location": "L49",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56405,7 +56487,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L47",
+      "source_location": "L49",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
@@ -56497,6 +56579,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L42",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis",
+      "target": "src_lib_domain_types",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -56530,6 +56624,18 @@
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis",
       "target": "src_lib_domain_types_devisstatut",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L42",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis",
+      "target": "src_lib_domain_types_societe",
       "confidence_score": 1.0
     },
     {
@@ -56725,6 +56831,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L32",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis",
+      "target": "src_lib_societe_brand_resolvetransitsociete",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -56789,7 +56907,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L118",
+      "source_location": "L120",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisformprops",
@@ -56801,11 +56919,23 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L121",
+      "source_location": "L125",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisformprops",
       "target": "src_lib_domain_types_devisinput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "field",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L122",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis_devisformprops",
+      "target": "src_lib_domain_types_societe",
       "confidence_score": 1.0
     },
     {
@@ -56814,7 +56944,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L217",
+      "source_location": "L293",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisformdialog",
@@ -56826,7 +56956,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L152",
+      "source_location": "L170",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisformdialog",
@@ -56838,7 +56968,19 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L277",
+      "source_location": "L137",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_sltt_screens_devis_devisformdialog",
+      "target": "src_lib_societe_brand_resolvetransitsociete"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/sltt/screens/devis.tsx",
+      "source_location": "L369",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56850,7 +56992,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L249",
+      "source_location": "L340",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56862,7 +57004,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L248",
+      "source_location": "L339",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56874,7 +57016,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L658",
+      "source_location": "L767",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56886,7 +57028,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L475",
+      "source_location": "L577",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56898,7 +57040,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L250",
+      "source_location": "L341",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56910,7 +57052,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L320",
+      "source_location": "L420",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56922,7 +57064,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L255",
+      "source_location": "L347",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -56934,7 +57076,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/sltt/screens/devis.tsx",
-      "source_location": "L617",
+      "source_location": "L721",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_sltt_screens_devis_devisscreen",
@@ -74642,7 +74784,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L341",
+      "source_location": "L344",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74708,7 +74850,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L411",
+      "source_location": "L414",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74763,7 +74905,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L357",
+      "source_location": "L360",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74774,7 +74916,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L375",
+      "source_location": "L378",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74818,7 +74960,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L315",
+      "source_location": "L318",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74840,7 +74982,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L266",
+      "source_location": "L269",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74851,7 +74993,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L274",
+      "source_location": "L277",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74917,7 +75059,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L401",
+      "source_location": "L404",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74928,7 +75070,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L387",
+      "source_location": "L390",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74939,7 +75081,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L307",
+      "source_location": "L310",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74950,7 +75092,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L297",
+      "source_location": "L300",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -74994,7 +75136,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L251",
+      "source_location": "L254",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows",
@@ -75298,6 +75440,18 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice",
+      "target": "src_lib_db_rows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/store/devis-slice.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_store_devis_slice_test",
       "target": "src_lib_db_rows",
       "confidence_score": 1.0
     },
@@ -75678,7 +75832,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L245",
+      "source_location": "L247",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_devisrow",
@@ -75698,11 +75852,23 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/store/devis-slice.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_store_devis_slice_test",
+      "target": "src_lib_db_rows_devisrow",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "references",
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L261",
+      "source_location": "L264",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_transporteurrow",
@@ -75714,7 +75880,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L257",
+      "source_location": "L260",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_transporteurrow",
@@ -75738,7 +75904,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L284",
+      "source_location": "L287",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_facturerow",
@@ -75786,7 +75952,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L330",
+      "source_location": "L333",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_dossierrow",
@@ -75810,7 +75976,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L344",
+      "source_location": "L347",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_archiverow",
@@ -75834,7 +76000,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L360",
+      "source_location": "L363",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_documentrow",
@@ -75846,7 +76012,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L367",
+      "source_location": "L370",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_documentrow",
@@ -75882,7 +76048,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L391",
+      "source_location": "L394",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_ocrjobrow",
@@ -75894,7 +76060,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/db-rows.ts",
-      "source_location": "L395",
+      "source_location": "L398",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_db_rows_ocrjobrow",
@@ -76153,7 +76319,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L90",
+      "source_location": "L112",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider_extract",
@@ -76223,7 +76389,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L38",
+      "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider_extract",
@@ -76270,7 +76436,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L50",
+      "source_location": "L88",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider_extract",
@@ -76373,7 +76539,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L27",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider_extract",
@@ -76408,7 +76574,7 @@
       "context": "type",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L24",
+      "source_location": "L62",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider",
@@ -76502,7 +76668,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L20",
+      "source_location": "L19",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider",
@@ -76513,7 +76679,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L105",
+      "source_location": "L126",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider",
@@ -76539,6 +76705,17 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider",
+      "target": "src_lib_documents_ocr_tesseract_provider_recognizewithabort",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
+      "source_location": "L62",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_documents_ocr_tesseract_provider",
       "target": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider",
       "confidence_score": 1.0
     },
@@ -76547,7 +76724,19 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L32",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_documents_ocr_tesseract_provider_recognizewithabort",
+      "target": "src_lib_documents_ocr_tesseract_provider_assertnotaborted",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
+      "source_location": "L70",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider_extract",
@@ -76555,10 +76744,22 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
+      "source_location": "L99",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider_extract",
+      "target": "src_lib_documents_ocr_tesseract_provider_recognizewithabort",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/documents/ocr/tesseract-provider.ts",
-      "source_location": "L27",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_documents_ocr_tesseract_provider_tesseractocrprovider",
@@ -76870,7 +77071,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L599",
+      "source_location": "L602",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_domain_types",
@@ -77013,7 +77214,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L555",
+      "source_location": "L557",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_domain_types",
@@ -77288,7 +77489,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L608",
+      "source_location": "L611",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_domain_types",
@@ -77376,7 +77577,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L569",
+      "source_location": "L572",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_domain_types",
@@ -77387,7 +77588,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L585",
+      "source_location": "L588",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_domain_types",
@@ -77398,7 +77599,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L566",
+      "source_location": "L569",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_domain_types",
@@ -77420,7 +77621,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/domain-types.ts",
-      "source_location": "L567",
+      "source_location": "L570",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_domain_types",
@@ -78126,7 +78327,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L37",
+      "source_location": "L40",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_devisslice",
@@ -79542,7 +79743,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L35",
+      "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_devisslice",
@@ -79578,7 +79779,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L33",
+      "source_location": "L36",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_devisslice",
@@ -79614,7 +79815,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L33",
+      "source_location": "L36",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_devisslice",
@@ -85715,7 +85916,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L168",
+      "source_location": "L184",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_createdevisslice",
@@ -86106,7 +86307,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L115",
+      "source_location": "L131",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_createdevisslice",
@@ -88653,10 +88854,34 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/store/devis-slice.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_store_devis_slice_test",
+      "target": "src_lib_store_devis_slice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/store/devis-slice.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_store_devis_slice_test",
+      "target": "src_lib_store_devis_slice_mapdevisfromdb",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L41",
+      "source_location": "L44",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice",
@@ -88667,7 +88892,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L31",
+      "source_location": "L34",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice",
@@ -88725,7 +88950,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L47",
+      "source_location": "L53",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_createdevisslice",
@@ -88737,7 +88962,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/store/devis-slice.ts",
-      "source_location": "L69",
+      "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_store_devis_slice_createdevisslice",
@@ -91832,5 +92057,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "30f36f349e732cc228198b279a09d5a96db36f0e"
+  "built_at_commit": "1ca3601815743c756d9a9c8c167c4d1879b2bdb9"
 }

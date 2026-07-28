@@ -691,7 +691,7 @@ export const useStore = create<SLTTState>()(
               key: "devis",
               q: () =>
                 fetchAllPaged(
-                  () => pagedSelect(supabase, "devis", "*, clients(nom)"),
+                  () => pagedSelect(supabase, "devis", "*, clients(nom), societes(nom)"),
                   { softCap: 2_000 },
                 ),
             },

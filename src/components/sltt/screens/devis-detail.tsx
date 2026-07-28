@@ -5,7 +5,7 @@ import {
   ArrowLeft, Pencil, X, CheckCircle2, Clock, XCircle, AlertCircle,
   Send, FolderKanban, Trash2, Save, AlertTriangle, User, Package,
   CalendarDays, Printer, FileCheck2, ChevronRight, Banknote,
-  MoreHorizontal,
+  MoreHorizontal, Building2,
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
+import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { canTransitionDevis, DEVIS_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 
 /* ------------------------------------------------------------------ */
@@ -275,6 +276,7 @@ export function DevisDetailScreen() {
   useUnsavedChangesWarning(isEditing);
 
   /* Edit form */
+  const [fSocieteId,       setFSocieteId]       = useState("");
   const [fClientId,        setFClientId]        = useState("");
   const [fClientNom,       setFClientNom]       = useState("");
   const [fNature,          setFNature]          = useState("");
@@ -290,6 +292,7 @@ export function DevisDetailScreen() {
   if (editKey !== prevEditKey) {
     setPrevEditKey(editKey);
     if (editKey !== null && devis) {
+      setFSocieteId(devis.societeId);
       setFClientId(devis.clientId);
       setFClientNom(devis.clientNom);
       setFNature(devis.nature);
@@ -343,8 +346,9 @@ export function DevisDetailScreen() {
       setIsEditing(false);
       return;
     }
-    if (!fClientId || !fNature.trim() || !fDateValidite) return;
+    if (!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite) return;
     updateDevis(devis.id, {
+      societeId: fSocieteId,
       clientId: fClientId, clientNom: fClientNom, nature: fNature,
       droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp,
       dateValidite: fDateValidite,
@@ -432,6 +436,7 @@ export function DevisDetailScreen() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">{devis.reference}</h1>
                   <DevisStatutBadge statut={devis.statut} size="md" />
+                  <SocieteBadge societeNom={devis.societeNom} size="sm" />
                   {devis.dossierId && (
                     <button
                       onClick={() => openDossierDetail(devis.dossierId!)}
@@ -530,7 +535,7 @@ export function DevisDetailScreen() {
                     <X className="size-4" /> Annuler
                   </Button>
                   <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90"
-                    disabled={!fClientId || !fNature.trim() || !fDateValidite}
+                    disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite}
                     onClick={handleSave}>
                     <Save className="size-4" /> Enregistrer
                   </Button>
@@ -555,6 +560,7 @@ export function DevisDetailScreen() {
                 <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Informations</h2>
               </div>
               <div className="px-5">
+                <InfoRow icon={Building2}    label="Société"                  value={devis.societeNom} />
                 <InfoRow icon={User}         label="Client"                   value={devis.clientNom} />
                 <InfoRow icon={Package}      label="Nature de la marchandise" value={devis.nature} />
                 <InfoRow icon={CalendarDays} label="Date de création"         value={formatDateShort(devis.dateCreation)} />
@@ -666,6 +672,25 @@ export function DevisDetailScreen() {
           </div>
 
           <div className="p-6 space-y-6">
+            {/* Société */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Société <span className="text-red-500 normal-case">*</span>
+              </Label>
+              <Select value={fSocieteId || undefined} onValueChange={setFSocieteId}>
+                <SelectTrigger className="h-10" aria-label="Sélectionner une société">
+                  <SelectValue placeholder="Sélectionner une société" />
+                </SelectTrigger>
+                <SelectContent>
+                  {societes
+                    .filter((s) => s.actif || s.id === devis.societeId)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Client + Nature */}
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
@@ -738,7 +763,7 @@ export function DevisDetailScreen() {
                 <X className="mr-2 size-4" /> Annuler
               </Button>
               <Button className="gap-2 bg-primary hover:bg-primary/90"
-                disabled={!fClientId || !fNature.trim() || !fDateValidite}
+                disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite}
                 onClick={handleSave}>
                 <Save className="size-4" /> Enregistrer les modifications
               </Button>

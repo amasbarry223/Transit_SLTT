@@ -237,6 +237,8 @@ export interface DevisRow {
   reference: string;
   client_id: string;
   clients?: NamedRelation;
+  societe_id: string;
+  societes?: NamedRelation;
   nature: string;
   droit_douane: number | string;
   frais_circuit: number | string;
@@ -246,6 +248,7 @@ export interface DevisRow {
   date_creation: string;
   date_validite: string;
   notes: string | null;
+  dossier_id?: string | null;
 }
 
 export interface TransporteurRow {
