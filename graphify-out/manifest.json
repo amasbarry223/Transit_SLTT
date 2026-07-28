@@ -360,8 +360,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/dossiers-list.tsx": {
-    "mtime": 1785169818.7566671,
-    "ast_hash": "ce5e21606c511ab9356f0bf80fc3ad49",
+    "mtime": 1785200017.3175359,
+    "ast_hash": "d7f34c1fd360ce65dba823c9020ff4ce",
     "semantic_hash": ""
   },
   "src/components/sltt/screens/entreposage.tsx": {
@@ -1700,8 +1700,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/documents/document-upload-zone.tsx": {
-    "mtime": 1785167022.2488375,
-    "ast_hash": "90237e13f1dc4e8f38f5134ddf2b7e06",
+    "mtime": 1785199523.090785,
+    "ast_hash": "3c5ee02026608d1c707918b65526f626",
     "semantic_hash": ""
   },
   "src/components/sltt/documents/document-viewer.tsx": {
@@ -1710,13 +1710,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/documents/dossier-documents-panel.tsx": {
-    "mtime": 1785167127.4462245,
-    "ast_hash": "7ec11a306f0653f7c042196da3543290",
+    "mtime": 1785199915.25199,
+    "ast_hash": "d16883dba8762045d863522980447952",
     "semantic_hash": ""
   },
   "src/components/sltt/documents/ocr-review-dialog.tsx": {
-    "mtime": 1785182447.6932182,
-    "ast_hash": "5dac32ef29f60e9b89b259a9ecbbee4b",
+    "mtime": 1785199954.7039797,
+    "ast_hash": "fb59115af86c98af0c5f6786fe21453a",
     "semantic_hash": ""
   },
   "src/lib/classeur-import.ts": {
@@ -1725,13 +1725,13 @@
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/mappers/dossier-mapper.ts": {
-    "mtime": 1785168082.9697895,
-    "ast_hash": "ba5acaf3d7c771b9880aeae4db4c20b3",
+    "mtime": 1785199978.610394,
+    "ast_hash": "89020ba389aab95e43b16a993d07e9d2",
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/pdf-rasterize.ts": {
-    "mtime": 1785182447.497605,
-    "ast_hash": "a1a8b5eb038ac650219168f7cc59ca22",
+    "mtime": 1785199516.8438728,
+    "ast_hash": "5aed1f04533000871b631a2f3e706db8",
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/preprocess.ts": {
@@ -1740,18 +1740,18 @@
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/provider.ts": {
-    "mtime": 1785167133.0464456,
-    "ast_hash": "d30e4a1c4140b6d75e32850c5cc6d2e9",
+    "mtime": 1785199512.4619198,
+    "ast_hash": "9e43e287c7aa53437262ea460f2e329e",
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/run-ocr.ts": {
-    "mtime": 1785179628.6318476,
-    "ast_hash": "fd29104e616bc3bc4dfbefdfea1bc26b",
+    "mtime": 1785199522.8256476,
+    "ast_hash": "790e486363e26f8ffba5db5c25711502",
     "semantic_hash": ""
   },
   "src/lib/documents/ocr/tesseract-provider.ts": {
-    "mtime": 1785182790.714151,
-    "ast_hash": "83a7c7169122d46015c740007c307fe0",
+    "mtime": 1785199519.0764687,
+    "ast_hash": "95f258e6041d468f52eb38b89be57f11",
     "semantic_hash": ""
   },
   "src/lib/documents/storage.ts": {
@@ -1790,8 +1790,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/excel/excel-workbook.tsx": {
-    "mtime": 1785197061.2034566,
-    "ast_hash": "0b61aba33e7bd9a9bddd65c088f8cf2d",
+    "mtime": 1785199882.2057903,
+    "ast_hash": "69cc35c401e6b0ac0af2778656cca11e",
     "semantic_hash": ""
   },
   "src/lib/excel/sltt-bridge.ts": {
@@ -1912,6 +1912,21 @@
   "src/lib/excel/sltt-bridge.test.ts": {
     "mtime": 1785197088.5147583,
     "ast_hash": "8b14f9d17878005ac3d382358a09c715",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260805_fix_agent_documents_perms.sql": {
+    "mtime": 1785199523.4143548,
+    "ast_hash": "9d63ecbddc3526c442c8a1a24faa2d27",
+    "semantic_hash": ""
+  },
+  "src/components/sltt/documents/create-dossier-from-ocr.tsx": {
+    "mtime": 1785199926.2079437,
+    "ast_hash": "24019d72a52cafa20ae7a878158b783c",
+    "semantic_hash": ""
+  },
+  "src/lib/documents/ocr/mappers/dossier-mapper.test.ts": {
+    "mtime": 1785199856.9411495,
+    "ast_hash": "4989aa85db6df9070fa8ea4899d48ac4",
     "semantic_hash": ""
   }
 }

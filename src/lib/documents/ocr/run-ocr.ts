@@ -15,5 +15,5 @@ export async function runOcrOnStoragePath(
   const blob = await res.blob();
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const provider = getDefaultOcrProvider();
-  return provider.extract(blob, mimeType || blob.type);
+  return provider.extract(blob, mimeType || blob.type, signal);
 }

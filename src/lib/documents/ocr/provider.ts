@@ -6,12 +6,24 @@ export type OcrExtractedField = {
   confidence?: number;
 };
 
+export type OcrPdfPagesInfo = {
+  processed: number;
+  total: number;
+  truncated: boolean;
+};
+
 export type OcrExtractResult = {
   rawText: string;
   fields: OcrExtractedField[];
+  /** Présent si la source était un PDF (v1 plafonne le nombre de pages). */
+  pdfPages?: OcrPdfPagesInfo;
 };
 
 export interface OcrProvider {
   readonly name: string;
-  extract(blob: Blob, mimeType: string): Promise<OcrExtractResult>;
+  extract(
+    blob: Blob,
+    mimeType: string,
+    signal?: AbortSignal,
+  ): Promise<OcrExtractResult>;
 }

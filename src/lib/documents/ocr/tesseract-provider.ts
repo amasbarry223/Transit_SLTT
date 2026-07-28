@@ -11,25 +11,80 @@ const OCR_WORKER_OPTIONS = {
   workerPath: "/ocr/worker.min.js",
   corePath: "/ocr",
   langPath: "/ocr/lang",
-  // workerBlobURL + importScripts('/ocr/worker...') reste same-origin.
   workerBlobURL: true,
   gzip: true,
   logger: () => undefined,
 } as const;
 
+function assertNotAborted(signal?: AbortSignal) {
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+}
+
+/** Reconnaît une image ; abandonne proprement si AbortSignal se déclenche. */
+async function recognizeWithAbort(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Tesseract: any,
+  img: Blob,
+  signal?: AbortSignal,
+): Promise<{ text: string; confidence: number }> {
+  assertNotAborted(signal);
+
+  const recognizePromise = Tesseract.recognize(img, "fra+eng", OCR_WORKER_OPTIONS).then(
+    (result: { data: { text?: string; confidence?: number } }) => ({
+      text: result.data.text || "",
+      confidence: (result.data.confidence || 0) / 100,
+    }),
+  );
+
+  if (!signal) return recognizePromise;
+
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    recognizePromise
+      .then((value: { text: string; confidence: number }) => {
+        signal.removeEventListener("abort", onAbort);
+        if (signal.aborted) {
+          reject(new DOMException("Aborted", "AbortError"));
+          return;
+        }
+        resolve(value);
+      })
+      .catch((err: unknown) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(err);
+      });
+  });
+}
+
 export class TesseractOcrProvider implements OcrProvider {
   readonly name = "tesseract";
 
-  async extract(blob: Blob, mimeType: string): Promise<OcrExtractResult> {
+  async extract(
+    blob: Blob,
+    mimeType: string,
+    signal?: AbortSignal,
+  ): Promise<OcrExtractResult> {
+    assertNotAborted(signal);
     const Tesseract = await import("tesseract.js");
     const images: Blob[] = [];
+    let pdfPages: OcrExtractResult["pdfPages"];
 
     if (mimeType.includes("pdf") || mimeType === "application/pdf") {
-      const pages = await rasterizePdfToBlobs(blob);
-      if (pages.length === 0) {
+      const raster = await rasterizePdfToBlobs(blob);
+      assertNotAborted(signal);
+      if (raster.blobs.length === 0) {
         throw new Error("Impossible de rasteriser le PDF");
       }
-      for (const page of pages) {
+      pdfPages = {
+        processed: raster.blobs.length,
+        total: raster.totalPages,
+        truncated: raster.truncated,
+      };
+      for (const page of raster.blobs) {
+        assertNotAborted(signal);
         images.push(await preprocessImageBlob(page));
       }
     } else {
@@ -40,12 +95,13 @@ export class TesseractOcrProvider implements OcrProvider {
     let meanConfidence = 0;
 
     for (const img of images) {
-      const result = await Tesseract.recognize(img, "fra+eng", {
-        ...OCR_WORKER_OPTIONS,
-      });
-      texts.push(result.data.text || "");
-      meanConfidence += (result.data.confidence || 0) / 100;
+      assertNotAborted(signal);
+      const page = await recognizeWithAbort(Tesseract, img, signal);
+      texts.push(page.text);
+      meanConfidence += page.confidence;
     }
+
+    assertNotAborted(signal);
 
     const rawText = texts.join("\n\n---\n\n").trim();
     if (!rawText) {
@@ -55,14 +111,13 @@ export class TesseractOcrProvider implements OcrProvider {
     const avgConf = meanConfidence / images.length;
     const fields = mapDossierFieldsFromText(rawText).map((f) => ({
       ...f,
-      // Combine heuristic field confidence with page OCR confidence
       confidence:
         f.confidence != null
           ? Math.round(f.confidence * (0.5 + 0.5 * avgConf) * 1000) / 1000
           : avgConf,
     }));
 
-    return { rawText, fields };
+    return { rawText, fields, pdfPages };
   }
 }
 

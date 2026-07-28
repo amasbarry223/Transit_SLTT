@@ -41,6 +41,9 @@ export function DossierDocumentsPanel({
 }) {
   const { toast } = useToast();
   const canWrite = usePermission("documents:write");
+  const canWriteDossiers = usePermission("dossiers:write");
+  /** Lancer l'OCR = documents:write ; valider vers dossier = dossiers:write. */
+  const canStartOcr = canWrite;
   const documents = useStore((s) => s.documents);
   const documentVersions = useStore((s) => s.documentVersions);
   const addDocument = useStore((s) => s.addDocument);
@@ -239,12 +242,16 @@ export function DossierDocumentsPanel({
                     >
                       <History className="size-4" />
                     </Button>
-                    {onStartOcr && (
+                    {onStartOcr && canStartOcr && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onStartOcr(doc.id)}
-                        title="OCR"
+                        title={
+                          canWriteDossiers
+                            ? "OCR — extraire vers le dossier"
+                            : "OCR — extraction (validation dossier : dossiers:write requis)"
+                        }
                       >
                         <ScanText className="size-4" />
                       </Button>

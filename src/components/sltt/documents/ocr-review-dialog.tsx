@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, ScanText, AlertTriangle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { DossierInput } from "@/lib/store";
+import { useNav } from "@/lib/nav-store";
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
@@ -81,6 +82,7 @@ export function OcrReviewDialog({
   defaultClientId?: string;
 }) {
   const { toast } = useToast();
+  const openDossierDetail = useNav((s) => s.openDossierDetail);
   const canWriteDocs = usePermission("documents:write");
   const canWriteDossiers = usePermission("dossiers:write");
   const canValidate = canWriteDocs && canWriteDossiers;
@@ -108,6 +110,9 @@ export function OcrReviewDialog({
   const [confidence, setConfidence] = useState<Record<string, number>>({});
   const [form, setForm] = useState<FormState>(() => emptyForm({ clientId: defaultClientId || "" }));
   const [ocrError, setOcrError] = useState<string | null>(null);
+  const [rawText, setRawText] = useState<string | null>(null);
+  const [showRawText, setShowRawText] = useState(false);
+  const [pdfPagesHint, setPdfPagesHint] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   /** Job OCR de la course en cours — survivit aux re-renders / abort. */
   const activeJobIdRef = useRef<string | null>(null);
@@ -157,67 +162,8 @@ export function OcrReviewDialog({
     return version;
   }, [doc, documentVersions, getDocumentVersions, getSignedDocumentUrl]);
 
-  const runOcr = useCallback(async () => {
-    if (!doc) return;
-
-    // Annuler la course précédente (sans toast).
-    const previousJobId = activeJobIdRef.current;
-    abortRef.current?.abort();
-    if (previousJobId) {
-      activeJobIdRef.current = null;
-      void markJobFailed(previousJobId, "OCR annulé (relance)");
-    }
-
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    setRunning(true);
-    setOcrError(null);
-    setConfidence({});
-    setJobId(null);
-    setPreviewUrl(null);
-    setForm(emptyForm({ clientId: defaultClientId || "" }));
-
-    let currentJobId: string | null = null;
-
-    try {
-      const version = await loadPreview();
-      if (!version) throw new Error("Version document introuvable");
-      if (ac.signal.aborted) return;
-
-      const job = await createOcrJob(doc.id, "dossier");
-      currentJobId = job.id;
-      activeJobIdRef.current = job.id;
-      setJobId(job.id);
-
-      await updateOcrJobResult(job.id, { status: "processing" });
-      if (ac.signal.aborted) {
-        if (activeJobIdRef.current === currentJobId) {
-          activeJobIdRef.current = null;
-          await markJobFailed(currentJobId, "OCR annulé");
-        }
-        return;
-      }
-
-      const result = await runOcrOnStoragePath(
-        version.storagePath,
-        doc.mimeType,
-        ac.signal,
-      );
-      if (ac.signal.aborted) {
-        if (activeJobIdRef.current === currentJobId) {
-          activeJobIdRef.current = null;
-          await markJobFailed(currentJobId, "OCR annulé");
-        }
-        return;
-      }
-
-      await updateOcrJobResult(job.id, {
-        status: "done",
-        rawText: result.rawText,
-        fields: result.fields,
-      });
-
+  const applyFieldsToForm = useCallback(
+    (fields: { fieldKey: string; fieldValue?: string; confidence?: number }[]) => {
       const conf: Record<string, number> = {};
       const next = emptyForm({
         clientId: existingDossierId
@@ -225,7 +171,7 @@ export function OcrReviewDialog({
           : defaultClientId || "",
       });
 
-      for (const f of result.fields) {
+      for (const f of fields) {
         if (f.confidence != null) conf[f.fieldKey] = f.confidence;
         const v = f.fieldValue ?? "";
         switch (f.fieldKey) {
@@ -282,6 +228,50 @@ export function OcrReviewDialog({
         }
       }
 
+      setConfidence(conf);
+      setForm(next);
+    },
+    [clients, defaultClientId, dossiers, existingDossierId],
+  );
+
+  const runOcr = useCallback(async () => {
+    if (!doc) return;
+
+    // Annuler la course précédente (sans toast).
+    const previousJobId = activeJobIdRef.current;
+    abortRef.current?.abort();
+    if (previousJobId) {
+      activeJobIdRef.current = null;
+      void markJobFailed(previousJobId, "OCR annulé (relance)");
+    }
+
+    const ac = new AbortController();
+    abortRef.current = ac;
+
+    setRunning(true);
+    setOcrError(null);
+    setConfidence({});
+    setJobId(null);
+    setRawText(null);
+    setShowRawText(false);
+    setPdfPagesHint(null);
+    // Garde le preview précédent pendant le reload pour éviter un flash vide.
+    setForm(emptyForm({ clientId: defaultClientId || "" }));
+
+    let currentJobId: string | null = null;
+
+    try {
+      if (!doc) throw new Error("Document introuvable dans le store — rechargez la page.");
+      const version = await loadPreview();
+      if (!version) throw new Error("Version document introuvable");
+      if (ac.signal.aborted) return;
+
+      const job = await createOcrJob(doc.id, "dossier");
+      currentJobId = job.id;
+      activeJobIdRef.current = job.id;
+      setJobId(job.id);
+
+      await updateOcrJobResult(job.id, { status: "processing" });
       if (ac.signal.aborted) {
         if (activeJobIdRef.current === currentJobId) {
           activeJobIdRef.current = null;
@@ -289,8 +279,43 @@ export function OcrReviewDialog({
         }
         return;
       }
-      setConfidence(conf);
-      setForm(next);
+
+      const result = await runOcrOnStoragePath(
+        version.storagePath,
+        doc.mimeType,
+        ac.signal,
+      );
+      if (ac.signal.aborted) {
+        if (activeJobIdRef.current === currentJobId) {
+          activeJobIdRef.current = null;
+          await markJobFailed(currentJobId, "OCR annulé");
+        }
+        return;
+      }
+
+      await updateOcrJobResult(job.id, {
+        status: "done",
+        rawText: result.rawText,
+        fields: result.fields,
+      });
+
+      if (result.pdfPages?.truncated) {
+        setPdfPagesHint(
+          `PDF : ${result.pdfPages.processed}/${result.pdfPages.total} pages analysées (plafond OCR). Les pages suivantes sont ignorées.`,
+        );
+      } else {
+        setPdfPagesHint(null);
+      }
+      setRawText(result.rawText || null);
+
+      if (ac.signal.aborted) {
+        if (activeJobIdRef.current === currentJobId) {
+          activeJobIdRef.current = null;
+          await markJobFailed(currentJobId, "OCR annulé");
+        }
+        return;
+      }
+      applyFieldsToForm(result.fields);
     } catch (e) {
       const isAbort =
         ac.signal.aborted ||
@@ -327,9 +352,7 @@ export function OcrReviewDialog({
     updateOcrJobResult,
     markJobFailed,
     defaultClientId,
-    existingDossierId,
-    dossiers,
-    clients,
+    applyFieldsToForm,
     toast,
   ]);
 
@@ -338,9 +361,10 @@ export function OcrReviewDialog({
     runOcrRef.current = runOcr;
   });
 
-  // Démarrage OCR : délai anti Strict Mode (cleanup avant fire → une seule course).
+  // Ouverture : toujours lancer l'OCR dès que le document est en store.
+  // (La réutilisation d'anciens jobs masquait des extractions cassées.)
   useEffect(() => {
-    if (!open || !documentId) return;
+    if (!open || !documentId || !doc) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (!cancelled) void runOcrRef.current();
@@ -348,10 +372,10 @@ export function OcrReviewDialog({
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      // N'aborte que si une course est vraiment en cours pour ce dialog.
       abortRef.current?.abort();
-      // Pas de markJobFailed ici — géré à la fermeture dialog / catch abort propriétaire.
     };
-  }, [open, documentId]);
+  }, [open, documentId, doc?.id]);
 
   // Fermeture réelle du dialog → job en failed.
   useEffect(() => {
@@ -462,6 +486,7 @@ export function OcrReviewDialog({
         };
         const created = await addDossier(input);
         await linkDocumentToDossier(doc.id, created.id);
+        openDossierDetail(created.id);
       }
 
       if (jobId) {
@@ -534,6 +559,12 @@ export function OcrReviewDialog({
               </div>
             )}
 
+            {pdfPagesHint && !running && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                {pdfPagesHint}
+              </div>
+            )}
+
             {lowFields.length > 0 && !running && (
               <p className="text-xs text-amber-700 dark:text-amber-400">
                 {lowFields.length} champ(s) à faible confiance — vérifiez avant validation.
@@ -602,13 +633,32 @@ export function OcrReviewDialog({
             <p className="text-[11px] text-slate-400">
               Champs détectés : {Object.keys(FIELD_LABELS).filter((k) => confidence[k] != null).join(", ") || "aucun"}
             </p>
+
+            {rawText && !running && (
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                  onClick={() => setShowRawText((v) => !v)}
+                >
+                  {showRawText ? "Masquer le texte OCR" : "Voir le texte brut OCR"}
+                </button>
+                {showRawText && (
+                  <pre className="max-h-40 overflow-auto rounded-md border border-border bg-slate-50 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                    {rawText}
+                  </pre>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
           {!canValidate && (
             <p className="mr-auto max-w-sm text-xs text-amber-700 dark:text-amber-400">
-              Validation désactivée : droits dossiers:write manquants.
+              {canWriteDocs && !canWriteDossiers
+                ? "Extraction possible, validation désactivée : droit dossiers:write manquant (rôle Comptable / lecture seule)."
+                : "Validation désactivée : droits documents:write et dossiers:write requis."}
             </p>
           )}
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

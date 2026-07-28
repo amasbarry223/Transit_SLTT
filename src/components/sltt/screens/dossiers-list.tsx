@@ -34,6 +34,7 @@ import {
 } from "@/components/sltt/dossier-transition-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { CreateDossierFromOcrButton } from "@/components/sltt/documents/create-dossier-from-ocr";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -284,10 +285,13 @@ export function DossiersListScreen() {
         description="Suivi des dossiers douaniers et de leur soldage"
       >
         {canWrite && (
-          <Button onClick={() => openDossier(null, "create")}>
-            <Plus className="size-4" />
-            Nouveau dossier
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <CreateDossierFromOcrButton />
+            <Button onClick={() => openDossier(null, "create")}>
+              <Plus className="size-4" />
+              Nouveau dossier
+            </Button>
+          </div>
         )}
       </PageHeader>
 

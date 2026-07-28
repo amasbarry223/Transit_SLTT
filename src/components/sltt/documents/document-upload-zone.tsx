@@ -56,11 +56,18 @@ async function maybeConvertHeic(file: File): Promise<File> {
     const heic2any = (await import("heic2any")).default;
     const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
     const blob = Array.isArray(converted) ? converted[0] : converted;
+    if (!blob) {
+      throw new Error("Conversion HEIC vide");
+    }
     return new File([blob], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), {
       type: "image/jpeg",
     });
-  } catch {
-    return file;
+  } catch (e) {
+    throw new Error(
+      e instanceof Error
+        ? `Conversion HEIC impossible : ${e.message}. Exportez en JPG/PNG.`
+        : "Conversion HEIC impossible. Exportez en JPG/PNG.",
+    );
   }
 }
 

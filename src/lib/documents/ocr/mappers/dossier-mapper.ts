@@ -26,25 +26,30 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   const fields: OcrExtractedField[] = [];
 
   const bl = findFirst(text, [
-    /(?:N[°o.]?\s*(?:BL|B\/L)|B\/L|connaissement)\s*[:\-]?\s*([A-Z0-9\-\/]{5,30})/i,
+    /(?:N[°o.]?\s*(?:BL|B\/L)|B\/L|connaissement|bill\s*of\s*lading)\s*[:\-]?\s*([A-Z0-9\-\/]{5,30})/i,
     /\bBL\s*[:\-]?\s*([A-Z0-9\-\/]{5,30})/i,
+    /(?:n[°o.]?\s*(?:de\s+)?(?:connaissement|bordereau))\s*[:\-]?\s*([A-Z0-9\-\/]{5,30})/i,
   ]);
-  if (bl) fields.push({ fieldKey: "bl", fieldValue: bl.value, confidence: bl.confidence });
+  if (bl) fields.push({ fieldKey: "bl", fieldValue: bl.value.toUpperCase(), confidence: bl.confidence });
 
   const date = findFirst(text, [
-    /(?:date|du)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i,
+    /(?:date(?:\s+d[e']?\s*(?:émission|embarq|arrivée))?|du)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i,
     /\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})\b/,
+    /\b(\d{4}-\d{2}-\d{2})\b/,
   ]);
   if (date) {
-    fields.push({
-      fieldKey: "date",
-      fieldValue: normalizeDate(date.value),
-      confidence: date.confidence * 0.95,
-    });
+    const normalized = normalizeDate(date.value);
+    if (normalized) {
+      fields.push({
+        fieldKey: "date",
+        fieldValue: normalized,
+        confidence: date.confidence * (normalized === date.value ? 0.9 : 0.95),
+      });
+    }
   }
 
   const client = findFirst(text, [
-    /(?:client|destinataire|consignee|nom)\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,60})/i,
+    /(?:client|destinataire|consignee|importateur|nom)\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,60})/i,
   ]);
   if (client) {
     fields.push({
@@ -55,15 +60,19 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   }
 
   const montant = findFirst(text, [
-    /(?:montant|total|ttc|investi)\s*[:\-]?\s*([\d\s.,]+)\s*(?:F(?:CFA)?|XOF)?/i,
-    /\b([\d]{1,3}(?:[\s.,]\d{3})+(?:[.,]\d{2})?)\s*(?:F(?:CFA)?|XOF)?/i,
+    /(?:montant(?:\s+total|\s+investi)?|total\s*ttc|ttc|investi)\s*[:\-]?\s*([\d\s.,]+)\s*(?:F(?:CFA)?|XOF|€|EUR)?/i,
+    /\b([\d]{1,3}(?:[\s.]\d{3})+(?:,\d{2})?)\s*(?:F(?:CFA)?|XOF)?/i,
+    /\b([\d]{1,3}(?:,\d{3})+(?:\.\d{2})?)\s*(?:F(?:CFA)?|XOF|\$)?/i,
   ]);
   if (montant) {
-    fields.push({
-      fieldKey: "montant",
-      fieldValue: String(parseMontant(montant.value)),
-      confidence: montant.confidence * 0.8,
-    });
+    const parsed = parseMontant(montant.value);
+    if (parsed != null && parsed > 0) {
+      fields.push({
+        fieldKey: "montant",
+        fieldValue: String(parsed),
+        confidence: montant.confidence * 0.8,
+      });
+    }
   }
 
   const refDouane = findFirst(text, [
@@ -72,13 +81,13 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   if (refDouane) {
     fields.push({
       fieldKey: "ref_douaniere",
-      fieldValue: refDouane.value,
+      fieldValue: refDouane.value.toUpperCase(),
       confidence: refDouane.confidence,
     });
   }
 
   const nature = findFirst(text, [
-    /(?:nature|marchandise|description)\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,80})/i,
+    /(?:nature|marchandise|description|désignation)\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,80})/i,
   ]);
   if (nature) {
     fields.push({
@@ -89,12 +98,12 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   }
 
   const camion = findFirst(text, [
-    /(?:camion|immatriculation|véhicule)\s*[:\-]?\s*([A-Z0-9\-\s]{4,20})/i,
+    /(?:camion|immatriculation|véhicule|plaque)\s*[:\-]?\s*([A-Z0-9\-\s]{4,20})/i,
   ]);
   if (camion) {
     fields.push({
       fieldKey: "camion",
-      fieldValue: camion.value.trim(),
+      fieldValue: camion.value.trim().toUpperCase(),
       confidence: camion.confidence * 0.8,
     });
   }
@@ -102,20 +111,80 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   return fields;
 }
 
-function normalizeDate(raw: string): string {
+/** Retourne YYYY-MM-DD ou null si invalide. */
+export function normalizeDate(raw: string): string | null {
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const y = Number(iso[1]);
+    const m = Number(iso[2]);
+    const d = Number(iso[3]);
+    if (!isValidYmd(y, m, d)) return null;
+    return raw;
+  }
+
   const parts = raw.split(/[\/\-.]/).map((p) => p.trim());
-  if (parts.length !== 3) return raw;
+  if (parts.length !== 3) return null;
   let [a, b, c] = parts;
   if (c.length === 2) c = `20${c}`;
-  // Assume DD/MM/YYYY
+  // Assume DD/MM/YYYY (FR)
   if (a.length <= 2 && b.length <= 2 && c.length === 4) {
-    return `${c}-${a.padStart(2, "0")}-${b.padStart(2, "0")}`;
+    const d = Number(a);
+    const m = Number(b);
+    const y = Number(c);
+    if (!isValidYmd(y, m, d)) return null;
+    return `${c}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   }
-  return raw;
+  return null;
 }
 
-function parseMontant(raw: string): number {
-  const cleaned = raw.replace(/\s/g, "").replace(/,(?=\d{3}\b)/g, "").replace(",", ".");
-  const n = Number(cleaned.replace(/[^\d.]/g, ""));
-  return Number.isFinite(n) ? Math.round(n) : 0;
+function isValidYmd(y: number, m: number, d: number): boolean {
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return false;
+  if (y < 1990 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return false;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
+/**
+ * Parse montants FR (1 234 567,89 / 1.234.567,89) et EN (1,234,567.89).
+ * Retourne null si ambigu ou non numérique (évite de préremplir 0).
+ */
+export function parseMontant(raw: string): number | null {
+  let s = raw.trim().replace(/\s/g, "");
+  if (!s) return null;
+
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+
+  if (hasComma && hasDot) {
+    // Le séparateur décimal est le dernier des deux.
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+      // 1.234.567,89
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      // 1,234,567.89
+      s = s.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    // 1234,56 ou 1.234 via comma as decimal (FR)
+    const parts = s.split(",");
+    if (parts.length === 2 && parts[1].length <= 2) {
+      s = `${parts[0].replace(/\./g, "")}.${parts[1]}`;
+    } else {
+      s = s.replace(/,/g, "");
+    }
+  } else if (hasDot) {
+    const parts = s.split(".");
+    // 1.234.567 → thousands ; 1234.56 → decimal
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3 && parts[0].length <= 3)) {
+      s = s.replace(/\./g, "");
+    }
+  }
+
+  const cleaned = s.replace(/[^\d.]/g, "");
+  if (!cleaned || cleaned === ".") return null;
+  const n = Number(cleaned);
+  if (!Number.isFinite(n) || n < 0) return null;
+  // Évite de préremplir 0 quand le texte n'avait aucun chiffre significatif
+  if (n === 0 && !/\d/.test(raw)) return null;
+  return Math.round(n);
 }

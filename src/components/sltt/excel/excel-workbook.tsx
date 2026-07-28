@@ -302,58 +302,71 @@ export function ExcelWorkbookPanel({
         clearTimeout(autosaveTimer.current);
         autosaveTimer.current = null;
       }
-      // Flush sync avant dispose pour ne pas perdre les 0–4 s d'édition.
+      // Flush avant dispose — y compris xlsx si snapshot > plafond (évite perte silencieuse).
       const api = univerApiRef.current;
       const ctx = saveCtxRef.current;
-      let snapshot: Record<string, unknown> | null = null;
-      if (dirtyRef.current && api && ctx.canWrite) {
-        try {
-          snapshot = api.getActiveWorkbook()?.save() as Record<string, unknown>;
-        } catch {
-          snapshot = null;
-        }
-      }
-      disposeRef.current?.();
+      const dispose = disposeRef.current;
+      const shouldFlush = Boolean(dirtyRef.current && api && ctx.canWrite);
+      dirtyRef.current = false;
       disposeRef.current = null;
       univerApiRef.current = null;
-      if (snapshot) {
-        void (async () => {
-          try {
+
+      void (async () => {
+        try {
+          if (shouldFlush && api) {
+            const snapshot = api.getActiveWorkbook()?.save() as Record<string, unknown> | undefined;
+            if (!snapshot) return;
+            let xlsxBlob: Blob | null = null;
             const size = new Blob([JSON.stringify(snapshot)]).size;
             if (size > SNAPSHOT_MAX_BYTES) {
-              console.warn("[Excel] Flush unmount: snapshot trop gros, skip sans xlsx.");
-              return;
+              xlsxBlob = await buildGrandLivreXlsxBlob(readGrandLivre(api));
             }
             await ctx.saveExcelWorkbook({
               clientId: ctx.clientId,
               clientNom: ctx.clientNom,
               snapshotJson: snapshot,
+              xlsxBlob,
               silent: true,
             });
-          } catch (err) {
-            console.warn("[Excel] Flush unmount échoué:", err);
           }
-        })();
-      }
-      dirtyRef.current = false;
+        } catch (err) {
+          console.warn("[Excel] Flush unmount échoué:", err);
+        } finally {
+          try {
+            dispose?.();
+          } catch {
+            // ignore
+          }
+        }
+      })();
     };
   }, [clientId, clientNom, getExcelWorkbookForClient, getSignedExcelWorkbookUrl]);
 
-  // Dirty tracking — keydown seulement (pointerup trop bruyant).
+  // Dirty tracking : clavier + collage (édition souris seule peut manquer un autosave).
   useEffect(() => {
     if (!ready || !canWrite) return;
     const el = containerRef.current;
     if (!el) return;
-    const onKey = () => scheduleAutosave();
-    el.addEventListener("keydown", onKey);
+    const markDirty = () => scheduleAutosave();
+    el.addEventListener("keydown", markDirty);
+    el.addEventListener("paste", markDirty);
+    el.addEventListener("input", markDirty);
     return () => {
-      el.removeEventListener("keydown", onKey);
+      el.removeEventListener("keydown", markDirty);
+      el.removeEventListener("paste", markDirty);
+      el.removeEventListener("input", markDirty);
     };
   }, [ready, canWrite]);
 
   async function handleRefreshFromSltt() {
     const api = univerApiRef.current;
     if (!api) return;
+    if (dirtyRef.current || saveStatus === "dirty") {
+      const ok = window.confirm(
+        "Des modifications non enregistrées seront remplacées par le journal SLTT. Continuer ?",
+      );
+      if (!ok) return;
+    }
     setBusy(true);
     try {
       const capacity = resolveGrandLivreRowCount(api) - 1;
@@ -397,74 +410,108 @@ export function ExcelWorkbookPanel({
       const byRef = new Map(
         journalEntries.map((e) => [normalizeClasseurRef(e.reference), e]),
       );
-      /** Idempotence intra-run : même référence Excel traitée une seule fois. */
       const processedRefs = new Set<string>();
-      let applied = 0;
-      let created = 0;
-      let skipped = 0;
-      const failed: string[] = [];
 
+      type PlannedOp =
+        | { kind: "skip" }
+        | {
+            kind: "patch-dossier";
+            row: (typeof rows)[number];
+            sourceId: string;
+            debit: number;
+            credit: number;
+          }
+        | {
+            kind: "patch-paiement";
+            row: (typeof rows)[number];
+            sourceId: string;
+            debit: number;
+            credit: number;
+            libelle: string;
+          }
+        | {
+            kind: "patch-facture";
+            row: (typeof rows)[number];
+            sourceId: string;
+            credit: number;
+          }
+        | {
+            kind: "create-paiement";
+            row: (typeof rows)[number];
+          };
+
+      const planned: PlannedOp[] = [];
+      const preFailed: string[] = [];
+      let skipped = 0;
+
+      // Phase 1 — dry-run : aucune écriture DB.
       for (const row of rows) {
         const refKey = normalizeClasseurRef(row.reference);
         if (refKey) {
           if (processedRefs.has(refKey)) {
             skipped++;
+            planned.push({ kind: "skip" });
             continue;
           }
           processedRefs.add(refKey);
         }
         const match = refKey ? byRef.get(refKey) : undefined;
         if (match) {
-          try {
-            if (match.type === "Dossier") {
-              if (!canDossiers) {
-                failed.push(`${row.reference} (dossiers:write requis)`);
-                continue;
-              }
-              if (match.debit === row.debit && match.credit === row.credit) {
-                skipped++;
-                continue;
-              }
-              await patchDossierClasseur(match.sourceId, {
-                montantInvesti: row.debit,
-                montantPaye: row.credit,
-              });
-              applied++;
-            } else if (match.type === "Paiement") {
-              if (!canCompta) {
-                failed.push(`${row.reference} (comptabilite:write requis)`);
-                continue;
-              }
-              if (
-                match.debit === row.debit &&
-                match.credit === row.credit &&
-                (match.libelle || "") === (row.libelle || "")
-              ) {
-                skipped++;
-                continue;
-              }
-              await patchEcriture(match.sourceId, {
-                montantInvesti: row.debit,
-                montantPaye: row.credit,
-                note: row.libelle || undefined,
-              });
-              applied++;
-            } else if (match.type === "Facture") {
-              if (!canFactures) {
-                failed.push(`${row.reference} (factures:write requis)`);
-                continue;
-              }
-              if (match.credit === row.credit) {
-                skipped++;
-                continue;
-              }
-              await patchFactureMontantPaye(match.sourceId, row.credit);
-              applied++;
+          if (match.type === "Dossier") {
+            if (!canDossiers) {
+              preFailed.push(`${row.reference} (dossiers:write requis)`);
+              continue;
             }
-          } catch (e) {
-            failed.push(
-              `${row.reference}: ${e instanceof Error ? e.message : "erreur"}`,
-            );
+            if (match.debit === row.debit && match.credit === row.credit) {
+              skipped++;
+              planned.push({ kind: "skip" });
+              continue;
+            }
+            planned.push({
+              kind: "patch-dossier",
+              row,
+              sourceId: match.sourceId,
+              debit: row.debit,
+              credit: row.credit,
+            });
+          } else if (match.type === "Paiement") {
+            if (!canCompta) {
+              preFailed.push(`${row.reference} (comptabilite:write requis)`);
+              continue;
+            }
+            if (
+              match.debit === row.debit &&
+              match.credit === row.credit &&
+              (match.libelle || "") === (row.libelle || "")
+            ) {
+              skipped++;
+              planned.push({ kind: "skip" });
+              continue;
+            }
+            planned.push({
+              kind: "patch-paiement",
+              row,
+              sourceId: match.sourceId,
+              debit: row.debit,
+              credit: row.credit,
+              libelle: row.libelle || "",
+            });
+          } else if (match.type === "Facture") {
+            if (!canFactures) {
+              preFailed.push(`${row.reference} (factures:write requis)`);
+              continue;
+            }
+            if (match.credit === row.credit) {
+              skipped++;
+              planned.push({ kind: "skip" });
+              continue;
+            }
+            planned.push({
+              kind: "patch-facture",
+              row,
+              sourceId: match.sourceId,
+              credit: row.credit,
+            });
           }
           continue;
         }
@@ -472,25 +519,81 @@ export function ExcelWorkbookPanel({
         const type = parseClasseurType(row.type) ?? "Paiement";
         if (type === "Paiement" && (row.debit > 0 || row.credit > 0)) {
           if (!refKey) {
-            failed.push(`${row.libelle || "ligne"} (référence Excel obligatoire)`);
+            preFailed.push(`${row.libelle || "ligne"} (référence Excel obligatoire)`);
             continue;
           }
           if (!canCompta) {
-            failed.push(`${row.reference || row.libelle} (création écriture refusée)`);
+            preFailed.push(`${row.reference || row.libelle} (création écriture refusée)`);
             continue;
           }
-          try {
+          planned.push({ kind: "create-paiement", row });
+        } else if (type === "Dossier" || type === "Facture") {
+          preFailed.push(`${row.reference || row.libelle} (aucune correspondance SLTT)`);
+        }
+      }
+
+      const mutations = planned.filter((p) => p.kind !== "skip");
+      if (mutations.length === 0 && preFailed.length === 0) {
+        toast({
+          title: "Rien à appliquer",
+          description: skipped
+            ? `${skipped} ligne(s) déjà synchronisée(s).`
+            : "Aucune ligne modifiable détectée.",
+        });
+        return;
+      }
+
+      if (preFailed.length > 0) {
+        const preview = preFailed.slice(0, 8).join("\n• ");
+        const ok = window.confirm(
+          `${preFailed.length} ligne(s) seront ignorées :\n• ${preview}${
+            preFailed.length > 8 ? "\n…" : ""
+          }\n\nAppliquer les ${mutations.length} autre(s) modification(s) ?`,
+        );
+        if (!ok) return;
+      } else if (mutations.length > 0) {
+        const ok = window.confirm(
+          `Appliquer ${mutations.length} modification(s) vers SLTT ?\n(${skipped} inchangée(s))`,
+        );
+        if (!ok) return;
+      }
+
+      // Phase 2 — exécution séquentielle (rapport complet en cas d'échec partiel).
+      let applied = 0;
+      let created = 0;
+      const failed = [...preFailed];
+
+      for (const op of planned) {
+        if (op.kind === "skip") continue;
+        try {
+          if (op.kind === "patch-dossier") {
+            await patchDossierClasseur(op.sourceId, {
+              montantInvesti: op.debit,
+              montantPaye: op.credit,
+            });
+            applied++;
+          } else if (op.kind === "patch-paiement") {
+            await patchEcriture(op.sourceId, {
+              montantInvesti: op.debit,
+              montantPaye: op.credit,
+              note: op.libelle || undefined,
+            });
+            applied++;
+          } else if (op.kind === "patch-facture") {
+            await patchFactureMontantPaye(op.sourceId, op.credit);
+            applied++;
+          } else if (op.kind === "create-paiement") {
             const createdE = await addEcriture({
-              date: row.date || new Date().toISOString().slice(0, 10),
+              date: op.row.date || new Date().toISOString().slice(0, 10),
               clientId,
               clientNom,
-              montantInvesti: row.debit,
-              montantPaye: row.credit,
+              montantInvesti: op.row.debit,
+              montantPaye: op.row.credit,
               modePaiement: DEFAULT_PAIEMENT_MODE,
-              note: row.libelle || `Excel · ${row.reference}`,
+              note: op.row.libelle || `Excel · ${op.row.reference}`,
             });
             const canon = ecritureClasseurReference(createdE.id);
-            setGrandLivreReference(api, row.sheetRow, canon);
+            setGrandLivreReference(api, op.row.sheetRow, canon);
             byRef.set(normalizeClasseurRef(canon), {
               id: createdE.id,
               sourceId: createdE.id,
@@ -506,13 +609,13 @@ export function ExcelWorkbookPanel({
               soldeCumule: 0,
             });
             created++;
-          } catch (e) {
-            failed.push(
-              `${row.reference || "nouvelle"}: ${e instanceof Error ? e.message : "erreur"}`,
-            );
           }
-        } else if (type === "Dossier" || type === "Facture") {
-          failed.push(`${row.reference || row.libelle} (aucune correspondance SLTT)`);
+        } catch (e) {
+          const label =
+            op.kind === "create-paiement"
+              ? op.row.reference || "nouvelle"
+              : op.row.reference;
+          failed.push(`${label}: ${e instanceof Error ? e.message : "erreur"}`);
         }
       }
 
@@ -524,9 +627,13 @@ export function ExcelWorkbookPanel({
         skipped ? `${skipped} inchangée(s)` : null,
         failed.length ? `${failed.length} échec(s)` : null,
       ].filter(Boolean);
+      const failDetail =
+        failed.length > 0
+          ? ` — ${failed.slice(0, 6).join("; ")}${failed.length > 6 ? ` (+${failed.length - 6})` : ""}`
+          : "";
       toast({
         title: failed.length ? "Appliqué avec alertes" : "Appliqué vers SLTT",
-        description: parts.join(" · ") + (failed.length ? ` — ${failed.slice(0, 3).join("; ")}` : ""),
+        description: parts.join(" · ") + failDetail,
         variant: failed.length ? "destructive" : undefined,
       });
     } catch (e) {
