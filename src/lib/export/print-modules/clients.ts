@@ -7,6 +7,7 @@ import {
   buildBrandSubHTML,
   documentFooterHTML,
   platformFooterHTML,
+  acquirePrintTarget,
   triggerPrint,
   warnPopupBlocked,
 } from "../print-document";
@@ -61,10 +62,10 @@ export function printClients(
       <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:${r.totalDu > 0 ? "#b45309" : "#15803d"};vertical-align:middle">${r.totalDu > 0 ? fmtFCFA(r.totalDu) : "Soldé"}</td>
     </tr>`).join("");
 
-  const win = window.open("", "_blank", "width=1060,height=820");
+  const win = acquirePrintTarget();
   if (!win) { warnPopupBlocked(); return; }
-  win.opener = null;
 
+  win.document.open();
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
 <head>

@@ -1,32 +1,18 @@
 import { NextRequest } from "next/server";
 import { authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
 import { normalizePermissions } from "@/lib/permissions";
-import type { UserRole } from "@/lib/domain-types";
-
-const VALID_ROLES: UserRole[] = ["Administrateur", "Agent de transit", "Comptable", "Magasinier"];
+import { createUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 export async function POST(request: NextRequest) {
   try {
     const { admin, isAdmin } = await requireUserManager(request);
-    const body = await request.json();
-    const { nom, email, role, permissions, password } = body as {
-      nom: string;
-      email: string;
-      role: UserRole;
-      permissions: string[];
-      password: string;
-    };
-
-    if (!nom?.trim() || !email?.trim() || !password || password.length < 8) {
-      return Response.json(
-        { error: "Nom, e-mail et mot de passe (8 caractères min.) requis." },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = createUserBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return Response.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
     }
 
-    if (!VALID_ROLES.includes(role)) {
-      return Response.json({ error: "Rôle invalide." }, { status: 400 });
-    }
+    const { nom, email, role, permissions, password } = parsed.data;
 
     if (role === "Administrateur" && !isAdmin) {
       return Response.json(

@@ -7,6 +7,7 @@ import {
   buildBrandSubHTML,
   documentFooterHTML,
   platformFooterHTML,
+  acquirePrintTarget,
   triggerPrint,
   warnPopupBlocked,
 } from "../print-document";
@@ -64,10 +65,10 @@ export function printDevis(data: DevisData, societe?: SocieteBrand | null): void
     </tr>`;
   }).join("");
 
-  const win = window.open("", "_blank", "width=880,height=760");
+  const win = acquirePrintTarget();
   if (!win) { warnPopupBlocked(); return; }
-  win.opener = null;
 
+  win.document.open();
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
 <head>

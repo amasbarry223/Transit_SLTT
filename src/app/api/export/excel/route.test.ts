@@ -9,7 +9,7 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       nom: "Test User",
       email: "test@sltt.ml",
       role: "Agent de transit",
-      permissions: [] as string[],
+      permissions: ["clients:read"] as string[],
       actif: true,
     },
   };
@@ -17,6 +17,7 @@ const { fakeState, resetFake } = vi.hoisted(() => {
     fakeState,
     resetFake: () => {
       fakeState.profile.actif = true;
+      fakeState.profile.permissions = ["clients:read"];
     },
   };
 });
@@ -42,6 +43,13 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 const { POST } = await import("@/app/api/export/excel/route");
+
+async function loadWorkbook(bytes: Uint8Array) {
+  const workbook = new ExcelJS.Workbook();
+  // ExcelJS types Buffer étroitement vs @types/node Buffer générique.
+  await workbook.xlsx.load(Buffer.from(bytes) as unknown as never);
+  return workbook;
+}
 
 function req(body: unknown, withAuth = true) {
   return new NextRequest("http://localhost/api/export/excel", {
@@ -93,8 +101,7 @@ describe("POST /api/export/excel", () => {
     expect(bytes[0]).toBe(0x50);
     expect(bytes[1]).toBe(0x4b);
 
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(bytes);
+    const workbook = await loadWorkbook(bytes);
     const sheet = workbook.getWorksheet("Export");
     expect(sheet?.getCell("A1").value).toBe("Référence");
     expect(sheet?.getCell("A2").value).toBe("D-001");
@@ -111,8 +118,7 @@ describe("POST /api/export/excel", () => {
 
     expect(res.status).toBe(200);
     const bytes = new Uint8Array(await res.arrayBuffer());
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(bytes);
+    const workbook = await loadWorkbook(bytes);
     const sheet = workbook.getWorksheet("Export");
     expect(sheet?.getCell("A2").value).toBe("");
     expect(sheet?.getCell("B2").value).toBe("Oui");
@@ -128,5 +134,17 @@ describe("POST /api/export/excel", () => {
       }),
     );
     expect(res.status).toBe(400);
+  });
+
+  it("rejette sans permission de lecture métier", async () => {
+    fakeState.profile.permissions = [];
+    const res = await POST(
+      req({
+        filename: "interdit",
+        headers: ["Ref"],
+        rows: [["D-001"]],
+      }),
+    );
+    expect(res.status).toBe(403);
   });
 });

@@ -199,3 +199,12 @@ export function parseClasseurType(raw: string): ClasseurType | null {
 export function ecritureClasseurReference(ecritureId: string): string {
   return `ÉCR-${ecritureId.slice(0, 8).toUpperCase()}`;
 }
+
+/** Clé de matching robuste (casse + accents) — évite ECR vs ÉCR. */
+export function normalizeClasseurRef(reference: string): string {
+  return reference
+    .trim()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase();
+}

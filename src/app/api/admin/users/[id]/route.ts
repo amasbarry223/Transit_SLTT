@@ -1,12 +1,10 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
 import { normalizePermissions } from "@/lib/permissions";
-import type { UserRole } from "@/lib/domain-types";
+import { updateUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 type AdminClient = Awaited<ReturnType<typeof requireUserManager>>["admin"];
-
-const VALID_ROLES: UserRole[] = ["Administrateur", "Agent de transit", "Comptable", "Magasinier"];
 
 /** Bloque toute action d'un non-admin sur un compte qui est déjà Administrateur. */
 async function assertCanTouchTarget(admin: AdminClient, targetId: string, isAdmin: boolean) {
@@ -35,24 +33,18 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const { admin, user: adminUser, isAdmin } = await requireUserManager(request);
     const { id } = await context.params;
-    const body = await request.json();
-    const { nom, email, role, permissions, actif } = body as {
-      nom: string;
-      email: string;
-      role: UserRole;
-      permissions: string[];
-      actif?: boolean;
-    };
+    const raw = await request.json();
+    const parsed = updateUserBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return Response.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
+    }
+    const { nom, email, role, permissions, actif } = parsed.data;
 
     if (id === adminUser.id && actif === false) {
       return Response.json(
         { error: "Vous ne pouvez pas désactiver votre propre compte." },
         { status: 400 },
       );
-    }
-
-    if (!VALID_ROLES.includes(role)) {
-      return Response.json({ error: "Rôle invalide." }, { status: 400 });
     }
 
     if (role === "Administrateur" && !isAdmin) {

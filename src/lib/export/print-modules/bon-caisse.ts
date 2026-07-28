@@ -3,6 +3,7 @@
 import { MISSING_SIGNATORY_LABEL, type SocieteLegalInfo } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
+  acquirePrintTarget,
   buildLegalLine,
   resolveLogoUrl,
   triggerPrint,
@@ -140,12 +141,12 @@ table { width: 100%; border-collapse: collapse; }
 /** Ouvre une fenêtre dédiée et déclenche l'impression (compat). Préférer l'aperçu intégré. */
 export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): boolean {
   const html = buildBonSortieCaisseHTML(data);
-  const win = window.open("", "_blank", "width=880,height=760");
+  const win = acquirePrintTarget();
   if (!win) {
     warnPopupBlocked();
     return false;
   }
-  win.opener = null;
+  win.document.open();
   win.document.write(html);
   win.document.close();
   triggerPrint(win);

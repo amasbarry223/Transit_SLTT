@@ -8,6 +8,7 @@ import {
   buildBrandSubHTML,
   documentFooterHTML,
   platformFooterHTML,
+  acquirePrintTarget,
   triggerPrint,
   warnPopupBlocked,
 } from "../print-document";
@@ -62,10 +63,10 @@ export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: So
     </tr>`;
   }).join("");
 
-  const win = window.open("", "_blank", "width=880,height=760");
+  const win = acquirePrintTarget();
   if (!win) { warnPopupBlocked(); return; }
-  win.opener = null;
 
+  win.document.open();
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
 <head>

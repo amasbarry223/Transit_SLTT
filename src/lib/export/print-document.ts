@@ -69,22 +69,56 @@ export function buildBrandSubHTML(brand: SocieteBrand): string {
 }
 
 /**
- * Fenêtre d'impression bloquée par le navigateur (popup). On ne retombe plus
- * sur window.print() de la page en cours : le globals.css qui réservait ça à
- * une #sltt-print-zone dédiée a été retiré (zone plus jamais rendue depuis un
- * précédent refactor), donc ce fallback produisait un document entièrement
- * vide au lieu de la page actuelle. Un message clair vaut mieux qu'un PDF vide.
+ * Impression via iframe cachée (pas de popup → pas de bloqueur navigateur).
+ * Remplace window.open pour tous les modules d'impression SLTT.
+ */
+const PRINT_FRAME_ID = "sltt-print-frame";
+
+export function acquirePrintTarget(): Window | null {
+  if (typeof document === "undefined") return null;
+
+  let iframe = document.getElementById(PRINT_FRAME_ID) as HTMLIFrameElement | null;
+  if (!iframe) {
+    iframe = document.createElement("iframe");
+    iframe.id = PRINT_FRAME_ID;
+    iframe.name = PRINT_FRAME_ID;
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.setAttribute("title", "Impression SLTT");
+    iframe.setAttribute("tabindex", "-1");
+    Object.assign(iframe.style, {
+      position: "fixed",
+      right: "0",
+      bottom: "0",
+      width: "0",
+      height: "0",
+      border: "0",
+      opacity: "0",
+      pointerEvents: "none",
+      visibility: "hidden",
+    });
+    document.body.appendChild(iframe);
+  }
+
+  return iframe.contentWindow;
+}
+
+/**
+ * Ancien message popup — conservé si même l'iframe échoue (contexte sandbox rare).
  */
 export function warnPopupBlocked(): void {
   window.alert(
-    "La fenêtre d'impression a été bloquée par le navigateur. Autorisez les pop-ups pour ce site puis réessayez.",
+    "Impossible d'ouvrir l'aperçu d'impression. Vérifiez que le site n'est pas en mode restreint, puis réessayez.",
   );
 }
 
 /** Attend le chargement des images avant d'ouvrir la boîte d'impression. */
 export function triggerPrint(win: Window, delayMs = PRINT_WINDOW_READY_MS): void {
   const doPrint = () => {
-    win.focus();
+    try {
+      win.focus();
+    } catch {
+      // iframe cross-doc focus peut échouer — print() suffit
+    }
     win.print();
   };
   const imgs = Array.from(win.document.images);
@@ -153,16 +187,14 @@ export function buildPrintDocument({ title, body, brand }: BuildPrintDocumentOpt
 </html>`;
 }
 
-export function openPrintWindow(
-  html: string,
-  windowFeatures = "width=900,height=700",
-): void {
-  const win = window.open("", "_blank", windowFeatures);
+/** Écrit le HTML dans la cible d'impression (iframe) et lance print(). */
+export function openPrintWindow(html: string, _windowFeatures?: string): void {
+  const win = acquirePrintTarget();
   if (!win) {
     warnPopupBlocked();
     return;
   }
-  win.opener = null;
+  win.document.open();
   win.document.write(html);
   win.document.close();
   triggerPrint(win);

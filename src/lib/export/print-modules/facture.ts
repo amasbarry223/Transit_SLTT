@@ -6,7 +6,7 @@ import {
   type SocieteBrand,
 } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
-import { triggerPrint, warnPopupBlocked } from "../print-document";
+import { acquirePrintTarget, triggerPrint, warnPopupBlocked } from "../print-document";
 import { fmtFCFA, shouldShowTva } from "./shared";
 
 /* ------------------------------------------------------------------ */
@@ -55,10 +55,10 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
       <span>Reste à payer</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(reste)}</span>
     </div>` : "";
 
-  const win = window.open("", "_blank", "width=880,height=760");
+  const win = acquirePrintTarget();
   if (!win) { warnPopupBlocked(); return; }
-  win.opener = null;
 
+  win.document.open();
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
 <head>

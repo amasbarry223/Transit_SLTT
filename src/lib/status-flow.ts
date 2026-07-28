@@ -1,4 +1,4 @@
-import type { DevisStatut, FactureStatut } from "@/lib/domain-types";
+import type { ContratStatut, DevisStatut, FactureStatut } from "@/lib/domain-types";
 
 /**
  * Transitions manuelles autorisées pour les devis et les factures.
@@ -21,10 +21,21 @@ export const FACTURE_ALLOWED_TRANSITIONS: Record<FactureStatut, FactureStatut[]>
   Annulée: [],
 };
 
+/** Matrice contrat — alignée sur trigger DB assert_contrat_transition. */
+export const CONTRAT_ALLOWED_TRANSITIONS: Record<ContratStatut, ContratStatut[]> = {
+  Actif: ["Suspendu", "Clôturé"],
+  Suspendu: ["Actif", "Clôturé"],
+  Clôturé: ["Actif"],
+};
+
 export function canTransitionDevis(from: DevisStatut, to: DevisStatut): boolean {
   return DEVIS_ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
 export function canTransitionFacture(from: FactureStatut, to: FactureStatut): boolean {
   return FACTURE_ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+export function canTransitionContrat(from: ContratStatut, to: ContratStatut): boolean {
+  return CONTRAT_ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
 }

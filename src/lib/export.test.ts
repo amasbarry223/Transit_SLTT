@@ -132,7 +132,7 @@ describe("buildXlsxBuffer", () => {
 
     const workbook = new ExcelJS.Workbook();
 
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(Buffer.from(buffer) as never);
 
 
 
@@ -160,7 +160,7 @@ describe("buildXlsxBuffer", () => {
 
     const workbook = new ExcelJS.Workbook();
 
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(Buffer.from(buffer) as never);
 
 
 

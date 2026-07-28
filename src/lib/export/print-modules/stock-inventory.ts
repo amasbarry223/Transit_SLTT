@@ -6,6 +6,7 @@ import {
   brandLogoImgHTML,
   buildBrandSubHTML,
   documentFooterHTML,
+  acquirePrintTarget,
   triggerPrint,
   warnPopupBlocked,
 } from "../print-document";
@@ -115,13 +116,13 @@ export function printStockInventory(
     })
     .join("");
 
-  const win = window.open("", "_blank", "width=1200,height=860");
+  const win = acquirePrintTarget();
   if (!win) {
     warnPopupBlocked();
     return;
   }
-  win.opener = null;
 
+  win.document.open();
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
 <head>

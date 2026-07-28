@@ -13,6 +13,7 @@ import {
   parseClasseurType,
   setGrandLivreReference,
   ecritureClasseurReference,
+  normalizeClasseurRef,
   resolveGrandLivreRowCount,
   type UniverApiLike,
 } from "@/lib/excel/sltt-bridge";
@@ -394,15 +395,25 @@ export function ExcelWorkbookPanel({
         });
       }
       const byRef = new Map(
-        journalEntries.map((e) => [e.reference.toLowerCase(), e]),
+        journalEntries.map((e) => [normalizeClasseurRef(e.reference), e]),
       );
+      /** Idempotence intra-run : même référence Excel traitée une seule fois. */
+      const processedRefs = new Set<string>();
       let applied = 0;
       let created = 0;
       let skipped = 0;
       const failed: string[] = [];
 
       for (const row of rows) {
-        const match = byRef.get(row.reference.toLowerCase());
+        const refKey = normalizeClasseurRef(row.reference);
+        if (refKey) {
+          if (processedRefs.has(refKey)) {
+            skipped++;
+            continue;
+          }
+          processedRefs.add(refKey);
+        }
+        const match = refKey ? byRef.get(refKey) : undefined;
         if (match) {
           try {
             if (match.type === "Dossier") {
@@ -460,6 +471,10 @@ export function ExcelWorkbookPanel({
 
         const type = parseClasseurType(row.type) ?? "Paiement";
         if (type === "Paiement" && (row.debit > 0 || row.credit > 0)) {
+          if (!refKey) {
+            failed.push(`${row.libelle || "ligne"} (référence Excel obligatoire)`);
+            continue;
+          }
           if (!canCompta) {
             failed.push(`${row.reference || row.libelle} (création écriture refusée)`);
             continue;
@@ -476,7 +491,7 @@ export function ExcelWorkbookPanel({
             });
             const canon = ecritureClasseurReference(createdE.id);
             setGrandLivreReference(api, row.sheetRow, canon);
-            byRef.set(canon.toLowerCase(), {
+            byRef.set(normalizeClasseurRef(canon), {
               id: createdE.id,
               sourceId: createdE.id,
               date: createdE.date,

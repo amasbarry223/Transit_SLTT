@@ -174,13 +174,16 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
   },
 
   updateContratStatut: async (id, statut) => {
+    const existing = get().contrats.find((c) => c.id === id);
+    if (!existing) return;
+    const { canTransitionContrat } = await import("@/lib/status-flow");
+    if (!canTransitionContrat(existing.statut, statut)) {
+      throw new Error(`Transition contrat invalide : ${existing.statut} → ${statut}`);
+    }
     const { error } = await supabase.from("contrats").update({ statut }).eq("id", id);
     if (error) throw error;
-    const existing = get().contrats.find((c) => c.id === id);
     set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
-    if (existing) {
-      await get().addAuditLog("Contrats", "Modification", `Contrat ${existing.reference} → ${statut}`);
-    }
+    await get().addAuditLog("Contrats", "Modification", `Contrat ${existing.reference} → ${statut}`);
   },
 
   removeContrat: async (id) => {

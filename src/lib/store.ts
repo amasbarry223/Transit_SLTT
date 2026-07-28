@@ -66,23 +66,38 @@ import {
   mapDevisFromDb,
   type DevisSlice,
 } from "@/lib/store/devis-slice";
+import {
+  createFacturesSlice,
+  mapFactureFromDb,
+  type FacturesSlice,
+} from "@/lib/store/factures-slice";
+import {
+  createStockSlice,
+  mapMouvementFromDb,
+  mapStockItemFromDb,
+  type StockSlice,
+} from "@/lib/store/stock-slice";
+import {
+  createBonsSlice,
+  mapBonFromDb,
+  mapBonSortieCaisseFromDb,
+  type BonsSlice,
+} from "@/lib/store/bons-slice";
 import { syncDossierPayeFromEcritures } from "@/lib/store/sync-helpers";
+import {
+  FETCH_SOFT_CAPS,
+  fetchAllPaged,
+  pagedSelect,
+} from "@/lib/store/fetch-pages";
 import type {
   EcritureRow,
-  StockItemRow,
-  MouvementRow,
-  BonSortieRow,
-  BonSortieCaisseRow,
   SubDossierRow,
   DossierFichierRow,
-  FactureRow,
   ProfilePublicRow,
 } from "@/lib/db-rows";
 import { DEFAULT_PAIEMENT_MODE } from "@/lib/constants";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncContratStats } from "@/lib/contrat-stats";
-import { computeIncrementalPaye, validatePaymentAmount } from "@/lib/payments";
-import { canTransitionFacture } from "@/lib/status-flow";
 import {
   insertAuditLog,
   mapAuditLogFromDb,
@@ -93,7 +108,6 @@ import {
 } from "@/lib/audit";
 import {
   PRESTATION_OPTIONNELLE_LABEL,
-  resteAPayer,
   type Client,
   type Dossier,
   type DossierStatut,
@@ -315,80 +329,6 @@ function mapEcritureFromDb(x: EcritureRow): Ecriture {
   };
 }
 
-function mapStockItemFromDb(x: StockItemRow): StockItem {
-  return {
-    id: x.id,
-    clientId: x.client_id || undefined,
-    clientNom: x.clients?.nom || undefined,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    marchandise: x.marchandise,
-    quantite: Number(x.quantite),
-    unite: x.unite,
-    seuil: Number(x.seuil),
-    depositaire: x.depositaire,
-    commercial: x.commercial,
-    sommePayee: Number(x.somme_payee),
-    resteAPayer: Number(x.reste_a_payer),
-  };
-}
-
-function mapMouvementFromDb(x: MouvementRow): Mouvement {
-  return {
-    id: x.id,
-    stockId: x.stock_id || undefined,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    date: x.date,
-    type: x.type,
-    marchandise: x.marchandise || "",
-    quantite: Number(x.quantite),
-    unite: x.unite || "",
-    responsable: x.responsable || "",
-    bonRef: x.bon_ref || undefined,
-    motif: x.motif || undefined,
-  };
-}
-
-function mapBonFromDb(x: BonSortieRow): BonSortie {
-  return {
-    id: x.id,
-    reference: x.reference,
-    date: x.date,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || x.client_nom || "",
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    stockId: x.stock_id || undefined,
-    marchandise: x.marchandise,
-    quantite: Number(x.quantite),
-    unite: x.unite,
-    motif: x.motif,
-    montant: Number(x.montant),
-    statut: x.statut,
-  };
-}
-
-function mapBonSortieCaisseFromDb(x: BonSortieCaisseRow): BonSortieCaisse {
-  return {
-    id: x.id,
-    reference: x.reference,
-    date: x.date,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    montantTotal: Number(x.montant_total),
-    creePar: x.cree_par || undefined,
-    creeLe: x.created_at,
-    lignes: (x.bons_sortie_caisse_lignes || []).map((l) => ({
-      id: l.id,
-      date: l.date,
-      beneficiaire: l.beneficiaire,
-      motif: l.motif,
-      montant: Number(l.montant),
-    })),
-  };
-}
-
 function mapSubDossierFromDb(x: SubDossierRow): SubDossier {
   return {
     id: x.id,
@@ -410,45 +350,6 @@ function mapFichierFromDb(x: DossierFichierRow): DossierFichier {
     dateUpload: x.date_upload || new Date().toISOString(),
     dataUrl: x.data_url,
   };
-}
-
-function mapFactureFromDb(x: FactureRow): Facture {
-  return {
-    id: x.id,
-    numero: x.numero,
-    dossierId: x.dossier_id,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    societeId: x.societe_id || undefined,
-    societeNom: x.societes?.nom || undefined,
-    date: x.date,
-    dateEcheance: x.date_echeance,
-    statut: x.statut,
-    tauxTVA: Number(x.taux_tva),
-    montantHT: Number(x.montant_ht),
-    montantTVA: Number(x.montant_tva),
-    montantTTC: Number(x.montant_ttc),
-    montantPaye: Number(x.montant_paye),
-    notes: x.notes,
-    creePar: x.cree_par,
-    creeLe: x.cree_le ?? x.created_at,
-    lignes: (x.facture_lignes || []).map((l) => ({
-      id: l.id,
-      description: l.description,
-      quantite: Number(l.quantite),
-      prixUnitaire: Number(l.prix_unitaire),
-      montantHT: Number(l.montant_ht),
-    })),
-  };
-}
-
-/* ------------------------------------------------------------------ */
-/* HELPERS                                                             */
-/* ------------------------------------------------------------------ */
-
-function findStockForBon(stock: StockItem[], ref: { stockId?: string; marchandise: string }): StockItem | undefined {
-  if (ref.stockId) return stock.find((s) => s.id === ref.stockId);
-  return stock.find((s) => s.marchandise === ref.marchandise);
 }
 
 type SequenceCounters = Pick<
@@ -524,39 +425,29 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
   };
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice {
   // Data
   ecritures: Ecriture[];
-  stock: StockItem[];
-  mouvements: Mouvement[];
-  bons: BonSortie[];
   subDossiers: SubDossier[];
   fichiers: DossierFichier[];
   auditLogs: AuditEntry[];
-  factures: Facture[];
-  bonsSortieCaisse: BonSortieCaisse[];
 
   // Counters for local reference fallback
   dossierSeq: number;
-  bonSeq: number;
   auditSeq: number;
   ecritureSeq: number;
   clientSeq: number;
-  stockSeq: number;
   userSeq: number;
-  mouvementSeq: number;
   subDossierSeq: number;
   fichierSeq: number;
   devisSeq: number;
   transporteurSeq: number;
-  factureSeq: number;
   fournisseurSeq: number;
   dossierFournisseurSeq: number;
   contratSeq: number;
   contratFichierSeq: number;
   depenseSeq: number;
   contratPrestationSeq: number;
-  bonSortieCaisseSeq: number;
 
   // Supabase sync
   dataLoading: boolean;
@@ -596,18 +487,6 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Document
     id: string,
     patch: { montantInvesti?: number; montantPaye?: number; nature?: string; bl?: string },
   ) => Promise<void>;
-  /** Fixe le montant payé d'une facture (classeur — crédit). */
-  patchFactureMontantPaye: (id: string, montantPaye: number) => Promise<void>;
-
-  // ---- Stock ----
-  addStockItem: (input: StockItemInput) => Promise<StockItem>;
-  addStockEntry: (stockId: string, quantite: number, responsable: string) => Promise<void>;
-  addStockExit: (stockId: string, quantite: number, responsable: string, bonRef?: string, motif?: string) => Promise<void>;
-
-  // ---- Bons de sortie ----
-  addBon: (input: BonInput) => Promise<BonSortie>;
-  validateBon: (id: string) => Promise<boolean>;
-
   // ---- Sous-dossiers ----
   addSubDossier: (input: SubDossierInput) => Promise<SubDossier>;
   updateSubDossier: (id: string, nom: string, description?: string) => Promise<void>;
@@ -618,45 +497,25 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Document
   deleteFichier: (id: string) => Promise<void>;
   deleteFichiersByDossier: (dossierId: string) => Promise<void>;
 
-  // ---- Factures ----
-  addFacture: (input: FactureInput) => Promise<Facture>;
-  updateFacture: (id: string, input: FactureInput) => Promise<void>;
-  removeFacture: (id: string) => Promise<void>;
-  updateFactureStatut: (id: string, statut: FactureStatut) => Promise<void>;
-  recordFacturePaiement: (id: string, montant: number) => Promise<void>;
-
-  // ---- Bons de sortie de caisse (décaissement) ----
-  addBonSortieCaisse: (input: BonSortieCaisseInput) => Promise<BonSortieCaisse>;
-  removeBonSortieCaisse: (id: string) => Promise<void>;
-
   refetchData: () => Promise<void>;
-}
-
-function pad(n: number, len: number): string {
-  return String(n).padStart(len, "0");
 }
 
 const INITIAL_SEQUENCES = {
   dossierSeq: 1,
-  bonSeq: 1,
   auditSeq: 1,
   ecritureSeq: 1,
   clientSeq: 1,
-  stockSeq: 1,
   userSeq: 1,
-  mouvementSeq: 1,
   subDossierSeq: 1,
   fichierSeq: 1,
   devisSeq: 1,
   transporteurSeq: 1,
-  factureSeq: 1,
   fournisseurSeq: 1,
   dossierFournisseurSeq: 1,
   contratSeq: 1,
   contratFichierSeq: 1,
   depenseSeq: 1,
   contratPrestationSeq: 1,
-  bonSortieCaisseSeq: 1,
 } as const;
 
 export const useStore = create<SLTTState>()(
@@ -674,14 +533,12 @@ export const useStore = create<SLTTState>()(
       ...createFournisseursSlice(set, get, api),
       ...createContratsSlice(set, get, api),
       ...createDevisSlice(set, get, api),
+      ...createFacturesSlice(set, get, api),
+      ...createStockSlice(set, get, api),
+      ...createBonsSlice(set, get, api),
       ecritures: [],
-      stock: [],
-      mouvements: [],
-      bons: [],
       subDossiers: [],
       fichiers: [],
-      factures: [],
-      bonsSortieCaisse: [],
       auditLogs: [],
       dataLoading: false,
       loadError: null,
@@ -708,25 +565,42 @@ export const useStore = create<SLTTState>()(
           }
 
           const coreResults = await Promise.all([
-            supabase.from("clients").select("*"),
-            supabase.from("dossiers").select("*, clients(nom), societes(nom)"),
-            supabase.from("ecritures").select("*, clients(nom), societes(nom)"),
-            supabase.from("factures").select("*, facture_lignes(*), clients(nom), societes(nom)"),
-            supabase.from("profiles").select("*"),
-            supabase.from("societes").select("*"),
+            fetchAllPaged(() => pagedSelect(supabase, "clients", "*"), { softCap: 2_000 }),
+            fetchAllPaged(
+              () => pagedSelect(supabase, "dossiers", "*, clients(nom), societes(nom)"),
+              { softCap: 2_000 },
+            ),
+            fetchAllPaged(
+              () => pagedSelect(supabase, "ecritures", "*, clients(nom), societes(nom)"),
+              { softCap: 2_000 },
+            ),
+            fetchAllPaged(
+              () =>
+                pagedSelect(
+                  supabase,
+                  "factures",
+                  "*, facture_lignes(*), clients(nom), societes(nom)",
+                ),
+              { softCap: 2_000 },
+            ),
+            fetchAllPaged(() => pagedSelect(supabase, "profiles", "*"), { softCap: 500 }),
+            fetchAllPaged(() => pagedSelect(supabase, "societes", "*"), { softCap: 100 }),
           ]);
 
           const coreError = coreResults.find((r) => r.error)?.error;
           if (coreError) throw coreError;
 
           const [
-            { data: clients },
-            { data: dossiers },
-            { data: ecritures },
-            { data: factures },
+            { data: clients, truncated: truncClients },
+            { data: dossiers, truncated: truncDossiers },
+            { data: ecritures, truncated: truncEcritures },
+            { data: factures, truncated: truncFactures },
             { data: profiles },
             { data: societes },
           ] = coreResults;
+
+          const coreTruncated =
+            truncClients || truncDossiers || truncEcritures || truncFactures;
 
           // Vue optionnelle (migration 20260722) — tant qu'elle n'est pas encore
           // appliquée en base, on dégrade sur users (ou liste vide) plutôt que
@@ -740,10 +614,10 @@ export const useStore = create<SLTTState>()(
             profilesPublic = null;
           }
 
-          const mappedClients = (clients || []).map(mapClientFromDb);
-          const mappedDossiers = (dossiers || []).map(mapDossierFromDb);
-          const mappedFactures = (factures || []).map(mapFactureFromDb);
-          const mappedEcritures = (ecritures || []).map(mapEcritureFromDb);
+          const mappedClients = (clients as any[]).map(mapClientFromDb);
+          const mappedDossiers = (dossiers as any[]).map(mapDossierFromDb);
+          const mappedFactures = (factures as any[]).map(mapFactureFromDb);
+          const mappedEcritures = (ecritures as any[]).map(mapEcritureFromDb);
 
           set((s) => {
             const nextState = {
@@ -752,9 +626,9 @@ export const useStore = create<SLTTState>()(
               dossiers: mappedDossiers,
               ecritures: mappedEcritures,
               factures: mappedFactures,
-              users: (profiles || []).map(mapProfileFromDb),
+              users: (profiles as any[]).map(mapProfileFromDb),
               usersPublic: (
-                profilesPublic ?? (profiles || [])
+                profilesPublic ?? (profiles as any[])
               ).map((x: ProfilePublicRow) => ({
                 id: x.id,
                 nom: x.nom,
@@ -762,7 +636,7 @@ export const useStore = create<SLTTState>()(
                 actif: x.actif,
                 derniereConnexion: x.derniere_connexion || "",
               })),
-              societes: (societes || []).map(mapSocieteFromDb),
+              societes: (societes as any[]).map(mapSocieteFromDb),
               loadError: null,
               dataLoading: false,
             };
@@ -772,100 +646,305 @@ export const useStore = create<SLTTState>()(
             };
           });
 
-          const secondaryResults = await Promise.all([
-            supabase.from("stock_items").select("*, clients(nom), societes(nom)"),
-            supabase.from("mouvements").select("*, societes(nom)"),
-            supabase.from("bons_sortie").select("*, clients(nom), societes(nom)"),
-            supabase.from("sub_dossiers").select("*"),
-            supabase.from("dossier_fichiers").select("*"),
-            supabase.from("devis").select("*, clients(nom)"),
-            supabase.from("transporteurs").select("*"),
-            supabase.from("fournisseurs").select("*"),
-            supabase.from("dossier_fournisseurs").select("*, fournisseurs(nom, type), dossiers(reference)"),
-            supabase.from("contrats").select("*, clients(nom), societes(nom)"),
-            supabase.from("contrat_fichiers").select("*"),
-            supabase.from("depenses").select("*"),
-            supabase.from("contrat_prestations").select("*"),
-            supabase.from("bons_sortie_caisse").select("*, bons_sortie_caisse_lignes(*), societes(nom)"),
-            supabase.from("audit_logs").select("*").order("date", { ascending: false }),
-            supabase.from("archives").select("*"),
-            supabase.from("documents").select("*").order("created_at", { ascending: false }),
-            supabase.from("document_versions").select("*").order("created_at", { ascending: false }),
-            supabase.from("ocr_jobs").select("*").order("created_at", { ascending: false }),
-            supabase.from("ocr_fields").select("*"),
-          ]);
+          const secondarySpecs = [
+            {
+              key: "stock",
+              q: () =>
+                fetchAllPaged(
+                  () => pagedSelect(supabase, "stock_items", "*, clients(nom), societes(nom)"),
+                  { softCap: 2_000 },
+                ),
+            },
+            {
+              key: "mouvements",
+              q: () =>
+                fetchAllPaged(
+                  () =>
+                    pagedSelect(supabase, "mouvements", "*, societes(nom)", {
+                      column: "date",
+                      ascending: false,
+                    }),
+                  { softCap: FETCH_SOFT_CAPS.mouvements },
+                ),
+            },
+            {
+              key: "bons",
+              q: () =>
+                fetchAllPaged(
+                  () => pagedSelect(supabase, "bons_sortie", "*, clients(nom), societes(nom)"),
+                  { softCap: 2_000 },
+                ),
+            },
+            {
+              key: "subDossiers",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "sub_dossiers", "*"), { softCap: 2_000 }),
+            },
+            {
+              key: "fichiers",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "dossier_fichiers", "*"), {
+                  softCap: 2_000,
+                }),
+            },
+            {
+              key: "devis",
+              q: () =>
+                fetchAllPaged(
+                  () => pagedSelect(supabase, "devis", "*, clients(nom)"),
+                  { softCap: 2_000 },
+                ),
+            },
+            {
+              key: "transporteurs",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "transporteurs", "*"), { softCap: 1_000 }),
+            },
+            {
+              key: "fournisseurs",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "fournisseurs", "*"), { softCap: 2_000 }),
+            },
+            {
+              key: "dossierFournisseurs",
+              q: () =>
+                fetchAllPaged(
+                  () =>
+                    pagedSelect(
+                      supabase,
+                      "dossier_fournisseurs",
+                      "*, fournisseurs(nom, type), dossiers(reference)",
+                    ),
+                  { softCap: 2_000 },
+                ),
+            },
+            {
+              key: "contrats",
+              q: () =>
+                fetchAllPaged(
+                  () => pagedSelect(supabase, "contrats", "*, clients(nom), societes(nom)"),
+                  { softCap: 2_000 },
+                ),
+            },
+            {
+              key: "contratFichiers",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "contrat_fichiers", "*"), {
+                  softCap: 2_000,
+                }),
+            },
+            {
+              key: "depenses",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "depenses", "*"), { softCap: 2_000 }),
+            },
+            {
+              key: "contratPrestations",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "contrat_prestations", "*"), {
+                  softCap: 2_000,
+                }),
+            },
+            {
+              key: "bonsSortieCaisse",
+              q: () =>
+                fetchAllPaged(
+                  () =>
+                    pagedSelect(
+                      supabase,
+                      "bons_sortie_caisse",
+                      "*, bons_sortie_caisse_lignes(*), societes(nom)",
+                    ),
+                  { softCap: 2_000 },
+                ),
+            },
+            {
+              key: "auditLogs",
+              q: () =>
+                fetchAllPaged(
+                  () =>
+                    pagedSelect(supabase, "audit_logs", "*", {
+                      column: "date",
+                      ascending: false,
+                    }),
+                  { softCap: FETCH_SOFT_CAPS.audit_logs },
+                ),
+            },
+            {
+              key: "archives",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "archives", "*"), { softCap: 1_000 }),
+            },
+            {
+              key: "documents",
+              q: () =>
+                fetchAllPaged(
+                  () =>
+                    pagedSelect(supabase, "documents", "*", {
+                      column: "created_at",
+                      ascending: false,
+                    }),
+                  { softCap: FETCH_SOFT_CAPS.documents },
+                ),
+            },
+            {
+              key: "documentVersions",
+              q: () =>
+                fetchAllPaged(
+                  () =>
+                    pagedSelect(supabase, "document_versions", "*", {
+                      column: "created_at",
+                      ascending: false,
+                    }),
+                  { softCap: FETCH_SOFT_CAPS.document_versions },
+                ),
+            },
+            {
+              key: "ocrJobs",
+              q: () =>
+                fetchAllPaged(
+                  () =>
+                    pagedSelect(supabase, "ocr_jobs", "*", {
+                      column: "created_at",
+                      ascending: false,
+                    }),
+                  { softCap: FETCH_SOFT_CAPS.ocr_jobs },
+                ),
+            },
+            {
+              key: "ocrFields",
+              q: () =>
+                fetchAllPaged(() => pagedSelect(supabase, "ocr_fields", "*"), {
+                  softCap: FETCH_SOFT_CAPS.ocr_fields,
+                }),
+            },
+          ] as const;
 
-          const secondaryError = secondaryResults.find((r) => r.error)?.error;
-          if (secondaryError) {
-            console.warn("[SLTT] Chargement secondaire partiel:", secondaryError);
+          const secondaryResults = await Promise.all(
+            secondarySpecs.map(async (spec) => {
+              try {
+                const res = await spec.q();
+                return {
+                  key: spec.key,
+                  data: res.data,
+                  error: res.error,
+                  truncated: res.truncated,
+                };
+              } catch (e) {
+                return {
+                  key: spec.key,
+                  data: null,
+                  error: e instanceof Error ? e : { message: String(e) },
+                  truncated: false,
+                };
+              }
+            }),
+          );
+
+          const failed = secondaryResults.filter((r) => r.error);
+          const anyTruncated =
+            coreTruncated || secondaryResults.some((r) => r.truncated && !r.error);
+          if (failed.length > 0) {
+            console.warn(
+              "[SLTT] Chargement secondaire partiel:",
+              failed.map((f) => `${f.key}: ${f.error?.message || f.error}`),
+            );
             set({
               partialLoadWarning:
-                "Certaines données (stock, bons, devis, contrats, archives…) n'ont pas pu être chargées. Elles peuvent être incomplètes ou obsolètes.",
+                "Certaines données n'ont pas pu être rechargées ; l'affichage conserve le cache précédent pour ces modules.",
             });
+          } else if (anyTruncated) {
+            set({
+              partialLoadWarning:
+                "Volume important : certaines listes sont plafonnées côté client. Affinez les filtres ou archivez les anciens enregistrements.",
+            });
+          } else {
+            set({ partialLoadWarning: null });
           }
 
-          const [
-            { data: stock },
-            { data: mouvements },
-            { data: bons },
-            { data: subDossiers },
-            { data: fichiers },
-            { data: devis },
-            { data: transporteurs },
-            { data: fournisseurs },
-            { data: dossierFournisseurs },
-            { data: contrats },
-            { data: contratFichiers },
-            { data: depenses },
-            { data: contratPrestations },
-            { data: bonsSortieCaisse },
-            { data: auditLogs },
-            { data: archives },
-            { data: documents },
-            { data: documentVersions },
-            { data: ocrJobs },
-            { data: ocrFields },
-          ] = secondaryResults;
+          const byKey = Object.fromEntries(
+            secondaryResults.map((r) => [r.key, r]),
+          ) as unknown as Record<
+            (typeof secondarySpecs)[number]["key"],
+            { key: string; data: unknown[] | null; error: unknown }
+          >;
 
-          const mappedFournisseurs = (fournisseurs || []).map(mapFournisseurFromDb);
-          const mappedDossierFournisseurs = (dossierFournisseurs || []).map(mapDossierFournisseurFromDb);
-          const mappedDepenses = (depenses || []).map(mapDepenseFromDb);
-          const mappedPrestations = (contratPrestations || []).map(mapContratPrestationFromDb);
-          const mappedContratsRaw = (contrats || []).map(mapContratFromDb);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ok = <T,>(key: (typeof secondarySpecs)[number]["key"], map: (rows: any[]) => T, fallback: T): T => {
+            const r = byKey[key];
+            if (r?.error || r?.data == null) return fallback;
+            return map(r.data);
+          };
 
           set((s) => {
+            const mappedFournisseurs = ok(
+              "fournisseurs",
+              (rows) => rows.map(mapFournisseurFromDb),
+              s.fournisseurs,
+            );
+            const mappedDossierFournisseurs = ok(
+              "dossierFournisseurs",
+              (rows) => rows.map(mapDossierFournisseurFromDb),
+              s.dossierFournisseurs,
+            );
+            const mappedDepenses = ok("depenses", (rows) => rows.map(mapDepenseFromDb), s.depenses);
+            const mappedPrestations = ok(
+              "contratPrestations",
+              (rows) => rows.map(mapContratPrestationFromDb),
+              s.contratPrestations,
+            );
+            const mappedContratsRaw = ok("contrats", (rows) => rows.map(mapContratFromDb), s.contrats);
+
+            const ocrFieldsRows = ok("ocrFields", (rows) => rows, null as unknown[] | null);
+            const ocrJobsRows = ok("ocrJobs", (rows) => rows, null as unknown[] | null);
+
+            let nextOcrJobs = s.ocrJobs;
+            if (ocrJobsRows && ocrFieldsRows) {
+              const fieldsByJob = new Map<string, ReturnType<typeof mapOcrFieldFromDb>[]>();
+              for (const raw of ocrFieldsRows) {
+                const f = mapOcrFieldFromDb(raw);
+                const list = fieldsByJob.get(f.ocrJobId) || [];
+                list.push(f);
+                fieldsByJob.set(f.ocrJobId, list);
+              }
+              nextOcrJobs = ocrJobsRows.map((j) =>
+                mapOcrJobFromDb(j, fieldsByJob.get((j as { id: string }).id) || []),
+              );
+            }
+
             const nextState = {
               ...s,
-              stock: (stock || []).map(mapStockItemFromDb),
-              mouvements: (mouvements || []).map(mapMouvementFromDb),
-              bons: (bons || []).map(mapBonFromDb),
-              subDossiers: (subDossiers || []).map(mapSubDossierFromDb),
-              fichiers: (fichiers || []).map(mapFichierFromDb),
-              devis: (devis || []).map(mapDevisFromDb),
-              transporteurs: (transporteurs || []).map(mapTransporteurFromDb),
-              fournisseurs: syncFournisseurStats(mappedDossierFournisseurs, mappedFournisseurs),
+              stock: ok("stock", (rows) => rows.map(mapStockItemFromDb), s.stock),
+              mouvements: ok("mouvements", (rows) => rows.map(mapMouvementFromDb), s.mouvements),
+              bons: ok("bons", (rows) => rows.map(mapBonFromDb), s.bons),
+              subDossiers: ok("subDossiers", (rows) => rows.map(mapSubDossierFromDb), s.subDossiers),
+              fichiers: ok("fichiers", (rows) => rows.map(mapFichierFromDb), s.fichiers),
+              devis: ok("devis", (rows) => rows.map(mapDevisFromDb), s.devis),
+              transporteurs: ok("transporteurs", (rows) => rows.map(mapTransporteurFromDb), s.transporteurs),
+              fournisseurs: byKey.fournisseurs?.error
+                ? s.fournisseurs
+                : syncFournisseurStats(mappedDossierFournisseurs, mappedFournisseurs),
               dossierFournisseurs: mappedDossierFournisseurs,
-              contrats: syncContratStats(mappedDepenses, mappedPrestations, mappedContratsRaw),
-              contratFichiers: (contratFichiers || []).map(mapContratFichierFromDb),
+              contrats: byKey.contrats?.error
+                ? s.contrats
+                : syncContratStats(mappedDepenses, mappedPrestations, mappedContratsRaw),
+              contratFichiers: ok("contratFichiers", (rows) => rows.map(mapContratFichierFromDb), s.contratFichiers),
               depenses: mappedDepenses,
               contratPrestations: mappedPrestations,
-              bonsSortieCaisse: (bonsSortieCaisse || []).map(mapBonSortieCaisseFromDb),
-              auditLogs: (auditLogs || []).map(mapAuditLogFromDb),
-              archives: (archives || []).map(mapArchiveFromDb),
-              documents: (documents || []).map(mapDocumentFromDb),
-              documentVersions: (documentVersions || []).map(mapDocumentVersionFromDb),
-              ocrJobs: (() => {
-                const fieldsByJob = new Map<string, ReturnType<typeof mapOcrFieldFromDb>[]>();
-                for (const raw of ocrFields || []) {
-                  const f = mapOcrFieldFromDb(raw);
-                  const list = fieldsByJob.get(f.ocrJobId) || [];
-                  list.push(f);
-                  fieldsByJob.set(f.ocrJobId, list);
-                }
-                return (ocrJobs || []).map((j) =>
-                  mapOcrJobFromDb(j, fieldsByJob.get(j.id) || []),
-                );
-              })(),
+              bonsSortieCaisse: ok(
+                "bonsSortieCaisse",
+                (rows) => rows.map(mapBonSortieCaisseFromDb),
+                s.bonsSortieCaisse,
+              ),
+              auditLogs: ok("auditLogs", (rows) => rows.map(mapAuditLogFromDb), s.auditLogs),
+              archives: ok("archives", (rows) => rows.map(mapArchiveFromDb), s.archives),
+              documents: ok("documents", (rows) => rows.map(mapDocumentFromDb), s.documents),
+              documentVersions: ok(
+                "documentVersions",
+                (rows) => rows.map(mapDocumentVersionFromDb),
+                s.documentVersions,
+              ),
+              ocrJobs: nextOcrJobs,
               clients: syncClientStats(s.dossiers, s.factures, s.ecritures, s.clients),
               lastSyncedAt: Date.now(),
             };
@@ -904,66 +983,44 @@ export const useStore = create<SLTTState>()(
       recordPayment: async (ecritureId, montant, mode, date, note) => {
         const ecriture = get().ecritures.find((e) => e.id === ecritureId);
         if (!ecriture) return;
-        const newMontantPaye = Math.min(ecriture.montantInvesti, Math.max(0, ecriture.montantPaye + montant));
 
-        const { error: ecritureError } = await supabase
-          .from("ecritures")
-          .update({
-            montant_paye: newMontantPaye,
-            mode_paiement: mode,
-            date_paiement: date,
-            note: note,
-          })
-          .eq("id", ecritureId);
-        if (ecritureError) throw ecritureError;
-
-        const updatedEcrituresPreview = get().ecritures.map((e) =>
-          e.id === ecritureId
-            ? {
-                ...e,
-                montantPaye: newMontantPaye,
-                modePaiement: mode,
-                datePaiement: date,
-                note: note || e.note,
-              }
-            : e,
-        );
-
-        let syncedMontantPaye: number | undefined;
-        if (ecriture.dossierId) {
-          const dossier = get().dossiers.find((d) => d.id === ecriture.dossierId);
-          if (dossier) {
-            syncedMontantPaye = await syncDossierPayeFromEcritures(
-              ecriture.dossierId,
-              updatedEcrituresPreview,
-              dossier,
-            );
-          }
-        }
+        const { data, error } = await supabase.rpc("record_ecriture_paiement", {
+          p_ecriture_id: ecritureId,
+          p_montant: montant,
+          p_mode: mode,
+          p_date: date,
+          p_note: note || null,
+        });
+        if (error) throw error;
+        const row = data as {
+          montant_paye: number;
+          mode_paiement: string;
+          date_paiement: string;
+          note: string | null;
+          dossier_id: string | null;
+        };
 
         set((s) => {
           const updatedEcritures = s.ecritures.map((e) =>
             e.id === ecritureId
               ? {
                   ...e,
-                  montantPaye: newMontantPaye,
-                  modePaiement: mode,
-                  datePaiement: date,
-                  note: note || e.note,
+                  montantPaye: Number(row.montant_paye),
+                  modePaiement: (row.mode_paiement || mode) as typeof e.modePaiement,
+                  datePaiement: row.date_paiement || date,
+                  note: row.note || note || e.note,
                 }
               : e,
           );
-          if (!ecriture.dossierId) {
-            return {
-              ecritures: updatedEcritures,
-              clients: syncClientStats(s.dossiers, s.factures, updatedEcritures, s.clients),
-            };
+          let updatedDossiers = s.dossiers;
+          if (row.dossier_id) {
+            const sumPaye = updatedEcritures
+              .filter((e) => e.dossierId === row.dossier_id)
+              .reduce((acc, e) => acc + e.montantPaye, 0);
+            updatedDossiers = s.dossiers.map((d) =>
+              d.id === row.dossier_id ? { ...d, montantPaye: sumPaye } : d,
+            );
           }
-          const updatedDossiers = s.dossiers.map((d) =>
-            d.id === ecriture.dossierId
-              ? { ...d, montantPaye: syncedMontantPaye ?? d.montantPaye }
-              : d,
-          );
           return {
             ecritures: updatedEcritures,
             dossiers: updatedDossiers,
@@ -1124,231 +1181,6 @@ export const useStore = create<SLTTState>()(
         );
       },
 
-      patchFactureMontantPaye: async (id, montantPaye) => {
-        const fact = get().factures.find((f) => f.id === id);
-        if (!fact) throw new Error("Facture introuvable");
-        if (fact.statut === "Annulée" || fact.statut === "Brouillon") {
-          throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
-        }
-        const paye = Math.max(0, Math.min(fact.montantTTC, montantPaye));
-        const newStatut: FactureStatut =
-          paye >= fact.montantTTC ? "Soldée" : paye > 0 ? "Partielle" : fact.statut === "Soldée" ? "Envoyée" : fact.statut;
-
-        const { error } = await supabase
-          .from("factures")
-          .update({ montant_paye: paye, statut: newStatut })
-          .eq("id", id);
-        if (error) throw error;
-
-        set((s) => {
-          const updatedFactures = s.factures.map((f) =>
-            f.id === id ? { ...f, montantPaye: paye, statut: newStatut } : f,
-          );
-          return {
-            factures: updatedFactures,
-            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-          };
-        });
-
-        await get().addAuditLog(
-          "Factures",
-          "Modification",
-          `Paiement facture ${fact.numero} ajusté (classeur) → ${paye.toLocaleString("fr-FR")} FCFA`,
-          fact.clientId,
-          { sourceType: "facture", sourceId: id },
-        );
-      },
-
-      // ---- Stock ----
-      addStockItem: async (input) => {
-        const seq = get().stockSeq;
-
-        
-        const { data, error } = await supabase
-          .from("stock_items")
-          .insert({
-            marchandise: input.marchandise,
-            quantite: input.quantite,
-            unite: input.unite,
-            seuil: input.seuil,
-            depositaire: input.depositaire,
-            commercial: input.commercial,
-            somme_payee: input.sommePayee,
-            reste_a_payer: input.resteAPayer,
-            client_id: input.clientId || null,
-            societe_id: input.societeId,
-          })
-          .select("*, clients(nom), societes(nom)")
-          .single();
-
-        if (error) throw error;
-        const newItem = mapStockItemFromDb(data);
-        set((s) => ({
-          stock: [newItem, ...s.stock],
-          stockSeq: seq + 1,
-        }));
-        await get().addAuditLog("Stock", "Création", `Article de stock créé : ${input.marchandise}`);
-        return newItem;
-
-      },
-
-      addStockEntry: async (stockId, quantite, responsable) => {
-        const stockItem = get().stock.find((s) => s.id === stockId);
-        if (!stockItem) return;
-
-        const newQty = stockItem.quantite + quantite;
-
-        const { error: stockErr } = await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
-        if (stockErr) throw stockErr;
-        const { error: mvtErr } = await supabase.from("mouvements").insert({
-          stock_id: stockId,
-          societe_id: stockItem.societeId,
-          type: "Entrée",
-          quantite,
-          date: new Date().toISOString(),
-          responsable,
-          marchandise: stockItem.marchandise,
-          unite: stockItem.unite,
-          bon_ref: null,
-        });
-        if (mvtErr) throw mvtErr;
-
-        const seq = get().mouvementSeq;
-        const newMouvement: Mouvement = {
-          id: `M-${seq}`,
-          societeId: stockItem.societeId,
-          societeNom: stockItem.societeNom,
-          date: new Date().toISOString(),
-          type: "Entrée",
-          marchandise: stockItem.marchandise,
-          quantite,
-          unite: stockItem.unite,
-          responsable,
-        };
-
-        set((s) => ({
-          stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
-          mouvements: [newMouvement, ...s.mouvements],
-          mouvementSeq: seq + 1,
-        }));
-        await get().addAuditLog("Stock", "Modification", `Entrée de stock : +${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`);
-      },
-
-      addStockExit: async (stockId, quantite, responsable, bonRef, motif) => {
-        const stockItem = get().stock.find((s) => s.id === stockId);
-        if (!stockItem) return;
-
-        if (quantite > stockItem.quantite) {
-          throw new Error("Quantité supérieure au stock disponible.");
-        }
-        const newQty = stockItem.quantite - quantite;
-
-        const { error: stockErr } = await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
-        if (stockErr) throw stockErr;
-        const { error: mvtErr } = await supabase.from("mouvements").insert({
-          stock_id: stockId,
-          societe_id: stockItem.societeId,
-          type: "Sortie",
-          quantite,
-          date: new Date().toISOString(),
-          responsable,
-          marchandise: stockItem.marchandise,
-          unite: stockItem.unite,
-          bon_ref: bonRef || null,
-          motif: motif || null,
-        });
-        if (mvtErr) throw mvtErr;
-
-        const seq = get().mouvementSeq;
-        const newMouvement: Mouvement = {
-          id: `M-${seq}`,
-          societeId: stockItem.societeId,
-          societeNom: stockItem.societeNom,
-          date: new Date().toISOString(),
-          type: "Sortie",
-          marchandise: stockItem.marchandise,
-          quantite,
-          unite: stockItem.unite,
-          responsable,
-          bonRef,
-          motif,
-        };
-
-        set((s) => ({
-          stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
-          mouvements: [newMouvement, ...s.mouvements],
-          mouvementSeq: seq + 1,
-        }));
-        await get().addAuditLog("Stock", "Modification", `Sortie de stock : -${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`);
-      },
-
-      // ---- Bons de sortie ----
-      addBon: async (input) => {
-        const seq = get().bonSeq;
-        const year = new Date().getFullYear();
-        const numero = `BS-${year}-${pad(seq, 4)}`;
-
-        const { data, error } = await supabase
-          .from("bons_sortie")
-          .insert({
-            reference: numero,
-            date: input.date,
-            client_id: input.clientId,
-            societe_id: input.societeId,
-            stock_id: input.stockId,
-            marchandise: input.marchandise,
-            quantite: input.quantite,
-            unite: input.unite,
-            motif: input.motif,
-            montant: input.montant,
-            statut: "Brouillon",
-          })
-          .select("*, clients(nom), societes(nom)")
-          .single();
-
-        if (error) throw error;
-        const newBon = mapBonFromDb(data);
-        set((s) => ({
-          bons: [newBon, ...s.bons],
-          bonSeq: seq + 1,
-        }));
-        await get().addAuditLog("Bons", "Création", `Bon ${numero} créé`);
-
-        if (input.statut === "Validé") {
-          // Réutilise le même chemin que la validation différée : vérifie le
-          // stock disponible et décrémente réellement au lieu de marquer le
-          // bon "Validé" sans toucher au stock.
-          const validated = await get().validateBon(newBon.id);
-          if (!validated) {
-            throw new Error("Stock insuffisant pour valider ce bon de sortie.");
-          }
-          return get().bons.find((b) => b.id === newBon.id) ?? newBon;
-        }
-
-        return newBon;
-      },
-
-      validateBon: async (id) => {
-        const bon = get().bons.find((b) => b.id === id);
-        if (!bon || bon.statut === "Validé") return false;
-
-        const stockItem = findStockForBon(get().stock, bon);
-        if (!stockItem || stockItem.quantite < bon.quantite) {
-          return false;
-        }
-
-        const { error } = await supabase.from("bons_sortie").update({ statut: "Validé" }).eq("id", id);
-        if (error) throw error;
-
-        await get().addStockExit(stockItem.id, bon.quantite, getConnectedUserName(), bon.reference);
-
-        set((s) => ({
-          bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" } : b)),
-        }));
-        await get().addAuditLog("Bons", "Validation", `Bon de sortie ${bon.reference} validé`);
-        return true;
-      },
-
       // ---- Sous-dossiers ----
       addSubDossier: async (input) => {
         const seq = get().subDossierSeq;
@@ -1483,323 +1315,6 @@ export const useStore = create<SLTTState>()(
         set((s) => ({
           fichiers: s.fichiers.filter((f) => f.dossierId !== dossierId),
         }));
-      },
-
-
-      // ---- Factures ----
-      addFacture: async (input) => {
-        const seq = get().factureSeq;
-        const year = new Date().getFullYear();
-        const numero = `FACT-${year}-${pad(seq, 4)}`;
-
-        const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
-        const TVA = Math.round(HT * (input.tauxTVA / 100));
-        const TTC = HT + TVA;
-        const creePar = getConnectedUserName();
-
-        
-        const { data: dbFact, error: errFact } = await supabase
-          .from("factures")
-          .insert({
-            numero,
-            dossier_id: input.dossierId,
-            client_id: input.clientId,
-            societe_id: input.societeId || null,
-            date: input.date,
-            date_echeance: input.dateEcheance,
-            statut: "Brouillon",
-            taux_tva: input.tauxTVA,
-            montant_ht: HT,
-            montant_tva: TVA,
-            montant_ttc: TTC,
-            montant_paye: 0,
-            notes: input.notes,
-            cree_par: creePar,
-          })
-          .select()
-          .single();
-
-        if (errFact) throw errFact;
-
-        if (input.lignes.length > 0) {
-          const { error: errLignes } = await supabase
-            .from("facture_lignes")
-            .insert(
-              input.lignes.map((l) => ({
-                facture_id: dbFact.id,
-                description: l.description,
-                quantite: l.quantite,
-                prix_unitaire: l.prixUnitaire,
-                montant_ht: l.quantite * l.prixUnitaire,
-              }))
-            );
-          if (errLignes) throw errLignes;
-        }
-
-        const { data: fullFact, error: errFetch } = await supabase
-          .from("factures")
-          .select("*, facture_lignes(*), clients(nom), societes(nom)")
-          .eq("id", dbFact.id)
-          .single();
-
-        if (errFetch) throw errFetch;
-
-        const newFacture = mapFactureFromDb(fullFact);
-        set((s) => {
-          const updatedFactures = [newFacture, ...s.factures];
-          return {
-            factures: updatedFactures,
-            factureSeq: seq + 1,
-            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-          };
-        });
-        await get().addAuditLog(
-          "Factures",
-          "Création",
-          `Facture ${numero} créée`,
-          newFacture.clientId,
-          { sourceType: "facture", sourceId: newFacture.id },
-        );
-        return newFacture;
-
-      },
-
-      updateFacture: async (id, input) => {
-        const existing = get().factures.find((f) => f.id === id);
-        const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
-        const TVA = Math.round(HT * (input.tauxTVA / 100));
-        const TTC = HT + TVA;
-
-        
-        const { error: errFact } = await supabase
-          .from("factures")
-          .update({
-            dossier_id: input.dossierId,
-            client_id: input.clientId,
-            societe_id: input.societeId ?? null,
-            date: input.date,
-            date_echeance: input.dateEcheance,
-            taux_tva: input.tauxTVA,
-            montant_ht: HT,
-            montant_tva: TVA,
-            montant_ttc: TTC,
-            notes: input.notes,
-          })
-          .eq("id", id);
-
-        if (errFact) throw errFact;
-
-        const { error: errDeleteLignes } = await supabase.from("facture_lignes").delete().eq("facture_id", id);
-        if (errDeleteLignes) throw errDeleteLignes;
-        if (input.lignes.length > 0) {
-          const { error: errInsertLignes } = await supabase.from("facture_lignes").insert(
-            input.lignes.map((l) => ({
-              facture_id: id,
-              description: l.description,
-              quantite: l.quantite,
-              prix_unitaire: l.prixUnitaire,
-              montant_ht: l.quantite * l.prixUnitaire,
-            }))
-          );
-          if (errInsertLignes) throw errInsertLignes;
-        }
-
-        set((s) => {
-          const updatedFactures = s.factures.map((fact) => {
-            if (fact.id !== id) return fact;
-            const updatedLignes: FactureLigne[] = input.lignes.map((l, idx) => ({
-              id: `FL-${idx + 1}`,
-              description: l.description,
-              quantite: l.quantite,
-              prixUnitaire: l.prixUnitaire,
-              montantHT: l.quantite * l.prixUnitaire,
-            }));
-            return {
-              ...fact,
-              ...input,
-              societeId: input.societeId ?? undefined,
-              montantHT: HT,
-              montantTVA: TVA,
-              montantTTC: TTC,
-              lignes: updatedLignes,
-            };
-          });
-          return {
-            factures: updatedFactures,
-            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-          };
-        });
-        if (existing) {
-          await get().addAuditLog(
-            "Factures",
-            "Modification",
-            `Facture ${existing.numero} modifiée`,
-            input.clientId,
-            { sourceType: "facture", sourceId: id },
-          );
-        }
-      },
-
-      removeFacture: async (id) => {
-        const fact = get().factures.find((f) => f.id === id);
-        
-        const { error } = await supabase.from("factures").delete().eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => {
-          const updatedFactures = s.factures.filter((f) => f.id !== id);
-          return {
-            factures: updatedFactures,
-            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-          };
-        });
-
-        if (fact) {
-          await get().addAuditLog(
-            "Factures",
-            "Suppression",
-            `Facture ${fact.numero} supprimée`,
-            fact.clientId,
-            { sourceType: "facture", sourceId: fact.id },
-          );
-        }
-      },
-
-      updateFactureStatut: async (id, statut) => {
-        const f = get().factures.find((x) => x.id === id);
-        if (!f) return;
-        if (!canTransitionFacture(f.statut, statut)) {
-          throw new Error(`Transition non autorisée : ${f.statut} → ${statut}.`);
-        }
-        const montantPaye = statut === "Soldée" ? f.montantTTC : f.montantPaye;
-
-        
-        const { error } = await supabase
-          .from("factures")
-          .update({ statut, montant_paye: montantPaye })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => {
-          const updatedFactures = s.factures.map((x) =>
-            x.id === id ? { ...x, statut, montantPaye } : x
-          );
-          return {
-            factures: updatedFactures,
-            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-          };
-        });
-        
-        await get().addAuditLog(
-          "Factures",
-          "Modification",
-          `Facture ${f.numero} → ${statut}`,
-          f.clientId,
-          { sourceType: "facture", sourceId: id },
-        );
-      },
-
-      recordFacturePaiement: async (id, montant) => {
-        const fact = get().factures.find((f) => f.id === id);
-        if (!fact) return;
-        if (fact.statut === "Brouillon" || fact.statut === "Annulée" || fact.statut === "Soldée") {
-          throw new Error(`Impossible d'enregistrer un paiement sur une facture ${fact.statut}.`);
-        }
-
-        const reste = resteAPayer({ montantInvesti: fact.montantTTC, montantPaye: fact.montantPaye });
-        const effective = validatePaymentAmount(montant, reste);
-        const newPaye = computeIncrementalPaye(fact.montantPaye, fact.montantTTC, effective);
-        const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
-
-        
-        const { error } = await supabase
-          .from("factures")
-          .update({ montant_paye: newPaye, statut: newStatut })
-          .eq("id", id);
-        if (error) throw error;
-      
-
-        set((s) => {
-          const updatedFactures = s.factures.map((f) =>
-            f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f
-          );
-          return {
-            factures: updatedFactures,
-            clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-          };
-        });
-
-        await get().addAuditLog(
-          "Factures",
-          "Paiement",
-          `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
-          fact.clientId,
-          { sourceType: "facture", sourceId: fact.id },
-        );
-      },
-
-
-      // ---- Bons de sortie de caisse (décaissement — sans rapport avec le stock) ----
-      addBonSortieCaisse: async (input) => {
-        const seq = get().bonSortieCaisseSeq;
-        const reference = `N°${seq}`;
-        const creePar = getConnectedUserName();
-        const montantTotal = input.lignes.reduce((sum, l) => sum + l.montant, 0);
-
-        const { data: dbBon, error: errBon } = await supabase
-          .from("bons_sortie_caisse")
-          .insert({
-            reference,
-            date: input.date,
-            societe_id: input.societeId,
-            montant_total: montantTotal,
-            cree_par: creePar,
-          })
-          .select()
-          .single();
-        if (errBon) throw errBon;
-
-        if (input.lignes.length > 0) {
-          const { error: errLignes } = await supabase
-            .from("bons_sortie_caisse_lignes")
-            .insert(
-              input.lignes.map((l) => ({
-                bon_id: dbBon.id,
-                date: l.date,
-                beneficiaire: l.beneficiaire,
-                motif: l.motif,
-                montant: l.montant,
-              })),
-            );
-          if (errLignes) throw errLignes;
-        }
-
-        const { data: fullBon, error: errFetch } = await supabase
-          .from("bons_sortie_caisse")
-          .select("*, bons_sortie_caisse_lignes(*), societes(nom)")
-          .eq("id", dbBon.id)
-          .single();
-        if (errFetch) throw errFetch;
-
-        const newBon = mapBonSortieCaisseFromDb(fullBon);
-        set((s) => ({
-          bonsSortieCaisse: [newBon, ...s.bonsSortieCaisse],
-          bonSortieCaisseSeq: seq + 1,
-        }));
-        await get().addAuditLog("Bons", "Création", `Bon de sortie caisse ${reference} créé — ${montantTotal.toLocaleString("fr-FR")} FCFA`);
-        return newBon;
-      },
-
-      removeBonSortieCaisse: async (id) => {
-        const bon = get().bonsSortieCaisse.find((b) => b.id === id);
-        const { error } = await supabase.from("bons_sortie_caisse").delete().eq("id", id);
-        if (error) throw error;
-        set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));
-        if (bon) {
-          await get().addAuditLog("Bons", "Suppression", `Bon de sortie caisse ${bon.reference} supprimé`);
-        }
       },
 
       refetchData: async () => {

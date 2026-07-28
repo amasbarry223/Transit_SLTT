@@ -25,13 +25,13 @@
     "semantic_hash": ""
   },
   "next.config.ts": {
-    "mtime": 1785178179.3627913,
-    "ast_hash": "8e57ff38b0f9872ff886ff350f32c60c",
+    "mtime": 1785193344.782406,
+    "ast_hash": "dc6b2ef96b9dc308a2dcefd2a9eed2fc",
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1785182794.9450438,
-    "ast_hash": "76ad1dad3b60755df16c3290141e666c",
+    "mtime": 1785195986.9870553,
+    "ast_hash": "bfe8e5384e49277d5b411552e0c91f95",
     "semantic_hash": ""
   },
   "postcss.config.mjs": {
@@ -45,18 +45,18 @@
     "semantic_hash": ""
   },
   "src/app/api/admin/users/[id]/password/route.ts": {
-    "mtime": 1784213568.691621,
-    "ast_hash": "7de5b0fe42fd39e93ca93fa2e0038976",
+    "mtime": 1785196061.6618884,
+    "ast_hash": "1a378b617cd44a16bad2cfbe66d9f6bf",
     "semantic_hash": ""
   },
   "src/app/api/admin/users/[id]/route.ts": {
-    "mtime": 1784213557.7118595,
-    "ast_hash": "e2fb8e1cfc5b7354adc5bc4db584bf4e",
+    "mtime": 1785196056.6335185,
+    "ast_hash": "f7fa16b5064e7ae8fffe2dc0e14fe6ee",
     "semantic_hash": ""
   },
   "src/app/api/admin/users/route.ts": {
-    "mtime": 1784213513.376744,
-    "ast_hash": "2700ff69b8817b31706cebdd14f39fc7",
+    "mtime": 1785196042.7593374,
+    "ast_hash": "c3e72737f123794677a590047ba84d45",
     "semantic_hash": ""
   },
   "src/app/api/auth/password/route.ts": {
@@ -695,8 +695,8 @@
     "semantic_hash": ""
   },
   "src/lib/export.test.ts": {
-    "mtime": 1784858049.1902933,
-    "ast_hash": "8adc3b5395f990dc05f4759caf50f541",
+    "mtime": 1785196239.5981028,
+    "ast_hash": "4e4078b4bb3da8f0cbae50904c21a26e",
     "semantic_hash": ""
   },
   "src/lib/export.ts": {
@@ -710,8 +710,8 @@
     "semantic_hash": ""
   },
   "src/lib/export/print-document.ts": {
-    "mtime": 1784668646.1419296,
-    "ast_hash": "f3811ed59bfb56ff1da57dec0dd8bd97",
+    "mtime": 1785189821.338137,
+    "ast_hash": "4c8b5cabadbb7744887dec044574d91f",
     "semantic_hash": ""
   },
   "src/lib/export/print-styles.ts": {
@@ -780,8 +780,8 @@
     "semantic_hash": ""
   },
   "src/lib/status-flow.ts": {
-    "mtime": 1784210763.7540722,
-    "ast_hash": "d3e2450708555e8f97eeac660896e987",
+    "mtime": 1785193539.7836802,
+    "ast_hash": "6bc3880ef5b36aab81d0f20df6311be3",
     "semantic_hash": ""
   },
   "src/lib/store-actions.test.ts": {
@@ -790,8 +790,8 @@
     "semantic_hash": ""
   },
   "src/lib/store.ts": {
-    "mtime": 1785179846.056298,
-    "ast_hash": "e6bd54732db813a395e81ff71ddca8e3",
+    "mtime": 1785196168.1893387,
+    "ast_hash": "c2888820b73b7414a20919f8df839555",
     "semantic_hash": ""
   },
   "src/lib/store/archives-slice.ts": {
@@ -1575,28 +1575,28 @@
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/bon-caisse.ts": {
-    "mtime": 1785169545.952052,
-    "ast_hash": "02621bd8b7d3629315b56b78314f8460",
+    "mtime": 1785189861.1055393,
+    "ast_hash": "3f25461ff832bbb60e7382c0e4cd1b56",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/classeur.ts": {
-    "mtime": 1784768610.0349543,
-    "ast_hash": "89fc3c4ca6f4537c78bbb9b2089ba31d",
+    "mtime": 1785189839.2360392,
+    "ast_hash": "1386b7abd633739c4dfa6c7dda46c1e4",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/clients.ts": {
-    "mtime": 1784768569.9324167,
-    "ast_hash": "9c9baa52a283056482f2869290d2e0d9",
+    "mtime": 1785189848.0641632,
+    "ast_hash": "d0710859c1a95b290667704cf3cd46a9",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/devis.ts": {
-    "mtime": 1784768327.7951546,
-    "ast_hash": "c29b5eb05e4bcdda46d49f335e43363f",
+    "mtime": 1785189853.862491,
+    "ast_hash": "4ad88c19d473304868a954110846a343",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/facture.ts": {
-    "mtime": 1784768361.3697016,
-    "ast_hash": "a16d7d4a36df093dcddbb445e543b1bc",
+    "mtime": 1785189856.3222578,
+    "ast_hash": "4cff21a747a29eb362f8f23a6f6cd138",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/index.ts": {
@@ -1605,8 +1605,8 @@
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/invoice.ts": {
-    "mtime": 1784768477.8379903,
-    "ast_hash": "c5c38a83ef3b7216dda8d90da048568f",
+    "mtime": 1785189853.8714604,
+    "ast_hash": "2404a4cfb59ac5faea365b7769a3097c",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/shared.ts": {
@@ -1615,18 +1615,18 @@
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/stock-inventory.ts": {
-    "mtime": 1784768533.1506677,
-    "ast_hash": "6e560cd2088a6fc46293e59414c648cf",
+    "mtime": 1785189869.0972538,
+    "ast_hash": "559e1259ed2baddc3ebf4a29f26aebe3",
     "semantic_hash": ""
   },
   "src/app/api/export/excel/route.test.ts": {
-    "mtime": 1784848423.05197,
-    "ast_hash": "a118beb1e44bcb1b51d32586d60aaeb4",
+    "mtime": 1785196298.2457728,
+    "ast_hash": "137fdeabcec9e0240ef42a7acc58d194",
     "semantic_hash": ""
   },
   "src/app/api/export/excel/route.ts": {
-    "mtime": 1784848423.036414,
-    "ast_hash": "cb01a525df83962fd3d3d32a396cbea3",
+    "mtime": 1785196021.9319527,
+    "ast_hash": "58ffce156266a1ffab256c883c867c47",
     "semantic_hash": ""
   },
   "src/lib/export/xlsx-builder.ts": {
@@ -1645,8 +1645,8 @@
     "semantic_hash": ""
   },
   "src/lib/store/contrats-slice.ts": {
-    "mtime": 1784978037.6594586,
-    "ast_hash": "88a514313f9649e8e1baed2100dc0466",
+    "mtime": 1785193531.328239,
+    "ast_hash": "68cacddcf988564b2ba1eb5b39382621",
     "semantic_hash": ""
   },
   "src/lib/store/devis-slice.ts": {
@@ -1790,13 +1790,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/excel/excel-workbook.tsx": {
-    "mtime": 1785184411.5306325,
-    "ast_hash": "5cb6ccfce32faf116289139e414dfea8",
+    "mtime": 1785197061.2034566,
+    "ast_hash": "0b61aba33e7bd9a9bddd65c088f8cf2d",
     "semantic_hash": ""
   },
   "src/lib/excel/sltt-bridge.ts": {
-    "mtime": 1785181314.0123036,
-    "ast_hash": "27fef33b182c5abbfb80dc3183c95183",
+    "mtime": 1785197032.5806968,
+    "ast_hash": "3f87312ea5e1b6adb9b8f8e136580c83",
     "semantic_hash": ""
   },
   "src/lib/excel/template.ts": {
@@ -1815,8 +1815,8 @@
     "semantic_hash": ""
   },
   "src/lib/store/excel-workbooks-slice.ts": {
-    "mtime": 1785179445.4513962,
-    "ast_hash": "2572626dc47498ab50e53398df2ab755",
+    "mtime": 1785193498.6561348,
+    "ast_hash": "1a1a07e1a09ce14b2b8063826b851692",
     "semantic_hash": ""
   },
   "supabase/migrations/20260732_excel_workbooks.sql": {
@@ -1852,6 +1852,66 @@
   "src/lib/excel/excel-theme.ts": {
     "mtime": 1785184321.2707844,
     "ast_hash": "8c4f9e97f50f3cd99e7e83aa83b212ab",
+    "semantic_hash": ""
+  },
+  ".tmp-migration.sql": {
+    "mtime": 1785193413.487238,
+    "ast_hash": "360b51e4a8757c1bfa7ed68ea681906c",
+    "semantic_hash": ""
+  },
+  "src/lib/store/bons-slice.ts": {
+    "mtime": 1785193734.992436,
+    "ast_hash": "81a4648ccf4a27b974d48888a805fa46",
+    "semantic_hash": ""
+  },
+  "src/lib/store/factures-slice.ts": {
+    "mtime": 1785193653.5706418,
+    "ast_hash": "345af13a8dd5b5f13e73d32cc1f91031",
+    "semantic_hash": ""
+  },
+  "src/lib/store/fetch-pages.ts": {
+    "mtime": 1785195467.9977674,
+    "ast_hash": "d03a81cb8516b2df8f8f8528fe26c1f8",
+    "semantic_hash": ""
+  },
+  "src/lib/store/stock-slice.ts": {
+    "mtime": 1785193659.2698603,
+    "ast_hash": "328c7893ffc7baed0698a3f2f7c8f20b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260804_audit_hardening_rpc_fsm.sql": {
+    "mtime": 1785193408.2354841,
+    "ast_hash": "2f8ea5a9db1e0742d6670c94f8a79c7b",
+    "semantic_hash": ""
+  },
+  "src/lib/api/schemas.ts": {
+    "mtime": 1785196018.5977697,
+    "ast_hash": "dbe5ef2b901f42bbbcec0b544af38168",
+    "semantic_hash": ""
+  },
+  "src/lib/paiement-math.test.ts": {
+    "mtime": 1785196030.9763165,
+    "ast_hash": "a9118178cd6a80af3b99810b97035ed2",
+    "semantic_hash": ""
+  },
+  "src/lib/paiement-math.ts": {
+    "mtime": 1785196030.8195899,
+    "ast_hash": "c817ba4e26c123e65d82f8d88dc13db9",
+    "semantic_hash": ""
+  },
+  "src/lib/status-flow.test.ts": {
+    "mtime": 1785195272.7017407,
+    "ast_hash": "c68bab8f0699c37a81b0c6fcc70e018f",
+    "semantic_hash": ""
+  },
+  "src/lib/store/fetch-pages.test.ts": {
+    "mtime": 1785195272.7017407,
+    "ast_hash": "e87ddb62628e026dc49160f1403b62f4",
+    "semantic_hash": ""
+  },
+  "src/lib/excel/sltt-bridge.test.ts": {
+    "mtime": 1785197088.5147583,
+    "ast_hash": "8b14f9d17878005ac3d382358a09c715",
     "semantic_hash": ""
   }
 }

@@ -114,6 +114,7 @@ export const createExcelWorkbooksSlice: StateCreator<
     }
 
     if (existing) {
+      const expectedVersion = existing.version;
       const { data, error } = await supabase
         .from("excel_workbooks")
         .update({
@@ -125,9 +126,15 @@ export const createExcelWorkbooksSlice: StateCreator<
           updated_by: userId,
         })
         .eq("id", existing.id)
+        .eq("version", expectedVersion)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
+      if (!data) {
+        throw new Error(
+          "Conflit de version : le classeur a été modifié ailleurs. Rechargez puis réessayez.",
+        );
+      }
       const mapped = mapExcelWorkbookFromDb(data as ExcelWorkbookRow);
       set((s) => ({
         excelWorkbooks: s.excelWorkbooks.map((w) =>

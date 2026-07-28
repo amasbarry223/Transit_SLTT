@@ -7,6 +7,7 @@ import {
   buildBrandSubHTML,
   documentFooterHTML,
   platformFooterHTML,
+  acquirePrintTarget,
   triggerPrint,
   warnPopupBlocked,
 } from "../print-document";
@@ -72,10 +73,10 @@ export function printClasseur(
         </div>`
       : "";
 
-  const win = window.open("", "_blank", "width=1100,height=820");
+  const win = acquirePrintTarget();
   if (!win) { warnPopupBlocked(); return; }
-  win.opener = null;
 
+  win.document.open();
   win.document.write(`<!DOCTYPE html>
 <html lang="fr">
 <head>

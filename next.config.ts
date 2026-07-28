@@ -21,10 +21,13 @@ const csp = [
   "default-src 'self'",
   `script-src ${scriptSrc.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Logos Storage + aperçus documents (signed URLs Supabase)
+  `img-src 'self' data: blob: ${supabaseOrigin}`,
   "font-src 'self' data:",
   `connect-src 'self' ${supabaseOrigin} ${supabaseWsOrigin} blob:`,
   "worker-src 'self' blob:",
+  // Aperçu PDF / documents dans iframes (signed URL Storage)
+  `frame-src 'self' blob: ${supabaseOrigin}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

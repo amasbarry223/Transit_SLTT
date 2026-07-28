@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authErrorResponse, requireUser } from "@/lib/auth/require-admin";
+import { authErrorResponse, requireUser, AuthError } from "@/lib/auth/require-admin";
+import { normalizePermissions } from "@/lib/permissions";
 import { normalizeExportRows } from "@/lib/export/normalize-export-cell";
 import { buildXlsxBuffer } from "@/lib/export/xlsx-builder";
+import {
+  exportExcelBodySchema,
+  zodErrorMessage,
+} from "@/lib/api/schemas";
 
 export const runtime = "nodejs";
 
-const MAX_ROWS = 10_000;
 const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+/** Au moins une permission de lecture métier pour exporter. */
+const EXPORT_PERMISSIONS = [
+  "clients:read",
+  "dossiers:read",
+  "factures:read",
+  "devis:read",
+  "comptabilite:read",
+  "stock:read",
+  "contrats:read",
+] as const;
 
 function sanitizeFilename(name: string): string {
   const base = name.replace(/\.(csv|xls|xlsx)$/i, "");
@@ -17,43 +32,25 @@ function sanitizeFilename(name: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireUser(request);
-
-    const body = (await request.json()) as {
-      filename?: string;
-      headers?: unknown;
-      rows?: unknown;
-    };
-
-    const { filename = "export", headers, rows } = body;
-
-    if (!Array.isArray(headers) || headers.length === 0) {
-      return Response.json(
-        { error: "En-têtes de colonnes requis." },
-        { status: 400 },
+    const { profile } = await requireUser(request);
+    const isAdmin = profile.role === "Administrateur";
+    const perms = normalizePermissions(profile.permissions ?? []);
+    const canExport =
+      isAdmin || EXPORT_PERMISSIONS.some((p) => perms.includes(p));
+    if (!canExport) {
+      throw new AuthError(
+        "Permission insuffisante pour exporter (lecture métier requise).",
+        403,
       );
     }
 
-    if (
-      !headers.every((h) => typeof h === "string" && h.trim().length > 0)
-    ) {
-      return Response.json({ error: "En-têtes invalides." }, { status: 400 });
+    const raw = await request.json();
+    const parsed = exportExcelBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return Response.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
     }
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return Response.json(
-        { error: "Aucune ligne à exporter." },
-        { status: 400 },
-      );
-    }
-
-    if (rows.length > MAX_ROWS) {
-      return Response.json(
-        { error: `Maximum ${MAX_ROWS} lignes par export.` },
-        { status: 400 },
-      );
-    }
-
+    const { filename, headers, rows } = parsed.data;
     const columnCount = headers.length;
     const normalizedRows = normalizeExportRows(rows as unknown[][], columnCount);
 
