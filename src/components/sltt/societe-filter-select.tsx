@@ -55,8 +55,13 @@ export function SocieteBadge({
 }) {
   const societes = useStore((s) => s.societes);
   if (!societeNom) return null;
-  const id = societeId ?? societes.find((s) => s.nom === societeNom)?.id;
-  const tone = id ? societeToneById(id) : "slate";
+  const match = societeId
+    ? societes.find((s) => s.id === societeId)
+    : societes.find((s) => s.nom === societeNom);
+  const id = match?.id ?? societeId;
+  const tone = id
+    ? societeToneById(id, { isTransit: match?.isTransit })
+    : "slate";
   return (
     <ToneBadge tone={tone} size={size}>
       {societeNom}

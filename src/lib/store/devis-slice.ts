@@ -1,9 +1,11 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
+import { useNav } from "@/lib/nav-store";
 import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
 import { resolveTransitSociete } from "@/lib/societe-brand";
+import { resolveActiveAnnexeId } from "@/lib/store/connected-user";
 import type { DevisRow } from "@/lib/db-rows";
 
 function pad(n: number, len: number): string {
@@ -187,8 +189,15 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       throw new Error("Aucune société configurée. Renseignez-la dans Paramètres > Sociétés.");
     }
 
+    const currentUser = get().users.find((u) => u.id === useNav.getState().currentUserId);
+    const annexeId = resolveActiveAnnexeId(currentUser?.annexeIds ?? []);
+    if (!annexeId) {
+      throw new Error("Aucune annexe assignée à l'utilisateur connecté.");
+    }
+
     const inputDossier: DossierInput = {
       societeId,
+      annexeId,
       clientId: dev.clientId,
       clientNom: dev.clientNom,
       nature: dev.nature || `Devis ${dev.reference} : ${dev.notes || "transit"}`,
