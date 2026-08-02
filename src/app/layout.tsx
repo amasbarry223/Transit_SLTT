@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeEffect } from "@/components/sltt/theme-effect";
-
-// Anti-flash : applique la classe .dark avant le premier paint, en lisant
-// directement le store persisté (évite un éclair de thème clair au chargement).
-const THEME_INIT_SCRIPT = `try{var r=localStorage.getItem('sltt-auth-v2');var t=r?JSON.parse(r).state.theme:'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}`;
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,7 +18,7 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Transit SLTT · Gestion logistique",
+  title: "Transit · Gestion logistique",
   description:
     "Plateforme de gestion logistique, transit douanier, comptabilité et entreposage.",
   keywords: [
@@ -33,24 +30,26 @@ export const metadata: Metadata = {
     "UEMOA",
     "Mali",
   ],
-  authors: [{ name: "Transit SLTT" }],
+  authors: [{ name: "Transit" }],
   icons: {
     icon: "/logoV.png",
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Nonce posé par middleware.ts (requis par la CSP script-src en production).
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="fr" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${sora.variable} antialiased bg-background text-foreground`}
       >
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        <ThemeEffect />
+        <ThemeEffect nonce={nonce} />
         {children}
         <Toaster />
       </body>

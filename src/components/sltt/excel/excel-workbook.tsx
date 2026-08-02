@@ -57,6 +57,8 @@ export function ExcelWorkbookPanel({
   const patchEcriture = useStore((s) => s.patchEcriture);
   const patchFactureMontantPaye = useStore((s) => s.patchFactureMontantPaye);
   const addEcriture = useStore((s) => s.addEcriture);
+  const clients = useStore((s) => s.clients);
+  const clientAnnexeId = clients.find((c) => c.id === clientId)?.annexeId;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const univerApiRef = useRef<UniverApiLike | null>(null);
@@ -587,6 +589,7 @@ export function ExcelWorkbookPanel({
               date: op.row.date || new Date().toISOString().slice(0, 10),
               clientId,
               clientNom,
+              annexeId: clientAnnexeId as string,
               montantInvesti: op.row.debit,
               montantPaye: op.row.credit,
               modePaiement: DEFAULT_PAIEMENT_MODE,

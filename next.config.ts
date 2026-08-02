@@ -1,46 +1,16 @@
 import type { NextConfig } from "next";
 
-// Origine Supabase dérivée de l'env — évite de coder en dur un projet précis
-// et reste correcte si l'URL change entre environnements (dev/staging/prod).
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const supabaseOrigin = supabaseUrl.replace(/\/$/, "");
-const supabaseWsOrigin = supabaseOrigin.replace(/^http/, "ws");
-
-// 'unsafe-inline' sur script-src est nécessaire pour l'unique script inline
-// de l'app (anti-flash de thème dans app/layout.tsx, statique, sans donnée
-// utilisateur) — le reste de la politique reste strict.
-// 'unsafe-eval' n'est ajouté qu'en dev : le HMR webpack de `next dev` évalue
-// du code via eval() pour les source maps, ce que la CSP bloque sinon (page
-// bloquée sur "Vérification de la session…"). Absent en production.
-const scriptSrc = ["'self'", "'unsafe-inline'"];
-if (process.env.NODE_ENV === "development") {
-  scriptSrc.push("'unsafe-eval'");
-}
-
-const csp = [
-  "default-src 'self'",
-  `script-src ${scriptSrc.join(" ")}`,
-  "style-src 'self' 'unsafe-inline'",
-  // Logos Storage + aperçus documents (signed URLs Supabase)
-  `img-src 'self' data: blob: ${supabaseOrigin}`,
-  "font-src 'self' data:",
-  `connect-src 'self' ${supabaseOrigin} ${supabaseWsOrigin} blob:`,
-  "worker-src 'self' blob:",
-  // Aperçu PDF / documents dans iframes (signed URL Storage)
-  `frame-src 'self' blob: ${supabaseOrigin}`,
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join("; ");
-
+// Content-Security-Policy est construite dynamiquement dans middleware.ts
+// (nonce par requête) — pas ici. Un script-src statique ne peut pas couvrir
+// les <script> de streaming RSC que Next.js injecte lui-même (contenu
+// différent à chaque requête), donc la CSP doit être posée là où le nonce
+// est généré.
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "Content-Security-Policy", value: csp },
 ];
 
 const nextConfig: NextConfig = {
