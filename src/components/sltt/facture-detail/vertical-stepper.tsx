@@ -3,7 +3,7 @@
 import { CheckCircle2 } from "lucide-react";
 import type { FactureStatut } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { canTransitionFacture, FACTURE_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
+import { FACTURE_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 import { STATUT_CONFIG, STATUT_FLOW } from "./facture-statut-config";
 
 export function VerticalStepper({

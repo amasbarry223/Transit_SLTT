@@ -39,24 +39,6 @@ export function mapDossierFournisseurFromDb(x: DossierFournisseurRow): DossierFo
   };
 }
 
-/** Retire l'apport d'une liste de DossierFournisseur des agrégats du Fournisseur parent (LOGIC-04). */
-function decrementFournisseurAgg(fournisseurs: Fournisseur[], removed: DossierFournisseur[]): Fournisseur[] {
-  if (removed.length === 0) return fournisseurs;
-  const deltaByFournisseur = new Map<string, { count: number; montant: number }>();
-  for (const df of removed) {
-    const prev = deltaByFournisseur.get(df.fournisseurId) ?? { count: 0, montant: 0 };
-    deltaByFournisseur.set(df.fournisseurId, { count: prev.count + 1, montant: prev.montant + df.montantReel });
-  }
-  return fournisseurs.map((f) => {
-    const delta = deltaByFournisseur.get(f.id);
-    if (!delta) return f;
-    return {
-      ...f,
-      nbDossiers: Math.max(0, f.nbDossiers - delta.count),
-      montantTotal: Math.max(0, f.montantTotal - delta.montant),
-    };
-  });
-}
 
 export interface FournisseursSlice {
   fournisseurs: Fournisseur[];

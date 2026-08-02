@@ -17,18 +17,3 @@ export function deriveClientIdFromRattachement(
   }
   return undefined;
 }
-
-export function deriveSocieteIdFromRattachement(
-  rattachementKind: RattachementKind,
-  rattachementId: string,
-  factures: Facture[],
-  depenses: { id: string; societeId?: string }[],
-): string | undefined {
-  if (rattachementKind === "facture") {
-    return factures.find((facture) => facture.id === rattachementId)?.societeId;
-  }
-  if (rattachementKind === "depense") {
-    return depenses.find((depense) => depense.id === rattachementId)?.societeId;
-  }
-  return undefined;
-}

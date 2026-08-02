@@ -10,7 +10,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 import type { DossierFichier, FichierInput, SubDossier } from "@/lib/store";
-import { formatDateShort } from "@/lib/format";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { Button } from "@/components/ui/button";
 import { FileDropZone } from "./file-drop-zone";

@@ -545,7 +545,6 @@ function TarifsTable({
 
 export function FournisseursScreen() {
   const { go } = useNav();
-  const { toast } = useToast();
   const canWrite = usePermission("fournisseurs:write");
   const fournisseurs = useStore((s) => s.fournisseurs);
   const dossierFournisseurs = useStore((s) => s.dossierFournisseurs);

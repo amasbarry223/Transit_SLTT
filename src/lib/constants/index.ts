@@ -29,10 +29,7 @@ export {
 
 export {
   TOAST_COPY_RESET_MS,
-  UI_LOAD_DELAY_MS,
   CHART_COLORS,
   SLTT_BLUE,
-  SLTT_EMERALD,
-  SLTT_AMBER,
   PAYMENT_RING_RADIUS_PX,
 } from "./ui.constants";
