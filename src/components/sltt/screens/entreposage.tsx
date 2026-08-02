@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -59,6 +60,7 @@ export function EntreposageScreen() {
   const societes = useStore((s) => s.societes);
   const addStockItem = useStore((s) => s.addStockItem);
   const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+  const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const stock = useMemo(
     () => (selectedSocieteId ? allStock.filter((s) => s.societeId === selectedSocieteId) : allStock),
@@ -306,8 +308,10 @@ export function EntreposageScreen() {
         open={newItemOpen}
         onOpenChange={setNewItemOpen}
         societes={societes}
+        annexes={annexes}
         clients={clients}
         defaultSocieteId={selectedSocieteId ?? societes[0]?.id ?? ""}
+        defaultAnnexeId={activeAnnexeId ?? ""}
         onSubmit={(input) => {
           addStockItem(input);
           toast({ title: "Article ajouté", description: `${input.marchandise} ajouté au stock.` });

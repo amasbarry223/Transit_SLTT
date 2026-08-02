@@ -61,3 +61,6 @@ server.log
 # OCR / PDF.js runtime assets (générés par `npm run sync:ocr-assets` / postinstall)
 /public/ocr/
 /public/pdf.worker.min.mjs
+
+# brouillons SQL locaux — jamais destinés à supabase/migrations/
+.tmp-*.sql

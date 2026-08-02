@@ -36,6 +36,7 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
       bonsSortieCaisse.flatMap((b) =>
         b.lignes.map((l) => ({
           societeId: b.societeId as string | undefined,
+          annexeId: b.annexeId,
           date: l.date,
           montant: l.montant,
         })),

@@ -23,7 +23,7 @@ import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
 import { printFactureModule, type SocieteBrand } from "@/lib/export";
-import { resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
+import { mergeAnnexeIntoBrand, resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 
@@ -44,6 +44,7 @@ export function FactureDetailScreen() {
   const openDossierDetail = useNav((s) => s.openDossierDetail);
   const factures = useStore((s) => s.factures);
   const societes = useStore((s) => s.societes);
+  const annexes = useStore((s) => s.annexes);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
   const updateFacture = useStore((s) => s.updateFacture);
   const dossiers = useStore((s) => s.dossiers);
@@ -57,8 +58,11 @@ export function FactureDetailScreen() {
     const societe = facture.societeId
       ? societes.find((s) => s.id === facture.societeId)
       : undefined;
-    return societe ? societeToBrand(societe) : resolveSlttBrand(societes);
-  }, [facture, societes]);
+    const base = societe ? societeToBrand(societe) : resolveSlttBrand(societes);
+    if (!base) return null;
+    const annexe = annexes.find((a) => a.id === facture.annexeId);
+    return annexe ? mergeAnnexeIntoBrand(base, annexe) : base;
+  }, [facture, societes, annexes]);
 
   const [showPaiement, setShowPaiement] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -123,8 +127,15 @@ export function FactureDetailScreen() {
 
   function handlePrint() {
     if (!facture || !factureBrand) return;
+    const memesAnnexe = factures
+      .filter((f) => f.annexeId === facture.annexeId)
+      .sort((a, b) => a.creeLe.localeCompare(b.creeLe));
+    const annexeSeq = memesAnnexe.findIndex((f) => f.id === facture.id) + 1;
+    const villeSiege = annexes.find((a) => a.id === facture.annexeId)?.villeSiege;
     printFactureModule({
       numero: facture.numero,
+      annexeSeq: annexeSeq > 0 ? annexeSeq : undefined,
+      villeSiege,
       clientNom: facture.clientNom,
       date: facture.date,
       dateEcheance: facture.dateEcheance,

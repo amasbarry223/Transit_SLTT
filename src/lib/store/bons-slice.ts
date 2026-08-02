@@ -18,6 +18,8 @@ export function mapBonFromDb(x: BonSortieRow): BonSortie {
     clientNom: x.clients?.nom || x.client_nom || "",
     societeId: x.societe_id,
     societeNom: x.societes?.nom || "—",
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     stockId: x.stock_id || undefined,
     marchandise: x.marchandise,
     quantite: Number(x.quantite),
@@ -35,6 +37,8 @@ export function mapBonSortieCaisseFromDb(x: BonSortieCaisseRow): BonSortieCaisse
     date: x.date,
     societeId: x.societe_id,
     societeNom: x.societes?.nom || "—",
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     montantTotal: Number(x.montant_total),
     creePar: x.cree_par || undefined,
     creeLe: x.created_at,
@@ -85,6 +89,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         date: input.date,
         client_id: input.clientId,
         societe_id: input.societeId,
+        annexe_id: input.annexeId,
         stock_id: input.stockId,
         marchandise: input.marchandise,
         quantite: input.quantite,
@@ -93,7 +98,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         montant: input.montant,
         statut: "Brouillon",
       })
-      .select("*, clients(nom), societes(nom)")
+      .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
@@ -143,6 +148,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
           id: `M-${s.mouvementSeq}`,
           societeId: stockItem?.societeId || bon.societeId,
           societeNom: stockItem?.societeNom || bon.societeNom,
+          annexeId: stockItem?.annexeId || bon.annexeId,
+          annexeNom: stockItem?.annexeNom || bon.annexeNom,
           date: new Date().toISOString(),
           type: "Sortie" as const,
           marchandise: bon.marchandise,
@@ -172,6 +179,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         reference,
         date: input.date,
         societe_id: input.societeId,
+        annexe_id: input.annexeId,
         montant_total: montantTotal,
         cree_par: creePar,
       })
@@ -196,7 +204,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
     const { data: fullBon, error: errFetch } = await supabase
       .from("bons_sortie_caisse")
-      .select("*, bons_sortie_caisse_lignes(*), societes(nom)")
+      .select("*, bons_sortie_caisse_lignes(*), societes(nom), annexes(nom)")
       .eq("id", dbBon.id)
       .single();
     if (errFetch) throw errFetch;

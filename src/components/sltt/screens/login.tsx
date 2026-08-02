@@ -116,7 +116,7 @@ export function LoginScreen() {
           <div className="flex flex-col items-center px-8 pb-6 pt-9">
             <Image
               src="/logoV.png"
-              alt="Transit SLTT"
+              alt="Transit"
               width={140}
               height={140}
               className="size-[132px] object-contain drop-shadow-md sm:size-[140px]"
@@ -242,7 +242,7 @@ export function LoginScreen() {
 
             <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
               <ShieldCheck className="size-3.5" />
-              Accès sécurisé · SLTT © {new Date().getFullYear()}
+              Accès sécurisé · Transit © {new Date().getFullYear()}
             </div>
           </div>
         </div>

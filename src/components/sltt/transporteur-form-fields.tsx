@@ -212,7 +212,7 @@ export function TransporteurFormFields({
                 id={`${idPrefix}-nom`}
                 value={values.nom}
                 onChange={(e) => onChange({ nom: e.target.value })}
-                placeholder="Konaté Transport SARL"
+                placeholder="Ex. Transport Express SARL"
                 className={cn("h-10", errors.nom && "border-red-400 focus-visible:ring-red-400")}
                 autoFocus={autoFocusNom}
               />
@@ -224,7 +224,7 @@ export function TransporteurFormFields({
                   id={`${idPrefix}-contact`}
                   value={values.contact}
                   onChange={(e) => onChange({ contact: e.target.value })}
-                  placeholder="Mamadou Konaté"
+                  placeholder="Ex. Nom du contact"
                   className={cn("h-10 pl-9", errors.contact && "border-red-400 focus-visible:ring-red-400")}
                 />
               </div>
@@ -250,7 +250,7 @@ export function TransporteurFormFields({
                   type="tel"
                   value={values.telephone}
                   onChange={(e) => onChange({ telephone: e.target.value })}
-                  placeholder="+223 76 00 00 00"
+                  placeholder="Ex. +223 70 00 00 00"
                   className={cn("h-10 pl-9", errors.telephone && "border-red-400 focus-visible:ring-red-400")}
                 />
               </div>
@@ -263,7 +263,7 @@ export function TransporteurFormFields({
                   type="email"
                   value={values.email}
                   onChange={(e) => onChange({ email: e.target.value })}
-                  placeholder="transport@mail.ml"
+                  placeholder="Ex. contact@exemple.com"
                   className="h-10 pl-9"
                 />
               </div>
@@ -320,7 +320,7 @@ export function TransporteurFormFields({
                 id={`${idPrefix}-immat`}
                 value={values.immatriculation}
                 onChange={(e) => onChange({ immatriculation: e.target.value.toUpperCase() })}
-                placeholder="BK-0845-ML"
+                placeholder="Ex. AB-1234-ML"
                 className={cn(
                   "h-10 font-mono uppercase tracking-wide",
                   errors.immatriculation && "border-red-400 focus-visible:ring-red-400",
@@ -373,7 +373,7 @@ export function TransporteurFormFields({
                   id={`${idPrefix}-trajet`}
                   value={values.trajet}
                   onChange={(e) => onChange({ trajet: e.target.value })}
-                  placeholder="Bamako – Dakar"
+                  placeholder="Ex. Bamako – Dakar"
                   className={cn("h-10 pl-9", errors.trajet && "border-red-400 focus-visible:ring-red-400")}
                 />
               </div>

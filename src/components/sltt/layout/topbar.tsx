@@ -48,6 +48,7 @@ import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
+import { AnnexeSelector } from "@/components/sltt/annexe-selector";
 import { GLOSSARY } from "@/lib/glossary";
 import { usePermission } from "@/hooks/use-permission";
 
@@ -144,6 +145,9 @@ export function Topbar() {
         <div className="min-w-0 flex-1">
           <BreadcrumbNav title={meta.title} subtitle={meta.sub} />
         </div>
+
+        {/* Annexe active — masqué si l'utilisateur est mono-annexe */}
+        <AnnexeSelector className="hidden shrink-0 sm:flex sm:w-40" />
 
         {/* Global search — command palette */}
         <CommandPalette />

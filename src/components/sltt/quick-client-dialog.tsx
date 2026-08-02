@@ -5,6 +5,7 @@ import { UserPlus } from "lucide-react";
 import { useStore, type ClientInput } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { getErrorMessage } from "@/lib/utils";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Button } from "@/components/ui/button";
@@ -25,12 +26,13 @@ export function QuickClientButton({ onCreated }: Props) {
   const { toast } = useToast();
   const addClient = useStore((s) => s.addClient);
   const canCreateClient = usePermission("clients:write");
+  const { annexes, activeAnnexeId } = useActiveAnnexe();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<ClientInput>(emptyClientForm());
+  const [form, setForm] = useState<ClientInput>(emptyClientForm(activeAnnexeId ?? ""));
   const [saving, setSaving] = useState(false);
 
   function reset() {
-    setForm(emptyClientForm());
+    setForm(emptyClientForm(activeAnnexeId ?? ""));
   }
 
   async function handleCreate() {
@@ -81,6 +83,7 @@ export function QuickClientButton({ onCreated }: Props) {
           <ClientFormFields
             values={form}
             onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+            annexes={annexes}
             idPrefix="qc"
             autoFocusNom
           />

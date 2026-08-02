@@ -4,7 +4,7 @@ import type { Client, Dossier, Facture, Ecriture } from "@/lib/store";
 
 describe("syncClientStats", () => {
   it("additionne dossiers, factures actives et écritures sans double-compter les écritures liées", () => {
-    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "" }];
+    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
     const dossiers = [{ clientId: "c1", montantInvesti: 1000, montantPaye: 400 }] as Dossier[];
     const factures = [
       { clientId: "c1", statut: "Partielle", montantTTC: 500, montantPaye: 200 },
@@ -21,7 +21,7 @@ describe("syncClientStats", () => {
   });
 
   it("exclut les factures annulées du total dû", () => {
-    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "" }];
+    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
     const factures = [
       { clientId: "c1", statut: "Annulée", montantTTC: 1000, montantPaye: 0 },
     ] as Facture[];
@@ -30,7 +30,7 @@ describe("syncClientStats", () => {
   });
 
   it("compte le reste à payer d'une facture impayée même sans dossier associé", () => {
-    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "" }];
+    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
     const factures = [
       { clientId: "c1", statut: "Envoyée", montantTTC: 1200, montantPaye: 0 },
     ] as Facture[];

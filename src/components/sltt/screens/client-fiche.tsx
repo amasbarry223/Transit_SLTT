@@ -18,6 +18,7 @@ import { useNav } from "@/lib/nav-store";
 import { useStore, type ClientInput } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import {
   buildClasseurJournal,
@@ -85,6 +86,7 @@ export function ClientFicheScreen() {
   const patchEcriture = useStore((s) => s.patchEcriture);
   const patchFactureMontantPaye = useStore((s) => s.patchFactureMontantPaye);
   const addEcriture = useStore((s) => s.addEcriture);
+  const { annexes } = useActiveAnnexe();
 
   const [activeTab, setActiveTab] = useState<FicheTab>(() => (canSeeCompta ? "classeur" : "dossiers"));
   const visibleFicheTabs = useMemo(
@@ -201,6 +203,7 @@ export function ClientFicheScreen() {
             date: row.date,
             clientId: client.id,
             clientNom: client.nom,
+            annexeId: client.annexeId,
             montantInvesti: row.debit,
             montantPaye: row.credit,
             modePaiement: DEFAULT_PAIEMENT_MODE,
@@ -284,8 +287,9 @@ export function ClientFicheScreen() {
     });
     const transit = resolveTransitSociete(societes);
     const societeNom = transit?.nom ?? "Société transit";
-    const ville = transit?.adresse?.split(",")[0]?.trim() || "Bamako";
-    const msg = `${ville}, le ${today}\n\nObjet : Rappel de solde — ${societeNom}\n\nBonjour${client.type === "Entreprise" ? "" : " M./Mme"},\n\nNous vous contactons au sujet du solde restant dû sur vos dossiers de transit :\n\n${lignes}\n\nMontant total dû : ${total} FCFA\n\nNous vous prions de bien vouloir régulariser ce solde dans les meilleurs délais. Pour tout renseignement, n'hésitez pas à nous contacter.\n\nCordialement,\n${societeNom}`;
+    const ville = transit?.adresse?.split(",")[0]?.trim() || "";
+    const dateLine = ville ? `${ville}, le ${today}` : `Le ${today}`;
+    const msg = `${dateLine}\n\nObjet : Rappel de solde — ${societeNom}\n\nBonjour${client.type === "Entreprise" ? "" : " M./Mme"},\n\nNous vous contactons au sujet du solde restant dû sur vos dossiers de transit :\n\n${lignes}\n\nMontant total dû : ${total} FCFA\n\nNous vous prions de bien vouloir régulariser ce solde dans les meilleurs délais. Pour tout renseignement, n'hésitez pas à nous contacter.\n\nCordialement,\n${societeNom}`;
     setRelanceMsg(msg);
     setCopied(false);
     setRelanceOpen(true);
@@ -414,6 +418,7 @@ export function ClientFicheScreen() {
       telephone: client.telephone ?? "",
       email: client.email ?? "",
       adresse: client.adresse ?? "",
+      annexeId: client.annexeId,
     });
     setEditOpen(true);
   }
@@ -426,6 +431,7 @@ export function ClientFicheScreen() {
       telephone: editValues.telephone.trim(),
       email: editValues.email.trim(),
       adresse: editValues.adresse.trim(),
+      annexeId: editValues.annexeId,
     };
     updateClient(client.id, input);
     setEditOpen(false);
@@ -658,6 +664,7 @@ export function ClientFicheScreen() {
           <ClientFormFields
             values={editValues}
             onChange={(patch) => setEditValues((v) => ({ ...v, ...patch }))}
+            annexes={annexes}
             idPrefix="cl-edit"
           />
           <DialogFooter className="gap-2 sm:gap-0">

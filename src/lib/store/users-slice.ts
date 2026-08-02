@@ -22,6 +22,7 @@ export function mapProfileFromDb(x: ProfileRow): User {
         : (ROLE_DEFAULT_PERMISSIONS[role] ?? []),
     actif: x.actif,
     derniereConnexion: x.derniere_connexion || "",
+    annexeIds: [],
   };
 }
 
@@ -36,6 +37,8 @@ export interface UsersSlice {
   removeUser: (id: string) => Promise<void>;
   resetUserPassword: (id: string, password: string) => Promise<void>;
   updateLastLogin: (id: string) => Promise<void>;
+  /** Remplace intégralement les annexes assignées à un utilisateur — détermine son périmètre RLS. */
+  updateUserAnnexes: (id: string, annexeIds: string[]) => Promise<void>;
 }
 
 export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (set, get) => ({
@@ -64,8 +67,9 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
       users: [newUser, ...s.users],
       userSeq: seq + 1,
     }));
+    await get().updateUserAnnexes(newUser.id, input.annexeIds);
     await get().addAuditLog("Utilisateurs", "Création", `Utilisateur ${input.nom} créé`);
-    return newUser;
+    return { ...newUser, annexeIds: input.annexeIds };
   },
 
   updateUser: async (id, input) => {
@@ -88,7 +92,21 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
         u.id === id ? { ...u, ...input, permissions } : u,
       ),
     }));
+    await get().updateUserAnnexes(id, input.annexeIds);
     await get().addAuditLog("Utilisateurs", "Modification", `Utilisateur ${input.nom} mis à jour`);
+  },
+
+  updateUserAnnexes: async (id, annexeIds) => {
+    const res = await fetchWithAuth(`/api/admin/users/${id}/annexes`, {
+      method: "PATCH",
+      body: JSON.stringify({ annexeIds }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || "Impossible de mettre à jour les annexes de l'utilisateur.");
+
+    set((s) => ({
+      users: s.users.map((u) => (u.id === id ? { ...u, annexeIds } : u)),
+    }));
   },
 
   toggleUserActive: async (id) => {

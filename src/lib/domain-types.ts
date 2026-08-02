@@ -26,6 +26,8 @@ export interface Client {
   telephone: string;
   email: string;
   adresse: string;
+  annexeId: string;
+  annexeNom?: string;
   nbDossiers: number;
   totalDu: number;
   totalPaye: number;
@@ -36,6 +38,8 @@ export interface Dossier {
   reference: string;
   societeId: string;
   societeNom: string;
+  annexeId: string;
+  annexeNom?: string;
   clientId: string;
   clientNom: string;
   bl: string;
@@ -74,6 +78,9 @@ export interface FactureLigne {
   quantite: number;
   prixUnitaire: number;
   montantHT: number;
+  /** Compagnie maritime/aérienne — modèle facture annexe CI (conteneurs). */
+  compagnie?: string;
+  bordereauLivraison?: string;
 }
 
 export interface Facture {
@@ -84,6 +91,8 @@ export interface Facture {
   clientNom: string;
   societeId?: string;
   societeNom?: string;
+  annexeId: string;
+  annexeNom?: string;
   date: string;
   dateEcheance: string;
   statut: FactureStatut;
@@ -173,6 +182,8 @@ export interface Ecriture {
   /** Nullable : une écriture peut rester au niveau transit global (non affectée à une société). */
   societeId?: string;
   societeNom?: string;
+  annexeId: string;
+  annexeNom?: string;
   montantInvesti: number;
   montantPaye: number;
   modePaiement: PaiementMode;
@@ -185,6 +196,8 @@ export interface StockItem {
   clientNom?: string;
   societeId: string;
   societeNom: string;
+  annexeId: string;
+  annexeNom?: string;
   marchandise: string;
   quantite: number;
   unite: string;
@@ -200,6 +213,8 @@ export interface Mouvement {
   stockId?: string;
   societeId: string;
   societeNom: string;
+  annexeId: string;
+  annexeNom?: string;
   date: string;
   type: "Entrée" | "Sortie";
   marchandise: string;
@@ -218,6 +233,8 @@ export interface BonSortie {
   clientNom: string;
   societeId: string;
   societeNom: string;
+  annexeId: string;
+  annexeNom?: string;
   /** Référence vers l'article de stock concerné, pour un décrément fiable (les bons plus anciens peuvent ne pas l'avoir). */
   stockId?: string;
   marchandise: string;
@@ -248,6 +265,8 @@ export interface BonSortieCaisse {
   date: string;
   societeId: string;
   societeNom: string;
+  annexeId: string;
+  annexeNom?: string;
   lignes: SortieCaisseLigne[];
   montantTotal: number;
   creePar?: string;
@@ -257,7 +276,36 @@ export interface BonSortieCaisse {
 export interface BonSortieCaisseInput {
   date: string;
   societeId: string;
+  annexeId: string;
   lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;
+}
+
+/* ------------------------------------------------------------------ */
+/* ANNEXES — implantations physiques (Mali / Côte d'Ivoire).           */
+/* Axe orthogonal à Societe (entité légale/comptable) : cloisonnement  */
+/* de sécurité (RLS) par utilisateur assigné, alors que societeId n'a  */
+/* jamais été qu'un filtre UI.                                        */
+/* ------------------------------------------------------------------ */
+
+export interface Annexe {
+  id: string;
+  nom: string;
+  villeSiege: string;
+  adresse?: string;
+  telephone?: string;
+  rccm?: string;
+  nif?: string;
+  devise: string;
+  actif: boolean;
+}
+
+/** Champs éditables d'une annexe depuis Paramètres — id/actif exclus. */
+export interface AnnexeInput {
+  villeSiege?: string;
+  adresse?: string;
+  telephone?: string;
+  rccm?: string;
+  nif?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -511,6 +559,8 @@ export interface User {
   permissions: string[];
   actif: boolean;
   derniereConnexion: string;
+  /** Annexes assignées à l'utilisateur — détermine son périmètre RLS. Plus d'une = accès au reporting consolidé. */
+  annexeIds: string[];
 }
 
 export interface SubDossier {

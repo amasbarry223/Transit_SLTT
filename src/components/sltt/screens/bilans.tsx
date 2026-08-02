@@ -18,8 +18,10 @@ import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatFCFACompact, formatDateShort, parseLocalDate } from "@/lib/format";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
-import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
+import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -225,9 +227,8 @@ export function BilansScreen() {
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
   const factures = useStore((s) => s.factures);
-  const depenses = useStore((s) => s.depenses);
-  const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
   const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+  const { annexes, isMultiAnnexe } = useActiveAnnexe();
 
   // F1 : quand une société précise est sélectionnée, les écritures non
   // affectées (transit global) sont exclues des récaps/graphiques de cet écran.
@@ -259,44 +260,41 @@ export function BilansScreen() {
     });
   }, [ecritures, mois, periode]);
 
-  // F5 : le Bénéfice compte une écriture au mois où l'argent est réellement
-  // arrivé (datePaiement), pas au mois de création de l'écriture.
-  const ecrituresAvecDate = useMemo(
-    () => allEcritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
-    [allEcritures],
-  );
-  const depensesAvecDate = useMemo(
-    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
-    [depenses],
-  );
-  // Sorties de caisse : chaque bon porte désormais sa propre société (F1).
-  const caisseAvecDate = useMemo(
-    () =>
-      bonsSortieCaisse.flatMap((b) =>
-        b.lignes.map((l) => ({ societeId: b.societeId as string | undefined, date: l.date, montant: l.montant })),
-      ),
-    [bonsSortieCaisse],
-  );
-
   // F5 — Bénéfice sur le mois de référence sélectionné (indépendant de la
   // granularité "période" choisie, qui ne s'applique qu'au récap client).
-  const benefice = useMemo(() => {
+  // Calcul partagé avec comptabilite.tsx / dashboard.tsx (useBeneficeParSociete) —
+  // ne pas le réimplémenter ici.
+  const anchorDate = useMemo(() => {
+    const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
+    return new Date(year, month - 1);
+  }, [mois]);
+  const { consolide, parSociete, ecrituresAvecDate, caisseAvecDate } = useBeneficeParSociete(anchorDate);
+
+  // F-ANNEXE — reporting consolidé par annexe, réservé aux utilisateurs
+  // multi-annexes (RLS les laisse déjà voir les données des deux annexes ;
+  // ce bloc n'est qu'un regroupement client-side, aucun contournement RLS).
+  // Contrairement au bénéfice par société, les dépenses de contrats ne sont
+  // pas comptées ici : contrats/dépenses restent hors périmètre annexe pour
+  // cette itération (cf. plan F-ANNEXE) — seules les sorties de caisse
+  // (annexe-scopées) sont déduites des recettes.
+  const beneficeAnnexe = useMemo(() => {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
     const m = month - 1;
-    const computeFor = (societeId: string | null) => {
+    const computeFor = (annexeId: string | null) => {
       const recettes =
-        filterBySocieteAndPeriode(ecrituresAvecDate, societeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
-        filterBySocieteAndPeriode(factures, societeId, year, m).reduce((sum, f) => sum + f.montantPaye, 0);
-      const depensesMois =
-        filterBySocieteAndPeriode(depensesAvecDate, societeId, year, m).reduce((sum, d) => sum + d.montant, 0) +
-        filterBySocieteAndPeriode(caisseAvecDate, societeId, year, m).reduce((sum, d) => sum + d.montant, 0);
+        filterByAnnexeAndPeriode(ecrituresAvecDate, annexeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
+        filterByAnnexeAndPeriode(factures, annexeId, year, m).reduce((sum, f) => sum + f.montantPaye, 0);
+      const depensesMois = filterByAnnexeAndPeriode(caisseAvecDate, annexeId, year, m).reduce(
+        (sum, d) => sum + d.montant,
+        0,
+      );
       return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
     };
     return {
       consolide: computeFor(null),
-      parSociete: societes.map((s) => ({ societe: s, ...computeFor(s.id) })),
+      parAnnexe: annexes.map((a) => ({ annexe: a, ...computeFor(a.id) })),
     };
-  }, [ecrituresAvecDate, factures, depensesAvecDate, caisseAvecDate, societes, mois]);
+  }, [ecrituresAvecDate, factures, caisseAvecDate, annexes, mois]);
 
   // Le calcul ci-dessus porte toujours sur un seul mois de référence, quelle
   // que soit la granularité "période" choisie (voir commentaire F5 plus haut)
@@ -546,13 +544,13 @@ export function BilansScreen() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard
             label="Toutes sociétés"
-            value={formatFCFA(benefice.consolide.benefice)}
+            value={formatFCFA(consolide.benefice)}
             icon={TrendingUp}
-            tone={benefice.consolide.benefice >= 0 ? "emerald" : "red"}
+            tone={consolide.benefice >= 0 ? "emerald" : "red"}
             sublabel="Recettes − Dépenses, consolidé"
             tooltip={`Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois. Consolidé = somme de toutes les sociétés (${societes.length}) + activité non affectée (transit).`}
           />
-          {benefice.parSociete.map(({ societe, benefice: b }) => (
+          {parSociete.map(({ societe, benefice: b }) => (
             <KpiCard
               key={societe.id}
               label={societe.nom}
@@ -564,6 +562,34 @@ export function BilansScreen() {
           ))}
         </div>
       </div>
+
+      {isMultiAnnexe && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Vue consolidée par annexe — {beneficeMoisLabel}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <KpiCard
+              label="Toutes annexes"
+              value={formatFCFA(beneficeAnnexe.consolide.benefice)}
+              icon={TrendingUp}
+              tone={beneficeAnnexe.consolide.benefice >= 0 ? "emerald" : "red"}
+              sublabel="Recettes − sorties de caisse, consolidé"
+              tooltip="Recettes = écritures + paiements factures du mois de référence, toutes annexes confondues. Réservé aux comptes ayant accès à plusieurs annexes."
+            />
+            {beneficeAnnexe.parAnnexe.map(({ annexe, benefice: b }) => (
+              <KpiCard
+                key={annexe.id}
+                label={annexe.nom}
+                value={formatFCFA(b)}
+                icon={TrendingUp}
+                tone={b >= 0 ? "emerald" : "red"}
+                sublabel="bénéfice du mois"
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Bar chart — full year overview */}
       <Card className="p-5 shadow-sm border-border/80 gap-4">

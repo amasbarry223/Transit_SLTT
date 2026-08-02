@@ -24,6 +24,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCurrentUser } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import {
   getModuleSummary,
   normalizePermissions,
@@ -129,6 +130,8 @@ interface UserFormState {
   confirmPassword: string;
   resetPassword: string;
   resetConfirmPassword: string;
+  /** Annexes assignées — détermine le périmètre RLS de l'utilisateur. */
+  annexeIds: string[];
 }
 
 /** True si les permissions de l'utilisateur s'écartent du standard de son rôle (LOGIC-audit). */
@@ -139,7 +142,7 @@ function isCustomPermissionSet(role: UserRole, permissions: string[]): boolean {
   return standard.some((p) => !actual.has(p));
 }
 
-function emptyFormState(role: UserRole = "Agent de transit"): UserFormState {
+function emptyFormState(role: UserRole = "Agent de transit", annexeIds: string[] = []): UserFormState {
   return {
     nom: "",
     email: "",
@@ -149,7 +152,45 @@ function emptyFormState(role: UserRole = "Agent de transit"): UserFormState {
     confirmPassword: "",
     resetPassword: "",
     resetConfirmPassword: "",
+    annexeIds,
   };
+}
+
+function AnnexePicker({
+  annexes,
+  value,
+  onChange,
+}: {
+  annexes: { id: string; nom: string }[];
+  value: string[];
+  onChange: (annexeIds: string[]) => void;
+}) {
+  function toggle(id: string) {
+    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+  }
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {annexes.map((a) => {
+        const selected = value.includes(a.id);
+        return (
+          <button
+            key={a.id}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => toggle(a.id)}
+            className={cn(
+              "flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-medium transition-all",
+              selected
+                ? "border-primary bg-primary/5 text-primary ring-2 ring-primary"
+                : "border-border bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300 hover:border-slate-300",
+            )}
+          >
+            {a.nom}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function PasswordField({
@@ -280,6 +321,7 @@ function UserFormModal({
   const [showResetPwd, setShowResetPwd] = useState(false);
   const { toast } = useToast();
   const currentUser = useCurrentUser();
+  const annexes = useStore((s) => s.annexes);
   const isEditingSelf = mode === "edit" && editingUserId === currentUser?.id;
   const isDemotingSelf = isEditingSelf && initialState.role === "Administrateur" && form.role !== "Administrateur";
 
@@ -370,7 +412,7 @@ function UserFormModal({
                           id="form-nom"
                           value={form.nom}
                           onChange={(e) => setForm((p) => ({ ...p, nom: e.target.value }))}
-                          placeholder="ex. Awa Traoré"
+                          placeholder="ex. Prénom Nom"
                           required
                           className="h-11"
                         />
@@ -382,7 +424,7 @@ function UserFormModal({
                           type="email"
                           value={form.email}
                           onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                          placeholder="awa.traore@sltt.ml"
+                          placeholder="ex. utilisateur@exemple.com"
                           required
                           className="h-11"
                         />
@@ -422,6 +464,17 @@ function UserFormModal({
                           Seul un administrateur peut créer un compte Administrateur.
                         </p>
                       )}
+                    </div>
+                    <div className="space-y-3">
+                      <Label>Annexes assignées <span className="text-red-500">*</span></Label>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Détermine les données visibles par l&apos;utilisateur — plusieurs annexes donnent accès au reporting consolidé.
+                      </p>
+                      <AnnexePicker
+                        annexes={annexes}
+                        value={form.annexeIds}
+                        onChange={(annexeIds) => setForm((p) => ({ ...p, annexeIds }))}
+                      />
                     </div>
                     <button
                       type="button"
@@ -481,7 +534,7 @@ function UserFormModal({
                       <ChevronRight className="size-4" />
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={saving}>
+                    <Button type="submit" disabled={saving || form.annexeIds.length === 0}>
                       {saving ? "Création…" : "Créer l'utilisateur"}
                     </Button>
                   )}
@@ -527,7 +580,7 @@ function UserFormModal({
                       id="form-nom"
                       value={form.nom}
                       onChange={(e) => setForm((p) => ({ ...p, nom: e.target.value }))}
-                      placeholder="ex. Awa Traoré"
+                      placeholder="ex. Prénom Nom"
                       required
                       className="h-11"
                     />
@@ -541,7 +594,7 @@ function UserFormModal({
                         type="email"
                         value={form.email}
                         onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                        placeholder="awa.traore@sltt.ml"
+                        placeholder="ex. utilisateur@exemple.com"
                         required
                         className="h-11 pl-10"
                       />
@@ -559,6 +612,17 @@ function UserFormModal({
                       Vous modifiez votre propre rôle : en enregistrant, vous perdrez immédiatement l&apos;accès aux écrans réservés aux administrateurs.
                     </p>
                   )}
+                </div>
+                <div className="space-y-3">
+                  <Label>Annexes assignées</Label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Détermine les données visibles par l&apos;utilisateur — plusieurs annexes donnent accès au reporting consolidé.
+                  </p>
+                  <AnnexePicker
+                    annexes={annexes}
+                    value={form.annexeIds}
+                    onChange={(annexeIds) => setForm((p) => ({ ...p, annexeIds }))}
+                  />
                 </div>
               </TabsContent>
 
@@ -669,7 +733,10 @@ function UserFormModal({
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Annuler
                 </Button>
-                <Button type="submit" disabled={saving || !form.nom.trim() || !form.email.trim() || readOnly}>
+                <Button
+                  type="submit"
+                  disabled={saving || !form.nom.trim() || !form.email.trim() || form.annexeIds.length === 0 || readOnly}
+                >
                   {saving ? "Enregistrement…" : "Enregistrer"}
                 </Button>
               </div>
@@ -715,6 +782,7 @@ export function UsersTab() {
   const toggleUserActive = useStore((s) => s.toggleUserActive);
   const removeUser = useStore((s) => s.removeUser);
   const resetUserPassword = useStore((s) => s.resetUserPassword);
+  const { activeAnnexeId } = useActiveAnnexe();
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
@@ -773,7 +841,7 @@ export function UsersTab() {
   function openCreate() {
     setFormMode("create");
     setEditingUserId(null);
-    setFormInitial(emptyFormState());
+    setFormInitial(emptyFormState("Agent de transit", activeAnnexeId ? [activeAnnexeId] : []));
     setFormOpen(true);
   }
 
@@ -791,6 +859,7 @@ export function UsersTab() {
       confirmPassword: "",
       resetPassword: "",
       resetConfirmPassword: "",
+      annexeIds: u.annexeIds,
     });
     setFormOpen(true);
   }
@@ -814,6 +883,7 @@ export function UsersTab() {
       role: state.role,
       permissions: permissionsFromSelection(state.perms),
       motDePasse: state.password,
+      annexeIds: state.annexeIds,
     };
     setSaving(true);
     try {
@@ -837,6 +907,7 @@ export function UsersTab() {
       email: state.email.trim(),
       role: state.role,
       permissions: permissionsFromSelection(state.perms),
+      annexeIds: state.annexeIds,
     };
     setSaving(true);
     try {

@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sync:ocr-assets": "node scripts/sync-ocr-assets.mjs",
-    "postinstall": "node scripts/sync-ocr-assets.mjs"
+    "postinstall": "node scripts/sync-ocr-assets.mjs",
+    "db:seed:demo": "node scripts/db-seed-demo.mjs"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.14",

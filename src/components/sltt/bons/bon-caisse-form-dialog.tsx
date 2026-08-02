@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { useNav } from "@/lib/nav-store";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,11 +45,13 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
   const addBonSortieCaisse = useStore((state) => state.addBonSortieCaisse);
   const societes = useStore((state) => state.societes);
   const selectedSocieteId = useNav((state) => state.selectedSocieteId);
+  const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const [caisseDate, setCaisseDate] = useState(todayIso);
   const [caisseSocieteId, setCaisseSocieteId] = useState("");
+  const [caisseAnnexeId, setCaisseAnnexeId] = useState("");
   const [caisseLignes, setCaisseLignes] = useState<CaisseLigneForm[]>([
     { date: todayIso, beneficiaire: "", motif: "", montant: "" },
   ]);
@@ -59,6 +62,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
     if (open) {
       setCaisseDate(todayIso);
       setCaisseSocieteId(selectedSocieteId ?? societes[0]?.id ?? "");
+      setCaisseAnnexeId(activeAnnexeId ?? "");
       setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
     }
   }
@@ -66,6 +70,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
   const caisseTotalSaisi = caisseLignes.reduce((sum, ligne) => sum + (Number(ligne.montant) || 0), 0);
   const caisseValid =
     !!caisseSocieteId &&
+    !!caisseAnnexeId &&
     caisseLignes.length > 0 &&
     caisseLignes.every((ligne) => ligne.beneficiaire.trim() && ligne.motif.trim() && Number(ligne.montant) > 0);
 
@@ -93,6 +98,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
       const bon = await addBonSortieCaisse({
         date: caisseDate,
         societeId: caisseSocieteId,
+        annexeId: caisseAnnexeId,
         lignes: caisseLignes.map((ligne) => ({
           date: ligne.date,
           beneficiaire: ligne.beneficiaire.trim(),
@@ -161,6 +167,26 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
               </SelectContent>
             </Select>
           </div>
+
+          {annexes.length > 1 && (
+            <div className="space-y-2">
+              <Label htmlFor="caisse-annexe" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Annexe <span className="text-red-500">*</span>
+              </Label>
+              <Select value={caisseAnnexeId} onValueChange={setCaisseAnnexeId}>
+                <SelectTrigger id="caisse-annexe" className="h-10 w-full sm:w-52">
+                  <SelectValue placeholder="Sélectionner une annexe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {annexes.map((annexe) => (
+                    <SelectItem key={annexe.id} value={annexe.id}>
+                      {annexe.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">

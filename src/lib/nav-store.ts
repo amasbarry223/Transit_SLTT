@@ -54,6 +54,8 @@ interface NavState {
   theme: Theme;
   /** Filtre société partagé et mémorisé entre écrans (F1). null = "Toutes les sociétés". */
   selectedSocieteId: string | null;
+  /** Annexe active — sous quelle annexe créer les nouveaux enregistrements. Pas un filtre de lecture (la RLS restreint déjà les lectures aux annexes assignées à l'utilisateur). */
+  selectedAnnexeId: string | null;
   /** Canal transitoire (non persisté) pour préremplir une facture depuis une prestation optionnelle F6. */
   pendingFacturePrefill: {
     clientId: string;
@@ -78,6 +80,7 @@ interface NavState {
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   setSelectedSocieteId: (id: string | null) => void;
+  setSelectedAnnexeId: (id: string | null) => void;
   setPendingFacturePrefill: (p: NavState["pendingFacturePrefill"]) => void;
 }
 
@@ -100,6 +103,7 @@ export const useNav = create<NavState>()(
       devisEditMode: false,
       theme: "light",
       selectedSocieteId: null,
+      selectedAnnexeId: null,
       pendingFacturePrefill: null,
       ...LOGGED_OUT,
 
@@ -164,6 +168,7 @@ export const useNav = create<NavState>()(
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
       setSelectedSocieteId: (id) => set({ selectedSocieteId: id }),
+      setSelectedAnnexeId: (id) => set({ selectedAnnexeId: id }),
       setPendingFacturePrefill: (p) => set({ pendingFacturePrefill: p }),
     }),
     {
@@ -178,6 +183,7 @@ export const useNav = create<NavState>()(
         lastActivityAt: s.lastActivityAt,
         theme: s.theme,
         selectedSocieteId: s.selectedSocieteId,
+        selectedAnnexeId: s.selectedAnnexeId,
       }),
     },
   ),

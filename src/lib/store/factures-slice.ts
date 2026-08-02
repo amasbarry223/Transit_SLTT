@@ -22,6 +22,8 @@ export function mapFactureFromDb(x: FactureRow): Facture {
     clientNom: x.clients?.nom || "—",
     societeId: x.societe_id || undefined,
     societeNom: x.societes?.nom || undefined,
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     date: x.date,
     dateEcheance: x.date_echeance,
     statut: x.statut,
@@ -39,6 +41,8 @@ export function mapFactureFromDb(x: FactureRow): Facture {
       quantite: Number(l.quantite),
       prixUnitaire: Number(l.prix_unitaire),
       montantHT: Number(l.montant_ht),
+      compagnie: l.compagnie || undefined,
+      bordereauLivraison: l.bordereau_livraison || undefined,
     })),
   };
 }
@@ -75,6 +79,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
         dossier_id: input.dossierId,
         client_id: input.clientId,
         societe_id: input.societeId || null,
+        annexe_id: input.annexeId,
         date: input.date,
         date_echeance: input.dateEcheance,
         statut: "Brouillon",
@@ -101,6 +106,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
             quantite: l.quantite,
             prix_unitaire: l.prixUnitaire,
             montant_ht: l.quantite * l.prixUnitaire,
+            compagnie: l.compagnie || null,
+            bordereau_livraison: l.bordereauLivraison || null,
           })),
         );
       if (errLignes) throw errLignes;
@@ -108,7 +115,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
 
     const { data: fullFact, error: errFetch } = await supabase
       .from("factures")
-      .select("*, facture_lignes(*), clients(nom), societes(nom)")
+      .select("*, facture_lignes(*), clients(nom), societes(nom), annexes(nom)")
       .eq("id", dbFact.id)
       .single();
 
@@ -145,6 +152,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
         dossier_id: input.dossierId,
         client_id: input.clientId,
         societe_id: input.societeId ?? null,
+        annexe_id: input.annexeId,
         date: input.date,
         date_echeance: input.dateEcheance,
         taux_tva: input.tauxTVA,
@@ -167,6 +175,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
           quantite: l.quantite,
           prix_unitaire: l.prixUnitaire,
           montant_ht: l.quantite * l.prixUnitaire,
+          compagnie: l.compagnie || null,
+          bordereau_livraison: l.bordereauLivraison || null,
         })),
       );
       if (errInsertLignes) throw errInsertLignes;
@@ -181,11 +191,14 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
           quantite: l.quantite,
           prixUnitaire: l.prixUnitaire,
           montantHT: l.quantite * l.prixUnitaire,
+          compagnie: l.compagnie,
+          bordereauLivraison: l.bordereauLivraison,
         }));
         return {
           ...fact,
           ...input,
           societeId: input.societeId ?? undefined,
+          annexeId: input.annexeId,
           montantHT: HT,
           montantTVA: TVA,
           montantTTC: TTC,
@@ -307,18 +320,20 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   patchFactureMontantPaye: async (id, montantPaye) => {
     const fact = get().factures.find((f) => f.id === id);
     if (!fact) throw new Error("Facture introuvable");
-    if (fact.statut === "Annulée" || fact.statut === "Brouillon") {
+    if (fact.statut === "Annulée" || fact.statut === "Brouillon" || fact.statut === "Soldée") {
       throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
     }
-    const paye = Math.max(0, Math.min(fact.montantTTC, montantPaye));
-    const newStatut: FactureStatut =
-      paye >= fact.montantTTC ? "Soldée" : paye > 0 ? "Partielle" : fact.statut === "Soldée" ? "Envoyée" : fact.statut;
 
-    const { error } = await supabase
-      .from("factures")
-      .update({ montant_paye: paye, statut: newStatut })
-      .eq("id", id);
+    // RPC atomique (verrou ligne en DB) : évite d'écraser un encaissement concurrent
+    // enregistré au même moment via recordFacturePaiement.
+    const { data, error } = await supabase.rpc("patch_facture_montant_paye", {
+      p_facture_id: id,
+      p_montant_paye: montantPaye,
+    });
     if (error) throw error;
+    const row = data as { montant_paye: number; statut: FactureStatut };
+    const paye = Number(row.montant_paye);
+    const newStatut = row.statut;
 
     set((s) => {
       const updatedFactures = s.factures.map((f) =>

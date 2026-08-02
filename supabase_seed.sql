@@ -1,9 +1,14 @@
 -- =====================================================================
--- JEU DE DONNEES INITIAL (SEED DATA) POUR TRANSIT SLTT (SUPABASE)
+-- SEED DÉMO UNIQUEMENT — NE PAS EXÉCUTER EN PRODUCTION
 -- =====================================================================
--- Ce fichier contient des requêtes d'insertion pour pré-remplir les tables
--- avec les données de démonstration du frontend de l'application.
--- Projet Supabase ID : qhpmegadoumarppmdbfn
+-- Contient des clients, dossiers, factures, stock et utilisateurs FICTIFS
+-- destinés aux environnements locaux / démo.
+--
+-- Hors pipeline prod : les migrations `supabase/migrations/*` suffisent.
+-- Pour charger volontairement ce jeu :
+--   npm run db:seed:demo -- --confirm
+--
+-- Ne confondez pas avec les migrations sociétés (identité légale réelle).
 -- =====================================================================
 
 -- Début de transaction pour garantir la cohérence

@@ -39,7 +39,8 @@ export async function syncDossierPayeFromEcritures(
 }
 
 export interface DossierSoldeEcritureContext {
-  montantPaye: number;
+  /** Montant reçu à l'instant T (delta) — le calcul du cumul est fait en DB, atomiquement. */
+  montantRecu: number;
   modePaiement?: PaiementMode;
   transitionNote?: string;
   resolvedDate: string;
@@ -49,61 +50,25 @@ export interface DossierSoldeEcritureContext {
 export interface EcritureSoldeLocalPatch {
   ecritures: Ecriture[];
   ecritureSeq?: number;
+  /** Montant payé du dossier tel que recalculé par la DB (sum(ecritures) authoritative). */
+  dossierMontantPaye: number;
 }
 
-function buildSoldeDossierNote(dossier: Dossier, transitionNote?: string, existingNote?: string): string {
-  const fallback = `Solde dossier ${dossier.reference}`;
-  return transitionNote || existingNote || fallback;
-}
-
-/** Met à jour l'état local des écritures lors d'une transition vers « Soldé ». */
-export function applyEcritureSoldeToLocalState(
-  dossier: Dossier,
-  ecritures: Ecriture[],
-  ecritureSeq: number,
-  context: DossierSoldeEcritureContext,
-): EcritureSoldeLocalPatch {
-  const existingIdx = ecritures.findIndex((e) => e.dossierId === dossier.id);
-  const resolvedMode = context.modePaiement ?? DEFAULT_PAIEMENT_MODE;
-
-  if (existingIdx >= 0) {
-    return {
-      ecritures: ecritures.map((e) =>
-        e.dossierId === dossier.id
-          ? {
-              ...e,
-              montantPaye: context.montantPaye,
-              modePaiement: context.modePaiement ?? e.modePaiement,
-              datePaiement: context.resolvedDate,
-              note: buildSoldeDossierNote(dossier, context.transitionNote, e.note),
-            }
-          : e,
-      ),
-    };
-  }
-
-  const autoEcriture: Ecriture = {
-    id: `E-${ecritureSeq}`,
-    date: context.today,
-    datePaiement: context.resolvedDate,
-    clientId: dossier.clientId,
-    clientNom: dossier.clientNom,
-    dossierId: dossier.id,
-    montantInvesti: dossier.montantInvesti,
-    montantPaye: context.montantPaye,
-    modePaiement: resolvedMode,
-    note: buildSoldeDossierNote(dossier, context.transitionNote),
-  };
-
-  return {
-    ecritures: [autoEcriture, ...ecritures],
-    ecritureSeq: ecritureSeq + 1,
-  };
+interface RecordDossierSoldePaiementRow {
+  dossier_montant_paye: number | string;
+  ecriture_id: string;
+  ecriture_montant_paye: number | string;
+  ecriture_mode_paiement: PaiementMode | null;
+  ecriture_date_paiement: string | null;
+  ecriture_note: string | null;
 }
 
 /**
- * Crée ou met à jour l'écriture comptable lors d'une transition dossier vers « Soldé ».
- * Couvre la persistance Supabase et le patch d'état local.
+ * Enregistre atomiquement le paiement de solde + le passage du dossier à
+ * « Soldé » via le RPC record_dossier_solde_paiement (verrou dossier +
+ * écriture côté Postgres, cumul calculé en DB). Remplace l'ancien calcul
+ * client (lecture état local + Math.min/max + deux .update() séparés) qui
+ * pouvait faire perdre un paiement en cas de transitions concurrentes.
  */
 export async function syncEcritureWhenDossierSolde(
   dossier: Dossier,
@@ -111,36 +76,46 @@ export async function syncEcritureWhenDossierSolde(
   ecritureSeq: number,
   context: DossierSoldeEcritureContext,
 ): Promise<EcritureSoldeLocalPatch> {
-  const existing = ecritures.find((e) => e.dossierId === dossier.id);
-  const resolvedMode = context.modePaiement ?? existing?.modePaiement ?? DEFAULT_PAIEMENT_MODE;
-  const resolvedNote = buildSoldeDossierNote(dossier, context.transitionNote, existing?.note);
+  const { data, error } = await supabase.rpc("record_dossier_solde_paiement", {
+    p_dossier_id: dossier.id,
+    p_montant: context.montantRecu,
+    p_mode: context.modePaiement ?? null,
+    p_date: context.resolvedDate,
+    p_note: context.transitionNote ?? null,
+  });
+  if (error) throw error;
+  const row = (data as RecordDossierSoldePaiementRow[] | null)?.[0];
+  if (!row) throw new Error("Réponse inattendue du serveur lors du solde du dossier.");
 
-  if (existing) {
-    const { error } = await supabase
-      .from("ecritures")
-      .update({
-        montant_paye: context.montantPaye,
-        mode_paiement: resolvedMode,
-        date_paiement: context.resolvedDate,
-        note: resolvedNote,
-      })
-      .eq("dossier_id", dossier.id);
-    if (error) throw error;
-  } else {
-    const { error } = await supabase.from("ecritures").insert({
-      date: context.today,
-      date_paiement: context.resolvedDate,
-      client_id: dossier.clientId,
-      dossier_id: dossier.id,
-      montant_investi: dossier.montantInvesti,
-      montant_paye: context.montantPaye,
-      mode_paiement: resolvedMode,
-      note: resolvedNote,
-    });
-    if (error) throw error;
+  const dossierMontantPaye = Number(row.dossier_montant_paye);
+  const existingIdx = ecritures.findIndex((e) => e.dossierId === dossier.id);
+  const patchedEcriture: Ecriture = {
+    id: row.ecriture_id,
+    date: existingIdx >= 0 ? ecritures[existingIdx].date : context.today,
+    datePaiement: row.ecriture_date_paiement ?? context.resolvedDate,
+    clientId: dossier.clientId,
+    clientNom: dossier.clientNom,
+    dossierId: dossier.id,
+    annexeId: dossier.annexeId,
+    annexeNom: dossier.annexeNom,
+    montantInvesti: existingIdx >= 0 ? ecritures[existingIdx].montantInvesti : dossier.montantInvesti,
+    montantPaye: Number(row.ecriture_montant_paye),
+    modePaiement: row.ecriture_mode_paiement ?? context.modePaiement ?? DEFAULT_PAIEMENT_MODE,
+    note: row.ecriture_note ?? `Solde dossier ${dossier.reference}`,
+  };
+
+  if (existingIdx >= 0) {
+    return {
+      ecritures: ecritures.map((e, i) => (i === existingIdx ? patchedEcriture : e)),
+      dossierMontantPaye,
+    };
   }
 
-  return applyEcritureSoldeToLocalState(dossier, ecritures, ecritureSeq, context);
+  return {
+    ecritures: [patchedEcriture, ...ecritures],
+    ecritureSeq: ecritureSeq + 1,
+    dossierMontantPaye,
+  };
 }
 
 /** Indique si une transition vers « Soldé » doit synchroniser une écriture. */

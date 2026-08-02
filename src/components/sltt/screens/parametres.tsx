@@ -19,6 +19,7 @@ import {
   ChevronRight,
   ImagePlus,
   Loader2,
+  MapPin,
   X,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
@@ -26,9 +27,9 @@ import { useNav } from "@/lib/nav-store";
 import { useCurrentUser, useCanManageUsers, usePermission } from "@/hooks/use-permission";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { UsersTab } from "@/components/sltt/users-tab";
-import type { UserRole, AuditAction, AuditModule, AuditEntry } from "@/lib/store";
-import type { Societe, SocieteInput } from "@/lib/domain-types";
-import { formatDateShort, formatDateTime } from "@/lib/format";
+import type { AuditAction } from "@/lib/store";
+import type { Annexe, AnnexeInput, Societe, SocieteInput } from "@/lib/domain-types";
+import { formatDateTime } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { GUIDE_DISMISS_KEY, emitGuideReset } from "@/lib/guide-progress";
@@ -37,7 +38,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -45,24 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableHeader,
@@ -499,26 +481,188 @@ function SocieteCard({
   );
 }
 
+function AnnexeCard({
+  annexe,
+  onSave,
+}: {
+  annexe: Annexe;
+  onSave: (id: string, input: AnnexeInput) => Promise<void>;
+}) {
+  const { toast } = useToast();
+  const [values, setValues] = useState<AnnexeInput>({
+    villeSiege: annexe.villeSiege,
+    adresse: annexe.adresse ?? "",
+    telephone: annexe.telephone ?? "",
+    rccm: annexe.rccm ?? "",
+    nif: annexe.nif ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  // Même logique de détection de conflit que SocieteCard — évite qu'un admin
+  // écrase en silence la mise à jour d'un autre pendant que ce formulaire est ouvert.
+  const [baseline, setBaseline] = useState(annexe);
+  const hasConflict = JSON.stringify(annexe) !== JSON.stringify(baseline);
+
+  function set<K extends keyof AnnexeInput>(key: K, value: AnnexeInput[K]) {
+    setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  function reloadFromLatest() {
+    setValues({
+      villeSiege: annexe.villeSiege,
+      adresse: annexe.adresse ?? "",
+      telephone: annexe.telephone ?? "",
+      rccm: annexe.rccm ?? "",
+      nif: annexe.nif ?? "",
+    });
+    setBaseline(annexe);
+    toast({ title: "Dernières valeurs chargées", description: "Vos modifications précédentes ont été remplacées." });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (hasConflict) {
+      toast({
+        title: "Conflit de modification",
+        description: "Cette annexe a été modifiée entre-temps. Rechargez les dernières valeurs avant d'enregistrer.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const trimmedVille = values.villeSiege?.trim();
+    if (!trimmedVille) {
+      toast({ title: "La ville de siège est requise", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const input: AnnexeInput = {
+        villeSiege: trimmedVille,
+        adresse: values.adresse?.trim() || undefined,
+        telephone: values.telephone?.trim() || undefined,
+        rccm: values.rccm?.trim() || undefined,
+        nif: values.nif?.trim() || undefined,
+      };
+      await onSave(annexe.id, input);
+      setBaseline((b) => ({ ...b, ...input }));
+      toast({ title: "Annexe mise à jour", description: annexe.nom });
+    } catch (err: unknown) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible d'enregistrer l'annexe.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-6 shadow-sm border-border/80">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {hasConflict && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="size-4 shrink-0" />
+              Cette annexe a été modifiée par quelqu&apos;un d&apos;autre depuis l&apos;ouverture de ce formulaire.
+            </span>
+            <Button type="button" size="sm" variant="outline" onClick={reloadFromLatest}>
+              Charger les dernières valeurs
+            </Button>
+          </div>
+        )}
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+            <MapPin className="size-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{annexe.nom}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Identité légale locale — imprimée sur les factures émises depuis cette annexe (le nom du logo/société reste celui de la société liée au dossier).
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Ville de siège</Label>
+            <Input value={values.villeSiege} onChange={(e) => set("villeSiege", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
+            <Input value={values.telephone} onChange={(e) => set("telephone", e.target.value)} />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</Label>
+            <Input
+              value={values.adresse}
+              onChange={(e) => set("adresse", e.target.value)}
+              placeholder="Ex. Quartier, rue, porte"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">RCCM</Label>
+            <Input
+              value={values.rccm}
+              onChange={(e) => set("rccm", e.target.value)}
+              placeholder="Ex. CI.ABJ.2026 B.1234"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">NIF</Label>
+            <Input value={values.nif} onChange={(e) => set("nif", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={saving}>
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
 function SocietesTab() {
   const societes = useStore((s) => s.societes);
   const updateSociete = useStore((s) => s.updateSociete);
   const uploadSocieteLogo = useStore((s) => s.uploadSocieteLogo);
+  const annexes = useStore((s) => s.annexes);
+  const updateAnnexe = useStore((s) => s.updateAnnexe);
 
   return (
-    <div className="space-y-5">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        Identité légale de chaque société — utilisée automatiquement sur les devis, factures,
-        bons de sortie et autres documents imprimés. Modifier ces champs ne nécessite plus
-        d&apos;intervention technique.
-      </p>
-      {societes.map((societe) => (
-        <SocieteCard
-          key={societe.id}
-          societe={societe}
-          onSave={updateSociete}
-          onUploadLogo={uploadSocieteLogo}
-        />
-      ))}
+    <div className="space-y-10">
+      <div className="space-y-5">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Identité légale de chaque société — utilisée automatiquement sur les devis, factures,
+          bons de sortie et autres documents imprimés. Modifier ces champs ne nécessite plus
+          d&apos;intervention technique.
+        </p>
+        {societes.map((societe) => (
+          <SocieteCard
+            key={societe.id}
+            societe={societe}
+            onSave={updateSociete}
+            onUploadLogo={uploadSocieteLogo}
+          />
+        ))}
+      </div>
+
+      <div className="space-y-5 border-t border-border/60 pt-8">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Annexes</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Coordonnées et identité légale (RCCM/NIF) de chaque implantation physique (Mali,
+            Côte d&apos;Ivoire) — indépendante de la société. C&apos;est l&apos;annexe qui
+            détermine l&apos;en-tête légal imprimé sur une facture, quelle que soit la société
+            du dossier facturé. Le RCCM/NIF peut rester vide en attendant l&apos;immatriculation
+            officielle de l&apos;annexe.
+          </p>
+        </div>
+        {annexes.map((annexe) => (
+          <AnnexeCard key={annexe.id} annexe={annexe} onSave={updateAnnexe} />
+        ))}
+      </div>
     </div>
   );
 }

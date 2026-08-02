@@ -45,6 +45,8 @@ export interface ClientRow {
   telephone: string;
   email: string;
   adresse: string;
+  annexe_id: string;
+  annexes?: NamedRelation;
 }
 
 export interface FournisseurRow {
@@ -81,6 +83,8 @@ export interface EcritureRow {
   dossier_id: string | null;
   societe_id: string | null;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   montant_investi: number | string | null;
   montant_paye: number | string | null;
   mode_paiement: PaiementMode | null;
@@ -93,6 +97,8 @@ export interface StockItemRow {
   clients?: NamedRelation;
   societe_id: string;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   marchandise: string;
   quantite: number | string;
   unite: string;
@@ -108,6 +114,8 @@ export interface MouvementRow {
   stock_id: string | null;
   societe_id: string;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   date: string;
   type: MouvementType;
   marchandise: string | null;
@@ -127,6 +135,8 @@ export interface BonSortieRow {
   client_nom?: string | null;
   societe_id: string;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   stock_id: string | null;
   marchandise: string;
   quantite: number | string;
@@ -150,6 +160,8 @@ export interface BonSortieCaisseRow {
   date: string;
   societe_id: string;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   montant_total: number | string;
   cree_par: string | null;
   created_at: string;
@@ -169,6 +181,18 @@ export interface SocieteRow {
   signataire_dg: string | null;
   signataire_pdg: string | null;
   is_transit: boolean | null;
+}
+
+export interface AnnexeRow {
+  id: string;
+  nom: string;
+  ville_siege: string;
+  adresse: string | null;
+  telephone: string | null;
+  rccm: string | null;
+  nif: string | null;
+  devise: string;
+  actif: boolean;
 }
 
 export interface ContratRow {
@@ -272,6 +296,8 @@ export interface FactureLigneRow {
   quantite: number | string;
   prix_unitaire: number | string;
   montant_ht: number | string;
+  compagnie: string | null;
+  bordereau_livraison: string | null;
 }
 
 export interface FactureRow {
@@ -282,6 +308,8 @@ export interface FactureRow {
   clients?: NamedRelation;
   societe_id: string | null;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   date: string;
   date_echeance: string;
   statut: FactureStatut;
@@ -320,6 +348,8 @@ export interface DossierRow {
   reference: string;
   societe_id: string;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   client_id: string;
   clients?: NamedRelation;
   bl: string;

@@ -5,21 +5,37 @@ import {
   requireSocieteBrand,
   type SocieteBrand,
 } from "@/lib/societe-brand";
+import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";
 import { htmlEscape } from "../html-escape";
 import { acquirePrintTarget, triggerPrint, warnPopupBlocked } from "../print-document";
 import { fmtFCFA, shouldShowTva } from "./shared";
 
 /* ------------------------------------------------------------------ */
 /* printFactureModule — facture TVA (module Factures)                  */
+/* Modèle : facture commerciale réelle annexe Côte d'Ivoire (Facture   */
+/* N°X, lieu + date d'émission, bloc "Doit", référence, tableau avec   */
+/* compagnie/bordereau de livraison, montant en toutes lettres,        */
+/* signatures "Pour acquit" / "Directeur Général").                    */
 /* ------------------------------------------------------------------ */
 
 export interface FactureModuleData {
   numero: string;
+  /** Numéro d'ordre affiché "N°X" — indépendant par annexe (rang de la facture parmi celles de son annexe). */
+  annexeSeq?: number;
   clientNom: string;
+  /** Ville du siège de l'annexe émettrice — "Abidjan, le [date]". */
+  villeSiege?: string;
   date: string;
   dateEcheance: string;
   statut: string;
-  lignes: Array<{ description: string; quantite: number; prixUnitaire: number; montantHT: number }>;
+  lignes: Array<{
+    description: string;
+    quantite: number;
+    prixUnitaire: number;
+    montantHT: number;
+    compagnie?: string;
+    bordereauLivraison?: string;
+  }>;
   tauxTVA: number;
   montantHT: number;
   montantTVA: number;
@@ -38,11 +54,16 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
+  const hasLignesDetails = data.lignes.some((l) => l.compagnie || l.bordereauLivraison);
+  const numeroAffiche = data.annexeSeq != null ? `N°${data.annexeSeq}` : data.numero;
+
   const lignesHTML = data.lignes.map((l, i) => `
     <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center;color:#94a3b8">${i + 1}</td>
       <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.description)}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center;font-variant-numeric:tabular-nums">${l.quantite}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${fmtFCFA(l.prixUnitaire)}</td>
+      ${hasLignesDetails ? `
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.compagnie ?? "")}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.bordereauLivraison ?? "")}</td>` : ""}
       <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${fmtFCFA(l.montantHT)}</td>
     </tr>`).join("");
 
@@ -63,7 +84,7 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Facture ${htmlEscape(data.numero)}</title>
+<title>Facture ${htmlEscape(numeroAffiche)}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
@@ -79,7 +100,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .doc-ref { font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
 .doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
 .body { padding: 32px 40px; }
-.client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; }
+.doit-lieu { text-align: right; font-size: 12px; color: #64748b; margin-bottom: 20px; }
+.client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
 .client-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 6px; }
 .client-name { font-size: 15px; font-weight: 700; color: #0f172a; }
 .client-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
@@ -90,7 +112,12 @@ table { width: 100%; border-collapse: collapse; }
 .totals { width: 280px; margin-left: auto; }
 .total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #475569; }
 .total-main { border-top: 2px solid #0f172a; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 15px; color: #1e40af; }
+.montant-lettres { margin-top: 18px; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-style: italic; color: #334155; }
 .notes { border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px; font-size: 12px; color: #64748b; }
+.sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
+.sig-box { text-align: center; }
+.sig-lbl { font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: .05em; }
+.sig-space { margin-top: 48px; border-top: 1px solid #cbd5e1; }
 .footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; line-height: 1.6; }
 .no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
 .btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -111,15 +138,14 @@ table { width: 100%; border-collapse: collapse; }
     ${brandBlocks.headerHTML}
     <div class="doc-meta">
       <div class="doc-type">Facture</div>
-      <div class="doc-ref">${htmlEscape(data.numero)}</div>
-      <div class="doc-date">Date : ${fmtD(data.date)}</div>
-      <div class="doc-date">Échéance : ${fmtD(data.dateEcheance)}</div>
+      <div class="doc-ref">${htmlEscape(numeroAffiche)}</div>
       <div class="doc-date">Statut : ${htmlEscape(data.statut)}</div>
     </div>
   </div>
   <div class="body">
+    ${data.villeSiege ? `<div class="doit-lieu">${htmlEscape(data.villeSiege)}, le ${fmtD(data.date)}</div>` : `<div class="doit-lieu">Le ${fmtD(data.date)}</div>`}
     <div class="client-box">
-      <div class="client-lbl">Facturé à</div>
+      <div class="client-lbl">Doit</div>
       <div class="client-name">${htmlEscape(data.clientNom)}</div>
       ${data.dossierReference ? `<div class="client-sub">Dossier lié : ${htmlEscape(data.dossierReference)}${data.dossierBl ? ` · BL ${htmlEscape(data.dossierBl)}` : ""}</div>` : ""}
     </div>
@@ -127,10 +153,12 @@ table { width: 100%; border-collapse: collapse; }
       <table>
         <thead class="tbl-head">
           <tr>
-            <th style="text-align:left">Description</th>
-            <th style="text-align:center;width:60px">Qté</th>
-            <th style="text-align:right;width:130px">P.U. HT</th>
-            <th style="text-align:right;width:140px">Montant HT</th>
+            <th style="text-align:center;width:36px">N°</th>
+            <th style="text-align:left">Désignation</th>
+            ${hasLignesDetails ? `
+            <th style="text-align:left">Compagnie</th>
+            <th style="text-align:left">Bordereau de livraison</th>` : ""}
+            <th style="text-align:right;width:140px">Montant</th>
           </tr>
         </thead>
         <tbody>${lignesHTML}</tbody>
@@ -139,10 +167,21 @@ table { width: 100%; border-collapse: collapse; }
     <div class="totals">
       <div class="total-line"><span>Sous-total HT</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantHT)}</span></div>
       ${shouldShowTva(data.tauxTVA) ? `<div class="total-line"><span>TVA ${data.tauxTVA}%</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTVA)}</span></div>` : ""}
-      <div class="total-line total-main"><span>TOTAL TTC</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTTC)}</span></div>
+      <div class="total-line total-main"><span>TOTAL</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTTC)}</span></div>
       ${paiementHTML}
     </div>
+    <div class="montant-lettres">Arrêtée la présente facture à la somme de : ${htmlEscape(montantEnLettresFCFA(data.montantTTC))}.</div>
     ${data.notes ? `<div class="notes"><strong style="color:#334155">Notes</strong><p style="margin-top:6px;white-space:pre-wrap">${htmlEscape(data.notes)}</p></div>` : ""}
+    <div class="sig-row">
+      <div class="sig-box">
+        <div class="sig-space"></div>
+        <div class="sig-lbl">Pour acquit</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-space"></div>
+        <div class="sig-lbl">Le Directeur Général</div>
+      </div>
+    </div>
   </div>
   <div class="footer">
     Facture générée · ${htmlEscape(societe.nom)} · ${htmlEscape(data.creePar)} · ${fmtD(data.creeLe)}<br>

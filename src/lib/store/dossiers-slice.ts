@@ -8,7 +8,6 @@ import {
   DOSSIER_REFERENCE_PAD_LENGTH,
   DOSSIER_STATUT_DEDOUANE,
   DOSSIER_STATUT_EN_COURS,
-  DOSSIER_STATUT_SOLDE,
 } from "@/lib/constants";
 import type { Dossier, DossierStatut, PaiementMode } from "@/lib/domain-types";
 import type { DossierInput, SLTTState } from "@/lib/store";
@@ -28,6 +27,8 @@ export function mapDossierFromDb(x: DossierRow): Dossier {
     reference: x.reference,
     societeId: x.societe_id,
     societeNom: x.societes?.nom || "—",
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     clientId: x.client_id,
     clientNom: x.clients?.nom || "—",
     bl: x.bl,
@@ -83,6 +84,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       .insert({
         reference,
         societe_id: input.societeId,
+        annexe_id: input.annexeId,
         client_id: input.clientId,
         bl: input.bl,
         camion: input.camion,
@@ -102,7 +104,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         poids_total: input.poidsTotal,
         notes: input.notes,
       })
-      .select("*, clients(nom), societes(nom)")
+      .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
@@ -133,11 +135,15 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       get().societes.find((item) => item.id === input.societeId)?.nom ||
       existing?.societeNom ||
       "—";
+    const annexeNom =
+      get().annexes.find((item) => item.id === input.annexeId)?.nom ||
+      existing?.annexeNom;
 
     const { error } = await supabase
       .from("dossiers")
       .update({
         societe_id: input.societeId,
+        annexe_id: input.annexeId,
         client_id: input.clientId,
         bl: input.bl,
         camion: input.camion,
@@ -162,7 +168,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     set((s) => {
       const updatedDossiers = s.dossiers.map((d) =>
         d.id === id
-          ? { ...d, ...input, statut, societeId: input.societeId, societeNom }
+          ? { ...d, ...input, statut, societeId: input.societeId, societeNom, annexeId: input.annexeId, annexeNom }
           : d,
       );
       return {
@@ -227,35 +233,34 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
     assertDossierTransition(dossier.statut, newStatut);
 
-    const montantApplicable = newStatut === DOSSIER_STATUT_SOLDE ? montantRecu : undefined;
-    const updatedMontantPaye =
-      montantApplicable !== undefined
-        ? Math.min(dossier.montantInvesti, Math.max(0, dossier.montantPaye + montantApplicable))
-        : dossier.montantPaye;
     const today = new Date().toISOString().slice(0, 10);
     const resolvedDate = effectiveDate || today;
     const dateDedouanement =
       newStatut === DOSSIER_STATUT_DEDOUANE ? resolvedDate : dossier.dateDedouanement;
 
-    const { error } = await supabase
-      .from("dossiers")
-      .update({
-        statut: newStatut,
-        montant_paye: updatedMontantPaye,
-        ...(newStatut === DOSSIER_STATUT_DEDOUANE ? { date_dedouanement: resolvedDate } : {}),
-      })
-      .eq("id", id);
-    if (error) throw error;
-
+    let updatedMontantPaye = dossier.montantPaye;
     let ecriturePatch: Awaited<ReturnType<typeof syncEcritureWhenDossierSolde>> | undefined;
+
     if (shouldSyncEcritureOnDossierSolde(newStatut, montantRecu)) {
+      // Solde + encaissement atomiques côté DB (verrou + cumul en Postgres) —
+      // le statut est mis à "Soldé" par le RPC lui-même, pas de .update() séparé ici.
       ecriturePatch = await syncEcritureWhenDossierSolde(dossier, get().ecritures, get().ecritureSeq, {
-        montantPaye: updatedMontantPaye,
+        montantRecu,
         modePaiement,
         transitionNote,
         resolvedDate,
         today,
       });
+      updatedMontantPaye = ecriturePatch.dossierMontantPaye;
+    } else {
+      const { error } = await supabase
+        .from("dossiers")
+        .update({
+          statut: newStatut,
+          ...(newStatut === DOSSIER_STATUT_DEDOUANE ? { date_dedouanement: resolvedDate } : {}),
+        })
+        .eq("id", id);
+      if (error) throw error;
     }
 
     set((s) => ({

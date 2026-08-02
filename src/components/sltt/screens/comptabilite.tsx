@@ -20,7 +20,7 @@ import {
 import { useStore, type Ecriture, type PaiementMode } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
 import { exportToExcel } from "@/lib/export";
-import { resolveTransitSociete, SLTT_SOCIETE_ID } from "@/lib/societe-brand";
+import { resolveTransitSociete, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-brand";
 import { useNav } from "@/lib/nav-store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -30,7 +30,6 @@ import { KpiCard } from "@/components/sltt/kpi-card";
 import { EcritureStatutBadge, EcartValue } from "@/components/sltt/status-badge";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { SocieteBadge } from "@/components/sltt/societe-filter-select";
-import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
@@ -108,7 +107,7 @@ export function ComptabiliteScreen() {
   // Onglets : Toutes / une par société. L'onglet transit inclut aussi les
   // écritures historiques sans société assignée (résolu via is_transit).
   const transitSocieteId = useMemo(
-    () => resolveTransitSociete(societes)?.id ?? SLTT_SOCIETE_ID,
+    () => resolveTransitSociete(societes)?.id ?? LEGACY_TRANSIT_SOCIETE_ID,
     [societes],
   );
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -293,6 +292,7 @@ export function ComptabiliteScreen() {
       clientNom: client.nom,
       dossierId: neDossierId || undefined,
       societeId: neSocieteId || undefined,
+      annexeId: client.annexeId,
       montantInvesti: investi,
       montantPaye: Math.min(paye, investi),
       modePaiement: neMode,
@@ -571,7 +571,6 @@ export function ComptabiliteScreen() {
             <div className="space-y-3 p-4 md:hidden">
               {paged.map((e) => {
                 const reste = resteAPayer(e);
-                const ecart = e.montantPaye - e.montantInvesti;
                 const statut = deriveStatut(e);
                 const ModeIcon = modeIcon[e.modePaiement];
                 const solde = reste === 0;

@@ -26,6 +26,7 @@ import { printClients } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -79,6 +80,7 @@ export function ClientsScreen() {
   const societes = useStore((s) => s.societes);
   const addClient = useStore((s) => s.addClient);
   const updateClient = useStore((s) => s.updateClient);
+  const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -88,7 +90,7 @@ export function ClientsScreen() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<ClientInput>(emptyClientForm());
+  const [formValues, setFormValues] = useState<ClientInput>(emptyClientForm(activeAnnexeId ?? ""));
 
   const isEdit = editingId !== null;
 
@@ -137,7 +139,7 @@ export function ClientsScreen() {
   const hasActiveFilters = query.trim() !== "" || typeFilter !== "all";
 
   function resetForm() {
-    setFormValues(emptyClientForm());
+    setFormValues(emptyClientForm(activeAnnexeId ?? ""));
     setEditingId(null);
   }
 
@@ -157,6 +159,7 @@ export function ClientsScreen() {
       telephone: c.telephone,
       email: c.email,
       adresse: c.adresse,
+      annexeId: c.annexeId,
     });
     setDialogOpen(true);
   }
@@ -178,6 +181,7 @@ export function ClientsScreen() {
       telephone: formValues.telephone.trim(),
       email: formValues.email.trim(),
       adresse: formValues.adresse.trim(),
+      annexeId: formValues.annexeId,
     };
     try {
       if (isEdit && editingId) {
@@ -625,6 +629,7 @@ export function ClientsScreen() {
             <ClientFormFields
               values={formValues}
               onChange={(patch) => setFormValues((v) => ({ ...v, ...patch }))}
+              annexes={annexes}
               autoFocusNom
             />
 

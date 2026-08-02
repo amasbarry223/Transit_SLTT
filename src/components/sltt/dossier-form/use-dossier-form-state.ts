@@ -1,20 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Dossier, DossierStatut, Societe } from "@/lib/domain-types";
+import type { Annexe, Dossier, DossierStatut, Societe } from "@/lib/domain-types";
 import { calculerEcart, resteAPayer } from "@/lib/domain-types";
 import { parseAmount } from "@/lib/format";
 import { getNextTransition } from "@/components/sltt/dossier-transition-dialog";
 import { resolveDossierReferencePrefix, resolveTransitSociete } from "@/lib/societe-brand";
 
 export const WIZARD_STEPS = [
-  { id: 1, label: "Identité", hint: "Société, client, BL, camion, nature" },
+  { id: 1, label: "Identité", hint: "Société, annexe, client, BL, camion, nature" },
   { id: 2, label: "Montants", hint: "Droits, frais, marge" },
   { id: 3, label: "Suivi", hint: "Dates, transport, notes" },
 ] as const;
 
 export type DossierFormErrors = {
   societeId?: string;
+  annexeId?: string;
   clientId?: string;
   nature?: string;
   bl?: string;
@@ -29,8 +30,11 @@ type UseDossierFormStateOptions = {
   isEdit: boolean;
   dossierSeq: number;
   societes: Societe[];
+  annexes: Annexe[];
   /** Défaut à la création (filtre nav ou société transit). */
   defaultSocieteId?: string;
+  /** Défaut à la création — annexe active de l'utilisateur connecté. */
+  defaultAnnexeId?: string;
 };
 
 export function useDossierFormState({
@@ -38,15 +42,20 @@ export function useDossierFormState({
   isEdit,
   dossierSeq,
   societes,
+  annexes,
   defaultSocieteId,
+  defaultAnnexeId,
 }: UseDossierFormStateOptions) {
   const initialSocieteId =
     existing?.societeId ??
     defaultSocieteId ??
     resolveTransitSociete(societes)?.id ??
     "";
+  const initialAnnexeId =
+    existing?.annexeId ?? defaultAnnexeId ?? (annexes.length === 1 ? annexes[0].id : "");
 
   const [societeId, setSocieteId] = useState<string>(initialSocieteId);
+  const [annexeId, setAnnexeId] = useState<string>(initialAnnexeId);
   const [clientId, setClientId] = useState<string>(existing?.clientId ?? "");
   const [nature, setNature] = useState<string>(existing?.nature ?? "");
   const [bl, setBl] = useState<string>(existing?.bl ?? "");
@@ -103,6 +112,7 @@ export function useDossierFormState({
     if (!isEdit) {
       return !!(
         societeId ||
+        annexeId ||
         clientId ||
         nature.trim() ||
         bl.trim() ||
@@ -116,6 +126,7 @@ export function useDossierFormState({
     if (!existing) return false;
     return (
       societeId !== existing.societeId ||
+      annexeId !== existing.annexeId ||
       clientId !== existing.clientId ||
       nature !== existing.nature ||
       bl !== existing.bl ||
@@ -137,6 +148,7 @@ export function useDossierFormState({
     isEdit,
     existing,
     societeId,
+    annexeId,
     clientId,
     nature,
     bl,
@@ -158,6 +170,7 @@ export function useDossierFormState({
   function validateField(field: keyof DossierFormErrors, value: string) {
     const msg: Record<string, string> = {
       societeId: "La société est obligatoire.",
+      annexeId: "L'annexe est obligatoire.",
       clientId: "Le client est obligatoire.",
       bl: "Le numéro de BL est obligatoire.",
       camion: "Le numéro de camion est obligatoire.",
@@ -173,6 +186,7 @@ export function useDossierFormState({
   function validate(): boolean {
     const errs: DossierFormErrors = {};
     if (!societeId) errs.societeId = "La société est obligatoire.";
+    if (!annexeId) errs.annexeId = "L'annexe est obligatoire.";
     if (!clientId) errs.clientId = "Le client est obligatoire.";
     if (!bl.trim()) errs.bl = "Le numéro de BL est obligatoire.";
     if (!camion.trim()) errs.camion = "Le numéro de camion est obligatoire.";
@@ -185,6 +199,7 @@ export function useDossierFormState({
   function validateStep1(): boolean {
     const next: DossierFormErrors = {};
     if (!societeId) next.societeId = "La société est obligatoire.";
+    if (!annexeId) next.annexeId = "L'annexe est obligatoire.";
     if (!clientId) next.clientId = "Le client est obligatoire.";
     if (!nature.trim()) next.nature = "La nature est obligatoire.";
     if (!bl.trim()) next.bl = "Le n° de BL est obligatoire.";
@@ -193,6 +208,7 @@ export function useDossierFormState({
     setErrors((p) => ({ ...p, ...next }));
     setTouched({
       societeId: true,
+      annexeId: true,
       clientId: true,
       nature: true,
       bl: true,
@@ -214,6 +230,7 @@ export function useDossierFormState({
   function buildSaveInput(clientNom: string) {
     return {
       societeId,
+      annexeId,
       clientId,
       clientNom,
       nature,
@@ -238,6 +255,8 @@ export function useDossierFormState({
   return {
     societeId,
     setSocieteId,
+    annexeId,
+    setAnnexeId,
     clientId,
     setClientId,
     nature,

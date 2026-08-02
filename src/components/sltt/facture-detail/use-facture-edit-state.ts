@@ -51,6 +51,7 @@ export function useFactureEditState(facture: Facture | undefined, isEditing: boo
       clientId: facture.clientId,
       clientNom: facture.clientNom,
       societeId: editSocieteId || null,
+      annexeId: facture.annexeId,
       date: editDate,
       dateEcheance: editDateEcheance,
       tauxTVA: editTvaOn ? DEFAULT_TVA_RATE : 0,

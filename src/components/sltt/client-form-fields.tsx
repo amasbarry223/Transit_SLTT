@@ -2,8 +2,16 @@
 
 import { Building2, User } from "lucide-react";
 import type { ClientInput } from "@/lib/store";
+import type { Annexe } from "@/lib/domain-types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 const clientTypes: ClientInput["type"][] = ["Entreprise", "Particulier"];
@@ -11,16 +19,17 @@ const clientTypes: ClientInput["type"][] = ["Entreprise", "Particulier"];
 interface ClientFormFieldsProps {
   values: ClientInput;
   onChange: (patch: Partial<ClientInput>) => void;
+  annexes: Annexe[];
   idPrefix?: string;
   autoFocusNom?: boolean;
 }
 
-export function emptyClientForm(): ClientInput {
-  return { nom: "", type: "Entreprise", telephone: "", email: "", adresse: "" };
+export function emptyClientForm(defaultAnnexeId = ""): ClientInput {
+  return { nom: "", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: defaultAnnexeId };
 }
 
 /** Champs partagés du formulaire client — utilisés par l'annuaire et par la fiche client. */
-export function ClientFormFields({ values, onChange, idPrefix = "cl", autoFocusNom }: ClientFormFieldsProps) {
+export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", autoFocusNom }: ClientFormFieldsProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -31,11 +40,31 @@ export function ClientFormFields({ values, onChange, idPrefix = "cl", autoFocusN
           id={`${idPrefix}-nom`}
           value={values.nom}
           onChange={(e) => onChange({ nom: e.target.value })}
-          placeholder="Ex. Société des Établissements Diallo"
+          placeholder="Ex. Société ABC Logistique"
           className="h-10"
           autoFocus={autoFocusNom}
         />
       </div>
+
+      {annexes.length > 1 && (
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-annexe`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Annexe <span className="text-red-500">*</span>
+          </Label>
+          <Select value={values.annexeId} onValueChange={(v) => onChange({ annexeId: v })}>
+            <SelectTrigger id={`${idPrefix}-annexe`} className="h-10 w-full" aria-label="Sélectionner une annexe">
+              <SelectValue placeholder="Sélectionner une annexe" />
+            </SelectTrigger>
+            <SelectContent>
+              {annexes.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.nom}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type de client</Label>
@@ -73,7 +102,7 @@ export function ClientFormFields({ values, onChange, idPrefix = "cl", autoFocusN
             id={`${idPrefix}-tel`}
             value={values.telephone}
             onChange={(e) => onChange({ telephone: e.target.value })}
-            placeholder="+223 76 00 00 00"
+            placeholder="Ex. +223 70 00 00 00"
             className="h-10"
           />
         </div>
@@ -86,7 +115,7 @@ export function ClientFormFields({ values, onChange, idPrefix = "cl", autoFocusN
             type="email"
             value={values.email}
             onChange={(e) => onChange({ email: e.target.value })}
-            placeholder="contact@exemple.ml"
+            placeholder="Ex. contact@exemple.com"
             className="h-10"
           />
         </div>
@@ -100,7 +129,7 @@ export function ClientFormFields({ values, onChange, idPrefix = "cl", autoFocusN
           id={`${idPrefix}-adresse`}
           value={values.adresse}
           onChange={(e) => onChange({ adresse: e.target.value })}
-          placeholder="Quartier, ville"
+          placeholder="Ex. Quartier, ville"
           className="h-10"
         />
       </div>

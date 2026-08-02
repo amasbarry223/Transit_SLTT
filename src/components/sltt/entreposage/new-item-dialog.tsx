@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import type { Client, Societe, StockItemInput } from "@/lib/store";
+import type { Annexe } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,15 +29,19 @@ export function NewItemDialog({
   open,
   onOpenChange,
   societes,
+  annexes,
   clients,
   defaultSocieteId,
+  defaultAnnexeId,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   societes: Societe[];
+  annexes: Annexe[];
   clients: Client[];
   defaultSocieteId: string;
+  defaultAnnexeId: string;
   onSubmit: (input: StockItemInput) => void;
 }) {
   const [niMarchandise, setNiMarchandise] = useState("");
@@ -49,12 +54,13 @@ export function NewItemDialog({
   const [niSommePayee, setNiSommePayee] = useState("0");
   const [niClientId, setNiClientId] = useState<string>("");
   const [niSocieteId, setNiSocieteId] = useState<string>(defaultSocieteId);
+  const [niAnnexeId, setNiAnnexeId] = useState<string>(defaultAnnexeId);
   const [niAdvancedOpen, setNiAdvancedOpen] = useState(false);
 
   function handleAddStockItem() {
     const marchandise = niMarchandise.trim();
     const unite = niUnite.trim();
-    if (!marchandise || !unite || !niSocieteId) return;
+    if (!marchandise || !unite || !niSocieteId || !niAnnexeId) return;
     const valeurTotale = Number(niValeurTotale) || 0;
     // Plafonnée à la valeur totale — sinon sommePayee + resteAPayer (utilisé
     // pour le KPI "Valeur du stock") dépasserait la valeur réelle de l'article.
@@ -70,6 +76,7 @@ export function NewItemDialog({
       resteAPayer: Math.max(0, valeurTotale - sommePayee),
       clientId: niClientId || undefined,
       societeId: niSocieteId,
+      annexeId: niAnnexeId,
     };
     onSubmit(input);
   }
@@ -113,6 +120,24 @@ export function NewItemDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {annexes.length > 1 && (
+            <div className="sm:col-span-2 space-y-2">
+              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Annexe <span className="text-red-500">*</span>
+              </Label>
+              <Select value={niAnnexeId} onValueChange={setNiAnnexeId}>
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue placeholder="Sélectionner une annexe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {annexes.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="sm:col-span-2 space-y-2">
             <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -257,7 +282,7 @@ export function NewItemDialog({
           </Button>
           <Button
             onClick={handleAddStockItem}
-            disabled={!niMarchandise.trim() || !niUnite.trim() || !niSocieteId}
+            disabled={!niMarchandise.trim() || !niUnite.trim() || !niSocieteId || !niAnnexeId}
           >
             <Plus className="size-4" />
             Ajouter au stock

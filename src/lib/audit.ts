@@ -24,6 +24,7 @@ export type AuditModule =
   | "Contrats"
   | "Dépenses"
   | "Sociétés"
+  | "Annexes"
   | "Archives"
   | "Documents";
 

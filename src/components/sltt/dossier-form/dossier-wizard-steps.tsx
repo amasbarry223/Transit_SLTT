@@ -7,7 +7,7 @@ import {
   Save,
   Truck,
 } from "lucide-react";
-import type { Client, DossierStatut, Societe } from "@/lib/domain-types";
+import type { Annexe, Client, DossierStatut, Societe } from "@/lib/domain-types";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { TRANSITION_META, type TransitionType } from "@/components/sltt/dossier-transition-dialog";
@@ -57,7 +57,9 @@ export function DossierWizardProgress({ wizardStep }: DossierWizardProgressProps
 type DossierIdentityStepProps = {
   clients: Client[];
   societes: Societe[];
+  annexes: Annexe[];
   societeId: string;
+  annexeId: string;
   clientId: string;
   nature: string;
   bl: string;
@@ -66,6 +68,7 @@ type DossierIdentityStepProps = {
   errors: DossierFormErrors;
   touched: Record<string, boolean>;
   onSocieteIdChange: (value: string) => void;
+  onAnnexeIdChange: (value: string) => void;
   onClientIdChange: (value: string) => void;
   onNatureChange: (value: string) => void;
   onBlChange: (value: string) => void;
@@ -79,7 +82,9 @@ type DossierIdentityStepProps = {
 export function DossierIdentityStep({
   clients,
   societes,
+  annexes,
   societeId,
+  annexeId,
   clientId,
   nature,
   bl,
@@ -88,6 +93,7 @@ export function DossierIdentityStep({
   errors,
   touched,
   onSocieteIdChange,
+  onAnnexeIdChange,
   onClientIdChange,
   onNatureChange,
   onBlChange,
@@ -130,6 +136,32 @@ export function DossierIdentityStep({
                     {s.nom}
                   </SelectItem>
                 ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+
+        <FormField id="dossier-annexe-select" label="Annexe" required error={errors.annexeId}>
+          <Select
+            value={annexeId}
+            onValueChange={(v) => {
+              onAnnexeIdChange(v);
+              onTouch("annexeId");
+              onValidateField("annexeId", v);
+            }}
+          >
+            <SelectTrigger
+              id="dossier-annexe-select"
+              className={cn("h-10 w-full", errors.annexeId && "border-red-400")}
+              aria-label="Sélectionner une annexe"
+            >
+              <SelectValue placeholder="Sélectionner une annexe" />
+            </SelectTrigger>
+            <SelectContent>
+              {annexes.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.nom}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </FormField>
@@ -196,7 +228,7 @@ export function DossierIdentityStep({
               if (touched.bl) onValidateField("bl", e.target.value);
             }}
             onBlur={() => onFieldBlur("bl")}
-            placeholder="BL-0000"
+            placeholder="Ex. BL-0000"
           />
         </FormField>
 
@@ -209,7 +241,7 @@ export function DossierIdentityStep({
               if (touched.camion) onValidateField("camion", e.target.value);
             }}
             onBlur={() => onFieldBlur("camion")}
-            placeholder="Ex. RJ 4521 KM"
+            placeholder="Ex. AB 1234 CD"
           />
         </FormField>
 
@@ -291,7 +323,7 @@ export function DossierTransportSection({
               className="h-10 font-mono"
               value={noConteneur}
               onChange={(e) => onNoConteneurChange(e.target.value)}
-              placeholder="Ex. MSCU4521789"
+              placeholder="Ex. CONTENEUR1234567"
             />
           </FormField>
         )}

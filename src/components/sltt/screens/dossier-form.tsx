@@ -17,6 +17,7 @@ import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { InfoCallout } from "@/components/sltt/info-callout";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { TransitionDialog } from "@/components/sltt/dossier-transition-dialog";
 import { Card } from "@/components/ui/card";
@@ -63,6 +64,7 @@ function DossierFormInner() {
   const addDossier = useStore((s) => s.addDossier);
   const updateDossier = useStore((s) => s.updateDossier);
   const dossierSeq = useStore((s) => s.dossierSeq);
+  const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const isEdit = dossierFormMode === "edit";
   const existing =
@@ -73,7 +75,9 @@ function DossierFormInner() {
     isEdit,
     dossierSeq,
     societes,
+    annexes,
     defaultSocieteId: selectedSocieteId ?? undefined,
+    defaultAnnexeId: activeAnnexeId ?? undefined,
   });
 
   useUnsavedChangesWarning(form.isDirty);
@@ -104,6 +108,7 @@ function DossierFormInner() {
     form.setTouched((p) => ({ ...p, [field]: true }));
     const values: Record<keyof typeof form.errors, string> = {
       societeId: form.societeId,
+      annexeId: form.annexeId,
       clientId: form.clientId,
       nature: form.nature,
       bl: form.bl,
@@ -261,7 +266,9 @@ function DossierFormInner() {
             <DossierIdentityStep
               clients={clients}
               societes={societes}
+              annexes={annexes}
               societeId={form.societeId}
+              annexeId={form.annexeId}
               clientId={form.clientId}
               nature={form.nature}
               bl={form.bl}
@@ -270,6 +277,7 @@ function DossierFormInner() {
               errors={form.errors}
               touched={form.touched}
               onSocieteIdChange={form.setSocieteId}
+              onAnnexeIdChange={form.setAnnexeId}
               onClientIdChange={form.setClientId}
               onNatureChange={form.setNature}
               onBlChange={form.setBl}

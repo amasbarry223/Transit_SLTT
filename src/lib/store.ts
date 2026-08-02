@@ -38,6 +38,11 @@ import {
   type SocietesSlice,
 } from "@/lib/store/societes-slice";
 import {
+  createAnnexesSlice,
+  mapAnnexeFromDb,
+  type AnnexesSlice,
+} from "@/lib/store/annexes-slice";
+import {
   createUsersSlice,
   mapProfileFromDb,
   type UsersSlice,
@@ -135,6 +140,8 @@ import {
   type DossierFournisseur,
   type DossierFournisseurInput,
   type Societe,
+  type Annexe,
+  type AnnexeInput,
   type Contrat,
   type ContratInput,
   type ContratStatut,
@@ -186,6 +193,8 @@ export type {
   TransporteurStatut,
   TypeVehicule,
   Societe,
+  Annexe,
+  AnnexeInput,
   Contrat,
   ContratInput,
   ContratStatut,
@@ -212,15 +221,23 @@ export interface FactureInput {
   clientId: string;
   clientNom: string;
   societeId?: string | null;
+  annexeId: string;
   date: string;
   dateEcheance: string;
-  lignes: Array<{ description: string; quantite: number; prixUnitaire: number }>;
+  lignes: Array<{
+    description: string;
+    quantite: number;
+    prixUnitaire: number;
+    compagnie?: string;
+    bordereauLivraison?: string;
+  }>;
   tauxTVA: number;
   notes: string;
 }
 
 export interface DossierInput {
   societeId: string;
+  annexeId: string;
   clientId: string;
   clientNom: string;
   nature: string;
@@ -247,6 +264,7 @@ export interface ClientInput {
   telephone: string;
   email: string;
   adresse: string;
+  annexeId: string;
 }
 
 export interface BonInput {
@@ -254,6 +272,7 @@ export interface BonInput {
   clientId: string;
   clientNom: string;
   societeId: string;
+  annexeId: string;
   stockId?: string;
   marchandise: string;
   quantite: number;
@@ -274,6 +293,7 @@ export interface StockItemInput {
   resteAPayer: number;
   clientId?: string;
   societeId: string;
+  annexeId: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -306,6 +326,7 @@ export interface UserInput {
   role: UserRole;
   permissions: string[];
   motDePasse?: string;
+  annexeIds: string[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -322,6 +343,8 @@ function mapEcritureFromDb(x: EcritureRow): Ecriture {
     dossierId: x.dossier_id || undefined,
     societeId: x.societe_id || undefined,
     societeNom: x.societes?.nom || undefined,
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     montantInvesti: Number(x.montant_investi || 0),
     montantPaye: Number(x.montant_paye || 0),
     modePaiement: x.mode_paiement || DEFAULT_PAIEMENT_MODE,
@@ -425,7 +448,7 @@ function syncSequencesFromData(state: Pick<SLTTState, keyof SequenceCounters | "
   };
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice {
   // Data
   ecritures: Ecriture[];
   subDossiers: SubDossier[];
@@ -528,6 +551,7 @@ export const useStore = create<SLTTState>()(
       ...createDossiersSlice(set, get, api),
       ...createTransporteursSlice(set, get, api),
       ...createSocietesSlice(set, get, api),
+      ...createAnnexesSlice(set, get, api),
       ...createUsersSlice(set, get, api),
       ...createClientsSlice(set, get, api),
       ...createFournisseursSlice(set, get, api),
@@ -565,13 +589,13 @@ export const useStore = create<SLTTState>()(
           }
 
           const coreResults = await Promise.all([
-            fetchAllPaged(() => pagedSelect(supabase, "clients", "*"), { softCap: 2_000 }),
+            fetchAllPaged(() => pagedSelect(supabase, "clients", "*, annexes(nom)"), { softCap: 2_000 }),
             fetchAllPaged(
-              () => pagedSelect(supabase, "dossiers", "*, clients(nom), societes(nom)"),
+              () => pagedSelect(supabase, "dossiers", "*, clients(nom), societes(nom), annexes(nom)"),
               { softCap: 2_000 },
             ),
             fetchAllPaged(
-              () => pagedSelect(supabase, "ecritures", "*, clients(nom), societes(nom)"),
+              () => pagedSelect(supabase, "ecritures", "*, clients(nom), societes(nom), annexes(nom)"),
               { softCap: 2_000 },
             ),
             fetchAllPaged(
@@ -579,12 +603,14 @@ export const useStore = create<SLTTState>()(
                 pagedSelect(
                   supabase,
                   "factures",
-                  "*, facture_lignes(*), clients(nom), societes(nom)",
+                  "*, facture_lignes(*), clients(nom), societes(nom), annexes(nom)",
                 ),
               { softCap: 2_000 },
             ),
             fetchAllPaged(() => pagedSelect(supabase, "profiles", "*"), { softCap: 500 }),
             fetchAllPaged(() => pagedSelect(supabase, "societes", "*"), { softCap: 100 }),
+            fetchAllPaged(() => pagedSelect(supabase, "annexes", "*"), { softCap: 100 }),
+            fetchAllPaged(() => pagedSelect(supabase, "user_annexes", "*"), { softCap: 5_000 }),
           ]);
 
           const coreError = coreResults.find((r) => r.error)?.error;
@@ -597,6 +623,8 @@ export const useStore = create<SLTTState>()(
             { data: factures, truncated: truncFactures },
             { data: profiles },
             { data: societes },
+            { data: annexes },
+            { data: userAnnexes },
           ] = coreResults;
 
           const coreTruncated =
@@ -619,6 +647,16 @@ export const useStore = create<SLTTState>()(
           const mappedFactures = (factures as any[]).map(mapFactureFromDb);
           const mappedEcritures = (ecritures as any[]).map(mapEcritureFromDb);
 
+          // Regroupe user_annexes par utilisateur pour hydrater User.annexeIds
+          // (détermine le périmètre RLS de chacun côté app — sélecteur,
+          // valeur par défaut des formulaires, accès au reporting consolidé).
+          const annexeIdsByUser = new Map<string, string[]>();
+          for (const row of (userAnnexes as { user_id: string; annexe_id: string }[]) ?? []) {
+            const list = annexeIdsByUser.get(row.user_id) ?? [];
+            list.push(row.annexe_id);
+            annexeIdsByUser.set(row.user_id, list);
+          }
+
           set((s) => {
             const nextState = {
               ...s,
@@ -626,7 +664,10 @@ export const useStore = create<SLTTState>()(
               dossiers: mappedDossiers,
               ecritures: mappedEcritures,
               factures: mappedFactures,
-              users: (profiles as any[]).map(mapProfileFromDb),
+              users: (profiles as any[]).map((p) => ({
+                ...mapProfileFromDb(p),
+                annexeIds: annexeIdsByUser.get(p.id) ?? [],
+              })),
               usersPublic: (
                 profilesPublic ?? (profiles as any[])
               ).map((x: ProfilePublicRow) => ({
@@ -637,6 +678,7 @@ export const useStore = create<SLTTState>()(
                 derniereConnexion: x.derniere_connexion || "",
               })),
               societes: (societes as any[]).map(mapSocieteFromDb),
+              annexes: (annexes as any[]).map(mapAnnexeFromDb),
               loadError: null,
               dataLoading: false,
             };
@@ -651,7 +693,7 @@ export const useStore = create<SLTTState>()(
               key: "stock",
               q: () =>
                 fetchAllPaged(
-                  () => pagedSelect(supabase, "stock_items", "*, clients(nom), societes(nom)"),
+                  () => pagedSelect(supabase, "stock_items", "*, clients(nom), societes(nom), annexes(nom)"),
                   { softCap: 2_000 },
                 ),
             },
@@ -660,7 +702,7 @@ export const useStore = create<SLTTState>()(
               q: () =>
                 fetchAllPaged(
                   () =>
-                    pagedSelect(supabase, "mouvements", "*, societes(nom)", {
+                    pagedSelect(supabase, "mouvements", "*, societes(nom), annexes(nom)", {
                       column: "date",
                       ascending: false,
                     }),
@@ -671,7 +713,7 @@ export const useStore = create<SLTTState>()(
               key: "bons",
               q: () =>
                 fetchAllPaged(
-                  () => pagedSelect(supabase, "bons_sortie", "*, clients(nom), societes(nom)"),
+                  () => pagedSelect(supabase, "bons_sortie", "*, clients(nom), societes(nom), annexes(nom)"),
                   { softCap: 2_000 },
                 ),
             },
@@ -753,7 +795,7 @@ export const useStore = create<SLTTState>()(
                     pagedSelect(
                       supabase,
                       "bons_sortie_caisse",
-                      "*, bons_sortie_caisse_lignes(*), societes(nom)",
+                      "*, bons_sortie_caisse_lignes(*), societes(nom), annexes(nom)",
                     ),
                   { softCap: 2_000 },
                 ),
@@ -869,7 +911,6 @@ export const useStore = create<SLTTState>()(
             { key: string; data: unknown[] | null; error: unknown }
           >;
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const ok = <T,>(key: (typeof secondarySpecs)[number]["key"], map: (rows: any[]) => T, fallback: T): T => {
             const r = byKey[key];
             if (r?.error || r?.data == null) return fallback;
@@ -954,7 +995,10 @@ export const useStore = create<SLTTState>()(
             };
           });
         } catch (e) {
-          const message = e instanceof Error ? e.message : "Impossible de charger les données.";
+          const raw = e instanceof Error ? e.message : "Impossible de charger les données.";
+          const message = /failed to fetch|networkerror|load failed/i.test(raw)
+            ? "Connexion à Supabase interrompue. Vérifiez le réseau, désactivez les bloqueurs, puis réessayez."
+            : raw;
           console.error("[SLTT] Erreur de chargement Supabase:", e);
           set({ loadError: message, dataLoading: false });
         }
@@ -1049,12 +1093,13 @@ export const useStore = create<SLTTState>()(
             client_id: e.clientId,
             dossier_id: e.dossierId || null,
             societe_id: e.societeId || null,
+            annexe_id: e.annexeId,
             montant_investi: e.montantInvesti,
             montant_paye: validatedPaye,
             mode_paiement: e.modePaiement,
             note: e.note || null,
           })
-          .select("*, clients(nom), societes(nom)")
+          .select("*, clients(nom), societes(nom), annexes(nom)")
           .single();
 
         if (error) throw error;

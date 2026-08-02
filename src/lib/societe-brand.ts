@@ -2,13 +2,10 @@
  * Résolution dynamique de l'identité société — source unique pour l'UI,
  * les exports PDF et le Classeur. Évite les noms/UUID/adresses codés en dur.
  */
-import type { Societe } from "@/lib/domain-types";
+import type { Annexe, Societe } from "@/lib/domain-types";
 
 /** UUID historique SLTT transit — repli si is_transit absent en base. */
 export const LEGACY_TRANSIT_SOCIETE_ID = "22222222-2222-2222-2222-222222222222";
-
-/** @deprecated Préférer resolveTransitSociete — conservé pour imports existants. */
-export const SLTT_SOCIETE_ID = LEGACY_TRANSIT_SOCIETE_ID;
 
 export interface SocieteLegalInfo {
   adresse?: string;
@@ -34,18 +31,42 @@ export interface PrintHTMLBrand {
   afficherNomAvecLogo?: boolean;
 }
 
-const SOCIETE_TONE_BY_ID: Record<string, "blue" | "indigo" | "slate"> = {
-  "11111111-1111-1111-1111-111111111111": "blue",
-  [LEGACY_TRANSIT_SOCIETE_ID]: "indigo",
-};
+const SOCIETE_TONES = ["blue", "slate"] as const;
 
-/** Société porteuse du transit (flag is_transit, sinon UUID legacy). */
+/**
+ * Ton badge société — indigo si transit, sinon bleu/gris déterministe
+ * (plus de mapping UUID seed hardcodé).
+ */
+export function societeToneById(
+  societeId: string,
+  options?: { isTransit?: boolean },
+): "blue" | "indigo" | "slate" {
+  if (options?.isTransit) return "indigo";
+  // Repli legacy si le flag is_transit n'est pas encore hydraté côté client.
+  if (societeId === LEGACY_TRANSIT_SOCIETE_ID) return "indigo";
+  let hash = 0;
+  for (let i = 0; i < societeId.length; i++) {
+    hash = (hash + societeId.charCodeAt(i) * (i + 1)) % 997;
+  }
+  return SOCIETE_TONES[hash % SOCIETE_TONES.length];
+}
+
+/**
+ * Société porteuse du transit (flag is_transit, sinon UUID legacy, sinon —
+ * seulement si aucune ambiguïté possible — l'unique société active).
+ * Ne devine jamais parmi plusieurs sociétés actives non flaguées : le
+ * branding sert aussi à l'identité légale imprimée (RCCM/NIF/logo) sur les
+ * factures/devis, donc un mauvais choix silencieux serait pire qu'un champ
+ * vide. `requireSocieteBrand`/`requirePrintHTMLBrand` gèrent déjà le cas
+ * "non configuré" avec un avertissement explicite.
+ */
 export function resolveTransitSociete(societes: Societe[]): Societe | undefined {
-  return (
-    societes.find((s) => s.isTransit) ??
-    societes.find((s) => s.id === LEGACY_TRANSIT_SOCIETE_ID) ??
-    societes.find((s) => s.actif)
-  );
+  const flagged = societes.find((s) => s.isTransit);
+  if (flagged) return flagged;
+  const legacy = societes.find((s) => s.id === LEGACY_TRANSIT_SOCIETE_ID);
+  if (legacy) return legacy;
+  const actives = societes.filter((s) => s.actif);
+  return actives.length === 1 ? actives[0] : undefined;
 }
 
 /**
@@ -54,7 +75,7 @@ export function resolveTransitSociete(societes: Societe[]): Societe | undefined 
  * flambant neuf, avant tout paramétrage).
  */
 export function resolveDossierReferencePrefix(societes: Societe[]): string {
-  return resolveTransitSociete(societes)?.nom || "SLTT";
+  return resolveTransitSociete(societes)?.nom || "TR";
 }
 
 /** Libellé affiché uniforme (Classeur, badges, exports) — toujours le nom en base, éditable depuis Paramètres. */
@@ -126,10 +147,6 @@ export function resolvePrintHTMLBrand(societes: Societe[]): PrintHTMLBrand | nul
   return s ? societeToPrintHTMLBrand(s) : null;
 }
 
-export function societeToneById(societeId: string): "blue" | "indigo" | "slate" {
-  return SOCIETE_TONE_BY_ID[societeId] ?? "slate";
-}
-
 /** Branding shell (topbar, login) — nom + logo depuis la société transit. */
 export function resolveAppShellBranding(societes: Societe[]): {
   appTitle: string;
@@ -138,9 +155,27 @@ export function resolveAppShellBranding(societes: Societe[]): {
 } {
   const s = resolveTransitSociete(societes);
   return {
-    appTitle: s?.nom ?? "Transit SLTT",
+    appTitle: s?.nom ?? "Transit",
     appSubtitle: "Plateforme de gestion logistique et transit",
     logoUrl: s?.logoUrl,
+  };
+}
+
+/**
+ * Fusionne l'identité légale d'une annexe (adresse/téléphone/RCCM/NIF,
+ * lieu d'émission physique) dans le branding société (nom/logo — l'annexe
+ * n'a pas son propre logo, c'est une déclinaison de coordonnées de la même
+ * entreprise). Utilisé pour l'en-tête des factures par annexe (F4).
+ */
+export function mergeAnnexeIntoBrand(brand: SocieteBrand, annexe: Annexe): SocieteBrand {
+  return {
+    ...brand,
+    legal: {
+      adresse: annexe.adresse,
+      telephone: annexe.telephone,
+      rccm: annexe.rccm,
+      nif: annexe.nif,
+    },
   };
 }
 

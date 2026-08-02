@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   Plus, Search, Receipt, TrendingUp, Clock, CheckCircle2,
-  ArrowRight, Trash2, Eye, Send, X, Info,
+  Trash2, Eye, Send, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { getErrorMessage } from "@/lib/utils";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
@@ -70,6 +71,7 @@ function FactureFormModal({
   const addFacture = useStore((s) => s.addFacture);
   const go         = useNav((s) => s.go);
   const { toast }  = useToast();
+  const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const today    = new Date().toISOString().slice(0, 10);
   const defaultDueDate = new Date(
@@ -81,6 +83,7 @@ function FactureFormModal({
   const [clientId,     setClientId]     = React.useState(prefill?.clientId ?? "");
   const [clientNom,    setClientNom]    = React.useState(prefill?.clientNom ?? "");
   const [societeId,    setSocieteId]    = React.useState(prefill?.societeId ?? "");
+  const [annexeId,     setAnnexeId]     = React.useState(prefill?.annexeId ?? activeAnnexeId ?? "");
   const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
   const [date,         setDate]         = React.useState(prefill?.date ?? today);
   const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? defaultDueDate);
@@ -144,13 +147,14 @@ function FactureFormModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!clientId || lignes.every((l) => !l.description)) return;
+    if (!clientId || !annexeId || lignes.every((l) => !l.description)) return;
     try {
       const f = await addFacture({
         dossierId: dossierId || null,
         clientId,
         clientNom,
         societeId: societeId || null,
+        annexeId,
         date,
         dateEcheance,
         lignes: lignes
@@ -225,7 +229,7 @@ function FactureFormModal({
               )}
             </div>
 
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Société (optionnel)</Label>
               <Select value={societeId || "none"} onValueChange={(v) => setSocieteId(v === "none" ? "" : v)}>
                 <SelectTrigger className="w-full">
@@ -239,6 +243,22 @@ function FactureFormModal({
                 </SelectContent>
               </Select>
             </div>
+
+            {annexes.length > 1 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Annexe *</Label>
+                <Select value={annexeId} onValueChange={setAnnexeId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sélectionner une annexe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {annexes.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Date de facture *</Label>

@@ -26,6 +26,26 @@ export function filterBySocieteAndPeriode<T extends { societeId?: string | null;
   });
 }
 
+/**
+ * Filtre une liste par annexe et par mois/année — pendant de
+ * filterBySocieteAndPeriode pour le reporting consolidé par annexe (F-ANNEXE).
+ * annexeId est toujours renseigné en base (NOT NULL) : pas de cas "non
+ * affecté" à gérer ici, contrairement à societeId.
+ */
+export function filterByAnnexeAndPeriode<T extends { annexeId: string; date: string }>(
+  rows: T[],
+  annexeId: string | null,
+  year: number,
+  month: number, // 0-11
+): T[] {
+  return rows.filter((row) => {
+    if (annexeId !== null && row.annexeId !== annexeId) return false;
+    const d = parseLocalDate(row.date);
+    if (Number.isNaN(d.getTime())) return false;
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+}
+
 /** Bénéfice = Recettes − Dépenses. */
 export function computeBenefice(recettes: number, depenses: number): number {
   return recettes - depenses;

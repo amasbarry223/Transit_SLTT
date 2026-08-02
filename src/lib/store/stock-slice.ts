@@ -11,6 +11,8 @@ export function mapStockItemFromDb(x: StockItemRow): StockItem {
     clientNom: x.clients?.nom || undefined,
     societeId: x.societe_id,
     societeNom: x.societes?.nom || "—",
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     marchandise: x.marchandise,
     quantite: Number(x.quantite),
     unite: x.unite,
@@ -28,6 +30,8 @@ export function mapMouvementFromDb(x: MouvementRow): Mouvement {
     stockId: x.stock_id || undefined,
     societeId: x.societe_id,
     societeNom: x.societes?.nom || "—",
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     date: x.date,
     type: x.type,
     marchandise: x.marchandise || "",
@@ -77,8 +81,9 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
         reste_a_payer: input.resteAPayer,
         client_id: input.clientId || null,
         societe_id: input.societeId,
+        annexe_id: input.annexeId,
       })
-      .select("*, clients(nom), societes(nom)")
+      .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
@@ -102,6 +107,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const { error: mvtErr } = await supabase.from("mouvements").insert({
       stock_id: stockId,
       societe_id: stockItem.societeId,
+      annexe_id: stockItem.annexeId,
       type: "Entrée",
       quantite,
       date: new Date().toISOString(),
@@ -117,6 +123,8 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       id: `M-${seq}`,
       societeId: stockItem.societeId,
       societeNom: stockItem.societeNom,
+      annexeId: stockItem.annexeId,
+      annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
       type: "Entrée",
       marchandise: stockItem.marchandise,
@@ -160,6 +168,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const { error: mvtErr } = await supabase.from("mouvements").insert({
       stock_id: stockId,
       societe_id: stockItem.societeId,
+      annexe_id: stockItem.annexeId,
       type: "Sortie",
       quantite,
       date: new Date().toISOString(),
@@ -176,6 +185,8 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       id: `M-${seq}`,
       societeId: stockItem.societeId,
       societeNom: stockItem.societeNom,
+      annexeId: stockItem.annexeId,
+      annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
       type: "Sortie",
       marchandise: stockItem.marchandise,

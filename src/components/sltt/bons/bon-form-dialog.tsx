@@ -100,6 +100,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
         clientId: formClientId,
         clientNom: selectedClient.nom,
         societeId: formSocieteId,
+        annexeId: selectedStock.annexeId,
         stockId: selectedStock.id,
         marchandise: selectedStock.marchandise,
         quantite: quantiteNum,
@@ -144,6 +145,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
         clientId: formClientId,
         clientNom: selectedClient.nom,
         societeId: formSocieteId,
+        annexeId: selectedStock.annexeId,
         stockId: selectedStock.id,
         marchandise: selectedStock.marchandise,
         quantite: quantiteNum,
@@ -460,7 +462,7 @@ function BonPreview({
         )}
         {afficherNomAvecLogo && (
           <div>
-            <p className="font-bold leading-tight text-slate-900 dark:text-slate-100">{societeNom || "SLTT"}</p>
+            <p className="font-bold leading-tight text-slate-900 dark:text-slate-100">{societeNom || "—"}</p>
             <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400">Bon de sortie — Marchandise</p>
           </div>
         )}
