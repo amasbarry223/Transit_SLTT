@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { fetchAllPaged, FETCH_PAGE_SIZE } from "@/lib/store/fetch-pages";
 
 describe("fetchAllPaged", () => {
@@ -55,5 +55,26 @@ describe("fetchAllPaged", () => {
     const { data, error } = await fetchAllPaged(buildQuery, { pageSize: 1, softCap: 10 });
     expect(data).toEqual([{ id: 1 }]);
     expect(error?.message).toBe("timeout");
+  });
+
+  it("retente les erreurs réseau transitoires", async () => {
+    let call = 0;
+    const buildQuery = () => ({
+      range: async () => {
+        call += 1;
+        if (call < 3) {
+          return { data: null, error: { message: "TypeError: Failed to fetch" } };
+        }
+        if (call === 3) {
+          return { data: [{ id: 42 }], error: null };
+        }
+        return { data: [], error: null };
+      },
+    });
+
+    const { data, error } = await fetchAllPaged(buildQuery, { pageSize: 1, softCap: 10 });
+    expect(error).toBeNull();
+    expect(data).toEqual([{ id: 42 }]);
+    expect(call).toBe(4);
   });
 });

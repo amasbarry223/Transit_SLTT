@@ -27,6 +27,34 @@ import {
 
 const ACTIVITY_EVENTS = ["mousemove", "keydown", "click", "scroll", "touchstart"] as const;
 const ACTIVITY_THROTTLE = 15 * 1000;
+/** Garde-fou : ne jamais bloquer l'UI sur "Vérification de la session…". */
+const AUTH_READY_TIMEOUT_MS = 4_000;
+const PROFILE_QUERY_TIMEOUT_MS = 3_000;
+const SW_CLEARED_KEY = "sltt-sw-cleared";
+
+async function clearRogueServiceWorkers(): Promise<"reload" | "ok"> {
+  if (!("serviceWorker" in navigator)) return "ok";
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if (regs.length === 0) return "ok";
+
+    await Promise.all(regs.map((reg) => reg.unregister()));
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+
+    // unregister() ne détache le SW actif qu'après reload.
+    if (navigator.serviceWorker.controller && !sessionStorage.getItem(SW_CLEARED_KEY)) {
+      sessionStorage.setItem(SW_CLEARED_KEY, "1");
+      window.location.reload();
+      return "reload";
+    }
+  } catch {
+    /* ignore */
+  }
+  return "ok";
+}
 
 export function AppRoot() {
   if (!isSupabaseConfigured) {
@@ -58,92 +86,150 @@ function AppRootInner() {
   // Aligne Zustand sur le JWT Supabase. Sans JWT, le RLS renvoie [] → écrans vides.
   useEffect(() => {
     let cancelled = false;
+    let markedReady = false;
+    let subscription: { unsubscribe: () => void } | null = null;
 
-    async function applyProfile(userId: string) {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("id, nom, role, actif")
-        .eq("id", userId)
-        .maybeSingle();
-
-      // Erreur réseau / temporaire : ne pas forcer un logout (évite boucle signOut).
-      if (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[SLTT] Lecture profil:", error.message);
-        }
-        return false;
-      }
-
-      if (!profile || profile.actif === false) {
-        await logoutRef.current();
-        return false;
-      }
-
-      restoreRef.current(profile.role, profile.nom, profile.id);
-      return true;
+    function markReady() {
+      if (cancelled || markedReady) return;
+      markedReady = true;
+      setAuthReady(true);
     }
 
-    async function syncSession() {
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+    // Filet de sécurité : même si getSession / le réseau hang, afficher login/shell.
+    const safetyTimer = setTimeout(() => {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[SLTT] Timeout sync session — déblocage UI");
+      }
+      markReady();
+    }, AUTH_READY_TIMEOUT_MS);
 
-        if (cancelled) return;
+    async function applyProfile(userId: string) {
+      let lastError: string | null = null;
 
-        if (sessionError) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("id, nom, role, actif")
+          .eq("id", userId)
+          .abortSignal(AbortSignal.timeout(PROFILE_QUERY_TIMEOUT_MS))
+          .maybeSingle();
+
+        // Erreur réseau / temporaire : ne pas forcer un logout (évite boucle signOut).
+        if (error) {
+          lastError = error.message;
+          if (
+            /failed to fetch|networkerror|load failed|abort|timed out/i.test(error.message) &&
+            attempt < 2
+          ) {
+            await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+            continue;
+          }
           if (process.env.NODE_ENV === "development") {
-            console.warn("[SLTT] getSession:", sessionError.message);
+            console.warn("[SLTT] Lecture profil:", error.message);
           }
-          return;
+          return false;
         }
 
-        if (!session?.user) {
-          if (useNav.getState().isAuthenticated) {
-            await logoutRef.current();
-          }
-          return;
+        if (!profile || profile.actif === false) {
+          await logoutRef.current();
+          return false;
         }
 
-        await applyProfile(session.user.id);
+        restoreRef.current(profile.role, profile.nom, profile.id);
+        return true;
+      }
+
+      if (lastError && process.env.NODE_ENV === "development") {
+        console.warn("[SLTT] Lecture profil:", lastError);
+      }
+      return false;
+    }
+
+    async function handleSession(session: { user: { id: string } } | null) {
+      if (!session?.user) {
+        if (useNav.getState().isAuthenticated) {
+          await logoutRef.current();
+        }
+        return;
+      }
+      await applyProfile(session.user.id);
+    }
+
+    async function boot() {
+      // SW d'un autre projet sur localhost:3000 peut intercepter les fetch Supabase
+      // et laisser getSession() / les requêtes pendantes à jamais.
+      const swStatus = await clearRogueServiceWorkers();
+      if (swStatus === "reload" || cancelled) return;
+
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        // Différer les appels Supabase pour éviter le deadlock du client auth.
+        setTimeout(() => {
+          void (async () => {
+            if (cancelled) return;
+            try {
+              if (event === "INITIAL_SESSION") {
+                await handleSession(session);
+                markReady();
+                return;
+              }
+
+              if (event === "SIGNED_OUT" || !session?.user) {
+                if (useNav.getState().isAuthenticated) {
+                  await logoutRef.current();
+                }
+                return;
+              }
+
+              if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+                await applyProfile(session.user.id);
+              }
+            } catch (e) {
+              if (process.env.NODE_ENV === "development") {
+                console.warn("[SLTT] Auth state change:", e);
+              }
+              if (event === "INITIAL_SESSION") markReady();
+            }
+          })();
+        }, 0);
+      });
+      subscription = data.subscription;
+      if (cancelled) {
+        subscription.unsubscribe();
+        return;
+      }
+
+      // Repli si INITIAL_SESSION n'arrive pas (réseau / init Auth bloquée).
+      try {
+        const result = await Promise.race([
+          supabase.auth.getSession().then((r) => ({ ok: true as const, r })),
+          new Promise<{ ok: false }>((resolve) =>
+            setTimeout(() => resolve({ ok: false }), AUTH_READY_TIMEOUT_MS - 500),
+          ),
+        ]);
+
+        if (cancelled || markedReady) return;
+
+        if (result.ok) {
+          if (result.r.error && process.env.NODE_ENV === "development") {
+            console.warn("[SLTT] getSession:", result.r.error.message);
+          }
+          await handleSession(result.r.data.session);
+        }
       } catch (e) {
         if (process.env.NODE_ENV === "development") {
           console.warn("[SLTT] Sync session Auth:", e);
         }
-        // Ne pas logout ici : une coupure réseau ne doit pas éjecter l'utilisateur.
       } finally {
-        if (!cancelled) setAuthReady(true);
+        markReady();
       }
     }
 
-    void syncSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "INITIAL_SESSION") return;
-
-      // Différer les appels Supabase pour éviter le deadlock du client auth.
-      setTimeout(() => {
-        void (async () => {
-          if (event === "SIGNED_OUT" || !session?.user) {
-            if (useNav.getState().isAuthenticated) {
-              await logoutRef.current();
-            }
-            return;
-          }
-
-          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-            await applyProfile(session.user.id);
-          }
-        })();
-      }, 0);
-    });
+    void boot();
 
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
+      clearTimeout(safetyTimer);
+      subscription?.unsubscribe();
     };
   }, []);
 

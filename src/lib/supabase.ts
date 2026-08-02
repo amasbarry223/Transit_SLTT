@@ -12,4 +12,13 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublicKey);
 export const supabase = createClient(
   supabaseUrl || "https://placeholder.supabase.co",
   supabasePublicKey || "placeholder-key",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      // Évite un hang infini si un navigateur / onglet laisse un lock Auth orphelin.
+      lockAcquireTimeout: 5_000,
+    },
+  },
 );
