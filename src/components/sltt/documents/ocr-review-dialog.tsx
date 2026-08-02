@@ -8,6 +8,7 @@ import { useNav } from "@/lib/nav-store";
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { runOcrOnStoragePath } from "@/lib/documents/ocr/run-ocr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,7 @@ export function OcrReviewDialog({
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
   const societes = useStore((s) => s.societes);
+  const { activeAnnexeId } = useActiveAnnexe();
   const createOcrJob = useStore((s) => s.createOcrJob);
   const updateOcrJobResult = useStore((s) => s.updateOcrJobResult);
   const failOcrJob = useStore((s) => s.failOcrJob);
@@ -443,6 +445,7 @@ export function OcrReviewDialog({
         }
         const input: DossierInput = {
           societeId: existing.societeId,
+          annexeId: existing.annexeId,
           clientId: existing.clientId,
           clientNom: existing.clientNom,
           nature: form.nature || existing.nature,
@@ -469,8 +472,12 @@ export function OcrReviewDialog({
         if (!transit) {
           throw new Error("Aucune société transit configurée.");
         }
+        if (!activeAnnexeId) {
+          throw new Error("Aucune annexe assignée à l'utilisateur connecté.");
+        }
         const input: DossierInput = {
           societeId: transit.id,
+          annexeId: activeAnnexeId,
           clientId: form.clientId,
           clientNom: client.nom,
           nature: form.nature || "Transit",

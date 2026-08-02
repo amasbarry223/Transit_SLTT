@@ -22,7 +22,6 @@ function assertNotAborted(signal?: AbortSignal) {
 
 /** Reconnaît une image ; abandonne proprement si AbortSignal se déclenche. */
 async function recognizeWithAbort(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Tesseract: any,
   img: Blob,
   signal?: AbortSignal,
