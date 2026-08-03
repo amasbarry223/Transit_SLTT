@@ -59,6 +59,7 @@ export interface FournisseurRow {
   adresse: string | null;
   tarif_contractuel: number | string | null;
   statut: FournisseurStatut;
+  annexe_id: string;
 }
 
 export interface DossierFournisseurRow {
@@ -186,6 +187,7 @@ export interface SocieteRow {
 export interface AnnexeRow {
   id: string;
   nom: string;
+  code: string;
   ville_siege: string;
   adresse: string | null;
   telephone: string | null;
@@ -200,6 +202,8 @@ export interface ContratRow {
   reference: string;
   societe_id: string;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   client_id: string;
   clients?: NamedRelation;
   objet: string;
@@ -263,6 +267,8 @@ export interface DevisRow {
   clients?: NamedRelation;
   societe_id: string;
   societes?: NamedRelation;
+  annexe_id: string;
+  annexes?: NamedRelation;
   nature: string;
   droit_douane: number | string;
   frais_circuit: number | string;
@@ -288,6 +294,7 @@ export interface TransporteurRow {
   statut: TransporteurStatut;
   date_creation: string | null;
   notes: string | null;
+  annexe_id: string;
 }
 
 export interface FactureLigneRow {
@@ -383,6 +390,7 @@ export interface ArchiveRow {
   depense_id: string | null;
   client_id: string | null;
   societe_id: string | null;
+  annexe_id: string;
   cree_par: string | null;
   created_at: string;
 }
@@ -403,6 +411,7 @@ export interface DocumentRow {
   cree_par: string | null;
   created_at: string;
   updated_at: string;
+  annexe_id: string;
 }
 
 export interface DocumentVersionRow {

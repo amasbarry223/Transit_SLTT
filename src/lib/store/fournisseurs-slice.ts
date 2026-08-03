@@ -1,6 +1,8 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
+import { requireActiveAnnexeId } from "@/lib/store/connected-user";
+import { useSession } from "@/lib/session/session-store";
 import type { DossierFournisseur, DossierFournisseurInput, Fournisseur, FournisseurInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { DossierFournisseurRow, FournisseurRow } from "@/lib/db-rows";
@@ -18,6 +20,7 @@ export function mapFournisseurFromDb(x: FournisseurRow): Fournisseur {
     nbDossiers: 0,
     montantTotal: 0,
     statut: x.statut,
+    annexeId: x.annexe_id,
   };
 }
 
@@ -57,6 +60,8 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
 
   addFournisseur: async (input) => {
     const seq = get().fournisseurSeq;
+    const userId = useSession.getState().currentUserId;
+    const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
     const { data, error } = await supabase
       .from("fournisseurs")
@@ -69,6 +74,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         adresse: input.adresse,
         tarif_contractuel: input.tarifContractuel,
         statut: input.statut || "Actif",
+        annexe_id: annexeId,
       })
       .select()
       .single();

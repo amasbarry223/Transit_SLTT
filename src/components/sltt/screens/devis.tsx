@@ -1,335 +1,35 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import {
-  Plus,
-  Search,
-  FileText,
-  FileSpreadsheet,
-  Pencil,
-  Trash2,
-  CheckCircle2,
-  Send,
-  FileOutput,
-  ClipboardList,
-  ArrowUpDown,
-  Eye,
-  FolderKanban,
-  MoreHorizontal,
-  ExternalLink,
-} from "lucide-react";
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 
+import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
-import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
-import { cn, getErrorMessage } from "@/lib/utils";
-import { exportToExcel, printHTML, printInvoice, htmlEscape } from "@/lib/export";
+import { formatFCFA, formatDateShort } from "@/lib/format";
+import { getErrorMessage } from "@/lib/utils";
+import { exportToExcel, htmlEscape, printHTML, printInvoice } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
-import { resolvePrintHTMLBrand, resolveTransitSociete } from "@/lib/societe-brand";
+import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { PageHeader } from "@/components/sltt/page-header";
-import { KpiCard } from "@/components/sltt/kpi-card";
-import { EmptyState } from "@/components/sltt/empty-state";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
-import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
-import type { Societe } from "@/lib/domain-types";
-
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { DevisStatutBadge } from "@/components/sltt/status-badge";
-import { StatusQuickAction } from "@/components/sltt/status-quick-action";
-import { TablePagination } from "@/components/sltt/table-pagination";
-
-/* ------------------------------------------------------------------ */
-/* Constants & types                                                   */
-/* ------------------------------------------------------------------ */
+import { Button } from "@/components/ui/button";
+import { DevisFormDialog } from "@/components/sltt/devis/devis-form-dialog";
+import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
+import { DevisListKpis } from "@/components/sltt/devis/devis-list-kpis";
+import { DevisListBanner } from "@/components/sltt/devis/devis-list-banner";
+import { DevisListFilters, type DevisSortKey } from "@/components/sltt/devis/devis-list-filters";
+import { DevisListTable } from "@/components/sltt/devis/devis-list-table";
 
 const PAGE_SIZE = 8;
-
-const NEXT_STATUT: Partial<Record<DevisStatut, { to: DevisStatut; label: string; colorClass: string; bgClass: string }>> = {
-  Brouillon: { to: "Envoyé",  label: "→ Envoyer",   colorClass: "text-blue-700 dark:text-blue-300",    bgClass: "bg-blue-50 dark:bg-blue-950/40" },
-  Envoyé:    { to: "Accepté", label: "→ Accepter",  colorClass: "text-emerald-700 dark:text-emerald-300", bgClass: "bg-emerald-50 dark:bg-emerald-950/40" },
-};
-
-type SortKey = "date-desc" | "date-asc" | "reference" | "client" | "montant-desc" | "montant-asc" | "validite-asc" | "statut";
-
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "date-desc",    label: "Date (récent d'abord)" },
-  { value: "date-asc",     label: "Date (ancien d'abord)" },
-  { value: "reference",    label: "Référence A → Z" },
-  { value: "client",       label: "Client A → Z" },
-  { value: "montant-desc", label: "Montant (décroissant)" },
-  { value: "montant-asc",  label: "Montant (croissant)" },
-  { value: "validite-asc", label: "Validité (proche d'abord)" },
-  { value: "statut",       label: "Statut" },
-];
-
-/* ------------------------------------------------------------------ */
-/* Pagination                                                          */
-/* ------------------------------------------------------------------ */
-
-
-/* ------------------------------------------------------------------ */
-/* Form dialog                                                         */
-/* ------------------------------------------------------------------ */
-
-interface DevisFormProps {
-  open: boolean;
-  devis: Devis | null;
-  clients: { id: string; nom: string }[];
-  societes: Societe[];
-  defaultSocieteId?: string | null;
-  onClose: () => void;
-  onSave: (input: DevisInput) => void;
-}
-
-function DevisFormDialog({
-  open,
-  devis,
-  clients,
-  societes,
-  defaultSocieteId,
-  onClose,
-  onSave,
-}: DevisFormProps) {
-  const transitId = resolveTransitSociete(societes)?.id ?? "";
-  const initialSociete =
-    devis?.societeId || defaultSocieteId || transitId || "";
-
-  const [societeId, setSocieteId] = useState(initialSociete);
-  const [clientId, setClientId] = useState(devis?.clientId ?? "");
-  const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
-  const [nature, setNature] = useState(devis?.nature ?? "");
-  const [droitDouane, setDroitDouane] = useState(devis ? String(devis.droitDouane) : "");
-  const [fraisCircuit, setFraisCircuit] = useState(devis ? String(devis.fraisCircuit) : "");
-  const [fraisPrestation, setFraisPrestation] = useState(devis ? String(devis.fraisPrestation) : "");
-  const [dateValidite, setDateValidite] = useState(devis?.dateValidite ?? "");
-  const [notes, setNotes] = useState(devis?.notes ?? "");
-  const isEdit = devis !== null;
-
-  // Réinitialise le formulaire quand le dialog s'ouvre ou que le devis cible change.
-  const openKey = open ? (devis?.id ?? "new") : null;
-  const [prevOpenKey, setPrevOpenKey] = useState(openKey);
-  if (openKey !== prevOpenKey) {
-    setPrevOpenKey(openKey);
-    if (openKey !== null) {
-      setSocieteId(devis?.societeId || defaultSocieteId || transitId || "");
-      setClientId(devis?.clientId ?? "");
-      setClientNom(devis?.clientNom ?? "");
-      setNature(devis?.nature ?? "");
-      setDroitDouane(devis ? String(devis.droitDouane) : "");
-      setFraisCircuit(devis ? String(devis.fraisCircuit) : "");
-      setFraisPrestation(devis ? String(devis.fraisPrestation) : "");
-      setDateValidite(devis?.dateValidite ?? "");
-      setNotes(devis?.notes ?? "");
-    }
-  }
-
-  const dd = parseAmount(droitDouane);
-  const fc = parseAmount(fraisCircuit);
-  const fp = parseAmount(fraisPrestation);
-  const total = dd + fc + fp;
-  const valid = !!societeId && !!clientId && !!nature.trim() && !!dateValidite;
-
-  function handleClientChange(id: string) {
-    setClientId(id);
-    const c = clients.find((c) => c.id === id);
-    if (c) setClientNom(c.nom);
-  }
-
-  function handleSave() {
-    if (!valid) return;
-    onSave({
-      societeId,
-      clientId,
-      clientNom,
-      nature,
-      droitDouane: dd,
-      fraisCircuit: fc,
-      fraisPrestation: fp,
-      dateValidite,
-      notes: notes.trim() || undefined,
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Modifier le devis" : "Nouveau devis"}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Modifiez les informations du devis."
-              : "Créez un devis client avant d'ouvrir un dossier."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-1">
-          <div className="space-y-2">
-            <Label>
-              Société <span className="text-red-500">*</span>
-            </Label>
-            <Select value={societeId || undefined} onValueChange={setSocieteId}>
-              <SelectTrigger aria-label="Sélectionner une société">
-                <SelectValue placeholder="Sélectionner une société" />
-              </SelectTrigger>
-              <SelectContent>
-                {societes
-                  .filter((s) => s.actif || s.id === societeId)
-                  .map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.nom}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>
-              Client <span className="text-red-500">*</span>
-            </Label>
-            <Select value={clientId} onValueChange={handleClientChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>
-              Nature de la marchandise <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              value={nature}
-              onChange={(e) => setNature(e.target.value)}
-              placeholder="ex. Matériaux de construction"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Droits douane (FCFA)</Label>
-              <Input
-                value={droitDouane}
-                onChange={(e) => setDroitDouane(e.target.value)}
-                placeholder="0"
-                className="text-right tabular-nums"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Frais circuit (FCFA)</Label>
-              <Input
-                value={fraisCircuit}
-                onChange={(e) => setFraisCircuit(e.target.value)}
-                placeholder="0"
-                className="text-right tabular-nums"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Prestation SLTT (FCFA)</Label>
-              <Input
-                value={fraisPrestation}
-                onChange={(e) => setFraisPrestation(e.target.value)}
-                placeholder="0"
-                className="text-right tabular-nums"
-              />
-            </div>
-          </div>
-
-          {total > 0 && (
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm dark:bg-blue-950/40">
-              <span className="font-medium text-blue-700 dark:text-blue-300">Total estimé</span>
-              <span className="font-bold tabular-nums text-blue-900 dark:text-blue-200">
-                {formatFCFA(total)}
-              </span>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>
-              Date de validité <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="date"
-              value={dateValidite}
-              onChange={(e) => setDateValidite(e.target.value)}
-              className="sm:w-1/2"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Notes (facultatif)</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Conditions, remarques..."
-              rows={2}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Annuler
-          </Button>
-          <Button onClick={handleSave} disabled={!valid}>
-            {isEdit ? "Enregistrer" : "Créer le devis"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Main screen                                                         */
-/* ------------------------------------------------------------------ */
 
 export function DevisScreen() {
   const { toast } = useToast();
@@ -338,8 +38,8 @@ export function DevisScreen() {
   const openDevisDetail = useNav((s) => s.openDevisDetail);
   const go = useNav((s) => s.go);
   const selectedId = useNav((s) => s.selectedId);
-  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
-
+  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
+  const { selectedAnnexeId } = useActiveAnnexe();
   const devisList = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
@@ -349,59 +49,35 @@ export function DevisScreen() {
   const expireDevisObsoletes = useStore((s) => s.expireDevisObsoletes);
   const removeDevis = useStore((s) => s.removeDevis);
 
-  // LM-06: expirer les devis obsolètes au montage du composant
-  useEffect(() => {
-    expireDevisObsoletes();
-  }, [expireDevisObsoletes]);
+  useEffect(() => { expireDevisObsoletes(); }, [expireDevisObsoletes]);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
   const [statutFilter, setStatutFilter] = useState<DevisStatut | "Tous">("Tous");
-  const [sortBy, setSortBy] = useState<SortKey>("date-desc");
+  const [sortBy, setSortBy] = useState<DevisSortKey>("date-desc");
   const [page, setPage] = useState(1);
-
   const [formOpen, setFormOpen] = useState(false);
   const [editDevis, setEditDevis] = useState<Devis | null>(null);
   const { target: deleteTarget, setTarget: setDeleteTarget, confirm: handleDelete } = useDeleteConfirm<Devis>(
-    removeDevis,
-    (d) => d.id,
-    (d) => d.reference,
-    "Devis supprimé",
-    "Impossible de supprimer le devis",
+    removeDevis, (d) => d.id, (d) => d.reference, "Devis supprimé", "Impossible de supprimer le devis",
   );
   const [convertTarget, setConvertTarget] = useState<Devis | null>(null);
 
   useEffect(() => {
     if (selectedId === "new") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le dialogue puis consomme le marqueur "new" de l'URL
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur
       setEditDevis(null);
       setFormOpen(true);
       go("devis");
     }
   }, [selectedId, go]);
 
-  function handleOpenDevis(d: Devis) {
-    openDevisDetail(d.id, false);
-  }
-
-  function handleOpenEdit(d: Devis) {
-    openDevisDetail(d.id, true);
-  }
-
-  /* ---- KPIs ---- */
-  const scopedDevis = useMemo(
-    () =>
-      selectedSocieteId
-        ? devisList.filter((d) => d.societeId === selectedSocieteId)
-        : devisList,
-    [devisList, selectedSocieteId],
-  );
-
-  const totalDevis = scopedDevis.length;
+  const scopedDevis = useMemo(() => {
+    const bySociete = selectedSocieteId ? devisList.filter((d) => d.societeId === selectedSocieteId) : devisList;
+    return filterByAnnexe(bySociete, selectedAnnexeId);
+  }, [devisList, selectedSocieteId, selectedAnnexeId]);
   const { enAttente, acceptes, totalEstime } = useMemo(() => {
-    let enAttente = 0;
-    let acceptes = 0;
-    let totalEstime = 0;
+    let enAttente = 0, acceptes = 0, totalEstime = 0;
     for (const d of scopedDevis) {
       if (d.statut === "Envoyé") enAttente++;
       if (d.statut === "Accepté") acceptes++;
@@ -409,600 +85,131 @@ export function DevisScreen() {
     }
     return { enAttente, acceptes, totalEstime };
   }, [scopedDevis]);
-
-  /* ---- Filters ---- */
   const filtered = useMemo(() => {
-    const list = scopedDevis.filter((d) => {
-      if (!matchesQuery(d, ["reference", "clientNom", "nature", "societeNom"], search)) return false;
-      if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
-      if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
-      return true;
-    });
-    return [...list].sort((a, b) => {
+    const result = scopedDevis.filter((d) =>
+      matchesQuery(d, ["reference", "clientNom", "nature", "societeNom"], search) &&
+      (clientFilter === "all" || d.clientId === clientFilter) &&
+      (statutFilter === "Tous" || d.statut === statutFilter));
+    return [...result].sort((a, b) => {
       switch (sortBy) {
-        case "date-desc":    return b.dateCreation.localeCompare(a.dateCreation);
-        case "date-asc":     return a.dateCreation.localeCompare(b.dateCreation);
-        case "reference":    return a.reference.localeCompare(b.reference);
-        case "client":       return a.clientNom.localeCompare(b.clientNom, "fr");
+        case "date-desc": return b.dateCreation.localeCompare(a.dateCreation);
+        case "date-asc": return a.dateCreation.localeCompare(b.dateCreation);
+        case "reference": return a.reference.localeCompare(b.reference);
+        case "client": return a.clientNom.localeCompare(b.clientNom, "fr");
         case "montant-desc": return b.total - a.total;
-        case "montant-asc":  return a.total - b.total;
+        case "montant-asc": return a.total - b.total;
         case "validite-asc": return a.dateValidite.localeCompare(b.dateValidite);
-        case "statut":       return a.statut.localeCompare(b.statut);
-        default: return 0;
+        case "statut": return a.statut.localeCompare(b.statut);
       }
     });
   }, [scopedDevis, search, clientFilter, statutFilter, sortBy]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
-
   const activeFiltersCount = [search.trim() !== "", clientFilter !== "all", statutFilter !== "Tous"].filter(Boolean).length;
   const hasActiveFilters = activeFiltersCount > 0;
+  const clearFilters = () => {
+    setSearch(""); setClientFilter("all"); setStatutFilter("Tous"); setSortBy("date-desc"); setPage(1);
+  };
 
-  function clearFilters() {
-    setSearch("");
-    setClientFilter("all");
-    setStatutFilter("Tous");
-    setSortBy("date-desc");
-    setPage(1);
-  }
-
-  /* ---- Actions ---- */
   async function handleSaveForm(input: DevisInput) {
     try {
       if (editDevis) {
         await updateDevis(editDevis.id, input);
         toast({ title: "Devis modifié", description: editDevis.reference });
       } else {
-        const d = await addDevis(input);
-        toast({ title: "Devis créé", description: d.reference });
+        const devis = await addDevis(input);
+        toast({ title: "Devis créé", description: devis.reference });
       }
-      setFormOpen(false);
-      setEditDevis(null);
-    } catch (e) {
-      toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de sauvegarder le devis"), variant: "destructive" });
+      setFormOpen(false); setEditDevis(null);
+    } catch (error) {
+      toast({ title: "Erreur", description: getErrorMessage(error, "Impossible de sauvegarder le devis"), variant: "destructive" });
     }
   }
-
-  async function handleQuickStatut(d: Devis, toStatut: DevisStatut) {
+  async function handleQuickStatut(devis: Devis, statut: DevisStatut) {
     try {
-      await updateDevisStatut(d.id, toStatut);
-      toast({ title: "Statut mis à jour", description: `${d.reference} → ${toStatut}` });
-    } catch (e) {
-      toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de mettre à jour le statut"), variant: "destructive" });
+      await updateDevisStatut(devis.id, statut);
+      toast({ title: "Statut mis à jour", description: `${devis.reference} → ${statut}` });
+    } catch (error) {
+      toast({ title: "Erreur", description: getErrorMessage(error, "Impossible de mettre à jour le statut"), variant: "destructive" });
     }
   }
-
-  function handlePrintDevis(d: Devis) {
-    const client = clients.find((c) => c.id === d.clientId);
+  function handlePrintDevis(devis: Devis) {
+    const client = clients.find((c) => c.id === devis.clientId);
     printInvoice({
-      reference: d.reference,
-      clientNom: d.clientNom,
-      clientAdresse: client?.adresse,
-      clientTelephone: client?.telephone,
-      clientEmail: client?.email,
-      nature: d.nature,
-      date: d.dateCreation,
-      droitDouane: d.droitDouane,
-      fraisCircuit: d.fraisCircuit,
-      fraisPrestation: d.fraisPrestation,
-      montantInvesti: d.total,
-      montantPaye: 0,
-    }, d.reference, resolveSlttBrand(societes));
+      reference: devis.reference, clientNom: devis.clientNom, clientAdresse: client?.adresse,
+      clientTelephone: client?.telephone, clientEmail: client?.email, nature: devis.nature,
+      date: devis.dateCreation, droitDouane: devis.droitDouane, fraisCircuit: devis.fraisCircuit,
+      fraisPrestation: devis.fraisPrestation, montantInvesti: devis.total, montantPaye: 0,
+    }, devis.reference, resolveSlttBrand(societes));
   }
-
   async function handleExportExcel() {
     if (filtered.length === 0) {
-      toast({
-        title: "Rien à exporter",
-        description: "Aucun devis ne correspond aux filtres actuels.",
-        variant: "destructive",
-      });
+      toast({ title: "Rien à exporter", description: "Aucun devis ne correspond aux filtres actuels.", variant: "destructive" });
       return;
     }
     try {
-      await exportToExcel(
-        `devis-sltt-${new Date().toISOString().slice(0, 10)}`,
-        [
-          { header: "Référence",       accessor: (d: Devis) => d.reference },
-          { header: "Client",          accessor: (d: Devis) => d.clientNom },
-          { header: "Société",         accessor: (d: Devis) => d.societeNom },
-          { header: "Nature",          accessor: (d: Devis) => d.nature },
-          { header: "Droits douane",   accessor: (d: Devis) => d.droitDouane },
-          { header: "Frais circuit",   accessor: (d: Devis) => d.fraisCircuit },
-          { header: "Prestation SLTT", accessor: (d: Devis) => d.fraisPrestation },
-          { header: "Total estimé",    accessor: (d: Devis) => d.total },
-          { header: "Date création",   accessor: (d: Devis) => formatDateShort(d.dateCreation) },
-          { header: "Date validité",   accessor: (d: Devis) => formatDateShort(d.dateValidite) },
-          { header: "Statut",          accessor: (d: Devis) => d.statut },
-        ],
-        filtered,
-        { module: "Devis" },
-      );
-    } catch {
-      return;
-    }
+      await exportToExcel(`devis-sltt-${new Date().toISOString().slice(0, 10)}`, [
+        { header: "Référence", accessor: (d: Devis) => d.reference },
+        { header: "Client", accessor: (d: Devis) => d.clientNom },
+        { header: "Société", accessor: (d: Devis) => d.societeNom },
+        { header: "Nature", accessor: (d: Devis) => d.nature },
+        { header: "Droits douane", accessor: (d: Devis) => d.droitDouane },
+        { header: "Frais circuit", accessor: (d: Devis) => d.fraisCircuit },
+        { header: "Prestation SLTT", accessor: (d: Devis) => d.fraisPrestation },
+        { header: "Total estimé", accessor: (d: Devis) => d.total },
+        { header: "Date création", accessor: (d: Devis) => formatDateShort(d.dateCreation) },
+        { header: "Date validité", accessor: (d: Devis) => formatDateShort(d.dateValidite) },
+        { header: "Statut", accessor: (d: Devis) => d.statut },
+      ], filtered, { module: "Devis" });
+    } catch { return; }
     toast({ title: "Export Excel généré", description: `${filtered.length} devis exportés.` });
   }
-
   function handleExportPDF() {
-    const rowsHTML = filtered.map((d) => `
-      <tr>
-        <td>${htmlEscape(d.reference)}</td>
-        <td>${htmlEscape(d.clientNom)}</td>
-        <td>${htmlEscape(d.societeNom)}</td>
-        <td>${htmlEscape(d.nature)}</td>
-        <td class="num">${formatFCFA(d.total, false)}</td>
-        <td>${formatDateShort(d.dateValidite)}</td>
-        <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${htmlEscape(d.statut)}</span></td>
-      </tr>`).join("");
-    printHTML("Liste des devis", `
-      <h1>Liste des devis</h1>
-      <div class="subtitle">${filtered.length} devis · ${formatDateShort(new Date())}</div>
-      <table>
-        <thead><tr>
-          <th>Référence</th><th>Client</th><th>Société</th><th>Nature</th>
-          <th class="num">Total estimé</th><th>Validité</th><th>Statut</th>
-        </tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>`, resolvePrintHTMLBrand(societes));
+    const rowsHTML = filtered.map((d) => `<tr><td>${htmlEscape(d.reference)}</td><td>${htmlEscape(d.clientNom)}</td><td>${htmlEscape(d.societeNom)}</td><td>${htmlEscape(d.nature)}</td><td class="num">${formatFCFA(d.total, false)}</td><td>${formatDateShort(d.dateValidite)}</td><td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${htmlEscape(d.statut)}</span></td></tr>`).join("");
+    printHTML("Liste des devis", `<h1>Liste des devis</h1><div class="subtitle">${filtered.length} devis · ${formatDateShort(new Date())}</div><table><thead><tr><th>Référence</th><th>Client</th><th>Société</th><th>Nature</th><th class="num">Total estimé</th><th>Validité</th><th>Statut</th></tr></thead><tbody>${rowsHTML}</tbody></table>`, resolvePrintHTMLBrand(societes));
   }
-
-  /* ---------------------------------------------------------------- */
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader title="Devis" description="Estimations tarifaires avant ouverture de dossier">
-        {canWrite && (
-          <Button onClick={() => { setEditDevis(null); setFormOpen(true); }}>
-            <Plus className="size-4" />
-            Nouveau devis
-          </Button>
-        )}
+        {canWrite && <Button onClick={() => { setEditDevis(null); setFormOpen(true); }}><Plus className="size-4" />Nouveau devis</Button>}
       </PageHeader>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Total devis"          value={String(totalDevis)}       icon={ClipboardList} tone="blue"    sublabel="devis enregistrés" />
-        <KpiCard label="En attente de réponse" value={String(enAttente)}       icon={Send}          tone="amber"   sublabel="envoyés, sans retour" />
-        <KpiCard label="Acceptés"              value={String(acceptes)}        icon={CheckCircle2}  tone="emerald" sublabel="convertibles en dossier" />
-        <KpiCard label="Montant estimé actif"  value={formatFCFA(totalEstime)} icon={FileOutput}    tone="indigo"  sublabel="hors refusés et expirés" />
-      </div>
-
-      {/* Banner */}
-      {enAttente > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/30 px-4 py-3">
-          <Send className="mt-0.5 size-5 shrink-0 text-blue-600 dark:text-blue-400" />
-          <div>
-            <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
-              {enAttente} devis{enAttente > 1 ? "s" : ""} en attente de réponse client
-            </p>
-            <p className="mt-0.5 text-xs text-blue-800/80 dark:text-blue-400/80">
-              Relancez vos clients, puis utilisez « Convertir en dossier » une fois le devis accepté.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <Card className="border-border/80 p-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-            <Input
-              className="h-10 pl-9"
-              placeholder="Référence, client, nature…"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            />
-          </div>
-
-          <Select value={clientFilter} onValueChange={(v) => { setClientFilter(v); setPage(1); }}>
-            <SelectTrigger className="h-10 w-full sm:w-52">
-              <SelectValue placeholder="Client" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les clients</SelectItem>
-              {clients.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <SocieteFilterSelect className="h-10 w-full sm:w-52" />
-
-          <Select value={statutFilter} onValueChange={(v) => { setStatutFilter(v as DevisStatut | "Tous"); setPage(1); }}>
-            <SelectTrigger className="h-10 w-full sm:w-44">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Tous">Tous les statuts</SelectItem>
-              {(["Brouillon", "Envoyé", "Accepté", "Refusé", "Expiré"] as DevisStatut[]).map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={sortBy} onValueChange={(v) => { setSortBy(v as SortKey); setPage(1); }}>
-            <SelectTrigger className="h-10 w-full sm:w-52">
-              <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
-              <SelectValue placeholder="Trier par…" />
-            </SelectTrigger>
-            <SelectContent>
-              {SORT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-10 gap-1.5 text-slate-500 dark:text-slate-400" onClick={clearFilters}>
-              Réinitialiser
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
-                {activeFiltersCount}
-              </span>
-            </Button>
-          )}
-
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 shrink-0"
-              onClick={handleExportPDF}
-              disabled={filtered.length === 0}
-              title="Exporter en PDF"
-              aria-label="Exporter en PDF"
-            >
-              <FileText className="size-4" />
-              <span className="hidden sm:inline">PDF</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 shrink-0"
-              onClick={handleExportExcel}
-              disabled={filtered.length === 0}
-              title="Exporter en Excel"
-              aria-label="Exporter en Excel"
-            >
-              <FileSpreadsheet className="size-4" />
-              <span className="hidden sm:inline">Excel</span>
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Table */}
-      <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <ClipboardList className="size-4 text-slate-400 dark:text-slate-500" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des devis</h2>
-          <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
-            {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-
-        {filtered.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title="Aucun devis trouvé"
-            description={
-              hasActiveFilters
-                ? "Modifiez vos filtres ou créez un nouveau devis."
-                : "Commencez par créer votre premier devis client."
-            }
-            action={
-              !hasActiveFilters && canWrite ? (
-                <Button onClick={() => { setEditDevis(null); setFormOpen(true); }}>
-                  <Plus className="size-4" />
-                  Nouveau devis
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <>
-            <div className="space-y-3 p-4 md:hidden">
-              {paged.map((d) => {
-                const next = NEXT_STATUT[d.statut];
-                const isEnAttente = d.statut === "Envoyé";
-                return (
-                  <Card
-                    key={d.id}
-                    className={cn(
-                      "cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60",
-                      isEnAttente && "bg-blue-50/30 dark:bg-blue-950/20",
-                    )}
-                    onClick={() => handleOpenDevis(d)}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">{d.reference}</p>
-                        <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
-                        {d.societeNom && (
-                          <div className="mt-1">
-                            <SocieteBadge societeNom={d.societeNom} size="sm" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <DevisStatutBadge statut={d.statut} />
-                        {d.dossierId ? (
-                          <button
-                            className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
-                            onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
-                          >
-                            <FolderKanban className="size-3" /> Dossier
-                          </button>
-                        ) : next && canWrite && (
-                          <StatusQuickAction
-                            label={next.label}
-                            bgClass={next.bgClass}
-                            colorClass={next.colorClass}
-                            onClick={(e) => { e.stopPropagation(); handleQuickStatut(d, next.to); }}
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <dl className="mt-3 space-y-1.5 text-sm">
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Nature</dt>
-                        <dd className="truncate text-right text-slate-700 dark:text-slate-300">{d.nature}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Total estimé</dt>
-                        <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(d.total)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Validité</dt>
-                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.dateValidite)}</dd>
-                      </div>
-                    </dl>
-                    <div
-                      className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Voir" onClick={() => handleOpenDevis(d)}>
-                        <Eye className="size-4" />
-                      </Button>
-                      {canWrite && !d.dossierId && d.statut !== "Accepté" && (
-                        <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Modifier" onClick={() => handleOpenEdit(d)}>
-                          <Pencil className="size-4" />
-                        </Button>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem onClick={() => handleOpenDevis(d)}>
-                            <ExternalLink className="mr-2 size-3.5" /> Ouvrir la fiche
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handlePrintDevis(d)}>
-                            <FileText className="mr-2 size-3.5" /> Imprimer le devis
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {d.dossierId ? (
-                            <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
-                              <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
-                            </DropdownMenuItem>
-                          ) : canWrite && d.statut === "Accepté" && (
-                            <DropdownMenuItem
-                              className="text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-950/40 focus:text-emerald-800"
-                              onClick={() => setConvertTarget(d)}
-                            >
-                              <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
-                            </DropdownMenuItem>
-                          )}
-                          {canWrite && (
-                            <DropdownMenuItem
-                              className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
-                              onClick={() => setDeleteTarget(d)}
-                            >
-                              <Trash2 className="mr-2 size-3.5" /> Supprimer
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Référence
-                    </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Client
-                    </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
-                      Société
-                    </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
-                      Nature marchandise
-                    </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Total estimé
-                    </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
-                      Validité
-                    </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Statut
-                    </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paged.map((d) => {
-                    const next = NEXT_STATUT[d.statut];
-                    const isEnAttente = d.statut === "Envoyé";
-                    return (
-                      <TableRow
-                        key={d.id}
-                        className={cn(
-                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80",
-                          isEnAttente && "bg-blue-50/30 dark:bg-blue-950/20",
-                        )}
-                        onClick={() => handleOpenDevis(d)}
-                      >
-                        <TableCell className="px-4 py-3.5">
-                          <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">{d.reference}</p>
-                          <p className="mt-0.5 text-xs tabular-nums text-slate-400 dark:text-slate-500">{formatDateShort(d.dateCreation)}</p>
-                        </TableCell>
-
-                        <TableCell className="max-w-[180px] px-4 py-3.5">
-                          <p className="truncate font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
-                        </TableCell>
-
-                        <TableCell className="hidden px-4 py-3.5 lg:table-cell">
-                          <SocieteBadge societeNom={d.societeNom} size="sm" />
-                        </TableCell>
-
-                        <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
-                          <span className="line-clamp-1 text-sm text-slate-600 dark:text-slate-300">{d.nature}</span>
-                        </TableCell>
-
-                        <TableCell className="px-4 py-3.5 text-right">
-                          <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(d.total)}</span>
-                        </TableCell>
-
-                        <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-                          <span className="text-sm tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(d.dateValidite)}</span>
-                        </TableCell>
-
-                        <TableCell className="px-4 py-3.5">
-                          <div className="flex flex-col gap-1">
-                            <DevisStatutBadge statut={d.statut} />
-                            {d.dossierId ? (
-                              <button
-                                className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
-                                onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
-                              >
-                                <FolderKanban className="size-3" /> Dossier créé
-                              </button>
-                            ) : next && canWrite && (
-                              <StatusQuickAction
-                                label={next.label}
-                                bgClass={next.bgClass}
-                                colorClass={next.colorClass}
-                                onClick={(e) => { e.stopPropagation(); handleQuickStatut(d, next.to); }}
-                              />
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="px-4 py-3.5">
-                          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
-                              title="Voir" onClick={() => handleOpenDevis(d)}
-                            >
-                              <Eye className="size-4" />
-                            </Button>
-                            {canWrite && !d.dossierId && d.statut !== "Accepté" && (
-                              <Button
-                                variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
-                                title="Modifier" onClick={() => handleOpenEdit(d)}
-                              >
-                                <Pencil className="size-4" />
-                              </Button>
-                            )}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
-                                  <MoreHorizontal className="size-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-52">
-                                <DropdownMenuItem onClick={() => handleOpenDevis(d)}>
-                                  <ExternalLink className="mr-2 size-3.5" /> Ouvrir la fiche
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handlePrintDevis(d)}>
-                                  <FileText className="mr-2 size-3.5" /> Imprimer le devis
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {d.dossierId ? (
-                                  <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
-                                    <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
-                                  </DropdownMenuItem>
-                                ) : canWrite && d.statut === "Accepté" && (
-                                  <DropdownMenuItem
-                                    className="text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-950/40 focus:text-emerald-800"
-                                    onClick={() => setConvertTarget(d)}
-                                  >
-                                    <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
-                                  </DropdownMenuItem>
-                                )}
-                                {canWrite && (
-                                  <DropdownMenuItem
-                                    className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
-                                    onClick={() => setDeleteTarget(d)}
-                                  >
-                                    <Trash2 className="mr-2 size-3.5" /> Supprimer
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            <TablePagination
-              startIdx={startIdx}
-              endIdx={endIdx}
-              totalItems={filtered.length}
-              itemLabel={`devis`}
-              page={safePage}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </>
-        )}
-      </Card>
-
-      {/* Dialogs */}
-      <DevisFormDialog
-        open={formOpen}
-        devis={editDevis}
-        clients={clients}
-        societes={societes}
-        defaultSocieteId={selectedSocieteId}
-        onClose={() => { setFormOpen(false); setEditDevis(null); }}
-        onSave={handleSaveForm}
+      <DevisListKpis totalDevis={scopedDevis.length} enAttente={enAttente} acceptes={acceptes} totalEstime={totalEstime} />
+      <DevisListBanner enAttente={enAttente} />
+      <DevisListFilters
+        search={search} setSearch={setSearch} clients={clients} clientFilter={clientFilter}
+        setClientFilter={setClientFilter} statutFilter={statutFilter} setStatutFilter={setStatutFilter}
+        sortBy={sortBy} setSortBy={setSortBy} setPage={setPage} hasActiveFilters={hasActiveFilters}
+        activeFiltersCount={activeFiltersCount} clearFilters={clearFilters} filteredCount={filtered.length}
+        handleExportPDF={handleExportPDF} handleExportExcel={handleExportExcel}
       />
-
+      <DevisListTable
+        filtered={filtered} paged={paged} hasActiveFilters={hasActiveFilters} canWrite={canWrite}
+        setEditDevis={setEditDevis} setFormOpen={setFormOpen}
+        handleOpenDevis={(d) => openDevisDetail(d.id, false)}
+        handleOpenEdit={(d) => openDevisDetail(d.id, true)}
+        handlePrintDevis={handlePrintDevis} handleQuickStatut={handleQuickStatut}
+        openDossierDetail={openDossierDetail} setConvertTarget={setConvertTarget}
+        setDeleteTarget={setDeleteTarget} startIdx={startIdx} endIdx={endIdx}
+        safePage={safePage} totalPages={totalPages} setPage={setPage}
+      />
+      <DevisFormDialog
+        open={formOpen} devis={editDevis} clients={clients} societes={societes}
+        defaultSocieteId={selectedSocieteId}
+        onClose={() => { setFormOpen(false); setEditDevis(null); }} onSave={handleSaveForm}
+      />
       <ConfirmDeleteDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Supprimer ce devis ?"
         description={<>Cette action est irréversible. Le devis {deleteTarget?.reference} sera définitivement supprimé.</>}
         onConfirm={handleDelete}
       />
-
       <ConvertDevisDialog
-        key={convertTarget?.id ?? "closed"}
-        devis={convertTarget}
-        onClose={() => setConvertTarget(null)}
-        onConverted={(dossierId) => openDossierDetail(dossierId)}
+        key={convertTarget?.id ?? "closed"} devis={convertTarget} onClose={() => setConvertTarget(null)}
+        onConverted={openDossierDetail}
       />
     </div>
   );

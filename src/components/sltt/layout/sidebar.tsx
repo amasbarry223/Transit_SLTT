@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useNav } from "@/lib/nav-store";
+import { useAppNavigation } from "@/lib/app-navigation";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import { useStore } from "@/lib/store";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
@@ -9,7 +10,7 @@ import { NavList } from "./nav-list";
 
 export function Sidebar() {
   const view = useNav((s) => s.view);
-  const go = useNav((s) => s.go);
+  const { goToView } = useAppNavigation();
   const societes = useStore((s) => s.societes);
   const shellBrand = resolveAppShellBranding(societes);
   const visibleItems = useVisibleNavItems();
@@ -30,7 +31,7 @@ export function Sidebar() {
       <nav
         className="flex-1 overflow-y-auto px-3 py-4 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <NavList items={visibleItems} currentView={view} onNavigate={go} />
+        <NavList items={visibleItems} currentView={view} onNavigate={(key) => goToView(key)} />
       </nav>
     </aside>
   );

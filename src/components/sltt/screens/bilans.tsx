@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import { useMemo, useState, type ReactNode } from "react";
 import {
   Wallet,
@@ -14,7 +16,6 @@ import {
   Users,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useNav } from "@/lib/nav-store";
 import { formatFCFA, formatFCFACompact, formatDateShort, parseLocalDate } from "@/lib/format";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
@@ -22,6 +23,7 @@ import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
 import { useToast } from "@/hooks/use-toast";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
+import { filterBySociete } from "@/lib/filter-by-societe";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -215,7 +217,7 @@ export function BilansScreen() {
   const [sortKey, setSortKey] = useState<SortKey>("reste");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const theme = useNav((s) => s.theme);
+  const theme = useUiPrefs((s) => s.theme);
   const isDark = theme === "dark";
   // Recharts SVG props n'héritent pas des classes `dark:` (voir dashboard.tsx) —
   // ces couleurs doivent être calculées explicitement selon le thème.
@@ -227,13 +229,15 @@ export function BilansScreen() {
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
   const factures = useStore((s) => s.factures);
-  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+  const depenses = useStore((s) => s.depenses);
+  const contrats = useStore((s) => s.contrats);
+  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
   const { annexes, isMultiAnnexe } = useActiveAnnexe();
 
   // F1 : quand une société précise est sélectionnée, les écritures non
   // affectées (transit global) sont exclues des récaps/graphiques de cet écran.
   const ecritures = useMemo(
-    () => (selectedSocieteId ? allEcritures.filter((e) => e.societeId === selectedSocieteId) : allEcritures),
+    () => filterBySociete(allEcritures, selectedSocieteId),
     [allEcritures, selectedSocieteId],
   );
 
@@ -273,10 +277,19 @@ export function BilansScreen() {
   // F-ANNEXE — reporting consolidé par annexe, réservé aux utilisateurs
   // multi-annexes (RLS les laisse déjà voir les données des deux annexes ;
   // ce bloc n'est qu'un regroupement client-side, aucun contournement RLS).
-  // Contrairement au bénéfice par société, les dépenses de contrats ne sont
-  // pas comptées ici : contrats/dépenses restent hors périmètre annexe pour
-  // cette itération (cf. plan F-ANNEXE) — seules les sorties de caisse
-  // (annexe-scopées) sont déduites des recettes.
+  // Les dépenses de contrats n'ont pas de annexe_id propre (héritée du
+  // contrat parent, cf. RLS 20260817) — on la dénormalise ici comme le fait
+  // déjà useBeneficeParSociete pour societeId.
+  const depensesAvecDateEtAnnexe = useMemo(
+    () =>
+      depenses.map((d) => ({
+        ...d,
+        date: d.dateDepense,
+        annexeId: contrats.find((c) => c.id === d.contratId)?.annexeId,
+      })),
+    [depenses, contrats],
+  );
+
   const beneficeAnnexe = useMemo(() => {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
     const m = month - 1;
@@ -284,17 +297,21 @@ export function BilansScreen() {
       const recettes =
         filterByAnnexeAndPeriode(ecrituresAvecDate, annexeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
         filterByAnnexeAndPeriode(factures, annexeId, year, m).reduce((sum, f) => sum + f.montantPaye, 0);
-      const depensesMois = filterByAnnexeAndPeriode(caisseAvecDate, annexeId, year, m).reduce(
-        (sum, d) => sum + d.montant,
-        0,
-      );
+      const depensesMois =
+        filterByAnnexeAndPeriode(caisseAvecDate, annexeId, year, m).reduce((sum, d) => sum + d.montant, 0) +
+        filterByAnnexeAndPeriode(
+          depensesAvecDateEtAnnexe.filter((d): d is typeof d & { annexeId: string } => !!d.annexeId),
+          annexeId,
+          year,
+          m,
+        ).reduce((sum, d) => sum + d.montant, 0);
       return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
     };
     return {
       consolide: computeFor(null),
       parAnnexe: annexes.map((a) => ({ annexe: a, ...computeFor(a.id) })),
     };
-  }, [ecrituresAvecDate, factures, caisseAvecDate, annexes, mois]);
+  }, [ecrituresAvecDate, factures, caisseAvecDate, depensesAvecDateEtAnnexe, annexes, mois]);
 
   // Le calcul ci-dessus porte toujours sur un seul mois de référence, quelle
   // que soit la granularité "période" choisie (voir commentaire F5 plus haut)

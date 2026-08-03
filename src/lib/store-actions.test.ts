@@ -146,6 +146,7 @@ describe("removeDossier", () => {
       id: "fr1",
       nom: "Transporteur X",
       type: "Transporteur",
+      annexeId: "a1",
       contact: "",
       telephone: "",
       email: "",
@@ -162,6 +163,7 @@ describe("removeDossier", () => {
       type: "application/pdf",
       storagePath: "2026-07/ar1.pdf",
       dossierId: "d1",
+      annexeId: "a1",
       creePar: "Test",
       createdAt: "2026-07-01",
     };
@@ -227,6 +229,7 @@ describe("deleteArchive", () => {
       taille: 100,
       type: "application/pdf",
       storagePath: "2026-07/ar1.pdf",
+      annexeId: "a1",
       creePar: "Test",
       createdAt: "2026-07-01",
     };

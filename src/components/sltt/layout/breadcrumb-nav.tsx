@@ -2,6 +2,7 @@
 
 import { ChevronRight } from "lucide-react";
 import { useNav, type ViewKey } from "@/lib/nav-store";
+import { useAppNavigation } from "@/lib/app-navigation";
 import { useStore } from "@/lib/store";
 import { navItems } from "@/lib/nav-items";
 import { useCanView } from "@/hooks/use-permission";
@@ -18,7 +19,7 @@ const DETAIL_PARENT: Partial<Record<ViewKey, ViewKey>> = {
 export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: string }) {
   const view = useNav((s) => s.view);
   const selectedId = useNav((s) => s.selectedId);
-  const go = useNav((s) => s.go);
+  const { goToView } = useAppNavigation();
 
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
@@ -58,7 +59,7 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
           {canViewParent ? (
             <button
               type="button"
-              onClick={() => go(parentKey)}
+              onClick={() => goToView(parentKey)}
               className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors truncate"
             >
               {parentItem.label}

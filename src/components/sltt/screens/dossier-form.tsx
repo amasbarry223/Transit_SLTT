@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import {
   ArrowLeft,
   Save,
@@ -53,7 +55,8 @@ export function DossierFormScreen() {
 }
 
 function DossierFormInner() {
-  const { selectedId, dossierFormMode, go, selectedSocieteId } = useNav();
+  const { selectedId, dossierFormMode, go } = useNav();
+  const { selectedSocieteId } = useUiPrefs();
   const { toast } = useToast();
   const canWrite = usePermission("dossiers:write");
   const canTransition = usePermission("dossiers:transition");

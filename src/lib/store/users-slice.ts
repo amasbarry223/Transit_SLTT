@@ -1,6 +1,6 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
-import { useNav } from "@/lib/nav-store";
+import { useSession } from "@/lib/session/session-store";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { normalizePermissions, ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { User, UserRole } from "@/lib/domain-types";
@@ -193,7 +193,7 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
       ),
     }));
 
-    useNav.getState().setCurrentUserName(trimmedNom);
+    useSession.getState().setCurrentUserName(trimmedNom);
     await get().addAuditLog("Utilisateurs", "Modification", `Profil de ${trimmedNom} mis à jour`);
   },
 });

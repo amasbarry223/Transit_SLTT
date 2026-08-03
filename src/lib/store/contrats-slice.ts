@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
-import { getConnectedUserName } from "@/lib/store/connected-user";
+import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
+import { useSession } from "@/lib/session/session-store";
 import { syncContratStats } from "@/lib/contrat-stats";
 import type {
   Contrat,
@@ -13,9 +14,7 @@ import type {
 import type { AddDepenseInput, SLTTState } from "@/lib/store";
 import type { ContratPrestationRow, ContratRow, DepenseRow } from "@/lib/db-rows";
 
-function pad(n: number, len: number): string {
-  return String(n).padStart(len, "0");
-}
+import { nextYearlyReference } from "@/lib/store/reference";
 
 export function mapContratFromDb(
   x: ContratRow,
@@ -25,6 +24,8 @@ export function mapContratFromDb(
     reference: x.reference,
     societeId: x.societe_id,
     societeNom: x.societes?.nom || "—",
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     clientId: x.client_id,
     clientNom: x.clients?.nom || "—",
     objet: x.objet,
@@ -90,9 +91,10 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
 
   addContrat: async (input) => {
     const seq = get().contratSeq;
-    const year = new Date().getFullYear();
-    const reference = `CTR-${year}-${pad(seq, 4)}`;
+    const reference = nextYearlyReference("CTR", seq);
     const creePar = getConnectedUserName();
+    const userId = useSession.getState().currentUserId;
+    const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
     const { data, error } = await supabase
       .from("contrats")
@@ -100,6 +102,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
         reference,
         societe_id: input.societeId,
         client_id: input.clientId,
+        annexe_id: annexeId,
         objet: input.objet,
         date_debut: input.dateDebut,
         date_fin: input.dateFin || null,
@@ -108,7 +111,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
         notes: input.notes || null,
         cree_par: creePar,
       })
-      .select("*, clients(nom), societes(nom)")
+      .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
 
     if (error) throw error;

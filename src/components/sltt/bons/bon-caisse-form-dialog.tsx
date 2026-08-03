@@ -5,7 +5,8 @@ import { Check, Plus, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
-import { useNav } from "@/lib/nav-store";
+import { toastError } from "@/lib/toast-error";
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
   const { toast } = useToast();
   const addBonSortieCaisse = useStore((state) => state.addBonSortieCaisse);
   const societes = useStore((state) => state.societes);
-  const selectedSocieteId = useNav((state) => state.selectedSocieteId);
+  const selectedSocieteId = useUiPrefs((state) => state.selectedSocieteId);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -112,11 +113,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
       });
       onOpenChange(false);
     } catch (error) {
-      toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de créer le bon de sortie.",
-        variant: "destructive",
-      });
+      toastError(toast, error, "Impossible de créer le bon de sortie.");
     }
   }
 

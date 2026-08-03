@@ -1,9 +1,10 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
+import { useSession } from "@/lib/session/session-store";
 import type { Archive, TypeDocument } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { ArchiveRow } from "@/lib/db-rows";
-import { getConnectedUserName } from "@/lib/store/connected-user";
+import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 
 const ARCHIVES_ALLOWED_MIME = new Set([
   "application/pdf",
@@ -57,9 +58,36 @@ export function mapArchiveFromDb(x: ArchiveRow): Archive {
     depenseId: x.depense_id || undefined,
     clientId: x.client_id || undefined,
     societeId: x.societe_id || undefined,
+    annexeId: x.annexe_id,
     creePar: x.cree_par || "",
     createdAt: x.created_at,
   };
+}
+
+/**
+ * Annexe d'une archive : héritée de l'entité liée (dossier/facture/dépense →
+ * contrat) pour rester cohérente avec les données qu'elle documente, sinon
+ * repli sur l'annexe active de l'utilisateur (archive "libre").
+ */
+function resolveArchiveAnnexeId(get: () => SLTTState, input: AddArchiveInput): string {
+  if (input.dossierId) {
+    const fromDossier = get().dossiers.find((d) => d.id === input.dossierId)?.annexeId;
+    if (fromDossier) return fromDossier;
+  }
+  if (input.factureId) {
+    const fromFacture = get().factures.find((f) => f.id === input.factureId)?.annexeId;
+    if (fromFacture) return fromFacture;
+  }
+  if (input.depenseId) {
+    const depense = get().depenses.find((d) => d.id === input.depenseId);
+    const fromContrat = depense
+      ? get().contrats.find((c) => c.id === depense.contratId)?.annexeId
+      : undefined;
+    if (fromContrat) return fromContrat;
+  }
+  const userId = useSession.getState().currentUserId;
+  const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
+  return requireActiveAnnexeId(userAnnexeIds);
 }
 
 export interface ArchivesSlice {
@@ -74,6 +102,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
   addArchive: async (input) => {
     const creePar = getConnectedUserName();
+    const annexeId = resolveArchiveAnnexeId(get, input);
     const contentType = resolveArchiveMimeType({ name: input.nom, type: input.type || input.file.type });
     if (!ARCHIVES_ALLOWED_MIME.has(contentType)) {
       throw new Error(
@@ -103,6 +132,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
         depense_id: input.depenseId || null,
         client_id: input.clientId || null,
         societe_id: input.societeId || null,
+        annexe_id: annexeId,
         cree_par: creePar,
       })
       .select()

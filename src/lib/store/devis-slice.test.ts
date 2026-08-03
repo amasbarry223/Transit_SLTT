@@ -11,6 +11,7 @@ describe("mapDevisFromDb", () => {
       clients: { nom: "ACME" },
       societe_id: "s1",
       societes: { nom: "SLTT Transit" },
+      annexe_id: "a1",
       nature: "Ciment",
       droit_douane: 100,
       frais_circuit: 50,

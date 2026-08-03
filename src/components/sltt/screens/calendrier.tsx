@@ -13,6 +13,8 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { formatFCFA } from "@/lib/format";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { DossierStatutBadge, DOSSIER_STATUT_DOT } from "@/components/sltt/status-badge";
@@ -166,12 +168,13 @@ export function CalendrierScreen() {
   const dossiersRaw = useStore((s) => s.dossiers);
   const bonsRaw = useStore((s) => s.bons);
   const ecrituresRaw = useStore((s) => s.ecritures);
+  const { selectedAnnexeId } = useActiveAnnexe();
   // Le calendrier est accessible à tous les rôles (calendrier:read) mais chaque
   // type d'événement expose des données métier (client, montants) qui restent
   // soumises à la permission du module d'origine — pas de fuite entre modules.
-  const dossiers = canSeeDossiers ? dossiersRaw : [];
-  const bons = canSeeBons ? bonsRaw : [];
-  const ecritures = canSeeComptabilite ? ecrituresRaw : [];
+  const dossiers = filterByAnnexe(canSeeDossiers ? dossiersRaw : [], selectedAnnexeId);
+  const bons = filterByAnnexe(canSeeBons ? bonsRaw : [], selectedAnnexeId);
+  const ecritures = filterByAnnexe(canSeeComptabilite ? ecrituresRaw : [], selectedAnnexeId);
 
   // Ancrage sur aujourd'hui (cohérent avec le dashboard) — pas sur la donnée
   // la plus récente, sinon le bouton "Aujourd'hui" ne ramène pas au mois

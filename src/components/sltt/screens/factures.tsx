@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import * as React from "react";
 import {
   Plus, Search, Receipt, TrendingUp, Clock, CheckCircle2,
@@ -40,6 +42,8 @@ import { getErrorMessage } from "@/lib/utils";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { shouldShowTva } from "@/lib/export";
+import { filterBySociete } from "@/lib/filter-by-societe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
@@ -408,7 +412,8 @@ export function FacturesScreen() {
   const selectedId          = useNav((s) => s.selectedId);
   const pendingFacturePrefill    = useNav((s) => s.pendingFacturePrefill);
   const setPendingFacturePrefill = useNav((s) => s.setPendingFacturePrefill);
-  const selectedSocieteId   = useNav((s) => s.selectedSocieteId);
+  const selectedSocieteId   = useUiPrefs((s) => s.selectedSocieteId);
+  const { selectedAnnexeId } = useActiveAnnexe();
 
   const [search,     setSearch]     = React.useState("");
   const [activeTab,  setActiveTab]  = React.useState<FactureStatut | "Tous">("Tous");
@@ -438,8 +443,8 @@ export function FacturesScreen() {
   // au niveau transit global (societeId null) ; le filtre société partagé
   // scope KPIs et table, comme sur Bons de sortie.
   const societeFactures = React.useMemo(
-    () => (selectedSocieteId ? factures.filter((f) => f.societeId === selectedSocieteId) : factures),
-    [factures, selectedSocieteId],
+    () => filterByAnnexe(filterBySociete(factures, selectedSocieteId), selectedAnnexeId),
+    [factures, selectedSocieteId, selectedAnnexeId],
   );
 
   const filtered = React.useMemo(() => {

@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { TransporteurInput, TransporteurStatut, TypeVehicule } from "@/lib/store";
+import { FormField } from "@/components/sltt/form-field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -69,32 +69,6 @@ export function emptyTransporteurForm(): TransporteurInput {
     statut: "Actif",
     notes: "",
   };
-}
-
-interface FieldProps {
-  id?: string;
-  label: string;
-  required?: boolean;
-  error?: string;
-  hint?: string;
-  children: React.ReactNode;
-}
-
-function Field({ id, label, required, error, hint, children }: FieldProps) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-sm font-medium text-slate-700 dark:text-slate-300">
-        {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
-      </Label>
-      {children}
-      {error ? (
-        <p className="text-xs text-red-500">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-slate-400 dark:text-slate-500">{hint}</p>
-      ) : null}
-    </div>
-  );
 }
 
 interface TransporteurFormStepperProps {
@@ -207,7 +181,7 @@ export function TransporteurFormFields({
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id={`${idPrefix}-nom`} label="Société / Nom" required error={errors.nom}>
+            <FormField id={`${idPrefix}-nom`} label="Société / Nom" required error={errors.nom}>
               <Input
                 id={`${idPrefix}-nom`}
                 value={values.nom}
@@ -216,8 +190,8 @@ export function TransporteurFormFields({
                 className={cn("h-10", errors.nom && "border-red-400 focus-visible:ring-red-400")}
                 autoFocus={autoFocusNom}
               />
-            </Field>
-            <Field id={`${idPrefix}-contact`} label="Personne de contact" required error={errors.contact}>
+            </FormField>
+            <FormField id={`${idPrefix}-contact`} label="Personne de contact" required error={errors.contact}>
               <div className="relative">
                 <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
@@ -228,7 +202,7 @@ export function TransporteurFormFields({
                   className={cn("h-10 pl-9", errors.contact && "border-red-400 focus-visible:ring-red-400")}
                 />
               </div>
-            </Field>
+            </FormField>
           </div>
         </section>
       )}
@@ -242,7 +216,7 @@ export function TransporteurFormFields({
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id={`${idPrefix}-tel`} label="Téléphone" required error={errors.telephone}>
+            <FormField id={`${idPrefix}-tel`} label="Téléphone" required error={errors.telephone}>
               <div className="relative">
                 <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
@@ -254,8 +228,8 @@ export function TransporteurFormFields({
                   className={cn("h-10 pl-9", errors.telephone && "border-red-400 focus-visible:ring-red-400")}
                 />
               </div>
-            </Field>
-            <Field id={`${idPrefix}-email`} label="E-mail" hint="Facultatif">
+            </FormField>
+            <FormField id={`${idPrefix}-email`} label="E-mail" hint="Facultatif">
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
@@ -267,7 +241,7 @@ export function TransporteurFormFields({
                   className="h-10 pl-9"
                 />
               </div>
-            </Field>
+            </FormField>
           </div>
         </section>
       )}
@@ -281,7 +255,7 @@ export function TransporteurFormFields({
             </p>
           </div>
 
-          <Field label="Type de véhicule" required>
+          <FormField label="Type de véhicule" required>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {VEHICULES.map((v) => {
                 const { icon: Icon, hint } = VEHICULE_META[v];
@@ -306,10 +280,10 @@ export function TransporteurFormFields({
                 );
               })}
             </div>
-          </Field>
+          </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field
+            <FormField
               id={`${idPrefix}-immat`}
               label="Immatriculation"
               required
@@ -326,8 +300,8 @@ export function TransporteurFormFields({
                   errors.immatriculation && "border-red-400 focus-visible:ring-red-400",
                 )}
               />
-            </Field>
-            <Field id={`${idPrefix}-capacite`} label="Capacité (tonnes)" required error={errors.capacite}>
+            </FormField>
+            <FormField id={`${idPrefix}-capacite`} label="Capacité (tonnes)" required error={errors.capacite}>
               <div className="space-y-2">
                 <div className="relative">
                   <Gauge className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -362,10 +336,10 @@ export function TransporteurFormFields({
                   ))}
                 </div>
               </div>
-            </Field>
+            </FormField>
           </div>
 
-          <Field id={`${idPrefix}-trajet`} label="Trajet habituel" required error={errors.trajet}>
+          <FormField id={`${idPrefix}-trajet`} label="Trajet habituel" required error={errors.trajet}>
             <div className="space-y-2">
               <div className="relative">
                 <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -395,7 +369,7 @@ export function TransporteurFormFields({
                 ))}
               </div>
             </div>
-          </Field>
+          </FormField>
         </section>
       )}
 
@@ -408,7 +382,7 @@ export function TransporteurFormFields({
             </p>
           </div>
 
-          <Field label="Statut opérationnel">
+          <FormField label="Statut opérationnel">
             <div className="grid grid-cols-2 gap-2">
               {(["Actif", "Inactif"] as TransporteurStatut[]).map((s) => {
                 const selected = values.statut === s;
@@ -441,9 +415,9 @@ export function TransporteurFormFields({
                 );
               })}
             </div>
-          </Field>
+          </FormField>
 
-          <Field id={`${idPrefix}-notes`} label="Notes" hint="Facultatif">
+          <FormField id={`${idPrefix}-notes`} label="Notes" hint="Facultatif">
             <Textarea
               id={`${idPrefix}-notes`}
               value={values.notes}
@@ -452,7 +426,7 @@ export function TransporteurFormFields({
               rows={3}
               className="resize-none"
             />
-          </Field>
+          </FormField>
 
           <TransporteurFormSummary values={values} />
         </section>

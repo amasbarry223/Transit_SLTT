@@ -1,7 +1,11 @@
 import { resteAPayer } from "@/lib/domain-types";
 import type { Client, Dossier, Ecriture, Facture } from "@/lib/store";
 
-/** Recalcule les agrégats client à partir des dossiers, factures et écritures autonomes. */
+/**
+ * Recalcule les agrégats client à partir des dossiers, factures et écritures.
+ * Les factures déjà rattachées à un dossier du client sont exclues pour éviter
+ * le double comptage (le dossier porte déjà l'encours).
+ */
 export function syncClientStats(
   dossiers: Dossier[],
   factures: Facture[],
@@ -10,7 +14,10 @@ export function syncClientStats(
 ): Client[] {
   return clients.map((c) => {
     const cd = dossiers.filter((d) => d.clientId === c.id);
-    const cf = factures.filter((f) => f.clientId === c.id);
+    const dossierIds = new Set(cd.map((d) => d.id));
+    const cf = factures.filter(
+      (f) => f.clientId === c.id && !(f.dossierId && dossierIds.has(f.dossierId)),
+    );
     const ce = ecritures.filter((e) => e.clientId === c.id && !e.dossierId);
     return {
       ...c,

@@ -1,8 +1,9 @@
-import { useNav } from "@/lib/nav-store";
+import { useSession } from "@/lib/session/session-store";
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 
-/** Nom de l'utilisateur connecté, tel qu'exposé par nav-store (session/auth). */
+/** Nom de l'utilisateur connecté, tel qu'exposé par session-store. */
 export function getConnectedUserName(): string {
-  return useNav.getState().currentUserName || "Système";
+  return useSession.getState().currentUserName || "Système";
 }
 
 /**
@@ -12,7 +13,16 @@ export function getConnectedUserName(): string {
  * persisté s'il reste valide, sinon première annexe assignée.
  */
 export function resolveActiveAnnexeId(userAnnexeIds: string[]): string | null {
-  const selected = useNav.getState().selectedAnnexeId;
+  const selected = useUiPrefs.getState().selectedAnnexeId;
   if (selected && userAnnexeIds.includes(selected)) return selected;
   return userAnnexeIds[0] ?? null;
+}
+
+/** Comme resolveActiveAnnexeId mais lève une erreur métier si aucune annexe. */
+export function requireActiveAnnexeId(userAnnexeIds: string[]): string {
+  const annexeId = resolveActiveAnnexeId(userAnnexeIds);
+  if (!annexeId) {
+    throw new Error("Aucune annexe active — assignez une annexe à l'utilisateur.");
+  }
+  return annexeId;
 }

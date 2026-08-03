@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import { useMemo, useState } from "react";
 import {
   Package,
@@ -27,6 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { filterBySociete } from "@/lib/filter-by-societe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { StockTab } from "@/components/sltt/entreposage/stock-tab";
 import { MouvementsTab } from "@/components/sltt/entreposage/mouvements-tab";
 import { EntryExitDialogs } from "@/components/sltt/entreposage/entry-exit-dialogs";
@@ -59,16 +63,16 @@ export function EntreposageScreen() {
   const allMouvements = useStore((s) => s.mouvements);
   const societes = useStore((s) => s.societes);
   const addStockItem = useStore((s) => s.addStockItem);
-  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
-  const { annexes, activeAnnexeId } = useActiveAnnexe();
+  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
+  const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
 
   const stock = useMemo(
-    () => (selectedSocieteId ? allStock.filter((s) => s.societeId === selectedSocieteId) : allStock),
-    [allStock, selectedSocieteId],
+    () => filterByAnnexe(filterBySociete(allStock, selectedSocieteId), selectedAnnexeId),
+    [allStock, selectedSocieteId, selectedAnnexeId],
   );
   const mouvements = useMemo(
-    () => (selectedSocieteId ? allMouvements.filter((m) => m.societeId === selectedSocieteId) : allMouvements),
-    [allMouvements, selectedSocieteId],
+    () => filterByAnnexe(filterBySociete(allMouvements, selectedSocieteId), selectedAnnexeId),
+    [allMouvements, selectedSocieteId, selectedAnnexeId],
   );
 
   const dialogs = useStockMovementDialogs(stock);

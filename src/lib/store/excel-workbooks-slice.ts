@@ -2,7 +2,7 @@ import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { SLTTState } from "@/lib/store";
 import type { ExcelWorkbook, ExcelWorkbookRow } from "@/lib/excel/types";
-import { useNav } from "@/lib/nav-store";
+import { useSession } from "@/lib/session/session-store";
 
 const BUCKET = "excel-workbooks";
 const SNAPSHOT_MAX_BYTES = 800_000;
@@ -23,7 +23,7 @@ export function mapExcelWorkbookFromDb(x: ExcelWorkbookRow): ExcelWorkbook {
 }
 
 function currentUserId(): string | null {
-  return useNav.getState().currentUserId;
+  return useSession.getState().currentUserId;
 }
 
 export interface ExcelWorkbooksSlice {

@@ -57,10 +57,8 @@ export const STATUT_CONFIG: Record<FactureStatut, StatutCfg> = {
 export const STATUT_FLOW: FactureStatut[] = ["Brouillon", "Envoyée", "Partielle", "Soldée"];
 export const STATUTS_ALL: FactureStatut[] = ["Brouillon", "Envoyée", "Partielle", "Soldée", "Annulée"];
 
-// "Partielle" n'est jamais un statut cible manuel : il ne doit résulter que
-// d'un paiement réel enregistré via recordFacturePaiement (montantPaye > 0),
-// jamais d'un simple changement de statut sans montant associé.
+// "Partielle" et "Soldée" ne sont jamais des cibles manuelles : ils résultent
+// uniquement d'un paiement réel (recordFacturePaiement / RPC).
 export const NEXT_STATUT: Partial<Record<FactureStatut, { to: FactureStatut; label: string }>> = {
   Brouillon: { to: "Envoyée", label: "Marquer comme envoyée" },
-  Partielle: { to: "Soldée", label: "Marquer comme soldée" },
 };

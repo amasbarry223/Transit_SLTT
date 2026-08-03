@@ -23,6 +23,7 @@ import { resolveTransitSociete } from "@/lib/societe-brand";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission, useHasRole } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { PageHeader } from "@/components/sltt/page-header";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ListFilters, type FilterChip } from "@/components/sltt/list-filters";
@@ -87,6 +88,7 @@ interface UnifiedDoc {
   clientNom: string;
   societeId?: string;
   societeNom: string;
+  annexeId?: string;
   rattachement: string;
   date: string;
   canDelete: boolean;
@@ -235,6 +237,7 @@ function useUnifiedDocs(): UnifiedDoc[] {
         clientNom: nomClient,
         societeId,
         societeNom: societeNom(societeId),
+        annexeId: a.annexeId,
         rattachement,
         date: a.createdAt,
         canDelete: true,
@@ -256,6 +259,7 @@ function useUnifiedDocs(): UnifiedDoc[] {
         clientNom: d?.clientNom ?? "",
         societeId: transitSociete?.id,
         societeNom: transitSociete?.nom ?? "",
+        annexeId: d?.annexeId,
         rattachement: d ? `Dossier ${d.reference}` : "Dossier",
         date: f.dateUpload,
         canDelete: true,
@@ -277,6 +281,7 @@ function useUnifiedDocs(): UnifiedDoc[] {
         clientNom: c?.clientNom ?? "",
         societeId: c?.societeId,
         societeNom: societeNom(c?.societeId),
+        annexeId: c?.annexeId,
         rattachement: c ? `Contrat ${c.reference}` : "Contrat",
         date: f.dateUpload,
         canDelete: true,
@@ -562,6 +567,7 @@ export function ArchivesScreen() {
   const getSignedContratFichierUrl = useStore((s) => s.getSignedContratFichierUrl);
 
   const docs = useUnifiedDocs();
+  const { selectedAnnexeId } = useActiveAnnexe();
 
   const [activeTab, setActiveTab] = useState<ArchiveTab>("all");
   const [search, setSearch] = useState("");
@@ -589,11 +595,12 @@ export function ArchivesScreen() {
       if (typeFilter && d.typeDocument !== typeFilter) return false;
       if (clientNom && d.clientNom !== clientNom) return false;
       if (societeFilter && d.societeId !== societeFilter) return false;
+      if (selectedAnnexeId && d.annexeId !== selectedAnnexeId) return false;
       if (dateDebut && d.date < dateDebut) return false;
       if (dateFin && d.date > `${dateFin}T23:59:59`) return false;
       return true;
     });
-  }, [docs, activeTab, search, typeFilter, clientFilter, societeFilter, clients, dateDebut, dateFin]);
+  }, [docs, activeTab, search, typeFilter, clientFilter, societeFilter, selectedAnnexeId, clients, dateDebut, dateFin]);
 
   const chips: FilterChip[] = TYPES_DOCUMENT.map((t) => ({
     id: t,

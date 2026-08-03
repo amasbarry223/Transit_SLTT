@@ -1,15 +1,16 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import { useEffect, useRef } from "react";
 import { useServerInsertedHTML } from "next/navigation";
-import { useNav } from "@/lib/nav-store";
 
-// Anti-flash : applique .dark avant le premier paint (lit le store persisté).
-const THEME_INIT_SCRIPT = `try{var r=localStorage.getItem('sltt-auth-v2');var t=r?JSON.parse(r).state.theme:'light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}`;
+// Anti-flash : applique .dark avant le premier paint (prefs v1, puis legacy auth-v2).
+const THEME_INIT_SCRIPT = `try{var t='light';var r=localStorage.getItem('sltt-ui-prefs-v1');if(r){t=JSON.parse(r).state.theme||'light'}else{var o=localStorage.getItem('sltt-auth-v2');if(o)t=JSON.parse(o).state.theme||'light'}if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}`;
 
 /** Applique/retire la classe `.dark` sur <html> en fonction du thème persisté. */
 export function ThemeEffect({ nonce }: { nonce?: string }) {
-  const theme = useNav((s) => s.theme);
+  const theme = useUiPrefs((s) => s.theme);
   const inserted = useRef(false);
 
   // Injecte le script hors de l'arbre React (évite le warning React 19 sur <script>).

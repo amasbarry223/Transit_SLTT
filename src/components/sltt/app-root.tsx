@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  useNav,
-  SESSION_TTL_SHORT,
-  SESSION_TTL_LONG,
-  IDLE_TIMEOUT,
-  IDLE_WARNING_BEFORE,
-} from "@/lib/nav-store";
+import { SESSION_TTL_SHORT, SESSION_TTL_LONG, IDLE_TIMEOUT, IDLE_WARNING_BEFORE, useSession } from "@/lib/session/session-store";
+import { clearLegacyNavPersist } from "@/lib/session/legacy-persist";
 import { useStore } from "@/lib/store";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { LoginScreen } from "@/components/sltt/screens/login";
@@ -65,16 +60,21 @@ export function AppRoot() {
 }
 
 function AppRootInner() {
-  const isAuthenticated = useNav((s) => s.isAuthenticated);
-  const loginAt = useNav((s) => s.loginAt);
-  const rememberMe = useNav((s) => s.rememberMe);
-  const lastActivityAt = useNav((s) => s.lastActivityAt);
-  const restoreSession = useNav((s) => s.restoreSession);
-  const logout = useNav((s) => s.logout);
-  const touchActivity = useNav((s) => s.touchActivity);
+  const isAuthenticated = useSession((s) => s.isAuthenticated);
+  const loginAt = useSession((s) => s.loginAt);
+  const rememberMe = useSession((s) => s.rememberMe);
+  const lastActivityAt = useSession((s) => s.lastActivityAt);
+  const restoreSession = useSession((s) => s.restoreSession);
+  const logout = useSession((s) => s.logout);
+  const touchActivity = useSession((s) => s.touchActivity);
   const fetchData = useStore((s) => s.fetchData);
   const [authReady, setAuthReady] = useState(false);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
+
+  useEffect(() => {
+    // Seed déjà lu en mémoire : on peut retirer l’ancien blob unifié.
+    clearLegacyNavPersist();
+  }, []);
 
   const logoutRef = useRef(logout);
   const restoreRef = useRef(restoreSession);
@@ -147,7 +147,7 @@ function AppRootInner() {
 
     async function handleSession(session: { user: { id: string } } | null) {
       if (!session?.user) {
-        if (useNav.getState().isAuthenticated) {
+        if (useSession.getState().isAuthenticated) {
           await logoutRef.current();
         }
         return;
@@ -174,7 +174,7 @@ function AppRootInner() {
               }
 
               if (event === "SIGNED_OUT" || !session?.user) {
-                if (useNav.getState().isAuthenticated) {
+                if (useSession.getState().isAuthenticated) {
                   await logoutRef.current();
                 }
                 return;

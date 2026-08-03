@@ -1,14 +1,16 @@
 "use client";
 
-import { useNav, type ViewKey } from "@/lib/nav-store";
+import { useSession } from "@/lib/session/session-store";
+
+import { type ViewKey } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { hasPermission, resolvePermissionUser } from "@/lib/permissions";
 import { VIEW_PERMISSIONS } from "@/lib/nav-items";
 import type { UserRole } from "@/lib/domain-types";
 
 function useEffectivePermissionUser() {
-  const currentUserId = useNav((s) => s.currentUserId);
-  const currentRole = useNav((s) => s.currentRole);
+  const currentUserId = useSession((s) => s.currentUserId);
+  const currentRole = useSession((s) => s.currentRole);
   const users = useStore((s) => s.users);
   const user = users.find((u) => u.id === currentUserId);
   return resolvePermissionUser(user, currentRole);
@@ -39,8 +41,8 @@ export function useCanManageUsers(): boolean {
 }
 
 export function useHasRole(...roles: UserRole[]): boolean {
-  const currentUserId = useNav((s) => s.currentUserId);
-  const currentRole = useNav((s) => s.currentRole);
+  const currentUserId = useSession((s) => s.currentUserId);
+  const currentRole = useSession((s) => s.currentRole);
   const users = useStore((s) => s.users);
   if (!currentUserId && !currentRole) return false;
   const user = users.find((u) => u.id === currentUserId);
@@ -53,7 +55,7 @@ export function useHasRole(...roles: UserRole[]): boolean {
 
 /** Retourne l'objet User de l'utilisateur connecté, ou null. */
 export function useCurrentUser() {
-  const currentUserId = useNav((s) => s.currentUserId);
+  const currentUserId = useSession((s) => s.currentUserId);
   const users = useStore((s) => s.users);
   return users.find((u) => u.id === currentUserId) ?? null;
 }

@@ -138,3 +138,30 @@ describe("transitionDossier — dédouanement/livraison (sans paiement)", () => 
     expect(dossier?.statut).toBe("Livré");
   });
 });
+
+describe("transitionDossier — garde Soldé sans encaissement", () => {
+  it("refuse Soldé si reste dû et aucun montantRecu", async () => {
+    await expect(
+      useStore.getState().transitionDossier("d1", "Soldé"),
+    ).rejects.toThrow(/encaissement|montant reçu/i);
+
+    const rpcCall = calls.find((c) => c.table === "rpc:record_dossier_solde_paiement");
+    expect(rpcCall).toBeUndefined();
+    expect(useStore.getState().dossiers.find((d) => d.id === "d1")?.statut).toBe("Livré");
+  });
+
+  it("autorise Soldé sans montantRecu lorsque le dossier est déjà intégralement payé", async () => {
+    useStore.setState({
+      dossiers: [{ ...baseDossier, montantPaye: 1000, montantInvesti: 1000 }],
+    });
+
+    await useStore.getState().transitionDossier("d1", "Soldé");
+
+    const rpcCall = calls.find((c) => c.table === "rpc:record_dossier_solde_paiement");
+    expect(rpcCall).toBeUndefined();
+
+    const directUpdate = calls.find((c) => c.table === "dossiers" && c.op === "update");
+    expect(directUpdate).toBeDefined();
+    expect(useStore.getState().dossiers.find((d) => d.id === "d1")?.statut).toBe("Soldé");
+  });
+});

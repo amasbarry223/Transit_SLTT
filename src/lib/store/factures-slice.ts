@@ -8,10 +8,7 @@ import type { Facture, FactureLigne, FactureStatut } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import type { FactureInput, SLTTState } from "@/lib/store";
 import type { FactureRow } from "@/lib/db-rows";
-
-function pad(n: number, len: number): string {
-  return String(n).padStart(len, "0");
-}
+import { nextAnnexeYearlyReference, nextScopedSeq, nextYearlyReference } from "@/lib/store/reference";
 
 export function mapFactureFromDb(x: FactureRow): Facture {
   return {
@@ -63,9 +60,16 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   factureSeq: 1,
 
   addFacture: async (input) => {
-    const seq = get().factureSeq;
-    const year = new Date().getFullYear();
-    const numero = `FACT-${year}-${pad(seq, 4)}`;
+    const societe = input.societeId ? get().societes.find((s) => s.id === input.societeId) : undefined;
+    const annexe = get().annexes.find((a) => a.id === input.annexeId);
+    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+
+    const seq = useAnnexeNumbering
+      ? nextScopedSeq(get().factures.map((f) => f.numero), (r) => r.startsWith(`${annexe!.code}-FACT-`))
+      : get().factureSeq;
+    const numero = useAnnexeNumbering
+      ? nextAnnexeYearlyReference(annexe!.code, "FACT", seq)
+      : nextYearlyReference("FACT", seq);
 
     const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
     const TVA = Math.round(HT * (input.tauxTVA / 100));
@@ -126,7 +130,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       const updatedFactures = [newFacture, ...s.factures];
       return {
         factures: updatedFactures,
-        factureSeq: seq + 1,
+        factureSeq: useAnnexeNumbering ? s.factureSeq : seq + 1,
         clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
       };
     });
@@ -165,22 +169,19 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
 
     if (errFact) throw errFact;
 
-    const { error: errDeleteLignes } = await supabase.from("facture_lignes").delete().eq("facture_id", id);
-    if (errDeleteLignes) throw errDeleteLignes;
-    if (input.lignes.length > 0) {
-      const { error: errInsertLignes } = await supabase.from("facture_lignes").insert(
-        input.lignes.map((l) => ({
-          facture_id: id,
-          description: l.description,
-          quantite: l.quantite,
-          prix_unitaire: l.prixUnitaire,
-          montant_ht: l.quantite * l.prixUnitaire,
-          compagnie: l.compagnie || null,
-          bordereau_livraison: l.bordereauLivraison || null,
-        })),
-      );
-      if (errInsertLignes) throw errInsertLignes;
-    }
+    const lignesPayload = input.lignes.map((l) => ({
+      description: l.description,
+      quantite: l.quantite,
+      prix_unitaire: l.prixUnitaire,
+      montant_ht: l.quantite * l.prixUnitaire,
+      compagnie: l.compagnie || null,
+      bordereau_livraison: l.bordereauLivraison || null,
+    }));
+    const { error: errLignes } = await supabase.rpc("replace_facture_lignes", {
+      p_facture_id: id,
+      p_lignes: lignesPayload,
+    });
+    if (errLignes) throw errLignes;
 
     set((s) => {
       const updatedFactures = s.factures.map((fact) => {
@@ -252,17 +253,23 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     if (!canTransitionFacture(f.statut, statut)) {
       throw new Error(`Transition non autorisée : ${f.statut} → ${statut}.`);
     }
-    const montantPaye = statut === "Soldée" ? f.montantTTC : f.montantPaye;
+    // Soldée ne peut résulter que d'un encaissement (RPC record_facture_paiement)
+    // — jamais d'un PATCH statut qui force montant_paye = TTC hors journal.
+    if (statut === "Soldée") {
+      throw new Error(
+        "Pour solder une facture, enregistrez un paiement (encaissement) couvrant le reste dû.",
+      );
+    }
 
     const { error } = await supabase
       .from("factures")
-      .update({ statut, montant_paye: montantPaye })
+      .update({ statut })
       .eq("id", id);
     if (error) throw error;
 
     set((s) => {
       const updatedFactures = s.factures.map((x) =>
-        x.id === id ? { ...x, statut, montantPaye } : x,
+        x.id === id ? { ...x, statut } : x,
       );
       return {
         factures: updatedFactures,

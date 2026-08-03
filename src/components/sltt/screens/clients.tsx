@@ -27,6 +27,7 @@ import { resolveSlttBrand } from "@/lib/classeur";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -80,7 +81,11 @@ export function ClientsScreen() {
   const societes = useStore((s) => s.societes);
   const addClient = useStore((s) => s.addClient);
   const updateClient = useStore((s) => s.updateClient);
-  const { annexes, activeAnnexeId } = useActiveAnnexe();
+  const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
+  const annexeScopedClients = useMemo(
+    () => filterByAnnexe(clients, selectedAnnexeId),
+    [clients, selectedAnnexeId],
+  );
 
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -102,17 +107,17 @@ export function ClientsScreen() {
     let entreprises = 0;
     let particuliers = 0;
     let totalDu = 0;
-    for (const c of clients) {
+    for (const c of annexeScopedClients) {
       if (c.type === "Entreprise") entreprises++;
       else particuliers++;
       totalDu += c.totalDu;
     }
-    return { total: clients.length, entreprises, particuliers, totalDu };
-  }, [clients]);
+    return { total: annexeScopedClients.length, entreprises, particuliers, totalDu };
+  }, [annexeScopedClients]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = clients;
+    let list = annexeScopedClients;
 
     if (typeFilter !== "all") {
       list = list.filter((c) => c.type === typeFilter);
@@ -132,7 +137,7 @@ export function ClientsScreen() {
       if (sortBy === "totalDu") return b.totalDu - a.totalDu;
       return b.nbDossiers - a.nbDossiers;
     });
-  }, [query, typeFilter, sortBy, clients]);
+  }, [query, typeFilter, sortBy, annexeScopedClients]);
 
   const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, pageSize);
 

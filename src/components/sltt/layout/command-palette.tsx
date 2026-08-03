@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useNav } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { useStore } from "@/lib/store";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
@@ -29,9 +28,7 @@ import { usePermission, useCanView } from "@/hooks/use-permission";
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
-  const go = useNav((s) => s.go);
-  const openDossier = useNav((s) => s.openDossier);
-  const { goToDossier, goToDevis, goToFacture, goToContrat, goToClient } = useAppNavigation();
+  const { goToDossier, goToDevis, goToFacture, goToContrat, goToClient, goToView, goToNewDossier } = useAppNavigation();
 
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
@@ -53,19 +50,19 @@ export function CommandPalette() {
       label: "Nouveau dossier",
       value: "action nouveau dossier",
       icon: FolderKanban,
-      run: () => openDossier(null, "create"),
+      run: () => goToNewDossier(),
     },
     canSeeCompta && {
       label: "Ouvrir la comptabilité",
       value: "action comptabilite paiement",
       icon: Wallet,
-      run: () => go("comptabilite"),
+      run: () => goToView("comptabilite"),
     },
     canSeeClients && {
       label: "Voir les clients",
       value: "action liste clients",
       icon: UserIcon,
-      run: () => go("clients"),
+      run: () => goToView("clients"),
     },
   ].filter(Boolean) as { label: string; value: string; icon: typeof Plus; run: () => void }[];
 
@@ -138,7 +135,7 @@ export function CommandPalette() {
                 <CommandItem
                   key={item.key}
                   value={`page ${item.label}`}
-                  onSelect={() => run(() => go(item.key))}
+                  onSelect={() => run(() => goToView(item.key))}
                 >
                   <Icon className="size-4 text-slate-400 dark:text-slate-500" />
                   <span>{item.label}</span>

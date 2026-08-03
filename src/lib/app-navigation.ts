@@ -4,70 +4,127 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useNav, type ViewKey } from "@/lib/nav-store";
 
-const DETAIL_ROUTES: Partial<Record<ViewKey, (id: string) => string>> = {
-  "client-fiche": (id) => `/clients/${id}`,
-  "dossier-detail": (id) => `/dossiers/${id}`,
-  "facture-detail": (id) => `/factures/${id}`,
-  "devis-detail": (id) => `/devis/${id}`,
-  "contrat-detail": (id) => `/contrats/${id}`,
-};
+/** Chemins URL pour chaque vue — deep-links list + détail. */
+export function pathForView(view: ViewKey, id?: string | null): string {
+  switch (view) {
+    case "dashboard":
+      return "/";
+    case "dossiers":
+      return "/dossiers";
+    case "dossier-form":
+      return id ? `/dossiers/${id}/edit` : "/dossiers/new";
+    case "dossier-detail":
+      return id ? `/dossiers/${id}` : "/dossiers";
+    case "comptabilite":
+      return "/comptabilite";
+    case "bilans":
+      return "/bilans";
+    case "entreposage":
+      return "/entreposage";
+    case "bons":
+      return "/bons";
+    case "clients":
+      return "/clients";
+    case "client-fiche":
+      return id ? `/clients/${id}` : "/clients";
+    case "devis":
+      return "/devis";
+    case "devis-detail":
+      return id ? `/devis/${id}` : "/devis";
+    case "calendrier":
+      return "/calendrier";
+    case "transporteurs":
+      return "/transporteurs";
+    case "factures":
+      return "/factures";
+    case "facture-detail":
+      return id ? `/factures/${id}` : "/factures";
+    case "fournisseurs":
+      return "/fournisseurs";
+    case "contrats":
+      return "/contrats";
+    case "contrat-detail":
+      return id ? `/contrats/${id}` : "/contrats";
+    case "archives":
+      return "/archives";
+    case "parametres":
+      return "/parametres";
+    default:
+      return "/";
+  }
+}
 
 export function useAppNavigation() {
   const router = useRouter();
   const nav = useNav();
 
-  const pushDetail = useCallback(
-    (view: ViewKey, id: string, open: (id: string) => void) => {
-      open(id);
-      const path = DETAIL_ROUTES[view]?.(id);
-      if (path) router.push(path);
+  const pushPath = useCallback(
+    (path: string) => {
+      if (typeof window !== "undefined" && window.location.pathname === path) return;
+      router.push(path);
     },
     [router],
   );
 
+  const goToView = useCallback(
+    (view: ViewKey, opts?: { id?: string | null }) => {
+      nav.go(view, opts);
+      pushPath(pathForView(view, opts?.id));
+    },
+    [nav, pushPath],
+  );
+
   const goToClient = useCallback(
-    (id: string) => pushDetail("client-fiche", id, nav.openClient),
-    [nav.openClient, pushDetail],
+    (id: string) => {
+      nav.openClient(id);
+      pushPath(pathForView("client-fiche", id));
+    },
+    [nav, pushPath],
   );
 
   const goToDossier = useCallback(
-    (id: string) => pushDetail("dossier-detail", id, nav.openDossierDetail),
-    [nav.openDossierDetail, pushDetail],
+    (id: string) => {
+      nav.openDossierDetail(id);
+      pushPath(pathForView("dossier-detail", id));
+    },
+    [nav, pushPath],
   );
 
   const goToFacture = useCallback(
     (id: string) => {
       nav.go("facture-detail", { id });
-      router.push(`/factures/${id}`);
+      pushPath(pathForView("facture-detail", id));
     },
-    [nav, router],
+    [nav, pushPath],
   );
 
   const goToDevis = useCallback(
     (id: string, edit = false) => {
       nav.openDevisDetail(id, edit);
-      router.push(`/devis/${id}`);
+      pushPath(pathForView("devis-detail", id));
     },
-    [nav, router],
+    [nav, pushPath],
   );
 
   const goToContrat = useCallback(
-    (id: string) => pushDetail("contrat-detail", id, nav.openContratDetail),
-    [nav.openContratDetail, pushDetail],
+    (id: string) => {
+      nav.openContratDetail(id);
+      pushPath(pathForView("contrat-detail", id));
+    },
+    [nav, pushPath],
   );
 
   const goToNewDossier = useCallback(() => {
     nav.openDossier(null, "create");
-    router.push("/dossiers/new");
-  }, [nav, router]);
+    pushPath(pathForView("dossier-form"));
+  }, [nav, pushPath]);
 
-  const goToView = useCallback(
-    (view: ViewKey, opts?: { id?: string | null }) => {
-      nav.go(view, opts);
-      if (view === "dashboard") router.push("/");
-      else if (view === "dossier-form" && opts?.id == null) router.push("/dossiers/new");
+  const goToEditDossier = useCallback(
+    (id: string) => {
+      nav.openDossier(id, "edit");
+      pushPath(pathForView("dossier-form", id));
     },
-    [nav, router],
+    [nav, pushPath],
   );
 
   const goBack = useCallback(() => {
@@ -76,8 +133,8 @@ export function useAppNavigation() {
       return;
     }
     nav.go("dashboard");
-    router.push("/");
-  }, [nav, router]);
+    pushPath("/");
+  }, [nav, pushPath, router]);
 
   return {
     ...nav,
@@ -87,15 +144,16 @@ export function useAppNavigation() {
     goToDevis,
     goToContrat,
     goToNewDossier,
+    goToEditDossier,
     goToView,
     goBack,
   };
 }
 
-/** Synchronise l'URL vers le nav-store au chargement d'une route détail. */
+/** Synchronise l'URL vers le nav-store au chargement d'une route. */
 export function syncNavFromRoute(
   view: ViewKey,
-  id: string,
+  id: string | undefined,
   actions: Pick<
     ReturnType<typeof useNav.getState>,
     "openClient" | "openDossierDetail" | "openDevisDetail" | "go" | "openDossier" | "openContratDetail"
@@ -104,24 +162,33 @@ export function syncNavFromRoute(
 ) {
   switch (view) {
     case "client-fiche":
-      actions.openClient(id);
+      if (id) actions.openClient(id);
+      else actions.go("clients");
       break;
     case "dossier-detail":
-      actions.openDossierDetail(id);
+      if (id) actions.openDossierDetail(id);
+      else actions.go("dossiers");
       break;
     case "dossier-form":
-      actions.openDossier(id === "new" ? null : id, opts?.dossierMode ?? "edit");
+      actions.openDossier(
+        !id || id === "new" ? null : id,
+        opts?.dossierMode ?? (id && id !== "new" ? "edit" : "create"),
+      );
       break;
     case "facture-detail":
-      actions.go("facture-detail", { id });
+      if (id) actions.go("facture-detail", { id });
+      else actions.go("factures");
       break;
     case "devis-detail":
-      actions.openDevisDetail(id, opts?.devisEdit ?? false);
+      if (id) actions.openDevisDetail(id, opts?.devisEdit ?? false);
+      else actions.go("devis");
       break;
     case "contrat-detail":
-      actions.openContratDetail(id);
+      if (id) actions.openContratDetail(id);
+      else actions.go("contrats");
       break;
     default:
+      actions.go(view, id ? { id } : undefined);
       break;
   }
 }

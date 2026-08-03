@@ -8,18 +8,16 @@ import {
   DOSSIER_REFERENCE_PAD_LENGTH,
   DOSSIER_STATUT_DEDOUANE,
   DOSSIER_STATUT_EN_COURS,
+  DOSSIER_STATUT_SOLDE,
 } from "@/lib/constants";
-import type { Dossier, DossierStatut, PaiementMode } from "@/lib/domain-types";
+import { resteAPayer, type Dossier, type DossierStatut, type PaiementMode } from "@/lib/domain-types";
 import type { DossierInput, SLTTState } from "@/lib/store";
 import type { DossierRow } from "@/lib/db-rows";
 import {
   shouldSyncEcritureOnDossierSolde,
   syncEcritureWhenDossierSolde,
 } from "@/lib/store/sync-helpers";
-
-function pad(n: number, len: number): string {
-  return String(n).padStart(len, "0");
-}
+import { nextScopedSeq, padSeq } from "@/lib/store/reference";
 
 export function mapDossierFromDb(x: DossierRow): Dossier {
   return {
@@ -71,12 +69,19 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
   dossiers: [],
 
   addDossier: async (input) => {
-    const seq = get().dossierSeq;
     const year = new Date().getFullYear();
     const societe = get().societes.find((item) => item.id === input.societeId);
+    const annexe = get().annexes.find((a) => a.id === input.annexeId);
     const prefix =
       societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
-    const reference = `${prefix}-TR-${year}-${pad(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
+    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+
+    const seq = useAnnexeNumbering
+      ? nextScopedSeq(get().dossiers.map((d) => d.reference), (r) => r.startsWith(`${prefix}-${annexe!.code}-TR-`))
+      : get().dossierSeq;
+    const reference = useAnnexeNumbering
+      ? `${prefix}-${annexe!.code}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`
+      : `${prefix}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
     const statut: DossierStatut = DOSSIER_STATUT_EN_COURS;
 
     const { data, error } = await supabase
@@ -113,7 +118,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       const updatedDossiers = [newDossier, ...s.dossiers];
       return {
         dossiers: updatedDossiers,
-        dossierSeq: seq + 1,
+        dossierSeq: useAnnexeNumbering ? s.dossierSeq : seq + 1,
         clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
       };
     });
@@ -232,6 +237,15 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     if (!dossier) return;
 
     assertDossierTransition(dossier.statut, newStatut);
+
+    // Soldé avec reste dû exige un encaissement — la garde UI ne suffit pas.
+    if (newStatut === DOSSIER_STATUT_SOLDE && resteAPayer(dossier) > 0) {
+      if (!(typeof montantRecu === "number" && montantRecu > 0)) {
+        throw new Error(
+          "Impossible de solder le dossier sans encaissement : un montant reçu est requis tant qu'il reste dû.",
+        );
+      }
+    }
 
     const today = new Date().toISOString().slice(0, 10);
     const resolvedDate = effectiveDate || today;

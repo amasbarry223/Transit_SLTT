@@ -1,15 +1,17 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
-import { useNav } from "@/lib/nav-store";
+import { useSession } from "@/lib/session/session-store";
 import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
 import { resolveTransitSociete } from "@/lib/societe-brand";
-import { resolveActiveAnnexeId } from "@/lib/store/connected-user";
+import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import type { DevisRow } from "@/lib/db-rows";
+import { nextAnnexeYearlyReference, nextScopedSeq, nextYearlyReference } from "@/lib/store/reference";
 
-function pad(n: number, len: number): string {
-  return String(n).padStart(len, "0");
+function currentUserAnnexeIds(get: () => SLTTState): string[] {
+  const userId = useSession.getState().currentUserId;
+  return get().users.find((u) => u.id === userId)?.annexeIds ?? [];
 }
 
 export function mapDevisFromDb(x: DevisRow): Devis {
@@ -20,6 +22,8 @@ export function mapDevisFromDb(x: DevisRow): Devis {
     clientNom: x.clients?.nom || "—",
     societeId: x.societe_id,
     societeNom: x.societes?.nom || "—",
+    annexeId: x.annexe_id,
+    annexeNom: x.annexes?.nom,
     nature: x.nature,
     droitDouane: Number(x.droit_douane),
     fraisCircuit: Number(x.frais_circuit),
@@ -50,9 +54,17 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     if (!input.societeId?.trim()) {
       throw new Error("La société est obligatoire pour créer un devis.");
     }
-    const seq = get().devisSeq;
-    const year = new Date().getFullYear();
-    const reference = `DEVIS-${year}-${pad(seq, 4)}`;
+    const annexeId = requireActiveAnnexeId(currentUserAnnexeIds(get));
+    const societe = get().societes.find((s) => s.id === input.societeId);
+    const annexe = get().annexes.find((a) => a.id === annexeId);
+    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+
+    const seq = useAnnexeNumbering
+      ? nextScopedSeq(get().devis.map((d) => d.reference), (r) => r.startsWith(`${annexe!.code}-DEVIS-`))
+      : get().devisSeq;
+    const reference = useAnnexeNumbering
+      ? nextAnnexeYearlyReference(annexe!.code, "DEVIS", seq)
+      : nextYearlyReference("DEVIS", seq);
 
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
 
@@ -62,6 +74,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
         reference,
         client_id: input.clientId,
         societe_id: input.societeId,
+        annexe_id: annexeId,
         nature: input.nature,
         droit_douane: input.droitDouane,
         frais_circuit: input.fraisCircuit,
@@ -71,14 +84,14 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
         date_validite: input.dateValidite,
         notes: input.notes,
       })
-      .select("*, clients(nom), societes(nom)")
+      .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
     const newDevis = mapDevisFromDb(data);
     set((s) => ({
       devis: [newDevis, ...s.devis],
-      devisSeq: seq + 1,
+      devisSeq: useAnnexeNumbering ? s.devisSeq : seq + 1,
     }));
     await get().addAuditLog("Devis", "Création", `Devis ${reference} créé — Client ${newDevis.clientNom}`);
     return newDevis;
@@ -189,11 +202,9 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       throw new Error("Aucune société configurée. Renseignez-la dans Paramètres > Sociétés.");
     }
 
-    const currentUser = get().users.find((u) => u.id === useNav.getState().currentUserId);
-    const annexeId = resolveActiveAnnexeId(currentUser?.annexeIds ?? []);
-    if (!annexeId) {
-      throw new Error("Aucune annexe assignée à l'utilisateur connecté.");
-    }
+    const annexeId = requireActiveAnnexeId(
+      get().users.find((u) => u.id === useSession.getState().currentUserId)?.annexeIds ?? [],
+    );
 
     const inputDossier: DossierInput = {
       societeId,
@@ -212,14 +223,27 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       notes: dev.notes,
     };
 
+    // Deux écritures séquentielles (insert dossier + lien devis) : en cas d'échec
+    // du lien, on compense en supprimant le dossier pour éviter un orphelin.
     const newDossier = await get().addDossier(inputDossier);
 
-    // Update the devis status and link it to the new dossier
-    const { error } = await supabase
-      .from("devis")
-      .update({ statut: "Accepté", dossier_id: newDossier.id })
-      .eq("id", id);
-    if (error) throw error;
+    try {
+      const { error } = await supabase
+        .from("devis")
+        .update({ statut: "Accepté", dossier_id: newDossier.id })
+        .eq("id", id);
+      if (error) throw error;
+    } catch (linkError) {
+      try {
+        await get().removeDossier(newDossier.id);
+      } catch (rollbackError) {
+        console.error(
+          "Rollback conversion devis→dossier échoué : dossier orphelin à purger manuellement",
+          { dossierId: newDossier.id, devisId: id, rollbackError },
+        );
+      }
+      throw linkError;
+    }
 
     set((s) => ({
       devis: s.devis.map((d) =>

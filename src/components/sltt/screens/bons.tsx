@@ -5,6 +5,7 @@ import { Plus, Package, Banknote } from "lucide-react";
 import type { BonMotif } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +24,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { filterBySociete } from "@/lib/filter-by-societe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { BonMarchandiseTab } from "@/components/sltt/bons/bon-marchandise-tab";
 import { BonCaisseTab } from "@/components/sltt/bons/bon-caisse-tab";
 import { BonFormDialog } from "@/components/sltt/bons/bon-form-dialog";
@@ -34,7 +38,8 @@ export function BonsScreen() {
   const canWriteCaisse = usePermission("bons:write-caisse");
   const go = useNav((state) => state.go);
   const selectedId = useNav((state) => state.selectedId);
-  const selectedSocieteId = useNav((state) => state.selectedSocieteId);
+  const selectedSocieteId = useUiPrefs((state) => state.selectedSocieteId);
+  const { selectedAnnexeId } = useActiveAnnexe();
 
   const allBons = useStore((state) => state.bons);
   const validateBon = useStore((state) => state.validateBon);
@@ -50,16 +55,13 @@ export function BonsScreen() {
   const [confirmValidate, setConfirmValidate] = useState<{ id: string; ref: string } | null>(null);
 
   const bons = useMemo(
-    () => (selectedSocieteId ? allBons.filter((bon) => bon.societeId === selectedSocieteId) : allBons),
-    [allBons, selectedSocieteId],
+    () => filterByAnnexe(filterBySociete(allBons, selectedSocieteId), selectedAnnexeId),
+    [allBons, selectedSocieteId, selectedAnnexeId],
   );
 
   const bonsCaisse = useMemo(
-    () =>
-      selectedSocieteId
-        ? bonsSortieCaisse.filter((bon) => bon.societeId === selectedSocieteId)
-        : bonsSortieCaisse,
-    [bonsSortieCaisse, selectedSocieteId],
+    () => filterByAnnexe(filterBySociete(bonsSortieCaisse, selectedSocieteId), selectedAnnexeId),
+    [bonsSortieCaisse, selectedSocieteId, selectedAnnexeId],
   );
 
   const nextReference = `BS-${new Date().getFullYear()}-${String(bonSeq).padStart(4, "0")}`;

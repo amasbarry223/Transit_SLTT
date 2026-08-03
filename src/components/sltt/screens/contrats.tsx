@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import { useMemo, useState } from "react";
 import { usePagination } from "@/hooks/use-pagination";
 import {
@@ -11,7 +13,6 @@ import {
 } from "lucide-react";
 
 import { useStore, type ContratInput, type ContratStatut } from "@/lib/store";
-import { useNav } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
@@ -25,6 +26,10 @@ import { SocieteBadge, SocieteFilterSelect } from "@/components/sltt/societe-fil
 import { ListFilters, type FilterChip } from "@/components/sltt/list-filters";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { TablePagination } from "@/components/sltt/table-pagination";
+import { CONTRAT_STATUTS, CONTRAT_STATUT_TONE } from "@/components/sltt/contrat-detail/shared";
+import { filterBySociete } from "@/lib/filter-by-societe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,14 +62,6 @@ import {
 
 const PAGE_SIZE = 8;
 
-const STATUT_TONE: Record<ContratStatut, "emerald" | "slate" | "amber"> = {
-  Actif: "emerald",
-  Clôturé: "slate",
-  Suspendu: "amber",
-};
-
-const STATUTS: ContratStatut[] = ["Actif", "Clôturé", "Suspendu"];
-
 export function ContratsScreen() {
   const { toast } = useToast();
   const { goToContrat } = useAppNavigation();
@@ -73,7 +70,8 @@ export function ContratsScreen() {
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
   const addContrat = useStore((s) => s.addContrat);
-  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
+  const { selectedAnnexeId } = useActiveAnnexe();
   const canWrite = usePermission("contrats:write");
 
   const [search, setSearch] = useState("");
@@ -83,11 +81,8 @@ export function ContratsScreen() {
   const [open, setOpen] = useState(false);
 
   const scoped = useMemo(
-    () =>
-      selectedSocieteId
-        ? contrats.filter((c) => c.societeId === selectedSocieteId)
-        : contrats,
-    [contrats, selectedSocieteId],
+    () => filterByAnnexe(filterBySociete(contrats, selectedSocieteId), selectedAnnexeId),
+    [contrats, selectedSocieteId, selectedAnnexeId],
   );
 
   const stats = useMemo(() => {
@@ -110,7 +105,7 @@ export function ContratsScreen() {
 
   const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, PAGE_SIZE);
 
-  const chips: FilterChip[] = STATUTS.map((s) => ({
+  const chips: FilterChip[] = CONTRAT_STATUTS.map((s) => ({
     id: s,
     label: s,
     active: statutFilter === s,
@@ -236,7 +231,7 @@ export function ContratsScreen() {
                       <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{c.reference}</p>
                       <p className="mt-1 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{c.clientNom}</p>
                     </div>
-                    <ToneBadge tone={STATUT_TONE[c.statut]}>{c.statut}</ToneBadge>
+                    <ToneBadge tone={CONTRAT_STATUT_TONE[c.statut]}>{c.statut}</ToneBadge>
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
@@ -303,7 +298,7 @@ export function ContratsScreen() {
                         {c.nbPrestationsRealisees}/{c.nbPrestations}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">
-                        <ToneBadge tone={STATUT_TONE[c.statut]}>{c.statut}</ToneBadge>
+                        <ToneBadge tone={CONTRAT_STATUT_TONE[c.statut]}>{c.statut}</ToneBadge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -478,7 +473,7 @@ function ContratFormModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {STATUTS.map((s) => (
+                {CONTRAT_STATUTS.map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
                   </SelectItem>

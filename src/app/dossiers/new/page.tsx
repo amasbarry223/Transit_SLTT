@@ -1,11 +1,5 @@
-import { AppRoot } from "@/components/sltt/app-root";
-import { RouteSync } from "@/components/sltt/route-sync";
+import { ViewRoutePage } from "@/components/sltt/view-route-page";
 
 export default function NewDossierPage() {
-  return (
-    <>
-      <RouteSync view="dossier-form" id="new" dossierMode="create" />
-      <AppRoot />
-    </>
-  );
+  return <ViewRoutePage view="dossier-form" id="new" dossierMode="create" />;
 }

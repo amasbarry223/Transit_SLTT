@@ -1,5 +1,9 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
+import { useSession } from "@/lib/session/session-store";
+
 import * as React from "react";
 import {
   Wallet,
@@ -41,9 +45,9 @@ export function DashboardScreen() {
   const go = useNav((s) => s.go);
   const openDossier = useNav((s) => s.openDossier);
   const openDossierDetail = useNav((s) => s.openDossierDetail);
-  const currentRole = useNav((s) => s.currentRole);
-  const currentUserName = useNav((s) => s.currentUserName);
-  const theme = useNav((s) => s.theme);
+  const currentRole = useSession((s) => s.currentRole);
+  const currentUserName = useSession((s) => s.currentUserName);
+  const theme = useUiPrefs((s) => s.theme);
   // Recharts dessine en SVG avec des couleurs passées en props — les classes
   // `dark:` de Tailwind n'ont aucune prise dessus, il faut donc calculer les
   // couleurs de grille/axes/curseur en JS selon le thème actif.
@@ -59,7 +63,7 @@ export function DashboardScreen() {
   const clients = useStore((s) => s.clients);
   const lastSyncedAt = useStore((s) => s.lastSyncedAt);
   const currentUser = useCurrentUser();
-  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
+  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
 
   const sections = React.useMemo(
     () => getDashboardSections(currentUser),

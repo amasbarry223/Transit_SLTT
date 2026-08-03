@@ -15,6 +15,8 @@ import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -287,10 +289,16 @@ function TransporteurFormModal({
 export function TransporteursScreen() {
   const { toast }                   = useToast();
   const canWrite                    = usePermission("transporteurs:write");
-  const transporteurs               = useStore((s) => s.transporteurs);
+  const allTransporteurs             = useStore((s) => s.transporteurs);
   const societes                    = useStore((s) => s.societes);
   const updateTransporteurStatut    = useStore((s) => s.updateTransporteurStatut);
   const removeTransporteur          = useStore((s) => s.removeTransporteur);
+  const { selectedAnnexeId }        = useActiveAnnexe();
+
+  const transporteurs = useMemo(
+    () => filterByAnnexe(allTransporteurs, selectedAnnexeId),
+    [allTransporteurs, selectedAnnexeId],
+  );
 
   // Filters
   const [search,        setSearch]        = useState("");

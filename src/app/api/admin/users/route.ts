@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
+import { assertPermissionCeiling } from "@/lib/auth/user-guards";
 import { normalizePermissions } from "@/lib/permissions";
 import { createUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 export async function POST(request: NextRequest) {
   try {
-    const { admin, isAdmin } = await requireUserManager(request);
+    const { admin, isAdmin, profile: actorProfile } = await requireUserManager(request);
     const raw = await request.json();
     const parsed = createUserBodySchema.safeParse(raw);
     if (!parsed.success) {
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const normalizedPerms = normalizePermissions(permissions || []);
+    assertPermissionCeiling(actorProfile.permissions, normalizedPerms, isAdmin);
 
     const { data: authUser, error: createError } = await admin.auth.admin.createUser({
       email: email.trim().toLowerCase(),

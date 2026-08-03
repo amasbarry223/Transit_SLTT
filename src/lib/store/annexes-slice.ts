@@ -8,6 +8,7 @@ export function mapAnnexeFromDb(x: AnnexeRow): Annexe {
   return {
     id: x.id,
     nom: x.nom,
+    code: x.code,
     villeSiege: x.ville_siege,
     adresse: x.adresse || undefined,
     telephone: x.telephone || undefined,

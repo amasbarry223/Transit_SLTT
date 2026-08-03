@@ -51,6 +51,8 @@ import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { MetaTabsList, type MetaTabItem } from "@/components/sltt/meta-tabs-list";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
 import { cn } from "@/lib/utils";
@@ -546,10 +548,16 @@ function TarifsTable({
 export function FournisseursScreen() {
   const { go } = useNav();
   const canWrite = usePermission("fournisseurs:write");
-  const fournisseurs = useStore((s) => s.fournisseurs);
+  const allFournisseurs = useStore((s) => s.fournisseurs);
   const dossierFournisseurs = useStore((s) => s.dossierFournisseurs);
   const dossiers = useStore((s) => s.dossiers);
   const removeFournisseur = useStore((s) => s.removeFournisseur);
+  const { selectedAnnexeId } = useActiveAnnexe();
+
+  const fournisseurs = React.useMemo(
+    () => filterByAnnexe(allFournisseurs, selectedAnnexeId),
+    [allFournisseurs, selectedAnnexeId],
+  );
 
   const [activeTab, setActiveTab] = React.useState<FournisseurTab>("prestataires");
   const [search, setSearch] = React.useState("");

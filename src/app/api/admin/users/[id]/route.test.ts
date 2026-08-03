@@ -10,7 +10,7 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       nom: "Manager",
       email: "manager@sltt.ml",
       role: "Comptable",
-      permissions: ["utilisateurs:manage"] as string[],
+      permissions: ["utilisateurs:manage", "dossiers:read"] as string[],
       actif: true,
     } as FakeProfile,
     profilesById: {} as Record<string, FakeProfile>,
@@ -29,7 +29,7 @@ const { fakeState, resetFake } = vi.hoisted(() => {
         nom: "Manager",
         email: "manager@sltt.ml",
         role: "Comptable",
-        permissions: ["utilisateurs:manage"],
+        permissions: ["utilisateurs:manage", "dossiers:read"],
         actif: true,
       };
       fakeState.profilesById = {
@@ -176,6 +176,15 @@ describe("PATCH /api/admin/users/[id]", () => {
     const res = await PATCH(patchReq(validPatchBody), ctx("target1"));
     expect(res.status).toBe(200);
     expect(fakeState.updateUserByIdCalls).toHaveLength(1);
+  });
+
+  it("refuse d'attribuer des permissions hors périmètre du délégué", async () => {
+    const res = await PATCH(
+      patchReq({ ...validPatchBody, permissions: ["dossiers:read", "factures:write"] }),
+      ctx("target1"),
+    );
+    expect(res.status).toBe(403);
+    expect(fakeState.updateUserByIdCalls).toHaveLength(0);
   });
 
   it("renvoie l'erreur si updateUserById échoue", async () => {

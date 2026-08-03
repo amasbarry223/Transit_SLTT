@@ -1,8 +1,9 @@
 "use client";
 
+import { useSession } from "@/lib/session/session-store";
+
 import { useState } from "react";
 import Image from "next/image";
-import { useNav } from "@/lib/nav-store";
 import { supabase } from "@/lib/supabase";
 import { insertAuditLog } from "@/lib/audit";
 import { getErrorMessage } from "@/lib/utils";
@@ -36,7 +37,7 @@ function LoginBackground() {
 }
 
 export function LoginScreen() {
-  const loginNav = useNav((s) => s.login);
+  const loginNav = useSession((s) => s.login);
 
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);

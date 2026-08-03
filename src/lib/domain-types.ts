@@ -132,6 +132,7 @@ export interface Fournisseur {
   nbDossiers: number;
   montantTotal: number;
   statut: FournisseurStatut;
+  annexeId: string;
 }
 
 export interface FournisseurInput {
@@ -290,6 +291,8 @@ export interface BonSortieCaisseInput {
 export interface Annexe {
   id: string;
   nom: string;
+  /** Code court (ML/CI…), utilisé comme préfixe de numérotation des documents SLTT. */
+  code: string;
   villeSiege: string;
   adresse?: string;
   telephone?: string;
@@ -365,6 +368,8 @@ export interface Contrat {
   reference: string;
   societeId: string;
   societeNom: string;
+  annexeId: string;
+  annexeNom?: string;
   clientId: string;
   clientNom: string;
   objet: string;
@@ -450,6 +455,7 @@ export interface SlttDocument {
   societeId?: string;
   entityType?: DocumentEntityType;
   entityId?: string;
+  annexeId: string;
   currentVersion: number;
   creePar?: string;
   createdAt: string;
@@ -501,6 +507,7 @@ export interface Archive {
   depenseId?: string;
   clientId?: string;
   societeId?: string;
+  annexeId: string;
   creePar: string;
   createdAt: string;
 }
@@ -591,6 +598,8 @@ export interface Devis {
   clientNom: string;
   societeId: string;
   societeNom: string;
+  annexeId: string;
+  annexeNom?: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;
@@ -633,6 +642,7 @@ export interface Transporteur {
   nbDossiers: number;
   dateCreation: string;
   notes?: string;
+  annexeId: string;
 }
 
 export interface TransporteurInput {
@@ -648,12 +658,18 @@ export interface TransporteurInput {
   notes?: string;
 }
 
-/** Calcule l'écart = fraisPrestation - coûts engagés (positif = marge) */
+/**
+ * Marge métier dossier = prestation − (droit de douane + frais de circuit).
+ *
+ * `montantInvesti` est accepté pour permettre de passer un `Dossier` entier,
+ * mais n'entre pas dans la formule : côté formulaire, `montantInvesti` vaut
+ * droit+circuit+prestation (assiette à payer), pas le coût engagé.
+ */
 export function calculerEcart(d: {
   droitDouane: number;
   fraisCircuit: number;
   fraisPrestation: number;
-  montantInvesti: number;
+  montantInvesti?: number;
 }): number {
   return d.fraisPrestation - (d.droitDouane + d.fraisCircuit);
 }

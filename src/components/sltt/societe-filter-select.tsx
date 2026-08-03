@@ -1,7 +1,8 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import { useStore } from "@/lib/store";
-import { useNav } from "@/lib/nav-store";
 import { cn } from "@/lib/utils";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import {
@@ -21,8 +22,8 @@ import { societeToneById } from "@/lib/societe-brand";
  */
 export function SocieteFilterSelect({ className }: { className?: string }) {
   const societes = useStore((s) => s.societes);
-  const selectedSocieteId = useNav((s) => s.selectedSocieteId);
-  const setSelectedSocieteId = useNav((s) => s.setSelectedSocieteId);
+  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
+  const setSelectedSocieteId = useUiPrefs((s) => s.setSelectedSocieteId);
 
   return (
     <Select

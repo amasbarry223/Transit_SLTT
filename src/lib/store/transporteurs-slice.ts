@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import type { Transporteur, TransporteurStatut } from "@/lib/domain-types";
 import type { TransporteurInput, SLTTState } from "@/lib/store";
 import type { TransporteurRow } from "@/lib/db-rows";
+import { requireActiveAnnexeId } from "@/lib/store/connected-user";
+import { useSession } from "@/lib/session/session-store";
 
 export function mapTransporteurFromDb(x: TransporteurRow): Transporteur {
   return {
@@ -19,6 +21,7 @@ export function mapTransporteurFromDb(x: TransporteurRow): Transporteur {
     nbDossiers: 0,
     dateCreation: x.date_creation || new Date().toISOString().slice(0, 10),
     notes: x.notes || undefined,
+    annexeId: x.annexe_id,
   };
 }
 
@@ -35,6 +38,8 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
 
   addTransporteur: async (input) => {
     const seq = get().transporteurSeq;
+    const userId = useSession.getState().currentUserId;
+    const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
     const { data, error } = await supabase
       .from("transporteurs")
@@ -49,6 +54,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
         capacite: input.capacite,
         statut: input.statut,
         notes: input.notes,
+        annexe_id: annexeId,
       })
       .select()
       .single();

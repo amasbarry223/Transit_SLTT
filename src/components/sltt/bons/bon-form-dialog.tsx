@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -125,11 +126,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
         });
         onOpenChange(false);
       } else {
-        toast({
-          title: "Erreur",
-          description: error instanceof Error ? error.message : "Impossible d'enregistrer le bon de sortie.",
-          variant: "destructive",
-        });
+        toastError(toast, error, "Impossible d'enregistrer le bon de sortie.");
       }
     } finally {
       setSaving(false);
@@ -160,11 +157,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
       });
       onOpenChange(false);
     } catch (error: unknown) {
-      toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible d'enregistrer le brouillon.",
-        variant: "destructive",
-      });
+      toastError(toast, error, "Impossible d'enregistrer le brouillon.");
     } finally {
       setSaving(false);
     }

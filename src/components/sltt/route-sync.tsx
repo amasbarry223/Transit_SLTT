@@ -6,7 +6,7 @@ import { syncNavFromRoute } from "@/lib/app-navigation";
 
 type RouteSyncProps = {
   view: ViewKey;
-  id: string;
+  id?: string;
   dossierMode?: "create" | "edit";
   devisEdit?: boolean;
 };

@@ -1,8 +1,13 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
+import { useSession } from "@/lib/session/session-store";
+
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useNav, type ViewKey } from "@/lib/nav-store";
+import { useAppNavigation } from "@/lib/app-navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -79,13 +84,12 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
 
 export function Topbar() {
   const view = useNav((s) => s.view);
-  const go = useNav((s) => s.go);
-  const openDossierDetail = useNav((s) => s.openDossierDetail);
-  const logout = useNav((s) => s.logout);
-  const currentRole = useNav((s) => s.currentRole);
-  const currentUserName = useNav((s) => s.currentUserName);
-  const theme = useNav((s) => s.theme);
-  const toggleTheme = useNav((s) => s.toggleTheme);
+  const { goToView, goToDossier } = useAppNavigation();
+  const logout = useSession((s) => s.logout);
+  const currentRole = useSession((s) => s.currentRole);
+  const currentUserName = useSession((s) => s.currentUserName);
+  const theme = useUiPrefs((s) => s.theme);
+  const toggleTheme = useUiPrefs((s) => s.toggleTheme);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [seenAlertIds, setSeenAlertIds] = useState<Set<string>>(new Set());
@@ -120,7 +124,7 @@ export function Topbar() {
   const hasUnread = alertIds.some((id) => !seenAlertIds.has(id));
 
   function handleNav(key: ViewKey) {
-    go(key);
+    goToView(key);
     setMobileOpen(false);
   }
 
@@ -207,7 +211,7 @@ export function Topbar() {
               <DropdownMenuItem
                 key={s.id}
                 className="flex flex-col items-start gap-1 py-2.5"
-                onClick={() => go("entreposage")}
+                onClick={() => goToView("entreposage")}
               >
                 <span className="text-sm font-medium text-red-600">
                   Stock faible · {s.marchandise}
@@ -221,7 +225,7 @@ export function Topbar() {
               <DropdownMenuItem
                 key={d.id}
                 className="flex flex-col items-start gap-1 py-2.5"
-                onClick={() => openDossierDetail(d.id)}
+                onClick={() => goToDossier(d.id)}
               >
                 <span className="text-sm font-medium text-amber-600">
                   Dossier non soldé · {d.reference}
@@ -236,7 +240,7 @@ export function Topbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="justify-center text-xs text-slate-500 dark:text-slate-400"
-                  onClick={() => go("dossiers")}
+                  onClick={() => goToView("dossiers")}
                 >
                   Voir les {unpaidDossiers.length - 5} autres dossiers non soldés →
                 </DropdownMenuItem>
@@ -273,7 +277,7 @@ export function Topbar() {
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => go("parametres")}>
+            <DropdownMenuItem onClick={() => goToView("parametres")}>
               Paramètres & profil
             </DropdownMenuItem>
             <DropdownMenuSeparator />

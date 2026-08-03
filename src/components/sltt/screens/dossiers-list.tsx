@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 import { useMemo, useState } from "react";
 import {
   Plus,
@@ -58,6 +60,7 @@ import type { Dossier } from "@/lib/domain-types";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { ListFilters } from "@/components/sltt/list-filters";
 import { SocieteBadge, SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 
 const PAGE_SIZE = 8;
 
@@ -93,7 +96,9 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 
 export function DossiersListScreen() {
-  const { openDossier, openDossierDetail, selectedSocieteId } = useNav();
+  const { openDossier, openDossierDetail } = useNav();
+  const { selectedSocieteId } = useUiPrefs();
+  const { selectedAnnexeId } = useActiveAnnexe();
   const { toast } = useToast();
   const canWrite = usePermission("dossiers:write");
   const canTransition = usePermission("dossiers:transition");
@@ -126,6 +131,7 @@ export function DossiersListScreen() {
   const filtered = useMemo(() => {
     const list = dossiers.filter((d) => {
       if (selectedSocieteId && d.societeId !== selectedSocieteId) return false;
+      if (selectedAnnexeId && d.annexeId !== selectedAnnexeId) return false;
       if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
@@ -157,7 +163,7 @@ export function DossiersListScreen() {
         default: return 0;
       }
     });
-  }, [dossiers, selectedSocieteId, search, clientFilter, statutFilter, nonSoldeOnly, periode, yearFilter, sortBy, refDate]);
+  }, [dossiers, selectedSocieteId, selectedAnnexeId, search, clientFilter, statutFilter, nonSoldeOnly, periode, yearFilter, sortBy, refDate]);
 
   // Les KPI reflètent les filtres actifs (comme le tableau juste en dessous),
   // pas l'ensemble des dossiers — sinon les chiffres semblent contredire ce

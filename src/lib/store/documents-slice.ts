@@ -16,7 +16,8 @@ import type {
   OcrJobRow,
 } from "@/lib/db-rows";
 import type { SLTTState } from "@/lib/store";
-import { useNav } from "@/lib/nav-store";
+import { useSession } from "@/lib/session/session-store";
+import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import {
   buildDocumentStoragePath,
   dataUrlToBlob,
@@ -53,7 +54,27 @@ export interface UpdateDocumentMetaInput {
 }
 
 function currentUserId(): string | null {
-  return useNav.getState().currentUserId;
+  return useSession.getState().currentUserId;
+}
+
+/**
+ * Annexe d'un document : héritée du dossier/facture lié pour rester cohérente
+ * avec la donnée qu'il documente (cas dossier-documents-panel, lien connu dès
+ * l'upload), sinon repli sur l'annexe active de l'utilisateur (cas OCR
+ * "Nouveau dossier via OCR" : le document précède la création du dossier).
+ */
+function resolveDocumentAnnexeId(get: () => SLTTState, input: AddDocumentInput): string {
+  if (input.dossierId) {
+    const fromDossier = get().dossiers.find((d) => d.id === input.dossierId)?.annexeId;
+    if (fromDossier) return fromDossier;
+  }
+  if (input.factureId) {
+    const fromFacture = get().factures.find((f) => f.id === input.factureId)?.annexeId;
+    if (fromFacture) return fromFacture;
+  }
+  const userId = currentUserId();
+  const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
+  return requireActiveAnnexeId(userAnnexeIds);
 }
 
 export function mapDocumentVersionFromDb(x: DocumentVersionRow): DocumentVersion {
@@ -83,6 +104,7 @@ export function mapDocumentFromDb(x: DocumentRow): SlttDocument {
     societeId: x.societe_id || undefined,
     entityType: x.entity_type || undefined,
     entityId: x.entity_id || undefined,
+    annexeId: x.annexe_id,
     currentVersion: Number(x.current_version),
     creePar: x.cree_par || undefined,
     createdAt: x.created_at,
@@ -155,6 +177,7 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
   addDocument: async (input) => {
     const userId = currentUserId();
+    const annexeId = resolveDocumentAnnexeId(get, input);
     const blob = await dataUrlToBlob(input.dataUrl);
     const checksum = await sha256Hex(blob);
 
@@ -171,6 +194,7 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
         societe_id: input.societeId || null,
         entity_type: input.entityType || null,
         entity_id: input.entityId || null,
+        annexe_id: annexeId,
         current_version: 1,
         cree_par: userId,
       })

@@ -1,19 +1,11 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
+import { assertCanTouchTarget, assertPermissionCeiling } from "@/lib/auth/user-guards";
 import { normalizePermissions } from "@/lib/permissions";
 import { updateUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 type AdminClient = Awaited<ReturnType<typeof requireUserManager>>["admin"];
-
-/** Bloque toute action d'un non-admin sur un compte qui est déjà Administrateur. */
-async function assertCanTouchTarget(admin: AdminClient, targetId: string, isAdmin: boolean) {
-  if (isAdmin) return;
-  const { data: target } = await admin.from("profiles").select("role").eq("id", targetId).single();
-  if (target?.role === "Administrateur") {
-    throw new AuthError("Seul un administrateur peut modifier un compte Administrateur.", 403);
-  }
-}
 
 /** Empêche de désactiver, rétrograder ou supprimer le dernier compte Administrateur actif. */
 async function assertNotLastActiveAdmin(admin: AdminClient, targetId: string) {
@@ -31,7 +23,7 @@ async function assertNotLastActiveAdmin(admin: AdminClient, targetId: string) {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { admin, user: adminUser, isAdmin } = await requireUserManager(request);
+    const { admin, user: adminUser, isAdmin, profile: actorProfile } = await requireUserManager(request);
     const { id } = await context.params;
     const raw = await request.json();
     const parsed = updateUserBodySchema.safeParse(raw);
@@ -60,6 +52,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const normalizedPerms = normalizePermissions(permissions || []);
+    assertPermissionCeiling(actorProfile.permissions, normalizedPerms, isAdmin);
 
     const { error: authError } = await admin.auth.admin.updateUserById(id, {
       email: email.trim().toLowerCase(),

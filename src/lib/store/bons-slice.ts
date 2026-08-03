@@ -5,9 +5,7 @@ import type { BonSortie, BonSortieCaisse, BonSortieCaisseInput, StockItem } from
 import type { BonInput, SLTTState } from "@/lib/store";
 import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
 
-function pad(n: number, len: number): string {
-  return String(n).padStart(len, "0");
-}
+import { nextAnnexeYearlyReference, nextScopedSeq, nextYearlyReference } from "@/lib/store/reference";
 
 export function mapBonFromDb(x: BonSortieRow): BonSortie {
   return {
@@ -78,9 +76,16 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   bonSortieCaisseSeq: 1,
 
   addBon: async (input) => {
-    const seq = get().bonSeq;
-    const year = new Date().getFullYear();
-    const numero = `BS-${year}-${pad(seq, 4)}`;
+    const societe = get().societes.find((s) => s.id === input.societeId);
+    const annexe = get().annexes.find((a) => a.id === input.annexeId);
+    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+
+    const seq = useAnnexeNumbering
+      ? nextScopedSeq(get().bons.map((b) => b.reference), (r) => r.startsWith(`${annexe!.code}-BS-`))
+      : get().bonSeq;
+    const numero = useAnnexeNumbering
+      ? nextAnnexeYearlyReference(annexe!.code, "BS", seq)
+      : nextYearlyReference("BS", seq);
 
     const { data, error } = await supabase
       .from("bons_sortie")
@@ -105,7 +110,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const newBon = mapBonFromDb(data);
     set((s) => ({
       bons: [newBon, ...s.bons],
-      bonSeq: seq + 1,
+      bonSeq: useAnnexeNumbering ? s.bonSeq : seq + 1,
     }));
     await get().addAuditLog("Bons", "Création", `Bon ${numero} créé`);
 
