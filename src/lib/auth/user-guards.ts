@@ -33,3 +33,26 @@ export function assertPermissionCeiling(
     );
   }
 }
+
+/**
+ * Empêche un délégué `utilisateurs:manage` d'assigner à autrui une annexe à
+ * laquelle il n'a lui-même pas accès (sinon il pourrait s'octroyer indirectement
+ * une visibilité cross-annexe via un compte tiers).
+ */
+export async function assertAnnexeCeiling(
+  admin: { from: (table: string) => any },
+  actorId: string,
+  requestedAnnexeIds: string[],
+  isAdmin: boolean,
+) {
+  if (isAdmin) return;
+  const { data: rows } = await admin.from("user_annexes").select("annexe_id").eq("user_id", actorId);
+  const allowed = new Set((rows ?? []).map((r: { annexe_id: string }) => r.annexe_id));
+  const overflow = requestedAnnexeIds.filter((id) => !allowed.has(id));
+  if (overflow.length > 0) {
+    throw new AuthError(
+      "Annexes hors périmètre délégué : vous ne pouvez assigner que des annexes auxquelles vous avez vous-même accès.",
+      403,
+    );
+  }
+}

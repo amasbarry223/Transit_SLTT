@@ -18,7 +18,9 @@ export interface BackupSlice {
   /** Purge toutes les données métier (irréversible) puis resynchronise le store. */
   wipeBusinessData: () => Promise<Record<string, number>>;
   /** Purge puis restaure depuis payload.data (format produit par exportBackup). */
-  restoreBackup: (data: Record<string, unknown[]>) => Promise<Record<string, number>>;
+  restoreBackup: (
+    data: Record<string, unknown[]>,
+  ) => Promise<{ restored: Record<string, number>; missingTables: string[] }>;
 }
 
 export const createBackupSlice: StateCreator<SLTTState, [], [], BackupSlice> = (set, get) => ({
@@ -51,14 +53,20 @@ export const createBackupSlice: StateCreator<SLTTState, [], [], BackupSlice> = (
   restoreBackup: async (backupData) => {
     const { data, error } = await supabase.rpc("restore_business_data", { payload: backupData });
     if (error) throw error;
-    const report = (data as Record<string, number>) ?? {};
+    const result = (data as { restored?: Record<string, number>; missingTables?: string[] }) ?? {};
+    const restored = result.restored ?? {};
+    const missingTables = result.missingTables ?? [];
 
+    const missingNote =
+      missingTables.length > 0
+        ? ` — ${missingTables.length} table(s) absente(s) du fichier (restées vides) : ${missingTables.join(", ")}`
+        : "";
     await get().addAuditLog(
       "Système",
       "Création",
-      `Restauration d'une sauvegarde — ${sumCounts(report)} ligne(s) restaurée(s) sur ${Object.keys(report).length} table(s)`,
+      `Restauration d'une sauvegarde — ${sumCounts(restored)} ligne(s) restaurée(s) sur ${Object.keys(restored).length} table(s)${missingNote}`,
     );
     await get().refetchData();
-    return report;
+    return { restored, missingTables };
   },
 });

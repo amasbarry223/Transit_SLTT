@@ -42,11 +42,11 @@ export function MargeChart({
         </div>
         <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1">
-            <span className="inline-block size-2.5 rounded-full bg-[#16853F]" />
+            <span className="inline-block size-2.5 rounded-full" style={{ background: CHART_COLORS.emerald }} />
             Marge positive
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block size-2.5 rounded-full bg-[#DC2626]" />
+            <span className="inline-block size-2.5 rounded-full" style={{ background: CHART_COLORS.red }} />
             Marge négative
           </span>
         </div>

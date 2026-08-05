@@ -108,11 +108,19 @@ export function BackupTab() {
   async function handleConfirmRestore() {
     if (!pendingRestore) return;
     try {
-      const report = await restoreBackup(pendingRestore.data);
-      toast({
-        title: "Restauration terminée",
-        description: `${totalRows(report)} ligne(s) restaurée(s) sur ${Object.keys(report).length} table(s).`,
-      });
+      const { restored, missingTables } = await restoreBackup(pendingRestore.data);
+      if (missingTables.length > 0) {
+        toast({
+          title: "Restauration partielle",
+          description: `${totalRows(restored)} ligne(s) restaurée(s) sur ${Object.keys(restored).length} table(s). Absentes du fichier (restées vides) : ${missingTables.join(", ")}.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Restauration terminée",
+          description: `${totalRows(restored)} ligne(s) restaurée(s) sur ${Object.keys(restored).length} table(s).`,
+        });
+      }
     } catch (e) {
       toast({
         title: "Restauration impossible",

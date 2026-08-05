@@ -77,12 +77,38 @@ export function computeAnnexeScopedReference(
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
   const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
   const seq = useAnnexeNumbering
-    ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${annexe!.code}-${prefix}-`))
+    ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${annexe!.code}-${prefix}-${year}-`))
     : globalSeq;
   const reference = useAnnexeNumbering
     ? nextAnnexeYearlyReference(annexe!.code, prefix, seq, 4, year)
     : nextYearlyReference(prefix, seq, 4, year);
   return { reference, useAnnexeNumbering, seq };
+}
+
+/**
+ * Référence dossier pour un import historique (`importDossierHistorique`) :
+ * contrairement à `computeDossierReference`, la séquence est TOUJOURS dérivée
+ * des références existantes de l'année de la ligne importée — jamais du
+ * compteur global `dossierSeq` (réservé aux dossiers créés aujourd'hui). Un
+ * import de lignes 2019/2023 ne doit donc jamais faire avancer le prochain
+ * numéro d'un dossier créé en 2026.
+ */
+export function computeHistoricalDossierReference(
+  societe: { isTransit?: boolean } | undefined,
+  annexe: { code: string } | undefined,
+  prefix: string,
+  existingRefs: Array<string | null | undefined>,
+  year: number,
+): { reference: string } {
+  const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+  const scopePrefix = useAnnexeNumbering
+    ? `${prefix}-${annexe!.code}-TR-${year}-`
+    : `${prefix}-TR-${year}-`;
+  const seq = nextScopedSeq(existingRefs, (r) => r.startsWith(scopePrefix));
+  const reference = useAnnexeNumbering
+    ? `${prefix}-${annexe!.code}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`
+    : `${prefix}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
+  return { reference };
 }
 
 /**
@@ -103,7 +129,7 @@ export function computeDossierReference(
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
   const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
   const seq = useAnnexeNumbering
-    ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${prefix}-${annexe!.code}-TR-`))
+    ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${prefix}-${annexe!.code}-TR-${year}-`))
     : dossierSeq;
   const reference = useAnnexeNumbering
     ? `${prefix}-${annexe!.code}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`

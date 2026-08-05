@@ -16,7 +16,7 @@ import {
   shouldSyncEcritureOnDossierSolde,
   syncEcritureWhenDossierSolde,
 } from "@/lib/store/sync-helpers";
-import { computeDossierReference } from "@/lib/store/reference";
+import { computeDossierReference, computeHistoricalDossierReference } from "@/lib/store/reference";
 
 export function mapDossierFromDb(x: DossierRow): Dossier {
   return {
@@ -154,10 +154,14 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
    */
   importDossierHistorique: async (input) => {
     const year = Number(input.date.slice(0, 4)) || new Date().getFullYear();
-    const { reference, useAnnexeNumbering, seq } = resolveDossierReference(
-      get,
-      input.societeId,
-      input.annexeId,
+    const societe = get().societes.find((item) => item.id === input.societeId);
+    const annexe = get().annexes.find((a) => a.id === input.annexeId);
+    const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
+    const { reference } = computeHistoricalDossierReference(
+      societe,
+      annexe,
+      prefix,
+      get().dossiers.map((d) => d.reference),
       year,
     );
 
@@ -189,7 +193,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       const updatedDossiers = [newDossier, ...s.dossiers];
       return {
         dossiers: updatedDossiers,
-        dossierSeq: useAnnexeNumbering ? s.dossierSeq : seq + 1,
         clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
       };
     });

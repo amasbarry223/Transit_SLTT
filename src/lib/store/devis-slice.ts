@@ -54,7 +54,8 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     if (!input.societeId?.trim()) {
       throw new Error("La société est obligatoire pour créer un devis.");
     }
-    const annexeId = requireActiveAnnexeId(currentUserAnnexeIds(get));
+    const client = get().clients.find((c) => c.id === input.clientId);
+    const annexeId = client?.annexeId ?? requireActiveAnnexeId(currentUserAnnexeIds(get));
     const societe = get().societes.find((s) => s.id === input.societeId);
     const annexe = get().annexes.find((a) => a.id === annexeId);
     const { reference, useAnnexeNumbering, seq } = computeAnnexeScopedReference(
@@ -201,9 +202,11 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       throw new Error("Aucune société configurée. Renseignez-la dans Paramètres > Sociétés.");
     }
 
-    const annexeId = requireActiveAnnexeId(
-      get().users.find((u) => u.id === useSession.getState().currentUserId)?.annexeIds ?? [],
-    );
+    const annexeId =
+      dev.annexeId ||
+      requireActiveAnnexeId(
+        get().users.find((u) => u.id === useSession.getState().currentUserId)?.annexeIds ?? [],
+      );
 
     const inputDossier: DossierInput = {
       societeId,

@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
-import { assertCanTouchTarget } from "@/lib/auth/user-guards";
+import { assertAnnexeCeiling, assertCanTouchTarget } from "@/lib/auth/user-guards";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 /** Remplace intégralement les annexes assignées à un utilisateur (delete + insert). */
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { admin, isAdmin } = await requireUserManager(request);
+    const { user, admin, isAdmin } = await requireUserManager(request);
     const { id } = await context.params;
     await assertCanTouchTarget(admin, id, isAdmin);
 
@@ -18,6 +18,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (!annexeIds || annexeIds.length === 0) {
       throw new AuthError("Au moins une annexe doit être assignée à l'utilisateur.", 400);
     }
+    await assertAnnexeCeiling(admin, user.id, annexeIds, isAdmin);
 
     const { error: deleteError } = await admin.from("user_annexes").delete().eq("user_id", id);
     if (deleteError) {

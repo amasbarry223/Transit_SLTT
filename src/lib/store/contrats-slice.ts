@@ -95,7 +95,10 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const reference = nextYearlyReference("CTR", seq);
     const creePar = getConnectedUserName();
     const userId = useSession.getState().currentUserId;
-    const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
+    const client = get().clients.find((c) => c.id === input.clientId);
+    const annexeId =
+      client?.annexeId ??
+      requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
     const { data, error } = await supabase
       .from("contrats")

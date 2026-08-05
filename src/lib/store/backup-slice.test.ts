@@ -96,22 +96,37 @@ describe("backup-slice", () => {
 
   it("restoreBackup transmet le payload et journalise le total restauré", async () => {
     resetFake();
-    rpcResult.data = { clients: 2 };
+    rpcResult.data = { restored: { clients: 2 }, missingTables: [] };
     const { slice, addAuditLog, refetchData } = makeSlice();
     const backupData = { clients: [{ id: "c1" }, { id: "c2" }] };
 
-    const report = await slice.restoreBackup(backupData);
+    const result = await slice.restoreBackup(backupData);
 
     expect(rpcCalls).toEqual([
       { fn: "restore_business_data", args: { payload: backupData } },
     ]);
-    expect(report).toEqual({ clients: 2 });
+    expect(result).toEqual({ restored: { clients: 2 }, missingTables: [] });
     expect(addAuditLog).toHaveBeenCalledWith(
       "Système",
       "Création",
       expect.stringContaining("2 ligne(s) restaurée(s) sur 1 table(s)"),
     );
     expect(refetchData).toHaveBeenCalledTimes(1);
+  });
+
+  it("restoreBackup signale les tables absentes du payload dans le journal d'audit", async () => {
+    resetFake();
+    rpcResult.data = { restored: { clients: 2 }, missingTables: ["factures"] };
+    const { slice, addAuditLog } = makeSlice();
+
+    const result = await slice.restoreBackup({ clients: [{ id: "c1" }] });
+
+    expect(result.missingTables).toEqual(["factures"]);
+    expect(addAuditLog).toHaveBeenCalledWith(
+      "Système",
+      "Création",
+      expect.stringContaining("table(s) absente(s) du fichier"),
+    );
   });
 
   it("listBackupTables renvoie la liste des tables", async () => {
