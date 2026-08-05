@@ -805,8 +805,8 @@
     "semantic_hash": ""
   },
   "src/lib/store/dossiers-slice.ts": {
-    "mtime": 1785897211.998702,
-    "ast_hash": "2515756874ad5667f04332afc8a1400f",
+    "mtime": 1785959512.5391736,
+    "ast_hash": "d491ad80dc2dddfe319767ff54e09cb4",
     "semantic_hash": ""
   },
   "src/lib/store/sync-helpers.ts": {
@@ -1640,13 +1640,13 @@
     "semantic_hash": ""
   },
   "src/lib/store/contrats-slice.ts": {
-    "mtime": 1785883781.8313725,
-    "ast_hash": "d6073575bc468f86d6ec52e133cf51cc",
+    "mtime": 1785959364.5229583,
+    "ast_hash": "1400efbc19a2c962e1272cbaa20db598",
     "semantic_hash": ""
   },
   "src/lib/store/devis-slice.ts": {
-    "mtime": 1785897953.526702,
-    "ast_hash": "2362b09ef6080934892943b3d21cc5a8",
+    "mtime": 1785959345.284023,
+    "ast_hash": "6460590be0df21f412a23d2c0a8e8bd6",
     "semantic_hash": ""
   },
   "src/lib/store/fournisseurs-slice.ts": {
@@ -1965,8 +1965,8 @@
     "semantic_hash": ""
   },
   "src/app/api/admin/users/[id]/annexes/route.ts": {
-    "mtime": 1785874891.0719497,
-    "ast_hash": "f60c0cb94ca0f3fb2b72d0a777bf64a7",
+    "mtime": 1785959261.8076754,
+    "ast_hash": "aa6cb83890dde2999b5b6259dfca0a96",
     "semantic_hash": ""
   },
   "src/components/sltt/annexe-selector.tsx": {
@@ -2115,8 +2115,8 @@
     "semantic_hash": ""
   },
   "src/lib/store/reference.ts": {
-    "mtime": 1785897826.0761273,
-    "ast_hash": "fc706799a570986e29c05dec8fb424e1",
+    "mtime": 1785959480.1485443,
+    "ast_hash": "7c8fda21ef4353fcb2598a39f0499547",
     "semantic_hash": ""
   },
   "src/lib/toast-error.ts": {
@@ -2400,8 +2400,8 @@
     "semantic_hash": ""
   },
   "src/lib/auth/user-guards.ts": {
-    "mtime": 1785876635.611523,
-    "ast_hash": "21da22baa04b02d3ed947de646dc1739",
+    "mtime": 1785959249.8698134,
+    "ast_hash": "55778bb55d38c7537f407d8fb7b9a1aa",
     "semantic_hash": ""
   },
   "supabase/migrations/20260817_replace_facture_lignes_rpc.sql": {
@@ -2470,18 +2470,18 @@
     "semantic_hash": ""
   },
   "src/components/sltt/parametres/backup-tab.tsx": {
-    "mtime": 1785894002.2841754,
-    "ast_hash": "157e965b6f806fc980e82a814b267bfb",
+    "mtime": 1785959990.2291796,
+    "ast_hash": "2b31d9008557aa02df4422395cfa5ca6",
     "semantic_hash": ""
   },
   "src/lib/store/backup-slice.test.ts": {
-    "mtime": 1785894165.9345157,
-    "ast_hash": "d28852cb738ed7693ae52d6c44b6bda3",
+    "mtime": 1785960013.3644,
+    "ast_hash": "7bbf197968d83cbdea1653d859af6fe2",
     "semantic_hash": ""
   },
   "src/lib/store/backup-slice.ts": {
-    "mtime": 1785893890.4166024,
-    "ast_hash": "a868e0d77cd30acaf7765b3742591468",
+    "mtime": 1785959980.453941,
+    "ast_hash": "1e3d0a8f2fd6d1da208817edc036de47",
     "semantic_hash": ""
   },
   "supabase/migrations/20260821_admin_backup_restore.sql": {
@@ -2492,6 +2492,16 @@
   "src/lib/format.test.ts": {
     "mtime": 1785895567.9503057,
     "ast_hash": "b2c4af1fe89dee86661ac858fb10e9e6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260822_fix_backup_audit_logs_and_restore_report.sql": {
+    "mtime": 1785959962.607399,
+    "ast_hash": "eab24d14e12cb2f644fe096ac4866663",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260823_clients_societe_id_backfill_from_activity.sql": {
+    "mtime": 1785960114.5577695,
+    "ast_hash": "240720af0eaad4d2bbe3620ab3ee6551",
     "semantic_hash": ""
   }
 }
