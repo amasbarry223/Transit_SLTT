@@ -71,7 +71,11 @@ export function ClasseurGrid({ rows, onRowClick, onDataChanged, className }: Cla
         flex: 1,
         minWidth: 180,
         editable: (p) => {
-          if (p.data?.type === "Dossier") return canEditDossier;
+          // Libellé Dossier reconstruit depuis nature+bl (buildDossierLibelle) : non
+          // éditable ici pour éviter un reparsing regex fragile qui échouerait
+          // silencieusement dès que le texte retapé ne suit plus exactement le
+          // gabarit "Dossier transit — {nature} · BL {bl}". Modifier nature/BL
+          // depuis la fiche dossier.
           if (p.data?.type === "Paiement") return canEditCompta;
           return false;
         },
@@ -146,15 +150,6 @@ export function ClasseurGrid({ rows, onRowClick, onDataChanged, className }: Cla
             await patchDossierClasseur(entry.sourceId, { montantInvesti: Number(event.newValue) });
           } else if (field === "credit") {
             await patchDossierClasseur(entry.sourceId, { montantPaye: Number(event.newValue) });
-          } else if (field === "libelle") {
-            const libelle = String(event.newValue || "");
-            // "Dossier transit — {nature} · BL {bl}"
-            const blMatch = libelle.match(/BL\s+(.+)$/i);
-            const natureMatch = libelle.match(/Dossier transit\s*—\s*(.+?)(?:\s*·|$)/i);
-            await patchDossierClasseur(entry.sourceId, {
-              nature: natureMatch?.[1]?.trim(),
-              bl: blMatch?.[1]?.trim(),
-            });
           }
         } else if (entry.type === "Paiement") {
           if (field === "debit") {
