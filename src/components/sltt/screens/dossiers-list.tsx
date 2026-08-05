@@ -37,6 +37,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { CreateDossierFromOcrButton } from "@/components/sltt/documents/create-dossier-from-ocr";
+import { DossierBulkImportButton } from "@/components/sltt/documents/dossier-bulk-import-dialog";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -263,7 +264,7 @@ export function DossiersListScreen() {
           <td>${htmlEscape(d.nature)}</td>
           <td class="num">${formatFCFA(d.fraisPrestation, false)}</td>
           <td class="num">${calculerEcart(d).toLocaleString("fr-FR")}</td>
-          <td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${htmlEscape(d.statut)}</span></td>
+          <td><span class="badge" style="background:#dfeefa;color:#155a93">${htmlEscape(d.statut)}</span></td>
         </tr>`,
       )
       .join("");
@@ -292,6 +293,7 @@ export function DossiersListScreen() {
       >
         {canWrite && (
           <div className="flex flex-wrap items-center gap-2">
+            <DossierBulkImportButton />
             <CreateDossierFromOcrButton />
             <Button onClick={() => openDossier(null, "create")}>
               <Plus className="size-4" />

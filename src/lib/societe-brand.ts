@@ -179,6 +179,50 @@ export function mergeAnnexeIntoBrand(brand: SocieteBrand, annexe: Annexe): Socie
   };
 }
 
+export interface DossierCoutLabels {
+  droitDouane: string;
+  droitDouaneHint: string;
+  fraisCircuit: string;
+  fraisCircuitHint: string;
+  fraisPrestation: string;
+  fraisPrestationHint: string;
+}
+
+const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
+  droitDouane: "Droit de douane",
+  droitDouaneHint: "Taxe versée à la douane pour dédouaner la marchandise.",
+  fraisCircuit: "Frais de circuit global",
+  fraisCircuitHint: "Frais de transit (manutention, transport local, formalités) hors droit de douane.",
+  fraisPrestation: "Frais de prestation",
+  fraisPrestationHint: "Rémunération de SLTT pour le service de transit — c'est elle qui détermine la marge du dossier.",
+};
+
+/**
+ * Rubriques par annexe (F-ANNEXE). Mali garde le triptyque douane/circuit/
+ * prestation ; la Côte d'Ivoire facture par transit portuaire (cf. facture
+ * CI type — conteneurs/compagnie/bordereau, sans droit de douane affiché) :
+ * "Frais transit port" remplace la douane, "Dépenses" remplace le circuit.
+ */
+const ANNEXE_DOSSIER_COUT_LABELS: Record<string, Partial<DossierCoutLabels>> = {
+  CI: {
+    droitDouane: "Frais transit port",
+    droitDouaneHint: "Frais de transit portuaire (manutention, passage port) — annexe Côte d'Ivoire.",
+    fraisCircuit: "Dépenses",
+    fraisCircuitHint: "Dépenses diverses engagées pour le dossier, hors frais de transit portuaire.",
+  },
+};
+
+/**
+ * Libellés affichés pour la décomposition de coûts d'un dossier (formulaire,
+ * détail, impressions, lignes de facture pré-remplies). Le modèle reste 3
+ * montants partout (marge, exports, bilans) — seuls les intitulés changent
+ * par annexe, jamais les champs stockés ni le calcul de marge/écart.
+ */
+export function resolveDossierCoutLabels(annexeCode?: string | null): DossierCoutLabels {
+  const override = annexeCode ? ANNEXE_DOSSIER_COUT_LABELS[annexeCode] : undefined;
+  return override ? { ...DEFAULT_DOSSIER_COUT_LABELS, ...override } : DEFAULT_DOSSIER_COUT_LABELS;
+}
+
 export const MISSING_SIGNATORY_LABEL = "Non renseigné";
 
 export function warnMissingBrand(context: string): boolean {

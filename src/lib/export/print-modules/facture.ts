@@ -59,17 +59,17 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
 
   const lignesHTML = data.lignes.map((l, i) => `
     <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center;color:#94a3b8">${i + 1}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.description)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7;text-align:center;color:#92a3ba">${i + 1}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7">${htmlEscape(l.description)}</td>
       ${hasLignesDetails ? `
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.compagnie ?? "")}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9">${htmlEscape(l.bordereauLivraison ?? "")}</td>` : ""}
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${fmtFCFA(l.montantHT)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7">${htmlEscape(l.compagnie ?? "")}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7">${htmlEscape(l.bordereauLivraison ?? "")}</td>` : ""}
+      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${fmtFCFA(l.montantHT)}</td>
     </tr>`).join("");
 
   const reste = Math.max(0, data.montantTTC - data.montantPaye);
   const paiementHTML = data.montantPaye > 0 ? `
-    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#15803d">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#126a32">
       <span>Déjà payé</span><span style="font-variant-numeric:tabular-nums">- ${fmtFCFA(data.montantPaye)}</span>
     </div>
     <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:600;color:#b45309">
@@ -87,40 +87,40 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
 <title>Facture ${htmlEscape(numeroAffiche)}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
-.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
-.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 30px 40px 26px; border-bottom: 3px solid #1e40af; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
+.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 30px 40px 26px; border-bottom: 3px solid #404089; }
 .brand { display: flex; align-items: center; gap: 20px; min-width: 0; }
 .brand--logo-only { flex: 1; max-width: 55%; }
 .brand-logo { height: 80px; width: auto; max-width: 420px; object-fit: contain; flex-shrink: 0; }
-.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
-.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
-.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
-.doc-ref { font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
-.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
+.doc-ref { font-size: 22px; font-weight: 800; color: #404089; letter-spacing: -1px; line-height: 1.1; }
+.doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
 .body { padding: 32px 40px; }
-.doit-lieu { text-align: right; font-size: 12px; color: #64748b; margin-bottom: 20px; }
-.client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
-.client-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 6px; }
-.client-name { font-size: 15px; font-weight: 700; color: #0f172a; }
-.client-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
-.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+.doit-lieu { text-align: right; font-size: 12px; color: #6b7280; margin-bottom: 20px; }
+.client-box { background: #f8fafc; border: 1px solid #d2dbe9; border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+.client-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 6px; }
+.client-name { font-size: 15px; font-weight: 700; color: #1f2937; }
+.client-sub { font-size: 12px; color: #6b7280; margin-top: 4px; }
+.tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
 table { width: 100%; border-collapse: collapse; }
-.tbl-head { background: #1e3a8a; }
+.tbl-head { background: #155a93; }
 .tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .totals { width: 280px; margin-left: auto; }
-.total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #475569; }
-.total-main { border-top: 2px solid #0f172a; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 15px; color: #1e40af; }
-.montant-lettres { margin-top: 18px; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-style: italic; color: #334155; }
-.notes { border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px; font-size: 12px; color: #64748b; }
+.total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #45556b; }
+.total-main { border-top: 2px solid #1f2937; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 15px; color: #404089; }
+.montant-lettres { margin-top: 18px; padding: 12px 16px; background: #f8fafc; border: 1px solid #d2dbe9; border-radius: 8px; font-size: 12px; font-style: italic; color: #354253; }
+.notes { border-top: 1px solid #d2dbe9; margin-top: 24px; padding-top: 16px; font-size: 12px; color: #6b7280; }
 .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
 .sig-box { text-align: center; }
-.sig-lbl { font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: .05em; }
-.sig-space { margin-top: 48px; border-top: 1px solid #cbd5e1; }
-.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; line-height: 1.6; }
-.no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
-.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.sig-lbl { font-size: 11px; font-weight: 700; color: #354253; text-transform: uppercase; letter-spacing: .05em; }
+.sig-space { margin-top: 48px; border-top: 1px solid #cdd4df; }
+.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; font-size: 10px; color: #92a3ba; text-align: center; line-height: 1.6; }
+.no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
+.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 @media print {
   .no-print { display: none !important; }
   body { background: white; }
@@ -171,7 +171,7 @@ table { width: 100%; border-collapse: collapse; }
       ${paiementHTML}
     </div>
     <div class="montant-lettres">Arrêtée la présente facture à la somme de : ${htmlEscape(montantEnLettresFCFA(data.montantTTC))}.</div>
-    ${data.notes ? `<div class="notes"><strong style="color:#334155">Notes</strong><p style="margin-top:6px;white-space:pre-wrap">${htmlEscape(data.notes)}</p></div>` : ""}
+    ${data.notes ? `<div class="notes"><strong style="color:#354253">Notes</strong><p style="margin-top:6px;white-space:pre-wrap">${htmlEscape(data.notes)}</p></div>` : ""}
     <div class="sig-row">
       <div class="sig-box">
         <div class="sig-space"></div>

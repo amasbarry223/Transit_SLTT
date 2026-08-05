@@ -44,6 +44,7 @@ import { matchesQuery } from "@/lib/search-filter";
 import { shouldShowTva } from "@/lib/export";
 import { filterBySociete } from "@/lib/filter-by-societe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
+import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
@@ -123,10 +124,11 @@ function FactureFormModal({
       const d = dossiers.find((x) => x.id === id);
       if (d) {
         handleClientChange(d.clientId);
+        const coutLabels = resolveDossierCoutLabels(annexes.find((a) => a.id === d.annexeId)?.code);
         setLignes([
           { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: "1", prixUnitaire: String(d.fraisPrestation) },
-          { description: `Droits de douane`, quantite: "1", prixUnitaire: String(d.droitDouane) },
-          { description: `Frais de circuit`, quantite: "1", prixUnitaire: String(d.fraisCircuit) },
+          { description: coutLabels.droitDouane, quantite: "1", prixUnitaire: String(d.droitDouane) },
+          { description: coutLabels.fraisCircuit, quantite: "1", prixUnitaire: String(d.fraisCircuit) },
         ]);
         // Droits de douane et frais de circuit sont des débours refacturés au
         // client, pas des prestations de service — la TVA ne s'applique pas
@@ -405,6 +407,7 @@ export function FacturesScreen() {
   const canWrite = usePermission("factures:write");
   const factures            = useStore((s) => s.factures);
   const dossiers            = useStore((s) => s.dossiers);
+  const annexes             = useStore((s) => s.annexes);
   const removeFacture       = useStore((s) => s.removeFacture);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
   const go                  = useNav((s) => s.go);
@@ -506,11 +509,14 @@ export function FacturesScreen() {
                   // Droits de douane et frais de circuit sont des débours
                   // refacturés, pas des prestations — pas de TVA par défaut.
                   tauxTVA: 0,
-                  lignes: [
-                    { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.fraisPrestation, montantHT: d.fraisPrestation },
-                    { description: `Droits de douane`, quantite: 1, prixUnitaire: d.droitDouane, montantHT: d.droitDouane },
-                    { description: `Frais de circuit`, quantite: 1, prixUnitaire: d.fraisCircuit, montantHT: d.fraisCircuit },
-                  ],
+                  lignes: (() => {
+                    const coutLabels = resolveDossierCoutLabels(annexes.find((a) => a.id === d.annexeId)?.code);
+                    return [
+                      { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.fraisPrestation, montantHT: d.fraisPrestation },
+                      { description: coutLabels.droitDouane, quantite: 1, prixUnitaire: d.droitDouane, montantHT: d.droitDouane },
+                      { description: coutLabels.fraisCircuit, quantite: 1, prixUnitaire: d.fraisCircuit, montantHT: d.fraisCircuit },
+                    ];
+                  })(),
                 };
               })()
             : pendingFacturePrefill

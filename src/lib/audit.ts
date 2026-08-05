@@ -26,7 +26,8 @@ export type AuditModule =
   | "Sociétés"
   | "Annexes"
   | "Archives"
-  | "Documents";
+  | "Documents"
+  | "Système";
 
 export type AuditSourceType = "dossier" | "ecriture" | "facture" | "document";
 

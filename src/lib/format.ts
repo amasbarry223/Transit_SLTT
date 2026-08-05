@@ -1,12 +1,16 @@
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
 /**
  * Format a number as FCFA currency with thousands separators.
  * Example: 1250000 -> "1 250 000 FCFA"
+ * Le libellé (FCFA/XOF — même monnaie, cf. Paramètres > Préférences) suit la
+ * préférence utilisateur ; les montants eux-mêmes ne sont jamais convertis.
  */
 export function formatFCFA(amount: number, withSymbol = true): string {
   const formatted = new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 0,
   }).format(Math.round(amount));
-  return withSymbol ? `${formatted} FCFA` : formatted;
+  return withSymbol ? `${formatted} ${useUiPrefs.getState().currencyLabel}` : formatted;
 }
 
 /** Compact FCFA for KPI cards: 8 750 000 -> "8,75 M" */
@@ -33,30 +37,39 @@ export function parseLocalDate(date: string): Date {
   return date.includes("T") ? new Date(date) : new Date(`${date}T12:00:00`);
 }
 
-/** Format a date as "12/01/2026". Invalid/missing values return "—". */
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Ordre jour/mois/année selon Paramètres > Préférences (JJ/MM/AAAA par défaut). */
+function formatDatePart(d: Date): string {
+  const dd = pad2(d.getDate());
+  const mm = pad2(d.getMonth() + 1);
+  const yyyy = d.getFullYear();
+  switch (useUiPrefs.getState().dateFormat) {
+    case "mdy":
+      return `${mm}/${dd}/${yyyy}`;
+    case "ymd":
+      return `${yyyy}-${mm}-${dd}`;
+    default:
+      return `${dd}/${mm}/${yyyy}`;
+  }
+}
+
+/** Format a date as "12/01/2026" (ou MM/JJ/AAAA, AAAA-MM-JJ selon préférence). Invalid/missing values return "—". */
 export function formatDateShort(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d: Date = typeof date === "string" ? parseLocalDate(date) : date;
   if (isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
+  return formatDatePart(d);
 }
 
-/** Format a date+time as "12/01/2026 14:30". Invalid/missing values return "—". */
+/** Format a date+time as "12/01/2026 14:30" (date selon préférence). Invalid/missing values return "—". */
 export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d: Date = typeof date === "string" ? parseLocalDate(date) : date;
   if (isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
+  return `${formatDatePart(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
 /** Parse a user-typed number string (allow spaces) into a number.

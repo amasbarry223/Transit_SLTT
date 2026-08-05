@@ -5,19 +5,18 @@ import { syncFournisseurStats } from "@/lib/fournisseur-stats";
 import { assertDossierTransition } from "@/lib/dossier-flow";
 import { resolveDossierReferencePrefix } from "@/lib/societe-brand";
 import {
-  DOSSIER_REFERENCE_PAD_LENGTH,
   DOSSIER_STATUT_DEDOUANE,
   DOSSIER_STATUT_EN_COURS,
   DOSSIER_STATUT_SOLDE,
 } from "@/lib/constants";
 import { resteAPayer, type Dossier, type DossierStatut, type PaiementMode } from "@/lib/domain-types";
-import type { DossierInput, SLTTState } from "@/lib/store";
+import type { DossierInput, ImportDossierHistoriqueInput, SLTTState } from "@/lib/store";
 import type { DossierRow } from "@/lib/db-rows";
 import {
   shouldSyncEcritureOnDossierSolde,
   syncEcritureWhenDossierSolde,
 } from "@/lib/store/sync-helpers";
-import { nextScopedSeq, padSeq } from "@/lib/store/reference";
+import { computeDossierReference } from "@/lib/store/reference";
 
 export function mapDossierFromDb(x: DossierRow): Dossier {
   return {
@@ -52,6 +51,7 @@ export function mapDossierFromDb(x: DossierRow): Dossier {
 export interface DossiersSlice {
   dossiers: Dossier[];
   addDossier: (input: DossierInput) => Promise<Dossier>;
+  importDossierHistorique: (input: ImportDossierHistoriqueInput) => Promise<Dossier>;
   updateDossier: (id: string, input: DossierInput) => Promise<void>;
   removeDossier: (id: string) => Promise<void>;
   getDossier: (id: string) => Dossier | undefined;
@@ -65,23 +65,37 @@ export interface DossiersSlice {
   ) => Promise<void>;
 }
 
+/** Génère la prochaine référence dossier (numérotation par annexe si société transit, sinon globale). */
+function resolveDossierReference(
+  get: () => SLTTState,
+  societeId: string,
+  annexeId: string,
+  year: number,
+): { reference: string; useAnnexeNumbering: boolean; seq: number } {
+  const societe = get().societes.find((item) => item.id === societeId);
+  const annexe = get().annexes.find((a) => a.id === annexeId);
+  const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
+  return computeDossierReference(
+    societe,
+    annexe,
+    prefix,
+    get().dossiers.map((d) => d.reference),
+    get().dossierSeq,
+    year,
+  );
+}
+
 export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice> = (set, get) => ({
   dossiers: [],
 
   addDossier: async (input) => {
     const year = new Date().getFullYear();
-    const societe = get().societes.find((item) => item.id === input.societeId);
-    const annexe = get().annexes.find((a) => a.id === input.annexeId);
-    const prefix =
-      societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
-    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
-
-    const seq = useAnnexeNumbering
-      ? nextScopedSeq(get().dossiers.map((d) => d.reference), (r) => r.startsWith(`${prefix}-${annexe!.code}-TR-`))
-      : get().dossierSeq;
-    const reference = useAnnexeNumbering
-      ? `${prefix}-${annexe!.code}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`
-      : `${prefix}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
+    const { reference, useAnnexeNumbering, seq } = resolveDossierReference(
+      get,
+      input.societeId,
+      input.annexeId,
+      year,
+    );
     const statut: DossierStatut = DOSSIER_STATUT_EN_COURS;
 
     const { data, error } = await supabase
@@ -126,6 +140,66 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       "Dossiers",
       "Création",
       `Dossier ${reference} créé — Client ${input.clientNom}`,
+      input.clientId,
+      { sourceType: "dossier", sourceId: newDossier.id },
+    );
+    return newDossier;
+  },
+
+  /**
+   * Backfill d'un dossier déjà connu (import Excel multi-clients) : contrairement
+   * à addDossier, écrit montant_paye et statut directement — ce ne sont pas des
+   * dossiers qui démarrent un flux métier, mais des opérations déjà closes ou
+   * partiellement réglées dont on documente l'historique.
+   */
+  importDossierHistorique: async (input) => {
+    const year = Number(input.date.slice(0, 4)) || new Date().getFullYear();
+    const { reference, useAnnexeNumbering, seq } = resolveDossierReference(
+      get,
+      input.societeId,
+      input.annexeId,
+      year,
+    );
+
+    const { data, error } = await supabase
+      .from("dossiers")
+      .insert({
+        reference,
+        societe_id: input.societeId,
+        annexe_id: input.annexeId,
+        client_id: input.clientId,
+        bl: "",
+        camion: "",
+        nature: input.nature,
+        droit_douane: 0,
+        frais_circuit: 0,
+        frais_prestation: input.montantInvesti,
+        montant_investi: input.montantInvesti,
+        montant_paye: input.montantPaye,
+        statut: input.statut,
+        date: input.date,
+        notes: input.notes,
+      })
+      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .single();
+
+    if (error) throw error;
+    const newDossier = mapDossierFromDb(data);
+    set((s) => {
+      const updatedDossiers = [newDossier, ...s.dossiers];
+      return {
+        dossiers: updatedDossiers,
+        dossierSeq: useAnnexeNumbering ? s.dossierSeq : seq + 1,
+        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+      };
+    });
+    await get().addAuditLog(
+      "Dossiers",
+      "Création",
+      `Dossier ${reference} importé (historique) — Client ${input.clientNom}` +
+        (input.montantPaye > 0
+          ? ` — ${input.montantPaye.toLocaleString("fr-FR")} FCFA déjà réglés`
+          : ""),
       input.clientId,
       { sourceType: "dossier", sourceId: newDossier.id },
     );

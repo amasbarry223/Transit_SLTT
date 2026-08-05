@@ -39,7 +39,7 @@ import { StatutsDonutCard } from "@/components/sltt/dashboard/statuts-donut-card
 import { AlertesCard } from "@/components/sltt/dashboard/alertes-card";
 import { useDashboardMetrics } from "@/components/sltt/dashboard/use-dashboard-metrics";
 
-const SLTT_GRID = "#E2E8F0";
+const SLTT_GRID = "#D2DBE9";
 
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
@@ -52,10 +52,10 @@ export function DashboardScreen() {
   // `dark:` de Tailwind n'ont aucune prise dessus, il faut donc calculer les
   // couleurs de grille/axes/curseur en JS selon le thème actif.
   const isDark = theme === "dark";
-  const gridColor = isDark ? "#1E293B" : SLTT_GRID;
-  const tickColor = isDark ? "#94A3B8" : "#64748B";
-  const barCursorFill = isDark ? "#1E293B" : "#EFF6FF";
-  const lineCursorStroke = isDark ? "#334155" : "#CBD5E1";
+  const gridColor = isDark ? "#27283F" : SLTT_GRID;
+  const tickColor = isDark ? "#92A3BA" : "#6B7280";
+  const barCursorFill = isDark ? "#27283F" : "#F1F8FD";
+  const lineCursorStroke = isDark ? "#354253" : "#CDD4DF";
   const dossiers = useStore((s) => s.dossiers);
   const factures = useStore((s) => s.factures);
   const stock = useStore((s) => s.stock);

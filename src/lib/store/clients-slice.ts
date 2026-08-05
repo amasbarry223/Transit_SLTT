@@ -14,6 +14,8 @@ export function mapClientFromDb(x: ClientRow): Client {
     adresse: x.adresse,
     annexeId: x.annexe_id,
     annexeNom: x.annexes?.nom,
+    societeId: x.societe_id,
+    societeNom: x.societes?.nom,
     nbDossiers: 0,
     totalDu: 0,
     totalPaye: 0,
@@ -42,8 +44,9 @@ export const createClientsSlice: StateCreator<SLTTState, [], [], ClientsSlice> =
         email: input.email,
         adresse: input.adresse,
         annexe_id: input.annexeId,
+        societe_id: input.societeId,
       })
-      .select("*, annexes(nom)")
+      .select("*, annexes(nom), societes(nom)")
       .single();
 
     if (error) throw error;
@@ -66,6 +69,7 @@ export const createClientsSlice: StateCreator<SLTTState, [], [], ClientsSlice> =
         email: input.email,
         adresse: input.adresse,
         annexe_id: input.annexeId,
+        societe_id: input.societeId,
       })
       .eq("id", id);
     if (error) throw error;

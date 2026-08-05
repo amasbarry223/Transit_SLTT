@@ -5,7 +5,7 @@ import type { BonSortie, BonSortieCaisse, BonSortieCaisseInput, StockItem } from
 import type { BonInput, SLTTState } from "@/lib/store";
 import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
 
-import { nextAnnexeYearlyReference, nextScopedSeq, nextYearlyReference } from "@/lib/store/reference";
+import { computeAnnexeScopedReference } from "@/lib/store/reference";
 
 export function mapBonFromDb(x: BonSortieRow): BonSortie {
   return {
@@ -78,14 +78,13 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   addBon: async (input) => {
     const societe = get().societes.find((s) => s.id === input.societeId);
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
-    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
-
-    const seq = useAnnexeNumbering
-      ? nextScopedSeq(get().bons.map((b) => b.reference), (r) => r.startsWith(`${annexe!.code}-BS-`))
-      : get().bonSeq;
-    const numero = useAnnexeNumbering
-      ? nextAnnexeYearlyReference(annexe!.code, "BS", seq)
-      : nextYearlyReference("BS", seq);
+    const { reference: numero, useAnnexeNumbering, seq } = computeAnnexeScopedReference(
+      societe,
+      annexe,
+      "BS",
+      get().bons.map((b) => b.reference),
+      get().bonSeq,
+    );
 
     const { data, error } = await supabase
       .from("bons_sortie")

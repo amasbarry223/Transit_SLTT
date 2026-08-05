@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import { parseClasseurXlsx } from "@/lib/classeur-import";
+import { parseClasseurXlsx, planClasseurImport } from "@/lib/classeur-import";
 import { GRAND_LIVRE_HEADERS } from "@/lib/excel/template";
 
 async function workbookToBuffer(
@@ -56,5 +56,31 @@ describe("parseClasseurXlsx", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].reference).toBe("D-99");
     expect(rows[0].debit).toBe(120);
+  });
+});
+
+describe("planClasseurImport", () => {
+  it("matche une référence malgré une différence d'accent/casse (ÉCR vs ECR)", () => {
+    const plan = planClasseurImport(
+      [
+        {
+          date: "2026-02-01",
+          societeNom: "SLTT",
+          type: "Paiement",
+          reference: "ECR-ABCDEF01",
+          libelle: "Paiement",
+          debit: 0,
+          credit: 500,
+          statut: "Payé",
+          rowNumber: 2,
+        },
+      ],
+      [{ type: "Paiement", sourceId: "ecriture-1", reference: "ÉCR-ABCDEF01" }],
+    );
+
+    expect(plan.unmatched).toHaveLength(0);
+    expect(plan.updates).toEqual([
+      { sourceType: "Paiement", sourceId: "ecriture-1", debit: 0, credit: 500, libelle: "Paiement" },
+    ]);
   });
 });

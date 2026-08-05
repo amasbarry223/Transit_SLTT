@@ -1,5 +1,5 @@
-import { AppRoot } from "@/components/sltt/app-root";
+import { RouteSync } from "@/components/sltt/route-sync";
 
 export default function Home() {
-  return <AppRoot />;
+  return <RouteSync view="dashboard" />;
 }

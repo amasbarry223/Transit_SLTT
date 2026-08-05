@@ -87,7 +87,7 @@ export function BonsScreen() {
     montant: number;
   }) {
     const motifColors: Record<string, string> = {
-      Vente: "background:#dbeafe;color:#1e3a8a",
+      Vente: "background:#dfeefa;color:#155a93",
       Livraison: "background:#e0e7ff;color:#3730a3",
       Transfert: "background:#fef3c7;color:#92400e",
     };
@@ -107,10 +107,10 @@ export function BonsScreen() {
       </table>
       <div style="margin-top:64px;display:flex;justify-content:space-between">
         <div>
-          <div style="border-top:1px solid #94a3b8;width:200px;padding-top:6px;font-size:11px;color:#64748b">Signature du responsable</div>
+          <div style="border-top:1px solid #92a3ba;width:200px;padding-top:6px;font-size:11px;color:#6b7280">Signature du responsable</div>
         </div>
         <div>
-          <div style="border-top:1px solid #94a3b8;width:200px;padding-top:6px;font-size:11px;color:#64748b;text-align:right">Cachet ${htmlEscape(bon.societeNom)}</div>
+          <div style="border-top:1px solid #92a3ba;width:200px;padding-top:6px;font-size:11px;color:#6b7280;text-align:right">Cachet ${htmlEscape(bon.societeNom)}</div>
         </div>
       </div>
     `;

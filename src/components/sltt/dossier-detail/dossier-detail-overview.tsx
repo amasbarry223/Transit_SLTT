@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import type { Dossier } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
+import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import {
   TRANSITION_META,
   type TransitionType,
@@ -52,6 +53,7 @@ export function DossierDetailOverview({
   echeanceImminente,
   joursRestants,
   onTransition,
+  annexeCode,
 }: {
   dossier: Dossier;
   ecart: number;
@@ -62,8 +64,11 @@ export function DossierDetailOverview({
   echeanceImminente: boolean;
   joursRestants: number | null;
   onTransition: () => void;
+  /** Code annexe (ML/CI) — détermine les intitulés des rubriques de coûts. */
+  annexeCode?: string | null;
 }) {
   const [amountsOpen, setAmountsOpen] = useState(false);
+  const coutLabels = resolveDossierCoutLabels(annexeCode);
 
   return (
     <div className="space-y-6">
@@ -149,9 +154,9 @@ export function DossierDetailOverview({
         </button>
         {amountsOpen && (
           <div className="border-t border-border px-5 pb-5 pt-2">
-            <AmountRow label="Droit de douane" value={dossier.droitDouane} />
-            <AmountRow label="Frais de circuit" value={dossier.fraisCircuit} />
-            <AmountRow label="Frais de prestation" value={dossier.fraisPrestation} />
+            <AmountRow label={coutLabels.droitDouane} value={dossier.droitDouane} />
+            <AmountRow label={coutLabels.fraisCircuit} value={dossier.fraisCircuit} />
+            <AmountRow label={coutLabels.fraisPrestation} value={dossier.fraisPrestation} />
             <Separator className="my-2" />
             <AmountRow label="Montant investi" value={dossier.montantInvesti} />
             <AmountRow label="Montant payé" value={dossier.montantPaye} tone="emerald" />

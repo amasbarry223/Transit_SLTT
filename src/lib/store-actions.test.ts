@@ -86,6 +86,7 @@ const baseClient: Client = {
   email: "",
   adresse: "",
   annexeId: "33333333-3333-3333-3333-333333333333",
+  societeId: "22222222-2222-2222-2222-222222222222",
   nbDossiers: 1,
   totalDu: 1000,
   totalPaye: 0,

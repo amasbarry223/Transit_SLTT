@@ -7,7 +7,7 @@ import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
 import { resolveTransitSociete } from "@/lib/societe-brand";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import type { DevisRow } from "@/lib/db-rows";
-import { nextAnnexeYearlyReference, nextScopedSeq, nextYearlyReference } from "@/lib/store/reference";
+import { computeAnnexeScopedReference } from "@/lib/store/reference";
 
 function currentUserAnnexeIds(get: () => SLTTState): string[] {
   const userId = useSession.getState().currentUserId;
@@ -57,14 +57,13 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     const annexeId = requireActiveAnnexeId(currentUserAnnexeIds(get));
     const societe = get().societes.find((s) => s.id === input.societeId);
     const annexe = get().annexes.find((a) => a.id === annexeId);
-    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
-
-    const seq = useAnnexeNumbering
-      ? nextScopedSeq(get().devis.map((d) => d.reference), (r) => r.startsWith(`${annexe!.code}-DEVIS-`))
-      : get().devisSeq;
-    const reference = useAnnexeNumbering
-      ? nextAnnexeYearlyReference(annexe!.code, "DEVIS", seq)
-      : nextYearlyReference("DEVIS", seq);
+    const { reference, useAnnexeNumbering, seq } = computeAnnexeScopedReference(
+      societe,
+      annexe,
+      "DEVIS",
+      get().devis.map((d) => d.reference),
+      get().devisSeq,
+    );
 
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
 

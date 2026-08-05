@@ -79,15 +79,15 @@ export function printStockInventory(
         r.seuil > 0
           ? Math.min(100, Math.round((r.quantite / Math.max(r.seuil, 1)) * 100))
           : 100;
-      const barColor = faible ? "#dc2626" : fillPct >= 150 ? "#059669" : "#2563eb";
+      const barColor = faible ? "#dc2626" : fillPct >= 150 ? "#16853f" : "#2f91e1";
       const statutBg = faible ? "#fef2f2" : "#ecfdf5";
       const statutFg = faible ? "#991b1b" : "#065f46";
       const rowBg = faible ? "#fffbeb" : i % 2 === 0 ? "#ffffff" : "#f8fafc";
       const clientLine = r.clientNom
-        ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${htmlEscape(r.clientNom)}</div>`
+        ? `<div style="font-size:10px;color:#6b7280;margin-top:2px">${htmlEscape(r.clientNom)}</div>`
         : "";
       const societeLine = r.societeNom
-        ? `<div style="font-size:10px;color:#94a3b8;margin-top:1px">${htmlEscape(r.societeNom)}</div>`
+        ? `<div style="font-size:10px;color:#92a3ba;margin-top:1px">${htmlEscape(r.societeNom)}</div>`
         : "";
 
       return `
@@ -134,7 +134,7 @@ export function printStockInventory(
 body {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #e8edf5;
-  color: #0f172a;
+  color: #1f2937;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -146,9 +146,9 @@ body {
   border: 1px solid #dbe3f0;
 }
 
-.no-print { text-align: center; padding: 14px 20px; background: #0f172a; }
+.no-print { text-align: center; padding: 14px 20px; background: #1f2937; }
 .btn-print {
-  background: #f8fafc; color: #0f172a; border: none;
+  background: #f8fafc; color: #1f2937; border: none;
   padding: 11px 28px; border-radius: 8px; font-size: 13px; font-weight: 700;
   cursor: pointer; letter-spacing: .02em;
 }
@@ -164,14 +164,14 @@ body {
 .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .brand-logo { width: 96px; height: 96px; object-fit: contain; flex-shrink: 0; }
 .brand-name {
-  font-size: 15px; font-weight: 800; color: #0f172a;
+  font-size: 15px; font-weight: 800; color: #1f2937;
   letter-spacing: -.2px; line-height: 1.25; text-transform: uppercase;
 }
-.brand-sub { font-size: 10px; color: #64748b; line-height: 1.65; margin-top: 4px; }
+.brand-sub { font-size: 10px; color: #6b7280; line-height: 1.65; margin-top: 4px; }
 .doc-meta { text-align: right; flex-shrink: 0; }
 .doc-type {
   font-size: 9.5px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .14em; color: #64748b; margin-bottom: 6px;
+  letter-spacing: .14em; color: #6b7280; margin-bottom: 6px;
 }
 .doc-title {
   font-size: 26px; font-weight: 800; color: #0b3a82;
@@ -180,16 +180,16 @@ body {
 .doc-ref {
   margin-top: 8px; display: inline-block;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px; font-weight: 600; color: #1e3a8a;
-  background: #eff6ff; border: 1px solid #bfdbfe;
+  font-size: 11px; font-weight: 600; color: #155a93;
+  background: #f1f8fd; border: 1px solid #c6e1f7;
   padding: 4px 10px; border-radius: 6px;
 }
-.doc-date { font-size: 11px; color: #64748b; margin-top: 6px; }
+.doc-date { font-size: 11px; color: #6b7280; margin-top: 6px; }
 .scope-chip {
   display: inline-block; margin-top: 8px;
   padding: 3px 10px; border-radius: 9999px;
   font-size: 10.5px; font-weight: 700;
-  background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;
+  background: #f3f5f7; color: #354253; border: 1px solid #d2dbe9;
 }
 
 .hero {
@@ -198,23 +198,23 @@ body {
 }
 .hero-title {
   font-size: 13px; font-weight: 800; letter-spacing: .08em;
-  text-transform: uppercase; color: #0f172a;
+  text-transform: uppercase; color: #1f2937;
 }
-.hero-sub { font-size: 12px; color: #64748b; margin-top: 4px; max-width: 520px; line-height: 1.5; }
+.hero-sub { font-size: 12px; color: #6b7280; margin-top: 4px; max-width: 520px; line-height: 1.5; }
 
 .kpi-band {
   display: grid; grid-template-columns: repeat(5, 1fr);
   gap: 10px; padding: 14px 36px 20px;
 }
 .kpi {
-  border: 1px solid #e2e8f0; border-radius: 10px;
+  border: 1px solid #d2dbe9; border-radius: 10px;
   padding: 12px 14px; background: #f8fafc;
 }
 .kpi.alert { background: #fff7ed; border-color: #fed7aa; }
 .kpi.ok { background: #f0fdf4; border-color: #bbf7d0; }
 .kpi-lbl {
   font-size: 9px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .1em; color: #94a3b8; margin-bottom: 6px;
+  letter-spacing: .1em; color: #92a3ba; margin-bottom: 6px;
 }
 .kpi-val {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -222,39 +222,39 @@ body {
 }
 .kpi.alert .kpi-val { color: #c2410c; }
 .kpi.ok .kpi-val { color: #047857; }
-.kpi-sub { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+.kpi-sub { font-size: 10px; color: #92a3ba; margin-top: 4px; }
 
 .tbl-outer { padding: 4px 36px 8px; }
-.tbl-wrap { border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; }
+.tbl-wrap { border: 1px solid #cdd4df; border-radius: 10px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; }
 .tbl-head { background: #0b3a82; }
 .tbl-head th {
-  color: #e2e8f0; padding: 10px 12px; font-size: 9px; font-weight: 700;
+  color: #d2dbe9; padding: 10px 12px; font-size: 9px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .07em; text-align: left;
-  border-bottom: 1px solid #1e3a8a;
+  border-bottom: 1px solid #155a93;
 }
 .tbl-head th.num { text-align: right; }
 .td-idx {
   padding: 9px 10px; border-bottom: 1px solid #eef2f7;
-  color: #94a3b8; font-size: 10px; width: 28px; vertical-align: middle;
+  color: #92a3ba; font-size: 10px; width: 28px; vertical-align: middle;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 .td-march { padding: 9px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; min-width: 180px; }
-.march-name { font-size: 12.5px; font-weight: 700; color: #0f172a; line-height: 1.3; }
+.march-name { font-size: 12.5px; font-weight: 700; color: #1f2937; line-height: 1.3; }
 .td-num {
   padding: 9px 12px; border-bottom: 1px solid #eef2f7; text-align: right;
   font-variant-numeric: tabular-nums; vertical-align: middle;
   font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px;
 }
 .td-qte { min-width: 78px; }
-.qte-val { font-weight: 700; color: #0f172a; }
+.qte-val { font-weight: 700; color: #1f2937; }
 .qte-bar {
-  margin-top: 5px; height: 4px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;
+  margin-top: 5px; height: 4px; background: #d2dbe9; border-radius: 9999px; overflow: hidden;
 }
 .qte-bar > span { display: block; height: 100%; border-radius: 9999px; }
 .td-unit, .td-text {
   padding: 9px 12px; border-bottom: 1px solid #eef2f7;
-  font-size: 11.5px; color: #475569; vertical-align: middle;
+  font-size: 11.5px; color: #45556b; vertical-align: middle;
 }
 .td-statut { padding: 9px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; }
 .badge {
@@ -263,7 +263,7 @@ table { width: 100%; border-collapse: collapse; }
 }
 .paid { color: #047857; font-weight: 600; }
 .due { color: #b45309; font-weight: 600; }
-.muted { color: #94a3b8; }
+.muted { color: #92a3ba; }
 
 .tbl-foot td {
   background: #0b3a82; color: #fff; padding: 11px 12px;
@@ -289,20 +289,20 @@ table { width: 100%; border-collapse: collapse; }
 .sig-block { text-align: center; }
 .sig-label {
   font-size: 10.5px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .08em; color: #475569; margin-bottom: 52px;
+  letter-spacing: .08em; color: #45556b; margin-bottom: 52px;
 }
 .sig-line {
-  border-top: 1px solid #94a3b8; padding-top: 8px;
-  font-size: 11px; color: #64748b;
+  border-top: 1px solid #92a3ba; padding-top: 8px;
+  font-size: 11px; color: #6b7280;
 }
 
 .footer {
   margin-top: 8px; padding: 14px 36px;
-  background: #0f172a; color: #94a3b8;
+  background: #1f2937; color: #92a3ba;
   display: flex; justify-content: space-between; align-items: center; gap: 16px;
 }
 .footer-note { font-size: 10px; line-height: 1.55; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #e2e8f0; letter-spacing: .04em; }
+.footer-brand { font-size: 11px; font-weight: 800; color: #d2dbe9; letter-spacing: .04em; }
 
 @media print {
   @page { size: A4 landscape; margin: 10mm; }
@@ -397,7 +397,7 @@ table { width: 100%; border-collapse: collapse; }
         <tbody>
           ${
             rowsHTML ||
-            `<tr><td colspan="10" style="padding:28px;text-align:center;color:#94a3b8">Aucun article à inventorier</td></tr>`
+            `<tr><td colspan="10" style="padding:28px;text-align:center;color:#92a3ba">Aucun article à inventorier</td></tr>`
           }
         </tbody>
         <tfoot>

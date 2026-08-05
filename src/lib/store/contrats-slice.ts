@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { syncContratStats } from "@/lib/contrat-stats";
+import { dataUrlToBlob } from "@/lib/documents/storage";
 import type {
   Contrat,
   ContratInput,
@@ -238,8 +239,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
 
     let justificatifPath: string | undefined;
     if (input.justificatifDataUrl && input.justificatifNom) {
-      const res = await fetch(input.justificatifDataUrl);
-      const blob = await res.blob();
+      const blob = await dataUrlToBlob(input.justificatifDataUrl);
       const safeName = input.justificatifNom.replace(/[^\w.\-]+/g, "_");
       justificatifPath = `${input.contratId}/depenses/${Date.now()}-${safeName}`;
       const { error: uploadError } = await supabase.storage

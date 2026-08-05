@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { LEGACY_TRANSIT_SOCIETE_ID, resolveTransitSociete } from "@/lib/societe-brand";
+import {
+  LEGACY_TRANSIT_SOCIETE_ID,
+  resolveTransitSociete,
+  resolveDossierCoutLabels,
+} from "@/lib/societe-brand";
 import type { Societe } from "@/lib/domain-types";
 
 function societe(overrides: Partial<Societe> & { id: string }): Societe {
@@ -33,5 +37,21 @@ describe("resolveTransitSociete", () => {
     const a = societe({ id: "a" });
     const b = societe({ id: "b" });
     expect(resolveTransitSociete([a, b])).toBeUndefined();
+  });
+});
+
+describe("resolveDossierCoutLabels", () => {
+  it("utilise le triptyque Mali par défaut (sans code annexe ou code ML)", () => {
+    expect(resolveDossierCoutLabels().droitDouane).toBe("Droit de douane");
+    expect(resolveDossierCoutLabels(null).fraisCircuit).toBe("Frais de circuit global");
+    expect(resolveDossierCoutLabels("ML").droitDouane).toBe("Droit de douane");
+  });
+
+  it("remplace les rubriques par le modèle transit portuaire pour l'annexe CI", () => {
+    const labels = resolveDossierCoutLabels("CI");
+    expect(labels.droitDouane).toBe("Frais transit port");
+    expect(labels.fraisCircuit).toBe("Dépenses");
+    // La prestation SLTT reste la même quelle que soit l'annexe.
+    expect(labels.fraisPrestation).toBe("Frais de prestation");
   });
 });

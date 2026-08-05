@@ -8,7 +8,7 @@ import type { Facture, FactureLigne, FactureStatut } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import type { FactureInput, SLTTState } from "@/lib/store";
 import type { FactureRow } from "@/lib/db-rows";
-import { nextAnnexeYearlyReference, nextScopedSeq, nextYearlyReference } from "@/lib/store/reference";
+import { computeAnnexeScopedReference } from "@/lib/store/reference";
 
 export function mapFactureFromDb(x: FactureRow): Facture {
   return {
@@ -62,14 +62,13 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   addFacture: async (input) => {
     const societe = input.societeId ? get().societes.find((s) => s.id === input.societeId) : undefined;
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
-    const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
-
-    const seq = useAnnexeNumbering
-      ? nextScopedSeq(get().factures.map((f) => f.numero), (r) => r.startsWith(`${annexe!.code}-FACT-`))
-      : get().factureSeq;
-    const numero = useAnnexeNumbering
-      ? nextAnnexeYearlyReference(annexe!.code, "FACT", seq)
-      : nextYearlyReference("FACT", seq);
+    const { reference: numero, useAnnexeNumbering, seq } = computeAnnexeScopedReference(
+      societe,
+      annexe,
+      "FACT",
+      get().factures.map((f) => f.numero),
+      get().factureSeq,
+    );
 
     const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
     const TVA = Math.round(HT * (input.tauxTVA / 100));

@@ -1,3 +1,5 @@
+import { DOSSIER_REFERENCE_PAD_LENGTH } from "@/lib/constants";
+
 /** Padding numérique pour les suffixes de référence (ex. 0001). */
 export function padSeq(n: number, len = 4): string {
   return String(n).padStart(len, "0");
@@ -54,4 +56,57 @@ export function nextScopedSeq(
     .filter((n): n is number => n !== null)
     .reduce((acc, n) => Math.max(acc, n), 0);
   return max + 1;
+}
+
+/**
+ * Référence "CODE-PREFIX-YYYY-NNNN" (société transit avec annexe) ou
+ * "PREFIX-YYYY-NNNN" (globale) — logique commune aux bons de sortie,
+ * factures et devis (numérotation par annexe si société transit, sinon
+ * compteur global partagé). Même principe que `computeDossierReference` :
+ * une seule implémentation, réutilisée aussi bien pour la génération réelle
+ * que pour tout aperçu affiché avant sauvegarde, pour qu'ils ne divergent
+ * jamais.
+ */
+export function computeAnnexeScopedReference(
+  societe: { isTransit?: boolean } | undefined,
+  annexe: { code: string } | undefined,
+  prefix: string,
+  existingRefs: Array<string | null | undefined>,
+  globalSeq: number,
+  year = new Date().getFullYear(),
+): { reference: string; useAnnexeNumbering: boolean; seq: number } {
+  const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+  const seq = useAnnexeNumbering
+    ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${annexe!.code}-${prefix}-`))
+    : globalSeq;
+  const reference = useAnnexeNumbering
+    ? nextAnnexeYearlyReference(annexe!.code, prefix, seq, 4, year)
+    : nextYearlyReference(prefix, seq, 4, year);
+  return { reference, useAnnexeNumbering, seq };
+}
+
+/**
+ * Référence dossier (`{société}-TR-YYYY-NNNN`, ou `{société}-{ML|CI}-TR-YYYY-NNNN`
+ * pour une société transit avec annexe — §5.2 cahier des charges). Logique
+ * unique partagée entre la génération réelle (`addDossier`) et l'aperçu
+ * affiché dans le formulaire de création : les deux doivent utiliser
+ * exactement le même calcul pour ne jamais diverger (l'aperçu doit montrer
+ * la référence qui sera vraiment attribuée à l'enregistrement).
+ */
+export function computeDossierReference(
+  societe: { isTransit?: boolean } | undefined,
+  annexe: { code: string } | undefined,
+  prefix: string,
+  existingRefs: Array<string | null | undefined>,
+  dossierSeq: number,
+  year = new Date().getFullYear(),
+): { reference: string; useAnnexeNumbering: boolean; seq: number } {
+  const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+  const seq = useAnnexeNumbering
+    ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${prefix}-${annexe!.code}-TR-`))
+    : dossierSeq;
+  const reference = useAnnexeNumbering
+    ? `${prefix}-${annexe!.code}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`
+    : `${prefix}-TR-${year}-${padSeq(seq, DOSSIER_REFERENCE_PAD_LENGTH)}`;
+  return { reference, useAnnexeNumbering, seq };
 }

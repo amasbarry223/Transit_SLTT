@@ -50,15 +50,15 @@ export function printClasseur(
 
   const rowsHTML = rows.map((r, i) => `
     <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#475569;white-space:nowrap">${fmtDate(r.date)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:11.5px;color:#475569">${htmlEscape(r.societeNom)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:11.5px;color:#475569">${htmlEscape(r.type)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#0f172a;white-space:nowrap">${htmlEscape(r.reference)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#475569">${htmlEscape(r.libelle)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#0f172a">${r.debit > 0 ? fmtFCFA(r.debit) : "—"}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#15803d">${r.credit > 0 ? fmtFCFA(r.credit) : "—"}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:${r.soldeCumule > 0 ? "#b45309" : "#15803d"}">${fmtFCFA(r.soldeCumule)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:11.5px;color:#475569">${htmlEscape(r.statut)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;font-size:12px;color:#45556b;white-space:nowrap">${fmtDate(r.date)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;font-size:11.5px;color:#45556b">${htmlEscape(r.societeNom)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;font-size:11.5px;color:#45556b">${htmlEscape(r.type)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;font-size:12px;font-weight:600;color:#1f2937;white-space:nowrap">${htmlEscape(r.reference)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;font-size:12px;color:#45556b">${htmlEscape(r.libelle)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#1f2937">${r.debit > 0 ? fmtFCFA(r.debit) : "—"}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#126a32">${r.credit > 0 ? fmtFCFA(r.credit) : "—"}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:${r.soldeCumule > 0 ? "#b45309" : "#126a32"}">${fmtFCFA(r.soldeCumule)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f3f5f7;font-size:11.5px;color:#45556b">${htmlEscape(r.statut)}</td>
     </tr>`).join("");
 
   const parSocieteHTML =
@@ -67,7 +67,7 @@ export function printClasseur(
           ${totals.parSociete
             .map(
               (p) =>
-                `<div class="societe-total"><span class="societe-total-lbl">${htmlEscape(p.societeNom)}</span><span class="societe-total-val" style="color:${p.soldeNet > 0 ? "#b45309" : "#15803d"}">${fmtFCFA(p.soldeNet)}</span></div>`,
+                `<div class="societe-total"><span class="societe-total-lbl">${htmlEscape(p.societeNom)}</span><span class="societe-total-val" style="color:${p.soldeNet > 0 ? "#b45309" : "#126a32"}">${fmtFCFA(p.soldeNet)}</span></div>`,
             )
             .join("")}
         </div>`
@@ -84,40 +84,40 @@ export function printClasseur(
 <title>Classeur — ${htmlEscape(clientNom)}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
-.wrap { max-width: 1040px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid #1e40af; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
+.wrap { max-width: 1040px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid #404089; }
 .brand { display: flex; align-items: flex-start; gap: 14px; }
 .brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
-.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
-.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
-.doc-title { font-size: 26px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1.1; }
-.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
-.doc-filter { display: inline-block; margin-top: 7px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
-.kpi-band { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-.kpi { flex: 1; padding: 16px 20px; border-right: 1px solid #e2e8f0; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
+.doc-title { font-size: 26px; font-weight: 800; color: #404089; letter-spacing: -1px; line-height: 1.1; }
+.doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
+.doc-filter { display: inline-block; margin-top: 7px; background: #f1f8fd; color: #404089; border: 1px solid #c6e1f7; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
+.kpi-band { display: flex; background: #f8fafc; border-bottom: 1px solid #d2dbe9; }
+.kpi { flex: 1; padding: 16px 20px; border-right: 1px solid #d2dbe9; }
 .kpi:last-child { border-right: none; }
-.kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 5px; }
-.kpi-val { font-size: 20px; font-weight: 800; color: #1e40af; line-height: 1; }
+.kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 5px; }
+.kpi-val { font-size: 20px; font-weight: 800; color: #404089; line-height: 1; }
 .tbl-outer { padding: 24px 44px 32px; }
-.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; }
-.tbl-head { background: #1e3a8a; }
+.tbl-head { background: #155a93; }
 .tbl-head th { color: #fff; padding: 10px 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .tbl-head th:nth-child(6), .tbl-head th:nth-child(7), .tbl-head th:nth-child(8) { text-align: right; }
 .societe-totals { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 14px 44px 0; }
 .societe-total { display: flex; align-items: baseline; gap: 8px; font-size: 12px; }
-.societe-total-lbl { font-weight: 700; color: #475569; }
+.societe-total-lbl { font-weight: 700; color: #45556b; }
 .societe-total-val { font-weight: 800; font-variant-numeric: tabular-nums; }
-.tbl-foot td { background: #1e3a8a; color: #fff; padding: 12px; font-weight: 700; font-size: 12px; }
+.tbl-foot td { background: #155a93; color: #fff; padding: 12px; font-weight: 700; font-size: 12px; }
 .tbl-foot .amt { text-align: right; font-variant-numeric: tabular-nums; color: #fde68a; font-size: 13px; }
-.footer { padding: 14px 44px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-.footer-note { font-size: 10px; color: #94a3b8; line-height: 1.65; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #1e40af; }
-.no-print { text-align: center; padding: 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
-.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.footer { padding: 14px 44px; background: #f8fafc; border-top: 1px solid #d2dbe9; display: flex; justify-content: space-between; align-items: center; }
+.footer-note { font-size: 10px; color: #92a3ba; line-height: 1.65; }
+.footer-brand { font-size: 11px; font-weight: 800; color: #404089; }
+.no-print { text-align: center; padding: 16px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
+.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 @media print { .no-print { display: none !important; } body { background: white; } .wrap { box-shadow: none; } }
 </style>
 </head>
@@ -143,8 +143,8 @@ table { width: 100%; border-collapse: collapse; }
   </div>
   <div class="kpi-band">
     <div class="kpi"><div class="kpi-lbl">Total débit</div><div class="kpi-val">${fmtFCFA(totals.totalDebit)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Total crédit</div><div class="kpi-val" style="color:#15803d">${fmtFCFA(totals.totalCredit)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Solde net</div><div class="kpi-val" style="color:${totals.soldeNet > 0 ? "#b45309" : "#15803d"}">${fmtFCFA(totals.soldeNet)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total crédit</div><div class="kpi-val" style="color:#126a32">${fmtFCFA(totals.totalCredit)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Solde net</div><div class="kpi-val" style="color:${totals.soldeNet > 0 ? "#b45309" : "#126a32"}">${fmtFCFA(totals.soldeNet)}</div></div>
   </div>
   <div class="tbl-outer">
     <div class="tbl-wrap">
@@ -162,7 +162,7 @@ table { width: 100%; border-collapse: collapse; }
             <th style="text-align:left">Statut</th>
           </tr>
         </thead>
-        <tbody>${rowsHTML || `<tr><td colspan="9" style="padding:16px;text-align:center;color:#94a3b8">Aucun mouvement</td></tr>`}</tbody>
+        <tbody>${rowsHTML || `<tr><td colspan="9" style="padding:16px;text-align:center;color:#92a3ba">Aucun mouvement</td></tr>`}</tbody>
         <tfoot class="tbl-foot">
           <tr>
             <td colspan="5">Total &mdash; ${rows.length} mouvement${rows.length !== 1 ? "s" : ""}</td>

@@ -28,6 +28,8 @@ export interface Client {
   adresse: string;
   annexeId: string;
   annexeNom?: string;
+  societeId: string;
+  societeNom?: string;
   nbDossiers: number;
   totalDu: number;
   totalPaye: number;

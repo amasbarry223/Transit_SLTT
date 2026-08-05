@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { DossierFichier, SubDossier } from "@/lib/domain-types";
 import type { FichierInput, SLTTState, SubDossierInput } from "@/lib/store";
 import type { DossierFichierRow, SubDossierRow } from "@/lib/db-rows";
+import { dataUrlToBlob } from "@/lib/documents/storage";
 
 export function mapSubDossierFromDb(x: SubDossierRow): SubDossier {
   return {
@@ -101,8 +102,7 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
     let storedUrl = input.dataUrl;
     if (input.dataUrl.startsWith("data:")) {
       try {
-        const res = await fetch(input.dataUrl);
-        const blob = await res.blob();
+        const blob = await dataUrlToBlob(input.dataUrl);
         const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
         const path = `${input.dossierId}/${Date.now()}-${safeName}`;
         const { error: uploadError } = await supabase.storage

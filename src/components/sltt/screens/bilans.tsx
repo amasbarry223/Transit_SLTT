@@ -221,9 +221,9 @@ export function BilansScreen() {
   const isDark = theme === "dark";
   // Recharts SVG props n'héritent pas des classes `dark:` (voir dashboard.tsx) —
   // ces couleurs doivent être calculées explicitement selon le thème.
-  const gridColor = isDark ? "#1E293B" : "#E2E8F0";
-  const tickColor = isDark ? "#94A3B8" : "#64748B";
-  const barCursorFill = isDark ? "rgba(30,41,59,0.5)" : "rgba(241,245,249,0.6)";
+  const gridColor = isDark ? "#27283F" : "#D2DBE9";
+  const tickColor = isDark ? "#92A3BA" : "#6B7280";
+  const barCursorFill = isDark ? "rgba(39,40,63,0.5)" : "rgba(243,245,247,0.6)";
 
   const allEcritures = useStore((s) => s.ecritures);
   const clients = useStore((s) => s.clients);

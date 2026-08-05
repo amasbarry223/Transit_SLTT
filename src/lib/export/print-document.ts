@@ -177,7 +177,7 @@ export function buildPrintDocument({ title, body, brand }: BuildPrintDocumentOpt
       </div>`}
     </div>
     <div class="doc-meta">
-      <div style="font-weight:600;color:#0f172a">${title}</div>
+      <div style="font-weight:600;color:#1f2937">${title}</div>
       <div>Édité le ${editedOn}</div>
     </div>
   </div>

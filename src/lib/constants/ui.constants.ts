@@ -5,11 +5,11 @@ export const TOAST_COPY_RESET_MS = 2_500;
 
 /** Palette chart SLTT — alignée sur globals.css (--primary, --chart-2). */
 export const CHART_COLORS = {
-  blue: "#1E40AF",
-  emerald: "#059669",
+  blue: "#404089",
+  emerald: "#16853F",
   amber: "#D97706",
   red: "#DC2626",
-  indigo: "#2563EB",
+  indigo: "#4F46E5",
 } as const;
 
 /** Alias historique dashboard (réexport pour compatibilité). */

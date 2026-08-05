@@ -99,10 +99,10 @@ export const DOSSIER_STATUT_DOT: Record<DossierStatut, string> = {
 };
 
 export const DOSSIER_STATUT_HEX: Record<DossierStatut, string> = {
-  "En cours": "#1E40AF",
+  "En cours": "#404089",
   Dédouané: "#4F46E5",
   Livré: "#D97706",
-  Soldé: "#059669",
+  Soldé: "#16853F",
 };
 
 export function DossierStatutBadge({ statut }: { statut: DossierStatut }) {

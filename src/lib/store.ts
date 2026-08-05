@@ -68,6 +68,7 @@ import { createAuditSlice, type AuditSlice } from "@/lib/store/audit-slice";
 import { createEcrituresSlice, type EcrituresSlice } from "@/lib/store/ecritures-slice";
 import { createFichiersSlice, type FichiersSlice } from "@/lib/store/fichiers-slice";
 import { createDataFetchSlice, type DataFetchSlice } from "@/lib/store/data-fetch-slice";
+import { createBackupSlice, type BackupSlice } from "@/lib/store/backup-slice";
 import {
   type AuditAction,
   type AuditEntry,
@@ -220,6 +221,26 @@ export interface DossierInput {
   notes?: string;
 }
 
+/**
+ * Backfill d'un dossier historique (import Excel multi-clients) — contrairement à
+ * DossierInput, permet de fixer montantPaye/statut dès la création : ces dossiers
+ * documentent des opérations déjà soldées ou partiellement payées, pas un flux
+ * métier en cours qui doit passer par transitionDossier() étape par étape.
+ */
+export interface ImportDossierHistoriqueInput {
+  societeId: string;
+  annexeId: string;
+  clientId: string;
+  clientNom: string;
+  nature: string;
+  date: string;
+  montantInvesti: number;
+  montantPaye: number;
+  /** "En cours" (reste dû) ou "Soldé" (entièrement payé) — les seuls statuts déductibles d'un grand livre. */
+  statut: Extract<DossierStatut, "En cours" | "Soldé">;
+  notes?: string;
+}
+
 export interface ClientInput {
   nom: string;
   type: Client["type"];
@@ -227,6 +248,7 @@ export interface ClientInput {
   email: string;
   adresse: string;
   annexeId: string;
+  societeId: string;
 }
 
 export interface BonInput {
@@ -291,7 +313,7 @@ export interface UserInput {
   annexeIds: string[];
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, FichiersSlice, DataFetchSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, FichiersSlice, DataFetchSlice, BackupSlice {
   dossierSeq: number;
   auditSeq: number;
   ecritureSeq: number;
@@ -350,6 +372,7 @@ export const useStore = create<SLTTState>()(
       ...createEcrituresSlice(set, get, api),
       ...createFichiersSlice(set, get, api),
       ...createDataFetchSlice(set, get, api),
+      ...createBackupSlice(set, get, api),
       ...INITIAL_SEQUENCES,
     }),
     {

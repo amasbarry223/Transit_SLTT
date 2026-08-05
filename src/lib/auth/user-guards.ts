@@ -3,7 +3,6 @@ import { normalizePermissions } from "@/lib/permissions";
 
 /** Bloque toute action d'un non-admin sur un compte qui est déjà Administrateur. */
 export async function assertCanTouchTarget(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: { from: (table: string) => any },
   targetId: string,
   isAdmin: boolean,

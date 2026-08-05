@@ -30,7 +30,7 @@ export function EncaissementsChart({
           <p className="text-xs text-slate-500 dark:text-slate-400">6 derniers mois</p>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-          <span className="inline-block size-2.5 rounded-sm bg-[#1E40AF]" />
+          <span className="inline-block size-2.5 rounded-sm bg-[#404089]" />
           Encaissé (FCFA)
         </div>
       </div>

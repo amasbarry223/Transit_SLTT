@@ -168,7 +168,7 @@ export function DevisScreen() {
     toast({ title: "Export Excel généré", description: `${filtered.length} devis exportés.` });
   }
   function handleExportPDF() {
-    const rowsHTML = filtered.map((d) => `<tr><td>${htmlEscape(d.reference)}</td><td>${htmlEscape(d.clientNom)}</td><td>${htmlEscape(d.societeNom)}</td><td>${htmlEscape(d.nature)}</td><td class="num">${formatFCFA(d.total, false)}</td><td>${formatDateShort(d.dateValidite)}</td><td><span class="badge" style="background:#dbeafe;color:#1e3a8a">${htmlEscape(d.statut)}</span></td></tr>`).join("");
+    const rowsHTML = filtered.map((d) => `<tr><td>${htmlEscape(d.reference)}</td><td>${htmlEscape(d.clientNom)}</td><td>${htmlEscape(d.societeNom)}</td><td>${htmlEscape(d.nature)}</td><td class="num">${formatFCFA(d.total, false)}</td><td>${formatDateShort(d.dateValidite)}</td><td><span class="badge" style="background:#dfeefa;color:#155a93">${htmlEscape(d.statut)}</span></td></tr>`).join("");
     printHTML("Liste des devis", `<h1>Liste des devis</h1><div class="subtitle">${filtered.length} devis · ${formatDateShort(new Date())}</div><table><thead><tr><th>Référence</th><th>Client</th><th>Société</th><th>Nature</th><th class="num">Total estimé</th><th>Validité</th><th>Statut</th></tr></thead><tbody>${rowsHTML}</tbody></table>`, resolvePrintHTMLBrand(societes));
   }
 

@@ -419,12 +419,13 @@ export function ClientFicheScreen() {
       email: client.email ?? "",
       adresse: client.adresse ?? "",
       annexeId: client.annexeId,
+      societeId: client.societeId,
     });
     setEditOpen(true);
   }
 
   function handleSaveEdit() {
-    if (!client || !editValues.nom.trim()) return;
+    if (!client || !editValues.nom.trim() || !editValues.societeId) return;
     const input: ClientInput = {
       nom: editValues.nom.trim(),
       type: editValues.type,
@@ -432,6 +433,7 @@ export function ClientFicheScreen() {
       email: editValues.email.trim(),
       adresse: editValues.adresse.trim(),
       annexeId: editValues.annexeId,
+      societeId: editValues.societeId,
     };
     updateClient(client.id, input);
     setEditOpen(false);
@@ -665,13 +667,14 @@ export function ClientFicheScreen() {
             values={editValues}
             onChange={(patch) => setEditValues((v) => ({ ...v, ...patch }))}
             annexes={annexes}
+            societes={societes}
             idPrefix="cl-edit"
           />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSaveEdit} disabled={!editValues.nom.trim()}>
+            <Button onClick={handleSaveEdit} disabled={!editValues.nom.trim() || !editValues.societeId}>
               <Pencil className="size-4" />
               Enregistrer
             </Button>

@@ -14,7 +14,7 @@ import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
+import { resolvePrintHTMLBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { InfoCallout } from "@/components/sltt/info-callout";
 import { useToast } from "@/hooks/use-toast";
@@ -77,11 +77,13 @@ function DossierFormInner() {
     existing,
     isEdit,
     dossierSeq,
+    dossiers,
     societes,
     annexes,
     defaultSocieteId: selectedSocieteId ?? undefined,
     defaultAnnexeId: activeAnnexeId ?? undefined,
   });
+  const annexeCode = annexes.find((a) => a.id === form.annexeId)?.code;
 
   useUnsavedChangesWarning(form.isDirty);
 
@@ -168,6 +170,7 @@ function DossierFormInner() {
 
   function handlePdf() {
     const clientNom = clients.find((c) => c.id === form.clientId)?.nom ?? "—";
+    const coutLabels = resolveDossierCoutLabels(annexeCode);
     printHTML(
       `Dossier ${form.reference}`,
       `
@@ -182,24 +185,24 @@ function DossierFormInner() {
           <tr><th>Date</th><td>${form.date ? formatDateShort(form.date) : "—"}</td></tr>
         </tbody>
       </table>
-      <h2 style="margin-top:24px;font-size:14px;color:#1e40af">Montants (FCFA)</h2>
+      <h2 style="margin-top:24px;font-size:14px;color:#404089">Montants (FCFA)</h2>
       <table>
         <tbody>
-          <tr><th style="width:35%">Droit de douane</th><td class="num">${formatFCFA(form.dN, false)}</td></tr>
-          <tr><th>Frais de circuit global</th><td class="num">${formatFCFA(form.fN, false)}</td></tr>
-          <tr><th>Frais de prestation</th><td class="num">${formatFCFA(form.pN, false)}</td></tr>
+          <tr><th style="width:35%">${htmlEscape(coutLabels.droitDouane)}</th><td class="num">${formatFCFA(form.dN, false)}</td></tr>
+          <tr><th>${htmlEscape(coutLabels.fraisCircuit)}</th><td class="num">${formatFCFA(form.fN, false)}</td></tr>
+          <tr><th>${htmlEscape(coutLabels.fraisPrestation)}</th><td class="num">${formatFCFA(form.pN, false)}</td></tr>
           <tr><th>Montant investi</th><td class="num">${formatFCFA(form.iN, false)}</td></tr>
           <tr><th>Montant payé</th><td class="num">${formatFCFA(form.montantPaye, false)}</td></tr>
           <tr><th>Reste à payer</th><td class="num">${formatFCFA(form.reste, false)}</td></tr>
           <tr class="total-row">
             <th>Marge calculée</th>
-            <td class="num" style="color:${form.ecart >= 0 ? "#059669" : "#dc2626"}">
+            <td class="num" style="color:${form.ecart >= 0 ? "#16853f" : "#dc2626"}">
               ${form.ecart >= 0 ? "+" : ""}${form.ecart.toLocaleString("fr-FR")}
             </td>
           </tr>
         </tbody>
       </table>
-      ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
+      ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#404089">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
     `,
       resolvePrintHTMLBrand(societes),
     );
@@ -316,6 +319,7 @@ function DossierFormInner() {
               onFraisPrestationChange={form.setFraisPrestation}
               montantInvesti={form.iN}
               ecart={form.ecart}
+              annexeCode={annexeCode}
             />
           )}
 

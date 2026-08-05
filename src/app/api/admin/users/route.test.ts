@@ -8,7 +8,7 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       nom: "Manager",
       email: "manager@sltt.ml",
       role: "Comptable",
-      permissions: ["utilisateurs:manage"] as string[],
+      permissions: ["utilisateurs:manage", "dossiers:read"] as string[],
       actif: true,
     },
     createUserResult: {
@@ -22,7 +22,7 @@ const { fakeState, resetFake } = vi.hoisted(() => {
     fakeState,
     resetFake: () => {
       fakeState.callerProfile.role = "Comptable";
-      fakeState.callerProfile.permissions = ["utilisateurs:manage"];
+      fakeState.callerProfile.permissions = ["utilisateurs:manage", "dossiers:read"];
       fakeState.callerProfile.actif = true;
       fakeState.createUserResult = { data: { user: { id: "new-user-1" } }, error: null };
       fakeState.profileUpdateError = null;
@@ -144,6 +144,14 @@ describe("POST /api/admin/users", () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.user.id).toBe("new-user-1");
+  });
+
+  it("rejette une permission que le manager délégué ne possède pas lui-même", async () => {
+    fakeState.callerProfile.permissions = ["utilisateurs:manage"];
+    const res = await POST(req(validBody));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error).toContain("hors périmètre délégué");
   });
 
   it("renvoie l'erreur si la création du compte auth échoue", async () => {

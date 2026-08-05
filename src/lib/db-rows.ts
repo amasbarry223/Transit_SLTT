@@ -47,6 +47,8 @@ export interface ClientRow {
   adresse: string;
   annexe_id: string;
   annexes?: NamedRelation;
+  societe_id: string;
+  societes?: NamedRelation;
 }
 
 export interface FournisseurRow {

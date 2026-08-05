@@ -40,7 +40,7 @@ export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: So
   const today    = fmtDate(new Date().toISOString().slice(0, 10));
 
   const lignes = [
-    { label: "Droits de douane",        montant: data.droitDouane,    color: "#2563eb", bg: "#dbeafe" },
+    { label: "Droits de douane",        montant: data.droitDouane,    color: "#2f91e1", bg: "#dfeefa" },
     { label: "Frais de circuit global",  montant: data.fraisCircuit,   color: "#7c3aed", bg: "#ede9fe" },
     { label: "Frais de prestation transit", montant: data.fraisPrestation, color: "#ea580c", bg: "#ffedd5" },
   ];
@@ -49,17 +49,17 @@ export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: So
     const pct = data.montantInvesti > 0 ? Math.round((l.montant / data.montantInvesti) * 100) : 0;
     return `
     <tr>
-      <td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;vertical-align:top">
+      <td style="padding:12px 16px;border-bottom:1px solid #f3f5f7;vertical-align:top">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${l.color};flex-shrink:0"></span>
-          <span style="font-size:13px;color:#0f172a">${l.label}</span>
+          <span style="font-size:13px;color:#1f2937">${l.label}</span>
         </div>
-        <div style="height:5px;background:#f1f5f9;border-radius:9999px;overflow:hidden">
+        <div style="height:5px;background:#f3f5f7;border-radius:9999px;overflow:hidden">
           <div style="height:100%;width:${pct}%;background:${l.color};border-radius:9999px"></div>
         </div>
       </td>
-      <td style="padding:12px 10px;border-bottom:1px solid #f1f5f9;text-align:center;font-size:11px;color:#94a3b8;width:50px;vertical-align:middle">${pct}%</td>
-      <td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;width:165px;vertical-align:middle">${fmtFCFA(l.montant)}</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #f3f5f7;text-align:center;font-size:11px;color:#92a3ba;width:50px;vertical-align:middle">${pct}%</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;width:165px;vertical-align:middle">${fmtFCFA(l.montant)}</td>
     </tr>`;
   }).join("");
 
@@ -74,22 +74,22 @@ export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: So
 <title>Facture ${invoiceNum}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
-.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
+.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
 
 /* Header */
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 40px 28px; border-bottom: 3px solid #1e40af; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 40px 28px; border-bottom: 3px solid #404089; }
 .brand { display: flex; align-items: flex-start; gap: 14px; }
 .brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
-.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
-.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
-.doc-ref { font-size: 28px; font-weight: 800; color: #1e40af; letter-spacing: -1.5px; line-height: 1; }
-.doc-dossier { font-size: 12px; color: #64748b; margin-top: 6px; }
-.doc-date { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
+.doc-ref { font-size: 28px; font-weight: 800; color: #404089; letter-spacing: -1.5px; line-height: 1; }
+.doc-dossier { font-size: 12px; color: #6b7280; margin-top: 6px; }
+.doc-date { font-size: 11px; color: #92a3ba; margin-top: 4px; }
 .statut-badge { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
-.statut-solde { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.statut-solde { background: #dcfce7; color: #126a32; border: 1px solid #86efac; }
 .statut-partiel { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
 
 /* Body */
@@ -97,50 +97,50 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 /* Parties */
 .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
-.party { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; }
-.party-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 7px; }
-.party-name { font-size: 14px; font-weight: 700; color: #0f172a; }
-.party-detail { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.7; }
+.party { background: #f8fafc; border: 1px solid #d2dbe9; border-radius: 10px; padding: 16px 18px; }
+.party-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 7px; }
+.party-name { font-size: 14px; font-weight: 700; color: #1f2937; }
+.party-detail { font-size: 12px; color: #6b7280; margin-top: 4px; line-height: 1.7; }
 
 /* Dossier ref block */
-.ref-block { display: flex; gap: 20px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 13px 18px; margin-bottom: 22px; flex-wrap: wrap; }
+.ref-block { display: flex; gap: 20px; background: #f1f8fd; border: 1px solid #c6e1f7; border-radius: 10px; padding: 13px 18px; margin-bottom: 22px; flex-wrap: wrap; }
 .ref-item { }
 .ref-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #93c5fd; margin-bottom: 3px; }
-.ref-val { font-size: 13px; font-weight: 700; color: #1e40af; }
+.ref-val { font-size: 13px; font-weight: 700; color: #404089; }
 
 /* Table prestations */
-.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
+.tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
 table { width: 100%; border-collapse: collapse; }
-.tbl-head { background: #1e3a8a; }
+.tbl-head { background: #155a93; }
 .tbl-head th { color: #fff; padding: 10px 16px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 
 /* Totaux */
-.totals { margin-top: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
-.total-line { display: flex; justify-content: space-between; align-items: center; padding: 11px 18px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+.totals { margin-top: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #d2dbe9; }
+.total-line { display: flex; justify-content: space-between; align-items: center; padding: 11px 18px; border-bottom: 1px solid #f3f5f7; font-size: 13px; }
 .total-line:last-child { border-bottom: none; }
-.total-main { background: #1e3a8a; color: #fff; }
+.total-main { background: #155a93; color: #fff; }
 .total-main .lbl { font-weight: 700; font-size: 14px; }
 .total-main .amt { font-size: 22px; font-weight: 800; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
-.total-paye .lbl { color: #15803d; font-weight: 600; }
-.total-paye .amt { color: #15803d; font-weight: 700; font-variant-numeric: tabular-nums; }
-.total-reste .lbl { font-weight: 600; color: #0f172a; }
+.total-paye .lbl { color: #126a32; font-weight: 600; }
+.total-paye .amt { color: #126a32; font-weight: 700; font-variant-numeric: tabular-nums; }
+.total-reste .lbl { font-weight: 600; color: #1f2937; }
 .total-reste .amt-due { color: #dc2626; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
-.total-reste .amt-ok  { color: #15803d; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
+.total-reste .amt-ok  { color: #126a32; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
 
 /* Signatures */
 .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px; }
-.sig-box { border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 16px; min-height: 88px; }
-.sig-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; }
-.sig-note { font-size: 10.5px; color: #cbd5e1; margin-top: 24px; }
+.sig-box { border: 1.5px dashed #cdd4df; border-radius: 10px; padding: 16px; min-height: 88px; }
+.sig-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; }
+.sig-note { font-size: 10.5px; color: #cdd4df; margin-top: 24px; }
 
 /* Footer */
-.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-.footer-note { font-size: 10px; color: #94a3b8; line-height: 1.65; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #1e40af; }
+.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; display: flex; justify-content: space-between; align-items: center; }
+.footer-note { font-size: 10px; color: #92a3ba; line-height: 1.65; }
+.footer-brand { font-size: 11px; font-weight: 800; color: #404089; }
 
 /* Bouton impression */
-.no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
-.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
+.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 @media print {
   .no-print { display: none !important; }

@@ -2,7 +2,8 @@
 
 import { Building2, User } from "lucide-react";
 import type { ClientInput } from "@/lib/store";
-import type { Annexe } from "@/lib/domain-types";
+import type { Annexe, Societe } from "@/lib/domain-types";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,16 +21,32 @@ interface ClientFormFieldsProps {
   values: ClientInput;
   onChange: (patch: Partial<ClientInput>) => void;
   annexes: Annexe[];
+  societes: Societe[];
   idPrefix?: string;
   autoFocusNom?: boolean;
 }
 
-export function emptyClientForm(defaultAnnexeId = ""): ClientInput {
-  return { nom: "", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: defaultAnnexeId };
+export function emptyClientForm(defaultAnnexeId = "", defaultSocieteId = ""): ClientInput {
+  return {
+    nom: "",
+    type: "Entreprise",
+    telephone: "",
+    email: "",
+    adresse: "",
+    annexeId: defaultAnnexeId,
+    societeId: defaultSocieteId,
+  };
 }
 
 /** Champs partagés du formulaire client — utilisés par l'annuaire et par la fiche client. */
-export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", autoFocusNom }: ClientFormFieldsProps) {
+export function ClientFormFields({ values, onChange, annexes, societes, idPrefix = "cl", autoFocusNom }: ClientFormFieldsProps) {
+  // L'annexe (implantation Mali/CI) n'a de sens que pour la société transit
+  // (SLTT), qui seule opère sur les deux implantations. Les autres sociétés
+  // (ex. Top Doumani) n'ont pas ce découpage : masquer le champ plutôt que
+  // de faire choisir une annexe qui ne s'applique pas à cette société.
+  const transitSocieteId = resolveTransitSociete(societes)?.id;
+  const showAnnexe = annexes.length > 1 && values.societeId === transitSocieteId;
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -46,7 +63,27 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
         />
       </div>
 
-      {annexes.length > 1 && (
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-societe`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Société <span className="text-red-500">*</span>
+        </Label>
+        <Select value={values.societeId || undefined} onValueChange={(v) => onChange({ societeId: v })}>
+          <SelectTrigger id={`${idPrefix}-societe`} className="h-10 w-full" aria-label="Sélectionner une société">
+            <SelectValue placeholder="Sélectionner une société" />
+          </SelectTrigger>
+          <SelectContent>
+            {societes
+              .filter((s) => s.actif || s.id === values.societeId)
+              .map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.nom}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {showAnnexe && (
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-annexe`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Annexe <span className="text-red-500">*</span>

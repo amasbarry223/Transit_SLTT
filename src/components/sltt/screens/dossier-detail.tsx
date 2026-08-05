@@ -15,7 +15,7 @@ import {
   isEcheanceImminente,
 } from "@/lib/echeance-utils";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
+import { resolvePrintHTMLBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
@@ -64,6 +64,7 @@ export function DossierDetailScreen() {
 
   const dossier = useStore((state) => state.dossiers.find((item) => item.id === selectedId));
   const societes = useStore((state) => state.societes);
+  const annexes = useStore((state) => state.annexes);
   const addSubDossier = useStore((state) => state.addSubDossier);
   const updateSubDossier = useStore((state) => state.updateSubDossier);
   const deleteSubDossier = useStore((state) => state.deleteSubDossier);
@@ -170,6 +171,7 @@ export function DossierDetailScreen() {
   }
 
   const currentDossier = dossier;
+  const annexeCode = annexes.find((a) => a.id === currentDossier.annexeId)?.code;
 
   const nextTransition = getNextTransition(currentDossier.statut);
   const ecart = calculerEcart(currentDossier);
@@ -273,6 +275,7 @@ export function DossierDetailScreen() {
   function handlePdfExport() {
     const positiveMarginColor = CHART_COLORS.emerald;
     const negativeMarginColor = CHART_COLORS.red;
+    const coutLabels = resolveDossierCoutLabels(annexeCode);
     printHTML(
       `Dossier ${currentDossier.reference}`,
       `
@@ -287,12 +290,12 @@ export function DossierDetailScreen() {
           <tr><th>Date</th><td>${currentDossier.date ? formatDateShort(currentDossier.date) : "—"}</td></tr>
         </tbody>
       </table>
-      <h2 style="margin-top:24px;font-size:14px;color:#1e40af">Montants (FCFA)</h2>
+      <h2 style="margin-top:24px;font-size:14px;color:#404089">Montants (FCFA)</h2>
       <table>
         <tbody>
-          <tr><th style="width:35%">Droit de douane</th><td class="num">${formatFCFA(currentDossier.droitDouane, false)}</td></tr>
-          <tr><th>Frais de circuit global</th><td class="num">${formatFCFA(currentDossier.fraisCircuit, false)}</td></tr>
-          <tr><th>Frais de prestation</th><td class="num">${formatFCFA(currentDossier.fraisPrestation, false)}</td></tr>
+          <tr><th style="width:35%">${htmlEscape(coutLabels.droitDouane)}</th><td class="num">${formatFCFA(currentDossier.droitDouane, false)}</td></tr>
+          <tr><th>${htmlEscape(coutLabels.fraisCircuit)}</th><td class="num">${formatFCFA(currentDossier.fraisCircuit, false)}</td></tr>
+          <tr><th>${htmlEscape(coutLabels.fraisPrestation)}</th><td class="num">${formatFCFA(currentDossier.fraisPrestation, false)}</td></tr>
           <tr><th>Montant investi</th><td class="num">${formatFCFA(currentDossier.montantInvesti, false)}</td></tr>
           <tr><th>Montant payé</th><td class="num">${formatFCFA(currentDossier.montantPaye, false)}</td></tr>
           <tr><th>Reste à payer</th><td class="num">${formatFCFA(reste, false)}</td></tr>
@@ -304,8 +307,8 @@ export function DossierDetailScreen() {
           </tr>
         </tbody>
       </table>
-      ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Notes</h2><p style="font-size:13px;color:#475569;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
-      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:#1e40af">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#475569">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
+      ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#404089">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
+      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:#404089">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#45556b">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
     `,
       resolvePrintHTMLBrand(societes),
     );
@@ -392,6 +395,7 @@ export function DossierDetailScreen() {
             echeanceDepassee={echeanceDepassee}
             echeanceImminente={echeanceImminente}
             joursRestants={joursRestants}
+            annexeCode={annexeCode}
             onTransition={() => setTransitionOpen(true)}
           />
         </TabsContent>

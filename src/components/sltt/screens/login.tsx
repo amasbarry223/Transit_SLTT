@@ -30,8 +30,8 @@ function LoginBackground() {
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url('/bg.jpg')` }}
       />
-      <div className="absolute inset-0 bg-[#0c1a4a]/50" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(15,23,42,0.45)_100%)]" />
+      <div className="absolute inset-0 bg-[#212150]/50" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(22,27,35,0.45)_100%)]" />
     </div>
   );
 }

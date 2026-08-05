@@ -126,7 +126,7 @@ export function buildStatutDonutData(
   return Object.entries(counts).map(([name, value]) => ({
     name,
     value,
-    color: DOSSIER_STATUT_HEX[name as keyof typeof DOSSIER_STATUT_HEX] ?? "#94A3B8",
+    color: DOSSIER_STATUT_HEX[name as keyof typeof DOSSIER_STATUT_HEX] ?? "#92A3BA",
   }));
 }
 

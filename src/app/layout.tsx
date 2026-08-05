@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeEffect } from "@/components/sltt/theme-effect";
+import { AppRoot } from "@/components/sltt/app-root";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,6 +37,16 @@ export const metadata: Metadata = {
   },
 };
 
+// Teinte la barre d'adresse/chrome des navigateurs mobiles (Android Chrome,
+// iOS Safari) sur les couleurs de fond de l'app — ajustée dynamiquement au
+// vrai thème appliqué (pas seulement à la préférence système) par ThemeEffect.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e1b" },
+  ],
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -51,6 +62,7 @@ export default async function RootLayout({
       >
         <ThemeEffect nonce={nonce} />
         {children}
+        <AppRoot />
         <Toaster />
       </body>
     </html>

@@ -8,6 +8,7 @@ import {
   Building2,
   ScrollText,
   Globe,
+  DatabaseBackup,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCanManageUsers, usePermission } from "@/hooks/use-permission";
@@ -20,8 +21,9 @@ import { SocietesTab } from "@/components/sltt/parametres/societe-tab";
 import { SecurityTab } from "@/components/sltt/parametres/security-tab";
 import { AuditTab } from "@/components/sltt/parametres/audit-tab";
 import { PreferencesTab } from "@/components/sltt/parametres/preferences-tab";
+import { BackupTab } from "@/components/sltt/parametres/backup-tab";
 
-type ParamTab = "users" | "societes" | "profile" | "security" | "audit" | "preferences";
+type ParamTab = "users" | "societes" | "profile" | "security" | "audit" | "preferences" | "backup";
 
 const tabs: {
   key: ParamTab;
@@ -35,6 +37,7 @@ const tabs: {
   { key: "security", label: "Sécurité", shortLabel: "Sécurité", icon: Shield },
   { key: "audit", label: "Audit & traçabilité", shortLabel: "Audit", icon: ScrollText },
   { key: "preferences", label: "Préférences", shortLabel: "Préférences", icon: Globe },
+  { key: "backup", label: "Sauvegarde", shortLabel: "Sauvegarde", icon: DatabaseBackup },
 ];
 
 function UsersTabBadge() {
@@ -50,19 +53,25 @@ export function ParametresScreen() {
   const canManageUsers = useCanManageUsers();
   const canViewAudit = usePermission("audit:read");
   const canManageSocietes = usePermission("parametres:write");
+  // Non répertorié dans PERMISSION_MODULES : has_permission() ne le satisfait
+  // que pour role === "Administrateur", jamais délégable via l'éditeur de
+  // permissions (cf. migration 20260821_admin_backup_restore.sql).
+  const canBackup = usePermission("systeme:backup");
   const [active, setActive] = useState<ParamTab>("profile");
 
-  const [prevPerms, setPrevPerms] = useState({ canManageUsers, canViewAudit, canManageSocietes });
+  const [prevPerms, setPrevPerms] = useState({ canManageUsers, canViewAudit, canManageSocietes, canBackup });
   if (
     prevPerms.canManageUsers !== canManageUsers ||
     prevPerms.canViewAudit !== canViewAudit ||
-    prevPerms.canManageSocietes !== canManageSocietes
+    prevPerms.canManageSocietes !== canManageSocietes ||
+    prevPerms.canBackup !== canBackup
   ) {
-    setPrevPerms({ canManageUsers, canViewAudit, canManageSocietes });
+    setPrevPerms({ canManageUsers, canViewAudit, canManageSocietes, canBackup });
     setActive((prev) => {
       if (prev === "users" && !canManageUsers) return "profile";
       if (prev === "audit" && !canViewAudit) return "profile";
       if (prev === "societes" && !canManageSocietes) return "profile";
+      if (prev === "backup" && !canBackup) return "profile";
       return prev;
     });
   }
@@ -96,6 +105,7 @@ export function ParametresScreen() {
               if (t.key === "users") return canManageUsers;
               if (t.key === "audit") return canViewAudit;
               if (t.key === "societes") return canManageSocietes;
+              if (t.key === "backup") return canBackup;
               return true;
             }).map((t) => {
               const Icon = t.icon;
@@ -149,6 +159,11 @@ export function ParametresScreen() {
         <TabsContent value="preferences" className="mt-6 focus-visible:outline-none">
           <PreferencesTab />
         </TabsContent>
+        {canBackup && (
+          <TabsContent value="backup" className="mt-6 focus-visible:outline-none">
+            <BackupTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

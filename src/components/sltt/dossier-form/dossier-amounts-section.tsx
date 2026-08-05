@@ -2,6 +2,7 @@
 
 import { Info, Wallet } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
+import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,8 @@ type DossierAmountsSectionProps = {
   onFraisPrestationChange: (value: string) => void;
   montantInvesti: number;
   ecart: number;
+  /** Code annexe (ML/CI) — détermine les intitulés des rubriques de coûts. */
+  annexeCode?: string | null;
 };
 
 export function DossierAmountsSection({
@@ -29,7 +32,9 @@ export function DossierAmountsSection({
   onFraisPrestationChange,
   montantInvesti,
   ecart,
+  annexeCode,
 }: DossierAmountsSectionProps) {
+  const labels = resolveDossierCoutLabels(annexeCode);
   return (
     <Card className="border-border/80 p-5 shadow-sm">
       <SectionTitle
@@ -40,22 +45,22 @@ export function DossierAmountsSection({
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <AmountField
-          label="Droit de douane"
+          label={labels.droitDouane}
           value={droitDouane}
           onChange={onDroitDouaneChange}
-          hint="Taxe versée à la douane pour dédouaner la marchandise."
+          hint={labels.droitDouaneHint}
         />
         <AmountField
-          label="Frais de circuit global"
+          label={labels.fraisCircuit}
           value={fraisCircuit}
           onChange={onFraisCircuitChange}
-          hint="Frais de transit (manutention, transport local, formalités) hors droit de douane."
+          hint={labels.fraisCircuitHint}
         />
         <AmountField
-          label="Frais de prestation"
+          label={labels.fraisPrestation}
           value={fraisPrestation}
           onChange={onFraisPrestationChange}
-          hint="Rémunération de SLTT pour le service de transit — c'est elle qui détermine la marge du dossier."
+          hint={labels.fraisPrestationHint}
         />
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -65,7 +70,7 @@ export function DossierAmountsSection({
             {formatFCFA(montantInvesti)}
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Droit de douane + Frais de circuit + Frais de prestation
+            {labels.droitDouane} + {labels.fraisCircuit} + {labels.fraisPrestation}
           </p>
         </div>
 
@@ -83,7 +88,7 @@ export function DossierAmountsSection({
                 Marge calculée automatiquement
               </div>
               <div className="mt-0.5 text-xs opacity-70">
-                Prestation − (Droit de douane + Frais de circuit)
+                {labels.fraisPrestation} − ({labels.droitDouane} + {labels.fraisCircuit})
               </div>
             </div>
             <div className="whitespace-nowrap text-xl font-bold tabular-nums">

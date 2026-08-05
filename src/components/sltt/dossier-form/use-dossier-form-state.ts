@@ -6,6 +6,7 @@ import { calculerEcart, resteAPayer } from "@/lib/domain-types";
 import { parseAmount } from "@/lib/format";
 import { getNextTransition } from "@/components/sltt/dossier-transition-dialog";
 import { resolveDossierReferencePrefix, resolveTransitSociete } from "@/lib/societe-brand";
+import { computeDossierReference } from "@/lib/store/reference";
 
 export const WIZARD_STEPS = [
   { id: 1, label: "Identité", hint: "Société, annexe, client, BL, camion, nature" },
@@ -29,6 +30,8 @@ type UseDossierFormStateOptions = {
   existing?: Dossier;
   isEdit: boolean;
   dossierSeq: number;
+  /** Dossiers existants — nécessaire pour prévisualiser la même séquence par annexe que `addDossier`. */
+  dossiers: Dossier[];
   societes: Societe[];
   annexes: Annexe[];
   /** Défaut à la création (filtre nav ou société transit). */
@@ -41,6 +44,7 @@ export function useDossierFormState({
   existing,
   isEdit,
   dossierSeq,
+  dossiers,
   societes,
   annexes,
   defaultSocieteId,
@@ -102,11 +106,18 @@ export function useDossierFormState({
   );
 
   const selectedSociete = societes.find((item) => item.id === societeId);
+  const selectedAnnexe = annexes.find((item) => item.id === annexeId);
   const referencePrefix =
     selectedSociete?.nom?.trim() || resolveDossierReferencePrefix(societes);
   const reference =
     existing?.reference ??
-    `${referencePrefix}-TR-${new Date().getFullYear()}-${String(dossierSeq).padStart(4, "0")}`;
+    computeDossierReference(
+      selectedSociete,
+      selectedAnnexe,
+      referencePrefix,
+      dossiers.map((d) => d.reference),
+      dossierSeq,
+    ).reference;
 
   const isDirty = useMemo(() => {
     if (!isEdit) {

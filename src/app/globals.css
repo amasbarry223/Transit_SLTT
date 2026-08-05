@@ -44,93 +44,145 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/*
+ * Palette de marque SLTT — voir docs internes pour les hex sources.
+ * Primary #404089 (indigo profond) / Secondary #ED1C24 (rouge d'action) /
+ * Accent #4FA3E6 (bleu ciel, liens/badges/infos) / Success·Warning·Error
+ * standards (vert/ambre/rouge). Les rampes slate/blue/emerald ci-dessous
+ * (juste avant :root) réaccordent TOUTES les classes Tailwind déjà utilisées
+ * dans l'app (text-slate-500, bg-blue-50, text-emerald-600…) sur cette
+ * identité, sans toucher aux ~150 fichiers qui les utilisent : même courbe
+ * de luminosité que les teintes Tailwind par défaut (donc mêmes contrastes
+ * éprouvés), seule la teinte change. amber/red/indigo restent Tailwind par
+ * défaut : #F59E0B et #DC2626 (Warning/Error de la palette) leur sont déjà
+ * quasi identiques, et indigo reste volontairement distinct du primary pour
+ * préserver son usage de badge « société transit ».
+ */
+@theme {
+  --color-slate-50: #f9fafb;
+  --color-slate-100: #f3f5f7;
+  --color-slate-200: #e4e8ee;
+  --color-slate-300: #cdd4df;
+  --color-slate-400: #92a3ba;
+  --color-slate-500: #5d7392;
+  --color-slate-600: #45556b;
+  --color-slate-700: #354253;
+  --color-slate-800: #232b36;
+  --color-slate-900: #161b23;
+  --color-slate-950: #0a0c0f;
+
+  --color-blue-50: #f1f8fd;
+  --color-blue-100: #dfeefa;
+  --color-blue-200: #c6e1f7;
+  --color-blue-300: #9fccf1;
+  --color-blue-400: #70b3eb;
+  --color-blue-500: #4ca0e5;
+  --color-blue-600: #2f91e1;
+  --color-blue-700: #1f84d6;
+  --color-blue-800: #1a6eb3;
+  --color-blue-900: #155a93;
+  --color-blue-950: #0d3a5e;
+
+  --color-emerald-50: #edfcf3;
+  --color-emerald-100: #d3f8e1;
+  --color-emerald-200: #aaf1c4;
+  --color-emerald-300: #6fe69b;
+  --color-emerald-400: #2cdb6c;
+  --color-emerald-500: #1dac51;
+  --color-emerald-600: #16853f;
+  --color-emerald-700: #126a32;
+  --color-emerald-800: #0f5629;
+  --color-emerald-900: #0c4822;
+  --color-emerald-950: #072713;
+}
+
 :root {
   --radius: 0.75rem;
 
   /* App surfaces */
   --background: #f8fafc;
-  --foreground: #0f172a;
+  --foreground: #1f2937;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1f2937;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #1f2937;
 
-  /* Primary: deep blue #1E40AF */
-  --primary: #1e40af;
+  /* Primary : indigo profond #404089 (hover #32326E) */
+  --primary: #404089;
   --primary-foreground: #ffffff;
 
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #dbeafe;
-  --accent-foreground: #1e3a8a;
+  --secondary: #f3f5f7;
+  --secondary-foreground: #1f2937;
+  --muted: #f3f5f7;
+  --muted-foreground: #6b7280;
+  --accent: #dfeefa;
+  --accent-foreground: #155a93;
 
-  /* Danger red #DC2626 */
-  --destructive: #dc2626;
+  /* Secondary/destructif : rouge d'action #ED1C24 (hover #D81820) */
+  --destructive: #ed1c24;
 
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #1e40af;
+  --border: #d2dbe9;
+  --input: #d2dbe9;
+  --ring: #404089;
 
-  /* Charts: blue / emerald / amber / indigo / red */
-  --chart-1: #1e40af;
-  --chart-2: #059669;
-  --chart-3: #d97706;
-  --chart-4: #4f46e5;
-  --chart-5: #dc2626;
+  /* Charts : primary / success / warning / accent / secondary */
+  --chart-1: #404089;
+  --chart-2: #22c55e;
+  --chart-3: #f59e0b;
+  --chart-4: #4fa3e6;
+  --chart-5: #ed1c24;
 
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #1e40af;
+  --sidebar-foreground: #1f2937;
+  --sidebar-primary: #404089;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eff6ff;
-  --sidebar-accent-foreground: #1e3a8a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #1e40af;
+  --sidebar-accent: #dfeefa;
+  --sidebar-accent-foreground: #155a93;
+  --sidebar-border: #d2dbe9;
+  --sidebar-ring: #404089;
 }
 
-/* Palette sombre — même identité navy que l'écran de login (LoginBackground),
-   pas un gris générique. Primaire/destructive éclaircis d'un cran (500 au
-   lieu de 700) pour rester lisibles sur fond sombre. */
+/* Palette sombre — identité indigo (pas un gris ni un bleu génériques),
+   dérivée de la teinte Primary plutôt que d'un navy neutre. Primaire/
+   destructif éclaircis d'un cran pour rester lisibles sur fond sombre. */
 .dark {
-  --background: #0b1220;
-  --foreground: #e2e8f0;
-  --card: #111a2e;
-  --card-foreground: #e2e8f0;
-  --popover: #111a2e;
-  --popover-foreground: #e2e8f0;
+  --background: #0e0e1b;
+  --foreground: #e7e9ef;
+  --card: #161627;
+  --card-foreground: #e7e9ef;
+  --popover: #161627;
+  --popover-foreground: #e7e9ef;
 
-  --primary: #3b82f6;
+  --primary: #7575c7;
   --primary-foreground: #ffffff;
 
-  --secondary: #1c2740;
-  --secondary-foreground: #e2e8f0;
-  --muted: #1c2740;
-  --muted-foreground: #94a3b8;
-  --accent: #1e3a8a;
-  --accent-foreground: #dbeafe;
+  --secondary: #212131;
+  --secondary-foreground: #e7e9ef;
+  --muted: #212131;
+  --muted-foreground: #a2aab9;
+  --accent: #0d3a5e;
+  --accent-foreground: #c6e1f7;
 
-  --destructive: #f87171;
+  --destructive: #ef6c70;
 
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #3b82f6;
+  --border: #27283f;
+  --input: #27283f;
+  --ring: #7575c7;
 
-  --chart-1: #3b82f6;
-  --chart-2: #10b981;
+  --chart-1: #7575c7;
+  --chart-2: #2cdb6c;
   --chart-3: #f59e0b;
-  --chart-4: #818cf8;
-  --chart-5: #f87171;
+  --chart-4: #70b3eb;
+  --chart-5: #ef6c70;
 
-  --sidebar: #0b1220;
-  --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #3b82f6;
+  --sidebar: #0e0e1b;
+  --sidebar-foreground: #e7e9ef;
+  --sidebar-primary: #7575c7;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #16213a;
-  --sidebar-accent-foreground: #93c5fd;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #3b82f6;
+  --sidebar-accent: #1b2a45;
+  --sidebar-accent-foreground: #9fccf1;
+  --sidebar-border: #27283f;
+  --sidebar-ring: #7575c7;
 }
 
 @layer base {
@@ -160,7 +212,7 @@
 /* Custom slim scrollbar */
 .sltt-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #cdd4df transparent;
 }
 .sltt-scroll::-webkit-scrollbar {
   width: 8px;
@@ -170,21 +222,21 @@
   background: transparent;
 }
 .sltt-scroll::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
+  background-color: #cdd4df;
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 .sltt-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+  background-color: #92a3ba;
   background-clip: content-box;
 }
 .dark .sltt-scroll {
-  scrollbar-color: #334155 transparent;
+  scrollbar-color: #354253 transparent;
 }
 .dark .sltt-scroll::-webkit-scrollbar-thumb {
-  background-color: #334155;
+  background-color: #354253;
 }
 .dark .sltt-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #475569;
+  background-color: #45556b;
 }

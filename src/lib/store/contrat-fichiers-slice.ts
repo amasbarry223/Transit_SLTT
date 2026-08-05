@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { ContratFichier } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { ContratFichierRow } from "@/lib/db-rows";
+import { dataUrlToBlob } from "@/lib/documents/storage";
 
 interface AddContratFichierInput {
   contratId: string;
@@ -36,8 +37,7 @@ export const createContratFichiersSlice: StateCreator<SLTTState, [], [], Contrat
 
   addContratFichier: async (input) => {
     const seq = get().contratFichierSeq;
-    const res = await fetch(input.dataUrl);
-    const blob = await res.blob();
+    const blob = await dataUrlToBlob(input.dataUrl);
     const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
     const path = `${input.contratId}/${Date.now()}-${safeName}`;
 

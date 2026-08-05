@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { usePagination } from "@/hooks/use-pagination";
 import {
   UserPlus,
@@ -24,6 +25,7 @@ import type { ClientType } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
 import { printClients } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/classeur";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
@@ -32,6 +34,7 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ToneBadge } from "@/components/sltt/status-badge";
+import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,10 +85,13 @@ export function ClientsScreen() {
   const addClient = useStore((s) => s.addClient);
   const updateClient = useStore((s) => s.updateClient);
   const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
-  const annexeScopedClients = useMemo(
-    () => filterByAnnexe(clients, selectedAnnexeId),
-    [clients, selectedAnnexeId],
-  );
+  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
+  const scopedClients = useMemo(() => {
+    const bySociete = selectedSocieteId
+      ? clients.filter((c) => c.societeId === selectedSocieteId)
+      : clients;
+    return filterByAnnexe(bySociete, selectedAnnexeId);
+  }, [clients, selectedSocieteId, selectedAnnexeId]);
 
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -95,7 +101,10 @@ export function ClientsScreen() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<ClientInput>(emptyClientForm(activeAnnexeId ?? ""));
+  const defaultSocieteId = selectedSocieteId ?? resolveTransitSociete(societes)?.id ?? "";
+  const [formValues, setFormValues] = useState<ClientInput>(
+    emptyClientForm(activeAnnexeId ?? "", defaultSocieteId),
+  );
 
   const isEdit = editingId !== null;
 
@@ -107,17 +116,17 @@ export function ClientsScreen() {
     let entreprises = 0;
     let particuliers = 0;
     let totalDu = 0;
-    for (const c of annexeScopedClients) {
+    for (const c of scopedClients) {
       if (c.type === "Entreprise") entreprises++;
       else particuliers++;
       totalDu += c.totalDu;
     }
-    return { total: annexeScopedClients.length, entreprises, particuliers, totalDu };
-  }, [annexeScopedClients]);
+    return { total: scopedClients.length, entreprises, particuliers, totalDu };
+  }, [scopedClients]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = annexeScopedClients;
+    let list = scopedClients;
 
     if (typeFilter !== "all") {
       list = list.filter((c) => c.type === typeFilter);
@@ -137,14 +146,14 @@ export function ClientsScreen() {
       if (sortBy === "totalDu") return b.totalDu - a.totalDu;
       return b.nbDossiers - a.nbDossiers;
     });
-  }, [query, typeFilter, sortBy, annexeScopedClients]);
+  }, [query, typeFilter, sortBy, scopedClients]);
 
   const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, pageSize);
 
   const hasActiveFilters = query.trim() !== "" || typeFilter !== "all";
 
   function resetForm() {
-    setFormValues(emptyClientForm(activeAnnexeId ?? ""));
+    setFormValues(emptyClientForm(activeAnnexeId ?? "", defaultSocieteId));
     setEditingId(null);
   }
 
@@ -165,6 +174,7 @@ export function ClientsScreen() {
       email: c.email,
       adresse: c.adresse,
       annexeId: c.annexeId,
+      societeId: c.societeId,
     });
     setDialogOpen(true);
   }
@@ -180,6 +190,14 @@ export function ClientsScreen() {
       });
       return;
     }
+    if (!formValues.societeId) {
+      toast({
+        title: "Champ requis",
+        description: "Veuillez sélectionner la société rattachée au client.",
+        variant: "destructive",
+      });
+      return;
+    }
     const input: ClientInput = {
       nom: trimmedNom,
       type: formValues.type,
@@ -187,6 +205,7 @@ export function ClientsScreen() {
       email: formValues.email.trim(),
       adresse: formValues.adresse.trim(),
       annexeId: formValues.annexeId,
+      societeId: formValues.societeId,
     };
     try {
       if (isEdit && editingId) {
@@ -304,6 +323,8 @@ export function ClientsScreen() {
             />
           </div>
 
+          <SocieteFilterSelect className="h-10 w-full sm:w-52" />
+
           <Select
             value={typeFilter}
             onValueChange={(v) => {
@@ -399,7 +420,10 @@ export function ClientsScreen() {
                       </div>
                       <div className="min-w-0">
                         <p className="truncate font-medium text-slate-900 dark:text-slate-100">{c.nom}</p>
-                        <ToneBadge tone={c.type === "Entreprise" ? "blue" : "slate"}>{c.type}</ToneBadge>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          <ToneBadge tone={c.type === "Entreprise" ? "blue" : "slate"}>{c.type}</ToneBadge>
+                          <SocieteBadge societeNom={c.societeNom} societeId={c.societeId} size="sm" />
+                        </div>
                       </div>
                     </div>
                     <div
@@ -464,6 +488,9 @@ export function ClientsScreen() {
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Client
                     </TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                      Société
+                    </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
                       Coordonnées
                     </TableHead>
@@ -517,6 +544,9 @@ export function ClientsScreen() {
                             </div>
                           </div>
                         </div>
+                      </TableCell>
+                      <TableCell className="hidden px-4 py-3.5 lg:table-cell">
+                        <SocieteBadge societeNom={c.societeNom} societeId={c.societeId} size="sm" />
                       </TableCell>
                       <TableCell className="hidden px-4 py-3.5 md:table-cell">
                         <div className="space-y-1 text-sm">
@@ -635,6 +665,7 @@ export function ClientsScreen() {
               values={formValues}
               onChange={(patch) => setFormValues((v) => ({ ...v, ...patch }))}
               annexes={annexes}
+              societes={societes}
               autoFocusNom
             />
 
@@ -646,7 +677,7 @@ export function ClientsScreen() {
               >
                 Annuler
               </Button>
-              <Button type="submit" disabled={!formValues.nom.trim()}>
+              <Button type="submit" disabled={!formValues.nom.trim() || !formValues.societeId}>
                 {isEdit ? "Enregistrer" : "Créer le client"}
               </Button>
             </DialogFooter>

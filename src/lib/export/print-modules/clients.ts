@@ -46,20 +46,20 @@ export function printClients(
 
   const rowsHTML = rows.map((r, i) => `
     <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle">
+      <td style="padding:11px 14px;border-bottom:1px solid #f3f5f7;vertical-align:middle">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:34px;height:34px;border-radius:50%;background:${r.type === "Entreprise" ? "linear-gradient(135deg,#2563eb,#4f46e5)" : "linear-gradient(135deg,#475569,#1e293b)"};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initiales(r.nom)}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:${r.type === "Entreprise" ? "linear-gradient(135deg,#2f91e1,#4f46e5)" : "linear-gradient(135deg,#45556b,#232b36)"};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initiales(r.nom)}</div>
           <div>
-            <div style="font-weight:600;color:#0f172a;font-size:13px">${htmlEscape(r.nom)}</div>
-            <div style="font-size:10px;color:#94a3b8;margin-top:1px;background:${r.type === "Entreprise" ? "#eff6ff" : "#f8fafc"};color:${r.type === "Entreprise" ? "#1e40af" : "#64748b"};border:1px solid ${r.type === "Entreprise" ? "#bfdbfe" : "#e2e8f0"};display:inline-block;padding:1px 7px;border-radius:9999px;font-weight:600">${r.type}</div>
+            <div style="font-weight:600;color:#1f2937;font-size:13px">${htmlEscape(r.nom)}</div>
+            <div style="font-size:10px;color:#92a3ba;margin-top:1px;background:${r.type === "Entreprise" ? "#f1f8fd" : "#f8fafc"};color:${r.type === "Entreprise" ? "#404089" : "#6b7280"};border:1px solid ${r.type === "Entreprise" ? "#c6e1f7" : "#d2dbe9"};display:inline-block;padding:1px 7px;border-radius:9999px;font-weight:600">${r.type}</div>
           </div>
         </div>
       </td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.telephone ? htmlEscape(r.telephone) : "<span style='color:#cbd5e1'>—</span>"}</td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.email ? htmlEscape(r.email) : "<span style='color:#cbd5e1'>—</span>"}</td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:middle">${r.adresse ? htmlEscape(r.adresse) : "<span style='color:#cbd5e1'>—</span>"}</td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;text-align:center;font-size:13px;font-weight:600;color:#0f172a;vertical-align:middle">${r.nbDossiers}</td>
-      <td style="padding:11px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:${r.totalDu > 0 ? "#b45309" : "#15803d"};vertical-align:middle">${r.totalDu > 0 ? fmtFCFA(r.totalDu) : "Soldé"}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f3f5f7;color:#45556b;font-size:12px;vertical-align:middle">${r.telephone ? htmlEscape(r.telephone) : "<span style='color:#cdd4df'>—</span>"}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f3f5f7;color:#45556b;font-size:12px;vertical-align:middle">${r.email ? htmlEscape(r.email) : "<span style='color:#cdd4df'>—</span>"}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f3f5f7;color:#45556b;font-size:12px;vertical-align:middle">${r.adresse ? htmlEscape(r.adresse) : "<span style='color:#cdd4df'>—</span>"}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f3f5f7;text-align:center;font-size:13px;font-weight:600;color:#1f2937;vertical-align:middle">${r.nbDossiers}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:${r.totalDu > 0 ? "#b45309" : "#126a32"};vertical-align:middle">${r.totalDu > 0 ? fmtFCFA(r.totalDu) : "Soldé"}</td>
     </tr>`).join("");
 
   const win = acquirePrintTarget();
@@ -73,46 +73,46 @@ export function printClients(
 <title>Annuaire clients — SLTT</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
-.wrap { max-width: 1000px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
+.wrap { max-width: 1000px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
 
 /* Header — fond blanc, logo visible à l'impression */
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid #1e40af; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid #404089; }
 .brand { display: flex; align-items: flex-start; gap: 14px; }
 .brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
-.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
-.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
-.doc-title { font-size: 28px; font-weight: 800; color: #1e40af; letter-spacing: -1px; line-height: 1; }
-.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
-.doc-filter { display: inline-block; margin-top: 7px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
+.doc-title { font-size: 28px; font-weight: 800; color: #404089; letter-spacing: -1px; line-height: 1; }
+.doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
+.doc-filter { display: inline-block; margin-top: 7px; background: #f1f8fd; color: #404089; border: 1px solid #c6e1f7; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
 
 /* KPI band */
-.kpi-band { display: flex; gap: 0; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-.kpi { flex: 1; padding: 18px 20px; border-right: 1px solid #e2e8f0; }
+.kpi-band { display: flex; gap: 0; background: #f8fafc; border-bottom: 1px solid #d2dbe9; }
+.kpi { flex: 1; padding: 18px 20px; border-right: 1px solid #d2dbe9; }
 .kpi:last-child { border-right: none; }
-.kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 5px; }
-.kpi-val { font-size: 22px; font-weight: 800; color: #1e40af; line-height: 1; }
-.kpi-sub { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+.kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 5px; }
+.kpi-val { font-size: 22px; font-weight: 800; color: #404089; line-height: 1; }
+.kpi-sub { font-size: 10px; color: #92a3ba; margin-top: 3px; }
 
 /* Table */
 .tbl-outer { padding: 28px 44px 32px; }
-.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; }
-.tbl-head { background: #1e3a8a; }
+.tbl-head { background: #155a93; }
 .tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-.tbl-foot td { background: #1e3a8a; color: #fff; padding: 12px 14px; font-weight: 700; font-size: 13px; }
+.tbl-foot td { background: #155a93; color: #fff; padding: 12px 14px; font-weight: 700; font-size: 13px; }
 .tbl-foot .amt { text-align: right; font-variant-numeric: tabular-nums; color: #fde68a; font-size: 15px; }
 
 /* Footer */
-.footer { padding: 14px 44px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-.footer-note { font-size: 10px; color: #94a3b8; line-height: 1.65; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #1e40af; }
+.footer { padding: 14px 44px; background: #f8fafc; border-top: 1px solid #d2dbe9; display: flex; justify-content: space-between; align-items: center; }
+.footer-note { font-size: 10px; color: #92a3ba; line-height: 1.65; }
+.footer-brand { font-size: 11px; font-weight: 800; color: #404089; }
 
 /* Print button */
-.no-print { text-align: center; padding: 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
-.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.no-print { text-align: center; padding: 16px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
+.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 @media print {
   .no-print { display: none !important; }
@@ -169,7 +169,7 @@ table { width: 100%; border-collapse: collapse; }
     </div>
     <div class="kpi">
       <div class="kpi-lbl">Créances totales</div>
-      <div class="kpi-val" style="font-size:16px;color:${totalCreance > 0 ? "#b45309" : "#15803d"}">${fmtFCFA(totalCreance)}</div>
+      <div class="kpi-val" style="font-size:16px;color:${totalCreance > 0 ? "#b45309" : "#126a32"}">${fmtFCFA(totalCreance)}</div>
       <div class="kpi-sub">reste à encaisser</div>
     </div>
   </div>

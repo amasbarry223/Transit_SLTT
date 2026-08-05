@@ -6,6 +6,7 @@
 import ExcelJS from "exceljs";
 import type { ClasseurType } from "@/lib/classeur";
 import { GRAND_LIVRE_HEADERS, GRAND_LIVRE_SHEET_NAME } from "@/lib/excel/template";
+import { normalizeClasseurRef } from "@/lib/excel/sltt-bridge";
 
 export type ClasseurImportRow = {
   date: string;
@@ -292,12 +293,12 @@ export function planClasseurImport(
   imported: ClasseurImportRow[],
   current: Array<{ type: ClasseurType; sourceId: string; reference: string }>,
 ): ClasseurImportApplyPlan {
-  const byRef = new Map(current.map((e) => [e.reference.toLowerCase(), e]));
+  const byRef = new Map(current.map((e) => [normalizeClasseurRef(e.reference), e]));
   const updates: ClasseurImportApplyPlan["updates"] = [];
   const unmatched: ClasseurImportRow[] = [];
 
   for (const row of imported) {
-    const match = byRef.get(row.reference.toLowerCase());
+    const match = byRef.get(normalizeClasseurRef(row.reference));
     if (!match) {
       unmatched.push(row);
       continue;

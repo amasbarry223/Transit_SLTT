@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { computeAnnexeScopedReference } from "@/lib/store/reference";
 import { BON_MOTIFS } from "./use-bon-filters";
 
 type BonFormDialogProps = {
@@ -55,6 +56,9 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
   const stock = useStore((state) => state.stock);
   const clients = useStore((state) => state.clients);
   const societes = useStore((state) => state.societes);
+  const annexes = useStore((state) => state.annexes);
+  const bons = useStore((state) => state.bons);
+  const bonSeq = useStore((state) => state.bonSeq);
 
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
   const [formClientId, setFormClientId] = useState("");
@@ -173,6 +177,19 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
   }
 
   const selectedSociete = societes.find((societe) => societe.id === formSocieteId);
+  // L'annexe d'un bon est héritée du stock visé (non resélectionnable, cf.
+  // handleValider) — l'aperçu ne peut donc refléter la vraie numérotation
+  // par annexe qu'une fois un stock choisi ; avant ça, `nextReference`
+  // (compteur global générique) reste la meilleure estimation possible.
+  const previewReference = selectedStock
+    ? computeAnnexeScopedReference(
+        selectedSociete,
+        annexes.find((a) => a.id === selectedStock.annexeId),
+        "BS",
+        bons.map((b) => b.reference),
+        bonSeq,
+      ).reference
+    : nextReference;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -184,7 +201,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
               variant="outline"
               className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-slate-500 dark:text-slate-400"
             >
-              {nextReference}
+              {previewReference}
             </Badge>
           </div>
           <DialogDescription>
@@ -314,7 +331,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
 
           <div>
             <BonPreview
-              reference={nextReference}
+              reference={previewReference}
               date={formDate}
               client={selectedClient?.nom}
               marchandise={selectedStock?.marchandise}

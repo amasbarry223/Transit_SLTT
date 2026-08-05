@@ -42,7 +42,7 @@ export function printDevis(data: DevisData, societe?: SocieteBrand | null): void
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
   const items = [
-    { label: "Droits de douane estimés", value: data.droitDouane,    color: "#2563eb", bg: "#dbeafe" },
+    { label: "Droits de douane estimés", value: data.droitDouane,    color: "#2f91e1", bg: "#dfeefa" },
     { label: "Frais de circuit global",  value: data.fraisCircuit,   color: "#7c3aed", bg: "#ede9fe" },
     { label: "Prestation transit",         value: data.fraisPrestation, color: "#ea580c", bg: "#ffedd5" },
   ];
@@ -51,17 +51,17 @@ export function printDevis(data: DevisData, societe?: SocieteBrand | null): void
     const pct = data.total > 0 ? Math.round((r.value / data.total) * 100) : 0;
     return `
     <tr>
-      <td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;vertical-align:top">
+      <td style="padding:12px 16px;border-bottom:1px solid #f3f5f7;vertical-align:top">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0"></span>
-          <span style="font-size:13px;color:#0f172a">${r.label}</span>
+          <span style="font-size:13px;color:#1f2937">${r.label}</span>
         </div>
-        <div style="height:5px;background:#f1f5f9;border-radius:9999px;overflow:hidden">
+        <div style="height:5px;background:#f3f5f7;border-radius:9999px;overflow:hidden">
           <div style="height:100%;width:${pct}%;background:${r.color};border-radius:9999px"></div>
         </div>
       </td>
-      <td style="padding:12px 10px;border-bottom:1px solid #f1f5f9;text-align:center;font-size:11px;color:#94a3b8;width:50px;vertical-align:middle">${pct}%</td>
-      <td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:#0f172a;width:165px;vertical-align:middle">${fmtFCFA(r.value)}</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #f3f5f7;text-align:center;font-size:11px;color:#92a3ba;width:50px;vertical-align:middle">${pct}%</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:#1f2937;width:165px;vertical-align:middle">${fmtFCFA(r.value)}</td>
     </tr>`;
   }).join("");
 
@@ -76,28 +76,28 @@ export function printDevis(data: DevisData, societe?: SocieteBrand | null): void
 <title>Devis ${data.reference}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; }
-.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
+.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
 
 /* ── Header (fond blanc, logo visible à l'impression) ── */
 .doc-header {
   display: flex; justify-content: space-between; align-items: flex-start;
   padding: 36px 40px 28px;
-  border-bottom: 3px solid #1e40af;
+  border-bottom: 3px solid #404089;
 }
 .brand { display: flex; align-items: flex-start; gap: 14px; }
 .brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: #1e40af; letter-spacing: -.5px; margin-bottom: 3px; }
-.brand-sub { font-size: 10.5px; color: #64748b; line-height: 1.7; }
+.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
-.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #94a3b8; margin-bottom: 6px; }
-.doc-ref { font-size: 30px; font-weight: 800; color: #1e40af; letter-spacing: -1.5px; line-height: 1; }
-.doc-date { font-size: 11px; color: #64748b; margin-top: 5px; }
+.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
+.doc-ref { font-size: 30px; font-weight: 800; color: #404089; letter-spacing: -1.5px; line-height: 1; }
+.doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
 .statut-badge {
   display: inline-block; margin-top: 8px;
   padding: 4px 12px; border-radius: 9999px;
   font-size: 11px; font-weight: 700; letter-spacing: .04em;
-  background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;
+  background: #f1f8fd; color: #404089; border: 1px solid #c6e1f7;
 }
 
 /* ── Body ── */
@@ -105,58 +105,58 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 /* Parties */
 .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-.party { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; }
-.party-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 7px; }
-.party-name { font-size: 14px; font-weight: 700; color: #0f172a; }
-.party-detail { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.7; }
+.party { background: #f8fafc; border: 1px solid #d2dbe9; border-radius: 10px; padding: 16px 18px; }
+.party-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 7px; }
+.party-name { font-size: 14px; font-weight: 700; color: #1f2937; }
+.party-detail { font-size: 12px; color: #6b7280; margin-top: 4px; line-height: 1.7; }
 
 /* Nature */
 .nature-block {
   display: flex; align-items: center; gap: 12px;
-  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+  background: #f1f8fd; border: 1px solid #c6e1f7; border-radius: 10px;
   padding: 13px 16px; margin-bottom: 24px;
 }
 .nature-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #93c5fd; margin-bottom: 3px; }
-.nature-val { font-size: 14px; font-weight: 700; color: #1e40af; }
+.nature-val { font-size: 14px; font-weight: 700; color: #404089; }
 .nature-icon { font-size: 22px; line-height: 1; }
 
 /* Table */
-.tbl-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
-.tbl-head { background: #1e3a8a; }
+.tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
+.tbl-head { background: #155a93; }
 .tbl-head th { color: #fff; padding: 10px 16px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .tbl-head th:last-child { text-align: right; }
 .tbl-head th:nth-child(2) { text-align: center; width: 50px; }
 table { width: 100%; border-collapse: collapse; }
 
 /* Total */
-.total-wrap { background: #1e3a8a; border-radius: 10px; overflow: hidden; }
+.total-wrap { background: #155a93; border-radius: 10px; overflow: hidden; }
 .total-inner { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; }
 .total-lbl { font-size: 14px; font-weight: 700; color: #fff; }
 .total-amt { font-size: 24px; font-weight: 800; letter-spacing: -1px; font-variant-numeric: tabular-nums; color: #fff; }
 
 /* Validity */
 .validity { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 13px 18px; margin-top: 20px; font-size: 12px; color: #374151; line-height: 1.65; }
-.validity strong { color: #15803d; }
+.validity strong { color: #126a32; }
 
 /* Notes */
-.notes-block { background: #fafafa; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
-.notes-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; margin-bottom: 8px; }
-.notes-text { font-size: 12.5px; color: #475569; line-height: 1.8; white-space: pre-wrap; }
+.notes-block { background: #fafafa; border: 1px solid #d2dbe9; border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+.notes-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 8px; }
+.notes-text { font-size: 12.5px; color: #45556b; line-height: 1.8; white-space: pre-wrap; }
 
 /* Signatures */
 .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
-.sig-box { border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 18px 16px; min-height: 88px; }
-.sig-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; }
-.sig-note { font-size: 10.5px; color: #cbd5e1; margin-top: 24px; }
+.sig-box { border: 1.5px dashed #cdd4df; border-radius: 10px; padding: 18px 16px; min-height: 88px; }
+.sig-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; }
+.sig-note { font-size: 10.5px; color: #cdd4df; margin-top: 24px; }
 
 /* Footer */
-.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-.footer-note { font-size: 10px; color: #94a3b8; line-height: 1.65; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #1e40af; }
+.footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; display: flex; justify-content: space-between; align-items: center; }
+.footer-note { font-size: 10px; color: #92a3ba; line-height: 1.65; }
+.footer-brand { font-size: 11px; font-weight: 800; color: #404089; }
 
 /* Bouton impression (caché à l'impression) */
-.no-print { text-align: center; padding: 18px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
-.btn-print { background: #1e40af; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: .01em; }
+.no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
+.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: .01em; }
 
 @media print {
   .no-print { display: none !important; }
@@ -215,7 +215,7 @@ table { width: 100%; border-collapse: collapse; }
       </div>
       <div style="margin-left:auto;text-align:right">
         <div class="nature-lbl">Validité</div>
-        <div style="font-size:12px;font-weight:600;color:#1e40af">${fmtD(data.dateCreation)} → ${fmtD(data.dateValidite)}</div>
+        <div style="font-size:12px;font-weight:600;color:#404089">${fmtD(data.dateCreation)} → ${fmtD(data.dateValidite)}</div>
       </div>
     </div>
 

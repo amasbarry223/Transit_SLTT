@@ -132,7 +132,7 @@ export function injectGrandLivre(
   const headerRange = sheet.getRange("A1:I1");
   try {
     headerRange.setFontWeight("bold");
-    headerRange.setBackgroundColor?.("#1E40AF");
+    headerRange.setBackgroundColor?.("#404089");
     headerRange.setFontColor?.("#FFFFFF");
   } catch {
     // Styles optionnels selon version facade
