@@ -304,7 +304,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
                 pagedSelect(
                   supabase,
                   "operations_comptables",
-                  "*, clients(nom), societes(nom), annexes(nom)",
+                  "*, clients(nom), societes(nom), annexes(nom), dossiers(reference)",
                 ),
               { softCap: 5_000 },
             ),

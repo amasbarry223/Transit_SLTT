@@ -103,13 +103,29 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
           className="h-10 min-w-[220px] flex-1"
         />
         <Select
+          value={screen.scopeFilter}
+          onValueChange={(v) => {
+            screen.setScopeFilter(v as typeof screen.scopeFilter);
+            screen.setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-10 w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="tous">Toutes opérations</SelectItem>
+            <SelectItem value="dossiers">Dossiers transit</SelectItem>
+            <SelectItem value="generales">Frais généraux</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
           value={screen.typeFilter}
           onValueChange={(v) => {
             screen.setTypeFilter(v as typeof screen.typeFilter);
             screen.setPage(1);
           }}
         >
-          <SelectTrigger className="h-10 w-40">
+          <SelectTrigger className="h-10 w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -165,6 +181,7 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
       <OperationsTable
         operations={screen.paged}
         ecartCumuleById={screen.ecartCumuleById}
+        ecartClientCumuleById={screen.ecartClientCumuleById}
         totalItems={screen.totalItems}
         hasActiveFilters={screen.hasActiveFilters}
         canWrite={screen.canWrite}

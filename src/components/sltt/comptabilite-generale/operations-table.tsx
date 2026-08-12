@@ -25,6 +25,7 @@ const SOURCE_LABEL: Record<OperationComptable["source"], string> = {
 interface OperationsTableProps {
   operations: OperationComptable[];
   ecartCumuleById: Map<string, number>;
+  ecartClientCumuleById?: Map<string, number>;
   totalItems: number;
   hasActiveFilters: boolean;
   canWrite: boolean;
@@ -41,6 +42,7 @@ interface OperationsTableProps {
 export function OperationsTable({
   operations,
   ecartCumuleById,
+  ecartClientCumuleById,
   totalItems,
   hasActiveFilters,
   canWrite,
@@ -57,7 +59,7 @@ export function OperationsTable({
     <Card className="border-border/80 gap-0 overflow-hidden p-0 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <Wallet className="size-4 text-slate-400 dark:text-slate-500" />
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Journal des opérations</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Journal unique des opérations</h2>
       </div>
       {totalItems === 0 ? (
         <EmptyState
@@ -77,7 +79,14 @@ export function OperationsTable({
               <Card key={o.id} className="border-border/80 p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{o.clientNom}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">{o.clientNom}</p>
+                      {o.dossierRef && (
+                        <Badge variant="secondary" className="text-[10px] font-mono py-0 px-1.5 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                          {o.dossierRef}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(o.date)} · {o.nature}</p>
                   </div>
                   <span className={cn("text-sm font-semibold tabular-nums", o.type === "Entrée" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
@@ -87,16 +96,19 @@ export function OperationsTable({
                 {showQuantitePrixUnitaire && o.quantite != null && o.prixUnitaire != null && (
                   <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{o.quantite} × {formatFCFA(o.prixUnitaire)}</p>
                 )}
-                {ecartCumuleById.has(o.id) && (
+                {ecartClientCumuleById?.has(o.id) && (
                   <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Écart cumulé :{" "}
-                    <span className={cn("font-medium tabular-nums", (ecartCumuleById.get(o.id) ?? 0) >= 0 ? "text-slate-700 dark:text-slate-200" : "text-red-600 dark:text-red-400")}>
-                      {formatFCFA(ecartCumuleById.get(o.id) ?? 0)}
+                    Écart Client :{" "}
+                    <span className={cn("font-medium tabular-nums", (ecartClientCumuleById.get(o.id) ?? 0) >= 0 ? "text-slate-700 dark:text-slate-200" : "text-red-600 dark:text-red-400")}>
+                      {formatFCFA(ecartClientCumuleById.get(o.id) ?? 0)}
                     </span>
                   </p>
                 )}
                 <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                  <Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge>
+                    {o.modePaiement && <Badge variant="secondary" className="text-xs font-normal">{o.modePaiement}</Badge>}
+                  </div>
                   {canWrite && (
                     <Button variant="ghost" size="icon" className="size-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40" onClick={() => onDelete(o)} aria-label="Supprimer">
                       <Trash2 className="size-4" />
@@ -112,11 +124,13 @@ export function OperationsTable({
                 <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
                   <Heading>Date</Heading>
                   <Heading>Client / Tiers</Heading>
+                  <Heading>Dossier</Heading>
                   <Heading>Nature</Heading>
+                  <Heading>Mode</Heading>
                   {showQuantitePrixUnitaire && <Heading className="text-right">Qté × PU</Heading>}
                   <Heading className="text-right">Entrée</Heading>
                   <Heading className="text-right">Sortie</Heading>
-                  <Heading className="text-right">Écart cumulé</Heading>
+                  <Heading className="text-right">Écart Client</Heading>
                   <Heading>Source</Heading>
                   <Heading className="text-right">Actions</Heading>
                 </TableRow>
@@ -129,25 +143,35 @@ export function OperationsTable({
                       <p className="font-medium text-slate-900 dark:text-slate-100">{o.clientNom}</p>
                       <p className="mt-0.5 font-mono text-xs text-slate-400 dark:text-slate-500">{o.reference}</p>
                     </TableCell>
+                    <TableCell className="px-4 py-3.5">
+                      {o.dossierRef ? (
+                        <Badge variant="secondary" className="font-mono text-[11px] bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
+                          {o.dossierRef}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="px-4 py-3.5 text-slate-600 dark:text-slate-300">{o.nature}</TableCell>
+                    <TableCell className="px-4 py-3.5 text-xs text-slate-500">{o.modePaiement || "Espèces"}</TableCell>
                     {showQuantitePrixUnitaire && (
                       <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-500 dark:text-slate-400">
                         {o.quantite != null && o.prixUnitaire != null ? `${o.quantite} × ${formatFCFA(o.prixUnitaire)}` : "—"}
                       </TableCell>
                     )}
-                    <TableCell className="px-4 py-3.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <TableCell className="px-4 py-3.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
                       {o.type === "Entrée" ? formatFCFA(o.montant) : "—"}
                     </TableCell>
-                    <TableCell className="px-4 py-3.5 text-right tabular-nums text-amber-600 dark:text-amber-400">
+                    <TableCell className="px-4 py-3.5 text-right tabular-nums text-amber-600 dark:text-amber-400 font-medium">
                       {o.type === "Sortie" ? formatFCFA(o.montant) : "—"}
                     </TableCell>
                     <TableCell
                       className={cn(
-                        "px-4 py-3.5 text-right tabular-nums",
-                        (ecartCumuleById.get(o.id) ?? 0) >= 0 ? "text-slate-600 dark:text-slate-300" : "text-red-600 dark:text-red-400",
+                        "px-4 py-3.5 text-right tabular-nums font-semibold",
+                        ((ecartClientCumuleById?.get(o.id) ?? ecartCumuleById.get(o.id) ?? 0)) >= 0 ? "text-slate-700 dark:text-slate-200" : "text-red-600 dark:text-red-400",
                       )}
                     >
-                      {ecartCumuleById.has(o.id) ? formatFCFA(ecartCumuleById.get(o.id) ?? 0) : "—"}
+                      {formatFCFA(ecartClientCumuleById?.get(o.id) ?? ecartCumuleById.get(o.id) ?? 0)}
                     </TableCell>
                     <TableCell className="px-4 py-3.5"><Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge></TableCell>
                     <TableCell className="px-4 py-3.5">

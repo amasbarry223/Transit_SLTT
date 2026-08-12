@@ -52,6 +52,7 @@ export function useComptabiliteGeneraleScreen() {
 
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | OperationComptableType>("all");
+  const [scopeFilter, setScopeFilter] = useState<"tous" | "dossiers" | "generales">("tous");
   const [clientFilter, setClientFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -77,11 +78,14 @@ export function useComptabiliteGeneraleScreen() {
     const normalizedQuery = query.trim().toLowerCase();
     return periodOperations.filter((o) => {
       if (typeFilter !== "all" && o.type !== typeFilter) return false;
+      if (scopeFilter === "dossiers" && !o.dossierId) return false;
+      if (scopeFilter === "generales" && !!o.dossierId) return false;
       if (effectiveClientFilter && o.clientNom !== effectiveClientFilter) return false;
-      const haystack = `${o.clientNom} ${o.nature} ${o.reference}`.toLowerCase();
+      const dossierRef = o.dossierRef ? o.dossierRef.toLowerCase() : "";
+      const haystack = `${o.clientNom} ${o.nature} ${o.reference} ${dossierRef}`.toLowerCase();
       return !normalizedQuery || haystack.includes(normalizedQuery);
     });
-  }, [periodOperations, query, typeFilter, effectiveClientFilter]);
+  }, [periodOperations, query, typeFilter, scopeFilter, effectiveClientFilter]);
 
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => b.date.localeCompare(a.date) || b.reference.localeCompare(a.reference)),
@@ -89,15 +93,15 @@ export function useComptabiliteGeneraleScreen() {
   );
 
   const totals = useMemo(() => computeOperationsTotals(periodOperations), [periodOperations]);
-  // Cumul sur TOUTES les opérations de l'entité (pas seulement la période/les
-  // filtres affichés) — l'Écart cumulé reproduit le solde du classeur papier,
-  // qui ne s'arrête jamais à un filtre écran.
-  const ecartCumuleById = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const { operation, ecartCumule } of computeRunningEcart(entiteOperations)) {
-      map.set(operation.id, ecartCumule);
+  // Cumul sur TOUTES les opérations de l'entité (global et par client)
+  const { ecartCumuleById, ecartClientCumuleById } = useMemo(() => {
+    const mapGlobal = new Map<string, number>();
+    const mapClient = new Map<string, number>();
+    for (const { operation, ecartCumule, ecartClientCumule } of computeRunningEcart(entiteOperations)) {
+      mapGlobal.set(operation.id, ecartCumule);
+      mapClient.set(operation.id, ecartClientCumule);
     }
-    return map;
+    return { ecartCumuleById: mapGlobal, ecartClientCumuleById: mapClient };
   }, [entiteOperations]);
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -185,6 +189,8 @@ export function useComptabiliteGeneraleScreen() {
     setQuery,
     typeFilter,
     setTypeFilter,
+    scopeFilter,
+    setScopeFilter,
     clientOptions,
     clientFilter: effectiveClientFilter,
     setClientFilter,
@@ -203,6 +209,7 @@ export function useComptabiliteGeneraleScreen() {
     clearFilters,
     totals,
     ecartCumuleById,
+    ecartClientCumuleById,
     entiteTotals,
     dernieresClotures,
     formOpen,

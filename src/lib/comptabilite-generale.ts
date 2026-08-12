@@ -74,6 +74,8 @@ export interface OperationWithEcartCumule {
   operation: OperationComptable;
   /** Solde cumulé (Entrée − Sortie) de l'entité juste après cette opération. */
   ecartCumule: number;
+  /** Solde cumulé spécifique du client/tiers (Entrée − Sortie) juste après cette opération. */
+  ecartClientCumule: number;
 }
 
 /** Extrait le numéro de séquence d'une référence "OPC-{n}" — ordre de saisie, pas la date. */
@@ -83,23 +85,35 @@ function referenceSeq(reference: string): number {
 }
 
 /**
- * Écart cumulé, ligne par ligne — reproduit les annotations manuscrites
- * "ECART" du classeur Excel (ex. Top Doumani : "Ecart" affiché sur les
- * lignes "Paiement dette" = solde impayé cumulé à cet instant). Vérifié sur
- * les vraies données Top Doumani (Djiby Diarra / Ami Kouma).
- *
- * Point clé : ce n'est JAMAIS un cumul par client — toujours un cumul global
- * de l'entité (Annexe ou Société), tous clients confondus. Et l'ordre est
- * celui de SAISIE (référence OPC-{n}), pas la date de l'opération : le
- * classeur source est tenu dans l'ordre où le comptable écrit les lignes,
- * pas dans l'ordre chronologique strict (deux clients traités le même jour
- * peuvent être écrits à des endroits différents du classeur).
- */
+  * Écart cumulé, ligne par ligne — calcule à la fois l'écart global d'entité et l'écart spécifique par client/tiers.
+  */
 export function computeRunningEcart(operations: OperationComptable[]): OperationWithEcartCumule[] {
   const sorted = [...operations].sort((a, b) => referenceSeq(a.reference) - referenceSeq(b.reference));
-  let running = 0;
+  let runningGlobal = 0;
+  const runningByClient: Record<string, number> = {};
+
   return sorted.map((operation) => {
-    running += operation.type === "Entrée" ? operation.montant : -operation.montant;
-    return { operation, ecartCumule: running };
+    const delta = operation.type === "Entrée" ? operation.montant : -operation.montant;
+    runningGlobal += delta;
+
+    const clientKey = (operation.clientId || operation.clientNom || "inconnu").trim().toLowerCase();
+    runningByClient[clientKey] = (runningByClient[clientKey] || 0) + delta;
+
+    return {
+      operation,
+      ecartCumule: runningGlobal,
+      ecartClientCumule: runningByClient[clientKey],
+    };
   });
+}
+
+export type OperationScopeFilter = "tous" | "dossiers" | "generales";
+
+export function filterOperationsByScope(
+  operations: OperationComptable[],
+  scope: OperationScopeFilter,
+): OperationComptable[] {
+  if (scope === "dossiers") return operations.filter((o) => !!o.dossierId);
+  if (scope === "generales") return operations.filter((o) => !o.dossierId);
+  return operations;
 }

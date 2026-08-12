@@ -88,10 +88,13 @@ export interface OperationComptableRow {
   date: string;
   client_id: string | null;
   clients?: NamedRelation;
+  dossier_id?: string | null;
+  dossiers?: { id: string; reference: string };
   client_nom: string;
   nature: string;
   type: "Entrée" | "Sortie";
   montant: number | string;
+  mode_paiement?: "Espèces" | "Virement" | "Mobile Money" | "Chèque" | null;
   quantite: number | string | null;
   prix_unitaire: number | string | null;
   source: "saisie" | "import_excel" | "import_ocr";

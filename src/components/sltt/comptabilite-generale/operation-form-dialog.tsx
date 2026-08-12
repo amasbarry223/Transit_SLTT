@@ -36,15 +36,17 @@ interface OperationFormDialogProps {
 
 export function OperationFormDialog({ open, onOpenChange, entite }: OperationFormDialogProps) {
   const { toast } = useToast();
-  const clients = useStore((s) => s.clients);
+  const dossiers = useStore((s) => s.dossiers);
   const addOperationComptable = useStore((s) => s.addOperationComptable);
   const isTopDoumani = entite.type === "societe";
 
   const [date, setDate] = useState(today);
   const [clientId, setClientId] = useState("");
+  const [dossierId, setDossierId] = useState("");
   const [clientNom, setClientNom] = useState("");
   const [nature, setNature] = useState("");
   const [type, setType] = useState<OperationComptableType>("Sortie");
+  const [modePaiement, setModePaiement] = useState<"Espèces" | "Virement" | "Mobile Money" | "Chèque">("Espèces");
   const [montant, setMontant] = useState("");
   const [quantite, setQuantite] = useState("");
   const [prixUnitaire, setPrixUnitaire] = useState("");
@@ -55,9 +57,11 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
     // eslint-disable-next-line react-hooks/set-state-in-effect -- réinitialisation du formulaire à l'ouverture du dialog
     setDate(today());
     setClientId("");
+    setDossierId("");
     setClientNom("");
     setNature("");
     setType("Sortie");
+    setModePaiement("Espèces");
     setMontant("");
     setQuantite("");
     setPrixUnitaire("");
@@ -77,6 +81,19 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
     }
     const client = clients.find((c) => c.id === id);
     if (client) setClientNom(client.nom);
+  }
+
+  function handleDossierSelect(id: string) {
+    if (id === "none") {
+      setDossierId("");
+      return;
+    }
+    setDossierId(id);
+    const dossier = dossiers.find((d) => d.id === id);
+    if (dossier) {
+      if (dossier.clientId) handleClientSelect(dossier.clientId);
+      if (!nature) setNature(`Règlement dossier ${dossier.reference}`);
+    }
   }
 
   async function handleSubmit() {
@@ -100,10 +117,12 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
         societeId: entite.type === "societe" ? entite.id : undefined,
         date,
         clientId: clientId || undefined,
+        dossierId: dossierId || undefined,
         clientNom: clientNom.trim(),
         nature: nature.trim(),
         type: isTopDoumani ? "Sortie" : type,
         montant: montantEffectif,
+        modePaiement,
         quantite: isTopDoumani && quantite ? Number(quantite) : undefined,
         prixUnitaire: isTopDoumani && prixUnitaire ? Number(prixUnitaire) : undefined,
         source: "saisie",
@@ -140,12 +159,40 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
                 <Select value={type} onValueChange={(value) => setType(value as OperationComptableType)}>
                   <SelectTrigger id="opc-type" className="h-10 w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Entrée">Entrée</SelectItem>
-                    <SelectItem value="Sortie">Sortie</SelectItem>
+                    <SelectItem value="Entrée">Entrée (Encaissement)</SelectItem>
+                    <SelectItem value="Sortie">Sortie (Décaissement)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="opc-mode-paiement">Mode de paiement</Label>
+              <Select value={modePaiement} onValueChange={(value) => setModePaiement(value as typeof modePaiement)}>
+                <SelectTrigger id="opc-mode-paiement" className="h-10 w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Espèces">Espèces</SelectItem>
+                  <SelectItem value="Virement">Virement</SelectItem>
+                  <SelectItem value="Chèque">Chèque</SelectItem>
+                  <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="opc-dossier">Dossier de transit (optionnel)</Label>
+              <Select value={dossierId || "none"} onValueChange={handleDossierSelect}>
+                <SelectTrigger id="opc-dossier" className="h-10 w-full"><SelectValue placeholder="Aucun (Frais général)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucun (Frais général)</SelectItem>
+                  {dossiers.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.reference} ({d.bl})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="opc-client-existant">Client existant (optionnel)</Label>

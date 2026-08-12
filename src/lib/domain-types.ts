@@ -366,9 +366,7 @@ export interface EntiteComptable {
   label: string;
 }
 
-export type OperationComptableType = "Entrée" | "Sortie";
-/** Traçabilité de la saisie — utile pour distinguer une ligne tapée à la main d'une ligne issue d'un import Excel/OCR revalidé par un humain. */
-export type OperationComptableSource = "saisie" | "import_excel" | "import_ocr";
+export type ModePaiement = "Espèces" | "Virement" | "Mobile Money" | "Chèque";
 
 export interface OperationComptable {
   id: string;
@@ -378,11 +376,14 @@ export interface OperationComptable {
   societeId?: string;
   date: string;
   clientId?: string;
+  dossierId?: string;
+  dossierRef?: string;
   /** Tiers en clair (BINA DEMBELE, EDY, Zhu hai…) — pas toujours un Client existant en base. */
   clientNom: string;
   nature: string;
   type: OperationComptableType;
   montant: number;
+  modePaiement?: ModePaiement;
   /** Top Doumani uniquement : montant (Sortie) = quantite * prixUnitaire. */
   quantite?: number;
   prixUnitaire?: number;
@@ -397,10 +398,12 @@ export interface OperationComptableInput {
   societeId?: string;
   date: string;
   clientId?: string;
+  dossierId?: string;
   clientNom: string;
   nature: string;
   type: OperationComptableType;
   montant: number;
+  modePaiement?: ModePaiement;
   quantite?: number;
   prixUnitaire?: number;
   source?: OperationComptableSource;

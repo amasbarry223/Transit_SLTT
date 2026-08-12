@@ -19,10 +19,13 @@ export function mapOperationComptableFromDb(row: OperationComptableRow): Operati
     societeId: row.societe_id || undefined,
     date: row.date,
     clientId: row.client_id || undefined,
+    dossierId: row.dossier_id || undefined,
+    dossierRef: row.dossiers?.reference || undefined,
     clientNom: row.client_nom,
     nature: row.nature,
     type: row.type,
     montant: Number(row.montant || 0),
+    modePaiement: (row.mode_paiement as OperationComptable["modePaiement"]) || "Espèces",
     quantite: row.quantite != null ? Number(row.quantite) : undefined,
     prixUnitaire: row.prix_unitaire != null ? Number(row.prix_unitaire) : undefined,
     source: row.source,
@@ -92,17 +95,19 @@ export const createComptabiliteGeneraleSlice: StateCreator<
         societe_id: input.societeId || null,
         date: input.date,
         client_id: input.clientId || null,
+        dossier_id: input.dossierId || null,
         client_nom: input.clientNom,
         nature: input.nature,
         type: input.type,
         montant: Math.max(0, input.montant),
+        mode_paiement: input.modePaiement ?? "Espèces",
         quantite: input.quantite ?? null,
         prix_unitaire: input.prixUnitaire ?? null,
         source: input.source ?? "saisie",
         import_ref: input.importRef || null,
         cree_par: creePar,
       })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .select("*, clients(nom), societes(nom), annexes(nom), dossiers(reference)")
       .single();
     if (error) throw error;
 
