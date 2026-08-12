@@ -7,18 +7,18 @@ import { useSession } from "@/lib/session/session-store";
 const BUCKET = "excel-workbooks";
 const SNAPSHOT_MAX_BYTES = 800_000;
 
-export function mapExcelWorkbookFromDb(x: ExcelWorkbookRow): ExcelWorkbook {
+export function mapExcelWorkbookFromDb(row: ExcelWorkbookRow): ExcelWorkbook {
   return {
-    id: x.id,
-    clientId: x.client_id,
-    societeId: x.societe_id || undefined,
-    nom: x.nom,
-    storagePath: x.storage_path || undefined,
-    snapshotJson: x.snapshot_json,
-    version: Number(x.version),
-    updatedBy: x.updated_by || undefined,
-    createdAt: x.created_at,
-    updatedAt: x.updated_at,
+    id: row.id,
+    clientId: row.client_id,
+    societeId: row.societe_id || undefined,
+    nom: row.nom,
+    storagePath: row.storage_path || undefined,
+    snapshotJson: row.snapshot_json,
+    version: Number(row.version),
+    updatedBy: row.updated_by || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 

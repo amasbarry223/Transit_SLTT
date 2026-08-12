@@ -1,7 +1,6 @@
-import type { OcrExtractResult, OcrProvider } from "./provider";
+import type { OcrExtractResult, OcrFieldMapper, OcrProvider } from "./provider";
 import { preprocessImageBlob } from "./preprocess";
 import { rasterizePdfToBlobs } from "./pdf-rasterize";
-import { mapDossierFieldsFromText } from "./mappers/dossier-mapper";
 
 /**
  * Chemins locaux (/public/ocr) — compatibles CSP (pas de CDN jsDelivr).
@@ -64,6 +63,7 @@ export class TesseractOcrProvider implements OcrProvider {
   async extract(
     blob: Blob,
     mimeType: string,
+    mapper: OcrFieldMapper,
     signal?: AbortSignal,
   ): Promise<OcrExtractResult> {
     assertNotAborted(signal);
@@ -108,7 +108,7 @@ export class TesseractOcrProvider implements OcrProvider {
     }
 
     const avgConf = meanConfidence / images.length;
-    const fields = mapDossierFieldsFromText(rawText).map((f) => ({
+    const fields = mapper(rawText).map((f) => ({
       ...f,
       confidence:
         f.confidence != null

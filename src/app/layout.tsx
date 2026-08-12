@@ -1,10 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Inter, Sora } from "next/font/google";
+import { BRAND } from "@/lib/brand-colors";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeEffect } from "@/components/sltt/theme-effect";
 import { AppRoot } from "@/components/sltt/app-root";
+import { AppSerwistProvider } from "@/components/pwa/serwist-provider";
+
+const APP_NAME = "Transit";
+const APP_DEFAULT_TITLE = "Transit · Gestion logistique";
+const APP_DESCRIPTION =
+  "Plateforme de gestion logistique, transit douanier, comptabilité et entreposage.";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -19,9 +26,12 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Transit · Gestion logistique",
-  description:
-    "Plateforme de gestion logistique, transit douanier, comptabilité et entreposage.",
+  applicationName: APP_NAME,
+  title: {
+    default: APP_DEFAULT_TITLE,
+    template: `%s · ${APP_NAME}`,
+  },
+  description: APP_DESCRIPTION,
   keywords: [
     "transit",
     "logistique",
@@ -31,9 +41,28 @@ export const metadata: Metadata = {
     "UEMOA",
     "Mali",
   ],
-  authors: [{ name: "Transit" }],
+  authors: [{ name: APP_NAME }],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: APP_NAME,
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
-    icon: "/logoV.png",
+    icon: [
+      { url: "/logoV.png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: APP_DEFAULT_TITLE,
+    description: APP_DESCRIPTION,
   },
 };
 
@@ -42,8 +71,8 @@ export const metadata: Metadata = {
 // vrai thème appliqué (pas seulement à la préférence système) par ThemeEffect.
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e0e1b" },
+    { media: "(prefers-color-scheme: light)", color: BRAND.background },
+    { media: "(prefers-color-scheme: dark)", color: BRAND.darkBg },
   ],
 };
 
@@ -60,10 +89,12 @@ export default async function RootLayout({
       <body
         className={`${inter.variable} ${sora.variable} antialiased bg-background text-foreground`}
       >
-        <ThemeEffect nonce={nonce} />
-        {children}
-        <AppRoot />
-        <Toaster />
+        <AppSerwistProvider>
+          <ThemeEffect nonce={nonce} />
+          {children}
+          <AppRoot />
+          <Toaster />
+        </AppSerwistProvider>
       </body>
     </html>
   );

@@ -23,6 +23,7 @@ import {
   buildGrandLivreXlsxBlob,
 } from "@/lib/excel/workbook-io";
 import { ExcelToolbar, type ExcelSaveStatus } from "./excel-toolbar";
+import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { excelTheme } from "@/lib/excel/excel-theme";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -81,6 +82,11 @@ export function ExcelWorkbookPanel({
   const [saveStatus, setSaveStatus] = useState<ExcelSaveStatus>("idle");
   const [fullscreen, setFullscreen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string;
+    description: string;
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
 
   async function persistWorkbook(silent: boolean) {
     const api = univerApiRef.current;
@@ -360,15 +366,9 @@ export function ExcelWorkbookPanel({
     };
   }, [ready, canWrite]);
 
-  async function handleRefreshFromSltt() {
+  async function executeRefreshFromSltt() {
     const api = univerApiRef.current;
     if (!api) return;
-    if (dirtyRef.current || saveStatus === "dirty") {
-      const ok = window.confirm(
-        "Des modifications non enregistrées seront remplacées par le journal SLTT. Continuer ?",
-      );
-      if (!ok) return;
-    }
     setBusy(true);
     try {
       const capacity = resolveGrandLivreRowCount(api) - 1;
@@ -394,6 +394,21 @@ export function ExcelWorkbookPanel({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleRefreshFromSltt() {
+    const api = univerApiRef.current;
+    if (!api) return;
+    if (dirtyRef.current || saveStatus === "dirty") {
+      setPendingConfirm({
+        title: "Actualiser depuis SLTT ?",
+        description:
+          "Des modifications non enregistrées seront remplacées par le journal SLTT. Cette action est irréversible pour les changements locaux non sauvegardés.",
+        onConfirm: executeRefreshFromSltt,
+      });
+      return;
+    }
+    await executeRefreshFromSltt();
   }
 
   async function handleApplyToSltt() {
@@ -542,25 +557,59 @@ export function ExcelWorkbookPanel({
             ? `${skipped} ligne(s) déjà synchronisée(s).`
             : "Aucune ligne modifiable détectée.",
         });
+        setBusy(false);
         return;
       }
 
       if (preFailed.length > 0) {
-        const preview = preFailed.slice(0, 8).join("\n• ");
-        const ok = window.confirm(
-          `${preFailed.length} ligne(s) seront ignorées :\n• ${preview}${
-            preFailed.length > 8 ? "\n…" : ""
-          }\n\nAppliquer les ${mutations.length} autre(s) modification(s) ?`,
-        );
-        if (!ok) return;
-      } else if (mutations.length > 0) {
-        const ok = window.confirm(
-          `Appliquer ${mutations.length} modification(s) vers SLTT ?\n(${skipped} inchangée(s))`,
-        );
-        if (!ok) return;
+        const preview = preFailed.slice(0, 8).join(" · ");
+        setPendingConfirm({
+          title: "Appliquer avec des lignes ignorées ?",
+          description: `${preFailed.length} ligne(s) seront ignorées (${preview}${preFailed.length > 8 ? " · …" : ""}). Appliquer les ${mutations.length} autre(s) modification(s) vers SLTT ?`,
+          onConfirm: () => executeApplyPhase(planned, preFailed, skipped),
+        });
+        setBusy(false);
+        return;
+      }
+      if (mutations.length > 0) {
+        setPendingConfirm({
+          title: "Appliquer vers SLTT ?",
+          description: `Appliquer ${mutations.length} modification(s) vers SLTT ? (${skipped} ligne(s) inchangée(s))`,
+          onConfirm: () => executeApplyPhase(planned, preFailed, skipped),
+        });
+        setBusy(false);
+        return;
       }
 
-      // Phase 2 — exécution séquentielle (rapport complet en cas d'échec partiel).
+      setBusy(false);
+    } catch (e) {
+      toast({
+        title: "Application impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+      setBusy(false);
+    }
+  }
+
+  async function executeApplyPhase(
+    planned: Array<
+      | { kind: "skip" }
+      | { kind: "patch-dossier"; row: ReturnType<typeof readGrandLivre>[number]; sourceId: string; debit: number; credit: number }
+      | { kind: "patch-paiement"; row: ReturnType<typeof readGrandLivre>[number]; sourceId: string; debit: number; credit: number; libelle: string }
+      | { kind: "patch-facture"; row: ReturnType<typeof readGrandLivre>[number]; sourceId: string; credit: number }
+      | { kind: "create-paiement"; row: ReturnType<typeof readGrandLivre>[number] }
+    >,
+    preFailed: string[],
+    skipped: number,
+  ) {
+    const api = univerApiRef.current;
+    if (!api) return;
+    setBusy(true);
+    try {
+      const byRef = new Map(
+        journalEntries.map((e) => [normalizeClasseurRef(e.reference), e]),
+      );
       let applied = 0;
       let created = 0;
       const failed = [...preFailed];
@@ -768,6 +817,19 @@ export function ExcelWorkbookPanel({
           Feuilles GrandLivre · Notes — sync SLTT
         </span>
       </div>
+
+      <ConfirmActionDialog
+        open={!!pendingConfirm}
+        onOpenChange={(open) => !open && setPendingConfirm(null)}
+        title={pendingConfirm?.title ?? ""}
+        description={pendingConfirm?.description ?? ""}
+        confirmLabel="Continuer"
+        onConfirm={async () => {
+          const action = pendingConfirm?.onConfirm;
+          setPendingConfirm(null);
+          if (action) await action();
+        }}
+      />
     </div>
   );
 }

@@ -71,6 +71,7 @@ describe("POST /api/export/excel", () => {
     const res = await POST(
       req(
         {
+          module: "clients",
           filename: "test",
           headers: ["Ref"],
           rows: [["D-001"]],
@@ -84,6 +85,7 @@ describe("POST /api/export/excel", () => {
   it("retourne un fichier xlsx non vide et réouvrable", async () => {
     const res = await POST(
       req({
+        module: "clients",
         filename: "dossiers-transit",
         headers: ["Référence", "Client"],
         rows: [
@@ -110,6 +112,7 @@ describe("POST /api/export/excel", () => {
   it("coerce null, booléens et NaN dans les cellules", async () => {
     const res = await POST(
       req({
+        module: "clients",
         filename: "coercion",
         headers: ["A", "B", "C"],
         rows: [[null, true, Number.NaN]],
@@ -128,6 +131,7 @@ describe("POST /api/export/excel", () => {
   it("rejette un export sans lignes", async () => {
     const res = await POST(
       req({
+        module: "clients",
         filename: "vide",
         headers: ["Ref"],
         rows: [],
@@ -140,11 +144,36 @@ describe("POST /api/export/excel", () => {
     fakeState.profile.permissions = [];
     const res = await POST(
       req({
+        module: "clients",
         filename: "interdit",
         headers: ["Ref"],
         rows: [["D-001"]],
       }),
     );
     expect(res.status).toBe(403);
+  });
+
+  it("rejette un module sans permission dédiée", async () => {
+    fakeState.profile.permissions = ["clients:read"];
+    const res = await POST(
+      req({
+        module: "dossiers",
+        filename: "interdit",
+        headers: ["Ref"],
+        rows: [["D-001"]],
+      }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("rejette sans champ module", async () => {
+    const res = await POST(
+      req({
+        filename: "sans-module",
+        headers: ["Ref"],
+        rows: [["D-001"]],
+      }),
+    );
+    expect(res.status).toBe(400);
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { BRAND, CHART_BRAND } from "@/lib/brand-colors";
 import { Badge } from "@/components/ui/badge";
 import {
   DossierStatut,
@@ -99,10 +100,10 @@ export const DOSSIER_STATUT_DOT: Record<DossierStatut, string> = {
 };
 
 export const DOSSIER_STATUT_HEX: Record<DossierStatut, string> = {
-  "En cours": "#404089",
+  "En cours": BRAND.primary,
   Dédouané: "#4F46E5",
-  Livré: "#D97706",
-  Soldé: "#16853F",
+  Livré: CHART_BRAND.amber,
+  Soldé: CHART_BRAND.emerald,
 };
 
 export function DossierStatutBadge({ statut }: { statut: DossierStatut }) {

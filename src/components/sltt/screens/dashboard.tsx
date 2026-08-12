@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import { KpiCard } from "@/components/sltt/kpi-card";
-import { PageHeader } from "@/components/sltt/page-header";
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -32,10 +31,9 @@ import { MagasinierPanel } from "@/components/sltt/dashboard/magasinier-panel";
 import { ComptablePanel } from "@/components/sltt/dashboard/comptable-panel";
 import { AdminPanel } from "@/components/sltt/dashboard/admin-panel";
 import { GuideDemarrage } from "@/components/sltt/dashboard/guide-demarrage";
-import { EncaissementsChart } from "@/components/sltt/dashboard/encaissements-chart";
-import { MargeChart } from "@/components/sltt/dashboard/marge-chart";
+import { DossiersEvolutionChart } from "@/components/sltt/dashboard/dossiers-evolution-chart";
+import { StockRepartitionChart } from "@/components/sltt/dashboard/stock-repartition-chart";
 import { DerniersDossiersCard } from "@/components/sltt/dashboard/derniers-dossiers-card";
-import { StatutsDonutCard } from "@/components/sltt/dashboard/statuts-donut-card";
 import { AlertesCard } from "@/components/sltt/dashboard/alertes-card";
 import { useDashboardMetrics } from "@/components/sltt/dashboard/use-dashboard-metrics";
 
@@ -48,14 +46,10 @@ export function DashboardScreen() {
   const currentRole = useSession((s) => s.currentRole);
   const currentUserName = useSession((s) => s.currentUserName);
   const theme = useUiPrefs((s) => s.theme);
-  // Recharts dessine en SVG avec des couleurs passées en props — les classes
-  // `dark:` de Tailwind n'ont aucune prise dessus, il faut donc calculer les
-  // couleurs de grille/axes/curseur en JS selon le thème actif.
   const isDark = theme === "dark";
   const gridColor = isDark ? "#27283F" : SLTT_GRID;
   const tickColor = isDark ? "#92A3BA" : "#6B7280";
   const barCursorFill = isDark ? "#27283F" : "#F1F8FD";
-  const lineCursorStroke = isDark ? "#354253" : "#CDD4DF";
   const dossiers = useStore((s) => s.dossiers);
   const factures = useStore((s) => s.factures);
   const stock = useStore((s) => s.stock);
@@ -71,7 +65,6 @@ export function DashboardScreen() {
   );
   const hasSection = (section: DashboardSection) => sections.has(section);
 
-  // Ancrage calendaire : date du jour (pas la date max des données)
   const anchorDate = getDashboardAnchorDate();
   const { ecrituresAvecDate, calculerBeneficeMensuel } = useBeneficeParSociete(anchorDate);
   const beneficeMoisCourant = calculerBeneficeMensuel(selectedSocieteId).benefice;
@@ -97,11 +90,9 @@ export function DashboardScreen() {
     dossiersEnCours,
     dossiersALivrer,
     valeurStock,
-    encaissementsParMois,
-    ecartsParPeriode,
+    dossiersParMois,
+    stockRepartition,
     derniersDossiers,
-    statutDonutData,
-    totalDossiers,
     alertes,
   } = useDashboardMetrics({ dossiers, factures, stock, ecrituresAvecDate, anchorDate });
 
@@ -125,10 +116,9 @@ export function DashboardScreen() {
   ].filter(Boolean).length;
 
   const showChartsRow =
-    hasSection("chart_encaissements") || hasSection("chart_marges");
+    hasSection("chart_dossiers_evolution") || hasSection("chart_stock_repartition");
   const showBlocksRow =
     hasSection("derniers_dossiers") ||
-    hasSection("chart_statuts") ||
     hasSection("alertes_stock") ||
     hasSection("alertes_dossiers");
 
@@ -136,30 +126,33 @@ export function DashboardScreen() {
 
   return (
     <div className="space-y-6">
-      {/* 1. PAGE HEADER */}
-      <PageHeader
-        title="Tableau de bord"
-        description={`Bonjour ${firstName} — Vue d'ensemble de votre activité ce mois-ci`}
-      >
+      {/* En-tête — greeting + filtres (maquette) */}
+      <div className="space-y-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            Tableau de bord
+          </h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Bonjour {firstName} 👋, voici l&apos;ensemble de votre activité ce mois-ci.
+          </p>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm shadow-sm">
+          <div className="flex items-center gap-2 rounded-full border border-border/80 bg-white px-3 py-1.5 text-sm shadow-sm dark:bg-slate-800">
             <span className="text-slate-500 dark:text-slate-400">Période :</span>
             <span className="font-medium text-slate-900 dark:text-slate-100">{periodeLabel}</span>
           </div>
           {syncLabel && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-500 shadow-sm dark:text-slate-400">
+            <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-white px-3 py-1.5 text-xs text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
               <span className="size-1.5 rounded-full bg-emerald-500" />
               {syncLabel}
             </div>
           )}
           {hasSection("kpi_benefice") && <SocieteFilterSelect className="w-full sm:w-44" />}
         </div>
-      </PageHeader>
+      </div>
 
-      {/* 1b. GUIDE DE DÉMARRAGE — les 4 gestes du cahier des charges */}
       <GuideDemarrage role={currentRole} go={(v) => go(v)} />
 
-      {/* 2. KPI ROW */}
       {visibleKpiCount > 0 && (
       <div className={cn("grid w-full gap-3 sm:gap-4", kpiGridClass(visibleKpiCount))}>
         {hasSection("kpi_encaisse") && (
@@ -178,7 +171,7 @@ export function DashboardScreen() {
           label="Restes à payer"
           value={formatFCFA(totalRestesAPayer)}
           icon={Clock}
-          tone="amber"
+          tone="red"
           sublabel={`Sur ${nbDossiersNonSoldes} dossier${nbDossiersNonSoldes > 1 ? "s" : ""}`}
         />
         )}
@@ -196,7 +189,7 @@ export function DashboardScreen() {
           label="Valeur du stock"
           value={formatFCFA(valeurStock)}
           icon={Warehouse}
-          tone="indigo"
+          tone="blue"
           sublabel={`${stock.length} article${stock.length > 1 ? "s" : ""}`}
         />
         )}
@@ -206,6 +199,7 @@ export function DashboardScreen() {
           value={formatFCFA(beneficeMoisCourant)}
           icon={TrendingUp}
           tone={beneficeMoisCourant >= 0 ? "emerald" : "red"}
+          valueNegative={beneficeMoisCourant < 0}
           sublabel="Recettes − Dépenses"
           tooltip="Recettes = écritures + paiements factures filtrés par société. Dépenses = dépenses de contrats filtrées par société. Voir Comptabilité pour le détail par société."
         />
@@ -213,7 +207,6 @@ export function DashboardScreen() {
       </div>
       )}
 
-      {/* 2b. ROLE PANEL */}
       {currentRole === "Administrateur" && (
         <AdminPanel
           go={go}
@@ -237,30 +230,26 @@ export function DashboardScreen() {
         <ComptablePanel go={go as (v: "comptabilite" | "bilans" | "factures", opts?: { id?: string | null }) => void} />
       )}
 
-      {/* 3. CHARTS ROW */}
       {showChartsRow && (
-      <div className={cn("grid grid-cols-1 gap-6", hasSection("chart_encaissements") && hasSection("chart_marges") && "lg:grid-cols-2")}>
-        {hasSection("chart_encaissements") && (
-          <EncaissementsChart
-            data={encaissementsParMois}
+      <div className={cn("grid grid-cols-1 gap-6", hasSection("chart_dossiers_evolution") && hasSection("chart_stock_repartition") && "lg:grid-cols-2")}>
+        {hasSection("chart_dossiers_evolution") && (
+          <DossiersEvolutionChart
+            data={dossiersParMois}
             gridColor={gridColor}
             tickColor={tickColor}
             barCursorFill={barCursorFill}
           />
         )}
 
-        {hasSection("chart_marges") && (
-          <MargeChart
-            data={ecartsParPeriode}
-            gridColor={gridColor}
-            tickColor={tickColor}
-            lineCursorStroke={lineCursorStroke}
+        {hasSection("chart_stock_repartition") && (
+          <StockRepartitionChart
+            data={stockRepartition}
+            totalValue={valeurStock}
           />
         )}
       </div>
       )}
 
-      {/* 4. BLOCKS ROW */}
       {showBlocksRow && (
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
 
@@ -270,30 +259,22 @@ export function DashboardScreen() {
             onGoToDossiers={() => go("dossiers")}
             onOpenDossier={(id) => go("dossier-detail", { id })}
             className={
-              (hasSection("chart_statuts") || hasSection("alertes_stock") || hasSection("alertes_dossiers"))
+              (hasSection("alertes_stock") || hasSection("alertes_dossiers"))
                 ? "lg:col-span-2"
                 : "lg:col-span-3"
             }
           />
         )}
 
-        {(hasSection("chart_statuts") || hasSection("alertes_stock") || hasSection("alertes_dossiers")) && (
+        {(hasSection("alertes_stock") || hasSection("alertes_dossiers")) && (
         <div className={cn(
           "flex flex-col gap-6",
           hasSection("derniers_dossiers") ? "lg:col-span-1" : "lg:col-span-3",
         )}>
-
-          {hasSection("chart_statuts") && (
-            <StatutsDonutCard data={statutDonutData} totalDossiers={totalDossiers} />
-          )}
-
-          {(hasSection("alertes_stock") || hasSection("alertes_dossiers")) && (
-            <AlertesCard
-              alertes={filteredAlertes}
-              onAlertClick={(alert) => go(alert.target.view, alert.target.id ? { id: alert.target.id } : undefined)}
-            />
-          )}
-
+          <AlertesCard
+            alertes={filteredAlertes}
+            onAlertClick={(alert) => go(alert.target.view, alert.target.id ? { id: alert.target.id } : undefined)}
+          />
         </div>
         )}
       </div>

@@ -12,6 +12,8 @@ export {
   printDevis,
   printFactureModule,
   printInvoice,
+  buildRecuPaiementHTML,
+  printRecuPaiementModule,
   printStockInventory,
   shouldShowTva,
   type BonSortieCaisseModuleData,
@@ -20,6 +22,7 @@ export {
   type DevisData,
   type FactureModuleData,
   type InvoiceData,
+  type RecuPaiementModuleData,
   type StockInventoryPrintOptions,
   type StockInventoryRow,
 } from "./print-modules";

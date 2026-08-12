@@ -2,6 +2,7 @@ import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
 import { resteAPayer, calculerEcart } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { filterBySocieteAndPeriode } from "@/lib/benefice";
+import { sommeFacturesEncaissees } from "@/lib/client-stats";
 import {
   CHART_MONTHS_COUNT,
   CHART_MONTHS_OFFSET,
@@ -9,6 +10,7 @@ import {
   MS_PER_DAY,
 } from "@/lib/constants";
 import { DOSSIER_STATUT_HEX } from "@/components/sltt/status-badge";
+import { CHART_BRAND } from "@/lib/brand-colors";
 
 export const DASHBOARD_CHART_MONTHS = [
   "Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
@@ -46,9 +48,10 @@ export function computeEncaisseVariation(
     const fromEcritures = filterBySocieteAndPeriode(ecrituresAvecDate, null, year, month)
       .reduce((sum, e) => sum + e.montantPaye, 0);
     // Les factures n'ont pas de date de paiement dédiée : la date de la
-    // facture est le meilleur proxy disponible.
-    const fromFactures = filterBySocieteAndPeriode(factures, null, year, month)
-      .reduce((sum, f) => sum + f.montantPaye, 0);
+    // facture est le meilleur proxy disponible. On exclut les factures
+    // Annulée (cf. sommeFacturesEncaissees) pour rester cohérent avec le
+    // totalPaye affiché sur la fiche client (client-stats.ts).
+    const fromFactures = sommeFacturesEncaissees(filterBySocieteAndPeriode(factures, null, year, month));
     return fromEcritures + fromFactures;
   };
 
@@ -92,6 +95,59 @@ export function buildEncaissementsParMois(
       .reduce((sum, ecriture) => sum + ecriture.montantPaye, 0);
     return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur };
   });
+}
+
+export function buildDossiersParMois(
+  dossiers: Dossier[],
+  anchorDate: Date,
+): { mois: string; valeur: number }[] {
+  return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
+    const chartDate = new Date(
+      anchorDate.getFullYear(),
+      anchorDate.getMonth() - (CHART_MONTHS_OFFSET - index),
+      1,
+    );
+    const monthIndex = chartDate.getMonth();
+    const year = chartDate.getFullYear();
+    const valeur = dossiers.filter((d) => {
+      const created = parseLocalDate(d.date);
+      return created.getFullYear() === year && created.getMonth() === monthIndex;
+    }).length;
+    return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur };
+  });
+}
+
+const STOCK_DONUT_COLORS = [
+  CHART_BRAND.primary,
+  CHART_BRAND.secondary,
+  CHART_BRAND.info,
+  CHART_BRAND.success,
+  CHART_BRAND.warning,
+  CHART_BRAND.slate,
+] as const;
+
+export function buildStockRepartition(
+  stock: StockItem[],
+): { name: string; value: number; color: string }[] {
+  const byMarchandise = new Map<string, number>();
+  for (const s of stock) {
+    const val = s.sommePayee + s.resteAPayer;
+    if (val <= 0) continue;
+    const key = s.marchandise.trim() || "Sans libellé";
+    byMarchandise.set(key, (byMarchandise.get(key) ?? 0) + val);
+  }
+  const sorted = [...byMarchandise.entries()].sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, 5);
+  const rest = sorted.slice(5).reduce((sum, [, v]) => sum + v, 0);
+  const rows = top.map(([name, value], i) => ({
+    name,
+    value,
+    color: STOCK_DONUT_COLORS[i % STOCK_DONUT_COLORS.length],
+  }));
+  if (rest > 0) {
+    rows.push({ name: "Autres", value: rest, color: CHART_BRAND.slate });
+  }
+  return rows;
 }
 
 export function buildEcartsParPeriode(

@@ -13,6 +13,7 @@ import { DossiersListScreen } from "@/components/sltt/screens/dossiers-list";
 import { DossierFormScreen } from "@/components/sltt/screens/dossier-form";
 import { DossierDetailScreen } from "@/components/sltt/screens/dossier-detail";
 import { ComptabiliteScreen } from "@/components/sltt/screens/comptabilite";
+import { RecusPaiementScreen } from "@/components/sltt/screens/recus-paiement";
 import { BilansScreen } from "@/components/sltt/screens/bilans";
 import { EntreposageScreen } from "@/components/sltt/screens/entreposage";
 import { BonsScreen } from "@/components/sltt/screens/bons";
@@ -29,6 +30,8 @@ import { FournisseursScreen } from "@/components/sltt/screens/fournisseurs";
 import { ContratsScreen } from "@/components/sltt/screens/contrats";
 import { ContratDetailScreen } from "@/components/sltt/screens/contrat-detail";
 import { ArchivesScreen } from "@/components/sltt/screens/archives";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { PwaUpdatePrompt } from "@/components/pwa/PwaUpdatePrompt";
 
 export function AppShell() {
   const view = useNav((s) => s.view);
@@ -50,6 +53,7 @@ export function AppShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
+        <OfflineIndicator />
         {dataLoading && (
           <div className="flex items-center gap-2 border-b border-border/60 bg-slate-50 px-4 py-2 text-sm text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
             <Loader2 className="size-4 animate-spin" />
@@ -112,6 +116,7 @@ export function AppShell() {
             {view === "dossier-form" && <DossierFormScreen />}
             {view === "dossier-detail" && <DossierDetailScreen />}
             {view === "comptabilite" && <ComptabiliteScreen />}
+            {view === "recus-paiement" && <RecusPaiementScreen />}
             {view === "bilans" && <BilansScreen />}
             {view === "entreposage" && <EntreposageScreen />}
             {view === "bons" && <BonsScreen />}
@@ -132,6 +137,7 @@ export function AppShell() {
             )}
           </div>
         </main>
+        <PwaUpdatePrompt />
       </div>
     </div>
   );

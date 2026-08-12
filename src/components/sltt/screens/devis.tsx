@@ -21,7 +21,9 @@ import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { PageHeader } from "@/components/sltt/page-header";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
+import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { Button } from "@/components/ui/button";
+import { devisStatutNeedsConfirm } from "@/lib/confirm-transitions";
 import { DevisFormDialog } from "@/components/sltt/devis/devis-form-dialog";
 import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
 import { DevisListKpis } from "@/components/sltt/devis/devis-list-kpis";
@@ -62,6 +64,7 @@ export function DevisScreen() {
     removeDevis, (d) => d.id, (d) => d.reference, "Devis supprimé", "Impossible de supprimer le devis",
   );
   const [convertTarget, setConvertTarget] = useState<Devis | null>(null);
+  const [pendingStatut, setPendingStatut] = useState<{ devis: Devis; statut: DevisStatut } | null>(null);
 
   useEffect(() => {
     if (selectedId === "new") {
@@ -128,13 +131,20 @@ export function DevisScreen() {
       toast({ title: "Erreur", description: getErrorMessage(error, "Impossible de sauvegarder le devis"), variant: "destructive" });
     }
   }
-  async function handleQuickStatut(devis: Devis, statut: DevisStatut) {
+  async function applyStatut(devis: Devis, statut: DevisStatut) {
     try {
       await updateDevisStatut(devis.id, statut);
       toast({ title: "Statut mis à jour", description: `${devis.reference} → ${statut}` });
     } catch (error) {
       toast({ title: "Erreur", description: getErrorMessage(error, "Impossible de mettre à jour le statut"), variant: "destructive" });
     }
+  }
+  async function handleQuickStatut(devis: Devis, statut: DevisStatut) {
+    if (devisStatutNeedsConfirm(statut)) {
+      setPendingStatut({ devis, statut });
+      return;
+    }
+    await applyStatut(devis, statut);
   }
   function handlePrintDevis(devis: Devis) {
     const client = clients.find((c) => c.id === devis.clientId);
@@ -151,7 +161,7 @@ export function DevisScreen() {
       return;
     }
     try {
-      await exportToExcel(`devis-sltt-${new Date().toISOString().slice(0, 10)}`, [
+      await exportToExcel(`devis`, `devis-sltt-${new Date().toISOString().slice(0, 10)}`, [
         { header: "Référence", accessor: (d: Devis) => d.reference },
         { header: "Client", accessor: (d: Devis) => d.clientNom },
         { header: "Société", accessor: (d: Devis) => d.societeNom },
@@ -206,6 +216,26 @@ export function DevisScreen() {
         title="Supprimer ce devis ?"
         description={<>Cette action est irréversible. Le devis {deleteTarget?.reference} sera définitivement supprimé.</>}
         onConfirm={handleDelete}
+      />
+      <ConfirmActionDialog
+        open={!!pendingStatut}
+        onOpenChange={(open) => !open && setPendingStatut(null)}
+        title={`Passer le devis au statut « ${pendingStatut?.statut} » ?`}
+        description={
+          pendingStatut ? (
+            <>
+              Le devis <strong>{pendingStatut.devis.reference}</strong> ({pendingStatut.devis.clientNom}) passera au
+              statut <strong>{pendingStatut.statut}</strong>. Cette transition peut limiter les modifications ultérieures.
+            </>
+          ) : null
+        }
+        confirmLabel={`Passer à ${pendingStatut?.statut ?? ""}`}
+        variant={pendingStatut?.statut === "Refusé" ? "destructive" : "default"}
+        onConfirm={async () => {
+          if (!pendingStatut) return;
+          await applyStatut(pendingStatut.devis, pendingStatut.statut);
+          setPendingStatut(null);
+        }}
       />
       <ConvertDevisDialog
         key={convertTarget?.id ?? "closed"} devis={convertTarget} onClose={() => setConvertTarget(null)}

@@ -62,5 +62,9 @@ server.log
 /public/ocr/
 /public/pdf.worker.min.mjs
 
-# brouillons SQL locaux — jamais destinés à supabase/migrations/
+# Serwist PWA (généré au build)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*
+
 .tmp-*.sql

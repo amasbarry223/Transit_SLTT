@@ -5,7 +5,7 @@ import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useSession } from "@/lib/session/session-store";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
+import { SidebarBrand } from "./sidebar";
 import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import {
@@ -56,13 +56,15 @@ import { resolveAppShellBranding } from "@/lib/societe-brand";
 import { AnnexeSelector } from "@/components/sltt/annexe-selector";
 import { GLOSSARY } from "@/lib/glossary";
 import { usePermission } from "@/hooks/use-permission";
+import { InstallPWA } from "@/components/pwa/InstallPWA";
 
 const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Dossiers, paiements et alertes du jour" },
   dossiers: { title: "Dossiers", sub: "Cycle devis → dossier → dédouanement → livraison → solde" },
   "dossier-form": { title: "Dossier de transit", sub: "Création et édition" },
   "dossier-detail": { title: "Dossier de transit", sub: "Statut, montants et documents du dossier" },
-  comptabilite: { title: "Comptabilité", sub: "Écritures, paiements et créances des dossiers" },
+  comptabilite: { title: "Comptabilité", sub: "Écritures dossiers et journal de caisse par entité" },
+  "recus-paiement": { title: "Gestion des reçus", sub: "Créer un reçu de paiement — format horizontal, aperçu en temps réel" },
   bilans: { title: "Bilans", sub: "Analyse financière périodique" },
   entreposage: { title: "Entreposage", sub: "Entrées, sorties et suivi du stock" },
   bons: { title: "Bons de sortie", sub: "Sorties de marchandises entreposées" },
@@ -133,7 +135,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6">
+      <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center gap-2 overflow-hidden border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:gap-3 sm:px-6">
 
         {/* Hamburger — mobile uniquement */}
         <Button
@@ -155,6 +157,8 @@ export function Topbar() {
 
         {/* Global search — command palette */}
         <CommandPalette />
+
+        <InstallPWA />
 
         {/* Aide — lexique des termes métier */}
         <Button
@@ -191,8 +195,8 @@ export function Topbar() {
               <Bell className="size-5" />
               {hasUnread && (
                 <span className="absolute right-1.5 top-1.5 flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping motion-reduce:animate-none rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+                  <span className="absolute inline-flex size-full animate-ping motion-reduce:animate-none rounded-full bg-[var(--brand-secondary)]/60 opacity-75" />
+                  <span className="relative inline-flex size-2 rounded-full bg-[var(--brand-secondary)]" />
                 </span>
               )}
             </Button>
@@ -201,7 +205,7 @@ export function Topbar() {
             <DropdownMenuLabel className="flex items-center justify-between">
               Notifications
               {alertCount > 0 && (
-                <Badge variant="secondary" className="text-[10px]">
+                <Badge className="bg-[var(--brand-secondary)] text-[10px] text-white hover:bg-[var(--brand-secondary-hover)]">
                   {alertCount} alerte{alertCount > 1 ? "s" : ""}
                 </Badge>
               )}
@@ -338,14 +342,12 @@ export function Topbar() {
       {/* Mobile navigation drawer — Sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[260px] p-0">
-          <SheetHeader className="flex h-16 flex-row items-center justify-start gap-3 border-b border-border px-5">
-            <Image
-              src={shellBrand.logoUrl ?? "/logoV.png"}
+          <SheetHeader className="relative flex h-[4.75rem] flex-row items-center justify-center border-b border-border/60 px-5">
+            <SidebarBrand
+              logoUrl={shellBrand.logoUrl}
               alt={shellBrand.appTitle}
-              width={48}
-              height={48}
-              className="size-11 object-contain"
-              unoptimized
+              size="sm"
+              onClick={() => handleNav("dashboard")}
             />
             <SheetTitle className="sr-only">{shellBrand.appTitle}</SheetTitle>
           </SheetHeader>

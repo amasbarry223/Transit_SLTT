@@ -49,6 +49,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
+import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -318,6 +319,7 @@ export function TransporteursScreen() {
     "Transporteur supprimé",
     "Impossible de supprimer le transporteur",
   );
+  const [deactivateTarget, setDeactivateTarget] = useState<Transporteur | null>(null);
 
   /* ---- KPIs ---- */
   const { actifs, inactifs, capaciteTotal } = useMemo(() => {
@@ -373,9 +375,13 @@ export function TransporteursScreen() {
 
   const handleToggleStatut = async (t: Transporteur) => {
     const next: TransporteurStatut = t.statut === "Actif" ? "Inactif" : "Actif";
+    if (next === "Inactif") {
+      setDeactivateTarget(t);
+      return;
+    }
     try {
       await updateTransporteurStatut(t.id, next);
-      toast({ title: `Transporteur ${next === "Actif" ? "activé" : "désactivé"}`, description: t.nom });
+      toast({ title: `Transporteur activé`, description: t.nom });
     } catch (e) {
       toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de modifier le statut"), variant: "destructive" });
     }
@@ -391,7 +397,7 @@ export function TransporteursScreen() {
       return;
     }
     try {
-      await exportToExcel(`transporteurs-sltt-${new Date().toISOString().slice(0, 10)}`, [
+      await exportToExcel(`transporteurs`, `transporteurs-sltt-${new Date().toISOString().slice(0, 10)}`, [
         { header: "Société",         accessor: (t: Transporteur) => t.nom },
         { header: "Contact",         accessor: (t: Transporteur) => t.contact },
         { header: "Téléphone",       accessor: (t: Transporteur) => t.telephone },
@@ -789,6 +795,30 @@ export function TransporteursScreen() {
           </>
         }
         onConfirm={confirmDeleteTransporteur}
+      />
+
+      <ConfirmActionDialog
+        open={!!deactivateTarget}
+        onOpenChange={(open) => !open && setDeactivateTarget(null)}
+        title="Désactiver ce transporteur ?"
+        description={
+          <>
+            <strong>{deactivateTarget?.nom}</strong> ne sera plus proposé dans les sélections de transport tant
+            qu&apos;il n&apos;aura pas été réactivé.
+          </>
+        }
+        confirmLabel="Désactiver"
+        variant="destructive"
+        onConfirm={async () => {
+          if (!deactivateTarget) return;
+          try {
+            await updateTransporteurStatut(deactivateTarget.id, "Inactif");
+            toast({ title: "Transporteur désactivé", description: deactivateTarget.nom });
+          } catch (e) {
+            toast({ title: "Erreur", description: getErrorMessage(e, "Impossible de modifier le statut"), variant: "destructive" });
+          }
+          setDeactivateTarget(null);
+        }}
       />
     </div>
   );

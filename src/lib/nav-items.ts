@@ -14,6 +14,7 @@ import {
   Building2,
   FileSignature,
   Archive,
+  FileText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ViewKey } from "@/lib/nav-store";
@@ -46,6 +47,7 @@ export const navItems: NavItem[] = [
   { key: "calendrier", label: "Calendrier", icon: CalendarDays, requiredPermission: "calendrier:read", section: "Logistique" },
 
   { key: "comptabilite", label: "Comptabilité", shortLabel: "Compta", icon: Wallet, requiredPermission: "comptabilite:read", section: "Finance" },
+  { key: "recus-paiement", label: "Gestion des reçus", shortLabel: "Reçus", icon: FileText, requiredPermission: "recus-paiement:read", section: "Finance" },
   { key: "bilans", label: "Bilans", shortLabel: "Bilans", icon: BarChart3, requiredPermission: "rapports:read", section: "Finance" },
 
   { key: "parametres", label: "Paramètres", shortLabel: "Réglages", icon: Settings, requiredPermission: "parametres:read" },
@@ -65,6 +67,7 @@ export const VIEW_PERMISSIONS: Record<ViewKey, string | undefined> = {
   "dossier-form": "dossiers:read",
   "dossier-detail": "dossiers:read",
   comptabilite: "comptabilite:read",
+  "recus-paiement": "recus-paiement:read",
   bilans: "rapports:read",
   entreposage: "stock:read",
   bons: "bons:read",

@@ -1,4 +1,18 @@
+import { spawnSync } from "node:child_process";
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+
+const revision =
+  spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" }).stdout?.trim() ||
+  crypto.randomUUID();
+
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development" && process.env.SERWIST_DEV !== "1",
+  additionalPrecacheEntries: [{ url: "/offline", revision }],
+  globPublicPatterns: ["**/*", "!sw.js", "!sw.js.map"],
+});
 
 // Content-Security-Policy est construite dynamiquement dans middleware.ts
 // (nonce par requête) — pas ici. Un script-src statique ne peut pas couvrir
@@ -11,6 +25,11 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+];
+
+const pwaHeaders = [
+  { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+  { key: "Service-Worker-Allowed", value: "/" },
 ];
 
 const nextConfig: NextConfig = {
@@ -42,6 +61,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/sw.js",
+        headers: pwaHeaders,
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
+      },
+      {
         source: "/:path*",
         headers: securityHeaders,
       },
@@ -49,4 +76,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

@@ -7,22 +7,22 @@ import type { Ecriture, PaiementMode } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { EcritureRow } from "@/lib/db-rows";
 
-export function mapEcritureFromDb(x: EcritureRow): Ecriture {
+export function mapEcritureFromDb(row: EcritureRow): Ecriture {
   return {
-    id: x.id,
-    date: x.date,
-    datePaiement: x.date_paiement || undefined,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "",
-    dossierId: x.dossier_id || undefined,
-    societeId: x.societe_id || undefined,
-    societeNom: x.societes?.nom || undefined,
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    montantInvesti: Number(x.montant_investi || 0),
-    montantPaye: Number(x.montant_paye || 0),
-    modePaiement: x.mode_paiement || DEFAULT_PAIEMENT_MODE,
-    note: x.note || undefined,
+    id: row.id,
+    date: row.date,
+    datePaiement: row.date_paiement || undefined,
+    clientId: row.client_id,
+    clientNom: row.clients?.nom || "",
+    dossierId: row.dossier_id || undefined,
+    societeId: row.societe_id || undefined,
+    societeNom: row.societes?.nom || undefined,
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    montantInvesti: Number(row.montant_investi || 0),
+    montantPaye: Number(row.montant_paye || 0),
+    modePaiement: row.mode_paiement || DEFAULT_PAIEMENT_MODE,
+    note: row.note || undefined,
   };
 }
 

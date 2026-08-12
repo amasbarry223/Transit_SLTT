@@ -4,20 +4,20 @@ import type { Societe, SocieteInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { SocieteRow } from "@/lib/db-rows";
 
-export function mapSocieteFromDb(x: SocieteRow): Societe {
+export function mapSocieteFromDb(row: SocieteRow): Societe {
   return {
-    id: x.id,
-    nom: x.nom,
-    actif: x.actif,
-    logoUrl: x.logo_url || undefined,
-    adresse: x.adresse || undefined,
-    telephone: x.telephone || undefined,
-    rccm: x.rccm || undefined,
-    nif: x.nif || undefined,
-    afficherNomAvecLogo: x.afficher_nom_avec_logo ?? true,
-    signataireDg: x.signataire_dg || undefined,
-    signatairePdg: x.signataire_pdg || undefined,
-    isTransit: x.is_transit ?? undefined,
+    id: row.id,
+    nom: row.nom,
+    actif: row.actif,
+    logoUrl: row.logo_url || undefined,
+    adresse: row.adresse || undefined,
+    telephone: row.telephone || undefined,
+    rccm: row.rccm || undefined,
+    nif: row.nif || undefined,
+    afficherNomAvecLogo: row.afficher_nom_avec_logo ?? true,
+    signataireDg: row.signataire_dg || undefined,
+    signatairePdg: row.signataire_pdg || undefined,
+    isTransit: row.is_transit ?? undefined,
   };
 }
 

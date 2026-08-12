@@ -3,10 +3,9 @@
 import { useMemo } from "react";
 import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
 import {
-  buildEcartsParPeriode,
-  buildEncaissementsParMois,
+  buildDossiersParMois,
   buildLiveAlertes,
-  buildStatutDonutData,
+  buildStockRepartition,
   computeEncaisseVariation,
   computeRestesAPayer,
   type LiveAlert,
@@ -41,7 +40,6 @@ export function useDashboardMetrics({
     [dossiers],
   );
 
-  // Dossiers dédouanés en attente de livraison (sublabel du KPI "En cours")
   const dossiersALivrer = useMemo(
     () => dossiers.filter((d) => d.statut === "Dédouané").length,
     [dossiers],
@@ -52,15 +50,12 @@ export function useDashboardMetrics({
     [stock],
   );
 
-  const encaissementsParMois = useMemo(
-    () => buildEncaissementsParMois(ecrituresAvecDate, anchorDate),
-    [ecrituresAvecDate, anchorDate],
-  );
-
-  const ecartsParPeriode = useMemo(
-    () => buildEcartsParPeriode(dossiers, anchorDate),
+  const dossiersParMois = useMemo(
+    () => buildDossiersParMois(dossiers, anchorDate),
     [dossiers, anchorDate],
   );
+
+  const stockRepartition = useMemo(() => buildStockRepartition(stock), [stock]);
 
   const derniersDossiers = useMemo(
     () =>
@@ -69,10 +64,6 @@ export function useDashboardMetrics({
         .slice(0, CHART_MONTHS_COUNT),
     [dossiers],
   );
-
-  const statutDonutData = useMemo(() => buildStatutDonutData(dossiers), [dossiers]);
-
-  const totalDossiers = dossiers.length;
 
   const alertes = useMemo<LiveAlert[]>(() => buildLiveAlertes(stock, dossiers), [stock, dossiers]);
 
@@ -84,11 +75,9 @@ export function useDashboardMetrics({
     dossiersEnCours,
     dossiersALivrer,
     valeurStock,
-    encaissementsParMois,
-    ecartsParPeriode,
+    dossiersParMois,
+    stockRepartition,
     derniersDossiers,
-    statutDonutData,
-    totalDossiers,
     alertes,
   };
 }

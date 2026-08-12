@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const raw = await request.json();
     const parsed = resetPasswordBodySchema.safeParse(raw);
     if (!parsed.success) {
-      return Response.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
+      throw new AuthError(zodErrorMessage(parsed.error), 400);
     }
     const { password } = parsed.data;
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const { error } = await admin.auth.admin.updateUserById(id, { password });
     if (error) {
-      return Response.json({ error: error.message }, { status: 400 });
+      throw new AuthError(error.message, 400);
     }
 
     return Response.json({ success: true });

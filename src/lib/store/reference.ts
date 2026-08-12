@@ -35,9 +35,55 @@ export function nextAnnexeYearlyReference(
 }
 
 /** Extrait le suffixe numérique final d'une référence (ex. "...-0007" → 7). */
-function extractTrailingSeq(ref: string): number | null {
+export function extractTrailingSeq(ref: string): number | null {
   const match = ref.match(/-(\d+)$/);
   return match ? Number.parseInt(match[1], 10) : null;
+}
+
+/**
+ * Incrémente le suffixe numérique final d'une référence en conservant le
+ * même nombre de chiffres (ex. "ML-FACT-2026-0007" → "ML-FACT-2026-0008").
+ * Utilisé pour régénérer une référence candidate après une violation de
+ * contrainte unique (deux créations concurrentes ayant calculé le même
+ * numéro à partir d'un même snapshot client — la numérotation elle-même
+ * reste calculée côté client, voir computeDossierReference/
+ * computeAnnexeScopedReference ; ceci ne fait que réagir à un conflit déjà
+ * détecté par la contrainte `unique` en base).
+ */
+export function bumpTrailingSeq(reference: string): string {
+  return reference.replace(/(\d+)$/, (digits) => String(Number(digits) + 1).padStart(digits.length, "0"));
+}
+
+/** true si l'erreur Postgres/PostgREST est une violation de contrainte unique (23505). */
+export function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "23505"
+  );
+}
+
+/**
+ * Exécute `attemptInsert(reference)` en réessayant avec une référence
+ * incrémentée si l'insertion échoue sur une violation de contrainte unique
+ * (deux créations concurrentes ayant calculé la même référence). Sans ce
+ * filet, la course se traduisait par une exception Postgres brute affichée
+ * à l'utilisateur plutôt qu'une nouvelle tentative transparente.
+ */
+export async function insertWithReferenceRetry<T>(
+  reference: string,
+  attemptInsert: (ref: string) => PromiseLike<{ data: T | null; error: { code?: string; message: string } | null }>,
+  maxAttempts = 3,
+): Promise<{ data: T; reference: string }> {
+  let ref = reference;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { data, error } = await attemptInsert(ref);
+    if (!error) return { data: data as T, reference: ref };
+    if (!isUniqueViolation(error) || attempt === maxAttempts) throw error;
+    ref = bumpTrailingSeq(ref);
+  }
+  throw new Error("Échec de génération de référence après plusieurs tentatives.");
 }
 
 /**

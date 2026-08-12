@@ -124,6 +124,7 @@ export function EntreposageScreen() {
     }
     try {
       await exportToExcel(
+        "stock",
         `inventaire-stock-${new Date().toISOString().slice(0, 10)}`,
         [
           { header: "Marchandise", accessor: (s) => s.marchandise },

@@ -4,18 +4,18 @@ import type { Client } from "@/lib/domain-types";
 import type { ClientInput, SLTTState } from "@/lib/store";
 import type { ClientRow } from "@/lib/db-rows";
 
-export function mapClientFromDb(x: ClientRow): Client {
+export function mapClientFromDb(row: ClientRow): Client {
   return {
-    id: x.id,
-    nom: x.nom,
-    type: x.type,
-    telephone: x.telephone,
-    email: x.email,
-    adresse: x.adresse,
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom,
+    id: row.id,
+    nom: row.nom,
+    type: row.type,
+    telephone: row.telephone,
+    email: row.email,
+    adresse: row.adresse,
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom,
     nbDossiers: 0,
     totalDu: 0,
     totalPaye: 0,

@@ -12,8 +12,27 @@ function useEffectivePermissionUser() {
   const currentUserId = useSession((s) => s.currentUserId);
   const currentRole = useSession((s) => s.currentRole);
   const users = useStore((s) => s.users);
+  const dataLoading = useStore((s) => s.dataLoading);
   const user = users.find((u) => u.id === currentUserId);
-  return resolvePermissionUser(user, currentRole);
+
+  // Profil pas encore hydraté : pas de repli sur les defaults du rôle (évite
+  // un flash de modules interdits avant fetchData).
+  if (currentUserId && !user) {
+    if (dataLoading) return null;
+    return null;
+  }
+
+  return resolvePermissionUser(user, user ? undefined : currentRole);
+}
+
+/** True lorsque le profil connecté est chargé et utilisable pour les checks UI. */
+export function usePermissionsReady(): boolean {
+  const currentUserId = useSession((s) => s.currentUserId);
+  const users = useStore((s) => s.users);
+  const dataLoading = useStore((s) => s.dataLoading);
+  if (!currentUserId) return false;
+  if (dataLoading) return false;
+  return users.some((u) => u.id === currentUserId);
 }
 
 /** Retourne true si l'utilisateur connecté possède la permission demandée. */

@@ -46,6 +46,7 @@ export function FactureDetailScreen() {
   const societes = useStore((s) => s.societes);
   const annexes = useStore((s) => s.annexes);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
+  const recordFacturePaiement = useStore((s) => s.recordFacturePaiement);
   const updateFacture = useStore((s) => s.updateFacture);
   const dossiers = useStore((s) => s.dossiers);
   const { toast } = useToast();
@@ -250,12 +251,11 @@ export function FactureDetailScreen() {
       <AlertDialog open={confirmSolde} onOpenChange={setConfirmSolde}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Marquer cette facture comme soldée ?</AlertDialogTitle>
+            <AlertDialogTitle>Solder cette facture ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Le montant payé sera fixé à <strong>{formatFCFA(facture.montantTTC)}</strong> (montant total
-              TTC), alors que <strong>{formatFCFA(facture.montantPaye)}</strong> seulement a été enregistré
-              jusqu&apos;ici. À utiliser uniquement si le client a réellement réglé la totalité par un autre
-              moyen que ce module.
+              Un encaissement de <strong>{formatFCFA(reste)}</strong> sera enregistré pour couvrir le
+              reste dû ({formatFCFA(facture.montantPaye)} déjà payés sur {formatFCFA(facture.montantTTC)}{" "}
+              TTC). La facture passera automatiquement au statut <strong>Soldée</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -263,19 +263,23 @@ export function FactureDetailScreen() {
             <AlertDialogAction
               onClick={async () => {
                 try {
-                  await updateFactureStatut(facture.id, "Soldée");
-                  toast({ title: "Statut mis à jour", description: `${facture.numero} → Soldée` });
+                  await recordFacturePaiement(facture.id, reste);
+                  toast({
+                    title: "Facture soldée",
+                    description: `${facture.numero} — encaissement de ${formatFCFA(reste)} enregistré.`,
+                  });
                 } catch (err: unknown) {
                   toast({
-                    title: "Transition impossible",
-                    description: err instanceof Error ? err.message : "Cette transition de statut n'est pas autorisée.",
+                    title: "Encaissement impossible",
+                    description:
+                      err instanceof Error ? err.message : "Impossible d'enregistrer le paiement.",
                     variant: "destructive",
                   });
                 }
                 setConfirmSolde(false);
               }}
             >
-              Confirmer
+              Confirmer le solde
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

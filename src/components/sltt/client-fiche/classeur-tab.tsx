@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { FileSpreadsheet, Printer, History, TrendingUp, Wallet, Clock, Upload, Table2 } from "lucide-react";
 import type { AuditEntry } from "@/lib/audit";
 import type { ClasseurEntry, ClasseurFilters, ClasseurTotals } from "@/lib/classeur";
@@ -38,7 +38,7 @@ type ClasseurTabProps = {
   isSyncing?: boolean;
   clientAuditHistory: AuditEntry[];
   onExportExcel: () => void;
-  onImportExcel?: (file: File) => void | Promise<void>;
+  onOpenImport?: () => void;
   onPrint: () => void;
   onRowClick: (entry: ClasseurEntry) => void;
   onGridDataChanged?: () => void;
@@ -58,14 +58,12 @@ export function ClasseurTab({
   isSyncing = false,
   clientAuditHistory,
   onExportExcel,
-  onImportExcel,
+  onOpenImport,
   onPrint,
   onRowClick,
   onGridDataChanged,
   canImport = false,
 }: ClasseurTabProps) {
-  const importRef = useRef<HTMLInputElement>(null);
-  const [importing, setImporting] = useState(false);
   const [viewMode, setViewMode] = useState<ClasseurViewMode>("grand-livre");
 
   return (
@@ -165,37 +163,17 @@ export function ClasseurTab({
           />
         </div>
         <div className="flex gap-2 sm:ml-auto">
-          {canImport && onImportExcel && (
-            <>
-              <input
-                ref={importRef}
-                type="file"
-                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = "";
-                  if (!file) return;
-                  setImporting(true);
-                  try {
-                    await onImportExcel(file);
-                  } finally {
-                    setImporting(false);
-                  }
-                }}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10"
-                disabled={importing}
-                onClick={() => importRef.current?.click()}
-                title="Importer un Excel"
-              >
-                <Upload className="size-4" />
-                <span className="hidden sm:inline">Importer</span>
-              </Button>
-            </>
+          {canImport && onOpenImport && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10"
+              onClick={onOpenImport}
+              title="Importer un Excel"
+            >
+              <Upload className="size-4" />
+              <span className="hidden sm:inline">Importer</span>
+            </Button>
           )}
           <Button
             variant="outline"

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { runOcrOnStoragePath } from "@/lib/documents/ocr/run-ocr";
+import { mapDossierFieldsFromText } from "@/lib/documents/ocr/mappers/dossier-mapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -285,6 +286,7 @@ export function OcrReviewDialog({
       const result = await runOcrOnStoragePath(
         version.storagePath,
         doc.mimeType,
+        mapDossierFieldsFromText,
         ac.signal,
       );
       if (ac.signal.aborted) {

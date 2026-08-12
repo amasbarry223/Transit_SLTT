@@ -8,31 +8,35 @@ import type { Facture, FactureLigne, FactureStatut } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import type { FactureInput, SLTTState } from "@/lib/store";
 import type { FactureRow } from "@/lib/db-rows";
-import { computeAnnexeScopedReference } from "@/lib/store/reference";
+import {
+  computeAnnexeScopedReference,
+  extractTrailingSeq,
+  insertWithReferenceRetry,
+} from "@/lib/store/reference";
 
-export function mapFactureFromDb(x: FactureRow): Facture {
+export function mapFactureFromDb(row: FactureRow): Facture {
   return {
-    id: x.id,
-    numero: x.numero,
-    dossierId: x.dossier_id,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    societeId: x.societe_id || undefined,
-    societeNom: x.societes?.nom || undefined,
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    date: x.date,
-    dateEcheance: x.date_echeance,
-    statut: x.statut,
-    tauxTVA: Number(x.taux_tva),
-    montantHT: Number(x.montant_ht),
-    montantTVA: Number(x.montant_tva),
-    montantTTC: Number(x.montant_ttc),
-    montantPaye: Number(x.montant_paye),
-    notes: x.notes,
-    creePar: x.cree_par,
-    creeLe: x.cree_le ?? x.created_at,
-    lignes: (x.facture_lignes || []).map((l) => ({
+    id: row.id,
+    numero: row.numero,
+    dossierId: row.dossier_id,
+    clientId: row.client_id,
+    clientNom: row.clients?.nom || "—",
+    societeId: row.societe_id || undefined,
+    societeNom: row.societes?.nom || undefined,
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    date: row.date,
+    dateEcheance: row.date_echeance,
+    statut: row.statut,
+    tauxTVA: Number(row.taux_tva),
+    montantHT: Number(row.montant_ht),
+    montantTVA: Number(row.montant_tva),
+    montantTTC: Number(row.montant_ttc),
+    montantPaye: Number(row.montant_paye),
+    notes: row.notes,
+    creePar: row.cree_par,
+    creeLe: row.cree_le ?? row.created_at,
+    lignes: (row.facture_lignes || []).map((l) => ({
       id: l.id,
       description: l.description,
       quantite: Number(l.quantite),
@@ -62,7 +66,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   addFacture: async (input) => {
     const societe = input.societeId ? get().societes.find((s) => s.id === input.societeId) : undefined;
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
-    const { reference: numero, useAnnexeNumbering, seq } = computeAnnexeScopedReference(
+    const { reference: initialNumero, useAnnexeNumbering } = computeAnnexeScopedReference(
       societe,
       annexe,
       "FACT",
@@ -75,29 +79,31 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     const TTC = HT + TVA;
     const creePar = getConnectedUserName();
 
-    const { data: dbFact, error: errFact } = await supabase
-      .from("factures")
-      .insert({
-        numero,
-        dossier_id: input.dossierId,
-        client_id: input.clientId,
-        societe_id: input.societeId || null,
-        annexe_id: input.annexeId,
-        date: input.date,
-        date_echeance: input.dateEcheance,
-        statut: "Brouillon",
-        taux_tva: input.tauxTVA,
-        montant_ht: HT,
-        montant_tva: TVA,
-        montant_ttc: TTC,
-        montant_paye: 0,
-        notes: input.notes,
-        cree_par: creePar,
-      })
-      .select()
-      .single();
-
-    if (errFact) throw errFact;
+    // Retry avec numéro incrémenté si deux créations concurrentes ont calculé
+    // le même numéro à partir d'un même snapshot client (contrainte unique en base).
+    const { data: dbFact, reference: numero } = await insertWithReferenceRetry<{ id: string }>(initialNumero, (ref) =>
+      supabase
+        .from("factures")
+        .insert({
+          numero: ref,
+          dossier_id: input.dossierId,
+          client_id: input.clientId,
+          societe_id: input.societeId || null,
+          annexe_id: input.annexeId,
+          date: input.date,
+          date_echeance: input.dateEcheance,
+          statut: "Brouillon",
+          taux_tva: input.tauxTVA,
+          montant_ht: HT,
+          montant_tva: TVA,
+          montant_ttc: TTC,
+          montant_paye: 0,
+          notes: input.notes,
+          cree_par: creePar,
+        })
+        .select()
+        .single(),
+    );
 
     if (input.lignes.length > 0) {
       const { error: errLignes } = await supabase
@@ -125,11 +131,12 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     if (errFetch) throw errFetch;
 
     const newFacture = mapFactureFromDb(fullFact);
+    const finalSeq = extractTrailingSeq(numero) ?? get().factureSeq;
     set((s) => {
       const updatedFactures = [newFacture, ...s.factures];
       return {
         factures: updatedFactures,
-        factureSeq: useAnnexeNumbering ? s.factureSeq : seq + 1,
+        factureSeq: useAnnexeNumbering ? s.factureSeq : finalSeq + 1,
         clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
       };
     });

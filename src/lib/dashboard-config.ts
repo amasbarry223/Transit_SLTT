@@ -6,9 +6,8 @@ export type DashboardSection =
   | "kpi_dossiers"
   | "kpi_stock"
   | "kpi_benefice"
-  | "chart_encaissements"
-  | "chart_marges"
-  | "chart_statuts"
+  | "chart_dossiers_evolution"
+  | "chart_stock_repartition"
   | "alertes_stock"
   | "alertes_dossiers"
   | "derniers_dossiers"
@@ -21,9 +20,8 @@ const SECTION_PERMISSIONS: Record<DashboardSection, (user: PermissionUser) => bo
   kpi_dossiers: (u) => hasPermission(u, "dossiers:read"),
   kpi_stock: (u) => hasPermission(u, "stock:read"),
   kpi_benefice: (u) => hasPermission(u, "comptabilite:read"),
-  chart_encaissements: (u) => hasPermission(u, "comptabilite:read"),
-  chart_marges: (u) => hasPermission(u, "dossiers:read"),
-  chart_statuts: (u) => hasPermission(u, "dossiers:read"),
+  chart_dossiers_evolution: (u) => hasPermission(u, "dossiers:read"),
+  chart_stock_repartition: (u) => hasPermission(u, "stock:read"),
   alertes_stock: (u) => hasPermission(u, "stock:read"),
   alertes_dossiers: (u) => hasPermission(u, "dossiers:read"),
   derniers_dossiers: (u) => hasPermission(u, "dossiers:read"),
@@ -52,6 +50,5 @@ export function kpiGridClass(count: number): string {
   if (count === 4) {
     return "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4";
   }
-  // 5+ : auto-fit remplit toute la largeur (plus de cellule orpheline vide)
   return "grid-cols-1 sm:[grid-template-columns:repeat(auto-fit,minmax(min(100%,13.5rem),1fr))]";
 }

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
 import { assertAnnexeCeiling, assertCanTouchTarget } from "@/lib/auth/user-guards";
+import { updateUserAnnexesBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -12,24 +13,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     await assertCanTouchTarget(admin, id, isAdmin);
 
     const raw = await request.json();
-    const annexeIds = Array.isArray(raw?.annexeIds)
-      ? raw.annexeIds.filter((v: unknown) => typeof v === "string")
-      : null;
-    if (!annexeIds || annexeIds.length === 0) {
-      throw new AuthError("Au moins une annexe doit être assignée à l'utilisateur.", 400);
+    const parsed = updateUserAnnexesBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      throw new AuthError(zodErrorMessage(parsed.error), 400);
     }
+    const { annexeIds } = parsed.data;
     await assertAnnexeCeiling(admin, user.id, annexeIds, isAdmin);
 
     const { error: deleteError } = await admin.from("user_annexes").delete().eq("user_id", id);
     if (deleteError) {
-      return Response.json({ error: deleteError.message }, { status: 400 });
+      throw new AuthError(deleteError.message, 400);
     }
 
     const { error: insertError } = await admin
       .from("user_annexes")
-      .insert(annexeIds.map((annexeId: string) => ({ user_id: id, annexe_id: annexeId })));
+      .insert(annexeIds.map((annexeId) => ({ user_id: id, annexe_id: annexeId })));
     if (insertError) {
-      return Response.json({ error: insertError.message }, { status: 400 });
+      throw new AuthError(insertError.message, 400);
     }
 
     return Response.json({ annexeIds });

@@ -74,9 +74,12 @@ export function formatDateTime(date: Date | string | null | undefined): string {
 
 /** Parse a user-typed number string (allow spaces) into a number.
  * DX-04: Returns 0 for negative values to reject invalid input.
+ * Le FCFA n'a pas de sous-unité : arrondi à l'entier pour qu'un montant
+ * fractionnaire saisi (ex. "1500.75") ne soit jamais persisté tel quel en
+ * base alors que formatFCFA() l'arrondit déjà à l'affichage (Math.round ci-dessus).
  */
 export function parseAmount(value: string): number {
   const cleaned = value.replace(/[^\d.,-]/g, "").replace(/\s/g, "");
   const result = Number.parseFloat(cleaned.replace(",", ".")) || 0;
-  return Math.max(0, result);
+  return Math.max(0, Math.round(result));
 }

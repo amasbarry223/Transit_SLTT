@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AlertTriangle, Bell, Calendar, Coins, Globe, RotateCcw } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useUiPrefs, type CurrencyLabel, type DateFormat } from "@/lib/session/ui-prefs-store";
@@ -16,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 
 export function PreferencesTab() {
   const { toast } = useToast();
@@ -26,6 +28,7 @@ export function PreferencesTab() {
   const setCurrencyLabel = useUiPrefs((s) => s.setCurrencyLabel);
   const notificationsEmail = useUiPrefs((s) => s.notificationsEmail);
   const setNotificationsEmail = useUiPrefs((s) => s.setNotificationsEmail);
+  const [cacheConfirmOpen, setCacheConfirmOpen] = useState(false);
 
   return (
     <div className="space-y-5">
@@ -155,23 +158,7 @@ export function PreferencesTab() {
             <Button
               variant="outline"
               className="mt-3 h-9"
-              onClick={async () => {
-                try {
-                  localStorage.removeItem("sltt-data-v9");
-                  localStorage.removeItem("sltt-data-v10");
-                  await refetchData();
-                  toast({
-                    title: "Cache vidé",
-                    description: "Les données ont été rechargées depuis Supabase.",
-                  });
-                } catch {
-                  toast({
-                    title: "Échec du rechargement",
-                    description: "Impossible de recharger les données.",
-                    variant: "destructive",
-                  });
-                }
-              }}
+              onClick={() => setCacheConfirmOpen(true)}
             >
               <RotateCcw className="size-4" />
               Vider le cache et recharger
@@ -179,6 +166,31 @@ export function PreferencesTab() {
           </div>
         </div>
       </Card>
+
+      <ConfirmActionDialog
+        open={cacheConfirmOpen}
+        onOpenChange={setCacheConfirmOpen}
+        title="Vider le cache local et recharger ?"
+        description="Les données en cache sur cet appareil seront effacées puis rechargées depuis Supabase. Les modifications non synchronisées pourraient être perdues."
+        confirmLabel="Vider et recharger"
+        onConfirm={async () => {
+          try {
+            localStorage.removeItem("sltt-data-v9");
+            localStorage.removeItem("sltt-data-v10");
+            await refetchData();
+            toast({
+              title: "Cache vidé",
+              description: "Les données ont été rechargées depuis Supabase.",
+            });
+          } catch {
+            toast({
+              title: "Échec du rechargement",
+              description: "Impossible de recharger les données.",
+              variant: "destructive",
+            });
+          }
+        }}
+      />
     </div>
   );
 }

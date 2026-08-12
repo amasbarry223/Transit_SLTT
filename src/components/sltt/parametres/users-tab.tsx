@@ -15,6 +15,7 @@ import { matchesQuery } from "@/lib/search-filter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
+import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { UserFormModal } from "./users/user-form-modal";
 import { UsersStatsRow, UsersTable } from "./users/users-table";
 import {
@@ -40,6 +41,7 @@ export function UsersTab() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<UserAccount | null>(null);
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [formOpen, setFormOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -196,11 +198,15 @@ export function UsersTab() {
 
   async function handleToggleActive(u: UserAccount) {
     if (u.id === currentUser?.id) return;
+    if (u.actif) {
+      setDeactivateTarget(u);
+      return;
+    }
     try {
       await toggleUserActive(u.id);
       toast({
         title: "Statut mis à jour",
-        description: `${u.nom} est maintenant ${u.actif ? "inactif" : "actif"}.`,
+        description: `${u.nom} est maintenant actif.`,
       });
     } catch (err: unknown) {
       toast({
@@ -283,6 +289,37 @@ export function UsersTab() {
               variant: "destructive",
             });
           }
+        }}
+      />
+
+      <ConfirmActionDialog
+        open={!!deactivateTarget}
+        onOpenChange={(open) => !open && setDeactivateTarget(null)}
+        title="Désactiver cet utilisateur ?"
+        description={
+          <>
+            <strong>{deactivateTarget?.nom}</strong> ne pourra plus se connecter à l&apos;application tant que son
+            compte n&apos;aura pas été réactivé.
+          </>
+        }
+        confirmLabel="Désactiver"
+        variant="destructive"
+        onConfirm={async () => {
+          if (!deactivateTarget) return;
+          try {
+            await toggleUserActive(deactivateTarget.id);
+            toast({
+              title: "Statut mis à jour",
+              description: `${deactivateTarget.nom} est maintenant inactif.`,
+            });
+          } catch (err: unknown) {
+            toast({
+              title: "Erreur",
+              variant: "destructive",
+              description: err instanceof Error ? err.message : undefined,
+            });
+          }
+          setDeactivateTarget(null);
         }}
       />
     </div>

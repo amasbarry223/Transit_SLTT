@@ -21,6 +21,11 @@ import { mapSocieteFromDb } from "@/lib/store/societes-slice";
 import { mapAnnexeFromDb } from "@/lib/store/annexes-slice";
 import { mapStockItemFromDb, mapMouvementFromDb } from "@/lib/store/stock-slice";
 import { mapBonFromDb, mapBonSortieCaisseFromDb } from "@/lib/store/bons-slice";
+import {
+  mapOperationComptableFromDb,
+  mapClotureCaisseFromDb,
+} from "@/lib/store/comptabilite-generale-slice";
+import { mapRecuPaiementFromDb } from "@/lib/store/recus-paiement-slice";
 import { mapSubDossierFromDb, mapFichierFromDb } from "@/lib/store/fichiers-slice";
 import { mapDevisFromDb } from "@/lib/store/devis-slice";
 import { mapTransporteurFromDb } from "@/lib/store/transporteurs-slice";
@@ -161,12 +166,12 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           })),
           usersPublic: (
             profilesPublic ?? (profiles as any[])
-          ).map((x: ProfilePublicRow) => ({
-            id: x.id,
-            nom: x.nom,
-            role: x.role as UserRole,
-            actif: x.actif,
-            derniereConnexion: x.derniere_connexion || "",
+          ).map((row: ProfilePublicRow) => ({
+            id: row.id,
+            nom: row.nom,
+            role: row.role as UserRole,
+            actif: row.actif,
+            derniereConnexion: row.derniere_connexion || "",
           })),
           societes: (societes as any[]).map(mapSocieteFromDb),
           annexes: (annexes as any[]).map(mapAnnexeFromDb),
@@ -289,6 +294,34 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
                   "*, bons_sortie_caisse_lignes(*), societes(nom), annexes(nom)",
                 ),
               { softCap: 2_000 },
+            ),
+        },
+        {
+          key: "operationsComptables",
+          q: () =>
+            fetchAllPaged(
+              () =>
+                pagedSelect(
+                  supabase,
+                  "operations_comptables",
+                  "*, clients(nom), societes(nom), annexes(nom)",
+                ),
+              { softCap: 5_000 },
+            ),
+        },
+        {
+          key: "cloturesCaisse",
+          q: () =>
+            fetchAllPaged(() => pagedSelect(supabase, "clotures_caisse", "*"), {
+              softCap: 500,
+            }),
+        },
+        {
+          key: "recusPaiement",
+          q: () =>
+            fetchAllPaged(
+              () => pagedSelect(supabase, "recus_paiement", "*, annexes(nom)"),
+              { softCap: 5_000 },
             ),
         },
         {
@@ -467,6 +500,21 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
             "bonsSortieCaisse",
             (rows) => rows.map(mapBonSortieCaisseFromDb),
             s.bonsSortieCaisse,
+          ),
+          operationsComptables: ok(
+            "operationsComptables",
+            (rows) => rows.map(mapOperationComptableFromDb),
+            s.operationsComptables,
+          ),
+          cloturesCaisse: ok(
+            "cloturesCaisse",
+            (rows) => rows.map(mapClotureCaisseFromDb),
+            s.cloturesCaisse,
+          ),
+          recusPaiement: ok(
+            "recusPaiement",
+            (rows) => rows.map(mapRecuPaiementFromDb),
+            s.recusPaiement,
           ),
           auditLogs: ok("auditLogs", (rows) => rows.map(mapAuditLogFromDb), s.auditLogs),
           archives: ok("archives", (rows) => rows.map(mapArchiveFromDb), s.archives),

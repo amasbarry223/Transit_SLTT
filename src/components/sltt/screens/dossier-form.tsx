@@ -13,6 +13,7 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
+import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
@@ -185,7 +186,7 @@ function DossierFormInner() {
           <tr><th>Date</th><td>${form.date ? formatDateShort(form.date) : "—"}</td></tr>
         </tbody>
       </table>
-      <h2 style="margin-top:24px;font-size:14px;color:#404089">Montants (FCFA)</h2>
+      <h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Montants (FCFA)</h2>
       <table>
         <tbody>
           <tr><th style="width:35%">${htmlEscape(coutLabels.droitDouane)}</th><td class="num">${formatFCFA(form.dN, false)}</td></tr>
@@ -202,7 +203,7 @@ function DossierFormInner() {
           </tr>
         </tbody>
       </table>
-      ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#404089">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
+      ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
     `,
       resolvePrintHTMLBrand(societes),
     );

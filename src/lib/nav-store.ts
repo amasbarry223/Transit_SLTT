@@ -8,6 +8,7 @@ export type ViewKey =
   | "dossier-form"
   | "dossier-detail"
   | "comptabilite"
+  | "recus-paiement"
   | "bilans"
   | "entreposage"
   | "bons"

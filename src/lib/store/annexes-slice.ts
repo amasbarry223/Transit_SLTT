@@ -4,18 +4,18 @@ import type { Annexe, AnnexeInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { AnnexeRow } from "@/lib/db-rows";
 
-export function mapAnnexeFromDb(x: AnnexeRow): Annexe {
+export function mapAnnexeFromDb(row: AnnexeRow): Annexe {
   return {
-    id: x.id,
-    nom: x.nom,
-    code: x.code,
-    villeSiege: x.ville_siege,
-    adresse: x.adresse || undefined,
-    telephone: x.telephone || undefined,
-    rccm: x.rccm || undefined,
-    nif: x.nif || undefined,
-    devise: x.devise,
-    actif: x.actif,
+    id: row.id,
+    nom: row.nom,
+    code: row.code,
+    villeSiege: row.ville_siege,
+    adresse: row.adresse || undefined,
+    telephone: row.telephone || undefined,
+    rccm: row.rccm || undefined,
+    nif: row.nif || undefined,
+    devise: row.devise,
+    actif: row.actif,
   };
 }
 

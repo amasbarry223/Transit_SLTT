@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
+import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
 import { assertPermissionCeiling } from "@/lib/auth/user-guards";
 import { normalizePermissions } from "@/lib/permissions";
 import { createUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
@@ -10,16 +10,13 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = createUserBodySchema.safeParse(raw);
     if (!parsed.success) {
-      return Response.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
+      throw new AuthError(zodErrorMessage(parsed.error), 400);
     }
 
     const { nom, email, role, permissions, password } = parsed.data;
 
     if (role === "Administrateur" && !isAdmin) {
-      return Response.json(
-        { error: "Seul un administrateur peut créer un compte Administrateur." },
-        { status: 403 },
-      );
+      throw new AuthError("Seul un administrateur peut créer un compte Administrateur.", 403);
     }
 
     const normalizedPerms = normalizePermissions(permissions || []);
@@ -37,28 +34,33 @@ export async function POST(request: NextRequest) {
     });
 
     if (createError || !authUser.user) {
-      return Response.json(
-        { error: createError?.message || "Impossible de créer l'utilisateur." },
-        { status: 400 },
-      );
+      throw new AuthError(createError?.message || "Impossible de créer l'utilisateur.", 400);
     }
 
+    // upsert plutôt qu'update : ne dépend pas silencieusement du trigger
+    // on_auth_user_created pour que la ligne profiles existe déjà (cf.
+    // 20260902_handle_new_user_trigger.sql — le trigger reste la voie
+    // normale, mais cette route ne doit pas casser si jamais il est absent
+    // ou en retard sur un environnement donné).
     const { data: profile, error: profileError } = await admin
       .from("profiles")
-      .update({
-        nom: nom.trim(),
-        email: email.trim().toLowerCase(),
-        role,
-        permissions: normalizedPerms,
-        actif: true,
-      })
-      .eq("id", authUser.user.id)
+      .upsert(
+        {
+          id: authUser.user.id,
+          nom: nom.trim(),
+          email: email.trim().toLowerCase(),
+          role,
+          permissions: normalizedPerms,
+          actif: true,
+        },
+        { onConflict: "id" },
+      )
       .select("*")
       .single();
 
     if (profileError) {
       await admin.auth.admin.deleteUser(authUser.user.id);
-      return Response.json({ error: profileError.message }, { status: 400 });
+      throw new AuthError(profileError.message, 400);
     }
 
     return Response.json({ user: profile }, { status: 201 });

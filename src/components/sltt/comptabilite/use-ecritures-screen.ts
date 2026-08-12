@@ -208,6 +208,7 @@ export function useEcrituresScreen() {
     }
     try {
       await exportToExcel(
+        "comptabilite",
         `comptabilite-ecritures-${today()}`,
         [
           { header: "Date", accessor: (ecriture: Ecriture) => formatDateShort(ecriture.date) },

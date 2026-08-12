@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand-colors";
 import { resteAPayer } from "@/lib/domain-types";
 import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
@@ -78,14 +79,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
 
 /* Header */
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 40px 28px; border-bottom: 3px solid #404089; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 40px 28px; border-bottom: 3px solid ${BRAND.navy}; }
 .brand { display: flex; align-items: flex-start; gap: 14px; }
 .brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-name { font-size: 20px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -.5px; margin-bottom: 3px; }
 .brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
 .doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-ref { font-size: 28px; font-weight: 800; color: #404089; letter-spacing: -1.5px; line-height: 1; }
+.doc-ref { font-size: 28px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1.5px; line-height: 1; }
 .doc-dossier { font-size: 12px; color: #6b7280; margin-top: 6px; }
 .doc-date { font-size: 11px; color: #92a3ba; margin-top: 4px; }
 .statut-badge { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
@@ -106,7 +107,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .ref-block { display: flex; gap: 20px; background: #f1f8fd; border: 1px solid #c6e1f7; border-radius: 10px; padding: 13px 18px; margin-bottom: 22px; flex-wrap: wrap; }
 .ref-item { }
 .ref-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #93c5fd; margin-bottom: 3px; }
-.ref-val { font-size: 13px; font-weight: 700; color: #404089; }
+.ref-val { font-size: 13px; font-weight: 700; color: ${BRAND.navy}; }
 
 /* Table prestations */
 .tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
@@ -136,11 +137,11 @@ table { width: 100%; border-collapse: collapse; }
 /* Footer */
 .footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; display: flex; justify-content: space-between; align-items: center; }
 .footer-note { font-size: 10px; color: #92a3ba; line-height: 1.65; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #404089; }
+.footer-brand { font-size: 11px; font-weight: 800; color: ${BRAND.navy}; }
 
 /* Bouton impression */
 .no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
-.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 @media print {
   .no-print { display: none !important; }

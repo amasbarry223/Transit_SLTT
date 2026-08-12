@@ -5,26 +5,26 @@ import type { FichierInput, SLTTState, SubDossierInput } from "@/lib/store";
 import type { DossierFichierRow, SubDossierRow } from "@/lib/db-rows";
 import { dataUrlToBlob } from "@/lib/documents/storage";
 
-export function mapSubDossierFromDb(x: SubDossierRow): SubDossier {
+export function mapSubDossierFromDb(row: SubDossierRow): SubDossier {
   return {
-    id: x.id,
-    dossierId: x.dossier_id,
-    nom: x.nom,
-    description: x.description,
-    dateCreation: x.date_creation || new Date().toISOString(),
+    id: row.id,
+    dossierId: row.dossier_id,
+    nom: row.nom,
+    description: row.description,
+    dateCreation: row.date_creation || new Date().toISOString(),
   };
 }
 
-export function mapFichierFromDb(x: DossierFichierRow): DossierFichier {
+export function mapFichierFromDb(row: DossierFichierRow): DossierFichier {
   return {
-    id: x.id,
-    dossierId: x.dossier_id,
-    sousDossierId: x.sub_dossier_id,
-    nom: x.nom,
-    taille: Number(x.taille),
-    type: x.type,
-    dateUpload: x.date_upload || new Date().toISOString(),
-    dataUrl: x.data_url,
+    id: row.id,
+    dossierId: row.dossier_id,
+    sousDossierId: row.sub_dossier_id,
+    nom: row.nom,
+    taille: Number(row.taille),
+    type: row.type,
+    dateUpload: row.date_upload || new Date().toISOString(),
+    dataUrl: row.data_url,
   };
 }
 

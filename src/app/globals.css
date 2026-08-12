@@ -45,144 +45,133 @@
 }
 
 /*
- * Palette de marque SLTT — voir docs internes pour les hex sources.
- * Primary #404089 (indigo profond) / Secondary #ED1C24 (rouge d'action) /
- * Accent #4FA3E6 (bleu ciel, liens/badges/infos) / Success·Warning·Error
- * standards (vert/ambre/rouge). Les rampes slate/blue/emerald ci-dessous
- * (juste avant :root) réaccordent TOUTES les classes Tailwind déjà utilisées
- * dans l'app (text-slate-500, bg-blue-50, text-emerald-600…) sur cette
- * identité, sans toucher aux ~150 fichiers qui les utilisent : même courbe
- * de luminosité que les teintes Tailwind par défaut (donc mêmes contrastes
- * éprouvés), seule la teinte change. amber/red/indigo restent Tailwind par
- * défaut : #F59E0B et #DC2626 (Warning/Error de la palette) leur sont déjà
- * quasi identiques, et indigo reste volontairement distinct du primary pour
- * préserver son usage de badge « société transit ».
+ * Palette institutionnelle — primary #2D348C / secondary #EB2727.
+ * Voir src/lib/brand-colors.ts pour la source TypeScript des hex.
  */
 @theme {
   --color-slate-50: #f9fafb;
-  --color-slate-100: #f3f5f7;
-  --color-slate-200: #e4e8ee;
-  --color-slate-300: #cdd4df;
-  --color-slate-400: #92a3ba;
-  --color-slate-500: #5d7392;
-  --color-slate-600: #45556b;
-  --color-slate-700: #354253;
-  --color-slate-800: #232b36;
-  --color-slate-900: #161b23;
-  --color-slate-950: #0a0c0f;
+  --color-slate-100: #f3f4f6;
+  --color-slate-200: #e5e7eb;
+  --color-slate-300: #d1d5db;
+  --color-slate-400: #9ca3af;
+  --color-slate-500: #6b7280;
+  --color-slate-600: #4b5563;
+  --color-slate-700: #374151;
+  --color-slate-800: #1f2937;
+  --color-slate-900: #111827;
+  --color-slate-950: #0a0e14;
 
-  --color-blue-50: #f1f8fd;
-  --color-blue-100: #dfeefa;
-  --color-blue-200: #c6e1f7;
-  --color-blue-300: #9fccf1;
-  --color-blue-400: #70b3eb;
-  --color-blue-500: #4ca0e5;
-  --color-blue-600: #2f91e1;
-  --color-blue-700: #1f84d6;
-  --color-blue-800: #1a6eb3;
-  --color-blue-900: #155a93;
-  --color-blue-950: #0d3a5e;
+  --color-blue-50: #eef0fb;
+  --color-blue-100: #e8eafb;
+  --color-blue-200: #c5c9f0;
+  --color-blue-300: #9ba3e0;
+  --color-blue-400: #6b75c4;
+  --color-blue-500: #4a54a8;
+  --color-blue-600: #3a4394;
+  --color-blue-700: #2d348c;
+  --color-blue-800: #252b73;
+  --color-blue-900: #1e245c;
+  --color-blue-950: #141845;
 
-  --color-emerald-50: #edfcf3;
-  --color-emerald-100: #d3f8e1;
-  --color-emerald-200: #aaf1c4;
-  --color-emerald-300: #6fe69b;
-  --color-emerald-400: #2cdb6c;
-  --color-emerald-500: #1dac51;
-  --color-emerald-600: #16853f;
-  --color-emerald-700: #126a32;
-  --color-emerald-800: #0f5629;
-  --color-emerald-900: #0c4822;
-  --color-emerald-950: #072713;
+  --color-emerald-50: #f0fdf4;
+  --color-emerald-100: #dcfce7;
+  --color-emerald-200: #bbf7d0;
+  --color-emerald-300: #86efac;
+  --color-emerald-400: #4ade80;
+  --color-emerald-500: #22c55e;
+  --color-emerald-600: #16a34a;
+  --color-emerald-700: #15803d;
+  --color-emerald-800: #166534;
+  --color-emerald-900: #14532d;
+  --color-emerald-950: #052e16;
 }
 
 :root {
   --radius: 0.75rem;
 
-  /* App surfaces */
-  --background: #f8fafc;
+  --background: #f8f9fc;
   --foreground: #1f2937;
   --card: #ffffff;
   --card-foreground: #1f2937;
   --popover: #ffffff;
   --popover-foreground: #1f2937;
 
-  /* Primary : indigo profond #404089 (hover #32326E) */
-  --primary: #404089;
+  --primary: #2d348c;
+  --primary-hover: #252b73;
   --primary-foreground: #ffffff;
 
-  --secondary: #f3f5f7;
-  --secondary-foreground: #1f2937;
-  --muted: #f3f5f7;
+  --brand-secondary: #eb2727;
+  --brand-secondary-hover: #c91f27;
+  --brand-secondary-light: #fde8e8;
+
+  --secondary: #e8eafb;
+  --secondary-foreground: #2d348c;
+  --muted: #f3f4f6;
   --muted-foreground: #6b7280;
-  --accent: #dfeefa;
-  --accent-foreground: #155a93;
+  --accent: #e8eafb;
+  --accent-foreground: #252b73;
 
-  /* Secondary/destructif : rouge d'action #ED1C24 (hover #D81820) */
-  --destructive: #ed1c24;
+  --destructive: #dc2626;
 
-  --border: #d2dbe9;
-  --input: #d2dbe9;
-  --ring: #404089;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #2d348c;
 
-  /* Charts : primary / success / warning / accent / secondary */
-  --chart-1: #404089;
-  --chart-2: #22c55e;
+  --chart-1: #2d348c;
+  --chart-2: #16a34a;
   --chart-3: #f59e0b;
-  --chart-4: #4fa3e6;
-  --chart-5: #ed1c24;
+  --chart-4: #2563eb;
+  --chart-5: #eb2727;
 
   --sidebar: #ffffff;
   --sidebar-foreground: #1f2937;
-  --sidebar-primary: #404089;
+  --sidebar-primary: #2d348c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #dfeefa;
-  --sidebar-accent-foreground: #155a93;
-  --sidebar-border: #d2dbe9;
-  --sidebar-ring: #404089;
+  --sidebar-accent: #2d348c;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #2d348c;
 }
 
-/* Palette sombre — identité indigo (pas un gris ni un bleu génériques),
-   dérivée de la teinte Primary plutôt que d'un navy neutre. Primaire/
-   destructif éclaircis d'un cran pour rester lisibles sur fond sombre. */
 .dark {
-  --background: #0e0e1b;
-  --foreground: #e7e9ef;
-  --card: #161627;
-  --card-foreground: #e7e9ef;
-  --popover: #161627;
-  --popover-foreground: #e7e9ef;
+  --background: #181d42;
+  --foreground: #e8eaf6;
+  --card: #222860;
+  --card-foreground: #e8eaf6;
+  --popover: #222860;
+  --popover-foreground: #e8eaf6;
 
-  --primary: #7575c7;
+  --primary: #5a63b8;
+  --primary-hover: #6b74c8;
   --primary-foreground: #ffffff;
 
-  --secondary: #212131;
-  --secondary-foreground: #e7e9ef;
-  --muted: #212131;
-  --muted-foreground: #a2aab9;
-  --accent: #0d3a5e;
-  --accent-foreground: #c6e1f7;
+  --secondary: #2a3068;
+  --secondary-foreground: #e8eaf6;
+  --muted: #2a3068;
+  --muted-foreground: #9ca3af;
+  --accent: #2a3068;
+  --accent-foreground: #c5c9f0;
 
-  --destructive: #ef6c70;
+  --destructive: #ef4444;
 
-  --border: #27283f;
-  --input: #27283f;
-  --ring: #7575c7;
+  --border: #2e3568;
+  --input: #2e3568;
+  --ring: #5a63b8;
 
-  --chart-1: #7575c7;
-  --chart-2: #2cdb6c;
+  --chart-1: #5a63b8;
+  --chart-2: #22c55e;
   --chart-3: #f59e0b;
-  --chart-4: #70b3eb;
-  --chart-5: #ef6c70;
+  --chart-4: #3b82f6;
+  --chart-5: #f87171;
 
-  --sidebar: #0e0e1b;
-  --sidebar-foreground: #e7e9ef;
-  --sidebar-primary: #7575c7;
+  --sidebar: #181d42;
+  --sidebar-foreground: #e8eaf6;
+  --sidebar-primary: #5a63b8;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1b2a45;
-  --sidebar-accent-foreground: #9fccf1;
-  --sidebar-border: #27283f;
-  --sidebar-ring: #7575c7;
+  --sidebar-accent: #2d348c;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2e3568;
+  --sidebar-ring: #5a63b8;
 }
 
 @layer base {
@@ -203,13 +192,11 @@
   }
 }
 
-/* Tabular figures for financial numbers */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-/* Custom slim scrollbar */
 .sltt-scroll {
   scrollbar-width: thin;
   scrollbar-color: #cdd4df transparent;
@@ -232,11 +219,11 @@
   background-clip: content-box;
 }
 .dark .sltt-scroll {
-  scrollbar-color: #354253 transparent;
+  scrollbar-color: #3a4080 transparent;
 }
 .dark .sltt-scroll::-webkit-scrollbar-thumb {
-  background-color: #354253;
+  background-color: #3a4080;
 }
 .dark .sltt-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #45556b;
+  background-color: #4a5090;
 }

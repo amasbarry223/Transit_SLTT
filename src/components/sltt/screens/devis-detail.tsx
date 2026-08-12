@@ -15,13 +15,15 @@ import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
-import { DevisSummaryHeader } from "@/components/sltt/devis/devis-summary-header";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
+import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
+import { devisStatutNeedsConfirm } from "@/lib/confirm-transitions";
 import { InfoRow } from "@/components/sltt/devis/info-row";
 import { FinancialBreakdown } from "@/components/sltt/devis/financial-breakdown";
 import { DevisPipelineCard } from "@/components/sltt/devis/devis-pipeline-card";
 import { DevisActionsCard } from "@/components/sltt/devis/devis-actions-card";
 import { DevisEditForm } from "@/components/sltt/devis/devis-edit-form";
-import { DevisDeleteZone } from "@/components/sltt/devis/devis-delete-zone";
+import { DevisSummaryHeader } from "@/components/sltt/devis/devis-summary-header";
 
 export function DevisDetailScreen() {
   const go = useNav((s) => s.go);
@@ -40,6 +42,7 @@ export function DevisDetailScreen() {
   const [isEditing, setIsEditing] = useState(devisEditMode);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmConvert, setConfirmConvert] = useState(false);
+  const [pendingStatut, setPendingStatut] = useState<DevisStatut | null>(null);
   useUnsavedChangesWarning(isEditing);
 
   const [fSocieteId, setFSocieteId] = useState("");
@@ -105,9 +108,18 @@ export function DevisDetailScreen() {
   const handleCancelEdit = () => { setIsEditing(false); setConfirmDelete(false); setConfirmConvert(false); };
   const handleStatutChange = async (statut: DevisStatut) => {
     if (!canWrite || statut === devis.statut) return;
+    if (devisStatutNeedsConfirm(statut)) {
+      setPendingStatut(statut);
+      return;
+    }
+    await applyStatut(statut);
+  };
+  async function applyStatut(statut: DevisStatut) {
+    const d = devis;
+    if (!d) return;
     try {
-      await updateDevisStatut(devis.id, statut);
-      toast({ title: "Statut mis à jour", description: `${devis.reference} → ${statut}` });
+      await updateDevisStatut(d.id, statut);
+      toast({ title: "Statut mis à jour", description: `${d.reference} → ${statut}` });
     } catch (error) {
       toast({ title: "Transition impossible", description: error instanceof Error ? error.message : "Cette transition de statut n'est pas autorisée.", variant: "destructive" });
     }
@@ -201,9 +213,45 @@ export function DevisDetailScreen() {
         devis={confirmConvert && !isEditing ? devis : null}
         onClose={() => setConfirmConvert(false)} onConverted={openDossierDetail}
       />
-      {confirmDelete && !isEditing && (
-        <DevisDeleteZone devis={devis} onConfirm={handleDelete} onCancel={() => setConfirmDelete(false)} />
-      )}
+      <ConfirmDeleteDialog
+        open={confirmDelete && !isEditing}
+        onOpenChange={(open) => setConfirmDelete(open)}
+        title="Supprimer ce devis ?"
+        description={
+          <>
+            Le devis <strong>{devis.reference}</strong> ({devis.clientNom} · {formatFCFA(devis.total)}) sera supprimé
+            de façon permanente et irréversible.
+            {devis.dossierId && (
+              <> Le dossier associé n&apos;est pas supprimé, mais son devis d&apos;origine disparaîtra de l&apos;historique.</>
+            )}
+          </>
+        }
+        consequences={
+          devis.dossierId ? ["Ce devis est à l'origine d'un dossier — le dossier reste intact."] : undefined
+        }
+        onConfirm={async () => {
+          await handleDelete();
+          setConfirmDelete(false);
+        }}
+      />
+      <ConfirmActionDialog
+        open={!!pendingStatut}
+        onOpenChange={(open) => !open && setPendingStatut(null)}
+        title={`Passer le devis au statut « ${pendingStatut} » ?`}
+        description={
+          <>
+            Le devis <strong>{devis.reference}</strong> passera au statut <strong>{pendingStatut}</strong>. Cette
+            transition peut limiter les modifications ultérieures.
+          </>
+        }
+        confirmLabel={`Passer à ${pendingStatut ?? ""}`}
+        variant={pendingStatut === "Refusé" ? "destructive" : "default"}
+        onConfirm={async () => {
+          if (!pendingStatut) return;
+          await applyStatut(pendingStatut);
+          setPendingStatut(null);
+        }}
+      />
     </div>
   );
 }

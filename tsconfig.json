@@ -4,7 +4,8 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext"
+      "esnext",
+      "webworker"
     ],
     "allowJs": true,
     "skipLibCheck": true,
@@ -39,6 +40,7 @@
     "node_modules",
     "examples",
     "skills",
-    "mini-services"
+    "mini-services",
+    "public/sw.js"
   ]
 }

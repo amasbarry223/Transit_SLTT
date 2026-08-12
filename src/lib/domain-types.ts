@@ -352,6 +352,107 @@ export interface SocieteInput {
 }
 
 /* ------------------------------------------------------------------ */
+/* COMPTABILITÉ GÉNÉRALE — 3 entités (Annexe Mali / Annexe CI /        */
+/* Société Top Doumani, cf. session F-ANNEXE vs F1 société)            */
+/* ------------------------------------------------------------------ */
+
+/** Discrimine sur quel axe existant (annexe ou société) porte une opération/clôture. */
+export type EntiteComptableType = "annexe" | "societe";
+
+/** Référence d'affichage unifiée pour les 3 entités comptables — dérivée d'une Annexe ou d'une Societe, jamais persistée telle quelle. */
+export interface EntiteComptable {
+  type: EntiteComptableType;
+  id: string;
+  label: string;
+}
+
+export type OperationComptableType = "Entrée" | "Sortie";
+/** Traçabilité de la saisie — utile pour distinguer une ligne tapée à la main d'une ligne issue d'un import Excel/OCR revalidé par un humain. */
+export type OperationComptableSource = "saisie" | "import_excel" | "import_ocr";
+
+export interface OperationComptable {
+  id: string;
+  reference: string;
+  entiteType: EntiteComptableType;
+  annexeId?: string;
+  societeId?: string;
+  date: string;
+  clientId?: string;
+  /** Tiers en clair (BINA DEMBELE, EDY, Zhu hai…) — pas toujours un Client existant en base. */
+  clientNom: string;
+  nature: string;
+  type: OperationComptableType;
+  montant: number;
+  /** Top Doumani uniquement : montant (Sortie) = quantite * prixUnitaire. */
+  quantite?: number;
+  prixUnitaire?: number;
+  source: OperationComptableSource;
+  importRef?: string;
+  creePar?: string;
+}
+
+export interface OperationComptableInput {
+  entiteType: EntiteComptableType;
+  annexeId?: string;
+  societeId?: string;
+  date: string;
+  clientId?: string;
+  clientNom: string;
+  nature: string;
+  type: OperationComptableType;
+  montant: number;
+  quantite?: number;
+  prixUnitaire?: number;
+  source?: OperationComptableSource;
+  importRef?: string;
+}
+
+/** Rapprochement de caisse périodique par entité — remplace les lignes manuscrites "ECART DE : ..." du classeur Excel. */
+export interface ClotureCaisse {
+  id: string;
+  entiteType: EntiteComptableType;
+  annexeId?: string;
+  societeId?: string;
+  periodeDebut: string;
+  periodeFin: string;
+  soldeTheorique: number;
+  soldeConstate: number;
+  ecart: number;
+  note?: string;
+  cloturePar?: string;
+  clotureLe: string;
+}
+
+/** EN_ATTENTE = rien payé, PARTIEL = paiement partiel, SOLDE = reste à 0. */
+export type RecuPaiementStatut = "EN_ATTENTE" | "PARTIEL" | "SOLDE";
+
+/** Reçu de paiement individuel (Nom/Prénom/Somme/Motif/Montant payé) — document autonome imprimable, sans lien avec le journal de caisse ni les Écritures. */
+export interface RecuPaiement {
+  id: string;
+  reference: string;
+  annexeId: string;
+  annexeNom?: string;
+  nom: string;
+  prenom: string;
+  somme: number;
+  motif: string;
+  montantPaye: number;
+  reste: number;
+  statut: RecuPaiementStatut;
+  creePar?: string;
+  createdAt: string;
+}
+
+export interface RecuPaiementInput {
+  annexeId: string;
+  nom: string;
+  prenom: string;
+  somme: number;
+  motif: string;
+  montantPaye: number;
+}
+
+/* ------------------------------------------------------------------ */
 /* CONTRATS (F3) + DÉPENSES (F4) + PRESTATIONS OPTIONNELLES (F6)       */
 /* ------------------------------------------------------------------ */
 
@@ -431,7 +532,7 @@ export type DocumentEntityType = "dossier" | "facture" | "ecriture";
 export type OcrJobStatus = "pending" | "processing" | "done" | "failed" | "validated";
 
 /** Formulaire cible OCR. Seul « dossier » est branché côté UI/mapper pour l’instant. */
-export type OcrTargetForm = "dossier" | "facture" | "paiement";
+export type OcrTargetForm = "dossier" | "facture" | "paiement" | "operation_comptable";
 
 export interface DocumentVersion {
   id: string;

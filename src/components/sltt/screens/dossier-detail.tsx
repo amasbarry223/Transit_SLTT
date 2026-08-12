@@ -14,6 +14,7 @@ import {
   isEcheanceDepassee,
   isEcheanceImminente,
 } from "@/lib/echeance-utils";
+import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
@@ -290,7 +291,7 @@ export function DossierDetailScreen() {
           <tr><th>Date</th><td>${currentDossier.date ? formatDateShort(currentDossier.date) : "—"}</td></tr>
         </tbody>
       </table>
-      <h2 style="margin-top:24px;font-size:14px;color:#404089">Montants (FCFA)</h2>
+      <h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Montants (FCFA)</h2>
       <table>
         <tbody>
           <tr><th style="width:35%">${htmlEscape(coutLabels.droitDouane)}</th><td class="num">${formatFCFA(currentDossier.droitDouane, false)}</td></tr>
@@ -307,8 +308,8 @@ export function DossierDetailScreen() {
           </tr>
         </tbody>
       </table>
-      ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:#404089">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
-      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:#404089">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#45556b">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
+      ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
+      ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#45556b">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
     `,
       resolvePrintHTMLBrand(societes),
     );

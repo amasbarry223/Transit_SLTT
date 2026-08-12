@@ -2,6 +2,7 @@
 
 import { useSession } from "@/lib/session/session-store";
 
+import { BRAND } from "@/lib/brand-colors";
 import { useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
@@ -30,7 +31,7 @@ function LoginBackground() {
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url('/bg.jpg')` }}
       />
-      <div className="absolute inset-0 bg-[#212150]/50" />
+      <div className="absolute inset-0" style={{ backgroundColor: `${BRAND.primary}8C` }} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(22,27,35,0.45)_100%)]" />
     </div>
   );
@@ -113,7 +114,7 @@ export function LoginScreen() {
       <LoginBackground />
 
       <div className="relative z-10 w-full max-w-[420px]">
-        <div className="overflow-hidden rounded-2xl border border-white/25 bg-white dark:bg-slate-900 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.45)]">
+        <div className="overflow-hidden rounded-2xl border border-white/25 bg-card shadow-[0_24px_80px_-12px_rgba(45,52,140,0.35)] dark:border-slate-700/50 dark:bg-card">
           <div className="flex flex-col items-center px-8 pb-6 pt-9">
             <Image
               src="/logoV.png"

@@ -1,16 +1,16 @@
-# Graph Report - Transit_SLTT  (2026-08-05)
+# Graph Report - Transit_SLTT  (2026-08-12)
 
 ## Corpus Check
-- 496 files · ~758,300 words
+- 577 files · ~805,143 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2076 nodes · 7616 edges · 149 communities (79 shown, 70 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 40 edges (avg confidence: 0.77)
+- 2373 nodes · 8824 edges · 174 communities (102 shown, 72 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 47 edges (avg confidence: 0.76)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `98f0ed89`
+- Built from commit: `f1e3d780`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -42,7 +42,7 @@
 - archives-slice.ts
 - dossier-form.tsx
 - UserRole
-- domain-types.ts
+- UserRole
 - components.json
 - stock-slice.ts
 - csv-export.ts
@@ -50,14 +50,15 @@
 - classeur.ts
 - Writing Guidelines for Postgres References
 - Supabase
-- derniers-dossiers-card.tsx
+- @supabase/server
+- comptabilite-generale-import.ts
+- createServerClient
 - 2. Fonctionnalités demandées
 - @radix-ui/react-slot
-- @radix-ui/react-toast
-- recharts
 - tailwind-merge
 - scripts
 - SLTT — Retour client V1 : Classeur Client & Architecture Bi-Sociétés
+- operation-form-dialog.tsx
 - parametres.tsx
 - guide-progress.ts
 - Section Definitions
@@ -116,10 +117,10 @@
 - @radix-ui/react-avatar
 - require-admin.test.ts
 - route.test.ts
-- contrats.tsx
+- dossier-bulk-import-dialog.tsx
 - devis.tsx
 - status-badge.tsx
-- devis-slice.ts
+- sync-sequences.ts
 - derniers-dossiers-card.tsx
 - excel-export.ts
 - postcss.config.mjs
@@ -129,201 +130,215 @@
 - 3. Modèle de données — détail champ par champ
 - heic2any.d.ts
 - 7. Spécification fonctionnelle par écran
-- echeance-utils.ts
-- contrat-detail.tsx
+- contrats.tsx
 - heic2any
 - route.test.ts
-- excel-export.ts
+- ocr-capture-dialog.tsx
 - pdfjs-dist
 - db-seed-demo.mjs
+- comptabilite-generale-import.ts
 - @radix-ui/react-toast
 - tailwind-merge
 - cmdk
+- factures-slice.ts
+- bon-marchandise-tab.tsx
+- index.ts
 - split-users-table.mjs
 - bons-slice.ts
 - @radix-ui/react-switch
 - recharts
+- command-palette.tsx
 - 8. Module OCR — détail du pipeline
 - @radix-ui/react-select
 - README.md
-- cmdk
+- generate-pwa-icons.mjs
 - 9. Multi-société / multi-annexe
 - @radix-ui/react-label
 - 5. Règles de gestion transversales
 - 10. Sécurité
 - 1. Présentation générale
 - 2. Architecture technique
+- package.json
 - tailwindcss-animate
 - backup-slice.test.ts
-- ag-grid-react
+- informations-card.tsx
+- dossier-detail-stepper.tsx
+- clsx
+- class-variance-authority
 - next
 - @radix-ui/react-separator
 - @radix-ui/react-toast
 - server-only
 - @supabase/supabase-js
+- @radix-ui/react-alert-dialog
+- FactureDetailScreen
+- cmdk
+- @radix-ui/react-dialog
+- @radix-ui/react-dropdown-menu
+- serwist
+- tesseract.js
+- @univerjs/preset-sheets-core
+- marge-chart.tsx
+- ag-grid-community
 
 ## God Nodes (most connected - your core abstractions)
-1. `cn()` - 258 edges
-2. `useStore` - 131 edges
-3. `formatFCFA()` - 128 edges
-4. `useToast()` - 95 edges
-5. `Button()` - 92 edges
-6. `formatDateShort()` - 72 edges
-7. `Card()` - 69 edges
-8. `usePermission()` - 59 edges
-9. `Input()` - 49 edges
-10. `useNav` - 49 edges
+1. `cn()` - 289 edges
+2. `formatFCFA()` - 156 edges
+3. `useStore` - 149 edges
+4. `useToast()` - 113 edges
+5. `Button()` - 108 edges
+6. `Card()` - 79 edges
+7. `formatDateShort()` - 76 edges
+8. `usePermission()` - 63 edges
+9. `Input()` - 55 edges
+10. `useActiveAnnexe()` - 50 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `GuideDemarrage()` --references--> `react`  [EXTRACTED]
   src/components/sltt/dashboard/guide-demarrage.tsx → package.json
+- `FactureFormModal()` --references--> `react`  [EXTRACTED]
+  src/components/sltt/factures/facture-form-modal.tsx → package.json
+- `useFacturesScreen()` --references--> `react`  [EXTRACTED]
+  src/components/sltt/factures/use-factures-screen.ts → package.json
 - `CalendrierScreen()` --references--> `react`  [EXTRACTED]
   src/components/sltt/screens/calendrier.tsx → package.json
 - `DashboardScreen()` --references--> `react`  [EXTRACTED]
   src/components/sltt/screens/dashboard.tsx → package.json
-- `PaiementDialog()` --references--> `react`  [EXTRACTED]
-  src/components/sltt/facture-detail/paiement-dialog.tsx → package.json
-- `useFactureEditState()` --references--> `react`  [EXTRACTED]
-  src/components/sltt/facture-detail/use-facture-edit-state.ts → package.json
 
 ## Import Cycles
-- 3-file cycle: `src/lib/contrat-stats.ts -> src/lib/store.ts -> src/lib/store/contrats-slice.ts -> src/lib/contrat-stats.ts`
 - 3-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/client-stats.ts`
-- 3-file cycle: `src/lib/contrat-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/contrat-stats.ts`
-- 3-file cycle: `src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/sync-sequences.ts -> src/lib/store.ts`
 - 3-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/dossiers-slice.ts -> src/lib/client-stats.ts`
 - 3-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/ecritures-slice.ts -> src/lib/client-stats.ts`
 - 3-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/factures-slice.ts -> src/lib/client-stats.ts`
-- 4-file cycle: `src/lib/contrat-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/contrats-slice.ts -> src/lib/contrat-stats.ts`
+- 3-file cycle: `src/lib/contrat-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/contrat-stats.ts`
+- 3-file cycle: `src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/sync-sequences.ts -> src/lib/store.ts`
+- 3-file cycle: `src/lib/contrat-stats.ts -> src/lib/store.ts -> src/lib/store/contrats-slice.ts -> src/lib/contrat-stats.ts`
 - 4-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/dossiers-slice.ts -> src/lib/client-stats.ts`
 - 4-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/ecritures-slice.ts -> src/lib/client-stats.ts`
 - 4-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/factures-slice.ts -> src/lib/client-stats.ts`
+- 4-file cycle: `src/lib/contrat-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/contrats-slice.ts -> src/lib/contrat-stats.ts`
 
-## Communities (149 total, 70 thin omitted)
+## Communities (174 total, 72 thin omitted)
 
 ### Community 0 - "devis.tsx"
 Cohesion: 0.10
-Nodes (40): ClientFormFieldsProps, EcrituresFiltersProps, StatutFilter, ActiveAnnexe, BaseContrat, AnnexeRow, ContratRow, SocieteRow (+32 more)
+Nodes (27): FactureRowProps, FACTURE_TABS, deriveClientIdFromRattachement(), RattachementKind, FactureRow, Facture, FactureLigne, FactureStatut (+19 more)
 
 ### Community 1 - "entreposage.tsx"
-Cohesion: 0.13
-Nodes (29): DossierFormErrors, numStr(), useDossierFormState(), UseDossierFormStateOptions, WIZARD_STEPS, getNextTransition(), DossierRow, calculerEcart() (+21 more)
+Cohesion: 0.15
+Nodes (22): AuditAction, AuditEntry, AuditModule, AuditSourceRef, insertAuditLog(), resolveClientIp(), ArchiveRow, RecuPaiementRow (+14 more)
 
 ### Community 2 - "print-modules.ts"
-Cohesion: 0.10
-Nodes (63): FinancialSummary(), LignesCard(), LignesTable(), FactureDocumentHeader(), htmlEscape(), acquirePrintTarget(), brandLogoImgHTML(), buildBrandSubHTML() (+55 more)
+Cohesion: 0.05
+Nodes (101): inter, metadata, sora, viewport, AppSerwistProvider(), AppRoot(), FactureDocumentHeader(), RecuGeneratorActions() (+93 more)
 
 ### Community 3 - "store.ts"
-Cohesion: 0.13
-Nodes (14): DevisListBanner(), DevisListFilters(), DevisSortKey, DevisListKpis(), DevisListTable(), NewItemDialog(), StockTab(), useStockMovementDialogs() (+6 more)
+Cohesion: 0.18
+Nodes (16): fetchWithAuth(), User, UserRole, ExcelWorkbook, ExcelWorkbookRow, LOGGED_OUT, SessionState, createExcelWorkbooksSlice() (+8 more)
 
 ### Community 4 - "dossiers-slice.ts"
-Cohesion: 0.12
-Nodes (16): beneficiairesSummary(), BonCaisseTabProps, CaisseMobileCard(), CaisseTableRow(), PreviewState, Heading(), ConfirmDeleteDialog(), EmptyState() (+8 more)
+Cohesion: 0.13
+Nodes (8): PageProps, PageProps, PageProps, PageProps, PageProps, RouteSync(), RouteSyncProps, syncNavFromRoute()
 
 ### Community 5 - "require-admin.ts"
-Cohesion: 0.17
-Nodes (12): StockCard(), StockRow(), DEVIS_STATUT_TONE, DOSSIER_STATUT_DOT, DOSSIER_STATUT_TONE, DossierStatutBadge(), dotClasses, EcritureStatutBadge() (+4 more)
+Cohesion: 0.16
+Nodes (19): ClotureDialog(), dayAfter(), firstDayOfMonth(), today(), JournalCaissePanelProps, NATURE_SUGGESTIONS, entiteKeyOf(), useComptabiliteGeneraleScreen() (+11 more)
 
 ### Community 6 - "utils.ts"
-Cohesion: 0.11
-Nodes (28): RolePicker(), allRoles, emptyFormState(), FormMode, FormTab, isCustomPermissionSet(), RoleFilter, roleMeta (+20 more)
+Cohesion: 0.08
+Nodes (31): DevisActionsCard(), AmountRow(), DossierDetailOverview(), DossierInfoGrid(), InfoTile(), DossierAmountsSection(), CollapsibleSection(), SectionTitle() (+23 more)
 
 ### Community 7 - "domain-types.ts"
-Cohesion: 0.13
-Nodes (28): syncContratStats(), syncFournisseurStats(), mapAnnexeFromDb(), createContratsSlice(), mapContratFromDb(), mapContratPrestationFromDb(), mapDepenseFromDb(), createDataFetchSlice() (+20 more)
+Cohesion: 0.33
+Nodes (9): nextSeqFromValues(), parseIdSeq(), parseNumeroSeq(), parseOpcSeq(), parseRecuSeq(), parseTrailingSeq(), SequenceCounters, syncSequencesFromData() (+1 more)
 
 ### Community 8 - "compilerOptions"
 Cohesion: 0.06
-Nodes (30): dom, dom.iterable, esnext, examples, mini-services, .next/dev/types/**/*.ts, next-env.d.ts, .next/types/**/*.ts (+22 more)
+Nodes (32): dom, dom.iterable, esnext, examples, mini-services, .next/dev/types/**/*.ts, next-env.d.ts, .next/types/**/*.ts (+24 more)
 
 ### Community 9 - "export.ts"
-Cohesion: 0.12
-Nodes (46): BonMarchandiseTabProps, BON_MOTIF_TONE, BON_MOTIFS, BON_STATUT_TONE, ClasseurTabProps, ClasseurViewMode, CONTRAT_STATUT_TONE, CONTRAT_STATUTS (+38 more)
+Cohesion: 0.10
+Nodes (53): BonCaisseTabProps, PreviewState, BonMarchandiseTabProps, BonsTabProps, DossiersTabProps, FacturesTabProps, TabEmptyState(), StockTabProps (+45 more)
 
 ### Community 10 - "useStore"
 Cohesion: 0.05
 Nodes (41): 0. Note d'architecture — À LIRE AVANT TOUT, 1.1 POST /api/admin/users, 1.2 PATCH /api/admin/users/:id, 1.3 DELETE /api/admin/users/:id, 1.4 POST /api/admin/users/:id/password, 1.5 PATCH /api/admin/users/:id/annexes, 1.6 PATCH /api/auth/password, 1.7 GET /api/client-ip (+33 more)
 
-### Community 11 - "dashboard.tsx"
-Cohesion: 0.05
-Nodes (10): PageProps, PageProps, PageProps, PageProps, PageProps, PageProps, RouteSync(), RouteSyncProps (+2 more)
-
 ### Community 12 - "nav-store.ts"
-Cohesion: 0.05
-Nodes (82): ACTIVITY_EVENTS, AppRootInner(), BonCaisseFormDialogProps, CaisseLigneForm, BonFormDialogProps, ClasseurSuiviDialog(), ClasseurSuiviDialogProps, ClasseurTab() (+74 more)
+Cohesion: 0.12
+Nodes (25): RolePicker(), allRoles, emptyFormState(), FormMode, FormTab, isCustomPermissionSet(), RoleFilter, roleMeta (+17 more)
 
 ### Community 13 - "contrats.tsx"
-Cohesion: 0.31
-Nodes (9): Command(), CommandDialog(), CommandEmpty(), CommandGroup(), CommandInput(), CommandItem(), CommandList(), CommandSeparator() (+1 more)
+Cohesion: 0.12
+Nodes (39): BonCaisseFormDialogProps, CaisseLigneForm, BonFormDialogProps, BON_MOTIFS, Phase, ReviewRow, ClasseurSuiviDialogProps, ClotureDialogProps (+31 more)
 
 ### Community 15 - "dossier-wizard-steps.tsx"
-Cohesion: 0.18
-Nodes (23): PATCH(), RouteContext, POST(), RouteContext, AdminClient, assertNotLastActiveAdmin(), DELETE(), PATCH() (+15 more)
+Cohesion: 0.09
+Nodes (26): DevisPipelineCard(), DevisNextStatut, DevisStatutConfig, NEXT_STATUT, STATUT_CONFIG, STATUT_FLOW, STATUTS_ALL, NEXT_STATUT (+18 more)
 
 ### Community 16 - "store-actions.test.ts"
-Cohesion: 0.11
-Nodes (58): react, react, BonCaisseFormDialog(), BonCaisseTab(), BonFormDialog(), ClasseurGrid(), ClasseurGridProps, CreateDossierFromOcrButton() (+50 more)
+Cohesion: 0.16
+Nodes (13): DossierDetailStepper(), STATUTS_ORDERED, DropdownMenu(), DropdownMenuCheckboxItem(), DropdownMenuContent(), DropdownMenuItem(), DropdownMenuLabel(), DropdownMenuRadioItem() (+5 more)
 
 ### Community 17 - "contrat-stats.test.ts"
-Cohesion: 0.10
-Nodes (25): FilterChip, ListFilters(), ListFiltersProps, MetaTabItem, MetaTabsList(), PageHeader(), ResponsiveColumn, ResponsiveDataList() (+17 more)
+Cohesion: 0.15
+Nodes (28): BonCaisseFormDialog(), BonMarchandiseTab(), BON_MOTIF_TONE, BON_STATUT_TONE, useBonFilters(), EntryExitDialogs(), StockTab(), FactureFormModal() (+20 more)
 
 ### Community 18 - "contrat-fichiers-slice.ts"
-Cohesion: 0.08
-Nodes (30): EcrituresTableProps, PaymentDialogProps, modeIcon, TransitionDialogProps, syncClientStats(), DEFAULT_PAIEMENT_MODE, DOSSIER_STATUT_DEDOUANE, DOSSIER_STATUT_EN_COURS (+22 more)
+Cohesion: 0.09
+Nodes (39): EcrituresFiltersProps, EcrituresTableProps, PaymentDialog(), PaymentDialogProps, modeIcon, StatutFilter, numStr(), useDossierFormState() (+31 more)
 
 ### Community 19 - "fournisseurs.tsx"
 Cohesion: 0.80
 Nodes (3): applyFacturePaiement(), canDecrementStock(), simulateSequentialPaiements()
 
 ### Community 20 - "Facture"
-Cohesion: 0.14
-Nodes (18): NEXT_STATUT, DossierDetailStepper(), STATUTS_ORDERED, SORT_OPTIONS, SortKey, DevisStatutBadge(), StatusQuickAction(), DropdownMenu() (+10 more)
+Cohesion: 0.20
+Nodes (17): EvolutionChartCard(), EvolutionChartCardProps, RecapClientCard(), RecapClientCardProps, RecapRow, currentYearMonth(), getPeriodeLabel(), Periode (+9 more)
 
 ### Community 21 - "cn"
-Cohesion: 0.09
-Nodes (28): BonPreview(), BonMobileCard(), BonTableRow(), BonsTab(), BonsTabProps, DossiersTab(), FacturesTab(), FacturesTabProps (+20 more)
+Cohesion: 0.14
+Nodes (18): ConvertDevisDialog(), DevisFormDialog(), DevisListBanner(), DevisListFilters(), DevisSortKey, ContratDetailScreen(), DevisDetailScreen(), useUnsavedChangesWarning() (+10 more)
 
 ### Community 22 - "dependencies"
-Cohesion: 0.08
-Nodes (25): ag-grid-community, class-variance-authority, lucide-react, dependencies, ag-grid-community, class-variance-authority, lucide-react, @radix-ui/react-alert-dialog (+17 more)
+Cohesion: 0.07
+Nodes (27): ag-grid-react, clsx, lucide-react, dependencies, ag-grid-react, clsx, lucide-react, @radix-ui/react-checkbox (+19 more)
 
 ### Community 23 - "devDependencies"
-Cohesion: 0.10
-Nodes (21): eslint, eslint-config-next, devDependencies, eslint, eslint-config-next, tailwindcss, @tailwindcss/postcss, tw-animate-css (+13 more)
+Cohesion: 0.09
+Nodes (23): eslint, eslint-config-next, devDependencies, eslint, eslint-config-next, sharp, tailwindcss, @tailwindcss/postcss (+15 more)
 
 ### Community 24 - "archives-slice.ts"
-Cohesion: 0.19
-Nodes (21): DossierDetailOverview(), DossierAmountsSection(), TransitionDialog(), DossierDetailScreen(), AlertDialog(), AlertDialogAction(), AlertDialogCancel(), AlertDialogContent() (+13 more)
+Cohesion: 0.21
+Nodes (12): Column, downloadBlob(), exportToExcel(), isValidXlsxBytes(), sanitizeFilename(), normalizeExportCell(), normalizeExportRows(), buildXlsxBuffer() (+4 more)
 
 ### Community 25 - "dossier-form.tsx"
-Cohesion: 0.18
-Nodes (17): ConvertDevisDialogProps, DevisFormProps, FactureSummaryHeader(), DevisRow, Devis, DevisInput, DevisStatut, canTransitionContrat() (+9 more)
+Cohesion: 0.07
+Nodes (53): react, react, ArchiveUploadDialog(), useArchivesScreen(), useUnifiedDocs(), BonCaisseTab(), BonFormDialog(), ClasseurGrid() (+45 more)
 
 ### Community 26 - "UserRole"
 Cohesion: 0.13
 Nodes (14): 1. Isolation des données par annexe, 2. Sélecteur d'annexe, 3. Numérotation des documents, 4. Migration des données existantes, 5. Création d'une nouvelle annexe, CONTEXTE MÉTIER, CONTRAINTE UX — PRIORITÉ ABSOLUE, CONTRAINTES TECHNIQUES (+6 more)
 
-### Community 27 - "domain-types.ts"
-Cohesion: 0.18
-Nodes (7): Sheet(), SheetContent(), SheetDescription(), SheetFooter(), SheetHeader(), SheetOverlay(), SheetTitle()
+### Community 27 - "UserRole"
+Cohesion: 0.20
+Nodes (12): assertCellSizes(), POST(), sanitizeFilename(), changePasswordBodySchema, createUserBodySchema, exportExcelBodySchema, resetPasswordBodySchema, updateUserAnnexesBodySchema (+4 more)
 
 ### Community 28 - "components.json"
 Cohesion: 0.11
 Nodes (17): aliases, components, hooks, lib, ui, utils, iconLibrary, rsc (+9 more)
 
 ### Community 29 - "stock-slice.ts"
-Cohesion: 0.12
-Nodes (29): ContratFichierRow, DocumentRow, buildDocumentStoragePath(), dataUrlToBlob(), getSignedDocumentUrl(), removeDocumentStoragePaths(), sha256Hex(), uploadDocumentBlob() (+21 more)
+Cohesion: 0.23
+Nodes (13): OperationsTableProps, OperationWithEcartCumule, ClotureCaisseRow, OperationComptableRow, ClotureCaisse, EntiteComptableType, OperationComptable, OperationComptableInput (+5 more)
 
 ### Community 30 - "csv-export.ts"
-Cohesion: 0.31
-Nodes (7): ChartTooltipPayload, EcartsTooltip(), EncaissementsTooltip(), DerniersDossiersCard(), EncaissementsChart(), MargeChart(), formatFCFACompact()
+Cohesion: 0.11
+Nodes (35): syncContratStats(), BaseContrat, AnnexeRow, ContratRow, MouvementRow, StockItemRow, Annexe, AnnexeInput (+27 more)
 
 ### Community 31 - "ag-grid-community"
-Cohesion: 0.43
-Nodes (6): fetchWithAuth(), Column, downloadBlob(), exportToExcel(), isValidXlsxBytes(), sanitizeFilename()
+Cohesion: 0.33
+Nodes (7): deriveStatut(), today(), useEcrituresScreen(), ComptabiliteScreen(), ComptabiliteTab, TabsList(), TabsTrigger()
 
 ### Community 33 - "Writing Guidelines for Postgres References"
 Cohesion: 0.12
@@ -333,45 +348,53 @@ Nodes (15): 1. Concrete Transformation Patterns, 2. Error-First Structure, 3. Qu
 Cohesion: 0.13
 Nodes (12): Fix suggestion, Source, What happened, Skill Feedback, Steps, Core Principles, Making and Committing Schema Changes, Reference Guides (+4 more)
 
-### Community 37 - "derniers-dossiers-card.tsx"
-Cohesion: 0.10
-Nodes (33): AdminPanel(), AgentPanel(), AlertesCard(), GuideDemarrage(), MagasinierPanel(), StatutsDonutCard(), useDashboardMetrics(), BilansScreen() (+25 more)
+### Community 35 - "@supabase/server"
+Cohesion: 0.12
+Nodes (16): Calling from database with pg_net, Cloudflare Workers, Cookie-based environments (compose with `@supabase/ssr`), Documentation, Edge Function recipes, Entry points, Function-to-function calls, Hono (+8 more)
+
+### Community 37 - "createServerClient"
+Cohesion: 0.35
+Nodes (8): PATCH(), getAdminClient(), getAuthenticatedProfile(), getServerClient(), requireUser(), createAdminClient(), createServerClient(), getPublicKey()
 
 ### Community 38 - "2. Fonctionnalités demandées"
 Cohesion: 0.14
 Nodes (13): 0. Contexte, 1. Principes directeurs (non négociables), 2. Fonctionnalités demandées, 3. Récapitulatif des changements techniques, 4. Points à confirmer avec le client avant / pendant l'implémentation, 5. Hors périmètre (pour éviter la dérive), F1 — Dimension « Société » (Top Doumani / Traoré Transit Logistique), F2 — TVA 18 % optionnelle sur les factures (+5 more)
 
 ### Community 39 - "@radix-ui/react-slot"
-Cohesion: 0.18
-Nodes (10): ContratFileDropZone(), DangerConfirmDialog(), EntityFileDropZone(), EntityFileDropZoneLabels, EntityFileItem, EntityFilePayload, formatFileSize(), getFileIconComponent() (+2 more)
-
-### Community 40 - "@radix-ui/react-toast"
-Cohesion: 0.13
-Nodes (16): inter, metadata, sora, viewport, AppRoot(), ThemeEffect(), Toast, ToastAction (+8 more)
+Cohesion: 0.09
+Nodes (23): ARCHIVE_COLUMNS, ArchiveTab, DocSource, RattachementKind, TAB_META, TYPE_DOC_BADGE, TYPES_DOCUMENT, UnifiedDoc (+15 more)
 
 ### Community 42 - "tailwind-merge"
-Cohesion: 0.28
-Nodes (8): copy(), download(), ensureDir(), langDir, langs, ocrDir, pdfWorkerSrc, root
+Cohesion: 0.24
+Nodes (9): copy(), coreSrcDir, download(), ensureDir(), langDir, langs, ocrDir, pdfWorkerSrc (+1 more)
 
 ### Community 43 - "scripts"
-Cohesion: 0.12
-Nodes (16): uuid, name, overrides, exceljs, private, scripts, build, db:seed:demo (+8 more)
+Cohesion: 0.18
+Nodes (11): scripts, build, db:seed:demo, dev, generate:pwa-icons, lint, postinstall, start (+3 more)
 
 ### Community 44 - "SLTT — Retour client V1 : Classeur Client & Architecture Bi-Sociétés"
 Cohesion: 0.18
 Nodes (10): 1. Contexte du retour, 2. Clarification métier CRITIQUE : deux sociétés, une plateforme, 3.1 Référence Excel actuelle, 3.2 Équivalent à implémenter, 3.3 Suivi des mouvements, 3. Fonctionnalité demandée : le Classeur Client, 4. Architecture données (orientation), 5. Contrainte technique (+2 more)
 
+### Community 45 - "operation-form-dialog.tsx"
+Cohesion: 0.06
+Nodes (47): ChartPayloadItem, ChartTooltip(), PiePayloadItem, PieTooltip(), PieDatum, RepartitionCard(), RepartitionCardProps, beneficiairesSummary() (+39 more)
+
 ### Community 46 - "parametres.tsx"
-Cohesion: 0.05
-Nodes (65): ExcelSaveStatus, ExcelToolbar(), QuickBtn(), ExcelWorkbookPanelProps, ExcelWorkbookLazy(), ExcelWorkbookPanel, mapAuditLogFromDb(), buildClasseurJournal() (+57 more)
+Cohesion: 0.19
+Nodes (6): DocumentUploadZone(), DEFAULT_PAIEMENT_MODE, DOSSIER_STATUT_DEDOUANE, DOSSIER_STATUT_EN_COURS, DOSSIER_STATUT_SOLDE, DOC_ACCEPTED_MIME_TYPES
 
 ### Community 47 - "guide-progress.ts"
-Cohesion: 0.28
-Nodes (8): emitGuideReset(), getGuideProgress(), getGuideStepsForRole(), GUIDE_STEP_DEFS, GuideStepId, GuideStepView, GuideStoreSnapshot, isGuideStepComplete()
+Cohesion: 0.16
+Nodes (16): BonsTab(), ClasseurSuiviDialog(), ClasseurTab(), ClientProfileCard(), ClientProfileCardProps, avatarGradient(), BON_MOTIF_TONE, bonStatutTone() (+8 more)
 
 ### Community 48 - "Section Definitions"
 Cohesion: 0.20
 Nodes (9): 1. Query Performance (query), 2. Connection Management (conn), 3. Security & RLS (security), 4. Schema Design (schema), 5. Concurrency & Locking (lock), 6. Data Access Patterns (data), 7. Monitoring & Diagnostics (monitor), 8. Advanced Features (advanced) (+1 more)
+
+### Community 49 - "archives-slice.ts"
+Cohesion: 0.23
+Nodes (15): InfoRow(), InformationsCard(), RecuGeneratorActionsProps, AlertDialog(), AlertDialogAction(), AlertDialogCancel(), AlertDialogContent(), AlertDialogDescription() (+7 more)
 
 ### Community 50 - "2026-07-14T18-50-10Z__ontrats-factures-comptabilite-entreposage-archives.md"
 Cohesion: 0.22
@@ -390,24 +413,28 @@ Cohesion: 0.25
 Nodes (7): [1.2.0](https://github.com/supabase/agent-skills/compare/v1.1.1...v1.2.0) (2026-06-02), [1.3.0](https://github.com/supabase/agent-skills/compare/v1.2.0...v1.3.0) (2026-06-05), Bug Fixes, Bug Fixes, Changelog, Features, Features
 
 ### Community 54 - "devis.tsx"
-Cohesion: 0.10
-Nodes (29): ReviewRow, clampConfidence(), findFirst(), isValidYmd(), mapDossierFieldsFromText(), normalizeDate(), parseMontant(), PdfRasterizeResult (+21 more)
+Cohesion: 0.09
+Nodes (34): ReviewRow, clampConfidence(), findFirst(), isValidYmd(), mapDossierFieldsFromText(), normalizeDate(), parseMontant(), clampConfidence() (+26 more)
 
 ### Community 55 - "factures.tsx"
-Cohesion: 0.06
-Nodes (53): ClientProfileCard(), ClientProfileCardProps, avatarGradient(), InfoRow(), DocumentPreviewBody(), DocumentViewer(), FetchedDocumentPreview(), isDirectUrl() (+45 more)
+Cohesion: 0.05
+Nodes (64): ExcelSaveStatus, ExcelToolbar(), QuickBtn(), ExcelWorkbookPanelProps, ExcelWorkbookLazy(), ExcelWorkbookPanel, AuditSourceType, mapAuditLogFromDb() (+56 more)
+
+### Community 56 - "next.config.ts"
+Cohesion: 0.40
+Nodes (4): nextConfig, pwaHeaders, securityHeaders, withSerwist
 
 ### Community 57 - "dashboard-metrics.ts"
-Cohesion: 0.15
-Nodes (14): deriveClientIdFromRattachement(), RattachementKind, FactureRow, Facture, FactureLigne, FactureStatut, computeIncrementalPaye(), validatePaymentAmount() (+6 more)
+Cohesion: 0.09
+Nodes (47): DocumentRow, buildDocumentStoragePath(), dataUrlToBlob(), getSignedDocumentUrl(), removeDocumentStoragePaths(), sha256Hex(), uploadDocumentBlob(), DocumentCategorie (+39 more)
 
 ### Community 58 - "Supabase Postgres Best Practices"
 Cohesion: 0.33
 Nodes (5): How to Use, References, Rule Categories by Priority, Supabase Postgres Best Practices, When to Apply
 
 ### Community 59 - "dashboard-metrics.ts"
-Cohesion: 0.23
-Nodes (14): DossierDetailDocuments(), FileDropZone(), SubDossierCard(), GlossaryLabel(), DossierFichierRow, SubDossierRow, DossierFichier, SubDossier (+6 more)
+Cohesion: 0.29
+Nodes (11): DossierDetailDocuments(), FileDropZone(), SubDossierCard(), GlossaryLabel(), DossierFichierRow, SubDossierRow, DossierFichier, SubDossier (+3 more)
 
 ### Community 60 - "route.test.ts"
 Cohesion: 0.25
@@ -418,32 +445,36 @@ Cohesion: 0.50
 Nodes (3): __dirname, eslintConfig, __filename
 
 ### Community 98 - "require-admin.ts"
-Cohesion: 0.19
-Nodes (12): CalendrierScreen(), CalEvent, DayPanel(), daysInMonth(), EventType, FR_DAYS, FR_MONTHS, isoDate() (+4 more)
+Cohesion: 0.16
+Nodes (15): CalendrierScreen(), CalEvent, DayPanel(), daysInMonth(), EventType, FR_DAYS, FR_MONTHS, isoDate() (+7 more)
 
 ### Community 101 - "@radix-ui/react-avatar"
-Cohesion: 0.15
-Nodes (28): AnnexeSelector(), BreadcrumbNav(), DETAIL_PARENT, CommandPalette(), NavList(), Sidebar(), Topbar(), viewTitles (+20 more)
+Cohesion: 0.14
+Nodes (29): AnnexeSelector(), BreadcrumbNav(), DETAIL_PARENT, CommandPalette(), NavList(), Sidebar(), SidebarBrand(), Topbar() (+21 more)
 
-### Community 104 - "contrats.tsx"
-Cohesion: 0.13
-Nodes (19): REALTIME_TABLES, ProfileRow, User, ExcelWorkbook, ExcelWorkbookRow, LegacyNavPersist, readLegacyNavPersist(), LOGGED_OUT (+11 more)
+### Community 105 - "dossier-bulk-import-dialog.tsx"
+Cohesion: 0.05
+Nodes (55): StatPill(), Heading(), StatPill(), Heading(), AdminPanel(), DerniersDossiersCard(), InfoRow(), DocumentPreviewBody() (+47 more)
 
 ### Community 106 - "devis.tsx"
-Cohesion: 0.14
-Nodes (17): DossiersTabProps, DevisActionsCard(), AmountRow(), TRANSITION_META, TransitionType, ActionsCard(), UsersEmptyState(), EcartValue() (+9 more)
+Cohesion: 0.25
+Nodes (18): PATCH(), RouteContext, POST(), RouteContext, AdminClient, assertNotLastActiveAdmin(), DELETE(), PATCH() (+10 more)
 
 ### Community 107 - "status-badge.tsx"
-Cohesion: 0.16
-Nodes (19): TransporteurFormModal(), CAPACITE_PRESETS, emptyTransporteurForm(), firstInvalidTransporteurStep(), isTransporteurFormValid(), isTransporteurStepValid(), maxReachableStep(), STEP_FIELDS (+11 more)
+Cohesion: 0.06
+Nodes (45): BeforeInstallPromptEvent, InstallPWA(), isIos(), isStandalone(), Benefice, BeneficeKpiRow(), BeneficeKpiRowProps, BeneficeParSociete (+37 more)
 
-### Community 108 - "devis-slice.ts"
-Cohesion: 0.21
-Nodes (13): BonSortieCaisseRow, BonSortieRow, BonMotif, BonSortie, BonSortieCaisse, BonSortieCaisseInput, societe(), BonInput (+5 more)
+### Community 109 - "sync-sequences.ts"
+Cohesion: 0.11
+Nodes (23): CheckedState, Phase, StatutHistorique, EMPTY_LIGNE, LigneForm, LOGO_ACCEPTED_TYPES, SocieteCard(), AnnexePicker() (+15 more)
 
 ### Community 116 - "use-benefice-par-societe.ts"
-Cohesion: 0.08
-Nodes (33): BonMarchandiseTab(), useBonFilters(), Benefice, BeneficeKpiRow(), BeneficeKpiRowProps, BeneficeParSociete, EcrituresFilters(), EcrituresKpiRow() (+25 more)
+Cohesion: 0.29
+Nodes (11): useDashboardMetrics(), DOSSIER_STATUT_HEX, sommeFacturesEncaissees(), buildDossiersParMois(), buildLiveAlertes(), buildStockRepartition(), computeEncaisseVariation(), computeRestesAPayer() (+3 more)
+
+### Community 117 - "contrat-detail.tsx"
+Cohesion: 0.24
+Nodes (14): ClasseurTabProps, ClasseurViewMode, clientTypes, DEVIS_SORT_OPTIONS, CATEGORIES, DocumentMetaForm(), DocumentMetaValues, ResponsiveDataList() (+6 more)
 
 ### Community 118 - "3. Modèle de données — détail champ par champ"
 Cohesion: 0.12
@@ -453,37 +484,65 @@ Nodes (16): 3.10 bons_sortie (marchandise) + bons_sortie_caisse, 3.11 contrats +
 Cohesion: 0.12
 Nodes (16): 7.10 Fournisseurs, 7.11 Transporteurs, 7.12 Calendrier, 7.13 Comptabilité, 7.14 Bilans, 7.15 Paramètres, 7.1 Dashboard, 7.2 Clients (+8 more)
 
-### Community 122 - "echeance-utils.ts"
-Cohesion: 0.12
-Nodes (16): DevisPipelineCard(), DevisNextStatut, DevisStatutConfig, STATUT_CONFIG, STATUT_FLOW, STATUTS_ALL, NEXT_STATUT, STATUT_CONFIG (+8 more)
+### Community 123 - "contrats.tsx"
+Cohesion: 0.11
+Nodes (23): ConfirmActionDialog(), ConfirmDeleteDialog(), ContratFormModal(), DepenseFormModal(), PrestationFormModal(), CONTRAT_STATUT_TONE, CONTRAT_STATUTS, contratToInput() (+15 more)
 
-### Community 123 - "contrat-detail.tsx"
-Cohesion: 0.35
-Nodes (8): PATCH(), getAdminClient(), getAuthenticatedProfile(), getServerClient(), requireUser(), createAdminClient(), createServerClient(), getPublicKey()
-
-### Community 126 - "excel-export.ts"
-Cohesion: 0.28
-Nodes (10): EXPORT_PERMISSIONS, POST(), sanitizeFilename(), normalizeExportCell(), normalizeExportRows(), buildXlsxBuffer(), cellDisplayLength(), computeColumnWidths() (+2 more)
+### Community 126 - "ocr-capture-dialog.tsx"
+Cohesion: 0.22
+Nodes (9): DossierFournisseur, DossierFournisseurInput, Fournisseur, FournisseurInput, baseClient, baseDossier, { calls, remoteState, resetFake }, FournisseursSlice (+1 more)
 
 ### Community 128 - "db-seed-demo.mjs"
 Cohesion: 0.50
 Nodes (3): result, root, seedFile
 
+### Community 129 - "comptabilite-generale-import.ts"
+Cohesion: 0.20
+Nodes (14): ReviewRow, buildColMap(), cellToString(), Field, findHeaderRow(), HEADER_ALIASES, isPlausibleDate(), normalizeHeader() (+6 more)
+
+### Community 130 - "@radix-ui/react-toast"
+Cohesion: 0.50
+Nodes (5): addToRemoveQueue(), dispatch(), genId(), reducer(), Toast
+
 ### Community 132 - "cmdk"
-Cohesion: 0.09
-Nodes (38): BonSortieCaisseLigneRow, BonSortieStatut, ClientRow, ContratPrestationRow, DocumentVersionRow, DossierFournisseurRow, DossierFournisseurStatut, FactureLigneRow (+30 more)
+Cohesion: 0.30
+Nodes (10): ConvertDevisDialogProps, DevisFormProps, DevisRow, Devis, DevisInput, DevisStatut, createDevisSlice(), currentUserAnnexeIds() (+2 more)
+
+### Community 133 - "factures-slice.ts"
+Cohesion: 0.24
+Nodes (10): GuideDemarrage(), emitGuideReset(), getGuideProgress(), getGuideStepsForRole(), GUIDE_STEP_DEFS, GuideStepDef, GuideStepId, GuideStepView (+2 more)
+
+### Community 134 - "bon-marchandise-tab.tsx"
+Cohesion: 0.29
+Nodes (10): BonSortieCaisseRow, BonSortieRow, BonMotif, BonSortie, BonSortieCaisse, BonSortieCaisseInput, BonInput, BonsSlice (+2 more)
+
+### Community 135 - "index.ts"
+Cohesion: 0.19
+Nodes (10): AgentPanel(), AlertesCard(), DossiersEvolutionChart(), MagasinierPanel(), DashboardSection, getDashboardSections(), kpiGridClass(), SECTION_PERMISSIONS (+2 more)
 
 ### Community 136 - "split-users-table.mjs"
 Cohesion: 0.22
 Nodes (8): 11. Temps réel, 12. Routes API custom (7), 13. Glossaire, 14. Références (fichiers sources), 4. Machines à états (FSM), 6. Matrice des permissions, Cahier des charges détaillé — Plateforme SLTT Transit, Sommaire
 
 ### Community 137 - "bons-slice.ts"
-Cohesion: 0.14
-Nodes (24): UnifiedDoc, AuditAction, AuditEntry, AuditModule, AuditSourceRef, AuditSourceType, insertAuditLog(), resolveClientIp() (+16 more)
+Cohesion: 0.06
+Nodes (53): ClientFormFieldsProps, NewEcritureDialogProps, BonSortieCaisseLigneRow, BonSortieStatut, ClientRow, ContratFichierRow, ContratPrestationRow, DocumentVersionRow (+45 more)
+
+### Community 139 - "recharts"
+Cohesion: 0.22
+Nodes (8): OfflineIndicator(), PwaUpdatePrompt(), getNextTransition(), AppShell(), DossierDetailScreen(), DossierFormScreen(), FacturesScreen(), ParametresScreen()
+
+### Community 140 - "command-palette.tsx"
+Cohesion: 0.27
+Nodes (8): RecuGeneratorForm(), RecuGeneratorFormProps, STATUT_BADGE_CLASS, STATUT_LABELS, SignaturePad(), SignaturePadProps, RecuGeneratorFormState, RecuPaiementStatut
 
 ### Community 141 - "8. Module OCR — détail du pipeline"
 Cohesion: 0.29
 Nodes (7): 8.1 Entrée, 8.2 Stockage, 8.3 Extraction (`tesseract-provider.ts`), 8.4 Mapping heuristique (`dossier-mapper.ts`), 8.5 Revue et validation, 8.6 Fiabilité, 8. Module OCR — détail du pipeline
+
+### Community 144 - "generate-pwa-icons.mjs"
+Cohesion: 0.32
+Nodes (7): __dirname, exists(), main(), outDir, root, source, writeIcon()
 
 ### Community 145 - "9. Multi-société / multi-annexe"
 Cohesion: 0.29
@@ -505,25 +564,53 @@ Nodes (5): 1.1 Objet, 1.2 Contexte organisationnel, 1.3 Rôles utilisateurs, 1.4
 Cohesion: 0.50
 Nodes (4): 2.1 Stack (versions issues de `package.json`), 2.2 Principe d'architecture — pas de backend REST custom, 2.3 Organisation du code, 2. Architecture technique
 
+### Community 151 - "package.json"
+Cohesion: 0.29
+Nodes (6): uuid, name, overrides, exceljs, private, version
+
+### Community 154 - "informations-card.tsx"
+Cohesion: 0.24
+Nodes (10): Toast, ToastAction, ToastActionElement, ToastClose, ToastDescription, ToastProps, ToastTitle, toastVariants (+2 more)
+
+### Community 155 - "dossier-detail-stepper.tsx"
+Cohesion: 0.13
+Nodes (16): ACTIVITY_EVENTS, AppRootInner(), LoginScreen(), SupabaseRequiredScreen(), REALTIME_TABLES, useSupabaseRealtime(), clearLegacyNavPersist(), LegacyNavPersist (+8 more)
+
+### Community 156 - "clsx"
+Cohesion: 0.50
+Nodes (3): secureRuntimeCaching, serwist, WorkerGlobalScope
+
+### Community 164 - "FactureDetailScreen"
+Cohesion: 0.33
+Nodes (7): BeneficeMensuel, BeneficeParSocieteEntry, useBeneficeParSociete(), computeBenefice(), filterBySocieteAndPeriode(), buildEcartsParPeriode(), buildEncaissementsParMois()
+
+### Community 167 - "@radix-ui/react-dropdown-menu"
+Cohesion: 0.47
+Nodes (3): FinancialSummary(), LignesCard(), LignesTable()
+
+### Community 172 - "marge-chart.tsx"
+Cohesion: 0.60
+Nodes (3): EncaissementsChart(), MargeChart(), formatFCFACompact()
+
 ## Knowledge Gaps
-- **544 isolated node(s):** `supabase`, `supabase`, `$schema`, `style`, `rsc` (+539 more)
+- **590 isolated node(s):** `supabase`, `supabase`, `$schema`, `style`, `rsc` (+585 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **70 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **72 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `factures.tsx` to `print-modules.ts`, `store.ts`, `dossiers-slice.ts`, `require-admin.ts`, `utils.ts`, `export.ts`, `nav-store.ts`, `contrats.tsx`, `store-actions.test.ts`, `contrat-stats.test.ts`, `Facture`, `cn`, `archives-slice.ts`, `dossier-form.tsx`, `domain-types.ts`, `csv-export.ts`, `derniers-dossiers-card.tsx`, `@radix-ui/react-slot`, `@radix-ui/react-toast`, `parametres.tsx`, `dashboard-metrics.ts`, `require-admin.ts`, `@radix-ui/react-avatar`, `devis.tsx`, `status-badge.tsx`, `use-benefice-par-societe.ts`, `echeance-utils.ts`?**
-  _High betweenness centrality (0.090) - this node is a cross-community bridge._
-- **Why does `dependencies` connect `dependencies` to `@radix-ui/react-toast`, `tailwind-merge`, `@radix-ui/react-switch`, `recharts`, `@radix-ui/react-select`, `calendrier.tsx`, `cmdk`, `store-actions.test.ts`, `@radix-ui/react-label`, `tailwindcss-animate`, `ag-grid-react`, `next`, `@radix-ui/react-separator`, `classeur.ts`, `@radix-ui/react-toast`, `server-only`, `@supabase/supabase-js`, `recharts`, `scripts`, `archives-slice.ts`, `excel-export.ts`, `contrat-detail.tsx`, `heic2any`, `pdfjs-dist`?**
-  _High betweenness centrality (0.080) - this node is a cross-community bridge._
-- **Why does `react` connect `store-actions.test.ts` to `require-admin.ts`, `derniers-dossiers-card.tsx`, `dependencies`?**
-  _High betweenness centrality (0.079) - this node is a cross-community bridge._
+- **Why does `cn()` connect `dossier-bulk-import-dialog.tsx` to `print-modules.ts`, `require-admin.ts`, `factures-slice.ts`, `utils.ts`, `index.ts`, `export.ts`, `recharts`, `nav-store.ts`, `contrats.tsx`, `command-palette.tsx`, `dossier-wizard-steps.tsx`, `store-actions.test.ts`, `contrat-stats.test.ts`, `Facture`, `cn`, `dossier-form.tsx`, `informations-card.tsx`, `ag-grid-community`, `@radix-ui/react-slot`, `@radix-ui/react-dropdown-menu`, `operation-form-dialog.tsx`, `parametres.tsx`, `guide-progress.ts`, `archives-slice.ts`, `factures.tsx`, `dashboard-metrics.ts`, `require-admin.ts`, `@radix-ui/react-avatar`, `status-badge.tsx`, `sync-sequences.ts`, `contrat-detail.tsx`, `contrats.tsx`?**
+  _High betweenness centrality (0.085) - this node is a cross-community bridge._
+- **Why does `react` connect `dossier-form.tsx` to `contrat-stats.test.ts`, `require-admin.ts`, `factures-slice.ts`, `dependencies`?**
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `dependencies` to `tailwind-merge`, `@radix-ui/react-switch`, `@radix-ui/react-select`, `calendrier.tsx`, `@radix-ui/react-label`, `package.json`, `tailwindcss-animate`, `dossier-form.tsx`, `class-variance-authority`, `next`, `@radix-ui/react-separator`, `classeur.ts`, `@radix-ui/react-toast`, `server-only`, `@radix-ui/react-alert-dialog`, `@supabase/supabase-js`, `cmdk`, `@radix-ui/react-dialog`, `serwist`, `tesseract.js`, `@univerjs/preset-sheets-core`, `ag-grid-community`, `excel-export.ts`, `heic2any`, `pdfjs-dist`?**
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
 - **What connects `supabase`, `supabase`, `$schema` to the rest of the system?**
-  _544 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _590 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `devis.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.0977891156462585 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10476190476190476 - nodes in this community are weakly interconnected._
 - **Should `entreposage.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.13109243697478992 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.14814814814814814 - nodes in this community are weakly interconnected._
 - **Should `print-modules.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.0966576332429991 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05249033920137398 - nodes in this community are weakly interconnected._

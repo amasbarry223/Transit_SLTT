@@ -19,11 +19,15 @@ export type OcrExtractResult = {
   pdfPages?: OcrPdfPagesInfo;
 };
 
+/** Convertit le texte OCR brut en champs structurés — un mapper par formulaire cible (dossier, opération comptable…). */
+export type OcrFieldMapper = (rawText: string) => OcrExtractedField[];
+
 export interface OcrProvider {
   readonly name: string;
   extract(
     blob: Blob,
     mimeType: string,
+    mapper: OcrFieldMapper,
     signal?: AbortSignal,
   ): Promise<OcrExtractResult>;
 }

@@ -13,15 +13,15 @@ interface AddContratFichierInput {
   dataUrl: string;
 }
 
-export function mapContratFichierFromDb(x: ContratFichierRow): ContratFichier {
+export function mapContratFichierFromDb(row: ContratFichierRow): ContratFichier {
   return {
-    id: x.id,
-    contratId: x.contrat_id,
-    nom: x.nom,
-    taille: Number(x.taille),
-    type: x.type,
-    dateUpload: x.date_upload || x.created_at,
-    storagePath: x.storage_path,
+    id: row.id,
+    contratId: row.contrat_id,
+    nom: row.nom,
+    taille: Number(row.taille),
+    type: row.type,
+    dateUpload: row.date_upload || row.created_at,
+    storagePath: row.storage_path,
   };
 }
 

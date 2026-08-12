@@ -22,6 +22,8 @@ export type SequenceCounters = Pick<
   | "depenseSeq"
   | "contratPrestationSeq"
   | "bonSortieCaisseSeq"
+  | "operationComptableSeq"
+  | "recuPaiementSeq"
 >;
 
 function parseTrailingSeq(value: string | null | undefined): number | null {
@@ -34,6 +36,20 @@ function parseTrailingSeq(value: string | null | undefined): number | null {
 function parseNumeroSeq(value: string | null | undefined): number | null {
   if (!value) return null;
   const match = value.match(/N°(\d+)/);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+/** Parse la référence "OPC-{n}" des opérations de comptabilité générale. */
+function parseOpcSeq(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = value.match(/OPC-(\d+)/);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+/** Parse la référence "RECU-{n}" des reçus de paiement. */
+function parseRecuSeq(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = value.match(/RECU-(\d+)/);
   return match ? Number.parseInt(match[1], 10) : null;
 }
 
@@ -71,6 +87,8 @@ type SyncSource = Pick<
   | "depenses"
   | "contratPrestations"
   | "bonsSortieCaisse"
+  | "operationsComptables"
+  | "recusPaiement"
 >;
 
 export function syncSequencesFromData(state: SyncSource): SequenceCounters {
@@ -95,5 +113,7 @@ export function syncSequencesFromData(state: SyncSource): SequenceCounters {
     depenseSeq: nextSeqFromValues(state.depenses.map((d) => parseIdSeq(d.id, "DEP")), state.depenseSeq),
     contratPrestationSeq: nextSeqFromValues(state.contratPrestations.map((p) => parseIdSeq(p.id, "PRES")), state.contratPrestationSeq),
     bonSortieCaisseSeq: nextSeqFromValues(state.bonsSortieCaisse.map((b) => parseNumeroSeq(b.reference)), state.bonSortieCaisseSeq),
+    operationComptableSeq: nextSeqFromValues(state.operationsComptables.map((o) => parseOpcSeq(o.reference)), state.operationComptableSeq),
+    recuPaiementSeq: nextSeqFromValues(state.recusPaiement.map((r) => parseRecuSeq(r.reference)), state.recuPaiementSeq),
   };
 }

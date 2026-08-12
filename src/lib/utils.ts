@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]): string {
 }
 
 /** Dégradé d'avatar unique pour les utilisateurs (agents, admins…) — dérivé de --primary. */
-export const USER_AVATAR_GRADIENT = "bg-gradient-to-br from-blue-600 to-blue-800";
+export const USER_AVATAR_GRADIENT = "bg-gradient-to-br from-primary to-[var(--primary-hover)]";
 
 /** Génère les initiales d'un nom complet (max 2 caractères). */
 export function getInitials(name: string): string {

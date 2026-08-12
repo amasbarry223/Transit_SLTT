@@ -220,6 +220,7 @@ export function DossiersListScreen() {
     }
     try {
       await exportToExcel(
+        "dossiers",
         `dossiers-transit-${new Date().toISOString().slice(0, 10)}`,
         [
           { header: "Référence", accessor: (d) => d.reference },

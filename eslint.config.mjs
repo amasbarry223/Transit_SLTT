@@ -54,6 +54,9 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "skills",
     "public/ocr/**",
     "public/pdf.worker.min.mjs",
+    "public/sw.js",
+    "public/sw.js.map",
+    "public/swe-worker-*",
     "graphify-out/**",
   ]
 }];

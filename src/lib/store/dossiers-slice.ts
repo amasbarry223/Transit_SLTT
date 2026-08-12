@@ -16,35 +16,40 @@ import {
   shouldSyncEcritureOnDossierSolde,
   syncEcritureWhenDossierSolde,
 } from "@/lib/store/sync-helpers";
-import { computeDossierReference, computeHistoricalDossierReference } from "@/lib/store/reference";
+import {
+  computeDossierReference,
+  computeHistoricalDossierReference,
+  extractTrailingSeq,
+  insertWithReferenceRetry,
+} from "@/lib/store/reference";
 
-export function mapDossierFromDb(x: DossierRow): Dossier {
+export function mapDossierFromDb(row: DossierRow): Dossier {
   return {
-    id: x.id,
-    reference: x.reference,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    bl: x.bl,
-    camion: x.camion,
-    nature: x.nature,
-    droitDouane: Number(x.droit_douane),
-    fraisCircuit: Number(x.frais_circuit),
-    fraisPrestation: Number(x.frais_prestation),
-    montantInvesti: Number(x.montant_investi),
-    montantPaye: Number(x.montant_paye),
-    statut: x.statut,
-    date: x.date,
-    dateEcheance: x.date_echeance ?? undefined,
-    dateDedouanement: x.date_dedouanement ?? undefined,
-    modeTransport: x.mode_transport ?? undefined,
-    noConteneur: x.no_conteneur ?? undefined,
-    portEntree: x.port_entree ?? undefined,
-    poidsTotal: x.poids_total ? Number(x.poids_total) : undefined,
-    notes: x.notes ?? undefined,
+    id: row.id,
+    reference: row.reference,
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom || "—",
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    clientId: row.client_id,
+    clientNom: row.clients?.nom || "—",
+    bl: row.bl,
+    camion: row.camion,
+    nature: row.nature,
+    droitDouane: Number(row.droit_douane),
+    fraisCircuit: Number(row.frais_circuit),
+    fraisPrestation: Number(row.frais_prestation),
+    montantInvesti: Number(row.montant_investi),
+    montantPaye: Number(row.montant_paye),
+    statut: row.statut,
+    date: row.date,
+    dateEcheance: row.date_echeance ?? undefined,
+    dateDedouanement: row.date_dedouanement ?? undefined,
+    modeTransport: row.mode_transport ?? undefined,
+    noConteneur: row.no_conteneur ?? undefined,
+    portEntree: row.port_entree ?? undefined,
+    poidsTotal: row.poids_total ? Number(row.poids_total) : undefined,
+    notes: row.notes ?? undefined,
   };
 }
 
@@ -90,7 +95,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
   addDossier: async (input) => {
     const year = new Date().getFullYear();
-    const { reference, useAnnexeNumbering, seq } = resolveDossierReference(
+    const { reference: initialReference, useAnnexeNumbering } = resolveDossierReference(
       get,
       input.societeId,
       input.annexeId,
@@ -98,41 +103,46 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     );
     const statut: DossierStatut = DOSSIER_STATUT_EN_COURS;
 
-    const { data, error } = await supabase
-      .from("dossiers")
-      .insert({
-        reference,
-        societe_id: input.societeId,
-        annexe_id: input.annexeId,
-        client_id: input.clientId,
-        bl: input.bl,
-        camion: input.camion,
-        nature: input.nature,
-        droit_douane: input.droitDouane,
-        frais_circuit: input.fraisCircuit,
-        frais_prestation: input.fraisPrestation,
-        montant_investi: input.montantInvesti,
-        montant_paye: 0,
-        statut,
-        date: input.date,
-        date_echeance: input.dateEcheance,
-        date_dedouanement: input.dateDedouanement,
-        mode_transport: input.modeTransport,
-        no_conteneur: input.noConteneur,
-        port_entree: input.portEntree,
-        poids_total: input.poidsTotal,
-        notes: input.notes,
-      })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
-      .single();
+    // Retry avec référence incrémentée si deux créations concurrentes ont
+    // calculé le même numéro à partir d'un même snapshot client — la
+    // contrainte unique en base fait alors échouer l'un des deux inserts.
+    const { data, reference } = await insertWithReferenceRetry<DossierRow>(initialReference, (ref) =>
+      supabase
+        .from("dossiers")
+        .insert({
+          reference: ref,
+          societe_id: input.societeId,
+          annexe_id: input.annexeId,
+          client_id: input.clientId,
+          bl: input.bl,
+          camion: input.camion,
+          nature: input.nature,
+          droit_douane: input.droitDouane,
+          frais_circuit: input.fraisCircuit,
+          frais_prestation: input.fraisPrestation,
+          montant_investi: input.montantInvesti,
+          montant_paye: 0,
+          statut,
+          date: input.date,
+          date_echeance: input.dateEcheance,
+          date_dedouanement: input.dateDedouanement,
+          mode_transport: input.modeTransport,
+          no_conteneur: input.noConteneur,
+          port_entree: input.portEntree,
+          poids_total: input.poidsTotal,
+          notes: input.notes,
+        })
+        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .single(),
+    );
 
-    if (error) throw error;
     const newDossier = mapDossierFromDb(data);
+    const finalSeq = extractTrailingSeq(reference) ?? get().dossierSeq;
     set((s) => {
       const updatedDossiers = [newDossier, ...s.dossiers];
       return {
         dossiers: updatedDossiers,
-        dossierSeq: useAnnexeNumbering ? s.dossierSeq : seq + 1,
+        dossierSeq: useAnnexeNumbering ? s.dossierSeq : finalSeq + 1,
         clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
       };
     });
@@ -315,11 +325,13 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
     assertDossierTransition(dossier.statut, newStatut);
 
-    // Soldé avec reste dû exige un encaissement — la garde UI ne suffit pas.
+    // Soldé avec reste dû exige un encaissement couvrant le solde — la garde UI
+    // ne suffit pas (appel programmatique ou RPC).
     if (newStatut === DOSSIER_STATUT_SOLDE && resteAPayer(dossier) > 0) {
-      if (!(typeof montantRecu === "number" && montantRecu > 0)) {
+      const reste = resteAPayer(dossier);
+      if (!(typeof montantRecu === "number" && montantRecu >= reste)) {
         throw new Error(
-          "Impossible de solder le dossier sans encaissement : un montant reçu est requis tant qu'il reste dû.",
+          `Impossible de solder le dossier : le paiement doit couvrir le solde dû (${reste.toLocaleString("fr-FR")} FCFA).`,
         );
       }
     }

@@ -16,7 +16,7 @@ export const DEVIS_ALLOWED_TRANSITIONS: Record<DevisStatut, DevisStatut[]> = {
 export const FACTURE_ALLOWED_TRANSITIONS: Record<FactureStatut, FactureStatut[]> = {
   Brouillon: ["Envoyée", "Annulée"],
   Envoyée: ["Partielle", "Soldée", "Annulée"],
-  Partielle: ["Soldée", "Annulée"],
+  Partielle: ["Soldée", "Annulée", "Partielle"],
   Soldée: ["Annulée"],
   Annulée: [],
 };

@@ -3,6 +3,7 @@
 import type { AuditModule } from "@/lib/audit";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { normalizeExportCell } from "@/lib/export/normalize-export-cell";
+import type { ExportModule } from "@/lib/export/export-modules";
 import { useStore } from "@/lib/store";
 import { toast } from "@/hooks/use-toast";
 
@@ -71,6 +72,7 @@ function isValidXlsxBytes(bytes: Uint8Array): boolean {
  * destination du blob.
  */
 export async function exportToExcel<T>(
+  module: ExportModule,
   filename: string,
   columns: Column<T>[],
   rows: T[],
@@ -92,7 +94,7 @@ export async function exportToExcel<T>(
   try {
     const response = await fetchWithAuth("/api/export/excel", {
       method: "POST",
-      body: JSON.stringify({ filename: baseName, headers, rows: data }),
+      body: JSON.stringify({ module, filename: baseName, headers, rows: data }),
     });
 
     if (!response.ok) {

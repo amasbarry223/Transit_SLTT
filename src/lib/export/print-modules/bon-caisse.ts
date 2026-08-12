@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand-colors";
 import { MISSING_SIGNATORY_LABEL, type SocieteLegalInfo } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
@@ -60,7 +61,7 @@ export function buildBonSortieCaisseHTML(data: BonSortieCaisseModuleData): strin
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
 .wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
-.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 26px 40px; border-bottom: 3px solid #404089; gap: 20px; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 26px 40px; border-bottom: 3px solid ${BRAND.navy}; gap: 20px; }
 .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
 /* Hauteur fixe, largeur libre : le badge circulaire de Traoré Transit Logistique
    (ratio ~1:1) et la bannière large de Top Doumani (ratio ~4:1) doivent tous deux
@@ -69,7 +70,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .brand-name { font-size: 17px; font-weight: 800; color: #1f2937; letter-spacing: -.3px; line-height: 1.25; text-transform: uppercase; }
 .doc-meta { text-align: right; flex-shrink: 0; }
 .doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-ref { font-size: 22px; font-weight: 800; color: #404089; letter-spacing: -1px; line-height: 1.1; }
+.doc-ref { font-size: 22px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1px; line-height: 1.1; }
 .doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
 .body { padding: 28px 40px; }
 .doc-title { text-align: center; font-size: 16px; font-weight: 800; letter-spacing: .04em; margin-bottom: 22px; }
@@ -84,7 +85,7 @@ table { width: 100%; border-collapse: collapse; }
 .sig-name { font-size: 12px; color: #1f2937; border-top: 1px solid #cdd4df; padding-top: 6px; }
 .footer { padding: 12px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; font-size: 10px; color: #45556b; text-align: center; }
 .no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
-.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 @media print {
   .no-print { display: none !important; }
   body { background: white; }

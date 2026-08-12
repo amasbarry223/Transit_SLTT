@@ -4,42 +4,42 @@ import type { Mouvement, StockItem } from "@/lib/domain-types";
 import type { SLTTState, StockItemInput } from "@/lib/store";
 import type { MouvementRow, StockItemRow } from "@/lib/db-rows";
 
-export function mapStockItemFromDb(x: StockItemRow): StockItem {
+export function mapStockItemFromDb(row: StockItemRow): StockItem {
   return {
-    id: x.id,
-    clientId: x.client_id || undefined,
-    clientNom: x.clients?.nom || undefined,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    marchandise: x.marchandise,
-    quantite: Number(x.quantite),
-    unite: x.unite,
-    seuil: Number(x.seuil),
-    depositaire: x.depositaire,
-    commercial: x.commercial,
-    sommePayee: Number(x.somme_payee),
-    resteAPayer: Number(x.reste_a_payer),
+    id: row.id,
+    clientId: row.client_id || undefined,
+    clientNom: row.clients?.nom || undefined,
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom || "—",
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    marchandise: row.marchandise,
+    quantite: Number(row.quantite),
+    unite: row.unite,
+    seuil: Number(row.seuil),
+    depositaire: row.depositaire,
+    commercial: row.commercial,
+    sommePayee: Number(row.somme_payee),
+    resteAPayer: Number(row.reste_a_payer),
   };
 }
 
-export function mapMouvementFromDb(x: MouvementRow): Mouvement {
+export function mapMouvementFromDb(row: MouvementRow): Mouvement {
   return {
-    id: x.id,
-    stockId: x.stock_id || undefined,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    date: x.date,
-    type: x.type,
-    marchandise: x.marchandise || "",
-    quantite: Number(x.quantite),
-    unite: x.unite || "",
-    responsable: x.responsable || "",
-    bonRef: x.bon_ref || undefined,
-    motif: x.motif || undefined,
+    id: row.id,
+    stockId: row.stock_id || undefined,
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom || "—",
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    date: row.date,
+    type: row.type,
+    marchandise: row.marchandise || "",
+    quantite: Number(row.quantite),
+    unite: row.unite || "",
+    responsable: row.responsable || "",
+    bonRef: row.bon_ref || undefined,
+    motif: row.motif || undefined,
   };
 }
 
@@ -100,27 +100,23 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const stockItem = get().stock.find((s) => s.id === stockId);
     if (!stockItem) return;
 
-    const newQty = stockItem.quantite + quantite;
+    // Mouvement appliqué atomiquement côté serveur (quantite = quantite + delta,
+    // jamais un calcul client) pour éviter une perte de mise à jour si deux
+    // entrées/sorties concurrentes s'appliquent au même article.
+    const { data, error } = await supabase
+      .rpc("apply_stock_movement", {
+        p_stock_id: stockId,
+        p_delta: quantite,
+        p_type: "Entrée",
+        p_responsable: responsable,
+      })
+      .single();
+    if (error) throw error;
+    const result = data as { stock_id: string; stock_quantite: number; mouvement_id: string };
+    const newQty = Number(result.stock_quantite);
 
-    const { error: stockErr } = await supabase.from("stock_items").update({ quantite: newQty }).eq("id", stockId);
-    if (stockErr) throw stockErr;
-    const { error: mvtErr } = await supabase.from("mouvements").insert({
-      stock_id: stockId,
-      societe_id: stockItem.societeId,
-      annexe_id: stockItem.annexeId,
-      type: "Entrée",
-      quantite,
-      date: new Date().toISOString(),
-      responsable,
-      marchandise: stockItem.marchandise,
-      unite: stockItem.unite,
-      bon_ref: null,
-    });
-    if (mvtErr) throw mvtErr;
-
-    const seq = get().mouvementSeq;
     const newMouvement: Mouvement = {
-      id: `M-${seq}`,
+      id: result.mouvement_id,
       societeId: stockItem.societeId,
       societeNom: stockItem.societeNom,
       annexeId: stockItem.annexeId,
@@ -136,7 +132,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     set((s) => ({
       stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
       mouvements: [newMouvement, ...s.mouvements],
-      mouvementSeq: seq + 1,
     }));
     await get().addAuditLog(
       "Stock",
@@ -149,40 +144,27 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const stockItem = get().stock.find((s) => s.id === stockId);
     if (!stockItem) return;
 
-    if (quantite > stockItem.quantite) {
-      throw new Error("Quantité supérieure au stock disponible.");
+    const { data, error } = await supabase
+      .rpc("apply_stock_movement", {
+        p_stock_id: stockId,
+        p_delta: -quantite,
+        p_type: "Sortie",
+        p_responsable: responsable,
+        p_bon_ref: bonRef || null,
+        p_motif: motif || null,
+      })
+      .single();
+    if (error) {
+      if (error.message?.includes("Stock insuffisant")) {
+        throw new Error("Quantité supérieure au stock disponible.");
+      }
+      throw error;
     }
-    const newQty = stockItem.quantite - quantite;
+    const result = data as { stock_id: string; stock_quantite: number; mouvement_id: string };
+    const newQty = Number(result.stock_quantite);
 
-    const { data: updatedStock, error: stockErr } = await supabase
-      .from("stock_items")
-      .update({ quantite: newQty })
-      .eq("id", stockId)
-      .gte("quantite", quantite)
-      .select("id")
-      .maybeSingle();
-    if (stockErr) throw stockErr;
-    if (!updatedStock) {
-      throw new Error("Stock insuffisant (mise à jour concurrente).");
-    }
-    const { error: mvtErr } = await supabase.from("mouvements").insert({
-      stock_id: stockId,
-      societe_id: stockItem.societeId,
-      annexe_id: stockItem.annexeId,
-      type: "Sortie",
-      quantite,
-      date: new Date().toISOString(),
-      responsable,
-      marchandise: stockItem.marchandise,
-      unite: stockItem.unite,
-      bon_ref: bonRef || null,
-      motif: motif || null,
-    });
-    if (mvtErr) throw mvtErr;
-
-    const seq = get().mouvementSeq;
     const newMouvement: Mouvement = {
-      id: `M-${seq}`,
+      id: result.mouvement_id,
       societeId: stockItem.societeId,
       societeNom: stockItem.societeNom,
       annexeId: stockItem.annexeId,
@@ -200,7 +182,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     set((s) => ({
       stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
       mouvements: [newMouvement, ...s.mouvements],
-      mouvementSeq: seq + 1,
     }));
     await get().addAuditLog(
       "Stock",

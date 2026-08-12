@@ -18,54 +18,54 @@ import type { ContratPrestationRow, ContratRow, DepenseRow } from "@/lib/db-rows
 import { nextYearlyReference } from "@/lib/store/reference";
 
 export function mapContratFromDb(
-  x: ContratRow,
+  row: ContratRow,
 ): Omit<Contrat, "nbPrestations" | "nbPrestationsRealisees" | "totalDepenses"> {
   return {
-    id: x.id,
-    reference: x.reference,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    objet: x.objet,
-    dateDebut: x.date_debut,
-    dateFin: x.date_fin || undefined,
-    montant: Number(x.montant),
-    statut: x.statut,
-    notes: x.notes || undefined,
-    creePar: x.cree_par || undefined,
-    creeLe: x.created_at,
+    id: row.id,
+    reference: row.reference,
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom || "—",
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    clientId: row.client_id,
+    clientNom: row.clients?.nom || "—",
+    objet: row.objet,
+    dateDebut: row.date_debut,
+    dateFin: row.date_fin || undefined,
+    montant: Number(row.montant),
+    statut: row.statut,
+    notes: row.notes || undefined,
+    creePar: row.cree_par || undefined,
+    creeLe: row.created_at,
   };
 }
 
-export function mapDepenseFromDb(x: DepenseRow): Depense {
+export function mapDepenseFromDb(row: DepenseRow): Depense {
   return {
-    id: x.id,
-    contratId: x.contrat_id,
-    societeId: x.societe_id,
-    libelle: x.libelle,
-    montant: Number(x.montant),
-    dateDepense: x.date_depense,
-    modePaiement: x.mode_paiement,
-    justificatifPath: x.justificatif_path || undefined,
-    note: x.note || undefined,
-    creePar: x.cree_par || undefined,
+    id: row.id,
+    contratId: row.contrat_id,
+    societeId: row.societe_id,
+    libelle: row.libelle,
+    montant: Number(row.montant),
+    dateDepense: row.date_depense,
+    modePaiement: row.mode_paiement,
+    justificatifPath: row.justificatif_path || undefined,
+    note: row.note || undefined,
+    creePar: row.cree_par || undefined,
   };
 }
 
-export function mapContratPrestationFromDb(x: ContratPrestationRow): ContratPrestation {
+export function mapContratPrestationFromDb(row: ContratPrestationRow): ContratPrestation {
   return {
-    id: x.id,
-    contratId: x.contrat_id,
-    libelle: x.libelle,
-    description: x.description || undefined,
-    montant: x.montant != null ? Number(x.montant) : undefined,
-    statut: x.statut,
-    datePrevue: x.date_prevue || undefined,
-    dateRealisation: x.date_realisation || undefined,
-    creePar: x.cree_par || undefined,
+    id: row.id,
+    contratId: row.contrat_id,
+    libelle: row.libelle,
+    description: row.description || undefined,
+    montant: row.montant != null ? Number(row.montant) : undefined,
+    statut: row.statut,
+    datePrevue: row.date_prevue || undefined,
+    dateRealisation: row.date_realisation || undefined,
+    creePar: row.cree_par || undefined,
   };
 }
 

@@ -2,6 +2,17 @@ import { resteAPayer } from "@/lib/domain-types";
 import type { Client, Dossier, Ecriture, Facture } from "@/lib/store";
 
 /**
+ * Somme des montants payés sur des factures actives — exclut les factures
+ * `Annulée`, dont l'encaissement ne doit plus compter dans un total global
+ * une fois la facture annulée. Fonction unique réutilisée par tout écran
+ * agrégeant des paiements de factures (Dashboard, Bilans, fiche client),
+ * pour qu'ils ne divergent jamais sur ce total.
+ */
+export function sommeFacturesEncaissees(factures: Facture[]): number {
+  return factures.filter((f) => f.statut !== "Annulée").reduce((sum, f) => sum + f.montantPaye, 0);
+}
+
+/**
  * Recalcule les agrégats client à partir des dossiers, factures et écritures.
  * Les factures déjà rattachées à un dossier du client sont exclues pour éviter
  * le double comptage (le dossier porte déjà l'encours).
@@ -24,7 +35,7 @@ export function syncClientStats(
       nbDossiers: cd.length,
       totalPaye:
         cd.reduce((s, d) => s + d.montantPaye, 0) +
-        cf.filter((f) => f.statut !== "Annulée").reduce((s, f) => s + f.montantPaye, 0) +
+        sommeFacturesEncaissees(cf) +
         ce.reduce((s, e) => s + e.montantPaye, 0),
       totalDu:
         cd.reduce((s, d) => s + resteAPayer(d), 0) +

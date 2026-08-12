@@ -25,23 +25,31 @@ const ACTIVITY_THROTTLE = 15 * 1000;
 /** Garde-fou : ne jamais bloquer l'UI sur "Vérification de la session…". */
 const AUTH_READY_TIMEOUT_MS = 4_000;
 const PROFILE_QUERY_TIMEOUT_MS = 3_000;
-const SW_CLEARED_KEY = "sltt-sw-cleared";
+const SW_FOREIGN_CLEARED_KEY = "sltt-sw-foreign-cleared";
+const SLTT_SW_PATH = "/sw.js";
 
-async function clearRogueServiceWorkers(): Promise<"reload" | "ok"> {
+/** Désenregistre uniquement les SW étrangers (autres projets localhost), pas la PWA Transit. */
+async function cleanupForeignServiceWorkers(): Promise<"reload" | "ok"> {
   if (!("serviceWorker" in navigator)) return "ok";
   try {
     const regs = await navigator.serviceWorker.getRegistrations();
-    if (regs.length === 0) return "ok";
+    const foreign = regs.filter((reg) => {
+      const scriptUrl =
+        reg.active?.scriptURL ?? reg.installing?.scriptURL ?? reg.waiting?.scriptURL;
+      if (!scriptUrl) return false;
+      return new URL(scriptUrl).pathname !== SLTT_SW_PATH;
+    });
+    if (foreign.length === 0) return "ok";
 
-    await Promise.all(regs.map((reg) => reg.unregister()));
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
-    }
+    await Promise.all(foreign.map((reg) => reg.unregister()));
 
-    // unregister() ne détache le SW actif qu'après reload.
-    if (navigator.serviceWorker.controller && !sessionStorage.getItem(SW_CLEARED_KEY)) {
-      sessionStorage.setItem(SW_CLEARED_KEY, "1");
+    const controller = navigator.serviceWorker.controller;
+    if (
+      controller &&
+      new URL(controller.scriptURL).pathname !== SLTT_SW_PATH &&
+      !sessionStorage.getItem(SW_FOREIGN_CLEARED_KEY)
+    ) {
+      sessionStorage.setItem(SW_FOREIGN_CLEARED_KEY, "1");
       window.location.reload();
       return "reload";
     }
@@ -158,7 +166,7 @@ function AppRootInner() {
     async function boot() {
       // SW d'un autre projet sur localhost:3000 peut intercepter les fetch Supabase
       // et laisser getSession() / les requêtes pendantes à jamais.
-      const swStatus = await clearRogueServiceWorkers();
+      const swStatus = await cleanupForeignServiceWorkers();
       if (swStatus === "reload" || cancelled) return;
 
       const { data } = supabase.auth.onAuthStateChange((event, session) => {

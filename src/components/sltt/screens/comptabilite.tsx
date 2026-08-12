@@ -1,134 +1,103 @@
 "use client";
 
-import { FileSpreadsheet, Plus } from "lucide-react";
+import { useState } from "react";
+import { FileSpreadsheet, FileUp, Plus, ScanLine } from "lucide-react";
 import { PageHeader } from "@/components/sltt/page-header";
+import { EcrituresPanel } from "@/components/sltt/comptabilite/ecritures-panel";
+import { useEcrituresScreen } from "@/components/sltt/comptabilite/use-ecritures-screen";
+import { JournalCaissePanel } from "@/components/sltt/comptabilite-generale/journal-caisse-panel";
+import { useComptabiliteGeneraleScreen } from "@/components/sltt/comptabilite-generale/use-comptabilite-generale-screen";
+import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BeneficeKpiRow } from "@/components/sltt/comptabilite/benefice-kpi-row";
-import { EcrituresFilters } from "@/components/sltt/comptabilite/ecritures-filters";
-import { EcrituresKpiRow } from "@/components/sltt/comptabilite/ecritures-kpi-row";
-import { EcrituresTable } from "@/components/sltt/comptabilite/ecritures-table";
-import { NewEcritureDialog } from "@/components/sltt/comptabilite/new-ecriture-dialog";
-import { PaymentDialog } from "@/components/sltt/comptabilite/payment-dialog";
-import { PaymentInfoBanner } from "@/components/sltt/comptabilite/payment-info-banner";
-import { PendingAlertBanner } from "@/components/sltt/comptabilite/pending-alert-banner";
-import { useEcrituresScreen } from "@/components/sltt/comptabilite/use-ecritures-screen";
-import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
+
+type ComptabiliteTab = "ecritures" | "journal";
 
 export function ComptabiliteScreen() {
-  const screen = useEcrituresScreen();
-  const { consolide, parSociete } = useBeneficeParSociete();
+  const [activeTab, setActiveTab] = useState<ComptabiliteTab>("ecritures");
+  const [importOpen, setImportOpen] = useState(false);
+
+  const ecrituresScreen = useEcrituresScreen();
+  const journalScreen = useComptabiliteGeneraleScreen();
+  const benefice = useBeneficeParSociete();
+
+  const tabMeta = {
+    ecritures: {
+      description: "Suivi des paiements liés aux dossiers de transit et entreposage, par société.",
+    },
+    journal: {
+      description: "Journal de caisse par entité — Annexe Mali, Annexe Côte d'Ivoire, Société Top Doumani.",
+    },
+  } as const;
+
+  const currentTab = tabMeta[activeTab];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Comptabilité"
-        description="Suivi interne des paiements — dossiers de transit et entreposage par société"
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as ComptabiliteTab)}
+        className="gap-5"
       >
-        <Button
-          variant="outline"
-          onClick={screen.exportExcel}
-          disabled={screen.filtered.length === 0}
-          title="Exporter en Excel"
-          aria-label="Exporter en Excel"
-        >
-          <FileSpreadsheet className="size-4" />
-          <span className="hidden sm:inline">Excel</span>
-        </Button>
-        {screen.canWrite && (
-          <Button onClick={screen.openNewEcriture}>
-            <Plus className="size-4" />
-            Nouvelle écriture
-          </Button>
-        )}
-      </PageHeader>
+        <PageHeader title="Comptabilité" description={currentTab.description}>
+          {activeTab === "ecritures" ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={ecrituresScreen.exportExcel}
+                disabled={ecrituresScreen.filtered.length === 0}
+                title="Exporter en Excel"
+                aria-label="Exporter en Excel"
+              >
+                <FileSpreadsheet className="size-4" />
+                <span className="hidden sm:inline">Excel</span>
+              </Button>
+              {ecrituresScreen.canWrite && (
+                <Button onClick={ecrituresScreen.openNewEcriture}>
+                  <Plus className="size-4" />
+                  Nouvelle écriture
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={journalScreen.exportExcel}
+                disabled={journalScreen.totalItems === 0}
+                title="Exporter en Excel"
+              >
+                <FileSpreadsheet className="size-4" />
+                <span className="hidden sm:inline">Excel</span>
+              </Button>
+              {journalScreen.canWrite && (
+                <>
+                  <Button variant="outline" onClick={() => setImportOpen(true)}>
+                    <FileUp className="size-4" />
+                    <span className="hidden sm:inline">Importer un document</span>
+                  </Button>
+                  <Button variant="outline" onClick={() => journalScreen.setClotureOpen(true)}>
+                    <ScanLine className="size-4" />
+                    <span className="hidden sm:inline">Clôturer la caisse</span>
+                  </Button>
+                  <Button onClick={() => journalScreen.setFormOpen(true)}>
+                    <Plus className="size-4" />
+                    Nouvelle opération
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </PageHeader>
 
-      <Tabs value={screen.resolvedTab} onValueChange={screen.setActiveTab}>
         <TabsList className="h-10 flex-wrap">
-          <TabsTrigger value="all">Toutes</TabsTrigger>
-          {screen.sortedSocietes.map((societe) => (
-            <TabsTrigger key={societe.id} value={societe.id}>Société {societe.nom}</TabsTrigger>
-          ))}
+          <TabsTrigger value="ecritures">Écritures dossiers</TabsTrigger>
+          <TabsTrigger value="journal">Journal de caisse</TabsTrigger>
         </TabsList>
-      </Tabs>
 
-      <PaymentInfoBanner onOpenFactures={() => screen.go("factures")} />
-      <EcrituresKpiRow
-        totalInvesti={screen.totalInvesti}
-        totalPaye={screen.totalPaye}
-        totalDu={screen.totalDu}
-        enAttenteCount={screen.enAttenteCount}
-      />
-      <BeneficeKpiRow
-        resolvedTab={screen.resolvedTab}
-        societesCount={screen.sortedSocietes.length}
-        consolide={consolide}
-        parSociete={parSociete}
-      />
-      <PendingAlertBanner count={screen.enAttenteCount} totalDu={screen.totalDu} />
-      <EcrituresFilters
-        query={screen.query}
-        statutFilter={screen.statutFilter}
-        clientFilter={screen.clientFilter}
-        clients={screen.clients}
-        resultCount={screen.filtered.length}
-        hasActiveFilters={screen.hasActiveFilters}
-        onQueryChange={(value) => { screen.setQuery(value); screen.setPage(1); }}
-        onStatutChange={(value) => { screen.setStatutFilter(value); screen.setPage(1); }}
-        onClientChange={(value) => { screen.setClientFilter(value); screen.setPage(1); }}
-        onClear={screen.clearFilters}
-      />
-      <EcrituresTable
-        ecritures={screen.paged}
-        totalItems={screen.filtered.length}
-        hasActiveFilters={screen.hasActiveFilters}
-        canWrite={screen.canWrite}
-        startIdx={screen.startIdx}
-        endIdx={screen.endIdx}
-        page={screen.page}
-        totalPages={screen.totalPages}
-        onPageChange={screen.setPage}
-        onPayment={screen.openPayment}
-        onCreate={screen.openNewEcriture}
-      />
-      <PaymentDialog
-        open={screen.paymentOpen}
-        selected={screen.selected}
-        montant={screen.montant}
-        mode={screen.mode}
-        datePaiement={screen.datePaiement}
-        note={screen.note}
-        onOpenChange={screen.setPaymentOpen}
-        onMontantChange={screen.setMontant}
-        onModeChange={screen.setMode}
-        onDateChange={screen.setDatePaiement}
-        onNoteChange={screen.setNote}
-        onValidate={screen.validatePayment}
-      />
-      <NewEcritureDialog
-        open={screen.newOpen}
-        clients={screen.clients}
-        societes={screen.societes}
-        clientDossiers={screen.clientDossiers}
-        clientId={screen.neClientId}
-        dossierId={screen.neDossierId}
-        investi={screen.neInvesti}
-        paye={screen.nePaye}
-        mode={screen.neMode}
-        date={screen.neDate}
-        note={screen.neNote}
-        societeId={screen.neSocieteId}
-        onOpenChange={screen.setNewOpen}
-        onClientChange={screen.handleClientChange}
-        onDossierChange={screen.handleDossierChange}
-        onInvestiChange={screen.setNeInvesti}
-        onPayeChange={screen.setNePaye}
-        onModeChange={screen.setNeMode}
-        onDateChange={screen.setNeDate}
-        onNoteChange={screen.setNeNote}
-        onSocieteChange={screen.setNeSocieteId}
-        onCreate={screen.createEcriture}
-      />
+        <EcrituresPanel screen={ecrituresScreen} benefice={benefice} />
+        <JournalCaissePanel screen={journalScreen} importOpen={importOpen} setImportOpen={setImportOpen} />
+      </Tabs>
     </div>
   );
 }

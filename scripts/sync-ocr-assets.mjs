@@ -46,13 +46,12 @@ copy(
   path.join(ocrDir, "worker.min.js"),
 );
 
-for (const name of [
-  "tesseract-core-simd-lstm.wasm.js",
-  "tesseract-core-simd-lstm.wasm",
-  "tesseract-core-lstm.wasm.js",
-  "tesseract-core-lstm.wasm",
-]) {
-  copy(path.join(root, "node_modules", "tesseract.js-core", name), path.join(ocrDir, name));
+// Tesseract.js v7 choisit dynamiquement le build (relaxedsimd > simd > base).
+// corePath doit contenir tous les fichiers .wasm.js (et .wasm associés).
+const coreSrcDir = path.join(root, "node_modules", "tesseract.js-core");
+for (const name of fs.readdirSync(coreSrcDir)) {
+  if (!/^tesseract-core.*\.wasm(\.js)?$/.test(name)) continue;
+  copy(path.join(coreSrcDir, name), path.join(ocrDir, name));
 }
 
 const pdfWorkerSrc = path.join(

@@ -46,6 +46,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
+import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
+import { contratStatutNeedsConfirm } from "@/lib/confirm-transitions";
 import {
   CONTRAT_STATUTS,
   CONTRAT_STATUT_TONE,
@@ -107,6 +109,7 @@ export function ContratDetailScreen() {
   // confirmation, contrairement à la suppression du contrat lui-même ci-dessous.
   const [depenseToDelete, setDepenseToDelete] = useState<{ id: string; libelle: string } | null>(null);
   const [prestationToDelete, setPrestationToDelete] = useState<{ id: string; libelle: string } | null>(null);
+  const [pendingStatut, setPendingStatut] = useState<ContratStatut | null>(null);
 
   if (!contrat) {
     return (
@@ -123,6 +126,11 @@ export function ContratDetailScreen() {
   }
 
   const nonVide = contrat.totalDepenses > 0 || contrat.nbPrestations > 0 || contratDocuments.length > 0;
+
+  async function applyContratStatut(statut: ContratStatut) {
+    await updateContratStatut(contrat!.id, statut);
+    toast({ title: "Statut mis à jour", description: `${contrat!.reference} → ${statut}` });
+  }
 
   async function handleDelete() {
     try {
@@ -208,8 +216,20 @@ export function ContratDetailScreen() {
                     <Select
                       value={contrat.statut}
                       onValueChange={async (v) => {
-                        await updateContratStatut(contrat.id, v as ContratStatut);
-                        toast({ title: "Statut mis à jour", description: `${contrat.reference} → ${v}` });
+                        const next = v as ContratStatut;
+                        if (contratStatutNeedsConfirm(next)) {
+                          setPendingStatut(next);
+                          return;
+                        }
+                        try {
+                          await applyContratStatut(next);
+                        } catch (e) {
+                          toast({
+                            title: "Transition impossible",
+                            description: e instanceof Error ? e.message : "Cette transition de statut n'est pas autorisée.",
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     >
                       <SelectTrigger
@@ -657,6 +677,33 @@ export function ContratDetailScreen() {
         title="Supprimer cette prestation ?"
         description={<>La prestation « {prestationToDelete?.libelle} » sera définitivement supprimée. Cette action est irréversible.</>}
         onConfirm={handleDeletePrestation}
+      />
+
+      <ConfirmActionDialog
+        open={!!pendingStatut}
+        onOpenChange={(open) => !open && setPendingStatut(null)}
+        title={`Passer le contrat au statut « ${pendingStatut} » ?`}
+        description={
+          <>
+            Le contrat <strong>{contrat.reference}</strong> passera au statut <strong>{pendingStatut}</strong>.
+            {pendingStatut === "Clôturé" && " Les prestations et dépenses restent archivées dans l'historique."}
+          </>
+        }
+        confirmLabel={`Passer à ${pendingStatut ?? ""}`}
+        variant={pendingStatut === "Clôturé" ? "destructive" : "default"}
+        onConfirm={async () => {
+          if (!pendingStatut) return;
+          try {
+            await applyContratStatut(pendingStatut);
+          } catch (e) {
+            toast({
+              title: "Transition impossible",
+              description: e instanceof Error ? e.message : "Cette transition de statut n'est pas autorisée.",
+              variant: "destructive",
+            });
+          }
+          setPendingStatut(null);
+        }}
       />
     </div>
   );

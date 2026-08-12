@@ -66,7 +66,15 @@ import {
 } from "@/lib/store/bons-slice";
 import { createAuditSlice, type AuditSlice } from "@/lib/store/audit-slice";
 import { createEcrituresSlice, type EcrituresSlice } from "@/lib/store/ecritures-slice";
+import {
+  createComptabiliteGeneraleSlice,
+  type ComptabiliteGeneraleSlice,
+} from "@/lib/store/comptabilite-generale-slice";
 import { createFichiersSlice, type FichiersSlice } from "@/lib/store/fichiers-slice";
+import {
+  createRecusPaiementSlice,
+  type RecusPaiementSlice,
+} from "@/lib/store/recus-paiement-slice";
 import { createDataFetchSlice, type DataFetchSlice } from "@/lib/store/data-fetch-slice";
 import { createBackupSlice, type BackupSlice } from "@/lib/store/backup-slice";
 import {
@@ -313,7 +321,7 @@ export interface UserInput {
   annexeIds: string[];
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, FichiersSlice, DataFetchSlice, BackupSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
   dossierSeq: number;
   auditSeq: number;
   ecritureSeq: number;
@@ -370,6 +378,8 @@ export const useStore = create<SLTTState>()(
       ...createBonsSlice(set, get, api),
       ...createAuditSlice(set, get, api),
       ...createEcrituresSlice(set, get, api),
+      ...createComptabiliteGeneraleSlice(set, get, api),
+      ...createRecusPaiementSlice(set, get, api),
       ...createFichiersSlice(set, get, api),
       ...createDataFetchSlice(set, get, api),
       ...createBackupSlice(set, get, api),
@@ -420,6 +430,7 @@ export const useStore = create<SLTTState>()(
         depenseSeq: s.depenseSeq,
         contratPrestationSeq: s.contratPrestationSeq,
         bonSortieCaisseSeq: s.bonSortieCaisseSeq,
+        operationComptableSeq: s.operationComptableSeq,
       }),
     },
   ),

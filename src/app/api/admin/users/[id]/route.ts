@@ -28,22 +28,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const raw = await request.json();
     const parsed = updateUserBodySchema.safeParse(raw);
     if (!parsed.success) {
-      return Response.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
+      throw new AuthError(zodErrorMessage(parsed.error), 400);
     }
     const { nom, email, role, permissions, actif } = parsed.data;
 
     if (id === adminUser.id && actif === false) {
-      return Response.json(
-        { error: "Vous ne pouvez pas désactiver votre propre compte." },
-        { status: 400 },
-      );
+      throw new AuthError("Vous ne pouvez pas désactiver votre propre compte.", 400);
     }
 
     if (role === "Administrateur" && !isAdmin) {
-      return Response.json(
-        { error: "Seul un administrateur peut promouvoir un compte en Administrateur." },
-        { status: 403 },
-      );
+      throw new AuthError("Seul un administrateur peut promouvoir un compte en Administrateur.", 403);
     }
 
     await assertCanTouchTarget(admin, id, isAdmin);
@@ -64,7 +58,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     });
 
     if (authError) {
-      return Response.json({ error: authError.message }, { status: 400 });
+      throw new AuthError(authError.message, 400);
     }
 
     const updatePayload: Record<string, unknown> = {
@@ -86,7 +80,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .single();
 
     if (profileError) {
-      return Response.json({ error: profileError.message }, { status: 400 });
+      throw new AuthError(profileError.message, 400);
     }
 
     return Response.json({ user: profile });
@@ -101,10 +95,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
 
     if (id === adminUser.id) {
-      return Response.json(
-        { error: "Vous ne pouvez pas supprimer votre propre compte." },
-        { status: 400 },
-      );
+      throw new AuthError("Vous ne pouvez pas supprimer votre propre compte.", 400);
     }
 
     await assertCanTouchTarget(admin, id, isAdmin);
@@ -112,7 +103,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
     const { error } = await admin.auth.admin.deleteUser(id);
     if (error) {
-      return Response.json({ error: error.message }, { status: 400 });
+      throw new AuthError(error.message, 400);
     }
 
     return Response.json({ success: true });

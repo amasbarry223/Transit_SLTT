@@ -45,22 +45,22 @@ interface AddArchiveInput {
   societeId?: string;
 }
 
-export function mapArchiveFromDb(x: ArchiveRow): Archive {
+export function mapArchiveFromDb(row: ArchiveRow): Archive {
   return {
-    id: x.id,
-    nom: x.nom,
-    typeDocument: x.type_document,
-    taille: Number(x.taille),
-    type: x.mime_type,
-    storagePath: x.storage_path,
-    dossierId: x.dossier_id || undefined,
-    factureId: x.facture_id || undefined,
-    depenseId: x.depense_id || undefined,
-    clientId: x.client_id || undefined,
-    societeId: x.societe_id || undefined,
-    annexeId: x.annexe_id,
-    creePar: x.cree_par || "",
-    createdAt: x.created_at,
+    id: row.id,
+    nom: row.nom,
+    typeDocument: row.type_document,
+    taille: Number(row.taille),
+    type: row.mime_type,
+    storagePath: row.storage_path,
+    dossierId: row.dossier_id || undefined,
+    factureId: row.facture_id || undefined,
+    depenseId: row.depense_id || undefined,
+    clientId: row.client_id || undefined,
+    societeId: row.societe_id || undefined,
+    annexeId: row.annexe_id,
+    creePar: row.cree_par || "",
+    createdAt: row.created_at,
   };
 }
 

@@ -113,6 +113,14 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     permissions: [{ key: "rapports:read", label: "Lecture", action: "read" }],
   },
   {
+    id: "recus-paiement",
+    label: "Reçus de paiement",
+    permissions: [
+      { key: "recus-paiement:read", label: "Lecture", action: "read" },
+      { key: "recus-paiement:write", label: "Écriture", action: "write" },
+    ],
+  },
+  {
     id: "parametres",
     label: "Paramètres",
     permissions: [
@@ -165,6 +173,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "fournisseurs:read",
     "comptabilite:read",
     "comptabilite:write",
+    "recus-paiement:read",
+    "recus-paiement:write",
     "bons:read",
     "bons:write-caisse",
     "rapports:read",

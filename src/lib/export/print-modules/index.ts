@@ -2,6 +2,11 @@ export { shouldShowTva } from "./shared";
 export { printDevis, type DevisData } from "./devis";
 export { printFactureModule, type FactureModuleData } from "./facture";
 export {
+  buildRecuPaiementHTML,
+  printRecuPaiementModule,
+  type RecuPaiementModuleData,
+} from "./recu-paiement";
+export {
   buildBonSortieCaisseHTML,
   printBonSortieCaisseModule,
   type BonSortieCaisseModuleData,

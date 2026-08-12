@@ -7,38 +7,38 @@ import type { DossierFournisseur, DossierFournisseurInput, Fournisseur, Fourniss
 import type { SLTTState } from "@/lib/store";
 import type { DossierFournisseurRow, FournisseurRow } from "@/lib/db-rows";
 
-export function mapFournisseurFromDb(x: FournisseurRow): Fournisseur {
+export function mapFournisseurFromDb(row: FournisseurRow): Fournisseur {
   return {
-    id: x.id,
-    nom: x.nom,
-    type: x.type,
-    contact: x.contact,
-    telephone: x.telephone,
-    email: x.email || "",
-    adresse: x.adresse || "",
-    tarifContractuel: x.tarif_contractuel ? Number(x.tarif_contractuel) : undefined,
+    id: row.id,
+    nom: row.nom,
+    type: row.type,
+    contact: row.contact,
+    telephone: row.telephone,
+    email: row.email || "",
+    adresse: row.adresse || "",
+    tarifContractuel: row.tarif_contractuel ? Number(row.tarif_contractuel) : undefined,
     nbDossiers: 0,
     montantTotal: 0,
-    statut: x.statut,
-    annexeId: x.annexe_id,
+    statut: row.statut,
+    annexeId: row.annexe_id,
   };
 }
 
-export function mapDossierFournisseurFromDb(x: DossierFournisseurRow): DossierFournisseur {
+export function mapDossierFournisseurFromDb(row: DossierFournisseurRow): DossierFournisseur {
   return {
-    id: x.id,
-    dossierId: x.dossier_id,
-    dossierRef: x.dossiers?.reference || undefined,
-    fournisseurId: x.fournisseur_id,
-    fournisseurNom: x.fournisseurs?.nom || "",
+    id: row.id,
+    dossierId: row.dossier_id,
+    dossierRef: row.dossiers?.reference || undefined,
+    fournisseurId: row.fournisseur_id,
+    fournisseurNom: row.fournisseurs?.nom || "",
     // NOTE: "Transport" n'est pas un FournisseurType valide (voir domain-types.ts) — comportement
     // préexistant conservé tel quel ; assertion nécessaire pour ne pas masquer le vrai bug derrière `any`.
-    type: x.fournisseurs?.type || ("Transport" as DossierFournisseur["type"]),
-    description: x.description,
-    montantBudgete: Number(x.montant_budgete),
-    montantReel: Number(x.montant_reel),
-    statut: x.statut,
-    date: x.date || new Date().toISOString().slice(0, 10),
+    type: row.fournisseurs?.type || ("Transport" as DossierFournisseur["type"]),
+    description: row.description,
+    montantBudgete: Number(row.montant_budgete),
+    montantReel: Number(row.montant_reel),
+    statut: row.statut,
+    date: row.date || new Date().toISOString().slice(0, 10),
   };
 }
 

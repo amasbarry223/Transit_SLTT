@@ -77,6 +77,59 @@ export interface DossierFournisseurRow {
   date: string | null;
 }
 
+export interface OperationComptableRow {
+  id: string;
+  reference: string;
+  entite_type: "annexe" | "societe";
+  annexe_id: string | null;
+  annexes?: NamedRelation;
+  societe_id: string | null;
+  societes?: NamedRelation;
+  date: string;
+  client_id: string | null;
+  clients?: NamedRelation;
+  client_nom: string;
+  nature: string;
+  type: "Entrée" | "Sortie";
+  montant: number | string;
+  quantite: number | string | null;
+  prix_unitaire: number | string | null;
+  source: "saisie" | "import_excel" | "import_ocr";
+  import_ref: string | null;
+  cree_par: string | null;
+}
+
+export interface RecuPaiementRow {
+  id: string;
+  reference: string;
+  annexe_id: string;
+  annexes?: NamedRelation;
+  nom: string;
+  prenom: string;
+  somme: number | string;
+  motif: string;
+  montant_paye: number | string;
+  reste: number | string;
+  statut: "EN_ATTENTE" | "PARTIEL" | "SOLDE";
+  cree_par: string | null;
+  created_at: string;
+}
+
+export interface ClotureCaisseRow {
+  id: string;
+  entite_type: "annexe" | "societe";
+  annexe_id: string | null;
+  societe_id: string | null;
+  periode_debut: string;
+  periode_fin: string;
+  solde_theorique: number | string;
+  solde_constate: number | string;
+  ecart: number | string;
+  note: string | null;
+  cloture_par: string | null;
+  cloture_le: string;
+}
+
 export interface EcritureRow {
   id: string;
   date: string;

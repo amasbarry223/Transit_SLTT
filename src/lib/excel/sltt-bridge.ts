@@ -5,6 +5,7 @@
 
 import type { ClasseurEntry, ClasseurType } from "@/lib/classeur";
 import { GRAND_LIVRE_HEADERS, GRAND_LIVRE_SHEET_NAME } from "@/lib/excel/template";
+import { BRAND } from "@/lib/brand-colors";
 
 /** Capacité max souhaitée (nouveaux classeurs). */
 export const GRAND_LIVRE_MAX_ROWS = 2000;
@@ -132,7 +133,7 @@ export function injectGrandLivre(
   const headerRange = sheet.getRange("A1:I1");
   try {
     headerRange.setFontWeight("bold");
-    headerRange.setBackgroundColor?.("#404089");
+    headerRange.setBackgroundColor?.(BRAND.navy);
     headerRange.setFontColor?.("#FFFFFF");
   } catch {
     // Styles optionnels selon version facade

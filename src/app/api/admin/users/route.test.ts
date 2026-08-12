@@ -46,15 +46,13 @@ vi.mock("@/lib/supabase/admin", () => ({
           single: async () => ({ data: fakeState.callerProfile, error: null }),
         }),
       }),
-      // profile update after auth-user creation
-      update: (payload: Record<string, unknown>) => ({
-        eq: (_field: string, id: string) => ({
-          select: () => ({
-            single: async () =>
-              fakeState.profileUpdateError
-                ? { data: null, error: fakeState.profileUpdateError }
-                : { data: { id, ...payload }, error: null },
-          }),
+      // profile upsert after auth-user creation
+      upsert: (payload: Record<string, unknown>) => ({
+        select: () => ({
+          single: async () =>
+            fakeState.profileUpdateError
+              ? { data: null, error: fakeState.profileUpdateError }
+              : { data: payload, error: null },
         }),
       }),
     }),

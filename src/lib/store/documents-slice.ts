@@ -1,5 +1,6 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 import type {
   DocumentCategorie,
   DocumentEntityType,
@@ -77,66 +78,66 @@ function resolveDocumentAnnexeId(get: () => SLTTState, input: AddDocumentInput):
   return requireActiveAnnexeId(userAnnexeIds);
 }
 
-export function mapDocumentVersionFromDb(x: DocumentVersionRow): DocumentVersion {
+export function mapDocumentVersionFromDb(row: DocumentVersionRow): DocumentVersion {
   return {
-    id: x.id,
-    documentId: x.document_id,
-    version: Number(x.version),
-    storagePath: x.storage_path,
-    taille: Number(x.taille),
-    mimeType: x.mime_type,
-    checksum: x.checksum || undefined,
-    uploadedBy: x.uploaded_by || undefined,
-    createdAt: x.created_at,
+    id: row.id,
+    documentId: row.document_id,
+    version: Number(row.version),
+    storagePath: row.storage_path,
+    taille: Number(row.taille),
+    mimeType: row.mime_type,
+    checksum: row.checksum || undefined,
+    uploadedBy: row.uploaded_by || undefined,
+    createdAt: row.created_at,
   };
 }
 
-export function mapDocumentFromDb(x: DocumentRow): SlttDocument {
+export function mapDocumentFromDb(row: DocumentRow): SlttDocument {
   return {
-    id: x.id,
-    nom: x.nom,
-    categorie: x.categorie,
-    mimeType: x.mime_type,
-    taille: Number(x.taille),
-    dossierId: x.dossier_id || undefined,
-    factureId: x.facture_id || undefined,
-    clientId: x.client_id || undefined,
-    societeId: x.societe_id || undefined,
-    entityType: x.entity_type || undefined,
-    entityId: x.entity_id || undefined,
-    annexeId: x.annexe_id,
-    currentVersion: Number(x.current_version),
-    creePar: x.cree_par || undefined,
-    createdAt: x.created_at,
-    updatedAt: x.updated_at,
+    id: row.id,
+    nom: row.nom,
+    categorie: row.categorie,
+    mimeType: row.mime_type,
+    taille: Number(row.taille),
+    dossierId: row.dossier_id || undefined,
+    factureId: row.facture_id || undefined,
+    clientId: row.client_id || undefined,
+    societeId: row.societe_id || undefined,
+    entityType: row.entity_type || undefined,
+    entityId: row.entity_id || undefined,
+    annexeId: row.annexe_id,
+    currentVersion: Number(row.current_version),
+    creePar: row.cree_par || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-export function mapOcrFieldFromDb(x: OcrFieldRow): OcrField {
+export function mapOcrFieldFromDb(row: OcrFieldRow): OcrField {
   return {
-    id: x.id,
-    ocrJobId: x.ocr_job_id,
-    fieldKey: x.field_key,
-    fieldValue: x.field_value ?? undefined,
-    confidence: x.confidence != null ? Number(x.confidence) : undefined,
-    bbox: x.bbox ?? undefined,
-    validatedValue: x.validated_value ?? undefined,
+    id: row.id,
+    ocrJobId: row.ocr_job_id,
+    fieldKey: row.field_key,
+    fieldValue: row.field_value ?? undefined,
+    confidence: row.confidence != null ? Number(row.confidence) : undefined,
+    bbox: row.bbox ?? undefined,
+    validatedValue: row.validated_value ?? undefined,
   };
 }
 
-export function mapOcrJobFromDb(x: OcrJobRow, fields?: OcrField[]): OcrJob {
+export function mapOcrJobFromDb(row: OcrJobRow, fields?: OcrField[]): OcrJob {
   return {
-    id: x.id,
-    documentId: x.document_id,
-    documentVersionId: x.document_version_id,
-    status: x.status,
-    provider: x.provider,
-    rawText: x.raw_text ?? undefined,
-    errorMessage: x.error_message ?? undefined,
-    targetForm: x.target_form,
-    createdBy: x.created_by || undefined,
-    createdAt: x.created_at,
-    completedAt: x.completed_at ?? undefined,
+    id: row.id,
+    documentId: row.document_id,
+    documentVersionId: row.document_version_id,
+    status: row.status,
+    provider: row.provider,
+    rawText: row.raw_text ?? undefined,
+    errorMessage: row.error_message ?? undefined,
+    targetForm: row.target_form,
+    createdBy: row.created_by || undefined,
+    createdAt: row.created_at,
+    completedAt: row.completed_at ?? undefined,
     fields,
   };
 }
@@ -293,7 +294,15 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
         current_version: nextVersion,
       })
       .eq("id", documentId);
-    if (updError) throw updError;
+    if (updError) {
+      // Le fichier et la ligne document_versions ont déjà été écrits : sans ce
+      // rollback, ils restent orphelins alors que documents.current_version
+      // pointe toujours sur l'ancienne version (contrairement à addDocument,
+      // qui nettoie déjà correctement sur échec).
+      await supabase.from("document_versions").delete().eq("id", verRow.id);
+      await removeDocumentStoragePaths([path]);
+      throw updError;
+    }
 
     const version = mapDocumentVersionFromDb(verRow as DocumentVersionRow);
     set((s) => ({
@@ -376,7 +385,17 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     const { error } = await supabase.from("documents").delete().eq("id", id);
     if (error) throw error;
 
-    await removeDocumentStoragePaths(paths);
+    const storageOk = await removeDocumentStoragePaths(paths);
+    if (!storageOk) {
+      // La ligne DB est déjà supprimée (succès affiché) mais le fichier peut
+      // rester orphelin en Storage — le signaler au lieu d'avaler l'échec
+      // silencieusement, pour qu'un nettoyage manuel reste possible.
+      toast({
+        variant: "destructive",
+        title: "Document supprimé partiellement",
+        description: "La fiche a été supprimée mais un fichier associé n'a pas pu être effacé du stockage.",
+      });
+    }
 
     set((s) => ({
       documents: s.documents.filter((d) => d.id !== id),

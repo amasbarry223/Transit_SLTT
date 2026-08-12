@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand-colors";
 import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
@@ -51,7 +52,7 @@ export function printClients(
           <div style="width:34px;height:34px;border-radius:50%;background:${r.type === "Entreprise" ? "linear-gradient(135deg,#2f91e1,#4f46e5)" : "linear-gradient(135deg,#45556b,#232b36)"};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initiales(r.nom)}</div>
           <div>
             <div style="font-weight:600;color:#1f2937;font-size:13px">${htmlEscape(r.nom)}</div>
-            <div style="font-size:10px;color:#92a3ba;margin-top:1px;background:${r.type === "Entreprise" ? "#f1f8fd" : "#f8fafc"};color:${r.type === "Entreprise" ? "#404089" : "#6b7280"};border:1px solid ${r.type === "Entreprise" ? "#c6e1f7" : "#d2dbe9"};display:inline-block;padding:1px 7px;border-radius:9999px;font-weight:600">${r.type}</div>
+            <div style="font-size:10px;color:#92a3ba;margin-top:1px;background:${r.type === "Entreprise" ? "#f1f8fd" : "#f8fafc"};color:${r.type === "Entreprise" ? BRAND.navy : "#6b7280"};border:1px solid ${r.type === "Entreprise" ? "#c6e1f7" : "#d2dbe9"};display:inline-block;padding:1px 7px;border-radius:9999px;font-weight:600">${r.type}</div>
           </div>
         </div>
       </td>
@@ -77,23 +78,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .wrap { max-width: 1000px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
 
 /* Header — fond blanc, logo visible à l'impression */
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid #404089; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid ${BRAND.navy}; }
 .brand { display: flex; align-items: flex-start; gap: 14px; }
 .brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-name { font-size: 20px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -.5px; margin-bottom: 3px; }
 .brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
 .doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-title { font-size: 28px; font-weight: 800; color: #404089; letter-spacing: -1px; line-height: 1; }
+.doc-title { font-size: 28px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1px; line-height: 1; }
 .doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
-.doc-filter { display: inline-block; margin-top: 7px; background: #f1f8fd; color: #404089; border: 1px solid #c6e1f7; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
+.doc-filter { display: inline-block; margin-top: 7px; background: #f1f8fd; color: ${BRAND.navy}; border: 1px solid #c6e1f7; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
 
 /* KPI band */
 .kpi-band { display: flex; gap: 0; background: #f8fafc; border-bottom: 1px solid #d2dbe9; }
 .kpi { flex: 1; padding: 18px 20px; border-right: 1px solid #d2dbe9; }
 .kpi:last-child { border-right: none; }
 .kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 5px; }
-.kpi-val { font-size: 22px; font-weight: 800; color: #404089; line-height: 1; }
+.kpi-val { font-size: 22px; font-weight: 800; color: ${BRAND.navy}; line-height: 1; }
 .kpi-sub { font-size: 10px; color: #92a3ba; margin-top: 3px; }
 
 /* Table */
@@ -108,11 +109,11 @@ table { width: 100%; border-collapse: collapse; }
 /* Footer */
 .footer { padding: 14px 44px; background: #f8fafc; border-top: 1px solid #d2dbe9; display: flex; justify-content: space-between; align-items: center; }
 .footer-note { font-size: 10px; color: #92a3ba; line-height: 1.65; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #404089; }
+.footer-brand { font-size: 11px; font-weight: 800; color: ${BRAND.navy}; }
 
 /* Print button */
 .no-print { text-align: center; padding: 16px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
-.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 @media print {
   .no-print { display: none !important; }

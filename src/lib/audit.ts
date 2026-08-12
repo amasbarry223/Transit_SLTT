@@ -13,6 +13,7 @@ export type AuditModule =
   | "Authentification"
   | "Dossiers"
   | "Comptabilité"
+  | "Reçus de paiement"
   | "Factures"
   | "Stock"
   | "Bons"
@@ -29,7 +30,14 @@ export type AuditModule =
   | "Documents"
   | "Système";
 
-export type AuditSourceType = "dossier" | "ecriture" | "facture" | "document";
+export type AuditSourceType =
+  | "dossier"
+  | "ecriture"
+  | "facture"
+  | "document"
+  | "operation_comptable"
+  | "cloture_caisse"
+  | "recu_paiement";
 
 export type AuditSourceRef = {
   sourceType: AuditSourceType;
@@ -48,6 +56,8 @@ export type AuditEntry = {
   clientId?: string;
   sourceType?: AuditSourceType;
   sourceId?: string;
+  /** Annexe dans le contexte de laquelle l'action a été réalisée (cloisonnement audit_logs). */
+  annexeId?: string;
 };
 
 let cachedClientIp: string | null = null;
@@ -71,18 +81,19 @@ async function resolveClientIp(): Promise<string> {
   return cachedClientIp;
 }
 
-export function mapAuditLogFromDb(x: Record<string, unknown>): AuditEntry {
+export function mapAuditLogFromDb(row: Record<string, unknown>): AuditEntry {
   return {
-    id: String(x.id),
-    date: String(x.date ?? x.created_at ?? new Date().toISOString()),
-    user: String(x.user_name ?? x.user_nom ?? "Système"),
-    module: x.module as AuditModule,
-    action: x.action as AuditAction,
-    detail: String(x.detail),
-    ip: String(x.ip ?? "N/A"),
-    clientId: x.client_id ? String(x.client_id) : undefined,
-    sourceType: x.source_type ? (String(x.source_type) as AuditSourceType) : undefined,
-    sourceId: x.source_id ? String(x.source_id) : undefined,
+    id: String(row.id),
+    date: String(row.date ?? row.created_at ?? new Date().toISOString()),
+    user: String(row.user_name ?? row.user_nom ?? "Système"),
+    module: row.module as AuditModule,
+    action: row.action as AuditAction,
+    detail: String(row.detail),
+    ip: String(row.ip ?? "N/A"),
+    clientId: row.client_id ? String(row.client_id) : undefined,
+    sourceType: row.source_type ? (String(row.source_type) as AuditSourceType) : undefined,
+    sourceId: row.source_id ? String(row.source_id) : undefined,
+    annexeId: row.annexe_id ? String(row.annexe_id) : undefined,
   };
 }
 
@@ -96,6 +107,8 @@ export async function insertAuditLog(params: {
   /** Client concerné, pour un suivi structuré côté Classeur plutôt qu'une correspondance texte. */
   clientId?: string;
   source?: AuditSourceRef;
+  /** Annexe dans le contexte de laquelle l'action a été réalisée (cloisonnement audit_logs_select). */
+  annexeId?: string;
 }): Promise<AuditEntry | null> {
   const ip = params.ip ?? (await resolveClientIp());
 
@@ -111,6 +124,7 @@ export async function insertAuditLog(params: {
         client_id: params.clientId ?? null,
         source_type: params.source?.sourceType ?? null,
         source_id: params.source?.sourceId ?? null,
+        annexe_id: params.annexeId ?? null,
       })
       .select()
       .single();

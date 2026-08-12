@@ -2,26 +2,25 @@ import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session/session-store";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
-import { normalizePermissions, ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
+import { normalizePermissions } from "@/lib/permissions";
 import type { User, UserRole } from "@/lib/domain-types";
 import type { UserInput, SLTTState } from "@/lib/store";
 import type { ProfileRow } from "@/lib/db-rows";
 
-export function mapProfileFromDb(x: ProfileRow): User {
-  const role = x.role as UserRole;
-  const raw = Array.isArray(x.permissions) ? x.permissions : [];
+export function mapProfileFromDb(row: ProfileRow): User {
+  const role = row.role as UserRole;
+  const raw = Array.isArray(row.permissions) ? row.permissions : [];
   const normalized = normalizePermissions(raw);
   return {
-    id: x.id,
-    nom: x.nom,
-    email: x.email,
+    id: row.id,
+    nom: row.nom,
+    email: row.email,
     role,
-    permissions:
-      normalized.length > 0
-        ? normalized
-        : (ROLE_DEFAULT_PERMISSIONS[role] ?? []),
-    actif: x.actif,
-    derniereConnexion: x.derniere_connexion || "",
+    // Aligné sur RLS has_permission() : un tableau vide signifie « aucun accès »,
+    // pas un repli sur les permissions par défaut du rôle.
+    permissions: normalized,
+    actif: row.actif,
+    derniereConnexion: row.derniere_connexion || "",
     annexeIds: [],
   };
 }

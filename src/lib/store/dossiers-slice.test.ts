@@ -143,7 +143,7 @@ describe("transitionDossier — garde Soldé sans encaissement", () => {
   it("refuse Soldé si reste dû et aucun montantRecu", async () => {
     await expect(
       useStore.getState().transitionDossier("d1", "Soldé"),
-    ).rejects.toThrow(/encaissement|montant reçu/i);
+    ).rejects.toThrow(/paiement doit couvrir|encaissement|montant reçu/i);
 
     const rpcCall = calls.find((c) => c.table === "rpc:record_dossier_solde_paiement");
     expect(rpcCall).toBeUndefined();

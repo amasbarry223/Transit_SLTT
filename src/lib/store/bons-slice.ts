@@ -7,40 +7,40 @@ import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
 
 import { computeAnnexeScopedReference } from "@/lib/store/reference";
 
-export function mapBonFromDb(x: BonSortieRow): BonSortie {
+export function mapBonFromDb(row: BonSortieRow): BonSortie {
   return {
-    id: x.id,
-    reference: x.reference,
-    date: x.date,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || x.client_nom || "",
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    stockId: x.stock_id || undefined,
-    marchandise: x.marchandise,
-    quantite: Number(x.quantite),
-    unite: x.unite,
-    motif: x.motif,
-    montant: Number(x.montant),
-    statut: x.statut,
+    id: row.id,
+    reference: row.reference,
+    date: row.date,
+    clientId: row.client_id,
+    clientNom: row.clients?.nom || row.client_nom || "",
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom || "—",
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    stockId: row.stock_id || undefined,
+    marchandise: row.marchandise,
+    quantite: Number(row.quantite),
+    unite: row.unite,
+    motif: row.motif,
+    montant: Number(row.montant),
+    statut: row.statut,
   };
 }
 
-export function mapBonSortieCaisseFromDb(x: BonSortieCaisseRow): BonSortieCaisse {
+export function mapBonSortieCaisseFromDb(row: BonSortieCaisseRow): BonSortieCaisse {
   return {
-    id: x.id,
-    reference: x.reference,
-    date: x.date,
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    montantTotal: Number(x.montant_total),
-    creePar: x.cree_par || undefined,
-    creeLe: x.created_at,
-    lignes: (x.bons_sortie_caisse_lignes || []).map((l) => ({
+    id: row.id,
+    reference: row.reference,
+    date: row.date,
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom || "—",
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    montantTotal: Number(row.montant_total),
+    creePar: row.cree_par || undefined,
+    creeLe: row.created_at,
+    lignes: (row.bons_sortie_caisse_lignes || []).map((l) => ({
       id: l.id,
       date: l.date,
       beneficiaire: l.beneficiaire,
@@ -128,14 +128,17 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const bon = get().bons.find((b) => b.id === id);
     if (!bon || bon.statut === "Validé") return false;
 
-    const { data, error } = await supabase.rpc("validate_bon_sortie", {
-      p_bon_id: id,
-      p_responsable: getConnectedUserName(),
-    });
+    const { data, error } = await supabase
+      .rpc("validate_bon_sortie", {
+        p_bon_id: id,
+        p_responsable: getConnectedUserName(),
+      })
+      .single();
     if (error) {
       if (/stock insuffisant/i.test(error.message)) return false;
       throw error;
     }
+    const result = data as { bon: BonSortieRow; mouvement_id: string };
 
     const stockItem = findStockForBon(get().stock, bon);
     set((s) => ({
@@ -149,7 +152,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         : s.stock,
       mouvements: [
         {
-          id: `M-${s.mouvementSeq}`,
+          id: result.mouvement_id,
           societeId: stockItem?.societeId || bon.societeId,
           societeNom: stockItem?.societeNom || bon.societeNom,
           annexeId: stockItem?.annexeId || bon.annexeId,
@@ -164,9 +167,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         },
         ...s.mouvements,
       ],
-      mouvementSeq: s.mouvementSeq + 1,
     }));
-    void data;
     await get().addAuditLog("Bons", "Validation", `Bon de sortie ${bon.reference} validé`);
     return true;
   },

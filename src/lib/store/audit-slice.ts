@@ -1,5 +1,6 @@
 import type { StateCreator } from "zustand";
-import { getConnectedUserName } from "@/lib/store/connected-user";
+import { getConnectedUserName, resolveActiveAnnexeId } from "@/lib/store/connected-user";
+import { useSession } from "@/lib/session/session-store";
 import {
   insertAuditLog,
   type AuditAction,
@@ -26,6 +27,8 @@ export const createAuditSlice: StateCreator<SLTTState, [], [], AuditSlice> = (se
   addAuditLog: async (module, action, detail, clientId, source) => {
     const seq = get().auditSeq;
     const userStr = getConnectedUserName();
+    const currentUser = get().users.find((u) => u.id === useSession.getState().currentUserId);
+    const annexeId = resolveActiveAnnexeId(currentUser?.annexeIds ?? []) ?? undefined;
     const newLog = await insertAuditLog({
       module,
       action,
@@ -33,6 +36,7 @@ export const createAuditSlice: StateCreator<SLTTState, [], [], AuditSlice> = (se
       userName: userStr,
       clientId,
       source,
+      annexeId,
     });
     if (!newLog) return;
     set((s) => ({

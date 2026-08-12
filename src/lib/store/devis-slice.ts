@@ -7,33 +7,37 @@ import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
 import { resolveTransitSociete } from "@/lib/societe-brand";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import type { DevisRow } from "@/lib/db-rows";
-import { computeAnnexeScopedReference } from "@/lib/store/reference";
+import {
+  computeAnnexeScopedReference,
+  extractTrailingSeq,
+  insertWithReferenceRetry,
+} from "@/lib/store/reference";
 
 function currentUserAnnexeIds(get: () => SLTTState): string[] {
   const userId = useSession.getState().currentUserId;
   return get().users.find((u) => u.id === userId)?.annexeIds ?? [];
 }
 
-export function mapDevisFromDb(x: DevisRow): Devis {
+export function mapDevisFromDb(row: DevisRow): Devis {
   return {
-    id: x.id,
-    reference: x.reference,
-    clientId: x.client_id,
-    clientNom: x.clients?.nom || "—",
-    societeId: x.societe_id,
-    societeNom: x.societes?.nom || "—",
-    annexeId: x.annexe_id,
-    annexeNom: x.annexes?.nom,
-    nature: x.nature,
-    droitDouane: Number(x.droit_douane),
-    fraisCircuit: Number(x.frais_circuit),
-    fraisPrestation: Number(x.frais_prestation),
-    total: Number(x.total),
-    statut: x.statut,
-    dateCreation: x.date_creation,
-    dateValidite: x.date_validite,
-    notes: x.notes || undefined,
-    dossierId: x.dossier_id ?? undefined,
+    id: row.id,
+    reference: row.reference,
+    clientId: row.client_id,
+    clientNom: row.clients?.nom || "—",
+    societeId: row.societe_id,
+    societeNom: row.societes?.nom || "—",
+    annexeId: row.annexe_id,
+    annexeNom: row.annexes?.nom,
+    nature: row.nature,
+    droitDouane: Number(row.droit_douane),
+    fraisCircuit: Number(row.frais_circuit),
+    fraisPrestation: Number(row.frais_prestation),
+    total: Number(row.total),
+    statut: row.statut,
+    dateCreation: row.date_creation,
+    dateValidite: row.date_validite,
+    notes: row.notes || undefined,
+    dossierId: row.dossier_id ?? undefined,
   };
 }
 
@@ -58,7 +62,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     const annexeId = client?.annexeId ?? requireActiveAnnexeId(currentUserAnnexeIds(get));
     const societe = get().societes.find((s) => s.id === input.societeId);
     const annexe = get().annexes.find((a) => a.id === annexeId);
-    const { reference, useAnnexeNumbering, seq } = computeAnnexeScopedReference(
+    const { reference: initialReference, useAnnexeNumbering } = computeAnnexeScopedReference(
       societe,
       annexe,
       "DEVIS",
@@ -68,30 +72,34 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
 
-    const { data, error } = await supabase
-      .from("devis")
-      .insert({
-        reference,
-        client_id: input.clientId,
-        societe_id: input.societeId,
-        annexe_id: annexeId,
-        nature: input.nature,
-        droit_douane: input.droitDouane,
-        frais_circuit: input.fraisCircuit,
-        frais_prestation: input.fraisPrestation,
-        total,
-        statut: "Brouillon",
-        date_validite: input.dateValidite,
-        notes: input.notes,
-      })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
-      .single();
+    // Retry avec référence incrémentée si deux créations concurrentes ont
+    // calculé la même référence à partir d'un même snapshot client (contrainte unique en base).
+    const { data, reference } = await insertWithReferenceRetry<DevisRow>(initialReference, (ref) =>
+      supabase
+        .from("devis")
+        .insert({
+          reference: ref,
+          client_id: input.clientId,
+          societe_id: input.societeId,
+          annexe_id: annexeId,
+          nature: input.nature,
+          droit_douane: input.droitDouane,
+          frais_circuit: input.fraisCircuit,
+          frais_prestation: input.fraisPrestation,
+          total,
+          statut: "Brouillon",
+          date_validite: input.dateValidite,
+          notes: input.notes,
+        })
+        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .single(),
+    );
 
-    if (error) throw error;
     const newDevis = mapDevisFromDb(data);
+    const finalSeq = extractTrailingSeq(reference) ?? get().devisSeq;
     set((s) => ({
       devis: [newDevis, ...s.devis],
-      devisSeq: useAnnexeNumbering ? s.devisSeq : seq + 1,
+      devisSeq: useAnnexeNumbering ? s.devisSeq : finalSeq + 1,
     }));
     await get().addAuditLog("Devis", "Création", `Devis ${reference} créé — Client ${newDevis.clientNom}`);
     return newDevis;
@@ -227,13 +235,16 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     // Deux écritures séquentielles (insert dossier + lien devis) : en cas d'échec
     // du lien, on compense en supprimant le dossier pour éviter un orphelin.
+    // Le lien passe par une RPC atomique (WHERE dossier_id IS NULL côté serveur)
+    // pour qu'une conversion concurrente du même devis échoue explicitement au
+    // lieu d'écraser silencieusement le premier dossier créé (course TOCTOU).
     const newDossier = await get().addDossier(inputDossier);
 
     try {
-      const { error } = await supabase
-        .from("devis")
-        .update({ statut: "Accepté", dossier_id: newDossier.id })
-        .eq("id", id);
+      const { error } = await supabase.rpc("link_devis_to_dossier", {
+        p_devis_id: id,
+        p_dossier_id: newDossier.id,
+      });
       if (error) throw error;
     } catch (linkError) {
       try {

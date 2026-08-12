@@ -17,6 +17,8 @@ export function pathForView(view: ViewKey, id?: string | null): string {
       return id ? `/dossiers/${id}` : "/dossiers";
     case "comptabilite":
       return "/comptabilite";
+    case "recus-paiement":
+      return "/recus/nouveau";
     case "bilans":
       return "/bilans";
     case "entreposage":

@@ -13,11 +13,11 @@ import {
 type KpiTone = "blue" | "emerald" | "amber" | "red" | "indigo" | "violet";
 
 const iconWrap: Record<KpiTone, string> = {
-  blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
+  blue: "bg-accent text-primary dark:bg-accent/30 dark:text-primary",
   emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
-  amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
-  red: "bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400",
-  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400",
+  amber: "bg-[var(--brand-secondary-light)] text-[var(--brand-secondary)] dark:bg-red-950/50 dark:text-red-400",
+  red: "bg-[var(--brand-secondary-light)] text-[var(--brand-secondary)] dark:bg-red-950/50 dark:text-red-400",
+  indigo: "bg-accent text-primary dark:bg-accent/30 dark:text-primary",
   violet: "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
 };
 
@@ -31,6 +31,7 @@ export function KpiCard({
   sublabel,
   tooltip,
   compact = false,
+  valueNegative = false,
   className,
 }: {
   label: string;
@@ -41,13 +42,15 @@ export function KpiCard({
   variationLabel?: string;
   sublabel?: string;
   tooltip?: string;
+  /** Affiche la valeur en rouge (ex. bénéfice négatif) */
+  valueNegative?: boolean;
   /** Grille dense (factures, fournisseurs) */
   compact?: boolean;
   className?: string;
 }) {
   if (compact) {
     return (
-      <Card className={cn("flex h-full items-center gap-3 border-border/80 p-4 shadow-sm", className)}>
+      <Card className={cn("flex h-full items-center gap-3 rounded-xl border-border/80 p-4 shadow-sm", className)}>
         <div
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-lg",
@@ -67,7 +70,7 @@ export function KpiCard({
   return (
     <Card
       className={cn(
-        "flex h-full min-h-[7.5rem] flex-col justify-between gap-0 border-border/80 p-4 shadow-sm sm:p-5",
+        "flex h-full min-h-[7.5rem] flex-col justify-between gap-0 rounded-xl border-border/80 p-4 shadow-sm sm:p-5",
         className,
       )}
     >
@@ -94,7 +97,12 @@ export function KpiCard({
               </TooltipProvider>
             )}
           </p>
-          <p className="mt-2 text-xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-slate-100 sm:text-2xl break-words">
+          <p
+            className={cn(
+              "mt-2 text-xl font-bold tracking-tight tabular-nums sm:text-2xl break-words",
+              valueNegative ? "text-destructive" : "text-slate-900 dark:text-slate-100",
+            )}
+          >
             {value}
           </p>
         </div>

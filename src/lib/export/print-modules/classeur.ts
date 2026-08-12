@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand-colors";
 import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
@@ -86,21 +87,21 @@ export function printClasseur(
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
 .wrap { max-width: 1040px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid #404089; }
+.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 44px 28px; border-bottom: 3px solid ${BRAND.navy}; }
 .brand { display: flex; align-items: flex-start; gap: 14px; }
 .brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-name { font-size: 20px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -.5px; margin-bottom: 3px; }
 .brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
 .doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-title { font-size: 26px; font-weight: 800; color: #404089; letter-spacing: -1px; line-height: 1.1; }
+.doc-title { font-size: 26px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1px; line-height: 1.1; }
 .doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
-.doc-filter { display: inline-block; margin-top: 7px; background: #f1f8fd; color: #404089; border: 1px solid #c6e1f7; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
+.doc-filter { display: inline-block; margin-top: 7px; background: #f1f8fd; color: ${BRAND.navy}; border: 1px solid #c6e1f7; border-radius: 9999px; padding: 3px 12px; font-size: 10.5px; font-weight: 700; }
 .kpi-band { display: flex; background: #f8fafc; border-bottom: 1px solid #d2dbe9; }
 .kpi { flex: 1; padding: 16px 20px; border-right: 1px solid #d2dbe9; }
 .kpi:last-child { border-right: none; }
 .kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #92a3ba; margin-bottom: 5px; }
-.kpi-val { font-size: 20px; font-weight: 800; color: #404089; line-height: 1; }
+.kpi-val { font-size: 20px; font-weight: 800; color: ${BRAND.navy}; line-height: 1; }
 .tbl-outer { padding: 24px 44px 32px; }
 .tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; }
@@ -115,9 +116,9 @@ table { width: 100%; border-collapse: collapse; }
 .tbl-foot .amt { text-align: right; font-variant-numeric: tabular-nums; color: #fde68a; font-size: 13px; }
 .footer { padding: 14px 44px; background: #f8fafc; border-top: 1px solid #d2dbe9; display: flex; justify-content: space-between; align-items: center; }
 .footer-note { font-size: 10px; color: #92a3ba; line-height: 1.65; }
-.footer-brand { font-size: 11px; font-weight: 800; color: #404089; }
+.footer-brand { font-size: 11px; font-weight: 800; color: ${BRAND.navy}; }
 .no-print { text-align: center; padding: 16px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
-.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 @media print { .no-print { display: none !important; } body { background: white; } .wrap { box-shadow: none; } }
 </style>
 </head>

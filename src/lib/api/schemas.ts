@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { UserRole } from "@/lib/domain-types";
+import { EXPORT_MODULES } from "@/lib/export/export-modules";
 
 export const USER_ROLES = [
   "Administrateur",
@@ -28,13 +29,23 @@ export const resetPasswordBodySchema = z.object({
   password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères."),
 });
 
+export const changePasswordBodySchema = z.object({
+  currentPassword: z.string().min(1, "Mot de passe actuel requis."),
+  newPassword: z.string().min(8, "Le nouveau mot de passe doit contenir au moins 8 caractères."),
+});
+
+export const updateUserAnnexesBodySchema = z.object({
+  annexeIds: z.array(z.string()).min(1, "Au moins une annexe doit être assignée à l'utilisateur."),
+});
+
 /** Plafond export Excel (aligné API). */
 export const EXPORT_MAX_ROWS = 2_000;
 
 export const exportExcelBodySchema = z.object({
+  module: z.enum(EXPORT_MODULES, { message: "Module d'export requis." }),
   filename: z.string().max(120).optional().default("export"),
   headers: z
-    .array(z.string().trim().min(1))
+    .array(z.string().trim().min(1).max(200))
     .min(1, "En-têtes de colonnes requis."),
   rows: z
     .array(z.array(z.unknown()))

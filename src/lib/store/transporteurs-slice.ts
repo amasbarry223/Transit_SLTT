@@ -6,22 +6,22 @@ import type { TransporteurRow } from "@/lib/db-rows";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 
-export function mapTransporteurFromDb(x: TransporteurRow): Transporteur {
+export function mapTransporteurFromDb(row: TransporteurRow): Transporteur {
   return {
-    id: x.id,
-    nom: x.nom,
-    contact: x.contact || "",
-    telephone: x.telephone,
-    email: x.email || undefined,
-    vehicule: x.vehicule,
-    immatriculation: x.immatriculation,
-    trajet: x.trajet || "",
-    capacite: x.capacite ? Number(x.capacite) : 0,
-    statut: x.statut,
+    id: row.id,
+    nom: row.nom,
+    contact: row.contact || "",
+    telephone: row.telephone,
+    email: row.email || undefined,
+    vehicule: row.vehicule,
+    immatriculation: row.immatriculation,
+    trajet: row.trajet || "",
+    capacite: row.capacite ? Number(row.capacite) : 0,
+    statut: row.statut,
     nbDossiers: 0,
-    dateCreation: x.date_creation || new Date().toISOString().slice(0, 10),
-    notes: x.notes || undefined,
-    annexeId: x.annexe_id,
+    dateCreation: row.date_creation || new Date().toISOString().slice(0, 10),
+    notes: row.notes || undefined,
+    annexeId: row.annexe_id,
   };
 }
 

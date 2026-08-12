@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand-colors";
 import {
   buildInvoiceBrandBlocks,
   requireSocieteBrand,
@@ -89,15 +90,15 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
 .wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
-.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 30px 40px 26px; border-bottom: 3px solid #404089; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 30px 40px 26px; border-bottom: 3px solid ${BRAND.navy}; }
 .brand { display: flex; align-items: center; gap: 20px; min-width: 0; }
 .brand--logo-only { flex: 1; max-width: 55%; }
 .brand-logo { height: 80px; width: auto; max-width: 420px; object-fit: contain; flex-shrink: 0; }
-.brand-name { font-size: 20px; font-weight: 800; color: #404089; letter-spacing: -.5px; margin-bottom: 3px; }
+.brand-name { font-size: 20px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -.5px; margin-bottom: 3px; }
 .brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
 .doc-meta { text-align: right; }
 .doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-ref { font-size: 22px; font-weight: 800; color: #404089; letter-spacing: -1px; line-height: 1.1; }
+.doc-ref { font-size: 22px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1px; line-height: 1.1; }
 .doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
 .body { padding: 32px 40px; }
 .doit-lieu { text-align: right; font-size: 12px; color: #6b7280; margin-bottom: 20px; }
@@ -111,7 +112,7 @@ table { width: 100%; border-collapse: collapse; }
 .tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .totals { width: 280px; margin-left: auto; }
 .total-line { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #45556b; }
-.total-main { border-top: 2px solid #1f2937; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 15px; color: #404089; }
+.total-main { border-top: 2px solid #1f2937; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 15px; color: ${BRAND.navy}; }
 .montant-lettres { margin-top: 18px; padding: 12px 16px; background: #f8fafc; border: 1px solid #d2dbe9; border-radius: 8px; font-size: 12px; font-style: italic; color: #354253; }
 .notes { border-top: 1px solid #d2dbe9; margin-top: 24px; padding-top: 16px; font-size: 12px; color: #6b7280; }
 .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
@@ -120,7 +121,7 @@ table { width: 100%; border-collapse: collapse; }
 .sig-space { margin-top: 48px; border-top: 1px solid #cdd4df; }
 .footer { padding: 14px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; font-size: 10px; color: #92a3ba; text-align: center; line-height: 1.6; }
 .no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
-.btn-print { background: #404089; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 @media print {
   .no-print { display: none !important; }
   body { background: white; }

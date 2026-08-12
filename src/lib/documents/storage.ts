@@ -49,12 +49,15 @@ export async function getSignedDocumentUrl(
   return data.signedUrl;
 }
 
-export async function removeDocumentStoragePaths(paths: string[]): Promise<void> {
-  if (paths.length === 0) return;
+/** Retourne false si la suppression a échoué (fichier(s) resté(s) orphelin(s) en Storage) — à surfacer à l'appelant plutôt qu'avaler silencieusement. */
+export async function removeDocumentStoragePaths(paths: string[]): Promise<boolean> {
+  if (paths.length === 0) return true;
   const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
   if (error) {
     console.error("[documents] Échec suppression storage:", error.message);
+    return false;
   }
+  return true;
 }
 
 /** Hash SHA-256 hex (navigateur). */
