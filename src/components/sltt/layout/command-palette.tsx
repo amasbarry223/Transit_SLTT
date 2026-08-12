@@ -23,12 +23,34 @@ import {
   Wallet,
   FolderKanban,
   FileSignature,
+  ScrollText,
 } from "lucide-react";
 import { usePermission, useCanView } from "@/hooks/use-permission";
+import type { NavItem } from "@/lib/nav-items";
+
+type QuickAction = {
+  label: string;
+  value: string;
+  icon: typeof Plus;
+  section: string;
+  run: () => void;
+};
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
-  const { goToDossier, goToDevis, goToFacture, goToContrat, goToClient, goToView, goToNewDossier } = useAppNavigation();
+  const {
+    goToDossier,
+    goToDevis,
+    goToFacture,
+    goToContrat,
+    goToClient,
+    goToView,
+    goToNewDossier,
+    goToNewDevis,
+    goToNewFacture,
+    goToNewRecu,
+    goToCompta,
+  } = useAppNavigation();
 
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
@@ -38,35 +60,75 @@ export function CommandPalette() {
 
   const visibleNavItems = useVisibleNavItems();
   const canCreateDossier = usePermission("dossiers:write");
+  const canCreateDevis = usePermission("devis:write");
+  const canCreateFacture = usePermission("factures:write");
+  const canCreateRecu = usePermission("recus-paiement:write");
   const canSeeDossiers = useCanView("dossiers");
   const canSeeDevis = useCanView("devis");
   const canSeeFactures = useCanView("factures");
   const canSeeContrats = useCanView("contrats");
   const canSeeClients = useCanView("clients");
   const canSeeCompta = useCanView("comptabilite");
+  const canSeeRecus = useCanView("recus-paiement");
 
   const quickActions = [
     canCreateDossier && {
       label: "Nouveau dossier",
-      value: "action nouveau dossier",
+      value: "action nouveau dossier transit",
       icon: FolderKanban,
+      section: "Cycle commercial",
       run: () => goToNewDossier(),
     },
+    canCreateDevis && {
+      label: "Nouveau devis",
+      value: "action nouveau devis",
+      icon: ClipboardList,
+      section: "Cycle commercial",
+      run: () => goToNewDevis(),
+    },
+    canCreateFacture && {
+      label: "Nouvelle facture",
+      value: "action nouvelle facture",
+      icon: Receipt,
+      section: "Cycle commercial",
+      run: () => goToNewFacture(),
+    },
+    canSeeRecus && canCreateRecu && {
+      label: "Nouveau reçu de paiement",
+      value: "action nouveau recu paiement",
+      icon: FileText,
+      section: "Finance",
+      run: () => goToNewRecu(),
+    },
     canSeeCompta && {
-      label: "Ouvrir la comptabilité",
-      value: "action comptabilite paiement",
+      label: "Paiements dossiers",
+      value: "action comptabilite ecritures",
       icon: Wallet,
-      run: () => goToView("comptabilite"),
+      section: "Finance",
+      run: () => goToCompta("ecritures"),
+    },
+    canSeeCompta && {
+      label: "Journal de caisse",
+      value: "action journal caisse",
+      icon: ScrollText,
+      section: "Finance",
+      run: () => goToCompta("journal"),
     },
     canSeeClients && {
       label: "Voir les clients",
       value: "action liste clients",
       icon: UserIcon,
+      section: "Cycle commercial",
       run: () => goToView("clients"),
     },
-  ].filter(Boolean) as { label: string; value: string; icon: typeof Plus; run: () => void }[];
+  ].filter(Boolean) as QuickAction[];
 
-  // Cmd+K / Ctrl+K to open
+  const actionsBySection = quickActions.reduce<Record<string, QuickAction[]>>((acc, action) => {
+    acc[action.section] = acc[action.section] ?? [];
+    acc[action.section].push(action);
+    return acc;
+  }, {});
+
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -81,6 +143,10 @@ export function CommandPalette() {
   function run(fn: () => void) {
     fn();
     setOpen(false);
+  }
+
+  function navigateToItem(item: NavItem) {
+    goToView(item.key, item.comptaTab ? { comptaTab: item.comptaTab } : undefined);
   }
 
   return (
@@ -108,9 +174,9 @@ export function CommandPalette() {
         <CommandList>
           <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
 
-          {quickActions.length > 0 && (
-            <CommandGroup heading="Actions rapides">
-              {quickActions.map((action) => {
+          {Object.entries(actionsBySection).map(([section, actions]) => (
+            <CommandGroup key={section} heading={`Actions — ${section}`}>
+              {actions.map((action) => {
                 const Icon = action.icon;
                 return (
                   <CommandItem
@@ -124,21 +190,24 @@ export function CommandPalette() {
                 );
               })}
             </CommandGroup>
-          )}
+          ))}
 
-          <CommandSeparator />
+          {quickActions.length > 0 && <CommandSeparator />}
 
           <CommandGroup heading="Navigation">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <CommandItem
-                  key={item.key}
-                  value={`page ${item.label}`}
-                  onSelect={() => run(() => goToView(item.key))}
+                  key={item.navId}
+                  value={`page ${item.label} ${item.section ?? ""}`}
+                  onSelect={() => run(() => navigateToItem(item))}
                 >
                   <Icon className="size-4 text-slate-400 dark:text-slate-500" />
                   <span>{item.label}</span>
+                  {item.section && (
+                    <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">{item.section}</span>
+                  )}
                 </CommandItem>
               );
             })}

@@ -22,6 +22,7 @@ type BonsTabProps = {
   bonSafePage: number;
   bonPages: number;
   onPageChange: (page: number) => void;
+  embedded?: boolean;
 };
 
 export function BonsTab({
@@ -30,9 +31,9 @@ export function BonsTab({
   bonSafePage,
   bonPages,
   onPageChange,
+  embedded,
 }: BonsTabProps) {
-  return (
-    <TabsContent value="bons" className="mt-6 focus-visible:outline-none">
+  const content = (
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         {bons.length === 0 ? (
           <TabEmptyState label="Aucun bon de sortie pour ce client." />
@@ -155,6 +156,12 @@ export function BonsTab({
           </>
         )}
       </Card>
+  );
+
+  if (embedded) return content;
+  return (
+    <TabsContent value="bons" className="mt-6 focus-visible:outline-none">
+      {content}
     </TabsContent>
   );
 }

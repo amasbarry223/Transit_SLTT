@@ -251,6 +251,8 @@ export function UserFormModal({
                           selection={form.perms}
                           onChange={(perms) => setForm((p) => ({ ...p, perms }))}
                           disabled={form.role === "Administrateur"}
+                          presetFirst
+                          currentRole={form.role}
                         />
                       </>
                     )}
@@ -459,6 +461,8 @@ export function UserFormModal({
                   selection={form.perms}
                   onChange={(perms) => setForm((p) => ({ ...p, perms }))}
                   disabled={form.role === "Administrateur"}
+                  presetFirst
+                  currentRole={form.role}
                 />
               </TabsContent>
             </div>

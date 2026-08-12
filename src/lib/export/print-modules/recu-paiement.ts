@@ -4,6 +4,7 @@ import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";
 import {
   RECEIPT_BLUE,
   RECEIPT_HEIGHT_MM,
+  RECEIPT_LOGO_FALLBACK,
   RECEIPT_PAPER,
   RECEIPT_WIDTH_MM,
 } from "@/lib/recus-paiement-styles";
@@ -52,10 +53,8 @@ function buildSignatureHTML(signature?: string): string {
 
 /** Construit le HTML complet du reçu de paiement (aperçu iframe ou fenêtre d'impression). */
 export function buildRecuPaiementHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
-  const logoUrl = resolveLogoUrl(brand.logoUrl);
-  const logoImg = logoUrl
-    ? `<img src="${logoUrl}" alt="${htmlEscape(brand.nom)}" class="brand-logo" onerror="this.style.display='none'">`
-    : "";
+  const logoUrl = resolveLogoUrl(brand.logoUrl) ?? RECEIPT_LOGO_FALLBACK;
+  const logoImg = `<img src="${logoUrl}" alt="${htmlEscape(brand.nom)}" class="brand-logo" onerror="this.onerror=null;this.src='${RECEIPT_LOGO_FALLBACK}'">`;
   const showName = brand.afficherNomAvecLogo !== false;
   const sommeLettres = htmlEscape(montantEnLettresFCFA(data.somme));
 
@@ -92,12 +91,27 @@ body {
   border-bottom: 1px solid rgba(30, 74, 138, 0.2);
 }
 .brand-logo {
-  width: 56px;
-  height: 56px;
+  max-width: 18mm;
+  max-height: 16mm;
   object-fit: contain;
   flex-shrink: 0;
 }
-.header-text { flex: 1; min-width: 0; }
+.header-logo {
+  width: 18mm;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-spacer {
+  width: 18mm;
+  flex-shrink: 0;
+}
+.header-text {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
 .brand-name {
   font-size: 14px;
   font-weight: 800;
@@ -230,12 +244,13 @@ body {
 </div>
 <div class="receipt-paper">
   <div class="header">
-    ${logoImg}
+    <div class="header-logo">${logoImg}</div>
     <div class="header-text">
       ${showName ? `<div class="brand-name">${htmlEscape(brand.nom)}</div>` : ""}
       ${buildHeaderLegalHTML(brand)}
       <div class="doc-title">Reçu de paiement</div>
     </div>
+    <div class="header-spacer"></div>
   </div>
   <div class="body">
     <div class="field-row--split">

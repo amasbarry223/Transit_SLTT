@@ -28,9 +28,28 @@ import { CollapsibleSection, FormField, SectionTitle } from "./dossier-form-ui";
 
 type DossierWizardProgressProps = {
   wizardStep: number;
+  mode?: "wizard" | "sections";
 };
 
-export function DossierWizardProgress({ wizardStep }: DossierWizardProgressProps) {
+export function DossierWizardProgress({ wizardStep, mode = "wizard" }: DossierWizardProgressProps) {
+  if (mode === "sections") {
+    return (
+      <Card className="border-border/80 p-4 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-3">
+          {WIZARD_STEPS.map((step) => (
+            <div
+              key={step.id}
+              className="rounded-lg border border-border/70 bg-slate-50/80 px-3 py-2.5 dark:bg-slate-800/40"
+            >
+              <p className="text-xs font-semibold text-primary">{step.label}</p>
+              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{step.hint}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="border-border/80 p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">

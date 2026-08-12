@@ -146,7 +146,6 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
       void handleFile(initialFile);
     }
     if (!open) consumedInitialFileRef.current = null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleFile est stable pour la durée du montage, seul le couple open/initialFile doit déclencher l'analyse
   }, [open, initialFile]);
 
   const selectedRows = useMemo(() => rows.filter((r) => r.selected), [rows]);

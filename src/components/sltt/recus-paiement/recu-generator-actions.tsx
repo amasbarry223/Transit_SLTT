@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 interface RecuGeneratorActionsProps {
   canWrite: boolean;
@@ -38,24 +39,36 @@ export function RecuGeneratorActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        {canWrite ? (
-          <Button onClick={() => void onSave()} disabled={busy}>
-            <Save className="size-4" />
-            Enregistrer
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Actions</p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            Enregistrez, imprimez ou exportez le reçu une fois les informations complétées.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {canWrite ? (
+            <Button onClick={() => void onSave()} disabled={busy} className="h-11 justify-center gap-2 sm:col-span-2">
+              <Save className="size-4" />
+              {submitting ? "Enregistrement…" : "Enregistrer le reçu"}
+            </Button>
+          ) : null}
+          <Button variant="outline" onClick={() => void onPrint()} disabled={busy} className="h-11 justify-center gap-2">
+            <Printer className="size-4" />
+            {printing ? "Préparation…" : "Imprimer"}
           </Button>
-        ) : null}
-        <Button variant="outline" onClick={() => void onPrint()} disabled={busy}>
-          <Printer className="size-4" />
-          Imprimer
-        </Button>
-        <Button variant="outline" onClick={() => void onDownloadPdf()} disabled={busy}>
-          <Download className="size-4" />
-          Télécharger PDF
-        </Button>
-        <Button variant="ghost" onClick={() => setResetOpen(true)} disabled={busy}>
+          <Button variant="outline" onClick={() => void onDownloadPdf()} disabled={busy} className="h-11 justify-center gap-2">
+            <Download className="size-4" />
+            Télécharger PDF
+          </Button>
+        </div>
+
+        <Separator />
+
+        <Button variant="ghost" onClick={() => setResetOpen(true)} disabled={busy} className="h-10 w-full justify-center gap-2 text-slate-500">
           <RotateCcw className="size-4" />
-          Réinitialiser
+          Réinitialiser le formulaire
         </Button>
       </div>
 
@@ -64,7 +77,7 @@ export function RecuGeneratorActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Réinitialiser le formulaire ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Toutes les informations saisies et la signature seront effacées et remplacées par les valeurs de test par défaut.
+              Toutes les informations saisies et la signature seront effacées.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

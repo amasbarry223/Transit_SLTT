@@ -2,10 +2,14 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useNav, type ViewKey } from "@/lib/nav-store";
+import { useNav, type ComptaTab, type ViewKey } from "@/lib/nav-store";
 
 /** Chemins URL pour chaque vue — deep-links list + détail. */
-export function pathForView(view: ViewKey, id?: string | null): string {
+export function pathForView(
+  view: ViewKey,
+  id?: string | null,
+  comptaTab?: ComptaTab,
+): string {
   switch (view) {
     case "dashboard":
       return "/";
@@ -16,7 +20,7 @@ export function pathForView(view: ViewKey, id?: string | null): string {
     case "dossier-detail":
       return id ? `/dossiers/${id}` : "/dossiers";
     case "comptabilite":
-      return "/comptabilite";
+      return comptaTab ? `/comptabilite?tab=${comptaTab}` : "/comptabilite";
     case "recus-paiement":
       return "/recus/nouveau";
     case "bilans":
@@ -62,16 +66,21 @@ export function useAppNavigation() {
 
   const pushPath = useCallback(
     (path: string) => {
-      if (typeof window !== "undefined" && window.location.pathname === path) return;
+      if (typeof window !== "undefined") {
+        const current = `${window.location.pathname}${window.location.search}`;
+        if (current === path) return;
+      }
       router.push(path);
     },
     [router],
   );
 
   const goToView = useCallback(
-    (view: ViewKey, opts?: { id?: string | null }) => {
-      nav.go(view, opts);
-      pushPath(pathForView(view, opts?.id));
+    (view: ViewKey, opts?: { id?: string | null; comptaTab?: ComptaTab }) => {
+      const comptaTab =
+        opts?.comptaTab ?? (view === "comptabilite" ? nav.comptaTab : undefined);
+      nav.go(view, view === "comptabilite" ? { ...opts, comptaTab } : opts);
+      pushPath(pathForView(view, opts?.id, view === "comptabilite" ? comptaTab : undefined));
     },
     [nav, pushPath],
   );
@@ -121,6 +130,28 @@ export function useAppNavigation() {
     pushPath(pathForView("dossier-form"));
   }, [nav, pushPath]);
 
+  const goToNewDevis = useCallback(() => {
+    nav.go("devis", { id: "new" });
+    pushPath(pathForView("devis"));
+  }, [nav, pushPath]);
+
+  const goToNewFacture = useCallback(() => {
+    nav.go("factures", { id: "new" });
+    pushPath(pathForView("factures"));
+  }, [nav, pushPath]);
+
+  const goToNewRecu = useCallback(() => {
+    nav.go("recus-paiement");
+    pushPath(pathForView("recus-paiement"));
+  }, [nav, pushPath]);
+
+  const goToCompta = useCallback(
+    (tab: ComptaTab) => {
+      goToView("comptabilite", { comptaTab: tab });
+    },
+    [goToView],
+  );
+
   const goToEditDossier = useCallback(
     (id: string) => {
       nav.openDossier(id, "edit");
@@ -146,6 +177,10 @@ export function useAppNavigation() {
     goToDevis,
     goToContrat,
     goToNewDossier,
+    goToNewDevis,
+    goToNewFacture,
+    goToNewRecu,
+    goToCompta,
     goToEditDossier,
     goToView,
     goBack,
@@ -160,7 +195,7 @@ export function syncNavFromRoute(
     ReturnType<typeof useNav.getState>,
     "openClient" | "openDossierDetail" | "openDevisDetail" | "go" | "openDossier" | "openContratDetail"
   >,
-  opts?: { dossierMode?: "create" | "edit"; devisEdit?: boolean },
+  opts?: { dossierMode?: "create" | "edit"; devisEdit?: boolean; comptaTab?: ComptaTab },
 ) {
   switch (view) {
     case "client-fiche":
@@ -188,6 +223,9 @@ export function syncNavFromRoute(
     case "contrat-detail":
       if (id) actions.openContratDetail(id);
       else actions.go("contrats");
+      break;
+    case "comptabilite":
+      actions.go("comptabilite", { comptaTab: opts?.comptaTab ?? "ecritures" });
       break;
     default:
       actions.go(view, id ? { id } : undefined);

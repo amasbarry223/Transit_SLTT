@@ -20,11 +20,12 @@ type StockTabProps = {
   stockItems: StockItem[];
   clientMouvements: Mouvement[];
   onOpenEntreposage: () => void;
+  /** Rendu dans l'onglet Logistique sans TabsContent parent. */
+  embedded?: boolean;
 };
 
-export function StockTab({ stockItems, clientMouvements, onOpenEntreposage }: StockTabProps) {
-  return (
-    <TabsContent value="stock" className="mt-6 focus-visible:outline-none">
+export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embedded }: StockTabProps) {
+  const content = (
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         {stockItems.length === 0 ? (
           <TabEmptyState
@@ -139,6 +140,12 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage }: St
           </>
         )}
       </Card>
+  );
+
+  if (embedded) return content;
+  return (
+    <TabsContent value="stock" className="mt-6 focus-visible:outline-none">
+      {content}
     </TabsContent>
   );
 }

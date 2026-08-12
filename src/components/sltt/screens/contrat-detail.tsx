@@ -22,6 +22,7 @@ import {
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
+import { EmptyState } from "@/components/sltt/empty-state";
 
 import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { ToneBadge, TONE_CLASSES } from "@/components/sltt/status-badge";
@@ -373,10 +374,20 @@ export function ContratDetailScreen() {
 
           <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
             {contratDepenses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                <Wallet className="size-8 text-slate-300 dark:text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucune dépense enregistrée</p>
-              </div>
+              <EmptyState
+                icon={Wallet}
+                title="Aucune dépense enregistrée"
+                description="Ajoutez les dépenses liées à ce contrat d'entreposage."
+                action={
+                  canWrite ? (
+                    <Button size="sm" onClick={() => setDepenseOpen(true)}>
+                      <Plus className="size-4" />
+                      Ajouter une dépense
+                    </Button>
+                  ) : undefined
+                }
+                className="border-0 bg-transparent"
+              />
             ) : (
               <>
                 <div className="space-y-3 p-4 md:hidden">
@@ -470,10 +481,20 @@ export function ContratDetailScreen() {
 
           <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
             {contratPrestations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                <CheckCircle2 className="size-8 text-slate-300 dark:text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucune prestation optionnelle</p>
-              </div>
+              <EmptyState
+                icon={CheckCircle2}
+                title="Aucune prestation optionnelle"
+                description="Les prestations réalisées pourront être facturées depuis cette fiche."
+                action={
+                  canWrite ? (
+                    <Button size="sm" onClick={() => setPrestationOpen(true)}>
+                      <Plus className="size-4" />
+                      Ajouter une prestation
+                    </Button>
+                  ) : undefined
+                }
+                className="border-0 bg-transparent"
+              />
             ) : (
               <>
                 <div className="space-y-3 p-4 md:hidden">

@@ -88,7 +88,7 @@ export function useDossierFormState({
   const setStatut = setDraftStatut;
   const nextTransition = existing ? getNextTransition(existing.statut) : null;
   const showWizard = !isEdit;
-  const showStep = (step: number) => !showWizard || wizardStep === step;
+  const showStep = (step: number) => isEdit || !showWizard || wizardStep === step;
 
   const dN = parseAmount(droitDouane);
   const fN = parseAmount(fraisCircuit);

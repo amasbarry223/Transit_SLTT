@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { FileSpreadsheet, FileUp, Plus, ScanLine } from "lucide-react";
 import { PageHeader } from "@/components/sltt/page-header";
 import { EcrituresPanel } from "@/components/sltt/comptabilite/ecritures-panel";
@@ -8,27 +9,45 @@ import { useEcrituresScreen } from "@/components/sltt/comptabilite/use-ecritures
 import { JournalCaissePanel } from "@/components/sltt/comptabilite-generale/journal-caisse-panel";
 import { useComptabiliteGeneraleScreen } from "@/components/sltt/comptabilite-generale/use-comptabilite-generale-screen";
 import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
+import { useAppNavigation } from "@/lib/app-navigation";
+import { useNav, type ComptaTab } from "@/lib/nav-store";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type ComptabiliteTab = "ecritures" | "journal";
+type ComptabiliteTab = ComptaTab;
+
+const tabMeta = {
+  ecritures: {
+    title: "Paiements dossiers",
+    description: "Suivi des paiements liés aux dossiers de transit et entreposage, par société.",
+  },
+  journal: {
+    title: "Journal de caisse",
+    description: "Journal de caisse par entité — Annexe Mali, Annexe Côte d'Ivoire, Société Top Doumani.",
+  },
+} as const;
 
 export function ComptabiliteScreen() {
-  const [activeTab, setActiveTab] = useState<ComptabiliteTab>("ecritures");
+  const searchParams = useSearchParams();
+  const comptaTabFromStore = useNav((s) => s.comptaTab);
+  const { goToCompta } = useAppNavigation();
   const [importOpen, setImportOpen] = useState(false);
+
+  const urlTab = searchParams.get("tab");
+  const activeTab: ComptabiliteTab =
+    urlTab === "journal" || urlTab === "ecritures" ? urlTab : comptaTabFromStore;
+
+  useEffect(() => {
+    if (urlTab === "journal" || urlTab === "ecritures") {
+      if (comptaTabFromStore !== urlTab) {
+        useNav.getState().go("comptabilite", { comptaTab: urlTab });
+      }
+    }
+  }, [urlTab, comptaTabFromStore]);
 
   const ecrituresScreen = useEcrituresScreen();
   const journalScreen = useComptabiliteGeneraleScreen();
   const benefice = useBeneficeParSociete();
-
-  const tabMeta = {
-    ecritures: {
-      description: "Suivi des paiements liés aux dossiers de transit et entreposage, par société.",
-    },
-    journal: {
-      description: "Journal de caisse par entité — Annexe Mali, Annexe Côte d'Ivoire, Société Top Doumani.",
-    },
-  } as const;
 
   const currentTab = tabMeta[activeTab];
 
@@ -36,10 +55,10 @@ export function ComptabiliteScreen() {
     <div className="space-y-6">
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as ComptabiliteTab)}
+        onValueChange={(value) => goToCompta(value as ComptabiliteTab)}
         className="gap-5"
       >
-        <PageHeader title="Comptabilité" description={currentTab.description}>
+        <PageHeader title={currentTab.title} description={currentTab.description}>
           {activeTab === "ecritures" ? (
             <>
               <Button

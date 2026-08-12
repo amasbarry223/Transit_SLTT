@@ -49,7 +49,9 @@ import { Badge } from "@/components/ui/badge";
 import { CommandPalette } from "./command-palette";
 import { BreadcrumbNav } from "./breadcrumb-nav";
 import { NavList } from "./nav-list";
+import type { NavItem } from "@/lib/nav-items";
 import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
+import type { ComptaTab } from "@/lib/nav-store";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
@@ -86,6 +88,7 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
 
 export function Topbar() {
   const view = useNav((s) => s.view);
+  const comptaTab = useNav((s) => s.comptaTab);
   const { goToView, goToDossier } = useAppNavigation();
   const logout = useSession((s) => s.logout);
   const currentRole = useSession((s) => s.currentRole);
@@ -106,10 +109,21 @@ export function Topbar() {
   const societes = useStore((s) => s.societes);
   const shellBrand = resolveAppShellBranding(societes);
 
-  const meta = viewTitles[view] ?? {
-    title: shellBrand.appTitle,
-    sub: shellBrand.appSubtitle,
-  };
+  const meta =
+    view === "comptabilite"
+      ? comptaTab === "journal"
+        ? {
+            title: "Journal de caisse",
+            sub: "Opérations, clôtures et import — par entité comptable",
+          }
+        : {
+            title: "Paiements dossiers",
+            sub: "Suivi des paiements liés aux dossiers de transit et entreposage",
+          }
+      : (viewTitles[view] ?? {
+          title: shellBrand.appTitle,
+          sub: shellBrand.appSubtitle,
+        });
 
   // Live alerts — chaque source reste soumise à la permission de son module
   // d'origine : la cloche ne doit pas devenir un canal de fuite de données
@@ -125,9 +139,13 @@ export function Topbar() {
   );
   const hasUnread = alertIds.some((id) => !seenAlertIds.has(id));
 
-  function handleNav(key: ViewKey) {
-    goToView(key);
+  function navigateToView(key: ViewKey, comptaTab?: ComptaTab) {
+    goToView(key, comptaTab ? { comptaTab } : undefined);
     setMobileOpen(false);
+  }
+
+  function handleNav(item: NavItem) {
+    navigateToView(item.key, item.comptaTab);
   }
 
   const visibleMobileNavItems = useVisibleNavItems();
@@ -347,7 +365,7 @@ export function Topbar() {
               logoUrl={shellBrand.logoUrl}
               alt={shellBrand.appTitle}
               size="sm"
-              onClick={() => handleNav("dashboard")}
+              onClick={() => navigateToView("dashboard")}
             />
             <SheetTitle className="sr-only">{shellBrand.appTitle}</SheetTitle>
           </SheetHeader>
@@ -364,7 +382,7 @@ export function Topbar() {
                       <button
                         key={sc.key}
                         type="button"
-                        onClick={() => handleNav(sc.key)}
+                        onClick={() => navigateToView(sc.key, sc.comptaTab)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-muted dark:text-slate-200"
                       >
                         <Icon className="size-3.5" />
@@ -378,6 +396,7 @@ export function Topbar() {
             <NavList
               items={visibleMobileNavItems}
               currentView={view}
+              currentComptaTab={comptaTab}
               onNavigate={handleNav}
             />
           </nav>

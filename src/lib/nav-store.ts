@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 
+export type ComptaTab = "ecritures" | "journal";
+
 export type ViewKey =
   | "dashboard"
   | "dossiers"
@@ -39,9 +41,11 @@ interface NavState {
   selectedId: string | null;
   dossierFormMode: "create" | "edit";
   devisEditMode: boolean;
+  /** Sous-onglet actif de l'écran Comptabilité (écritures dossiers vs journal de caisse). */
+  comptaTab: ComptaTab;
   /** Canal transitoire (non persisté) pour préremplir une facture depuis une prestation optionnelle F6. */
   pendingFacturePrefill: PendingFacturePrefill;
-  go: (view: ViewKey, opts?: { id?: string | null }) => void;
+  go: (view: ViewKey, opts?: { id?: string | null; comptaTab?: ComptaTab }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
   openDossierDetail: (id: string) => void;
   openDevisDetail: (id: string, edit?: boolean) => void;
@@ -57,9 +61,15 @@ export const useNav = create<NavState>()((set) => ({
   selectedId: null,
   dossierFormMode: "create",
   devisEditMode: false,
+  comptaTab: "ecritures",
   pendingFacturePrefill: null,
 
-  go: (view, opts) => set({ view, selectedId: opts?.id ?? null }),
+  go: (view, opts) =>
+    set({
+      view,
+      selectedId: opts?.id ?? null,
+      ...(opts?.comptaTab ? { comptaTab: opts.comptaTab } : {}),
+    }),
   openDossier: (id, mode = "edit") =>
     set({ view: "dossier-form", selectedId: id, dossierFormMode: mode }),
   openDossierDetail: (id) =>
@@ -75,6 +85,7 @@ export const useNav = create<NavState>()((set) => ({
       selectedId: null,
       dossierFormMode: "create",
       devisEditMode: false,
+      comptaTab: "ecritures",
       pendingFacturePrefill: null,
     }),
 }));

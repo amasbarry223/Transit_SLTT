@@ -5,8 +5,6 @@ import type { AuditEntry } from "@/lib/audit";
 import {
   Clock,
   ArrowLeft,
-  TrendingUp,
-  Wallet,
   FolderKanban,
   Pencil,
   BellRing,
@@ -35,7 +33,6 @@ import { resolveClasseurPrintBrand, resolveTransitSociete } from "@/lib/societe-
 import { TOAST_COPY_RESET_MS } from "@/lib/constants";
 import { exportToExcel, printClasseur } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
-import { KpiCard } from "@/components/sltt/kpi-card";
 import { ClientFormFields, emptyClientForm } from "@/components/sltt/client-form-fields";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,8 +53,7 @@ import { ClasseurImportDialog } from "@/components/sltt/client-fiche/classeur-im
 import { ClasseurSuiviDialog } from "@/components/sltt/client-fiche/classeur-suivi-dialog";
 import { DossiersTab } from "@/components/sltt/client-fiche/dossiers-tab";
 import { FacturesTab } from "@/components/sltt/client-fiche/factures-tab";
-import { StockTab } from "@/components/sltt/client-fiche/stock-tab";
-import { BonsTab } from "@/components/sltt/client-fiche/bons-tab";
+import { LogistiqueTab } from "@/components/sltt/client-fiche/logistique-tab";
 import { FICHE_TABS, PAGE_SIZE, type FicheTab } from "@/components/sltt/client-fiche/shared";
 
 export function ClientFicheScreen() {
@@ -423,9 +419,43 @@ export function ClientFicheScreen() {
         client={client}
         totalDu={totalDu}
         onEdit={canWrite ? openEditDialog : undefined}
-        onNewDossier={canWriteDossiers ? () => openDossier(null, "create") : undefined}
         onRelance={openRelanceDialog}
       />
+
+      <div className="sticky top-16 z-20 -mx-4 border-y border-border/80 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Reste à payer</p>
+              <p className={cn("text-lg font-bold tabular-nums", totalDu > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
+                {formatFCFA(totalDu)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total payé</p>
+              <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatFCFA(totalPaye)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Investi</p>
+              <p className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(totalInvesti)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Prochaine action</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                {totalDu > 0
+                  ? `${pendingCount} solde${pendingCount !== 1 ? "s" : ""} ouvert${pendingCount !== 1 ? "s" : ""}`
+                  : "Compte à jour"}
+              </p>
+            </div>
+          </div>
+          {canWriteDossiers && (
+            <Button className="shrink-0" onClick={() => openDossier(null, "create")}>
+              <FolderKanban className="size-4" />
+              Nouveau dossier
+            </Button>
+          )}
+        </div>
+      </div>
 
       {totalDu > 0 && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30">
@@ -441,37 +471,6 @@ export function ClientFicheScreen() {
           </div>
         </div>
       )}
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard
-          label="Dossiers"
-          value={String(dossiers.length)}
-          icon={FolderKanban}
-          tone="blue"
-          sublabel="dossiers de transit"
-        />
-        <KpiCard
-          label="Total investi"
-          value={formatFCFA(totalInvesti)}
-          icon={TrendingUp}
-          tone="indigo"
-          sublabel="montant engagé"
-        />
-        <KpiCard
-          label="Total payé"
-          value={formatFCFA(totalPaye)}
-          icon={Wallet}
-          tone="emerald"
-          sublabel="encaissements"
-        />
-        <KpiCard
-          label="Reste à payer"
-          value={formatFCFA(totalDu)}
-          icon={Clock}
-          tone="amber"
-          sublabel={totalDu > 0 ? "solde dû" : "compte soldé"}
-        />
-      </div>
 
       <Tabs
         value={activeTab}
@@ -494,9 +493,7 @@ export function ClientFicheScreen() {
                     ? dossiers.length
                     : t.key === "factures"
                       ? factures.length
-                      : t.key === "stock"
-                        ? stockItems.length
-                        : bons.length;
+                      : stockItems.length + bons.length;
               return (
                 <TabsTrigger
                   key={t.key}
@@ -579,18 +576,15 @@ export function ClientFicheScreen() {
           onOpenFacture={(id) => go("facture-detail", { id })}
         />
 
-        <StockTab
+        <LogistiqueTab
           stockItems={stockItems}
           clientMouvements={clientMouvements}
-          onOpenEntreposage={() => go("entreposage")}
-        />
-
-        <BonsTab
           bons={bons}
           pagedBons={pagedBons}
           bonSafePage={bonSafePage}
           bonPages={bonPages}
-          onPageChange={setBonPage}
+          onBonPageChange={setBonPage}
+          onOpenEntreposage={() => go("entreposage")}
         />
       </Tabs>
 

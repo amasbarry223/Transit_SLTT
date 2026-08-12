@@ -265,7 +265,12 @@ function DossierFormInner() {
         </div>
       )}
 
-      {form.showWizard && <DossierWizardProgress wizardStep={form.wizardStep} />}
+      {(form.showWizard || isEdit) && (
+        <DossierWizardProgress
+          wizardStep={form.wizardStep}
+          mode={isEdit ? "sections" : "wizard"}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

@@ -27,9 +27,6 @@ interface ConvertDevisDialogProps {
  * Formulaire de conversion devis → dossier, partagé entre l'écran Devis et la
  * fiche détail. Demande BL/camion au lieu de laisser convertDevisToDossier
  * insérer des valeurs factices invisibles (LOGIC-audit).
- *
- * Le parent doit monter ce composant avec `key={devis?.id ?? "closed"}` pour
- * que les champs se réinitialisent proprement d'un devis à l'autre.
  */
 export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevisDialogProps) {
   const convertDevisToDossier = useStore((s) => s.convertDevisToDossier);
@@ -37,16 +34,24 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
   const [bl, setBl] = useState("");
   const [camion, setCamion] = useState("");
   const [saving, setSaving] = useState(false);
+  const [draftMode, setDraftMode] = useState(false);
 
-  async function handleConvert() {
-    if (!devis || !bl.trim() || !camion.trim()) return;
+  const blError = !bl.trim() && !draftMode ? "Le numéro de BL est requis." : undefined;
+  const camionError = !camion.trim() && !draftMode ? "L'immatriculation du camion est requise." : undefined;
+
+  async function handleConvert(useDraft = false) {
+    if (!devis) return;
+    const blValue = useDraft ? "À compléter" : bl.trim();
+    const camionValue = useDraft ? "À compléter" : camion.trim();
+    if (!useDraft && (!blValue || !camionValue)) return;
+
     setSaving(true);
     try {
-      const dossier = await convertDevisToDossier(devis.id, bl.trim(), camion.trim());
+      const dossier = await convertDevisToDossier(devis.id, blValue, camionValue);
       if (dossier) {
         toast({
-          title: "Dossier créé",
-          description: `${dossier.reference} ouvert depuis ${devis.reference}`,
+          title: useDraft ? "Dossier brouillon créé" : "Dossier créé",
+          description: `${dossier.reference} ouvert depuis ${devis.reference}${useDraft ? " — complétez BL et camion depuis la fiche dossier." : ""}`,
         });
         onConverted(dossier.id);
       }
@@ -68,15 +73,21 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
         <DialogHeader>
           <DialogTitle>Convertir en dossier de transit</DialogTitle>
           <DialogDescription>
-            Un nouveau dossier sera créé à partir du devis {devis?.reference}. Le devis passera au
-            statut <strong>Accepté</strong> et vous serez redirigé vers la fiche dossier.
+            Un nouveau dossier sera créé à partir du devis {devis?.reference} ({devis?.clientNom}
+            {devis?.nature ? ` — ${devis.nature}` : ""}). Le devis passera au statut{" "}
+            <strong>Accepté</strong>.
           </DialogDescription>
         </DialogHeader>
+
+        <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+          Le BL et le camion identifient physiquement la marchandise — renseignez-les dès que
+          disponibles pour le suivi logistique et les documents douaniers.
+        </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="conv-bl" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              N° BL <span className="text-red-500">*</span>
+              N° BL {!draftMode && <span className="text-red-500">*</span>}
             </Label>
             <Input
               id="conv-bl"
@@ -85,28 +96,51 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
               placeholder="BL-2026-0001"
               className="h-10"
               autoFocus
+              disabled={draftMode}
+              aria-invalid={!!blError}
             />
+            {blError && <p className="text-xs text-red-600 dark:text-red-400">{blError}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="conv-camion" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Camion <span className="text-red-500">*</span>
+              Camion {!draftMode && <span className="text-red-500">*</span>}
             </Label>
             <Input
               id="conv-camion"
               value={camion}
               onChange={(e) => setCamion(e.target.value)}
-              placeholder="Immatriculation"
+              placeholder="Immatriculation ou transporteur"
               className="h-10"
+              disabled={draftMode}
+              aria-invalid={!!camionError}
             />
+            {camionError && <p className="text-xs text-red-600 dark:text-red-400">{camionError}</p>}
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Annuler
-          </Button>
-          <Button onClick={handleConvert} disabled={!bl.trim() || !camion.trim() || saving}>
-            {saving ? "Création…" : "Créer le dossier"}
+        <DialogFooter className="flex-col gap-2 sm:flex-col sm:items-stretch">
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button
+              onClick={() => handleConvert(false)}
+              disabled={(!draftMode && (!bl.trim() || !camion.trim())) || saving}
+            >
+              {saving ? "Création…" : "Créer le dossier"}
+            </Button>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-xs text-slate-500"
+            disabled={saving}
+            onClick={() => {
+              setDraftMode(true);
+              void handleConvert(true);
+            }}
+          >
+            Compléter plus tard — créer un dossier brouillon minimal
           </Button>
         </DialogFooter>
       </DialogContent>

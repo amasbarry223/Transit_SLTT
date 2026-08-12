@@ -1,32 +1,37 @@
 "use client";
 
 import { resolveLogoUrl } from "@/lib/export/print-document";
-import { RECEIPT_BLUE } from "@/lib/recus-paiement-styles";
+import { RECEIPT_BLUE, RECEIPT_LOGO_FALLBACK } from "@/lib/recus-paiement-styles";
 import type { SocieteBrand } from "@/lib/societe-brand";
 
 interface RecuReceiptHeaderProps {
   brand: SocieteBrand;
 }
 
-/** En-tête paysage — logo à gauche, identité société + titre à droite. */
+/** En-tête paysage — logo à gauche, identité société centrée, titre en bas. */
 export function RecuReceiptHeader({ brand }: RecuReceiptHeaderProps) {
-  const logoUrl = resolveLogoUrl(brand.logoUrl);
+  const logoUrl = resolveLogoUrl(brand.logoUrl) ?? RECEIPT_LOGO_FALLBACK;
   const showName = brand.afficherNomAvecLogo !== false;
 
   return (
-    <header className="mb-3 flex items-start gap-3 border-b border-[#1e4a8a]/20 pb-2.5">
-      {logoUrl ? (
-        <img src={logoUrl} alt={brand.nom} className="size-14 shrink-0 object-contain" />
-      ) : (
-        <div
-          className="size-14 shrink-0 rounded-full border border-dashed opacity-40"
-          style={{ borderColor: RECEIPT_BLUE }}
+    <header className="mb-3 flex items-start gap-4 border-b border-[#1e4a8a]/20 pb-3">
+      <div className="flex w-[18mm] shrink-0 items-center justify-center">
+        <img
+          src={logoUrl}
+          alt={brand.nom}
+          className="max-h-[16mm] max-w-[18mm] object-contain"
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (img.src.includes(RECEIPT_LOGO_FALLBACK)) return;
+            img.src = RECEIPT_LOGO_FALLBACK;
+          }}
         />
-      )}
-      <div className="min-w-0 flex-1">
+      </div>
+
+      <div className="min-w-0 flex-1 text-center">
         {showName ? (
           <div
-            className="text-sm font-extrabold uppercase leading-tight tracking-wide"
+            className="text-[13px] font-extrabold uppercase leading-tight tracking-wide"
             style={{ color: RECEIPT_BLUE }}
           >
             {brand.nom}
@@ -48,12 +53,15 @@ export function RecuReceiptHeader({ brand }: RecuReceiptHeaderProps) {
           </div>
         ) : null}
         <div
-          className="mt-1.5 text-[11px] font-extrabold uppercase tracking-widest"
+          className="mt-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em]"
           style={{ color: RECEIPT_BLUE }}
         >
           Reçu de paiement
         </div>
       </div>
+
+      {/* Équilibre visuel — espace miroir du logo */}
+      <div className="w-[18mm] shrink-0" aria-hidden />
     </header>
   );
 }

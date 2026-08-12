@@ -4,13 +4,12 @@ import {
   BookOpen,
   FolderKanban,
   Receipt,
-  Warehouse,
-  Truck,
+  Package,
 } from "lucide-react";
 
 export const PAGE_SIZE = 6;
 
-export type FicheTab = "classeur" | "dossiers" | "factures" | "stock" | "bons";
+export type FicheTab = "classeur" | "dossiers" | "factures" | "logistique";
 
 export const FICHE_TABS: {
   key: FicheTab;
@@ -21,8 +20,7 @@ export const FICHE_TABS: {
   { key: "classeur", label: "Classeur", shortLabel: "Classeur", icon: BookOpen },
   { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban },
   { key: "factures", label: "Factures", shortLabel: "Factures", icon: Receipt },
-  { key: "stock", label: "Stock", shortLabel: "Stock", icon: Warehouse },
-  { key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: Truck },
+  { key: "logistique", label: "Logistique", shortLabel: "Logistique", icon: Package },
 ];
 
 export function avatarGradient(type: "Entreprise" | "Particulier"): string {

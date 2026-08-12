@@ -59,6 +59,7 @@ export function SidebarBrand({
 
 export function Sidebar() {
   const view = useNav((s) => s.view);
+  const comptaTab = useNav((s) => s.comptaTab);
   const { goToView } = useAppNavigation();
   const societes = useStore((s) => s.societes);
   const shellBrand = resolveAppShellBranding(societes);
@@ -79,7 +80,14 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2.5 py-4 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <NavList items={visibleItems} currentView={view} onNavigate={(key) => goToView(key)} />
+        <NavList
+          items={visibleItems}
+          currentView={view}
+          currentComptaTab={comptaTab}
+          onNavigate={(item) =>
+            goToView(item.key, item.comptaTab ? { comptaTab: item.comptaTab } : undefined)
+          }
+        />
       </nav>
     </aside>
   );

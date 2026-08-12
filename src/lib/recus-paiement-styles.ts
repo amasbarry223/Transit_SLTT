@@ -1,6 +1,8 @@
 /** Constantes visuelles partagées entre l'aperçu React et le HTML d'impression. */
 export const RECEIPT_BLUE = "#1e4a8a";
 export const RECEIPT_PAPER = "#dce8f5";
+/** Logo par défaut si la société n'en a pas configuré un. */
+export const RECEIPT_LOGO_FALLBACK = "/logoV.png";
 /** Format horizontal — carnet papier TRAORE DE LOGISTIQUE (paysage). */
 export const RECEIPT_WIDTH_MM = 240;
 export const RECEIPT_HEIGHT_MM = 100;

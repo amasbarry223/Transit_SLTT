@@ -1,5 +1,5 @@
 import type { UserRole } from "@/lib/domain-types";
-import type { ViewKey } from "@/lib/nav-store";
+import type { ComptaTab, ViewKey } from "@/lib/nav-store";
 import { Wallet, BarChart3, Warehouse, FileOutput, FolderKanban, ClipboardList, Settings, LayoutDashboard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -7,11 +7,12 @@ export interface RoleShortcut {
   key: ViewKey;
   label: string;
   icon: LucideIcon;
+  comptaTab?: ComptaTab;
 }
 
 export const ROLE_SHORTCUTS: Partial<Record<UserRole, RoleShortcut[]>> = {
   Comptable: [
-    { key: "comptabilite", label: "Comptabilité", icon: Wallet },
+    { key: "comptabilite", label: "Paiements dossiers", icon: Wallet, comptaTab: "ecritures" },
     { key: "bilans", label: "Bilans", icon: BarChart3 },
   ],
   Magasinier: [

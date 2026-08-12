@@ -62,8 +62,14 @@ export function useFacturesScreen() {
   const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
+    if (selectedId === "new") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur
+      setPrefillDossierId(undefined);
+      setShowForm(true);
+      go("factures");
+      return;
+    }
     if (selectedId?.startsWith("D-")) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le formulaire puis consomme le marqueur "D-…" de l'URL
       setPrefillDossierId(selectedId);
       setShowForm(true);
       go("factures");

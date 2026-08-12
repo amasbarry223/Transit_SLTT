@@ -6,7 +6,7 @@ import { useCanView } from "@/hooks/use-permission";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ShieldAlert } from "lucide-react";
 
 import { DashboardScreen } from "@/components/sltt/screens/dashboard";
 import { DossiersListScreen } from "@/components/sltt/screens/dossiers-list";
@@ -32,6 +32,7 @@ import { ContratDetailScreen } from "@/components/sltt/screens/contrat-detail";
 import { ArchivesScreen } from "@/components/sltt/screens/archives";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { PwaUpdatePrompt } from "@/components/pwa/PwaUpdatePrompt";
+import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
 
 export function AppShell() {
   const view = useNav((s) => s.view);
@@ -39,6 +40,7 @@ export function AppShell() {
   const dataLoading = useStore((s) => s.dataLoading);
   const loadError = useStore((s) => s.loadError);
   const partialLoadWarning = useStore((s) => s.partialLoadWarning);
+  const lastSyncedAt = useStore((s) => s.lastSyncedAt);
   const fetchData = useStore((s) => s.fetchData);
   const clearLoadError = useStore((s) => s.clearLoadError);
   const clearPartialLoadWarning = useStore((s) => s.clearPartialLoadWarning);
@@ -47,6 +49,7 @@ export function AppShell() {
   // main ou un état restauré peut viser une vue interdite — on ne rend
   // jamais l'écran cible dans ce cas, quel que soit le point d'entrée.
   const canViewCurrent = useCanView(view);
+  const isInitialLoad = lastSyncedAt === null && !loadError;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -54,10 +57,9 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <OfflineIndicator />
-        {dataLoading && (
-          <div className="flex items-center gap-2 border-b border-border/60 bg-slate-50 px-4 py-2 text-sm text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
-            <Loader2 className="size-4 animate-spin" />
-            Chargement des données…
+        {dataLoading && lastSyncedAt !== null && (
+          <div className="h-0.5 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+            <div className="h-full w-1/3 animate-pulse bg-primary/70" />
           </div>
         )}
         {loadError && !dataLoading && (
@@ -109,6 +111,8 @@ export function AppShell() {
                   Retour au tableau de bord
                 </Button>
               </div>
+            ) : isInitialLoad ? (
+              <ScreenSkeleton view={view} />
             ) : (
             <>
             {view === "dashboard" && <DashboardScreen />}

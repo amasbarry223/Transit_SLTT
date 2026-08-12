@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { RecuPaiementModuleData } from "@/lib/export";
 import { printRecuPaiementModule } from "@/lib/export";
-import { formatFCFA } from "@/lib/format";
 import { computeReste, computeStatut } from "@/lib/recus-paiement";
 import type { SocieteBrand } from "@/lib/societe-brand";
 import { useStore } from "@/lib/store";
@@ -23,13 +22,20 @@ export interface RecuGeneratorFormState {
   signature: string | null;
 }
 
+export interface LastSavedRecu {
+  reference: string;
+  montantPaye: number;
+  beneficiaire: string;
+  moduleData: RecuPaiementModuleData;
+}
+
 export const DEFAULT_FORM_STATE: RecuGeneratorFormState = {
-  nom: "TRAORE",
-  prenom: "Amadou",
-  somme: "100000",
+  nom: "",
+  prenom: "",
+  somme: "",
   motif: "Frais de prestation de transit",
-  montantPaye: "70000",
-  date: "2026-08-12",
+  montantPaye: "",
+  date: new Date().toISOString().slice(0, 10),
   signature: null,
 };
 
@@ -55,6 +61,7 @@ export function useRecuGenerator() {
   const [form, setForm] = useState<RecuGeneratorFormState>(DEFAULT_FORM_STATE);
   const [submitting, setSubmitting] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [lastSaved, setLastSaved] = useState<LastSavedRecu | null>(null);
 
   const previewReference = useMemo(() => `RECU-${recuPaiementSeq}`, [recuPaiementSeq]);
 
@@ -97,16 +104,62 @@ export function useRecuGenerator() {
     return null;
   }, [form.nom, form.prenom, form.motif, somme, montantPayeDepasseSomme, activeAnnexeId]);
 
-  const handleSave = useCallback(async () => {
+  const printModuleData = useCallback(
+    async (data: RecuPaiementModuleData, asPdf = false) => {
+      if (!brand) {
+        toast({
+          title: "Aperçu indisponible",
+          description: "Configurez la société transit dans Paramètres > Sociétés.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      setPrinting(true);
+      try {
+        const ok = printRecuPaiementModule(data, brand);
+        if (!ok) {
+          toast({
+            title: asPdf ? "Export PDF impossible" : "Impression impossible",
+            description: "Autorisez les fenêtres pop-up ou réessayez.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        if (asPdf) {
+          toast({
+            title: "Enregistrer en PDF",
+            description: "Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF ».",
+          });
+        }
+        return true;
+      } finally {
+        setPrinting(false);
+      }
+    },
+    [brand, toast],
+  );
+
+  const resetForm = useCallback((opts?: { keepMotif?: boolean }) => {
+    setForm({
+      ...DEFAULT_FORM_STATE,
+      motif: opts?.keepMotif ? form.motif : DEFAULT_FORM_STATE.motif,
+      date: new Date().toISOString().slice(0, 10),
+      signature: null,
+    });
+  }, [form.motif]);
+
+  const handleSave = useCallback(async (): Promise<LastSavedRecu | null> => {
     const error = validate();
     if (error) {
       toast({ title: error, variant: "destructive" });
-      return;
+      return null;
     }
     if (!canWrite) {
       toast({ title: "Permission insuffisante", variant: "destructive" });
-      return;
+      return null;
     }
+
+    const savedModuleData = { ...moduleData };
 
     setSubmitting(true);
     try {
@@ -118,16 +171,24 @@ export function useRecuGenerator() {
         somme,
         montantPaye,
       });
-      toast({
-        title: "Reçu enregistré",
-        description: `${saved.reference} — ${form.nom.trim()} ${form.prenom.trim()} (${formatFCFA(montantPaye)})`,
-      });
+
+      const beneficiaire = `${form.nom.trim()} ${form.prenom.trim()}`;
+      const result: LastSavedRecu = {
+        reference: saved.reference,
+        montantPaye,
+        beneficiaire,
+        moduleData: savedModuleData,
+      };
+      setLastSaved(result);
+      resetForm({ keepMotif: true });
+      return result;
     } catch (err) {
       toast({
         title: "Échec de l'enregistrement",
         description: getErrorMessage(err, "Réessayez."),
         variant: "destructive",
       });
+      return null;
     } finally {
       setSubmitting(false);
     }
@@ -139,46 +200,22 @@ export function useRecuGenerator() {
     form,
     somme,
     montantPaye,
+    moduleData,
     toast,
+    resetForm,
   ]);
 
   const handlePrint = useCallback(
     async (asPdf = false) => {
-      if (!brand) {
-        toast({
-          title: "Aperçu indisponible",
-          description: "Configurez la société transit dans Paramètres > Sociétés.",
-          variant: "destructive",
-        });
-        return;
-      }
-      setPrinting(true);
-      try {
-        const ok = printRecuPaiementModule(moduleData, brand);
-        if (!ok) {
-          toast({
-            title: asPdf ? "Export PDF impossible" : "Impression impossible",
-            description: "Autorisez les fenêtres pop-up ou réessayez.",
-            variant: "destructive",
-          });
-          return;
-        }
-        if (asPdf) {
-          toast({
-            title: "Enregistrer en PDF",
-            description: `Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF » — recu-${previewReference}.pdf`,
-          });
-        }
-      } finally {
-        setPrinting(false);
-      }
+      await printModuleData(moduleData, asPdf);
     },
-    [brand, moduleData, previewReference, toast],
+    [moduleData, printModuleData],
   );
 
-  const resetForm = useCallback(() => {
-    setForm({ ...DEFAULT_FORM_STATE, signature: null });
-  }, []);
+  const handlePrintLastSaved = useCallback(async () => {
+    if (!lastSaved) return;
+    await printModuleData(lastSaved.moduleData);
+  }, [lastSaved, printModuleData]);
 
   return {
     form,
@@ -195,10 +232,13 @@ export function useRecuGenerator() {
     canWrite,
     submitting,
     printing,
+    lastSaved,
     handleSave,
     handlePrint,
+    handlePrintLastSaved,
+    printModuleData,
     handleDownloadPdf: () => void handlePrint(true),
-    resetForm,
+    resetForm: () => resetForm(),
   };
 }
 

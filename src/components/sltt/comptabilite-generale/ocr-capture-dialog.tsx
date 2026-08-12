@@ -123,7 +123,6 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
       void handleFile(initialFile);
     }
     if (!open) consumedInitialFileRef.current = null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleFile est stable pour la durée du montage, seul le couple open/initialFile doit déclencher l'OCR
   }, [open, initialFile]);
 
   function fieldClass(key: string) {

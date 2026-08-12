@@ -60,7 +60,12 @@ export function DerniersDossiersCard({
                 tabIndex={0}
                 className="grid cursor-pointer grid-cols-[1fr_1.5fr_auto_auto] items-center gap-x-3 px-5 py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 onClick={() => onOpenDossier(d.id)}
-                onKeyDown={(e) => e.key === "Enter" && onOpenDossier(d.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onOpenDossier(d.id);
+                  }
+                }}
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`size-2 shrink-0 rounded-full ${dotColor}`} />

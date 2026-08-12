@@ -1,7 +1,7 @@
 "use client";
 
 import type { NavItem } from "@/lib/nav-items";
-import type { ViewKey } from "@/lib/nav-store";
+import type { ComptaTab, ViewKey } from "@/lib/nav-store";
 import { cn, isNavActive } from "@/lib/utils";
 
 function NavSectionLabel({ label, first }: { label: string; first?: boolean }) {
@@ -21,30 +21,32 @@ function NavSectionLabel({ label, first }: { label: string; first?: boolean }) {
 export function NavList({
   items,
   currentView,
+  currentComptaTab,
   onNavigate,
   className,
 }: {
   items: NavItem[];
   currentView: ViewKey;
-  onNavigate: (key: ViewKey) => void;
+  currentComptaTab?: ComptaTab;
+  onNavigate: (item: NavItem) => void;
   className?: string;
 }) {
   return (
     <ul className={cn("space-y-0.5", className)}>
       {items.map((item, i) => {
-        const active = isNavActive(currentView, item.key);
+        const active = isNavActive(currentView, item.key, currentComptaTab, item.comptaTab);
         const Icon = item.icon;
         const prevSection = items[i - 1]?.section;
         const showSectionLabel = item.section && item.section !== prevSection;
 
         return (
-          <li key={item.key}>
+          <li key={item.navId}>
             {showSectionLabel && (
               <NavSectionLabel label={item.section!} first={i === 0} />
             )}
             <button
               type="button"
-              onClick={() => onNavigate(item.key)}
+              onClick={() => onNavigate(item)}
               className={cn(
                 "group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-medium",
                 "transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
