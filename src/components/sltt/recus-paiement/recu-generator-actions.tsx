@@ -19,6 +19,7 @@ interface RecuGeneratorActionsProps {
   canWrite: boolean;
   submitting: boolean;
   printing: boolean;
+  variant?: "default" | "toolbar";
   onSave: () => void | Promise<void>;
   onPrint: () => void | Promise<void>;
   onDownloadPdf: () => void | Promise<void>;
@@ -29,6 +30,7 @@ export function RecuGeneratorActions({
   canWrite,
   submitting,
   printing,
+  variant = "default",
   onSave,
   onPrint,
   onDownloadPdf,
@@ -36,6 +38,63 @@ export function RecuGeneratorActions({
 }: RecuGeneratorActionsProps) {
   const [resetOpen, setResetOpen] = useState(false);
   const busy = submitting || printing;
+
+  if (variant === "toolbar") {
+    return (
+      <>
+        <div className="flex flex-wrap items-center gap-2">
+          {canWrite ? (
+            <Button size="sm" onClick={() => void onSave()} disabled={busy} className="h-9 gap-1.5 px-4">
+              <Save className="size-3.5" />
+              {submitting ? "Enregistrement…" : "Enregistrer"}
+            </Button>
+          ) : null}
+          <Button size="sm" variant="outline" onClick={() => void onPrint()} disabled={busy} className="h-9 gap-1.5">
+            <Printer className="size-3.5" />
+            {printing ? "Préparation…" : "Imprimer"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => void onDownloadPdf()} disabled={busy} className="h-9 gap-1.5">
+            <Download className="size-3.5" />
+            PDF
+          </Button>
+          <div className="ml-auto">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setResetOpen(true)}
+              disabled={busy}
+              className="h-9 gap-1.5 text-slate-500"
+            >
+              <RotateCcw className="size-3.5" />
+              Reset
+            </Button>
+          </div>
+        </div>
+
+        <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Réinitialiser le formulaire ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Toutes les informations saisies et la signature seront effacées.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  onReset();
+                  setResetOpen(false);
+                }}
+              >
+                Réinitialiser
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
 
   return (
     <>

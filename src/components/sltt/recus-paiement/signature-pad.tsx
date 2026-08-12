@@ -10,9 +10,10 @@ interface SignaturePadProps {
   value: string | null;
   onChange: (dataUrl: string | null) => void;
   className?: string;
+  compact?: boolean;
 }
 
-export function SignaturePad({ value, onChange, className }: SignaturePadProps) {
+export function SignaturePad({ value, onChange, className, compact = false }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
 
@@ -102,7 +103,7 @@ export function SignaturePad({ value, onChange, className }: SignaturePadProps) 
       <div className="overflow-hidden rounded-lg border border-border bg-white">
         <canvas
           ref={canvasRef}
-          className="h-28 w-full touch-none cursor-crosshair"
+          className={cn("w-full touch-none cursor-crosshair", compact ? "h-20" : "h-28")}
           onPointerDown={startDraw}
           onPointerMove={draw}
           onPointerUp={endDraw}

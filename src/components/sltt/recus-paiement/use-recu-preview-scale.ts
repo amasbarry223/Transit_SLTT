@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import { RECEIPT_HEIGHT_MM, RECEIPT_WIDTH_MM } from "@/lib/recus-paiement-styles";
 
 /** mm → px (96 dpi) — approximation stable pour le calcul de scale. */
@@ -11,7 +11,7 @@ function mmToPx(mm: number): number {
 const RECEIPT_W_PX = mmToPx(RECEIPT_WIDTH_MM);
 const RECEIPT_H_PX = mmToPx(RECEIPT_HEIGHT_MM);
 
-export function useRecuPreviewScale(containerRef: React.RefObject<HTMLElement | null>) {
+export function useRecuPreviewScale(containerRef: RefObject<HTMLElement | null>) {
   const [scale, setScale] = useState(0.75);
 
   const updateScale = useCallback(() => {
