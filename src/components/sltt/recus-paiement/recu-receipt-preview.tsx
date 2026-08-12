@@ -1,11 +1,10 @@
 "use client";
 
-import { AlertTriangle, Maximize2, Radio } from "lucide-react";
+import { AlertTriangle, Radio } from "lucide-react";
 import type { RecuPaiementModuleData } from "@/lib/export";
 import { RECEIPT_HEIGHT_MM, RECEIPT_PAPER, RECEIPT_WIDTH_MM } from "@/lib/recus-paiement-styles";
 import type { SocieteBrand } from "@/lib/societe-brand";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { RecuReceiptBody } from "./recu-receipt-body";
 import { RecuReceiptHeader } from "./recu-receipt-header";
 
@@ -15,10 +14,20 @@ interface RecuReceiptPreviewProps {
   reference?: string;
   id?: string;
   className?: string;
+  fitContainer?: boolean;
+  scale?: number;
 }
 
 /** Aperçu React WYSIWYG — reçu horizontal (paysage) fidèle au carnet papier. */
-export function RecuReceiptPreview({ data, brand, reference, id = "recu-print-root", className }: RecuReceiptPreviewProps) {
+export function RecuReceiptPreview({
+  data,
+  brand,
+  reference,
+  id = "recu-print-root",
+  className,
+  fitContainer = false,
+  scale = 0.92,
+}: RecuReceiptPreviewProps) {
   if (!brand) {
     return (
       <div
@@ -32,6 +41,64 @@ export function RecuReceiptPreview({ data, brand, reference, id = "recu-print-ro
         <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
           Configurez la société transit dans Paramètres &gt; Sociétés pour afficher le logo et l&apos;identité sur le reçu.
         </p>
+      </div>
+    );
+  }
+
+  const receiptPaper = (
+    <div
+      id={id}
+      className="recu-print-target flex flex-col print:shadow-none"
+      style={{
+        width: `${RECEIPT_WIDTH_MM}mm`,
+        minWidth: `${RECEIPT_WIDTH_MM}mm`,
+        height: `${RECEIPT_HEIGHT_MM}mm`,
+        minHeight: `${RECEIPT_HEIGHT_MM}mm`,
+        maxWidth: "none",
+        background: RECEIPT_PAPER,
+        padding: "8mm 10mm",
+        color: "#1e4a8a",
+      }}
+    >
+      <RecuReceiptHeader brand={brand} />
+      <RecuReceiptBody data={data} className="flex-1" />
+    </div>
+  );
+
+  if (fitContainer) {
+    return (
+      <div
+        className={cn(
+          "flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border/60 bg-gradient-to-b from-slate-100/60 to-slate-200/40 dark:from-slate-900/50 dark:to-slate-950/30",
+          className,
+        )}
+      >
+        <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2 text-xs">
+          <span className="relative flex size-1.5">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+          </span>
+          <span className="font-medium text-slate-700 dark:text-slate-200">Aperçu live</span>
+          {reference ? (
+            <>
+              <span className="text-slate-300 dark:text-slate-600">·</span>
+              <Radio className="size-3 text-primary" aria-hidden />
+              <span className="font-mono tracking-wide text-slate-500 dark:text-slate-400">{reference}</span>
+            </>
+          ) : null}
+          <span className="ml-auto text-slate-400 dark:text-slate-500">
+            {RECEIPT_WIDTH_MM}×{RECEIPT_HEIGHT_MM} mm
+          </span>
+        </div>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-2">
+          <div
+            className="rounded-sm shadow-[0_8px_30px_rgba(30,74,138,0.12),0_2px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#1e4a8a]/10"
+            style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}
+          >
+            {receiptPaper}
+          </div>
+        </div>
       </div>
     );
   }
@@ -50,14 +117,10 @@ export function RecuReceiptPreview({ data, brand, reference, id = "recu-print-ro
             <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
           </span>
           <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Aperçu en direct</span>
-          <Badge variant="secondary" className="hidden text-[10px] font-normal sm:inline-flex">
-            Format horizontal
-          </Badge>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-          <Maximize2 className="size-3.5" aria-hidden />
+        <span className="text-xs text-slate-500 dark:text-slate-400">
           {RECEIPT_WIDTH_MM} × {RECEIPT_HEIGHT_MM} mm
-        </div>
+        </span>
       </div>
 
       {reference ? (
@@ -71,25 +134,9 @@ export function RecuReceiptPreview({ data, brand, reference, id = "recu-print-ro
         <div className="mx-auto w-fit">
           <div
             className="rounded-sm shadow-[0_8px_30px_rgba(30,74,138,0.12),0_2px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#1e4a8a]/10"
-            style={{ transform: "scale(0.92)", transformOrigin: "top center" }}
+            style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
           >
-            <div
-              id={id}
-              className="recu-print-target flex flex-col print:shadow-none"
-              style={{
-                width: `${RECEIPT_WIDTH_MM}mm`,
-                minWidth: `${RECEIPT_WIDTH_MM}mm`,
-                height: `${RECEIPT_HEIGHT_MM}mm`,
-                minHeight: `${RECEIPT_HEIGHT_MM}mm`,
-                maxWidth: "none",
-                background: RECEIPT_PAPER,
-                padding: "8mm 10mm",
-                color: "#1e4a8a",
-              }}
-            >
-              <RecuReceiptHeader brand={brand} />
-              <RecuReceiptBody data={data} className="flex-1" />
-            </div>
+            {receiptPaper}
           </div>
         </div>
       </div>

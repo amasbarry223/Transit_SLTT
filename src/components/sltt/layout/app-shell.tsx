@@ -32,6 +32,7 @@ import { ContratDetailScreen } from "@/components/sltt/screens/contrat-detail";
 import { ArchivesScreen } from "@/components/sltt/screens/archives";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
+import { cn } from "@/lib/utils";
 
 export function AppShell() {
   const view = useNav((s) => s.view);
@@ -49,11 +50,12 @@ export function AppShell() {
   // jamais l'écran cible dans ce cas, quel que soit le point d'entrée.
   const canViewCurrent = useCanView(view);
   const isInitialLoad = lastSyncedAt === null && !loadError;
+  const isRecuWorkspace = view === "recus-paiement" && canViewCurrent && !isInitialLoad;
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className={cn("flex bg-background", isRecuWorkspace ? "h-dvh min-h-0 overflow-hidden" : "min-h-screen")}>
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Topbar />
         <OfflineIndicator />
         {dataLoading && lastSyncedAt !== null && (
@@ -93,8 +95,13 @@ export function AppShell() {
             </div>
           </div>
         )}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="w-full">
+        <main
+          className={cn(
+            "min-h-0 flex-1",
+            isRecuWorkspace ? "overflow-hidden p-0" : "p-4 sm:p-6 lg:p-8",
+          )}
+        >
+          <div className={cn("w-full", isRecuWorkspace && "h-full min-h-0")}>
             {!canViewCurrent ? (
               <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
                 <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">

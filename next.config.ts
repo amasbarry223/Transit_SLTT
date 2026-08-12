@@ -14,7 +14,7 @@ const withSerwist = withSerwistInit({
   globPublicPatterns: ["**/*", "!sw.js", "!sw.js.map"],
 });
 
-// Content-Security-Policy est construite dynamiquement dans middleware.ts
+// Content-Security-Policy est construite dynamiquement dans proxy.ts
 // (nonce par requête) — pas ici. Un script-src statique ne peut pas couvrir
 // les <script> de streaming RSC que Next.js injecte lui-même (contenu
 // différent à chaque requête), donc la CSP doit être posée là où le nonce

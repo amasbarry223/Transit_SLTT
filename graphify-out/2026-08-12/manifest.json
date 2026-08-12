@@ -30,8 +30,8 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1786500190.556426,
-    "ast_hash": "f31e407374eb17dfb3ba1d42f1c79ebb",
+    "mtime": 1786509613.8372383,
+    "ast_hash": "6fddeda6db8e383ae15cb83c640a71bb",
     "semantic_hash": ""
   },
   "postcss.config.mjs": {
@@ -100,8 +100,8 @@
     "semantic_hash": ""
   },
   "src/app/layout.tsx": {
-    "mtime": 1786500180.619979,
-    "ast_hash": "5b62cbe8792e6e057e6fa0accadd1e87",
+    "mtime": 1786509605.4975915,
+    "ast_hash": "b1f406d0f8a515ae1972fd6ead313432",
     "semantic_hash": ""
   },
   "src/app/page.tsx": {
@@ -225,8 +225,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/layout/app-shell.tsx": {
-    "mtime": 1786504795.7033453,
-    "ast_hash": "a745d1685ca12b8f1d04e0c225a7f510",
+    "mtime": 1786509608.531228,
+    "ast_hash": "2b68e34904744b2e9ec27ce71bf0b455",
     "semantic_hash": ""
   },
   "src/components/sltt/layout/breadcrumb-nav.tsx": {
@@ -385,8 +385,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/login.tsx": {
-    "mtime": 1786493924.7132738,
-    "ast_hash": "87be34af2e0ff1171cf4abcf476295a7",
+    "mtime": 1786509613.2651117,
+    "ast_hash": "e2ce207fba0cd299d804b6b3a578e57d",
     "semantic_hash": ""
   },
   "src/components/sltt/screens/parametres.tsx": {
@@ -1990,8 +1990,8 @@
     "semantic_hash": ""
   },
   "src/middleware.ts": {
-    "mtime": 1785688077.6999223,
-    "ast_hash": "498cf8bc72a84b57a7aa724bf536c6d0",
+    "mtime": 1786509590.541921,
+    "ast_hash": "416fee1fb466f267ed0af9bddd5e2d99",
     "semantic_hash": ""
   },
   "supabase/migrations/20260809_annexes.sql": {
@@ -2505,13 +2505,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/comptabilite-generale/import-dialog.tsx": {
-    "mtime": 1786489829.481315,
-    "ast_hash": "545898175c27bf6d81d61a245a4c203b",
+    "mtime": 1786507503.4793067,
+    "ast_hash": "6b647dc417994c25fead5b27f143ca7f",
     "semantic_hash": ""
   },
   "src/components/sltt/comptabilite-generale/ocr-capture-dialog.tsx": {
-    "mtime": 1786489858.9512832,
-    "ast_hash": "dbe6270053ac6b5e478b6577ac0b6afa",
+    "mtime": 1786507503.3295918,
+    "ast_hash": "5c87035910716a89719deae024e466d3",
     "semantic_hash": ""
   },
   "src/components/sltt/comptabilite-generale/operation-form-dialog.tsx": {
@@ -2755,8 +2755,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/factures/use-factures-screen.ts": {
-    "mtime": 1786504657.7980244,
-    "ast_hash": "2801c4c5367a440b435e7b236c1c7dee",
+    "mtime": 1786507501.4762301,
+    "ast_hash": "8318c21ffe8d9995ff45962658b35ea6",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/shared.ts": {
@@ -2765,13 +2765,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/recus-paiement.tsx": {
-    "mtime": 1786504648.95958,
-    "ast_hash": "51c23f4cf3b09f2ae68eede84bc77448",
+    "mtime": 1786506615.5574713,
+    "ast_hash": "1def0f6262bf6ec6a9d9e7e61ac83ea9",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/recu-paiement.ts": {
-    "mtime": 1786502102.4218514,
-    "ast_hash": "9331987f4cc1c18b9587990bec9bcb52",
+    "mtime": 1786506624.8010712,
+    "ast_hash": "5c4a9f4a6e54b4cce0326ce143f9aa7b",
     "semantic_hash": ""
   },
   "src/lib/recus-paiement.test.ts": {
@@ -2810,13 +2810,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-generator-actions.tsx": {
-    "mtime": 1786499123.9245505,
-    "ast_hash": "e2530cf70eab8d43db8ad8f84082017e",
+    "mtime": 1786506621.740018,
+    "ast_hash": "87c73f11d00b10f48da317c1f72422a7",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-generator-form.tsx": {
-    "mtime": 1786499123.7011316,
-    "ast_hash": "7b19df40e8c2ce64b35e7f89728b8d2b",
+    "mtime": 1786506598.3652992,
+    "ast_hash": "9e0c5ca56759e624bb967daaa30ab1b4",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-receipt-body.tsx": {
@@ -2825,13 +2825,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-receipt-header.tsx": {
-    "mtime": 1786502084.7594545,
-    "ast_hash": "694865f79de7b5cd69bc5b735920aaca",
+    "mtime": 1786506603.6468234,
+    "ast_hash": "33cf3fe087924a20b8e3310496e36f3d",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-receipt-preview.tsx": {
-    "mtime": 1786502087.4698086,
-    "ast_hash": "529f528e36eabf1b7728e918ff32fe53",
+    "mtime": 1786506606.4299061,
+    "ast_hash": "7c1b2d1aaa65cc9f83382a7a2f2ef726",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/signature-pad.tsx": {
@@ -2840,8 +2840,8 @@
     "semantic_hash": ""
   },
   "src/lib/recus-paiement-styles.ts": {
-    "mtime": 1786502084.7594545,
-    "ast_hash": "bf8bb773e5e77348ef995e9a817a178e",
+    "mtime": 1786506584.631419,
+    "ast_hash": "a3b8fcc6cc2bf0cebdcd250e43ae354d",
     "semantic_hash": ""
   },
   "recugenerateur.md": {
@@ -2855,8 +2855,8 @@
     "semantic_hash": ""
   },
   "src/app/manifest.ts": {
-    "mtime": 1786499774.9081688,
-    "ast_hash": "8cf948af0a56d037ed3f33f81ee47280",
+    "mtime": 1786509590.5698736,
+    "ast_hash": "d2a37ecf159ea7e81dad351394caf869",
     "semantic_hash": ""
   },
   "src/app/offline/page.tsx": {
@@ -2870,8 +2870,8 @@
     "semantic_hash": ""
   },
   "src/components/pwa/InstallPWA.tsx": {
-    "mtime": 1786500480.7932992,
-    "ast_hash": "8fdab34a489215b2aa808fa0902447d7",
+    "mtime": 1786509605.657402,
+    "ast_hash": "570c3b7fac0849c3cbc69df24155511a",
     "semantic_hash": ""
   },
   "src/components/pwa/OfflineIndicator.tsx": {
@@ -2895,22 +2895,22 @@
     "semantic_hash": ""
   },
   "public/icons/apple-touch-icon.png": {
-    "mtime": 1786500144.072,
+    "mtime": 1786509638.198,
     "ast_hash": "bda5f152446680f6c5600ff4d2a3457d",
     "semantic_hash": ""
   },
   "public/icons/icon-192x192.png": {
-    "mtime": 1786500143.495,
+    "mtime": 1786509638.015,
     "ast_hash": "fac5fd5a36cb667ff892cd48e2f28b18",
     "semantic_hash": ""
   },
   "public/icons/icon-512x512-maskable.png": {
-    "mtime": 1786500143.859,
+    "mtime": 1786509638.152,
     "ast_hash": "140f65f0bf368915b9b14ed7d0870dfa",
     "semantic_hash": ""
   },
   "public/icons/icon-512x512.png": {
-    "mtime": 1786500143.656,
+    "mtime": 1786509638.077,
     "ast_hash": "256032eae1f43686b29d8f899bccdcc9",
     "semantic_hash": ""
   },
@@ -2934,14 +2934,24 @@
     "ast_hash": "ca678ec2a2245fd4dcb9ab6bccc1ed27",
     "semantic_hash": ""
   },
-  "src/components/sltt/recus-paiement/use-recu-generator.tsx": {
-    "mtime": 1786504646.0666687,
-    "ast_hash": "b070c90c424a18c46e09b384c97f6981",
-    "semantic_hash": ""
-  },
   "src/components/sltt/screen-skeleton.tsx": {
     "mtime": 1786504485.9166684,
     "ast_hash": "8d60a16bc30ec44a04380d7b4a063aa5",
+    "semantic_hash": ""
+  },
+  "src/components/sltt/recus-paiement/recu-form-section.tsx": {
+    "mtime": 1786506585.064283,
+    "ast_hash": "eba8f45a8ccc1902106f1142e6a6c03b",
+    "semantic_hash": ""
+  },
+  "src/components/sltt/recus-paiement/use-recu-generator.ts": {
+    "mtime": 1786505946.401555,
+    "ast_hash": "2746cd81d9901b2ef0a0463416d3b377",
+    "semantic_hash": ""
+  },
+  "src/components/pwa/pwa-global-effects.tsx": {
+    "mtime": 1786509600.2768013,
+    "ast_hash": "0b05ca47ccff949e38c03f4a8a01f6a9",
     "semantic_hash": ""
   }
 }

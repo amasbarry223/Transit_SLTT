@@ -83,7 +83,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Nonce posé par middleware.ts (requis par la CSP script-src en production).
+  // Nonce posé par proxy.ts (requis par la CSP script-src en production).
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
