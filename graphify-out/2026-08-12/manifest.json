@@ -25,13 +25,13 @@
     "semantic_hash": ""
   },
   "next.config.ts": {
-    "mtime": 1786500131.0856833,
-    "ast_hash": "116529718043fb955290b3caeeeb9317",
+    "mtime": 1786510256.2199354,
+    "ast_hash": "3367cca221db6224b13f311886362c83",
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1786509613.8372383,
-    "ast_hash": "6fddeda6db8e383ae15cb83c640a71bb",
+    "mtime": 1786510064.1983654,
+    "ast_hash": "f31e407374eb17dfb3ba1d42f1c79ebb",
     "semantic_hash": ""
   },
   "postcss.config.mjs": {
@@ -100,8 +100,8 @@
     "semantic_hash": ""
   },
   "src/app/layout.tsx": {
-    "mtime": 1786509605.4975915,
-    "ast_hash": "b1f406d0f8a515ae1972fd6ead313432",
+    "mtime": 1786510259.954668,
+    "ast_hash": "90019472bbd0f24edcfab111bae10f16",
     "semantic_hash": ""
   },
   "src/app/page.tsx": {
@@ -225,8 +225,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/layout/app-shell.tsx": {
-    "mtime": 1786509608.531228,
-    "ast_hash": "2b68e34904744b2e9ec27ce71bf0b455",
+    "mtime": 1786510600.2857368,
+    "ast_hash": "9b54824e4ef8ceb201765a99157f143f",
     "semantic_hash": ""
   },
   "src/components/sltt/layout/breadcrumb-nav.tsx": {
@@ -1989,11 +1989,6 @@
     "ast_hash": "6024aefed758e2109099feac8dc2dc42",
     "semantic_hash": ""
   },
-  "src/middleware.ts": {
-    "mtime": 1786509590.541921,
-    "ast_hash": "416fee1fb466f267ed0af9bddd5e2d99",
-    "semantic_hash": ""
-  },
   "supabase/migrations/20260809_annexes.sql": {
     "mtime": 1785689296.653116,
     "ast_hash": "53d9630b33455c02b573b89fba8b41ce",
@@ -2765,8 +2760,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/screens/recus-paiement.tsx": {
-    "mtime": 1786506615.5574713,
-    "ast_hash": "1def0f6262bf6ec6a9d9e7e61ac83ea9",
+    "mtime": 1786510646.6064117,
+    "ast_hash": "a591b41f99b707c538a3e61c3aa53171",
     "semantic_hash": ""
   },
   "src/lib/export/print-modules/recu-paiement.ts": {
@@ -2810,13 +2805,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-generator-actions.tsx": {
-    "mtime": 1786506621.740018,
-    "ast_hash": "87c73f11d00b10f48da317c1f72422a7",
+    "mtime": 1786510650.9365504,
+    "ast_hash": "9fc77c1c5305bac3842cef6c28cc75dd",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-generator-form.tsx": {
-    "mtime": 1786506598.3652992,
-    "ast_hash": "9e0c5ca56759e624bb967daaa30ab1b4",
+    "mtime": 1786510634.1017077,
+    "ast_hash": "983fb27fed94563586919600ed8df6fc",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-receipt-body.tsx": {
@@ -2830,13 +2825,13 @@
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/recu-receipt-preview.tsx": {
-    "mtime": 1786506606.4299061,
-    "ast_hash": "7c1b2d1aaa65cc9f83382a7a2f2ef726",
+    "mtime": 1786510638.0362077,
+    "ast_hash": "56af05a6c03500b819788e01f1ae6c87",
     "semantic_hash": ""
   },
   "src/components/sltt/recus-paiement/signature-pad.tsx": {
-    "mtime": 1786499096.8466043,
-    "ast_hash": "8fc4eca6ea6d8a2d66f1a9a8be0c1554",
+    "mtime": 1786510644.012848,
+    "ast_hash": "be0682bfb34e35bef4bd9ae8ac353d94",
     "semantic_hash": ""
   },
   "src/lib/recus-paiement-styles.ts": {
@@ -2952,6 +2947,21 @@
   "src/components/pwa/pwa-global-effects.tsx": {
     "mtime": 1786509600.2768013,
     "ast_hash": "0b05ca47ccff949e38c03f4a8a01f6a9",
+    "semantic_hash": ""
+  },
+  "src/proxy.ts": {
+    "mtime": 1786510251.8326354,
+    "ast_hash": "8f1861db7cdf8b318ec6522251d3d67e",
+    "semantic_hash": ""
+  },
+  "src/components/sltt/recus-paiement/recu-workspace.tsx": {
+    "mtime": 1786510623.1001809,
+    "ast_hash": "943bad3cf4c5753664413eabd126143f",
+    "semantic_hash": ""
+  },
+  "src/components/sltt/recus-paiement/use-recu-preview-scale.ts": {
+    "mtime": 1786510651.3039827,
+    "ast_hash": "0734ac612e8abb6cdf3037aa382a7bee",
     "semantic_hash": ""
   }
 }

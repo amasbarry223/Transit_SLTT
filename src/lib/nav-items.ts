@@ -15,7 +15,6 @@ import {
   FileSignature,
   Archive,
   FileText,
-  ScrollText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ComptaTab, ViewKey } from "@/lib/nav-store";
@@ -52,22 +51,11 @@ export const navItems: NavItem[] = [
   { navId: "calendrier", key: "calendrier", label: "Calendrier", icon: CalendarDays, requiredPermission: "calendrier:read", section: "Logistique" },
 
   {
-    navId: "comptabilite-ecritures",
+    navId: "comptabilite",
     key: "comptabilite",
-    label: "Paiements dossiers",
-    shortLabel: "Paiements",
+    label: "Comptabilité",
+    shortLabel: "Compta",
     icon: Wallet,
-    comptaTab: "ecritures",
-    requiredPermission: "comptabilite:read",
-    section: "Finance",
-  },
-  {
-    navId: "comptabilite-journal",
-    key: "comptabilite",
-    label: "Journal de caisse",
-    shortLabel: "Journal",
-    icon: ScrollText,
-    comptaTab: "journal",
     requiredPermission: "comptabilite:read",
     section: "Finance",
   },

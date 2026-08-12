@@ -12,7 +12,7 @@ export interface RoleShortcut {
 
 export const ROLE_SHORTCUTS: Partial<Record<UserRole, RoleShortcut[]>> = {
   Comptable: [
-    { key: "comptabilite", label: "Paiements dossiers", icon: Wallet, comptaTab: "ecritures" },
+    { key: "comptabilite", label: "Comptabilité", icon: Wallet },
     { key: "bilans", label: "Bilans", icon: BarChart3 },
   ],
   Magasinier: [
