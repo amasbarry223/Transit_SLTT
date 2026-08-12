@@ -31,7 +31,6 @@ import { ContratsScreen } from "@/components/sltt/screens/contrats";
 import { ContratDetailScreen } from "@/components/sltt/screens/contrat-detail";
 import { ArchivesScreen } from "@/components/sltt/screens/archives";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
-import { PwaUpdatePrompt } from "@/components/pwa/PwaUpdatePrompt";
 import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
 
 export function AppShell() {
@@ -141,7 +140,6 @@ export function AppShell() {
             )}
           </div>
         </main>
-        <PwaUpdatePrompt />
       </div>
     </div>
   );

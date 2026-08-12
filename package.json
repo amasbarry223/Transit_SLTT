@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "npm run generate:pwa-icons && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",

@@ -35,6 +35,8 @@ export function middleware(request: NextRequest) {
     `img-src 'self' data: blob: ${supabaseUrl}`,
     "font-src 'self' data:",
     `connect-src 'self' ${supabaseUrl} ${supabaseWsUrl} blob:`,
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "worker-src 'self' blob:",
     // Aperçu PDF / documents dans iframes (signed URL Storage)
     `frame-src 'self' blob: ${supabaseUrl}`,

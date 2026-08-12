@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   AlertTriangle,
 } from "lucide-react";
+import { InstallPWA } from "@/components/pwa/InstallPWA";
 
 
 
@@ -245,6 +246,10 @@ export function LoginScreen() {
             <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
               <ShieldCheck className="size-3.5" />
               Accès sécurisé · Transit © {new Date().getFullYear()}
+            </div>
+
+            <div className="mt-4">
+              <InstallPWA variant="login" />
             </div>
           </div>
         </div>

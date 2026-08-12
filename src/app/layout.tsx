@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeEffect } from "@/components/sltt/theme-effect";
 import { AppRoot } from "@/components/sltt/app-root";
 import { AppSerwistProvider } from "@/components/pwa/serwist-provider";
+import { PwaGlobalEffects } from "@/components/pwa/pwa-global-effects";
 
 const APP_NAME = "Transit";
 const APP_DEFAULT_TITLE = "Transit · Gestion logistique";
@@ -27,6 +28,7 @@ const sora = Sora({
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
+  manifest: "/manifest.webmanifest",
   title: {
     default: APP_DEFAULT_TITLE,
     template: `%s · ${APP_NAME}`,
@@ -93,6 +95,7 @@ export default async function RootLayout({
           <ThemeEffect nonce={nonce} />
           {children}
           <AppRoot />
+          <PwaGlobalEffects />
           <Toaster />
         </AppSerwistProvider>
       </body>
