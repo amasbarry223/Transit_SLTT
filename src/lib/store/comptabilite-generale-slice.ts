@@ -107,7 +107,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
         import_ref: input.importRef || null,
         cree_par: creePar,
       })
-      .select("*, clients(nom), societes(nom), annexes(nom), dossiers(reference)")
+      .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
     if (error) throw error;
 

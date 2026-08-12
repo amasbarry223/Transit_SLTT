@@ -58,21 +58,35 @@ export function useComptabiliteGeneraleScreen() {
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
 
+  const dossiers = useStore((s) => s.dossiers);
+  const dossiersMap = useMemo(() => new Map(dossiers.map((d) => [d.id, d.reference])), [dossiers]);
+
   const entiteOperations = useMemo(
     () => (resolvedEntite ? filterOperationsByEntite(allOperations, resolvedEntite) : []),
     [allOperations, resolvedEntite],
   );
+
+  const entiteOperationsWithDossierRef = useMemo(() => {
+    return entiteOperations.map((o) => {
+      if (o.dossierRef) return o;
+      if (o.dossierId && dossiersMap.has(o.dossierId)) {
+        return { ...o, dossierRef: dossiersMap.get(o.dossierId) };
+      }
+      return o;
+    });
+  }, [entiteOperations, dossiersMap]);
+
   const clientOptions = useMemo(
-    () => Array.from(new Set(entiteOperations.map((o) => o.clientNom))).sort((a, b) => a.localeCompare(b, "fr")),
-    [entiteOperations],
+    () => Array.from(new Set(entiteOperationsWithDossierRef.map((o) => o.clientNom))).sort((a, b) => a.localeCompare(b, "fr")),
+    [entiteOperationsWithDossierRef],
   );
   // Retombe sur "tous les clients" si la valeur sélectionnée n'existe pas
   // pour l'entité active (ex. après un changement d'onglet) plutôt que
   // d'afficher silencieusement zéro résultat.
   const effectiveClientFilter = clientOptions.includes(clientFilter) ? clientFilter : "";
   const periodOperations = useMemo(
-    () => filterOperationsByPeriode(entiteOperations, dateFrom || undefined, dateTo || undefined),
-    [entiteOperations, dateFrom, dateTo],
+    () => filterOperationsByPeriode(entiteOperationsWithDossierRef, dateFrom || undefined, dateTo || undefined),
+    [entiteOperationsWithDossierRef, dateFrom, dateTo],
   );
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
