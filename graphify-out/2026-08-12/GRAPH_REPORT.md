@@ -1,11 +1,11 @@
 # Graph Report - Transit_SLTT  (2026-08-12)
 
 ## Corpus Check
-- 584 files · ~808,876 words
+- 584 files · ~808,849 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2406 nodes · 8947 edges · 181 communities (108 shown, 73 thin omitted)
+- 2406 nodes · 8947 edges · 182 communities (109 shown, 73 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 47 edges (avg confidence: 0.76)
 - Token cost: 0 input · 0 output
 
@@ -225,7 +225,7 @@
 - 4-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/ecritures-slice.ts -> src/lib/client-stats.ts`
 - 4-file cycle: `src/lib/client-stats.ts -> src/lib/store.ts -> src/lib/store/data-fetch-slice.ts -> src/lib/store/factures-slice.ts -> src/lib/client-stats.ts`
 
-## Communities (181 total, 73 thin omitted)
+## Communities (182 total, 73 thin omitted)
 
 ### Community 0 - "devis.tsx"
 Cohesion: 0.12
@@ -309,7 +309,7 @@ Nodes (28): react, react, ConfirmActionDialog(), ConvertDevisDialog(), DevisEdit
 
 ### Community 22 - "dependencies"
 Cohesion: 0.07
-Nodes (27): ag-grid-community, ag-grid-react, clsx, lucide-react, dependencies, ag-grid-community, ag-grid-react, clsx (+19 more)
+Nodes (27): ag-grid-react, class-variance-authority, clsx, lucide-react, dependencies, ag-grid-react, class-variance-authority, clsx (+19 more)
 
 ### Community 23 - "devDependencies"
 Cohesion: 0.09

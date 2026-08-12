@@ -735,8 +735,8 @@
     "semantic_hash": ""
   },
   "src/lib/nav-items.ts": {
-    "mtime": 1786504501.266504,
-    "ast_hash": "7d94f50bd315fb34520c40a8c5a77833",
+    "mtime": 1786511400.2420087,
+    "ast_hash": "8c4330cf71eb5d59e917d3f290ef397c",
     "semantic_hash": ""
   },
   "src/lib/nav-store.ts": {
@@ -760,8 +760,8 @@
     "semantic_hash": ""
   },
   "src/lib/role-shortcuts.ts": {
-    "mtime": 1786504600.9521825,
-    "ast_hash": "0278b0335bb4e3fc59787bed0e340d0d",
+    "mtime": 1786511405.990458,
+    "ast_hash": "da664d71e4425ec361a1fdd3f42a61ca",
     "semantic_hash": ""
   },
   "src/lib/search-filter.ts": {
