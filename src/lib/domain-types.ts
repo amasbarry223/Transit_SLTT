@@ -367,6 +367,8 @@ export interface EntiteComptable {
 }
 
 export type ModePaiement = "Espèces" | "Virement" | "Mobile Money" | "Chèque";
+export type OperationComptableType = "Entrée" | "Sortie";
+export type OperationComptableSource = "saisie" | "import_excel" | "import_ocr";
 
 export interface OperationComptable {
   id: string;

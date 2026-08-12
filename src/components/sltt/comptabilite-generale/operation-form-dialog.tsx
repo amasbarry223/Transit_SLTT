@@ -36,6 +36,7 @@ interface OperationFormDialogProps {
 
 export function OperationFormDialog({ open, onOpenChange, entite }: OperationFormDialogProps) {
   const { toast } = useToast();
+  const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
   const addOperationComptable = useStore((s) => s.addOperationComptable);
   const isTopDoumani = entite.type === "societe";
