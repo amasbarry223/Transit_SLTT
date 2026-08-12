@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClotureDialog } from "@/components/sltt/comptabilite-generale/cloture-dialog";
 import { EntitesConsolideesCard } from "@/components/sltt/comptabilite-generale/entites-consolidees-card";
 import { ImportAnyDialog } from "@/components/sltt/comptabilite-generale/import-any-dialog";
@@ -34,18 +34,18 @@ interface JournalCaissePanelProps {
 export function JournalCaissePanel({ screen, importOpen, setImportOpen }: JournalCaissePanelProps) {
   if (!screen.resolvedEntite) {
     return (
-      <TabsContent value="journal" className="mt-0">
+      <div className="mt-0">
         <EmptyState
           icon={PiggyBank}
           title="Aucune entité comptable disponible"
           description="Aucune annexe ni société « Top Doumani » n'est configurée pour cet utilisateur."
         />
-      </TabsContent>
+      </div>
     );
   }
 
   return (
-    <TabsContent value="journal" className="mt-0 space-y-6">
+    <div className="mt-0 space-y-6">
       <EntitesConsolideesCard
         entiteTotals={screen.entiteTotals}
         activeEntiteKey={screen.resolvedTab}
@@ -217,6 +217,6 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
         entite={screen.resolvedEntite}
         dernieresClotures={screen.dernieresClotures}
       />
-    </TabsContent>
+    </div>
   );
 }
