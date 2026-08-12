@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import { parseDossierBulkXlsx } from "./dossier-bulk-import";
+import { parseDossierBulkXlsx, looksLikeJournalCaisseWorkbook } from "./dossier-bulk-import";
 
 /** Reproduit le format maison : « Situation du Client X », en-tête dupliqué, montants « 18 200 000 ». */
 async function buildSampleWorkbook(): Promise<ArrayBuffer> {
@@ -153,5 +153,32 @@ describe("parseDossierBulkXlsx", () => {
     const rows = await parseDossierBulkXlsx(buf);
     expect(rows).toHaveLength(1);
     expect(rows[0].clientNom).toBe("Mahamadou Drame");
+  });
+});
+
+describe("looksLikeJournalCaisseWorkbook", () => {
+  it("détecte un classeur journal de caisse (Dates | Clients | Nature | Entrée | Sortie | Écart)", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("SLTT");
+    sheet.addRow(["SLTT"]);
+    sheet.addRow([]);
+    sheet.addRow(["Dates", "Clients", "Nature de la depenses", "Entrée", "Sortie", "Ecart"]);
+    sheet.addRow(["12/01/2026", "DOUNIYA INFORM ELECTRO", "ACHAT DE MATERIEL", "", "555 000", ""]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    expect(await looksLikeJournalCaisseWorkbook(buf)).toBe(true);
+    // Et confirme que ce même fichier ne produit aucune ligne dossier exploitable.
+    expect(await parseDossierBulkXlsx(buf)).toHaveLength(0);
+  });
+
+  it("ne signale pas un classeur « Situation des clients » normal comme un journal de caisse", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("X");
+    sheet.addRow(["Situation du Client X"]);
+    sheet.addRow(["Date", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Reste a payer", "Benefice net"]);
+    sheet.addRow(["01/01/2026", "CONTENEUR", "1", "F1", "1 000 000", "400 000", "600 000", ""]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    expect(await looksLikeJournalCaisseWorkbook(buf)).toBe(false);
   });
 });

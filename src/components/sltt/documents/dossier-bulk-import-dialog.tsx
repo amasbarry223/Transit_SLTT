@@ -17,7 +17,11 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { resolveTransitSociete } from "@/lib/societe-brand";
-import { parseDossierBulkXlsx, type DossierBulkImportRow } from "@/lib/dossier-bulk-import";
+import {
+  parseDossierBulkXlsx,
+  looksLikeJournalCaisseWorkbook,
+  type DossierBulkImportRow,
+} from "@/lib/dossier-bulk-import";
 import { formatFCFA } from "@/lib/format";
 import { getErrorMessage, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -141,10 +145,12 @@ export function DossierBulkImportButton() {
       const buf = await file.arrayBuffer();
       const parsed = await parseDossierBulkXlsx(buf);
       if (parsed.length === 0) {
+        const isJournalCaisse = await looksLikeJournalCaisseWorkbook(buf);
         toast({
           title: "Aucune ligne exploitable",
-          description:
-            "Vérifiez que le fichier contient des feuilles « Situation du Client X » avec un tableau Date/Nature/Total investi.",
+          description: isJournalCaisse
+            ? "Ce fichier ressemble à un journal de caisse (colonnes Entrée/Sortie) — importez-le plutôt depuis Comptabilité → Journal de caisse → « Importer un document »."
+            : "Vérifiez que le fichier contient des feuilles « Situation du Client X » avec un tableau Date/Nature/Total investi.",
           variant: "destructive",
         });
         return;

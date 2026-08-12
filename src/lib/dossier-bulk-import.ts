@@ -198,6 +198,30 @@ function parseBlockRow(
   };
 }
 
+/**
+ * Distingue un classeur « Journal de caisse » (Dates | Clients | Nature de la dépense |
+ * Entrée | Sortie | Écart, cf. comptabilite-generale-import.ts) d'un classeur « Situation
+ * des clients » — les deux sont des exports du même dossier comptable SLTT, seul le second
+ * convient à cet import. Sert uniquement à orienter l'utilisateur quand aucune ligne n'a
+ * été trouvée, jamais à décider quoi importer.
+ */
+export async function looksLikeJournalCaisseWorkbook(file: ArrayBuffer): Promise<boolean> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(file);
+  for (const sheet of wb.worksheets) {
+    const maxScan = Math.min(20, sheet.rowCount || 20);
+    for (let r = 1; r <= maxScan; r++) {
+      const row = sheet.getRow(r);
+      const headers = new Set<string>();
+      for (let c = 1; c <= Math.min(20, row.cellCount || 20); c++) {
+        headers.add(normalizeHeader(cellToString(row.getCell(c).value)));
+      }
+      if (headers.has("entree") && headers.has("sortie")) return true;
+    }
+  }
+  return false;
+}
+
 /** Parse un classeur multi-clients (une feuille par client) en lignes dossier prêtes à revue. */
 export async function parseDossierBulkXlsx(file: ArrayBuffer): Promise<DossierBulkImportRow[]> {
   const wb = new ExcelJS.Workbook();
