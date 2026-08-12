@@ -30,7 +30,8 @@ export interface DossierBulkImportRow {
   warnings: string[];
 }
 
-const CLIENT_TITLE_RE = /situation\s+du\s+client\s*[:\-]?\s*(.+)/i;
+/** Accepte les variantes réellement rencontrées : « du Client », « de la Cliente », casse libre. */
+const CLIENT_TITLE_RE = /situation\s+d[eu](?:\s+la)?\s+client(?:e)?\s*[:\-]?\s*(.+)/i;
 const GENERIC_SHEET_NAMES = new Set(["sheet1", "feuil1", "feuille1", "sheet", "feuille"]);
 
 function normalizeHeader(h: string): string {
@@ -63,7 +64,8 @@ function cellToString(v: ExcelJS.CellValue): string {
 
 /** Cherche « Situation du Client X » dans les premières lignes ; sinon replie sur le nom de la feuille. */
 function resolveClientNom(sheet: ExcelJS.Worksheet): string | null {
-  const maxScan = Math.min(8, sheet.rowCount || 8);
+  // Certains classeurs ont un bandeau (logo, année, lignes vides) avant le titre.
+  const maxScan = Math.min(20, sheet.rowCount || 20);
   for (let r = 1; r <= maxScan; r++) {
     const row = sheet.getRow(r);
     for (let c = 1; c <= Math.min(20, row.cellCount || 20); c++) {
@@ -88,27 +90,66 @@ function findHeaderBlocks(row: ExcelJS.Row): number[] {
 }
 
 function findHeaderRow(sheet: ExcelJS.Worksheet): number | null {
-  const maxScan = Math.min(15, sheet.rowCount || 15);
+  // Certains classeurs ont un bandeau (logo, titre société, année) avant l'en-tête réel.
+  const maxScan = Math.min(40, sheet.rowCount || 40);
   for (let r = 1; r <= maxScan; r++) {
     if (findHeaderBlocks(sheet.getRow(r)).length > 0) return r;
   }
   return null;
 }
 
+interface BlockColumns {
+  dateCol: number;
+  natureCol: number;
+  quantiteCol: number;
+  factureCol: number;
+  investiCol: number;
+  payeCol: number;
+  resteCol: number | null;
+}
+
+/**
+ * Résout les colonnes d'un bloc par le libellé de leur en-tête plutôt que par position fixe :
+ * l'ordre « Reste à payer » / « Bénéfice net » (et parfois l'absence de l'une des deux) varie
+ * d'un client à l'autre dans ce classeur tenu à la main — une position figée après « Montant
+ * payé » lit parfois le bénéfice à la place du reste. Nature/Quantité/Facture N°/Total investi/
+ * Montant payé, eux, sont toujours dans cet ordre juste après Date sur tous les clients observés.
+ */
+function resolveBlockColumns(headerRow: ExcelJS.Row, startCol: number, endCol: number): BlockColumns {
+  let investiCol: number | null = null;
+  let payeCol: number | null = null;
+  let resteCol: number | null = null;
+  for (let c = startCol + 4; c <= endCol; c++) {
+    const h = normalizeHeader(cellToString(headerRow.getCell(c).value));
+    if (investiCol == null && h.includes("investi")) investiCol = c;
+    if (payeCol == null && h.includes("paye")) payeCol = c;
+    if (resteCol == null && h.includes("reste")) resteCol = c;
+  }
+  return {
+    dateCol: startCol,
+    natureCol: startCol + 1,
+    quantiteCol: startCol + 2,
+    factureCol: startCol + 3,
+    investiCol: investiCol ?? startCol + 4,
+    payeCol: payeCol ?? startCol + 5,
+    resteCol,
+  };
+}
+
 function parseBlockRow(
   row: ExcelJS.Row,
-  startCol: number,
+  cols: BlockColumns,
   clientNom: string,
   sheetName: string,
   rowNumber: number,
 ): DossierBulkImportRow | null {
-  const dateRaw = cellToString(row.getCell(startCol).value).trim();
-  const nature = cellToString(row.getCell(startCol + 1).value).trim();
-  const quantite = cellToString(row.getCell(startCol + 2).value).trim();
-  const factureNo = cellToString(row.getCell(startCol + 3).value).trim();
-  const investiRaw = cellToString(row.getCell(startCol + 4).value).trim();
-  const payeRaw = cellToString(row.getCell(startCol + 5).value).trim();
-  const resteRaw = cellToString(row.getCell(startCol + 6).value).trim();
+  const dateRaw = cellToString(row.getCell(cols.dateCol).value).trim();
+  const nature = cellToString(row.getCell(cols.natureCol).value).trim();
+  const quantite = cellToString(row.getCell(cols.quantiteCol).value).trim();
+  const factureNo = cellToString(row.getCell(cols.factureCol).value).trim();
+  const investiRaw = cellToString(row.getCell(cols.investiCol).value).trim();
+  const payeRaw = cellToString(row.getCell(cols.payeCol).value).trim();
+  const resteRaw = cols.resteCol != null ? cellToString(row.getCell(cols.resteCol).value).trim() : "";
 
   const montantInvesti = parseAmount(investiRaw);
   const montantPaye = parseAmount(payeRaw);
@@ -157,6 +198,30 @@ function parseBlockRow(
   };
 }
 
+/**
+ * Distingue un classeur « Journal de caisse » (Dates | Clients | Nature de la dépense |
+ * Entrée | Sortie | Écart, cf. comptabilite-generale-import.ts) d'un classeur « Situation
+ * des clients » — les deux sont des exports du même dossier comptable SLTT, seul le second
+ * convient à cet import. Sert uniquement à orienter l'utilisateur quand aucune ligne n'a
+ * été trouvée, jamais à décider quoi importer.
+ */
+export async function looksLikeJournalCaisseWorkbook(file: ArrayBuffer): Promise<boolean> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(file);
+  for (const sheet of wb.worksheets) {
+    const maxScan = Math.min(20, sheet.rowCount || 20);
+    for (let r = 1; r <= maxScan; r++) {
+      const row = sheet.getRow(r);
+      const headers = new Set<string>();
+      for (let c = 1; c <= Math.min(20, row.cellCount || 20); c++) {
+        headers.add(normalizeHeader(cellToString(row.getCell(c).value)));
+      }
+      if (headers.has("entree") && headers.has("sortie")) return true;
+    }
+  }
+  return false;
+}
+
 /** Parse un classeur multi-clients (une feuille par client) en lignes dossier prêtes à revue. */
 export async function parseDossierBulkXlsx(file: ArrayBuffer): Promise<DossierBulkImportRow[]> {
   const wb = new ExcelJS.Workbook();
@@ -169,12 +234,18 @@ export async function parseDossierBulkXlsx(file: ArrayBuffer): Promise<DossierBu
 
     const headerRowNumber = findHeaderRow(sheet);
     if (headerRowNumber == null) continue;
-    const blockStarts = findHeaderBlocks(sheet.getRow(headerRowNumber));
+    const headerRow = sheet.getRow(headerRowNumber);
+    const blockStarts = findHeaderBlocks(headerRow);
+    const blockColumns = blockStarts.map((start, i) => {
+      const nextStart = blockStarts[i + 1];
+      const endCol = nextStart ? nextStart - 1 : start + 8;
+      return resolveBlockColumns(headerRow, start, endCol);
+    });
 
     sheet.eachRow((row, rowNumber) => {
       if (rowNumber <= headerRowNumber) return;
-      for (const startCol of blockStarts) {
-        const parsed = parseBlockRow(row, startCol, clientNom, sheet.name, rowNumber);
+      for (const cols of blockColumns) {
+        const parsed = parseBlockRow(row, cols, clientNom, sheet.name, rowNumber);
         if (parsed) rows.push(parsed);
       }
     });

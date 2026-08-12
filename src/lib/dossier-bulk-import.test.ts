@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import { parseDossierBulkXlsx } from "./dossier-bulk-import";
+import { parseDossierBulkXlsx, looksLikeJournalCaisseWorkbook } from "./dossier-bulk-import";
 
 /** Reproduit le format maison : « Situation du Client X », en-tête dupliqué, montants « 18 200 000 ». */
 async function buildSampleWorkbook(): Promise<ArrayBuffer> {
@@ -90,6 +90,59 @@ describe("parseDossierBulkXlsx", () => {
     expect(rows[0].warnings).toHaveLength(0);
   });
 
+  it("lit le Reste à payer par libellé même quand le Bénéfice net le précède dans le bloc", async () => {
+    // Cas réel observé : certains clients ont "... | Montant payé | Benefice | Reste a payer"
+    // au lieu de "... | Montant payé | Reste a payer | Benefice net" — une lecture positionnelle
+    // fixe après "Montant payé" lirait alors le bénéfice à la place du reste.
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("AMADOU DEMBELE");
+    sheet.addRow(["bina DEMBELE"]);
+    sheet.addRow([]);
+    sheet.addRow(["Janvier"]);
+    sheet.addRow([
+      "Date", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Benefice", "Reste a payer",
+    ]);
+    sheet.addRow(["28/03/2026", "Machine", "", "", "12 500 000", "10 000 000", "1 700 000", "2 500 000"]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const rows = await parseDossierBulkXlsx(buf);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      montantInvesti: 12_500_000,
+      montantPaye: 10_000_000,
+      resteAPayerFichier: 2_500_000,
+    });
+    // Le reste calculé (2 500 000) doit correspondre au reste lu — pas d'alerte de faux écart.
+    expect(rows[0].warnings).toHaveLength(0);
+  });
+
+  it("reconnaît « Situation de la Cliente X » (variante féminine du titre)", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Ba diallo");
+    sheet.addRow(["Situation de la Cliente ba Diallo"]);
+    sheet.addRow(["Date", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Reste a payer", "Benefice net"]);
+    sheet.addRow(["02/05/2026", "Meubles ci", "1", "", "3 750 000", "", "", "450 000"]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const rows = await parseDossierBulkXlsx(buf);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].clientNom).toBe("ba Diallo");
+  });
+
+  it("trouve l'en-tête même après un bandeau de plus de 15 lignes", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("X");
+    sheet.addRow(["Situation du Client X"]);
+    for (let i = 0; i < 20; i++) sheet.addRow([]);
+    sheet.addRow(["Date", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Reste a payer", "Benefice net"]);
+    sheet.addRow(["01/01/2026", "CONTENEUR", "1", "F1", "1 000 000", "400 000", "600 000", ""]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const rows = await parseDossierBulkXlsx(buf);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].montantInvesti).toBe(1_000_000);
+  });
+
   it("replie sur le nom de la feuille quand aucun titre « Situation du Client » n'est présent", async () => {
     const wb = new ExcelJS.Workbook();
     const sheet = wb.addWorksheet("Mahamadou Drame");
@@ -100,5 +153,32 @@ describe("parseDossierBulkXlsx", () => {
     const rows = await parseDossierBulkXlsx(buf);
     expect(rows).toHaveLength(1);
     expect(rows[0].clientNom).toBe("Mahamadou Drame");
+  });
+});
+
+describe("looksLikeJournalCaisseWorkbook", () => {
+  it("détecte un classeur journal de caisse (Dates | Clients | Nature | Entrée | Sortie | Écart)", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("SLTT");
+    sheet.addRow(["SLTT"]);
+    sheet.addRow([]);
+    sheet.addRow(["Dates", "Clients", "Nature de la depenses", "Entrée", "Sortie", "Ecart"]);
+    sheet.addRow(["12/01/2026", "DOUNIYA INFORM ELECTRO", "ACHAT DE MATERIEL", "", "555 000", ""]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    expect(await looksLikeJournalCaisseWorkbook(buf)).toBe(true);
+    // Et confirme que ce même fichier ne produit aucune ligne dossier exploitable.
+    expect(await parseDossierBulkXlsx(buf)).toHaveLength(0);
+  });
+
+  it("ne signale pas un classeur « Situation des clients » normal comme un journal de caisse", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("X");
+    sheet.addRow(["Situation du Client X"]);
+    sheet.addRow(["Date", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Reste a payer", "Benefice net"]);
+    sheet.addRow(["01/01/2026", "CONTENEUR", "1", "F1", "1 000 000", "400 000", "600 000", ""]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    expect(await looksLikeJournalCaisseWorkbook(buf)).toBe(false);
   });
 });

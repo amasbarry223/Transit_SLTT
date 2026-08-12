@@ -177,8 +177,10 @@
   "175": "@radix-ui/react-dropdown-menu",
   "176": "InstallPWA.tsx",
   "177": "lignes-card.tsx",
-  "178": "dispatch",
-  "179": "confirm-transitions.ts",
+  "178": "recap-client-card.tsx",
+  "179": "payment-dialog.tsx",
   "180": "page.tsx",
-  "181": "cmdk"
+  "181": "cmdk",
+  "182": "factures-slice.test.ts",
+  "183": "class-variance-authority"
 }

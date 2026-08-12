@@ -2440,18 +2440,18 @@
     "semantic_hash": ""
   },
   "src/components/sltt/documents/dossier-bulk-import-dialog.tsx": {
-    "mtime": 1785889977.8537974,
-    "ast_hash": "542cbb96acd6250d14a432de8012a11d",
+    "mtime": 1786514148.8399546,
+    "ast_hash": "bb2db9e3cb40e2a0af536b4544680033",
     "semantic_hash": ""
   },
   "src/lib/dossier-bulk-import.test.ts": {
-    "mtime": 1785889996.9954681,
-    "ast_hash": "fb9f1cdee933bec32a3f1cd7410f6ef1",
+    "mtime": 1786514191.0309937,
+    "ast_hash": "e78a3c69dbb46635cf6a721c232bd157",
     "semantic_hash": ""
   },
   "src/lib/dossier-bulk-import.ts": {
-    "mtime": 1785889965.3346639,
-    "ast_hash": "08995740c73e9263486fd03e42d618e0",
+    "mtime": 1786514123.9239924,
+    "ast_hash": "0989dad6e0e9aa0a0884b36c439335fd",
     "semantic_hash": ""
   },
   "src/components/sltt/danger-confirm-dialog.tsx": {
