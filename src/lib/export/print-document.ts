@@ -11,6 +11,7 @@ import {
   type SocieteBrand,
   type SocieteLegalInfo,
 } from "@/lib/societe-brand";
+import { toast } from "@/hooks/use-toast";
 import { htmlEscape } from "./html-escape";
 import { PRINT_HTML_DOCUMENT_CSS } from "./print-styles";
 
@@ -85,12 +86,17 @@ export function acquirePrintTarget(): Window | null {
     iframe.setAttribute("aria-hidden", "true");
     iframe.setAttribute("title", "Impression SLTT");
     iframe.setAttribute("tabindex", "-1");
+    // Dimensions réelles (A4) requises : une iframe 0×0 fait caler
+    // indéfiniment la génération d'aperçu du dialogue d'impression système
+    // (imprimante physique) sous Chromium, même si « Enregistrer en PDF »
+    // et les navigateurs mobiles (pas de round-trip vers un pilote système)
+    // ne sont pas affectés — d'où le symptôme desktop-only.
     Object.assign(iframe.style, {
       position: "fixed",
-      right: "0",
-      bottom: "0",
-      width: "0",
-      height: "0",
+      left: "-10000px",
+      top: "0",
+      width: "21cm",
+      height: "29.7cm",
       border: "0",
       opacity: "0",
       pointerEvents: "none",
@@ -113,7 +119,15 @@ export function warnPopupBlocked(): void {
 
 /** Attend le chargement des images avant d'ouvrir la boîte d'impression. */
 export function triggerPrint(win: Window, delayMs = PRINT_WINDOW_READY_MS): void {
+  // Retour visuel le temps de préparer le document (chargement du logo,
+  // etc.) — sans ça le clic sur « Imprimer » ne montre rien avant que la
+  // boîte de dialogue système n'apparaisse, ce qui se lit comme un blocage.
+  const progress = toast({
+    title: "Préparation de l'impression…",
+    description: "La boîte de dialogue va s'ouvrir dans un instant.",
+  });
   const doPrint = () => {
+    progress.dismiss();
     try {
       win.focus();
     } catch {

@@ -80,6 +80,14 @@ export async function exportToExcel<T>(
 ): Promise<void> {
   if (rows.length === 0) return;
 
+  // Retour visuel immédiat : le mapping synchrone des lignes ci-dessous puis
+  // l'aller-retour réseau peuvent prendre 1-3s sur de gros exports sans que
+  // rien ne bouge à l'écran sinon — perçu comme un blocage.
+  const progress = toast({
+    title: "Génération du fichier Excel…",
+    description: "Veuillez patienter.",
+  });
+
   // Claim le geste utilisateur de façon synchrone (certains navigateurs
   // sinon bloquent le téléchargement après l'await fetch).
   const downloadTab =
@@ -114,6 +122,7 @@ export async function exportToExcel<T>(
     const blob = new Blob([bytes], { type: XLSX_MIME });
     downloadBlob(blob, `${baseName}.xlsx`);
     downloadTab?.close();
+    progress.dismiss();
 
     if (audit) {
       void useStore.getState().addAuditLog(
@@ -124,6 +133,7 @@ export async function exportToExcel<T>(
     }
   } catch (error) {
     downloadTab?.close();
+    progress.dismiss();
     console.error("[SLTT] Export Excel:", error);
     toast({
       title: "Export Excel impossible",
