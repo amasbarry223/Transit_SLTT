@@ -8,28 +8,30 @@ import { Topbar } from "./topbar";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 
-import { DashboardScreen } from "@/components/sltt/screens/dashboard";
-import { DossiersListScreen } from "@/components/sltt/screens/dossiers-list";
-import { DossierFormScreen } from "@/components/sltt/screens/dossier-form";
-import { DossierDetailScreen } from "@/components/sltt/screens/dossier-detail";
-import { ComptabiliteScreen } from "@/components/sltt/screens/comptabilite";
-import { RecusPaiementScreen } from "@/components/sltt/screens/recus-paiement";
-import { BilansScreen } from "@/components/sltt/screens/bilans";
-import { EntreposageScreen } from "@/components/sltt/screens/entreposage";
-import { BonsScreen } from "@/components/sltt/screens/bons";
-import { ClientsScreen } from "@/components/sltt/screens/clients";
-import { ClientFicheScreen } from "@/components/sltt/screens/client-fiche";
-import { ParametresScreen } from "@/components/sltt/screens/parametres";
-import { DevisScreen } from "@/components/sltt/screens/devis";
-import { DevisDetailScreen } from "@/components/sltt/screens/devis-detail";
-import { CalendrierScreen } from "@/components/sltt/screens/calendrier";
-import { TransporteursScreen } from "@/components/sltt/screens/transporteurs";
-import { FacturesScreen } from "@/components/sltt/screens/factures";
-import { FactureDetailScreen } from "@/components/sltt/screens/facture-detail";
-import { FournisseursScreen } from "@/components/sltt/screens/fournisseurs";
-import { ContratsScreen } from "@/components/sltt/screens/contrats";
-import { ContratDetailScreen } from "@/components/sltt/screens/contrat-detail";
-import { ArchivesScreen } from "@/components/sltt/screens/archives";
+import {
+  ArchivesScreen,
+  BilansScreen,
+  BonsScreen,
+  CalendrierScreen,
+  ClientFicheScreen,
+  ClientsScreen,
+  ComptabiliteScreen,
+  ContratDetailScreen,
+  ContratsScreen,
+  DashboardScreen,
+  DevisDetailScreen,
+  DevisScreen,
+  DossierDetailScreen,
+  DossierFormScreen,
+  DossiersListScreen,
+  EntreposageScreen,
+  FactureDetailScreen,
+  FacturesScreen,
+  FournisseursScreen,
+  ParametresScreen,
+  RecusPaiementScreen,
+  TransporteursScreen,
+} from "@/components/sltt/screens";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
 import { cn } from "@/lib/utils";

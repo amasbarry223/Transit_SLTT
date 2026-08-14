@@ -15,6 +15,7 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore, type ClientInput } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-error";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -270,7 +271,8 @@ export function ClientFicheScreen() {
         classeurFiltered,
         { module: "Clients" },
       );
-    } catch {
+    } catch (error) {
+      toastError(toast, error, "Impossible de générer l'export Excel.");
       return;
     }
     toast({

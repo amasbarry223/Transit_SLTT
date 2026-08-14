@@ -22,6 +22,7 @@ import { resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-error";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 
@@ -144,7 +145,8 @@ export function EntreposageScreen() {
         rows,
         { module: "Stock" },
       );
-    } catch {
+    } catch (error) {
+      toastError(toast, error, "Impossible d'exporter l'inventaire.");
       return;
     }
     toast({

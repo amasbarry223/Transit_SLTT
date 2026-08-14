@@ -9,6 +9,7 @@ import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
 import { sommeFacturesEncaissees } from "@/lib/client-stats";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-error";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
 import { filterBySociete } from "@/lib/filter-by-societe";
@@ -215,7 +216,8 @@ export function useBilansScreen() {
         sortedRecap,
         { module: "Comptabilité" },
       );
-    } catch {
+    } catch (error) {
+      toastError(toast, error, "Impossible de générer l'export Excel.");
       return;
     }
     toast({

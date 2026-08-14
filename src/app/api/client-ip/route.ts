@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { toApiErrorResponse, apiSuccessResponse } from "@/lib/errors";
+import type { NextRequest } from "next/server";
 
 function extractClientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    // Le proxy de confiance ajoute l'IP réelle en dernier ; les segments
-    // précédents sont fournis par le client et donc falsifiables.
     const parts = forwarded
       .split(",")
-      .map((s) => s.trim())
+      .map((segment) => segment.trim())
       .filter(Boolean);
     const last = parts[parts.length - 1];
     if (last) return last;
@@ -20,5 +19,9 @@ function extractClientIp(request: NextRequest): string {
 }
 
 export function GET(request: NextRequest) {
-  return NextResponse.json({ ip: extractClientIp(request) });
+  try {
+    return apiSuccessResponse({ ip: extractClientIp(request) });
+  } catch (error) {
+    return toApiErrorResponse(error);
+  }
 }

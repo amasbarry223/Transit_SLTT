@@ -12,13 +12,9 @@ import {
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { formatFCFA, formatDateShort } from "@/lib/format";
-import { BRAND } from "@/lib/brand-colors";
-import { printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
+import { formatFCFA } from "@/lib/format";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { InfoCallout } from "@/components/sltt/info-callout";
-import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
@@ -36,8 +32,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn, getErrorMessage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useDossierFormState } from "@/components/sltt/dossier-form/use-dossier-form-state";
+import { useDossierFormActions } from "@/components/sltt/dossier-form/use-dossier-form-actions";
 import { DossierAmountsSection } from "@/components/sltt/dossier-form/dossier-amounts-section";
 import {
   DossierWizardProgress,
@@ -58,15 +55,11 @@ export function DossierFormScreen() {
 function DossierFormInner() {
   const { selectedId, dossierFormMode, go } = useNav();
   const { selectedSocieteId } = useUiPrefs();
-  const { toast } = useToast();
-  const canWrite = usePermission("dossiers:write");
   const canTransition = usePermission("dossiers:transition");
 
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
   const dossiers = useStore((s) => s.dossiers);
-  const addDossier = useStore((s) => s.addDossier);
-  const updateDossier = useStore((s) => s.updateDossier);
   const dossierSeq = useStore((s) => s.dossierSeq);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
@@ -85,6 +78,13 @@ function DossierFormInner() {
     defaultAnnexeId: activeAnnexeId ?? undefined,
   });
   const annexeCode = annexes.find((a) => a.id === form.annexeId)?.code;
+
+  const { canWrite, handleFieldBlur, handleBack, handleSave, handlePdf } = useDossierFormActions({
+    form,
+    isEdit,
+    selectedId,
+    annexeCode,
+  });
 
   useUnsavedChangesWarning(form.isDirty);
 
@@ -108,109 +108,6 @@ function DossierFormInner() {
         </Button>
       </div>
     );
-  }
-
-  function handleFieldBlur(field: keyof typeof form.errors) {
-    form.setTouched((p) => ({ ...p, [field]: true }));
-    const values: Record<keyof typeof form.errors, string> = {
-      societeId: form.societeId,
-      annexeId: form.annexeId,
-      clientId: form.clientId,
-      nature: form.nature,
-      bl: form.bl,
-      camion: form.camion,
-      date: form.date,
-    };
-    form.validateField(field, values[field]);
-  }
-
-  function handleBack() {
-    if (form.isDirty) {
-      form.setConfirmLeaveOpen(true);
-    } else {
-      go("dossiers");
-    }
-  }
-
-  async function handleSave() {
-    if (!canWrite) {
-      toast({
-        title: "Action non autorisée",
-        description: "Vous n'avez pas la permission d'enregistrer un dossier.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!form.validate()) {
-      toast({
-        title: "Champs manquants",
-        description: "Veuillez remplir tous les champs obligatoires.",
-        variant: "destructive",
-      });
-      return;
-    }
-    const clientNom = clients.find((c) => c.id === form.clientId)?.nom ?? "";
-    const input = form.buildSaveInput(clientNom);
-    try {
-      if (isEdit && selectedId) {
-        await updateDossier(selectedId, input);
-        toast({ title: "Succès", description: "Dossier mis à jour." });
-      } else {
-        await addDossier(input);
-        toast({ title: "Succès", description: "Dossier créé avec succès." });
-      }
-      go("dossiers");
-    } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        description: getErrorMessage(err, "Impossible d'enregistrer le dossier."),
-        variant: "destructive",
-      });
-    }
-  }
-
-  function handlePdf() {
-    const clientNom = clients.find((c) => c.id === form.clientId)?.nom ?? "—";
-    const coutLabels = resolveDossierCoutLabels(annexeCode);
-    printHTML(
-      `Dossier ${form.reference}`,
-      `
-      <h1>Dossier de transit</h1>
-      <div class="subtitle">Référence : <strong>${htmlEscape(form.reference)}</strong> · Statut : ${htmlEscape(form.statut)}</div>
-      <table>
-        <tbody>
-          <tr><th style="width:35%">Client</th><td>${htmlEscape(clientNom)}</td></tr>
-          <tr><th>Nature de la marchandise</th><td>${htmlEscape(form.nature) || "—"}</td></tr>
-          <tr><th>N° de BL</th><td>${htmlEscape(form.bl) || "—"}</td></tr>
-          <tr><th>N° du camion</th><td>${htmlEscape(form.camion) || "—"}</td></tr>
-          <tr><th>Date</th><td>${form.date ? formatDateShort(form.date) : "—"}</td></tr>
-        </tbody>
-      </table>
-      <h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Montants (FCFA)</h2>
-      <table>
-        <tbody>
-          <tr><th style="width:35%">${htmlEscape(coutLabels.droitDouane)}</th><td class="num">${formatFCFA(form.dN, false)}</td></tr>
-          <tr><th>${htmlEscape(coutLabels.fraisCircuit)}</th><td class="num">${formatFCFA(form.fN, false)}</td></tr>
-          <tr><th>${htmlEscape(coutLabels.fraisPrestation)}</th><td class="num">${formatFCFA(form.pN, false)}</td></tr>
-          <tr><th>Montant investi</th><td class="num">${formatFCFA(form.iN, false)}</td></tr>
-          <tr><th>Montant payé</th><td class="num">${formatFCFA(form.montantPaye, false)}</td></tr>
-          <tr><th>Reste à payer</th><td class="num">${formatFCFA(form.reste, false)}</td></tr>
-          <tr class="total-row">
-            <th>Marge calculée</th>
-            <td class="num" style="color:${form.ecart >= 0 ? "#16853f" : "#dc2626"}">
-              ${form.ecart >= 0 ? "+" : ""}${form.ecart.toLocaleString("fr-FR")}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
-    `,
-      resolvePrintHTMLBrand(societes),
-    );
-    toast({
-      title: "PDF généré",
-      description: "Le document s'est ouvert dans une nouvelle fenêtre.",
-    });
   }
 
   return (
@@ -323,7 +220,7 @@ function DossierFormInner() {
               onDroitDouaneChange={form.setDroitDouane}
               onFraisCircuitChange={form.setFraisCircuit}
               onFraisPrestationChange={form.setFraisPrestation}
-              montantInvesti={form.iN}
+              montantInvesti={form.totalImportAmount}
               ecart={form.ecart}
               annexeCode={annexeCode}
             />
@@ -367,8 +264,8 @@ function DossierFormInner() {
               />
 
               <div className="divide-y divide-border">
-                <SummaryRow label="Frais prestation" value={formatFCFA(form.pN)} />
-                <SummaryRow label="Montant investi" value={formatFCFA(form.iN)} />
+                <SummaryRow label="Frais prestation" value={formatFCFA(form.serviceFeesAmount)} />
+                <SummaryRow label="Montant investi" value={formatFCFA(form.totalImportAmount)} />
                 <SummaryRow label="Reste à payer" value={formatFCFA(form.reste)} tone="amber" />
               </div>
 

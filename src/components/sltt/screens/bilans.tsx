@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatFCFA } from "@/lib/format";
+import { getRecoveryRateColor } from "@/lib/constants";
 import { EvolutionChartCard } from "@/components/sltt/bilans/evolution-chart-card";
 import { RecapClientCard } from "@/components/sltt/bilans/recap-client-card";
 import { RepartitionCard } from "@/components/sltt/bilans/repartition-card";
@@ -104,11 +105,7 @@ export function BilansScreen() {
           tone={
             screen.recapTotaux.investi === 0
               ? "blue"
-              : screen.tauxRecouvrement >= 80
-              ? "emerald"
-              : screen.tauxRecouvrement >= 50
-              ? "amber"
-              : "red"
+              : getRecoveryRateColor(screen.tauxRecouvrement)
           }
           sublabel={screen.periodeLabel}
         />

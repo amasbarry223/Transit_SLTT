@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { formatFCFA } from "@/lib/format";
+import { RECOVERY_RATE_THRESHOLDS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { PieTooltip } from "./chart-tooltips";
 
@@ -80,9 +81,9 @@ export function RepartitionCard({ pieData, pieTotal, tauxRecouvrement }: Reparti
               <p
                 className={cn(
                   "mt-0.5 text-xl font-bold tabular-nums",
-                  tauxRecouvrement >= 80
+                  tauxRecouvrement >= RECOVERY_RATE_THRESHOLDS.good
                     ? "text-emerald-600 dark:text-emerald-400"
-                    : tauxRecouvrement >= 50
+                    : tauxRecouvrement >= RECOVERY_RATE_THRESHOLDS.medium
                     ? "text-amber-600 dark:text-amber-400"
                     : "text-red-600 dark:text-red-400",
                 )}

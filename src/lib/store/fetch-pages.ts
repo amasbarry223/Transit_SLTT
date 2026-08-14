@@ -94,7 +94,7 @@ export async function fetchAllPaged<T>(
 
 /** Helper typé pour supabase.from(...).select(...).order(...). */
 export function pagedSelect(
-  client: SupabaseClient<any>,
+  client: SupabaseClient,
   table: string,
   select: string,
   order?: { column: string; ascending?: boolean },

@@ -1,9 +1,10 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { AuthError } from "@/lib/auth/require-admin";
 import { normalizePermissions } from "@/lib/permissions";
 
 /** Bloque toute action d'un non-admin sur un compte qui est déjà Administrateur. */
 export async function assertCanTouchTarget(
-  admin: { from: (table: string) => any },
+  admin: SupabaseClient,
   targetId: string,
   isAdmin: boolean,
 ) {
@@ -40,7 +41,7 @@ export function assertPermissionCeiling(
  * une visibilité cross-annexe via un compte tiers).
  */
 export async function assertAnnexeCeiling(
-  admin: { from: (table: string) => any },
+  admin: SupabaseClient,
   actorId: string,
   requestedAnnexeIds: string[],
   isAdmin: boolean,

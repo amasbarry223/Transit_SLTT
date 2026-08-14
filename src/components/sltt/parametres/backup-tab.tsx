@@ -6,6 +6,8 @@ import { useStore } from "@/lib/store";
 import type { BackupExportPayload } from "@/lib/store/backup-slice";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/utils";
+import { backupRestoreSchema } from "@/lib/schemas/store-inputs";
+import { zodErrorMessage } from "@/lib/api/schemas";
 import { formatFileSize } from "@/lib/file-utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,16 +88,18 @@ export function BackupTab() {
   async function handleFileSelected(file: File) {
     try {
       const text = await file.text();
-      const parsed = JSON.parse(text) as Partial<BackupExportPayload>;
-      if (!parsed || typeof parsed !== "object" || !parsed.data || typeof parsed.data !== "object") {
-        throw new Error("Fichier de sauvegarde invalide : structure inattendue.");
+      const raw = JSON.parse(text);
+      const parsed = backupRestoreSchema.safeParse(raw);
+      if (!parsed.success) {
+        throw new Error(zodErrorMessage(parsed.error));
       }
-      const tableCount = Object.keys(parsed.data).length;
-      const rowCount = Object.values(parsed.data).reduce(
+      const { data } = parsed.data;
+      const tableCount = Object.keys(data).length;
+      const rowCount = Object.values(data).reduce(
         (sum, rows) => sum + (Array.isArray(rows) ? rows.length : 0),
         0,
       );
-      setPendingRestore({ fileName: file.name, data: parsed.data, tableCount, rowCount });
+      setPendingRestore({ fileName: file.name, data, tableCount, rowCount });
     } catch (e) {
       toast({
         title: "Fichier illisible",

@@ -8,6 +8,7 @@ import { formatDateShort, formatFCFA } from "@/lib/format";
 import { useNav } from "@/lib/nav-store";
 import { LEGACY_TRANSIT_SOCIETE_ID, resolveTransitSociete } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-error";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
@@ -224,7 +225,8 @@ export function useEcrituresScreen() {
         filtered,
         { module: "Comptabilité" },
       );
-    } catch {
+    } catch (error) {
+      toastError(toast, error, "Impossible de générer l'export Excel.");
       return;
     }
     toast({ title: "Export Excel généré", description: `${filtered.length} écriture${filtered.length !== 1 ? "s" : ""} exportée${filtered.length !== 1 ? "s" : ""}.` });

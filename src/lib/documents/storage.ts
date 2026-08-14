@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
 
 export const DOCUMENTS_BUCKET = "documents";
 
@@ -27,7 +28,7 @@ export async function uploadDocumentBlob(
 
 export async function getSignedDocumentUrl(
   storagePath: string,
-  expiresIn = 3600,
+  expiresIn = SIGNED_URL_TTL_SEC,
 ): Promise<string> {
   // Pont legacy : fichiers encore dans dossier_fichiers (data_url / bucket public).
   if (storagePath.startsWith("legacy/dossier_fichiers/")) {

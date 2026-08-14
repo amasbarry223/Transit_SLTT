@@ -19,9 +19,17 @@ function assertNotAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 }
 
+type TesseractModule = {
+  recognize: (
+    image: Blob,
+    lang: string,
+    options: typeof OCR_WORKER_OPTIONS,
+  ) => Promise<{ data: { text?: string; confidence?: number } }>;
+};
+
 /** Reconnaît une image ; abandonne proprement si AbortSignal se déclenche. */
 async function recognizeWithAbort(
-  Tesseract: any,
+  Tesseract: TesseractModule,
   img: Blob,
   signal?: AbortSignal,
 ): Promise<{ text: string; confidence: number }> {

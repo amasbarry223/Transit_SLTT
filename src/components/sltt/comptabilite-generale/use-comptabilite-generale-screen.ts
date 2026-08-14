@@ -13,6 +13,7 @@ import {
 } from "@/lib/comptabilite-generale";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-error";
 import { exportToExcel } from "@/lib/export";
 import { formatDateShort } from "@/lib/format";
 import { PAGE_SIZE } from "./shared";
@@ -187,7 +188,8 @@ export function useComptabiliteGeneraleScreen() {
         sorted,
         { module: "Comptabilité" },
       );
-    } catch {
+    } catch (error) {
+      toastError(toast, error, "Impossible de générer l'export Excel.");
       return;
     }
     toast({ title: "Export Excel généré", description: `${sorted.length} opération${sorted.length !== 1 ? "s" : ""} exportée${sorted.length !== 1 ? "s" : ""}.` });

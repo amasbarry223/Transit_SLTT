@@ -90,19 +90,25 @@ export function useDossierFormState({
   const showWizard = !isEdit;
   const showStep = (step: number) => isEdit || !showWizard || wizardStep === step;
 
-  const dN = parseAmount(droitDouane);
-  const fN = parseAmount(fraisCircuit);
-  const pN = parseAmount(fraisPrestation);
-  const iN = dN + fN + pN;
+  const customsDutyAmount = parseAmount(droitDouane);
+  const circuitFeesAmount = parseAmount(fraisCircuit);
+  const serviceFeesAmount = parseAmount(fraisPrestation);
+  const totalImportAmount = customsDutyAmount + circuitFeesAmount + serviceFeesAmount;
   const montantPaye = existing?.montantPaye ?? 0;
 
   const ecart = useMemo(
-    () => calculerEcart({ droitDouane: dN, fraisCircuit: fN, fraisPrestation: pN, montantInvesti: iN }),
-    [pN, dN, fN, iN],
+    () =>
+      calculerEcart({
+        droitDouane: customsDutyAmount,
+        fraisCircuit: circuitFeesAmount,
+        fraisPrestation: serviceFeesAmount,
+        montantInvesti: totalImportAmount,
+      }),
+    [serviceFeesAmount, customsDutyAmount, circuitFeesAmount, totalImportAmount],
   );
   const reste = useMemo(
-    () => resteAPayer({ montantInvesti: iN, montantPaye }),
-    [iN, montantPaye],
+    () => resteAPayer({ montantInvesti: totalImportAmount, montantPaye }),
+    [totalImportAmount, montantPaye],
   );
 
   const selectedSociete = societes.find((item) => item.id === societeId);
@@ -254,10 +260,10 @@ export function useDossierFormState({
       noConteneur: noConteneur || undefined,
       portEntree: portEntree || undefined,
       poidsTotal: poidsTotal ? parseFloat(poidsTotal) : undefined,
-      droitDouane: dN,
-      fraisCircuit: fN,
-      fraisPrestation: pN,
-      montantInvesti: iN,
+      droitDouane: customsDutyAmount,
+      fraisCircuit: circuitFeesAmount,
+      fraisPrestation: serviceFeesAmount,
+      montantInvesti: totalImportAmount,
       statut,
       notes,
     };
@@ -311,10 +317,10 @@ export function useDossierFormState({
     wizardStep,
     showWizard,
     showStep,
-    dN,
-    fN,
-    pN,
-    iN,
+    customsDutyAmount,
+    circuitFeesAmount,
+    serviceFeesAmount,
+    totalImportAmount,
     montantPaye,
     ecart,
     reste,
