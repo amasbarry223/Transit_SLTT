@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { SLTTState } from "@/lib/store";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export interface BackupExportPayload {
   meta: { exportedAt: string; tables: string[] };
@@ -42,8 +43,8 @@ export const createBackupSlice: StateCreator<SLTTState, [], [], BackupSlice> = (
     const report = (data as Record<string, number>) ?? {};
 
     await get().addAuditLog(
-      "Système",
-      "Suppression",
+      AUDIT_MODULE.Systeme,
+      AUDIT_ACTION.Suppression,
       `Purge complète des données métier — ${sumCounts(report)} ligne(s) supprimée(s) sur ${Object.keys(report).length} table(s)`,
     );
     await get().refetchData();
@@ -62,8 +63,8 @@ export const createBackupSlice: StateCreator<SLTTState, [], [], BackupSlice> = (
         ? ` — ${missingTables.length} table(s) absente(s) du fichier (restées vides) : ${missingTables.join(", ")}`
         : "";
     await get().addAuditLog(
-      "Système",
-      "Création",
+      AUDIT_MODULE.Systeme,
+      AUDIT_ACTION.Creation,
       `Restauration d'une sauvegarde — ${sumCounts(restored)} ligne(s) restaurée(s) sur ${Object.keys(restored).length} table(s)${missingNote}`,
     );
     await get().refetchData();

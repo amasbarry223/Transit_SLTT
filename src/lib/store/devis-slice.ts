@@ -12,6 +12,7 @@ import {
   extractTrailingSeq,
   insertWithReferenceRetry,
 } from "@/lib/store/reference";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 function currentUserAnnexeIds(get: () => SLTTState): string[] {
   const userId = useSession.getState().currentUserId;
@@ -101,7 +102,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       devis: [newDevis, ...s.devis],
       devisSeq: useAnnexeNumbering ? s.devisSeq : finalSeq + 1,
     }));
-    await get().addAuditLog("Devis", "Création", `Devis ${reference} créé — Client ${newDevis.clientNom}`);
+    await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Creation, `Devis ${reference} créé — Client ${newDevis.clientNom}`);
     return newDevis;
   },
 
@@ -133,19 +134,19 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     const existing = get().devis.find((d) => d.id === id);
     set((s) => ({
-      devis: s.devis.map((d) =>
-        d.id === id
+      devis: s.devis.map((devisItem) =>
+        devisItem.id === id
           ? {
-              ...d,
+              ...devisItem,
               ...input,
               societeNom,
               total,
             }
-          : d
+          : devisItem
       ),
     }));
     if (existing) {
-      await get().addAuditLog("Devis", "Modification", `Devis ${existing.reference} modifié`);
+      await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Modification, `Devis ${existing.reference} modifié`);
     }
   },
 
@@ -166,7 +167,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       devis: s.devis.map((d) => (d.id === id ? { ...d, statut } : d)),
     }));
     if (existing) {
-      await get().addAuditLog("Devis", "Modification", `Devis ${existing.reference} → ${statut}`);
+      await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Modification, `Devis ${existing.reference} → ${statut}`);
     }
   },
 
@@ -184,15 +185,17 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       .in("id", obsoletes.map((o) => o.id));
 
     set((s) => ({
-      devis: s.devis.map((d) =>
-        d.dateValidite < today && d.statut !== "Accepté" && d.statut !== "Refusé"
-          ? { ...d, statut: "Expiré" as DevisStatut }
-          : d
+      devis: s.devis.map((devisItem) =>
+        devisItem.dateValidite < today &&
+        devisItem.statut !== "Accepté" &&
+        devisItem.statut !== "Refusé"
+          ? { ...devisItem, statut: "Expiré" as DevisStatut }
+          : devisItem
       ),
     }));
     await get().addAuditLog(
-      "Devis",
-      "Modification",
+      AUDIT_MODULE.Devis,
+      AUDIT_ACTION.Modification,
       `${obsoletes.length} devis expiré${obsoletes.length !== 1 ? "s" : ""} automatiquement`,
     );
   },
@@ -259,14 +262,14 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     }
 
     set((s) => ({
-      devis: s.devis.map((d) =>
-        d.id === id ? { ...d, statut: "Accepté", dossierId: newDossier.id } : d
+      devis: s.devis.map((devisItem) =>
+        devisItem.id === id ? { ...devisItem, statut: "Accepté", dossierId: newDossier.id } : devisItem
       ),
     }));
 
     await get().addAuditLog(
-      "Devis",
-      "Validation",
+      AUDIT_MODULE.Devis,
+      AUDIT_ACTION.Validation,
       `Devis ${dev.reference} converti en dossier ${newDossier.reference}`,
     );
     return newDossier;
@@ -281,7 +284,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       devis: s.devis.filter((d) => d.id !== id),
     }));
     if (existing) {
-      await get().addAuditLog("Devis", "Suppression", `Devis ${existing.reference} supprimé`);
+      await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Suppression, `Devis ${existing.reference} supprimé`);
     }
   },
 });

@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import type { SLTTState } from "@/lib/store";
 import type { ExcelWorkbook, ExcelWorkbookRow } from "@/lib/excel/types";
 import { useSession } from "@/lib/session/session-store";
+import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 const BUCKET = "excel-workbooks";
 const SNAPSHOT_MAX_BYTES = 800_000;
@@ -144,8 +146,8 @@ export const createExcelWorkbooksSlice: StateCreator<
       // Audit uniquement sur save manuel (pas autosave silencieux) — géré par l'appelant via silent.
       if (!input.silent) {
         await get().addAuditLog(
-          "Comptabilité",
-          "Modification",
+          AUDIT_MODULE.Comptabilite,
+          AUDIT_ACTION.Modification,
           `Classeur Excel « ${nom} » enregistré (v${nextVersion})`,
           input.clientId,
         );
@@ -171,8 +173,8 @@ export const createExcelWorkbooksSlice: StateCreator<
     set((s) => ({ excelWorkbooks: [mapped, ...s.excelWorkbooks] }));
     if (!input.silent) {
       await get().addAuditLog(
-        "Comptabilité",
-        "Création",
+        AUDIT_MODULE.Comptabilite,
+        AUDIT_ACTION.Creation,
         `Classeur Excel « ${nom} » créé`,
         input.clientId,
       );
@@ -183,7 +185,7 @@ export const createExcelWorkbooksSlice: StateCreator<
   getSignedExcelWorkbookUrl: async (storagePath) => {
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUrl(storagePath, 3600);
+      .createSignedUrl(storagePath, SIGNED_URL_TTL_SEC);
     if (error) throw error;
     return data.signedUrl;
   },

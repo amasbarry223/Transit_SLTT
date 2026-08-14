@@ -13,6 +13,7 @@ import {
   extractTrailingSeq,
   insertWithReferenceRetry,
 } from "@/lib/store/reference";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapFactureFromDb(row: FactureRow): Facture {
   return {
@@ -36,14 +37,14 @@ export function mapFactureFromDb(row: FactureRow): Facture {
     notes: row.notes,
     creePar: row.cree_par,
     creeLe: row.cree_le ?? row.created_at,
-    lignes: (row.facture_lignes || []).map((l) => ({
-      id: l.id,
-      description: l.description,
-      quantite: Number(l.quantite),
-      prixUnitaire: Number(l.prix_unitaire),
-      montantHT: Number(l.montant_ht),
-      compagnie: l.compagnie || undefined,
-      bordereauLivraison: l.bordereau_livraison || undefined,
+    lignes: (row.facture_lignes || []).map((ligne) => ({
+      id: ligne.id,
+      description: ligne.description,
+      quantite: Number(ligne.quantite),
+      prixUnitaire: Number(ligne.prix_unitaire),
+      montantHT: Number(ligne.montant_ht),
+      compagnie: ligne.compagnie || undefined,
+      bordereauLivraison: ligne.bordereau_livraison || undefined,
     })),
   };
 }
@@ -57,6 +58,16 @@ export interface FacturesSlice {
   updateFactureStatut: (id: string, statut: FactureStatut) => Promise<void>;
   recordFacturePaiement: (id: string, montant: number) => Promise<void>;
   patchFactureMontantPaye: (id: string, montantPaye: number) => Promise<void>;
+}
+
+function computeInvoiceAmounts(
+  lignes: { quantite: number; prixUnitaire: number }[],
+  vatRate: number,
+) {
+  const amountExclTax = lignes.reduce((sum, line) => sum + line.quantite * line.prixUnitaire, 0);
+  const vatAmount = Math.round(amountExclTax * (vatRate / 100));
+  const amountInclTax = amountExclTax + vatAmount;
+  return { amountExclTax, vatAmount, amountInclTax };
 }
 
 export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice> = (set, get) => ({
@@ -74,9 +85,10 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       get().factureSeq,
     );
 
-    const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
-    const TVA = Math.round(HT * (input.tauxTVA / 100));
-    const TTC = HT + TVA;
+    const { amountExclTax, vatAmount, amountInclTax } = computeInvoiceAmounts(
+      input.lignes,
+      input.tauxTVA,
+    );
     const creePar = getConnectedUserName();
 
     // Retry avec numéro incrémenté si deux créations concurrentes ont calculé
@@ -94,9 +106,9 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
           date_echeance: input.dateEcheance,
           statut: "Brouillon",
           taux_tva: input.tauxTVA,
-          montant_ht: HT,
-          montant_tva: TVA,
-          montant_ttc: TTC,
+          montant_ht: amountExclTax,
+          montant_tva: vatAmount,
+          montant_ttc: amountInclTax,
           montant_paye: 0,
           notes: input.notes,
           cree_par: creePar,
@@ -109,14 +121,14 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       const { error: errLignes } = await supabase
         .from("facture_lignes")
         .insert(
-          input.lignes.map((l) => ({
+          input.lignes.map((ligne) => ({
             facture_id: dbFact.id,
-            description: l.description,
-            quantite: l.quantite,
-            prix_unitaire: l.prixUnitaire,
-            montant_ht: l.quantite * l.prixUnitaire,
-            compagnie: l.compagnie || null,
-            bordereau_livraison: l.bordereauLivraison || null,
+            description: ligne.description,
+            quantite: ligne.quantite,
+            prix_unitaire: ligne.prixUnitaire,
+            montant_ht: ligne.quantite * ligne.prixUnitaire,
+            compagnie: ligne.compagnie || null,
+            bordereau_livraison: ligne.bordereauLivraison || null,
           })),
         );
       if (errLignes) throw errLignes;
@@ -141,8 +153,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       };
     });
     await get().addAuditLog(
-      "Factures",
-      "Création",
+      AUDIT_MODULE.Factures,
+      AUDIT_ACTION.Creation,
       `Facture ${numero} créée`,
       newFacture.clientId,
       { sourceType: "facture", sourceId: newFacture.id },
@@ -152,9 +164,10 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
 
   updateFacture: async (id, input) => {
     const existing = get().factures.find((f) => f.id === id);
-    const HT = input.lignes.reduce((sum, l) => sum + l.quantite * l.prixUnitaire, 0);
-    const TVA = Math.round(HT * (input.tauxTVA / 100));
-    const TTC = HT + TVA;
+    const { amountExclTax, vatAmount, amountInclTax } = computeInvoiceAmounts(
+      input.lignes,
+      input.tauxTVA,
+    );
 
     const { error: errFact } = await supabase
       .from("factures")
@@ -166,22 +179,22 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
         date: input.date,
         date_echeance: input.dateEcheance,
         taux_tva: input.tauxTVA,
-        montant_ht: HT,
-        montant_tva: TVA,
-        montant_ttc: TTC,
+        montant_ht: amountExclTax,
+        montant_tva: vatAmount,
+        montant_ttc: amountInclTax,
         notes: input.notes,
       })
       .eq("id", id);
 
     if (errFact) throw errFact;
 
-    const lignesPayload = input.lignes.map((l) => ({
-      description: l.description,
-      quantite: l.quantite,
-      prix_unitaire: l.prixUnitaire,
-      montant_ht: l.quantite * l.prixUnitaire,
-      compagnie: l.compagnie || null,
-      bordereau_livraison: l.bordereauLivraison || null,
+    const lignesPayload = input.lignes.map((ligne) => ({
+      description: ligne.description,
+      quantite: ligne.quantite,
+      prix_unitaire: ligne.prixUnitaire,
+      montant_ht: ligne.quantite * ligne.prixUnitaire,
+      compagnie: ligne.compagnie || null,
+      bordereau_livraison: ligne.bordereauLivraison || null,
     }));
     const { error: errLignes } = await supabase.rpc("replace_facture_lignes", {
       p_facture_id: id,
@@ -192,23 +205,23 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     set((s) => {
       const updatedFactures = s.factures.map((fact) => {
         if (fact.id !== id) return fact;
-        const updatedLignes: FactureLigne[] = input.lignes.map((l, idx) => ({
+        const updatedLignes: FactureLigne[] = input.lignes.map((ligne, idx) => ({
           id: `FL-${idx + 1}`,
-          description: l.description,
-          quantite: l.quantite,
-          prixUnitaire: l.prixUnitaire,
-          montantHT: l.quantite * l.prixUnitaire,
-          compagnie: l.compagnie,
-          bordereauLivraison: l.bordereauLivraison,
+          description: ligne.description,
+          quantite: ligne.quantite,
+          prixUnitaire: ligne.prixUnitaire,
+          montantHT: ligne.quantite * ligne.prixUnitaire,
+          compagnie: ligne.compagnie,
+          bordereauLivraison: ligne.bordereauLivraison,
         }));
         return {
           ...fact,
           ...input,
           societeId: input.societeId ?? undefined,
           annexeId: input.annexeId,
-          montantHT: HT,
-          montantTVA: TVA,
-          montantTTC: TTC,
+          montantHT: amountExclTax,
+          montantTVA: vatAmount,
+          montantTTC: amountInclTax,
           lignes: updatedLignes,
         };
       });
@@ -219,8 +232,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     });
     if (existing) {
       await get().addAuditLog(
-        "Factures",
-        "Modification",
+        AUDIT_MODULE.Factures,
+        AUDIT_ACTION.Modification,
         `Facture ${existing.numero} modifiée`,
         input.clientId,
         { sourceType: "facture", sourceId: id },
@@ -244,8 +257,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
 
     if (fact) {
       await get().addAuditLog(
-        "Factures",
-        "Suppression",
+        AUDIT_MODULE.Factures,
+        AUDIT_ACTION.Suppression,
         `Facture ${fact.numero} supprimée`,
         fact.clientId,
         { sourceType: "facture", sourceId: fact.id },
@@ -254,10 +267,10 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   },
 
   updateFactureStatut: async (id, statut) => {
-    const f = get().factures.find((x) => x.id === id);
-    if (!f) return;
-    if (!canTransitionFacture(f.statut, statut)) {
-      throw new Error(`Transition non autorisée : ${f.statut} → ${statut}.`);
+    const facture = get().factures.find((item) => item.id === id);
+    if (!facture) return;
+    if (!canTransitionFacture(facture.statut, statut)) {
+      throw new Error(`Transition non autorisée : ${facture.statut} → ${statut}.`);
     }
     // Soldée ne peut résulter que d'un encaissement (RPC record_facture_paiement)
     // — jamais d'un PATCH statut qui force montant_paye = TTC hors journal.
@@ -274,8 +287,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     if (error) throw error;
 
     set((s) => {
-      const updatedFactures = s.factures.map((x) =>
-        x.id === id ? { ...x, statut } : x,
+      const updatedFactures = s.factures.map((item) =>
+        item.id === id ? { ...item, statut } : item,
       );
       return {
         factures: updatedFactures,
@@ -284,10 +297,10 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     });
 
     await get().addAuditLog(
-      "Factures",
-      "Modification",
-      `Facture ${f.numero} → ${statut}`,
-      f.clientId,
+      AUDIT_MODULE.Factures,
+      AUDIT_ACTION.Modification,
+      `Facture ${facture.numero} → ${statut}`,
+      facture.clientId,
       { sourceType: "facture", sourceId: id },
     );
   },
@@ -322,8 +335,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     });
 
     await get().addAuditLog(
-      "Factures",
-      "Paiement",
+      AUDIT_MODULE.Factures,
+      AUDIT_ACTION.Paiement,
       `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
       fact.clientId,
       { sourceType: "facture", sourceId: fact.id },
@@ -359,8 +372,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     });
 
     await get().addAuditLog(
-      "Factures",
-      "Modification",
+      AUDIT_MODULE.Factures,
+      AUDIT_ACTION.Modification,
       `Paiement facture ${fact.numero} ajusté (classeur) → ${paye.toLocaleString("fr-FR")} FCFA`,
       fact.clientId,
       { sourceType: "facture", sourceId: id },

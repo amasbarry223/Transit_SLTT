@@ -5,6 +5,7 @@ import type { TransporteurInput, SLTTState } from "@/lib/store";
 import type { TransporteurRow } from "@/lib/db-rows";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapTransporteurFromDb(row: TransporteurRow): Transporteur {
   return {
@@ -65,7 +66,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
       transporteurs: [newTr, ...s.transporteurs],
       transporteurSeq: seq + 1,
     }));
-    await get().addAuditLog("Transporteurs", "Création", `Transporteur ${input.nom} ajouté`);
+    await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Creation, `Transporteur ${input.nom} ajouté`);
     return newTr;
   },
 
@@ -90,7 +91,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     set((s) => ({
       transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, ...input } : t)),
     }));
-    await get().addAuditLog("Transporteurs", "Modification", `Transporteur ${input.nom} mis à jour`);
+    await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Modification, `Transporteur ${input.nom} mis à jour`);
   },
 
   updateTransporteurStatut: async (id, statut) => {
@@ -105,7 +106,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
       transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, statut } : t)),
     }));
     if (transporteur) {
-      await get().addAuditLog("Transporteurs", "Modification", `Transporteur ${transporteur.nom} → ${statut}`);
+      await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Modification, `Transporteur ${transporteur.nom} → ${statut}`);
     }
   },
 
@@ -120,7 +121,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     }));
 
     if (trans) {
-      await get().addAuditLog("Transporteurs", "Suppression", `Transporteur ${trans.nom} supprimé`);
+      await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Suppression, `Transporteur ${trans.nom} supprimé`);
     }
   },
 });

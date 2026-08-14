@@ -9,6 +9,7 @@ import type {
 } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { ClotureCaisseRow, OperationComptableRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapOperationComptableFromDb(row: OperationComptableRow): OperationComptable {
   return {
@@ -118,8 +119,8 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     }));
 
     await get().addAuditLog(
-      "Comptabilité",
-      "Création",
+      AUDIT_MODULE.Comptabilite,
+      AUDIT_ACTION.Creation,
       `Opération ${reference} — ${input.type} ${input.montant.toLocaleString("fr-FR")} FCFA (${input.nature})`,
       input.clientId,
       { sourceType: "operation_comptable", sourceId: newOperation.id },
@@ -134,8 +135,8 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     set((s) => ({ operationsComptables: s.operationsComptables.filter((o) => o.id !== id) }));
     if (operation) {
       await get().addAuditLog(
-        "Comptabilité",
-        "Suppression",
+        AUDIT_MODULE.Comptabilite,
+        AUDIT_ACTION.Suppression,
         `Opération ${operation.reference} supprimée`,
         operation.clientId,
         { sourceType: "operation_comptable", sourceId: id },
@@ -173,8 +174,8 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     }));
 
     await get().addAuditLog(
-      "Comptabilité",
-      "Validation",
+      AUDIT_MODULE.Comptabilite,
+      AUDIT_ACTION.Validation,
       `Clôture de caisse ${input.periodeDebut} → ${input.periodeFin} — écart ${cloture.ecart.toLocaleString("fr-FR")} FCFA`,
       undefined,
       { sourceType: "cloture_caisse", sourceId: cloture.id },

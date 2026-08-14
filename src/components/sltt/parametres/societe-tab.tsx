@@ -194,7 +194,13 @@ function SocieteCard({
                 {uploadingLogo ? (
                   <Loader2 className="size-5 animate-spin text-slate-400" />
                 ) : values.logoUrl ? (
-                  <img src={values.logoUrl} alt="Aperçu du logo de la société" className="size-full object-contain" />
+                  <img
+                    src={values.logoUrl}
+                    alt="Aperçu du logo de la société"
+                    width={64}
+                    height={64}
+                    className="size-full object-contain"
+                  />
                 ) : (
                   <ImagePlus className="size-5 text-slate-300 dark:text-slate-600" />
                 )}

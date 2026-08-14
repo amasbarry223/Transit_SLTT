@@ -310,7 +310,7 @@ export interface SubDossierRow {
 export interface DossierFichierRow {
   id: string;
   dossier_id: string;
-  sub_dossier_id: string;
+  sous_dossier_id: string;
   nom: string;
   taille: number | string;
   type: string;

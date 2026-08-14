@@ -3,8 +3,10 @@ import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session/session-store";
 import type { Archive, TypeDocument } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
+import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
 import type { ArchiveRow } from "@/lib/db-rows";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 const ARCHIVES_ALLOWED_MIME = new Set([
   "application/pdf",
@@ -141,7 +143,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
     const newArchive = mapArchiveFromDb(data);
     set((s) => ({ archives: [newArchive, ...s.archives] }));
-    await get().addAuditLog("Archives", "Création", `Document archivé "${input.nom}" (${input.typeDocument})`);
+    await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Creation, `Document archivé "${input.nom}" (${input.typeDocument})`);
     return newArchive;
   },
 
@@ -160,14 +162,14 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
     if (error) throw error;
     set((s) => ({ archives: s.archives.filter((a) => a.id !== id) }));
     if (archive) {
-      await get().addAuditLog("Archives", "Suppression", `Document archivé "${archive.nom}" supprimé`);
+      await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Suppression, `Document archivé "${archive.nom}" supprimé`);
     }
   },
 
   getSignedArchiveUrl: async (storagePath) => {
     const { data, error } = await supabase.storage
       .from("archives")
-      .createSignedUrl(storagePath, 3600);
+      .createSignedUrl(storagePath, SIGNED_URL_TTL_SEC);
     if (error) throw error;
     return data.signedUrl;
   },

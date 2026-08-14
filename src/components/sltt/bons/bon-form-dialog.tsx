@@ -464,7 +464,13 @@ function BonPreview({
     <div className="rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 font-[var(--font-heading)]">
       <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
         {logoUrl ? (
-          <img src={logoUrl} alt={societeNom || "Logo société"} className="h-10 w-auto max-w-28 object-contain" />
+          <img
+            src={logoUrl}
+            alt={societeNom || "Logo société"}
+            width={112}
+            height={40}
+            className="h-10 w-auto max-w-28 object-contain"
+          />
         ) : (
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Truck className="size-5" />

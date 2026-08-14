@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
 import type { SLTTState, StockItemInput } from "@/lib/store";
 import type { MouvementRow, StockItemRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapStockItemFromDb(row: StockItemRow): StockItem {
   return {
@@ -92,7 +93,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       stock: [newItem, ...s.stock],
       stockSeq: seq + 1,
     }));
-    await get().addAuditLog("Stock", "Création", `Article de stock créé : ${input.marchandise}`);
+    await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Creation, `Article de stock créé : ${input.marchandise}`);
     return newItem;
   },
 
@@ -134,8 +135,8 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       mouvements: [newMouvement, ...s.mouvements],
     }));
     await get().addAuditLog(
-      "Stock",
-      "Modification",
+      AUDIT_MODULE.Stock,
+      AUDIT_ACTION.Modification,
       `Entrée de stock : +${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`,
     );
   },
@@ -184,8 +185,8 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       mouvements: [newMouvement, ...s.mouvements],
     }));
     await get().addAuditLog(
-      "Stock",
-      "Modification",
+      AUDIT_MODULE.Stock,
+      AUDIT_ACTION.Modification,
       `Sortie de stock : -${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`,
     );
   },

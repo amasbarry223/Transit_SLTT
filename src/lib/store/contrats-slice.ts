@@ -14,6 +14,7 @@ import type {
 } from "@/lib/domain-types";
 import type { AddDepenseInput, SLTTState } from "@/lib/store";
 import type { ContratPrestationRow, ContratRow, DepenseRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 import { nextYearlyReference } from "@/lib/store/reference";
 
@@ -124,7 +125,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       contrats: syncContratStats(s.depenses, s.contratPrestations, [raw, ...s.contrats]),
       contratSeq: seq + 1,
     }));
-    await get().addAuditLog("Contrats", "Création", `Contrat ${reference} créé — ${input.clientNom}`);
+    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Contrat ${reference} créé — ${input.clientNom}`);
     return get().contrats.find((c) => c.id === raw.id)!;
   },
 
@@ -160,19 +161,21 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     }
 
     set((s) => ({
-      contrats: s.contrats.map((c) =>
-        c.id === id
-          ? { ...c, ...input, clientNom: input.clientNom }
-          : c,
+      contrats: s.contrats.map((contrat) =>
+        contrat.id === id
+          ? { ...contrat, ...input, clientNom: input.clientNom }
+          : contrat,
       ),
       depenses: societeChanged
-        ? s.depenses.map((d) => (d.contratId === id ? { ...d, societeId: input.societeId } : d))
+        ? s.depenses.map((depense) =>
+            depense.contratId === id ? { ...depense, societeId: input.societeId } : depense,
+          )
         : s.depenses,
     }));
     if (existing) {
       await get().addAuditLog(
-        "Contrats",
-        "Modification",
+        AUDIT_MODULE.Contrats,
+        AUDIT_ACTION.Modification,
         societeChanged
           ? `Contrat ${existing.reference} modifié — société changée, dépenses liées recalées`
           : `Contrat ${existing.reference} modifié`,
@@ -190,7 +193,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const { error } = await supabase.from("contrats").update({ statut }).eq("id", id);
     if (error) throw error;
     set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
-    await get().addAuditLog("Contrats", "Modification", `Contrat ${existing.reference} → ${statut}`);
+    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Contrat ${existing.reference} → ${statut}`);
   },
 
   removeContrat: async (id) => {
@@ -228,7 +231,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       contrats: s.contrats.filter((c) => c.id !== id),
       contratFichiers: s.contratFichiers.filter((f) => f.contratId !== id),
     }));
-    await get().addAuditLog("Contrats", "Suppression", `Contrat ${contrat.reference} supprimé`);
+    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Contrat ${contrat.reference} supprimé`);
   },
 
   getContrat: (id) => get().contrats.find((c) => c.id === id),
@@ -278,8 +281,8 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       };
     });
     await get().addAuditLog(
-      "Dépenses",
-      "Création",
+      AUDIT_MODULE.Depenses,
+      AUDIT_ACTION.Creation,
       `Dépense "${input.libelle}" (${input.montant.toLocaleString("fr-FR")} FCFA) — contrat ${contrat.reference}`,
     );
     return newDepense;
@@ -300,7 +303,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       };
     });
     if (depense) {
-      await get().addAuditLog("Dépenses", "Suppression", `Dépense "${depense.libelle}" supprimée`);
+      await get().addAuditLog(AUDIT_MODULE.Depenses, AUDIT_ACTION.Suppression, `Dépense "${depense.libelle}" supprimée`);
     }
   },
 
@@ -333,7 +336,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
         contrats: syncContratStats(s.depenses, updated, s.contrats),
       };
     });
-    await get().addAuditLog("Contrats", "Création", `Prestation "${newPrestation.libelle}" ajoutée`);
+    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Prestation "${newPrestation.libelle}" ajoutée`);
     return newPrestation;
   },
 
@@ -355,7 +358,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       const updated = s.contratPrestations.map((p) => (p.id === id ? { ...p, ...input } : p));
       return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
     });
-    await get().addAuditLog("Contrats", "Modification", `Prestation "${input.libelle}" modifiée`);
+    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Prestation "${input.libelle}" modifiée`);
   },
 
   removeContratPrestation: async (id) => {
@@ -367,7 +370,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
     });
     if (prestation) {
-      await get().addAuditLog("Contrats", "Suppression", `Prestation "${prestation.libelle}" supprimée`);
+      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Prestation "${prestation.libelle}" supprimée`);
     }
   },
 });

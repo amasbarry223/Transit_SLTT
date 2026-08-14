@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { ArrowLeft, Info, Check, Plus } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -71,28 +70,42 @@ export function DossierDetailScreen() {
   const deleteSubDossier = useStore((state) => state.deleteSubDossier);
   const addFichier = useStore((state) => state.addFichier);
   const deleteFichier = useStore((state) => state.deleteFichier);
-  const fournisseurs = useStore(useShallow((state) => state.fournisseurs));
+  const fournisseurs = useStore((state) => state.fournisseurs);
   const addDossierFournisseur = useStore((state) => state.addDossierFournisseur);
   const removeDossier = useStore((state) => state.removeDossier);
   const canWrite = usePermission("dossiers:write");
   const canTransition = usePermission("dossiers:transition");
 
   const dossierId = selectedId ?? "";
-  const dossierFournisseurs = useStore(
-    useShallow((state) => state.dossierFournisseurs.filter((item) => item.dossierId === dossierId)),
+  const dossierFournisseursSource = useStore((state) => state.dossierFournisseurs);
+  const subDossiersSource = useStore((state) => state.subDossiers);
+  const fichiersSource = useStore((state) => state.fichiers);
+  const ecrituresSource = useStore((state) => state.ecritures);
+  const auditLogs = useStore((state) => state.auditLogs);
+  const facturesSource = useStore((state) => state.factures);
+
+  // Dérivés à partir des tableaux du store : ne se recalculent que si la
+  // source pertinente ou le dossier affiché change, pas à chaque écriture
+  // du store (contrairement à un filter() fait dans le sélecteur Zustand).
+  const dossierFournisseurs = useMemo(
+    () => dossierFournisseursSource.filter((item) => item.dossierId === dossierId),
+    [dossierFournisseursSource, dossierId],
   );
-  const allSubDossiers = useStore(
-    useShallow((state) => state.subDossiers.filter((item) => item.dossierId === dossierId)),
+  const allSubDossiers = useMemo(
+    () => subDossiersSource.filter((item) => item.dossierId === dossierId),
+    [subDossiersSource, dossierId],
   );
-  const allFichiers = useStore(
-    useShallow((state) => state.fichiers.filter((item) => item.dossierId === dossierId)),
+  const allFichiers = useMemo(
+    () => fichiersSource.filter((item) => item.dossierId === dossierId),
+    [fichiersSource, dossierId],
   );
-  const allEcritures = useStore(
-    useShallow((state) => state.ecritures.filter((item) => item.dossierId === dossierId)),
+  const allEcritures = useMemo(
+    () => ecrituresSource.filter((item) => item.dossierId === dossierId),
+    [ecrituresSource, dossierId],
   );
-  const auditLogs = useStore(useShallow((state) => state.auditLogs));
-  const dossierFactures = useStore(
-    useShallow((state) => state.factures.filter((item) => item.dossierId === dossierId)),
+  const dossierFactures = useMemo(
+    () => facturesSource.filter((item) => item.dossierId === dossierId),
+    [facturesSource, dossierId],
   );
 
   const [transitionOpen, setTransitionOpen] = useState(false);

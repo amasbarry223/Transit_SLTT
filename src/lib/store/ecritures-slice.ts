@@ -6,6 +6,7 @@ import { syncDossierPayeFromEcritures } from "@/lib/store/sync-helpers";
 import type { Ecriture, PaiementMode } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { EcritureRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapEcritureFromDb(row: EcritureRow): Ecriture {
   return {
@@ -35,7 +36,7 @@ export interface EcrituresSlice {
     date: string,
     note: string,
   ) => Promise<void>;
-  addEcriture: (e: Omit<Ecriture, "id">) => Promise<Ecriture>;
+  addEcriture: (input: Omit<Ecriture, "id">) => Promise<Ecriture>;
   patchEcriture: (
     id: string,
     patch: { note?: string; montantInvesti?: number; montantPaye?: number },
@@ -51,7 +52,7 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
   ecritures: [],
 
   recordPayment: async (ecritureId, montant, mode, date, note) => {
-    const ecriture = get().ecritures.find((e) => e.id === ecritureId);
+    const ecriture = get().ecritures.find((item) => item.id === ecritureId);
     if (!ecriture) return;
 
     const { data, error } = await supabase.rpc("record_ecriture_paiement", {
@@ -71,24 +72,24 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     };
 
     set((s) => {
-      const updatedEcritures = s.ecritures.map((e) =>
-        e.id === ecritureId
+      const updatedEcritures = s.ecritures.map((item) =>
+        item.id === ecritureId
           ? {
-              ...e,
+              ...item,
               montantPaye: Number(row.montant_paye),
-              modePaiement: (row.mode_paiement || mode) as typeof e.modePaiement,
+              modePaiement: (row.mode_paiement || mode) as typeof item.modePaiement,
               datePaiement: row.date_paiement || date,
-              note: row.note || note || e.note,
+              note: row.note || note || item.note,
             }
-          : e,
+          : item,
       );
       let updatedDossiers = s.dossiers;
       if (row.dossier_id) {
         const sumPaye = updatedEcritures
-          .filter((e) => e.dossierId === row.dossier_id)
-          .reduce((acc, e) => acc + e.montantPaye, 0);
-        updatedDossiers = s.dossiers.map((d) =>
-          d.id === row.dossier_id ? { ...d, montantPaye: sumPaye } : d,
+          .filter((item) => item.dossierId === row.dossier_id)
+          .reduce((sum, item) => sum + item.montantPaye, 0);
+        updatedDossiers = s.dossiers.map((dossier) =>
+          dossier.id === row.dossier_id ? { ...dossier, montantPaye: sumPaye } : dossier,
         );
       }
       return {
@@ -99,31 +100,31 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     });
 
     await get().addAuditLog(
-      "Comptabilité",
-      "Paiement",
+      AUDIT_MODULE.Comptabilite,
+      AUDIT_ACTION.Paiement,
       `Paiement ${montant.toLocaleString("fr-FR")} FCFA — Écriture ${ecritureId}`,
       ecriture.clientId,
       { sourceType: "ecriture", sourceId: ecritureId },
     );
   },
 
-  addEcriture: async (e) => {
+  addEcriture: async (input) => {
     const seq = get().ecritureSeq;
-    const validatedPaye = Math.max(0, e.montantPaye);
+    const validatedPaye = Math.max(0, input.montantPaye);
 
     const { data, error } = await supabase
       .from("ecritures")
       .insert({
-        date: e.date,
-        date_paiement: e.datePaiement || null,
-        client_id: e.clientId,
-        dossier_id: e.dossierId || null,
-        societe_id: e.societeId || null,
-        annexe_id: e.annexeId,
-        montant_investi: e.montantInvesti,
+        date: input.date,
+        date_paiement: input.datePaiement || null,
+        client_id: input.clientId,
+        dossier_id: input.dossierId || null,
+        societe_id: input.societeId || null,
+        annexe_id: input.annexeId,
+        montant_investi: input.montantInvesti,
         montant_paye: validatedPaye,
-        mode_paiement: e.modePaiement,
-        note: e.note || null,
+        mode_paiement: input.modePaiement,
+        note: input.note || null,
       })
       .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
@@ -133,11 +134,11 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     const updatedEcrituresPreview = [newEcriture, ...get().ecritures];
 
     let syncedMontantPaye: number | undefined;
-    if (e.dossierId) {
-      const dossier = get().dossiers.find((d) => d.id === e.dossierId);
+    if (input.dossierId) {
+      const dossier = get().dossiers.find((item) => item.id === input.dossierId);
       if (dossier) {
         syncedMontantPaye = await syncDossierPayeFromEcritures(
-          e.dossierId,
+          input.dossierId,
           updatedEcrituresPreview,
           dossier,
         );
@@ -146,17 +147,17 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
 
     set((s) => {
       const updatedEcritures = [newEcriture, ...s.ecritures];
-      if (!e.dossierId) {
+      if (!input.dossierId) {
         return {
           ecritures: updatedEcritures,
           ecritureSeq: seq + 1,
           clients: syncClientStats(s.dossiers, s.factures, updatedEcritures, s.clients),
         };
       }
-      const updatedDossiers = s.dossiers.map((d) =>
-        d.id === e.dossierId
-          ? { ...d, montantPaye: syncedMontantPaye ?? d.montantPaye }
-          : d,
+      const updatedDossiers = s.dossiers.map((dossier) =>
+        dossier.id === input.dossierId
+          ? { ...dossier, montantPaye: syncedMontantPaye ?? dossier.montantPaye }
+          : dossier,
       );
       return {
         ecritures: updatedEcritures,
@@ -167,17 +168,17 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     });
 
     await get().addAuditLog(
-      "Comptabilité",
-      "Création",
-      `Écriture créée pour ${e.clientNom}`,
-      e.clientId,
+      AUDIT_MODULE.Comptabilite,
+      AUDIT_ACTION.Creation,
+      `Écriture créée pour ${input.clientNom}`,
+      input.clientId,
       { sourceType: "ecriture", sourceId: newEcriture.id },
     );
     return newEcriture;
   },
 
   patchEcriture: async (id, patch) => {
-    const existing = get().ecritures.find((e) => e.id === id);
+    const existing = get().ecritures.find((ecriture) => ecriture.id === id);
     if (!existing) throw new Error("Écriture introuvable");
     const payload: Record<string, unknown> = {};
     if (patch.note !== undefined) payload.note = patch.note;
@@ -187,21 +188,21 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     const { error } = await supabase.from("ecritures").update(payload).eq("id", id);
     if (error) throw error;
 
-    const updatedEcrituresPreview = get().ecritures.map((e) =>
-      e.id === id
+    const updatedEcrituresPreview = get().ecritures.map((ecriture) =>
+      ecriture.id === id
         ? {
-            ...e,
-            note: patch.note ?? e.note,
-            montantInvesti: patch.montantInvesti ?? e.montantInvesti,
-            montantPaye: patch.montantPaye ?? e.montantPaye,
+            ...ecriture,
+            note: patch.note ?? ecriture.note,
+            montantInvesti: patch.montantInvesti ?? ecriture.montantInvesti,
+            montantPaye: patch.montantPaye ?? ecriture.montantPaye,
           }
-        : e,
+        : ecriture,
     );
 
     let syncedMontantPaye: number | undefined;
     const dossierId = existing.dossierId;
     if (dossierId && patch.montantPaye !== undefined) {
-      const dossier = get().dossiers.find((d) => d.id === dossierId);
+      const dossier = get().dossiers.find((item) => item.id === dossierId);
       if (dossier) {
         syncedMontantPaye = await syncDossierPayeFromEcritures(
           dossierId,
@@ -212,15 +213,15 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     }
 
     set((s) => {
-      const updatedEcritures = s.ecritures.map((e) =>
-        e.id === id
+      const updatedEcritures = s.ecritures.map((ecriture) =>
+        ecriture.id === id
           ? {
-              ...e,
-              note: patch.note ?? e.note,
-              montantInvesti: patch.montantInvesti ?? e.montantInvesti,
-              montantPaye: patch.montantPaye ?? e.montantPaye,
+              ...ecriture,
+              note: patch.note ?? ecriture.note,
+              montantInvesti: patch.montantInvesti ?? ecriture.montantInvesti,
+              montantPaye: patch.montantPaye ?? ecriture.montantPaye,
             }
-          : e,
+          : ecriture,
       );
       if (!dossierId || syncedMontantPaye === undefined) {
         return {
@@ -228,8 +229,8 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
           clients: syncClientStats(s.dossiers, s.factures, updatedEcritures, s.clients),
         };
       }
-      const updatedDossiers = s.dossiers.map((d) =>
-        d.id === dossierId ? { ...d, montantPaye: syncedMontantPaye } : d,
+      const updatedDossiers = s.dossiers.map((dossier) =>
+        dossier.id === dossierId ? { ...dossier, montantPaye: syncedMontantPaye } : dossier,
       );
       return {
         ecritures: updatedEcritures,
@@ -239,8 +240,8 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     });
 
     await get().addAuditLog(
-      "Comptabilité",
-      "Modification",
+      AUDIT_MODULE.Comptabilite,
+      AUDIT_ACTION.Modification,
       `Écriture ${id.slice(0, 8)} modifiée (classeur)`,
       existing.clientId,
       { sourceType: "ecriture", sourceId: id },
@@ -248,7 +249,7 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
   },
 
   patchDossierClasseur: async (id, patch) => {
-    const existing = get().dossiers.find((d) => d.id === id);
+    const existing = get().dossiers.find((dossier) => dossier.id === id);
     if (!existing) throw new Error("Dossier introuvable");
     const payload: Record<string, unknown> = {};
     if (patch.montantInvesti !== undefined) payload.montant_investi = Math.max(0, patch.montantInvesti);
@@ -259,20 +260,27 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     let updatedEcrituresPreview = get().ecritures;
     if (patch.montantPaye !== undefined) {
       const targetPaye = Math.max(0, patch.montantPaye);
-      const linked = get().ecritures.filter((e) => e.dossierId === id);
+      const linked = get().ecritures.filter((ecriture) => ecriture.dossierId === id);
       if (linked.length > 0) {
-        for (let i = 0; i < linked.length; i++) {
-          const { error: ecritureError } = await supabase
-            .from("ecritures")
-            .update({ montant_paye: i === 0 ? targetPaye : 0 })
-            .eq("id", linked[i].id);
-          if (ecritureError) throw ecritureError;
-        }
+        // Chaque écriture liée cible un id distinct — les updates sont
+        // indépendants entre eux, donc parallélisables sans risque d'ordre
+        // (contrairement à un upsert groupé, ça garde exactement la même
+        // policy RLS UPDATE que l'appel séquentiel d'origine).
+        const updateResults = await Promise.all(
+          linked.map((ecriture, i) =>
+            supabase
+              .from("ecritures")
+              .update({ montant_paye: i === 0 ? targetPaye : 0 })
+              .eq("id", ecriture.id),
+          ),
+        );
+        const failedUpdate = updateResults.find((result) => result.error);
+        if (failedUpdate?.error) throw failedUpdate.error;
         const firstId = linked[0].id;
-        const linkedIds = new Set(linked.map((e) => e.id));
-        updatedEcrituresPreview = get().ecritures.map((e) => {
-          if (!linkedIds.has(e.id)) return e;
-          return { ...e, montantPaye: e.id === firstId ? targetPaye : 0 };
+        const linkedIds = new Set(linked.map((ecriture) => ecriture.id));
+        updatedEcrituresPreview = get().ecritures.map((ecriture) => {
+          if (!linkedIds.has(ecriture.id)) return ecriture;
+          return { ...ecriture, montantPaye: ecriture.id === firstId ? targetPaye : 0 };
         });
         syncedMontantPaye = await syncDossierPayeFromEcritures(id, updatedEcrituresPreview, {
           montantInvesti:
@@ -292,16 +300,16 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     }
 
     set((s) => {
-      const updatedDossiers = s.dossiers.map((d) =>
-        d.id === id
+      const updatedDossiers = s.dossiers.map((dossier) =>
+        dossier.id === id
           ? {
-              ...d,
-              montantInvesti: patch.montantInvesti ?? d.montantInvesti,
-              montantPaye: syncedMontantPaye ?? patch.montantPaye ?? d.montantPaye,
-              nature: patch.nature ?? d.nature,
-              bl: patch.bl ?? d.bl,
+              ...dossier,
+              montantInvesti: patch.montantInvesti ?? dossier.montantInvesti,
+              montantPaye: syncedMontantPaye ?? patch.montantPaye ?? dossier.montantPaye,
+              nature: patch.nature ?? dossier.nature,
+              bl: patch.bl ?? dossier.bl,
             }
-          : d,
+          : dossier,
       );
       return {
         dossiers: updatedDossiers,
@@ -311,8 +319,8 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
     });
 
     await get().addAuditLog(
-      "Dossiers",
-      "Modification",
+      AUDIT_MODULE.Dossiers,
+      AUDIT_ACTION.Modification,
       `Dossier ${existing.reference} modifié (classeur)`,
       existing.clientId,
       { sourceType: "dossier", sourceId: id },

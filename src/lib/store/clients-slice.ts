@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { Client } from "@/lib/domain-types";
 import type { ClientInput, SLTTState } from "@/lib/store";
 import type { ClientRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapClientFromDb(row: ClientRow): Client {
   return {
@@ -55,7 +56,7 @@ export const createClientsSlice: StateCreator<SLTTState, [], [], ClientsSlice> =
       clients: [newClient, ...s.clients],
       clientSeq: seq + 1,
     }));
-    await get().addAuditLog("Clients", "Création", `Client ${input.nom} créé`, newClient.id);
+    await get().addAuditLog(AUDIT_MODULE.Clients, AUDIT_ACTION.Creation, `Client ${input.nom} créé`, newClient.id);
     return newClient;
   },
 
@@ -77,7 +78,7 @@ export const createClientsSlice: StateCreator<SLTTState, [], [], ClientsSlice> =
     set((s) => ({
       clients: s.clients.map((c) => (c.id === id ? { ...c, ...input } : c)),
     }));
-    await get().addAuditLog("Clients", "Modification", `Client ${input.nom} mis à jour`, id);
+    await get().addAuditLog(AUDIT_MODULE.Clients, AUDIT_ACTION.Modification, `Client ${input.nom} mis à jour`, id);
   },
 
   getClient: (id) => get().clients.find((c) => c.id === id),

@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { Societe, SocieteInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { SocieteRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapSocieteFromDb(row: SocieteRow): Societe {
   return {
@@ -54,7 +55,7 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
     set((s) => ({
       societes: s.societes.map((soc) => (soc.id === id ? { ...soc, ...input } : soc)),
     }));
-    await get().addAuditLog("Sociétés", "Modification", `Société ${input.nom} mise à jour`);
+    await get().addAuditLog(AUDIT_MODULE.Societes, AUDIT_ACTION.Modification, `Société ${input.nom} mise à jour`);
   },
 
   uploadSocieteLogo: async (id, file) => {

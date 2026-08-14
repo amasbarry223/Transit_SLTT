@@ -4,6 +4,7 @@ import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { BonSortie, BonSortieCaisse, BonSortieCaisseInput, StockItem } from "@/lib/domain-types";
 import type { BonInput, SLTTState } from "@/lib/store";
 import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 import { computeAnnexeScopedReference } from "@/lib/store/reference";
 
@@ -40,12 +41,12 @@ export function mapBonSortieCaisseFromDb(row: BonSortieCaisseRow): BonSortieCais
     montantTotal: Number(row.montant_total),
     creePar: row.cree_par || undefined,
     creeLe: row.created_at,
-    lignes: (row.bons_sortie_caisse_lignes || []).map((l) => ({
-      id: l.id,
-      date: l.date,
-      beneficiaire: l.beneficiaire,
-      motif: l.motif,
-      montant: Number(l.montant),
+    lignes: (row.bons_sortie_caisse_lignes || []).map((ligne) => ({
+      id: ligne.id,
+      date: ligne.date,
+      beneficiaire: ligne.beneficiaire,
+      motif: ligne.motif,
+      montant: Number(ligne.montant),
     })),
   };
 }
@@ -111,7 +112,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       bons: [newBon, ...s.bons],
       bonSeq: useAnnexeNumbering ? s.bonSeq : seq + 1,
     }));
-    await get().addAuditLog("Bons", "Création", `Bon ${numero} créé`);
+    await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Creation, `Bon ${numero} créé`);
 
     if (input.statut === "Validé") {
       const validated = await get().validateBon(newBon.id);
@@ -168,7 +169,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         ...s.mouvements,
       ],
     }));
-    await get().addAuditLog("Bons", "Validation", `Bon de sortie ${bon.reference} validé`);
+    await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Validation, `Bon de sortie ${bon.reference} validé`);
     return true;
   },
 
@@ -176,7 +177,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const seq = get().bonSortieCaisseSeq;
     const reference = `N°${seq}`;
     const creePar = getConnectedUserName();
-    const montantTotal = input.lignes.reduce((sum, l) => sum + l.montant, 0);
+    const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
 
     const { data: dbBon, error: errBon } = await supabase
       .from("bons_sortie_caisse")
@@ -196,12 +197,12 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       const { error: errLignes } = await supabase
         .from("bons_sortie_caisse_lignes")
         .insert(
-          input.lignes.map((l) => ({
+          input.lignes.map((ligne) => ({
             bon_id: dbBon.id,
-            date: l.date,
-            beneficiaire: l.beneficiaire,
-            motif: l.motif,
-            montant: l.montant,
+            date: ligne.date,
+            beneficiaire: ligne.beneficiaire,
+            motif: ligne.motif,
+            montant: ligne.montant,
           })),
         );
       if (errLignes) throw errLignes;
@@ -220,8 +221,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       bonSortieCaisseSeq: seq + 1,
     }));
     await get().addAuditLog(
-      "Bons",
-      "Création",
+      AUDIT_MODULE.Bons,
+      AUDIT_ACTION.Creation,
       `Bon de sortie caisse ${reference} créé — ${montantTotal.toLocaleString("fr-FR")} FCFA`,
     );
     return newBon;
@@ -233,7 +234,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     if (error) throw error;
     set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));
     if (bon) {
-      await get().addAuditLog("Bons", "Suppression", `Bon de sortie caisse ${bon.reference} supprimé`);
+      await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Suppression, `Bon de sortie caisse ${bon.reference} supprimé`);
     }
   },
 });

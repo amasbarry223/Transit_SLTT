@@ -62,6 +62,8 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
   const { toast } = useToast();
   const addOperationComptable = useStore((s) => s.addOperationComptable);
   const consumedInitialFileRef = useRef<File | null>(null);
+  /** Course OCR en cours — abortée si le dialog se ferme ou se démonte pendant l'extraction. */
+  const abortRef = useRef<AbortController | null>(null);
 
   const [running, setRunning] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -84,6 +86,11 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
   }
 
   async function handleFile(file: File) {
+    // Annule une course précédente encore en vol avant d'en démarrer une nouvelle.
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setFileName(file.name);
     setRunning(true);
     setOcrError(null);
@@ -92,7 +99,8 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
     setRawText(null);
 
     try {
-      const result = await runOcrOnBlob(file, file.type, mapOperationComptableFieldsFromText);
+      const result = await runOcrOnBlob(file, file.type, mapOperationComptableFieldsFromText, ac.signal);
+      if (ac.signal.aborted) return;
       setRawText(result.rawText || null);
 
       const conf: Record<string, number> = {};
@@ -109,11 +117,12 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
       setConfidence(conf);
       setForm(next);
     } catch (e) {
+      if (ac.signal.aborted) return;
       const message = e instanceof Error ? e.message : "OCR échoué";
       setOcrError(message);
       toast({ title: "OCR échoué", description: message, variant: "destructive" });
     } finally {
-      setRunning(false);
+      if (abortRef.current === ac) setRunning(false);
     }
   }
 
@@ -124,6 +133,19 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
     }
     if (!open) consumedInitialFileRef.current = null;
   }, [open, initialFile]);
+
+  // Fermeture du dialog ou démontage pendant l'OCR : annule la course en cours
+  // pour ne pas appeler setRunning/setForm/etc. sur un composant qui n'affiche
+  // plus ce résultat.
+  useEffect(() => {
+    if (!open) abortRef.current?.abort();
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   function fieldClass(key: string) {
     const c = confidence[key];

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { AlertTriangle, FolderKanban, Users } from "lucide-react";
 import type { ViewKey } from "@/lib/nav-store";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
@@ -23,10 +24,17 @@ export function AdminPanel({
   dossiersCount: number;
   clientsCount: number;
 }) {
-  const critical = alertes.filter((a) => a.niveau === "danger").slice(0, 4);
-  const recentUsers = [...users]
-    .sort((a, b) => (b.derniereConnexion ?? "").localeCompare(a.derniereConnexion ?? ""))
-    .slice(0, 4);
+  const critical = useMemo(
+    () => alertes.filter((a) => a.niveau === "danger").slice(0, 4),
+    [alertes],
+  );
+  const recentUsers = useMemo(
+    () =>
+      [...users]
+        .sort((a, b) => (b.derniereConnexion ?? "").localeCompare(a.derniereConnexion ?? ""))
+        .slice(0, 4),
+    [users],
+  );
 
   return (
     <Card className="rounded-xl border-border/80 p-5 shadow-sm">

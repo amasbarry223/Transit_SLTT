@@ -30,6 +30,37 @@ export type AuditModule =
   | "Documents"
   | "Système";
 
+/** Modules d'audit utilisés par les slices du store (sous-ensemble de `AuditModule`). */
+export const AUDIT_MODULE = {
+  Dossiers: "Dossiers",
+  Fournisseurs: "Fournisseurs",
+  Utilisateurs: "Utilisateurs",
+  Stock: "Stock",
+  Societes: "Sociétés",
+  Transporteurs: "Transporteurs",
+  Clients: "Clients",
+  Devis: "Devis",
+  Archives: "Archives",
+  Bons: "Bons",
+  Annexes: "Annexes",
+  Contrats: "Contrats",
+  Depenses: "Dépenses",
+  Documents: "Documents",
+  Comptabilite: "Comptabilité",
+  RecusPaiement: "Reçus de paiement",
+  Factures: "Factures",
+  Systeme: "Système",
+} as const satisfies Record<string, AuditModule>;
+
+/** Actions d'audit utilisées par les slices du store (sous-ensemble de `AuditAction`). */
+export const AUDIT_ACTION = {
+  Creation: "Création",
+  Modification: "Modification",
+  Suppression: "Suppression",
+  Validation: "Validation",
+  Paiement: "Paiement",
+} as const satisfies Record<string, AuditAction>;
+
 export type AuditSourceType =
   | "dossier"
   | "ecriture"

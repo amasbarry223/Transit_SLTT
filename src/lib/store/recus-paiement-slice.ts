@@ -4,6 +4,7 @@ import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { RecuPaiement, RecuPaiementInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { RecuPaiementRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapRecuPaiementFromDb(row: RecuPaiementRow): RecuPaiement {
   return {
@@ -73,8 +74,8 @@ export const createRecusPaiementSlice: StateCreator<
     }));
 
     await get().addAuditLog(
-      "Reçus de paiement",
-      "Création",
+      AUDIT_MODULE.RecusPaiement,
+      AUDIT_ACTION.Creation,
       `Reçu ${reference} — ${newRecu.nom} ${newRecu.prenom} (${input.montantPaye.toLocaleString("fr-FR")} FCFA payés sur ${input.somme.toLocaleString("fr-FR")})`,
       undefined,
       { sourceType: "recu_paiement", sourceId: newRecu.id },
@@ -104,8 +105,8 @@ export const createRecusPaiementSlice: StateCreator<
     }));
 
     await get().addAuditLog(
-      "Reçus de paiement",
-      "Modification",
+      AUDIT_MODULE.RecusPaiement,
+      AUDIT_ACTION.Modification,
       `Reçu ${updated.reference} modifié`,
       undefined,
       { sourceType: "recu_paiement", sourceId: id },
@@ -119,8 +120,8 @@ export const createRecusPaiementSlice: StateCreator<
     set((s) => ({ recusPaiement: s.recusPaiement.filter((r) => r.id !== id) }));
     if (recu) {
       await get().addAuditLog(
-        "Reçus de paiement",
-        "Suppression",
+        AUDIT_MODULE.RecusPaiement,
+        AUDIT_ACTION.Suppression,
         `Reçu ${recu.reference} supprimé`,
         undefined,
         { sourceType: "recu_paiement", sourceId: id },

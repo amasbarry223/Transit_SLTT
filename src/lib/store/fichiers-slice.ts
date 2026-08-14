@@ -4,6 +4,7 @@ import type { DossierFichier, SubDossier } from "@/lib/domain-types";
 import type { FichierInput, SLTTState, SubDossierInput } from "@/lib/store";
 import type { DossierFichierRow, SubDossierRow } from "@/lib/db-rows";
 import { dataUrlToBlob } from "@/lib/documents/storage";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapSubDossierFromDb(row: SubDossierRow): SubDossier {
   return {
@@ -19,7 +20,7 @@ export function mapFichierFromDb(row: DossierFichierRow): DossierFichier {
   return {
     id: row.id,
     dossierId: row.dossier_id,
-    sousDossierId: row.sub_dossier_id,
+    sousDossierId: row.sous_dossier_id,
     nom: row.nom,
     taille: Number(row.taille),
     type: row.type,
@@ -62,7 +63,7 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
       subDossiers: [newSd, ...s.subDossiers],
       subDossierSeq: seq + 1,
     }));
-    await get().addAuditLog("Dossiers", "Création", `Sous-dossier "${newSd.nom}" créé`);
+    await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Creation, `Sous-dossier "${newSd.nom}" créé`);
     return newSd;
   },
 
@@ -78,7 +79,7 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
         sd.id === id ? { ...sd, nom, description } : sd,
       ),
     }));
-    await get().addAuditLog("Dossiers", "Modification", `Sous-dossier "${nom}" modifié`);
+    await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Modification, `Sous-dossier "${nom}" modifié`);
   },
 
   deleteSubDossier: async (id) => {
@@ -92,7 +93,7 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
       fichiers: s.fichiers.filter((f) => f.sousDossierId !== id),
     }));
     if (subDossier) {
-      await get().addAuditLog("Dossiers", "Suppression", `Sous-dossier "${subDossier.nom}" supprimé`);
+      await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Suppression, `Sous-dossier "${subDossier.nom}" supprimé`);
     }
   },
 
@@ -126,7 +127,7 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
       .from("dossier_fichiers")
       .insert({
         dossier_id: input.dossierId,
-        sub_dossier_id: input.sousDossierId,
+        sous_dossier_id: input.sousDossierId,
         nom: input.nom,
         taille: input.taille,
         type: input.type,
@@ -141,7 +142,7 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
       fichiers: [newFile, ...s.fichiers],
       fichierSeq: seq + 1,
     }));
-    await get().addAuditLog("Dossiers", "Création", `Fichier "${newFile.nom}" ajouté`);
+    await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Creation, `Fichier "${newFile.nom}" ajouté`);
     return newFile;
   },
 
@@ -155,7 +156,7 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
       fichiers: s.fichiers.filter((f) => f.id !== id),
     }));
     if (fichier) {
-      await get().addAuditLog("Dossiers", "Suppression", `Fichier "${fichier.nom}" supprimé`);
+      await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Suppression, `Fichier "${fichier.nom}" supprimé`);
     }
   },
 

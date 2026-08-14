@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { ArrowRight, CheckCircle2, FileOutput, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
@@ -11,16 +12,28 @@ export function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "fa
   const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
   const dossiers = useStore((s) => s.dossiers);
-  const totalDu = dossiers.reduce((s, d) => s + resteAPayer(d), 0);
-  const nbImpayés = dossiers.filter((d) => resteAPayer(d) > 0).length;
-  const dernières = [...ecritures]
-    .sort((a, b) => (a.date > b.date ? -1 : 1))
-    .slice(0, 5);
 
-  const facturesImpayées = factures.filter((f) => f.statut !== "Soldée" && f.statut !== "Annulée");
-  const totalFactures = facturesImpayées.reduce(
-    (s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }),
-    0,
+  const totalDu = useMemo(() => dossiers.reduce((sum, d) => sum + resteAPayer(d), 0), [dossiers]);
+  const nbImpayés = useMemo(
+    () => dossiers.filter((d) => resteAPayer(d) > 0).length,
+    [dossiers],
+  );
+  const dernières = useMemo(
+    () => [...ecritures].sort((a, b) => (a.date > b.date ? -1 : 1)).slice(0, 5),
+    [ecritures],
+  );
+
+  const facturesImpayées = useMemo(
+    () => factures.filter((f) => f.statut !== "Soldée" && f.statut !== "Annulée"),
+    [factures],
+  );
+  const totalFactures = useMemo(
+    () =>
+      facturesImpayées.reduce(
+        (sum, f) => sum + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }),
+        0,
+      ),
+    [facturesImpayées],
   );
 
   return (

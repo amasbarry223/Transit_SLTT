@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session/session-store";
 import type { DossierFournisseur, DossierFournisseurInput, Fournisseur, FournisseurInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { DossierFournisseurRow, FournisseurRow } from "@/lib/db-rows";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapFournisseurFromDb(row: FournisseurRow): Fournisseur {
   return {
@@ -85,7 +86,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       fournisseurs: [newFourn, ...s.fournisseurs],
       fournisseurSeq: seq + 1,
     }));
-    await get().addAuditLog("Fournisseurs", "Création", `Fournisseur ${input.nom} créé`);
+    await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Creation, `Fournisseur ${input.nom} créé`);
     return newFourn;
   },
   updateFournisseur: async (id, input) => {
@@ -107,7 +108,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     set((s) => ({
       fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
     }));
-    await get().addAuditLog("Fournisseurs", "Modification", `Fournisseur ${input.nom} mis à jour`);
+    await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Modification, `Fournisseur ${input.nom} mis à jour`);
   },
 
   removeFournisseur: async (id) => {
@@ -121,7 +122,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     }));
 
     if (fourn) {
-      await get().addAuditLog("Fournisseurs", "Suppression", `Fournisseur ${fourn.nom} supprimé`);
+      await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Suppression, `Fournisseur ${fourn.nom} supprimé`);
     }
   },
 
@@ -153,8 +154,8 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       };
     });
     await get().addAuditLog(
-      "Fournisseurs",
-      "Création",
+      AUDIT_MODULE.Fournisseurs,
+      AUDIT_ACTION.Creation,
       `Lien fournisseur ${newDf.fournisseurNom} ↔ dossier ${newDf.dossierRef ?? newDf.dossierId} créé`,
     );
     return newDf;
@@ -182,7 +183,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
       };
     });
-    await get().addAuditLog("Fournisseurs", "Modification", `Lien fournisseur ↔ dossier modifié`);
+    await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Modification, `Lien fournisseur ↔ dossier modifié`);
   },
 
   removeDossierFournisseur: async (id) => {
@@ -199,8 +200,8 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     });
     if (target) {
       await get().addAuditLog(
-        "Fournisseurs",
-        "Suppression",
+        AUDIT_MODULE.Fournisseurs,
+        AUDIT_ACTION.Suppression,
         `Lien fournisseur ${target.fournisseurNom} ↔ dossier ${target.dossierRef ?? target.dossierId} supprimé`,
       );
     }

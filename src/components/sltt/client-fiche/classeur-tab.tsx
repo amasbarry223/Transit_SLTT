@@ -20,7 +20,7 @@ import {
 import { TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { TabEmptyState, classeurStatutTone } from "./shared";
-import { ClasseurGrid } from "./classeur-grid";
+import { ClasseurGridLazy } from "./classeur-grid-lazy";
 import { ExcelWorkbookLazy } from "@/components/sltt/excel/excel-workbook-lazy";
 
 type ClasseurViewMode = "grand-livre" | "excel";
@@ -314,7 +314,7 @@ export function ClasseurTab({
               ))}
             </div>
             <div className="hidden p-2 md:block">
-              <ClasseurGrid
+              <ClasseurGridLazy
                 rows={classeurFiltered}
                 onRowClick={onRowClick}
                 onDataChanged={onGridDataChanged}

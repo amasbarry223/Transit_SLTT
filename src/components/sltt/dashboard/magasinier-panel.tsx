@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { ArrowRight, CheckCircle2, Package, Plus, Warehouse } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
@@ -8,8 +9,8 @@ import { Button } from "@/components/ui/button";
 export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?: { id?: string | null }) => void }) {
   const stock = useStore((s) => s.stock);
   const bons = useStore((s) => s.bons);
-  const lowStock = stock.filter((s) => s.quantite < s.seuil);
-  const bonsBrouillon = bons.filter((b) => b.statut === "Brouillon");
+  const lowStock = useMemo(() => stock.filter((item) => item.quantite < item.seuil), [stock]);
+  const bonsBrouillon = useMemo(() => bons.filter((b) => b.statut === "Brouillon"), [bons]);
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

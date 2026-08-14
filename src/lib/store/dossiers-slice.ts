@@ -22,6 +22,7 @@ import {
   extractTrailingSeq,
   insertWithReferenceRetry,
 } from "@/lib/store/reference";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapDossierFromDb(row: DossierRow): Dossier {
   return {
@@ -78,13 +79,13 @@ function resolveDossierReference(
   year: number,
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
   const societe = get().societes.find((item) => item.id === societeId);
-  const annexe = get().annexes.find((a) => a.id === annexeId);
+  const annexe = get().annexes.find((item) => item.id === annexeId);
   const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
   return computeDossierReference(
     societe,
     annexe,
     prefix,
-    get().dossiers.map((d) => d.reference),
+    get().dossiers.map((dossier) => dossier.reference),
     get().dossierSeq,
     year,
   );
@@ -147,8 +148,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       };
     });
     await get().addAuditLog(
-      "Dossiers",
-      "Création",
+      AUDIT_MODULE.Dossiers,
+      AUDIT_ACTION.Creation,
       `Dossier ${reference} créé — Client ${input.clientNom}`,
       input.clientId,
       { sourceType: "dossier", sourceId: newDossier.id },
@@ -165,13 +166,13 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
   importDossierHistorique: async (input) => {
     const year = Number(input.date.slice(0, 4)) || new Date().getFullYear();
     const societe = get().societes.find((item) => item.id === input.societeId);
-    const annexe = get().annexes.find((a) => a.id === input.annexeId);
+    const annexe = get().annexes.find((item) => item.id === input.annexeId);
     const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
     const { reference } = computeHistoricalDossierReference(
       societe,
       annexe,
       prefix,
-      get().dossiers.map((d) => d.reference),
+      get().dossiers.map((dossier) => dossier.reference),
       year,
     );
 
@@ -207,8 +208,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       };
     });
     await get().addAuditLog(
-      "Dossiers",
-      "Création",
+      AUDIT_MODULE.Dossiers,
+      AUDIT_ACTION.Creation,
       `Dossier ${reference} importé (historique) — Client ${input.clientNom}` +
         (input.montantPaye > 0
           ? ` — ${input.montantPaye.toLocaleString("fr-FR")} FCFA déjà réglés`
@@ -220,7 +221,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
   },
 
   updateDossier: async (id, input) => {
-    const existing = get().dossiers.find((d) => d.id === id);
+    const existing = get().dossiers.find((dossier) => dossier.id === id);
     // Le statut ne se change que via transitionDossier (flux guidé).
     const statut = existing?.statut ?? input.statut;
     const societeNom =
@@ -258,10 +259,10 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     if (error) throw error;
 
     set((s) => {
-      const updatedDossiers = s.dossiers.map((d) =>
-        d.id === id
-          ? { ...d, ...input, statut, societeId: input.societeId, societeNom, annexeId: input.annexeId, annexeNom }
-          : d,
+      const updatedDossiers = s.dossiers.map((dossier) =>
+        dossier.id === id
+          ? { ...dossier, ...input, statut, societeId: input.societeId, societeNom, annexeId: input.annexeId, annexeNom }
+          : dossier,
       );
       return {
         dossiers: updatedDossiers,
@@ -271,8 +272,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
     if (existing) {
       await get().addAuditLog(
-        "Dossiers",
-        "Modification",
+        AUDIT_MODULE.Dossiers,
+        AUDIT_ACTION.Modification,
         `Dossier ${existing.reference} modifié`,
         existing.clientId,
         { sourceType: "dossier", sourceId: id },
@@ -281,54 +282,64 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
   },
 
   removeDossier: async (id) => {
-    const dossier = get().dossiers.find((d) => d.id === id);
+    const dossier = get().dossiers.find((item) => item.id === id);
 
     const { error } = await supabase.from("dossiers").delete().eq("id", id);
     if (error) throw error;
 
     set((s) => {
-      const updatedDossiers = s.dossiers.filter((d) => d.id !== id);
-      const updatedDossierFournisseurs = s.dossierFournisseurs.filter((df) => df.dossierId !== id);
+      const updatedDossiers = s.dossiers.filter((item) => item.id !== id);
+      const updatedDossierFournisseurs = s.dossierFournisseurs.filter(
+        (dossierFournisseur) => dossierFournisseur.dossierId !== id,
+      );
       return {
         dossiers: updatedDossiers,
         clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-        ecritures: s.ecritures.map((e) => (e.dossierId === id ? { ...e, dossierId: undefined } : e)),
-        fichiers: s.fichiers.filter((f) => f.dossierId !== id),
-        subDossiers: s.subDossiers.filter((sd) => sd.dossierId !== id),
-        factures: s.factures.map((f) => (f.dossierId === id ? { ...f, dossierId: null } : f)),
+        ecritures: s.ecritures.map((ecriture) =>
+          ecriture.dossierId === id ? { ...ecriture, dossierId: undefined } : ecriture,
+        ),
+        fichiers: s.fichiers.filter((fichier) => fichier.dossierId !== id),
+        subDossiers: s.subDossiers.filter((subDossier) => subDossier.dossierId !== id),
+        factures: s.factures.map((facture) =>
+          facture.dossierId === id ? { ...facture, dossierId: null } : facture,
+        ),
         dossierFournisseurs: updatedDossierFournisseurs,
         fournisseurs: syncFournisseurStats(updatedDossierFournisseurs, s.fournisseurs),
-        devis: s.devis.map((d) => (d.dossierId === id ? { ...d, dossierId: null } : d)),
-        archives: s.archives.map((a) => (a.dossierId === id ? { ...a, dossierId: undefined } : a)),
+        devis: s.devis.map((devisItem) =>
+          devisItem.dossierId === id ? { ...devisItem, dossierId: null } : devisItem,
+        ),
+        archives: s.archives.map((archive) =>
+          archive.dossierId === id ? { ...archive, dossierId: undefined } : archive,
+        ),
       };
     });
 
     if (!dossier) return;
 
-    const orphanBons = get().bons.filter((b) => b.marchandise.includes(dossier.reference));
+    const orphanBons = get().bons.filter((bon) => bon.marchandise.includes(dossier.reference));
     const orphanNote =
       orphanBons.length > 0 ? ` — ${orphanBons.length} bon(s) potentiellement orphelin(s)` : "";
     await get().addAuditLog(
-      "Dossiers",
-      "Suppression",
+      AUDIT_MODULE.Dossiers,
+      AUDIT_ACTION.Suppression,
       `Dossier ${dossier.reference} supprimé${orphanNote}`,
       dossier.clientId,
       { sourceType: "dossier", sourceId: dossier.id },
     );
   },
 
-  getDossier: (id) => get().dossiers.find((d) => d.id === id),
+  getDossier: (id) => get().dossiers.find((dossier) => dossier.id === id),
 
   transitionDossier: async (id, newStatut, montantRecu, modePaiement, transitionNote, effectiveDate) => {
-    const dossier = get().dossiers.find((d) => d.id === id);
+    const dossier = get().dossiers.find((item) => item.id === id);
     if (!dossier) return;
 
     assertDossierTransition(dossier.statut, newStatut);
 
     // Soldé avec reste dû exige un encaissement couvrant le solde — la garde UI
     // ne suffit pas (appel programmatique ou RPC).
-    if (newStatut === DOSSIER_STATUT_SOLDE && resteAPayer(dossier) > 0) {
-      const reste = resteAPayer(dossier);
+    const reste = resteAPayer(dossier);
+    if (newStatut === DOSSIER_STATUT_SOLDE && reste > 0) {
       if (!(typeof montantRecu === "number" && montantRecu >= reste)) {
         throw new Error(
           `Impossible de solder le dossier : le paiement doit couvrir le solde dû (${reste.toLocaleString("fr-FR")} FCFA).`,
@@ -367,16 +378,18 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     }
 
     set((s) => ({
-      dossiers: s.dossiers.map((d) =>
-        d.id === id ? { ...d, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement } : d,
+      dossiers: s.dossiers.map((item) =>
+        item.id === id
+          ? { ...item, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
+          : item,
       ),
       ecritures: ecriturePatch?.ecritures ?? s.ecritures,
       ecritureSeq: ecriturePatch?.ecritureSeq ?? s.ecritureSeq,
       clients: syncClientStats(
-        s.dossiers.map((d) =>
-          d.id === id
-            ? { ...d, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
-            : d,
+        s.dossiers.map((item) =>
+          item.id === id
+            ? { ...item, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
+            : item,
         ),
         s.factures,
         ecriturePatch?.ecritures ?? s.ecritures,
@@ -385,8 +398,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     }));
 
     await get().addAuditLog(
-      "Dossiers",
-      "Validation",
+      AUDIT_MODULE.Dossiers,
+      AUDIT_ACTION.Validation,
       `Dossier ${dossier.reference} → ${newStatut}${montantRecu ? ` — ${montantRecu.toLocaleString("fr-FR")} FCFA reçus` : ""}`,
       dossier.clientId,
       { sourceType: "dossier", sourceId: id },

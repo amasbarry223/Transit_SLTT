@@ -2,8 +2,6 @@ import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import type {
-  DocumentCategorie,
-  DocumentEntityType,
   DocumentVersion,
   OcrField,
   OcrJob,
@@ -16,9 +14,6 @@ import type {
   OcrFieldRow,
   OcrJobRow,
 } from "@/lib/db-rows";
-import type { SLTTState } from "@/lib/store";
-import { useSession } from "@/lib/session/session-store";
-import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import {
   buildDocumentStoragePath,
   dataUrlToBlob,
@@ -27,120 +22,25 @@ import {
   sha256Hex,
   uploadDocumentBlob,
 } from "@/lib/documents/storage";
+import {
+  currentUserId,
+  mapDocumentFromDb,
+  mapDocumentVersionFromDb,
+  mapOcrFieldFromDb,
+  mapOcrJobFromDb,
+  resolveDocumentAnnexeId,
+} from "./documents";
+import type { AddDocumentInput, UpdateDocumentMetaInput } from "./documents";
+import type { SLTTState } from "@/lib/store";
+import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
-export interface AddDocumentInput {
-  nom: string;
-  categorie: DocumentCategorie;
-  taille: number;
-  mimeType: string;
-  /** data: URL ou blob déjà résolu. */
-  dataUrl: string;
-  dossierId?: string;
-  factureId?: string;
-  clientId?: string;
-  societeId?: string;
-  entityType?: DocumentEntityType;
-  entityId?: string;
-}
-
-export interface UpdateDocumentMetaInput {
-  nom?: string;
-  categorie?: DocumentCategorie;
-  dossierId?: string | null;
-  factureId?: string | null;
-  clientId?: string | null;
-  societeId?: string | null;
-  entityType?: DocumentEntityType | null;
-  entityId?: string | null;
-}
-
-function currentUserId(): string | null {
-  return useSession.getState().currentUserId;
-}
-
-/**
- * Annexe d'un document : héritée du dossier/facture lié pour rester cohérente
- * avec la donnée qu'il documente (cas dossier-documents-panel, lien connu dès
- * l'upload), sinon repli sur l'annexe active de l'utilisateur (cas OCR
- * "Nouveau dossier via OCR" : le document précède la création du dossier).
- */
-function resolveDocumentAnnexeId(get: () => SLTTState, input: AddDocumentInput): string {
-  if (input.dossierId) {
-    const fromDossier = get().dossiers.find((d) => d.id === input.dossierId)?.annexeId;
-    if (fromDossier) return fromDossier;
-  }
-  if (input.factureId) {
-    const fromFacture = get().factures.find((f) => f.id === input.factureId)?.annexeId;
-    if (fromFacture) return fromFacture;
-  }
-  const userId = currentUserId();
-  const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
-  return requireActiveAnnexeId(userAnnexeIds);
-}
-
-export function mapDocumentVersionFromDb(row: DocumentVersionRow): DocumentVersion {
-  return {
-    id: row.id,
-    documentId: row.document_id,
-    version: Number(row.version),
-    storagePath: row.storage_path,
-    taille: Number(row.taille),
-    mimeType: row.mime_type,
-    checksum: row.checksum || undefined,
-    uploadedBy: row.uploaded_by || undefined,
-    createdAt: row.created_at,
-  };
-}
-
-export function mapDocumentFromDb(row: DocumentRow): SlttDocument {
-  return {
-    id: row.id,
-    nom: row.nom,
-    categorie: row.categorie,
-    mimeType: row.mime_type,
-    taille: Number(row.taille),
-    dossierId: row.dossier_id || undefined,
-    factureId: row.facture_id || undefined,
-    clientId: row.client_id || undefined,
-    societeId: row.societe_id || undefined,
-    entityType: row.entity_type || undefined,
-    entityId: row.entity_id || undefined,
-    annexeId: row.annexe_id,
-    currentVersion: Number(row.current_version),
-    creePar: row.cree_par || undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-export function mapOcrFieldFromDb(row: OcrFieldRow): OcrField {
-  return {
-    id: row.id,
-    ocrJobId: row.ocr_job_id,
-    fieldKey: row.field_key,
-    fieldValue: row.field_value ?? undefined,
-    confidence: row.confidence != null ? Number(row.confidence) : undefined,
-    bbox: row.bbox ?? undefined,
-    validatedValue: row.validated_value ?? undefined,
-  };
-}
-
-export function mapOcrJobFromDb(row: OcrJobRow, fields?: OcrField[]): OcrJob {
-  return {
-    id: row.id,
-    documentId: row.document_id,
-    documentVersionId: row.document_version_id,
-    status: row.status,
-    provider: row.provider,
-    rawText: row.raw_text ?? undefined,
-    errorMessage: row.error_message ?? undefined,
-    targetForm: row.target_form,
-    createdBy: row.created_by || undefined,
-    createdAt: row.created_at,
-    completedAt: row.completed_at ?? undefined,
-    fields,
-  };
-}
+export type { AddDocumentInput, UpdateDocumentMetaInput } from "./documents";
+export {
+  mapDocumentFromDb,
+  mapDocumentVersionFromDb,
+  mapOcrFieldFromDb,
+  mapOcrJobFromDb,
+} from "./documents";
 
 export interface DocumentsSlice {
   documents: SlttDocument[];
@@ -239,8 +139,8 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     }));
 
     await get().addAuditLog(
-      "Documents",
-      "Création",
+      AUDIT_MODULE.Documents,
+      AUDIT_ACTION.Creation,
       `Document « ${input.nom} » uploadé (${input.categorie})`,
       input.clientId,
       { sourceType: "document", sourceId: doc.id },
@@ -250,7 +150,7 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   },
 
   replaceDocumentVersion: async (documentId, file) => {
-    const existing = get().documents.find((d) => d.id === documentId);
+    const existing = get().documents.find((doc) => doc.id === documentId);
     if (!existing) throw new Error("Document introuvable");
 
     const userId = currentUserId();
@@ -306,24 +206,24 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
     const version = mapDocumentVersionFromDb(verRow as DocumentVersionRow);
     set((s) => ({
-      documents: s.documents.map((d) =>
-        d.id === documentId
+      documents: s.documents.map((doc) =>
+        doc.id === documentId
           ? {
-              ...d,
+              ...doc,
               nom: file.nom,
               mimeType: file.mimeType,
               taille: file.taille,
               currentVersion: nextVersion,
               updatedAt: new Date().toISOString(),
             }
-          : d,
+          : doc,
       ),
       documentVersions: [version, ...s.documentVersions],
     }));
 
     await get().addAuditLog(
-      "Documents",
-      "Modification",
+      AUDIT_MODULE.Documents,
+      AUDIT_ACTION.Modification,
       `Document « ${file.nom} » remplacé (v${nextVersion})`,
       existing.clientId,
       { sourceType: "document", sourceId: documentId },
@@ -333,7 +233,7 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   },
 
   updateDocumentMeta: async (id, input) => {
-    const existing = get().documents.find((d) => d.id === id);
+    const existing = get().documents.find((doc) => doc.id === id);
     const payload: Record<string, unknown> = {};
     if (input.nom !== undefined) payload.nom = input.nom;
     if (input.categorie !== undefined) payload.categorie = input.categorie;
@@ -348,28 +248,28 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     if (error) throw error;
 
     set((s) => ({
-      documents: s.documents.map((d) =>
-        d.id === id
+      documents: s.documents.map((doc) =>
+        doc.id === id
           ? {
-              ...d,
-              nom: input.nom ?? d.nom,
-              categorie: input.categorie ?? d.categorie,
-              dossierId: input.dossierId === null ? undefined : (input.dossierId ?? d.dossierId),
-              factureId: input.factureId === null ? undefined : (input.factureId ?? d.factureId),
-              clientId: input.clientId === null ? undefined : (input.clientId ?? d.clientId),
-              societeId: input.societeId === null ? undefined : (input.societeId ?? d.societeId),
+              ...doc,
+              nom: input.nom ?? doc.nom,
+              categorie: input.categorie ?? doc.categorie,
+              dossierId: input.dossierId === null ? undefined : (input.dossierId ?? doc.dossierId),
+              factureId: input.factureId === null ? undefined : (input.factureId ?? doc.factureId),
+              clientId: input.clientId === null ? undefined : (input.clientId ?? doc.clientId),
+              societeId: input.societeId === null ? undefined : (input.societeId ?? doc.societeId),
               entityType:
-                input.entityType === null ? undefined : (input.entityType ?? d.entityType),
-              entityId: input.entityId === null ? undefined : (input.entityId ?? d.entityId),
+                input.entityType === null ? undefined : (input.entityType ?? doc.entityType),
+              entityId: input.entityId === null ? undefined : (input.entityId ?? doc.entityId),
               updatedAt: new Date().toISOString(),
             }
-          : d,
+          : doc,
       ),
     }));
 
     await get().addAuditLog(
-      "Documents",
-      "Modification",
+      AUDIT_MODULE.Documents,
+      AUDIT_ACTION.Modification,
       `Métadonnées du document « ${input.nom ?? existing?.nom ?? id} » mises à jour`,
       input.clientId === null ? undefined : (input.clientId ?? existing?.clientId),
       { sourceType: "document", sourceId: id },
@@ -377,10 +277,10 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   },
 
   deleteDocument: async (id) => {
-    const doc = get().documents.find((d) => d.id === id);
+    const doc = get().documents.find((item) => item.id === id);
     // Toujours recharger les versions depuis la DB pour éviter les orphelins storage.
     const versions = await get().getDocumentVersions(id);
-    const paths = versions.map((v) => v.storagePath).filter(Boolean);
+    const paths = versions.map((version) => version.storagePath).filter(Boolean);
 
     const { error } = await supabase.from("documents").delete().eq("id", id);
     if (error) throw error;
@@ -398,15 +298,15 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     }
 
     set((s) => ({
-      documents: s.documents.filter((d) => d.id !== id),
-      documentVersions: s.documentVersions.filter((v) => v.documentId !== id),
-      ocrJobs: s.ocrJobs.filter((j) => j.documentId !== id),
+      documents: s.documents.filter((item) => item.id !== id),
+      documentVersions: s.documentVersions.filter((version) => version.documentId !== id),
+      ocrJobs: s.ocrJobs.filter((job) => job.documentId !== id),
     }));
 
     if (doc) {
       await get().addAuditLog(
-        "Documents",
-        "Suppression",
+        AUDIT_MODULE.Documents,
+        AUDIT_ACTION.Suppression,
         `Document « ${doc.nom} » supprimé`,
         doc.clientId,
         { sourceType: "document", sourceId: id },
@@ -423,26 +323,26 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
       .eq("document_id", documentId)
       .order("version", { ascending: false });
     if (error) throw error;
-    const versions = (data || []).map((r) => mapDocumentVersionFromDb(r as DocumentVersionRow));
+    const versions = (data || []).map((row) => mapDocumentVersionFromDb(row as DocumentVersionRow));
     set((s) => ({
       documentVersions: [
         ...versions,
-        ...s.documentVersions.filter((v) => v.documentId !== documentId),
+        ...s.documentVersions.filter((version) => version.documentId !== documentId),
       ],
     }));
     return versions;
   },
 
   createOcrJob: async (documentId, targetForm = "dossier") => {
-    const doc = get().documents.find((d) => d.id === documentId);
+    const doc = get().documents.find((item) => item.id === documentId);
     if (!doc) throw new Error("Document introuvable");
 
     let version = get().documentVersions.find(
-      (v) => v.documentId === documentId && v.version === doc.currentVersion,
+      (item) => item.documentId === documentId && item.version === doc.currentVersion,
     );
     if (!version) {
       const versions = await get().getDocumentVersions(documentId);
-      version = versions.find((v) => v.version === doc.currentVersion);
+      version = versions.find((item) => item.version === doc.currentVersion);
     }
     if (!version) throw new Error("Version courante introuvable");
 
@@ -490,18 +390,18 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
       const job = mapOcrJobFromDb(data as OcrJobRow);
       set((s) => ({
-        ocrJobs: s.ocrJobs.map((j) =>
-          j.id === jobId ? { ...job, fields: j.fields } : j,
+        ocrJobs: s.ocrJobs.map((existingJob) =>
+          existingJob.id === jobId ? { ...job, fields: existingJob.fields } : existingJob,
         ),
       }));
       return job;
     }
 
     const fieldsPayload =
-      result.fields?.map((f) => ({
-        field_key: f.fieldKey,
-        field_value: f.fieldValue ?? null,
-        confidence: f.confidence ?? null,
+      result.fields?.map((field) => ({
+        field_key: field.fieldKey,
+        field_value: field.fieldValue ?? null,
+        confidence: field.confidence ?? null,
       })) ?? null;
 
     const { data, error } = await supabase.rpc("replace_ocr_job_fields", {
@@ -542,16 +442,16 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
           const { data: fieldRows, error: fieldError } = await supabase
             .from("ocr_fields")
             .insert(
-              result.fields.map((f) => ({
+              result.fields.map((field) => ({
                 ocr_job_id: jobId,
-                field_key: f.fieldKey,
-                field_value: f.fieldValue ?? null,
-                confidence: f.confidence ?? null,
+                field_key: field.fieldKey,
+                field_value: field.fieldValue ?? null,
+                confidence: field.confidence ?? null,
               })),
             )
             .select();
           if (fieldError) throw fieldError;
-          fields = (fieldRows || []).map((r) => mapOcrFieldFromDb(r as OcrFieldRow));
+          fields = (fieldRows || []).map((row) => mapOcrFieldFromDb(row as OcrFieldRow));
         } else {
           fields = [];
         }
@@ -559,8 +459,8 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
       const job = mapOcrJobFromDb(jobData as OcrJobRow, fields);
       set((s) => ({
-        ocrJobs: s.ocrJobs.map((j) =>
-          j.id === jobId ? { ...job, fields: fields ?? j.fields } : j,
+        ocrJobs: s.ocrJobs.map((existingJob) =>
+          existingJob.id === jobId ? { ...job, fields: fields ?? existingJob.fields } : existingJob,
         ),
       }));
       return job;
@@ -572,13 +472,13 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
         .from("ocr_fields")
         .select("*")
         .eq("ocr_job_id", jobId);
-      fields = (fieldRows || []).map((r) => mapOcrFieldFromDb(r as OcrFieldRow));
+      fields = (fieldRows || []).map((row) => mapOcrFieldFromDb(row as OcrFieldRow));
     }
 
     const job = mapOcrJobFromDb(data as OcrJobRow, fields);
     set((s) => ({
-      ocrJobs: s.ocrJobs.map((j) =>
-        j.id === jobId ? { ...job, fields: fields ?? j.fields } : j,
+      ocrJobs: s.ocrJobs.map((existingJob) =>
+        existingJob.id === jobId ? { ...job, fields: fields ?? existingJob.fields } : existingJob,
       ),
     }));
     return job;
@@ -597,40 +497,45 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     if (error) throw error;
 
     set((s) => ({
-      ocrJobs: s.ocrJobs.map((j) =>
-        j.id === jobId
+      ocrJobs: s.ocrJobs.map((job) =>
+        job.id === jobId
           ? {
-              ...j,
+              ...job,
               status: "failed",
               errorMessage: errorMessage.slice(0, 2000),
               completedAt,
             }
-          : j,
+          : job,
       ),
     }));
   },
 
   validateOcrFields: async (jobId, validated) => {
     const entries = Object.entries(validated);
-    for (const [fieldKey, value] of entries) {
-      const { data: updated, error } = await supabase
-        .from("ocr_fields")
-        .update({ validated_value: value })
-        .eq("ocr_job_id", jobId)
-        .eq("field_key", fieldKey)
-        .select("id");
-      if (error) throw error;
-      if (!updated?.length) {
-        const { error: insErr } = await supabase.from("ocr_fields").insert({
-          ocr_job_id: jobId,
-          field_key: fieldKey,
-          field_value: value,
-          validated_value: value,
-          confidence: null,
-        });
-        if (insErr) throw insErr;
-      }
-    }
+    // Chaque entrée cible un field_key distinct pour ce job — indépendantes
+    // entre elles, donc parallélisables sans risque d'ordre ni de conflit
+    // d'écriture (chaque update-ou-insert garde sa logique inchangée).
+    await Promise.all(
+      entries.map(async ([fieldKey, value]) => {
+        const { data: updated, error } = await supabase
+          .from("ocr_fields")
+          .update({ validated_value: value })
+          .eq("ocr_job_id", jobId)
+          .eq("field_key", fieldKey)
+          .select("id");
+        if (error) throw error;
+        if (!updated?.length) {
+          const { error: insErr } = await supabase.from("ocr_fields").insert({
+            ocr_job_id: jobId,
+            field_key: fieldKey,
+            field_value: value,
+            validated_value: value,
+            confidence: null,
+          });
+          if (insErr) throw insErr;
+        }
+      }),
+    );
 
     const { error } = await supabase
       .from("ocr_jobs")
@@ -639,13 +544,13 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     if (error) throw error;
 
     set((s) => ({
-      ocrJobs: s.ocrJobs.map((j) => {
-        if (j.id !== jobId) return j;
-        const keys = new Set((j.fields || []).map((f) => f.fieldKey));
+      ocrJobs: s.ocrJobs.map((job) => {
+        if (job.id !== jobId) return job;
+        const keys = new Set((job.fields || []).map((field) => field.fieldKey));
         const fields = [
-          ...(j.fields || []).map((f) => ({
-            ...f,
-            validatedValue: validated[f.fieldKey] ?? f.validatedValue,
+          ...(job.fields || []).map((field) => ({
+            ...field,
+            validatedValue: validated[field.fieldKey] ?? field.validatedValue,
           })),
           ...Object.entries(validated)
             .filter(([k]) => !keys.has(k))
@@ -658,7 +563,7 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
             })),
         ];
         return {
-          ...j,
+          ...job,
           status: "validated" as const,
           completedAt: new Date().toISOString(),
           fields,
