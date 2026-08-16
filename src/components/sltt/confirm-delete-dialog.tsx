@@ -11,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { UI } from "@/lib/ui-messages";
 
 /**
  * Dialogue de confirmation de suppression partagé — standardise les 8 implémentations
@@ -23,7 +24,8 @@ export function ConfirmDeleteDialog({
   title,
   description,
   consequences,
-  confirmLabel = "Supprimer",
+  confirmLabel = UI.buttons.confirmDelete,
+  cancelLabel = UI.buttons.cancel,
   onConfirm,
 }: {
   open: boolean;
@@ -33,6 +35,7 @@ export function ConfirmDeleteDialog({
   /** Conséquences à afficher explicitement avant confirmation (ex: "3 dépenses liées"). */
   consequences?: string[];
   confirmLabel?: string;
+  cancelLabel?: string;
   onConfirm: () => void | Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
@@ -64,7 +67,7 @@ export function ConfirmDeleteDialog({
         )}
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Annuler</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             disabled={loading}
@@ -73,7 +76,7 @@ export function ConfirmDeleteDialog({
               void handleConfirm();
             }}
           >
-            {loading ? "Suppression…" : confirmLabel}
+            {loading ? "Suppression en cours…" : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

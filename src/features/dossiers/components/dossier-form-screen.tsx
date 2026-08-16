@@ -1,0 +1,351 @@
+"use client";
+
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+
+import {
+  ArrowLeft,
+  Save,
+  FileText,
+  Info,
+  AlertTriangle,
+} from "lucide-react";
+
+import { useNav } from "@/lib/nav-store";
+import { useStore } from "@/lib/store";
+import { formatFCFA } from "@/lib/format";
+import { DossierStatutBadge } from "@/components/sltt/status-badge";
+import { InfoCallout } from "@/components/sltt/info-callout";
+import { usePermission } from "@/hooks/use-permission";
+import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { TransitionDialog } from "@/components/sltt/dossier-transition-dialog";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import { useDossierFormState } from "./dossier-form/use-dossier-form-state";
+import { useDossierFormActions } from "./dossier-form/use-dossier-form-actions";
+import {
+  DossierAmountsSection,
+  DossierWizardProgress,
+  DossierIdentityStep,
+  DossierTransportSection,
+  DossierSuiviSection,
+  DossierWizardNav,
+  SectionTitle,
+  SummaryRow,
+} from "./dossier-form";
+
+export function DossierFormScreen() {
+  const { selectedId, dossierFormMode } = useNav();
+  return (
+    <DossierFormInner key={`${dossierFormMode}-${selectedId ?? "new"}`} />
+  );
+}
+
+function DossierFormInner() {
+  const { selectedId, dossierFormMode, go } = useNav();
+  const { selectedSocieteId } = useUiPrefs();
+  const canTransition = usePermission("dossiers:transition");
+
+  const clients = useStore((s) => s.clients);
+  const societes = useStore((s) => s.societes);
+  const dossiers = useStore((s) => s.dossiers);
+  const dossierSeq = useStore((s) => s.dossierSeq);
+  const { annexes, activeAnnexeId } = useActiveAnnexe();
+
+  const isEdit = dossierFormMode === "edit";
+  const existing =
+    isEdit && selectedId ? dossiers.find((d) => d.id === selectedId) : undefined;
+
+  const form = useDossierFormState({
+    existing,
+    isEdit,
+    dossierSeq,
+    dossiers,
+    societes,
+    annexes,
+    defaultSocieteId: selectedSocieteId ?? undefined,
+    defaultAnnexeId: activeAnnexeId ?? undefined,
+  });
+  const annexeCode = annexes.find((a) => a.id === form.annexeId)?.code;
+
+  const { canWrite, saving, handleFieldBlur, handleBack, handleSave, handlePdf } = useDossierFormActions({
+    form,
+    isEdit,
+    selectedId,
+    annexeCode,
+  });
+
+  useUnsavedChangesWarning(form.isDirty);
+
+  if (isEdit && selectedId && !existing) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+          <Info className="size-7" />
+        </div>
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Dossier introuvable
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Le dossier demandé n&apos;existe pas ou a été supprimé.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => go("dossiers")}>
+          <ArrowLeft className="size-4" />
+          Retour à la liste
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Button
+        variant="ghost"
+        className="-ml-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+        onClick={handleBack}
+      >
+        <ArrowLeft className="size-4" />
+        Retour à la liste
+      </Button>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            {isEdit ? `Dossier ${form.reference}` : "Nouveau dossier de transit"}
+          </h1>
+          <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            {form.reference}
+          </span>
+          <DossierStatutBadge statut={form.statut} />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleBack}>
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!canWrite || saving}
+            title={
+              !canWrite ? "Vous n'avez pas la permission d'enregistrer un dossier." : undefined
+            }
+          >
+            <Save className="size-4" />
+            Enregistrer
+          </Button>
+        </div>
+      </div>
+
+      {!canWrite && (
+        <InfoCallout className="border-amber-200/80 bg-amber-50/60 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+          Vous consultez ce formulaire en lecture seule — vous n&apos;avez pas la permission
+          d&apos;enregistrer un dossier.
+        </InfoCallout>
+      )}
+
+      {form.isDirty && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:text-amber-300 dark:bg-amber-950/40">
+          <AlertTriangle className="size-4 shrink-0 text-amber-500" />
+          Modifications non enregistrées — pensez à sauvegarder.
+        </div>
+      )}
+
+      {(form.showWizard || isEdit) && (
+        <DossierWizardProgress
+          wizardStep={form.wizardStep}
+          mode={isEdit ? "sections" : "wizard"}
+        />
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          {form.showStep(1) && (
+            <DossierIdentityStep
+              clients={clients}
+              societes={societes}
+              annexes={annexes}
+              societeId={form.societeId}
+              annexeId={form.annexeId}
+              clientId={form.clientId}
+              nature={form.nature}
+              bl={form.bl}
+              camion={form.camion}
+              date={form.date}
+              errors={form.errors}
+              touched={form.touched}
+              onSocieteIdChange={form.setSocieteId}
+              onAnnexeIdChange={form.setAnnexeId}
+              onClientIdChange={form.setClientId}
+              onNatureChange={form.setNature}
+              onBlChange={form.setBl}
+              onCamionChange={form.setCamion}
+              onDateChange={form.setDate}
+              onFieldBlur={handleFieldBlur}
+              onValidateField={form.validateField}
+              onTouch={(field) => form.setTouched((p) => ({ ...p, [field]: true }))}
+            />
+          )}
+
+          {form.showStep(3) && (
+            <DossierTransportSection
+              isEdit={isEdit}
+              modeTransport={form.modeTransport}
+              portEntree={form.portEntree}
+              noConteneur={form.noConteneur}
+              poidsTotal={form.poidsTotal}
+              onModeTransportChange={form.setModeTransport}
+              onPortEntreeChange={form.setPortEntree}
+              onNoConteneurChange={form.setNoConteneur}
+              onPoidsTotalChange={form.setPoidsTotal}
+            />
+          )}
+
+          {form.showStep(2) && (
+            <DossierAmountsSection
+              droitDouane={form.droitDouane}
+              fraisCircuit={form.fraisCircuit}
+              fraisPrestation={form.fraisPrestation}
+              onDroitDouaneChange={form.setDroitDouane}
+              onFraisCircuitChange={form.setFraisCircuit}
+              onFraisPrestationChange={form.setFraisPrestation}
+              montantInvesti={form.totalImportAmount}
+              ecart={form.ecart}
+              annexeCode={annexeCode}
+            />
+          )}
+
+          {form.showStep(3) && (
+            <DossierSuiviSection
+              isEdit={isEdit}
+              statut={form.statut}
+              nextTransition={form.nextTransition}
+              canTransition={canTransition}
+              dateEcheance={form.dateEcheance}
+              dateDedouanement={form.dateDedouanement}
+              notes={form.notes}
+              onTransitionOpen={() => form.setTransitionOpen(true)}
+              onDateEcheanceChange={form.setDateEcheance}
+              onDateDedouanementChange={form.setDateDedouanement}
+              onNotesChange={form.setNotes}
+            />
+          )}
+
+          {form.showWizard && (
+            <DossierWizardNav
+              wizardStep={form.wizardStep}
+              canWrite={canWrite}
+              saving={saving}
+              onPrev={form.goPrevStep}
+              onNext={form.goNextStep}
+              onSave={handleSave}
+            />
+          )}
+        </div>
+
+        <div className="lg:col-span-1">
+          <div className="space-y-4 lg:sticky lg:top-24">
+            <Card className="border-border/80 p-5 shadow-sm">
+              <SectionTitle
+                icon={<Info className="size-4" />}
+                tone="amber"
+                title="Récapitulatif"
+                description="Synthèse des montants saisis"
+              />
+
+              <div className="divide-y divide-border">
+                <SummaryRow label="Frais prestation" value={formatFCFA(form.serviceFeesAmount)} />
+                <SummaryRow label="Montant investi" value={formatFCFA(form.totalImportAmount)} />
+                <SummaryRow label="Reste à payer" value={formatFCFA(form.reste)} tone="amber" />
+              </div>
+
+              <div className="mt-4 border-t border-border pt-4">
+                <div className="text-xs text-slate-500 dark:text-slate-400">Marge</div>
+                <div
+                  className={cn(
+                    "mt-1 text-2xl font-bold tabular-nums",
+                    form.ecart >= 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-600 dark:text-red-400",
+                  )}
+                >
+                  {form.ecart >= 0 ? "+" : ""}
+                  {formatFCFA(form.ecart)}
+                </div>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {form.ecart >= 0
+                    ? "Marge positive sur ce dossier."
+                    : "Marge négative — à surveiller."}
+                </p>
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  className="w-full"
+                  onClick={handleSave}
+                  disabled={!canWrite || saving}
+                  title={
+                    !canWrite
+                      ? "Vous n'avez pas la permission d'enregistrer un dossier."
+                      : undefined
+                  }
+                >
+                  <Save className="size-4" />
+                  Enregistrer le dossier
+                </Button>
+                <Button variant="outline" className="w-full" onClick={handlePdf}>
+                  <FileText className="size-4" />
+                  Générer le PDF
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      <AlertDialog open={form.confirmLeaveOpen} onOpenChange={form.setConfirmLeaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quitter sans sauvegarder ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous avez des modifications non enregistrées. Si vous quittez maintenant, ces
+              modifications seront perdues définitivement.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Rester sur le formulaire</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => go("dossiers")}
+            >
+              Quitter sans sauvegarder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {isEdit && existing && form.nextTransition && (
+        <TransitionDialog
+          dossier={existing}
+          transition={form.nextTransition}
+          open={form.transitionOpen}
+          onOpenChange={form.setTransitionOpen}
+        />
+      )}
+    </div>
+  );
+}

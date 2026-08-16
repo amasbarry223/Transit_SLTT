@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useStore, type StockItem } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { useCurrentUser } from "@/hooks/use-permission";
 
 export const SORTIE_MOTIFS = ["Vente", "Livraison", "Transfert", "Autre"] as const;
@@ -48,14 +50,10 @@ export function useStockMovementDialogs(stock: StockItem[]) {
     if (!qty || qty <= 0) return;
     try {
       await addStockEntry(entryStockId, qty, entryResp.trim() || currentUser?.nom || "Système");
-      toast({ title: "Entrée enregistrée — stock mis à jour" });
+      toastSuccess(toast, { title: "Entrée enregistrée — stock mis à jour" });
       setEntryOpen(false);
     } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        description: err instanceof Error ? err.message : "Impossible d'enregistrer l'entrée.",
-        variant: "destructive",
-      });
+      toastError(toast, err, { title: "Impossible d'enregistrer l'entrée", fallback: "Impossible d'enregistrer l'entrée." });
     }
   }
 
@@ -67,14 +65,10 @@ export function useStockMovementDialogs(stock: StockItem[]) {
     if (!item || qty > item.quantite) return;
     try {
       await addStockExit(exitStockId, qty, exitResp.trim() || currentUser?.nom || "Système", undefined, exitMotif);
-      toast({ title: "Sortie enregistrée — stock décrémenté" });
+      toastSuccess(toast, { title: "Sortie enregistrée — stock décrémenté" });
       setExitOpen(false);
     } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        description: err instanceof Error ? err.message : "Impossible d'enregistrer la sortie.",
-        variant: "destructive",
-      });
+      toastError(toast, err, { title: "Impossible d'enregistrer la sortie", fallback: "Impossible d'enregistrer la sortie." });
     }
   }
 

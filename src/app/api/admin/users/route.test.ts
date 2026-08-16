@@ -34,6 +34,12 @@ const { fakeState, resetFake } = vi.hoisted(() => {
 vi.mock("@/lib/supabase/server", () => ({
   createServerClient: () => ({
     auth: { getUser: async () => ({ data: { user: { id: "manager1" } }, error: null }) },
+    rpc: async (fnName: string, params: { perm: string }) => {
+      if (fnName !== "has_permission") return { data: null, error: { message: "unknown rpc" } };
+      const p = fakeState.callerProfile;
+      const granted = Boolean(p.actif && (p.role === "Administrateur" || p.permissions.includes(params.perm)));
+      return { data: granted, error: null };
+    },
   }),
 }));
 

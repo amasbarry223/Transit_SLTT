@@ -5,6 +5,8 @@ import type { EntiteComptable, OperationComptableType } from "@/lib/domain-types
 import { computeMontantFromQuantitePrixUnitaire } from "@/lib/comptabilite-generale";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { formatFCFA } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
@@ -99,15 +101,15 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
 
   async function handleSubmit() {
     if (!clientNom.trim()) {
-      toast({ title: "Client / Tiers requis", variant: "destructive" });
+      toastWarning(toast, { title: "Client / Tiers requis" });
       return;
     }
     if (!nature.trim()) {
-      toast({ title: "Nature requise", variant: "destructive" });
+      toastWarning(toast, { title: "Nature requise" });
       return;
     }
     if (montantEffectif <= 0) {
-      toast({ title: "Montant invalide", description: "Le montant doit être supérieur à 0.", variant: "destructive" });
+      toastWarning(toast, { title: "Montant invalide", description: "Le montant doit être supérieur à 0." });
       return;
     }
     setSubmitting(true);
@@ -128,14 +130,10 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
         prixUnitaire: isTopDoumani && prixUnitaire ? Number(prixUnitaire) : undefined,
         source: "saisie",
       });
-      toast({ title: "Opération enregistrée", description: `${clientNom} — ${formatFCFA(montantEffectif)}.` });
+      toastSuccess(toast, { title: "Opération enregistrée", description: `${clientNom} — ${formatFCFA(montantEffectif)}.` });
       onOpenChange(false);
     } catch (error) {
-      toast({
-        title: "Échec de l'enregistrement",
-        description: error instanceof Error ? error.message : "Réessayez.",
-        variant: "destructive",
-      });
+      toastError(toast, error, { title: "Échec de l'enregistrement", fallback: "Réessayez." });
     } finally {
       setSubmitting(false);
     }
@@ -224,11 +222,11 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="opc-quantite">Quantité</Label>
-                <Input id="opc-quantite" type="number" min="0" value={quantite} onChange={(e) => setQuantite(e.target.value)} placeholder="0" className="h-10" />
+                <Input id="opc-quantite" type="number" min="0" value={quantite} onChange={(e) => setQuantite(e.target.value)} placeholder="Ex. 10" className="h-10" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="opc-pu">Prix unitaire (FCFA)</Label>
-                <Input id="opc-pu" type="number" min="0" value={prixUnitaire} onChange={(e) => setPrixUnitaire(e.target.value)} placeholder="0" className="h-10" />
+                <Input id="opc-pu" type="number" min="0" value={prixUnitaire} onChange={(e) => setPrixUnitaire(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
               </div>
               <p className="col-span-full text-sm text-slate-500 dark:text-slate-400">
                 Montant (Sortie) : <span className="font-semibold text-slate-700 dark:text-slate-200">{formatFCFA(montantEffectif)}</span>
@@ -239,7 +237,7 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
               <Label htmlFor="opc-montant">
                 Montant (FCFA) <span className="text-red-500">*</span>
               </Label>
-              <Input id="opc-montant" type="number" min="0" value={montant} onChange={(e) => setMontant(e.target.value)} placeholder="0" className="h-10" />
+              <Input id="opc-montant" type="number" min="0" value={montant} onChange={(e) => setMontant(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
             </div>
           )}
         </div>

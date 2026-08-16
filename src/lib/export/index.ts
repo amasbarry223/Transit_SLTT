@@ -10,6 +10,7 @@ export {
   printClasseur,
   printClients,
   printDevis,
+  printDevisList,
   printFactureModule,
   printInvoice,
   buildRecuPaiementHTML,
@@ -20,10 +21,11 @@ export {
   type ClasseurPrintRow,
   type ClientPrintRow,
   type DevisData,
+  type DevisListPrintRow,
   type FactureModuleData,
   type InvoiceData,
   type RecuPaiementModuleData,
-  type StockInventoryPrintOptions,
+  type StockInventoryGroup,
   type StockInventoryRow,
 } from "./print-modules";
 

@@ -17,6 +17,8 @@ export interface SocieteLegalInfo {
 /** Identité d'une société pour l'en-tête d'un document imprimé. */
 export interface SocieteBrand {
   nom: string;
+  /** Nom légal complet pour les documents qui reproduisent le papier à en-tête officiel — repli sur `nom` si absent. */
+  raisonSociale?: string;
   logoUrl?: string;
   legal?: SocieteLegalInfo;
   /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). */
@@ -69,6 +71,17 @@ export function resolveTransitSociete(societes: Societe[]): Societe | undefined 
   return actives.length === 1 ? actives[0] : undefined;
 }
 
+/** Annexe visible uniquement pour la société transit (SLTT) — cf. bon de sortie caisse. */
+export function shouldShowAnnexeForSociete(
+  societeId: string,
+  societes: Societe[],
+  annexes: Annexe[],
+): boolean {
+  if (!societeId || annexes.length <= 1) return false;
+  const transitId = resolveTransitSociete(societes)?.id;
+  return societeId === transitId;
+}
+
 /**
  * Préfixe des références dossier — dérivé du nom (éditable) de la société
  * transit, avec repli si aucune société n'est encore configurée (compte
@@ -96,6 +109,7 @@ export function resolveSocieteDisplayNameById(
 export function societeToBrand(s: Societe): SocieteBrand {
   return {
     nom: s.nom,
+    raisonSociale: s.raisonSociale,
     logoUrl: s.logoUrl,
     afficherNomAvecLogo: s.afficherNomAvecLogo,
     legal: {

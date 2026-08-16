@@ -113,6 +113,15 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
 
   removeFournisseur: async (id) => {
     const fourn = get().fournisseurs.find((f) => f.id === id);
+    // Garde client-side — message clair AVANT l'appel réseau. dossier_fournisseurs.fournisseur_id
+    // est ON DELETE CASCADE en base : sans cette garde, supprimer un fournisseur efface
+    // silencieusement le suivi budget/réel de tous les dossiers qui lui sont liés.
+    const dossiersLies = get().dossierFournisseurs.filter((df) => df.fournisseurId === id).length;
+    if (dossiersLies > 0) {
+      throw new Error(
+        `Impossible de supprimer ${fourn?.nom ?? "ce fournisseur"} : il est lié à ${dossiersLies} dossier(s). Retirez-le d'abord de ces dossiers.`,
+      );
+    }
     const { error } = await supabase.from("fournisseurs").delete().eq("id", id);
     if (error) throw error;
 

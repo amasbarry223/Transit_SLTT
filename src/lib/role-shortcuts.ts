@@ -1,12 +1,13 @@
 import type { UserRole } from "@/lib/domain-types";
 import type { ComptaTab, ViewKey } from "@/lib/nav-store";
-import { Wallet, BarChart3, Warehouse, FileOutput, FolderKanban, ClipboardList, Settings, LayoutDashboard } from "lucide-react";
+import { Wallet, BarChart3, Warehouse, FileOutput, ClipboardList, Settings, LayoutDashboard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 
 export interface RoleShortcut {
   key: ViewKey;
   label: string;
-  icon: LucideIcon;
+  icon: LucideIcon | typeof DossierIcon;
   comptaTab?: ComptaTab;
 }
 
@@ -20,7 +21,7 @@ export const ROLE_SHORTCUTS: Partial<Record<UserRole, RoleShortcut[]>> = {
     { key: "bons", label: "Bons de sortie", icon: FileOutput },
   ],
   "Agent de transit": [
-    { key: "dossiers", label: "Dossiers", icon: FolderKanban },
+    { key: "dossiers", label: "Dossiers", icon: DossierIcon },
     { key: "devis", label: "Devis", icon: ClipboardList },
   ],
   Administrateur: [

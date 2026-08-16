@@ -230,6 +230,7 @@ export interface BonSortieCaisseRow {
 export interface SocieteRow {
   id: string;
   nom: string;
+  raison_sociale: string | null;
   actif: boolean;
   logo_url: string | null;
   adresse: string | null;

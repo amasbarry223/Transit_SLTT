@@ -14,6 +14,8 @@ import type { SlttDocument, DocumentVersion } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { formatDateShort } from "@/lib/format";
 import { formatFileSize } from "@/lib/file-utils";
 import { Button } from "@/components/ui/button";
@@ -84,13 +86,9 @@ export function DossierDocumentsPanel({
           entityType: "dossier",
           entityId: dossierId,
         });
-        toast({ title: "Document ajouté", description: f.nom });
+        toastSuccess(toast, { title: "Document ajouté", description: f.nom });
       } catch (e) {
-        toast({
-          title: "Upload impossible",
-          description: e instanceof Error ? e.message : "Erreur",
-          variant: "destructive",
-        });
+        toastError(toast, e, { title: "Upload impossible", fallback: "Erreur" });
       }
     }
   }
@@ -109,11 +107,7 @@ export function DossierDocumentsPanel({
       const url = await getSignedDocumentUrl(version.storagePath);
       setPreview({ doc, url, version });
     } catch (e) {
-      toast({
-        title: "Aperçu impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Aperçu impossible", fallback: "Erreur" });
     } finally {
       setBusyId(null);
     }
@@ -126,11 +120,7 @@ export function DossierDocumentsPanel({
       setHistoryDoc(doc);
       setHistoryVersions(versions);
     } catch (e) {
-      toast({
-        title: "Historique indisponible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Historique indisponible", fallback: "Erreur" });
     } finally {
       setBusyId(null);
     }
@@ -146,14 +136,10 @@ export function DossierDocumentsPanel({
         mimeType: f.mimeType,
         dataUrl: f.dataUrl,
       });
-      toast({ title: "Nouvelle version enregistrée", description: `v${replaceTarget.currentVersion + 1}` });
+      toastSuccess(toast, { title: "Nouvelle version enregistrée", description: `v${replaceTarget.currentVersion + 1}` });
       setReplaceTarget(null);
     } catch (e) {
-      toast({
-        title: "Remplacement impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Remplacement impossible", fallback: "Erreur" });
     }
   }
 
@@ -164,14 +150,10 @@ export function DossierDocumentsPanel({
         nom: editMeta.values.nom,
         categorie: editMeta.values.categorie,
       });
-      toast({ title: "Métadonnées mises à jour" });
+      toastSuccess(toast, { title: "Métadonnées mises à jour" });
       setEditMeta(null);
     } catch (e) {
-      toast({
-        title: "Enregistrement impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Enregistrement impossible", fallback: "Erreur" });
     }
   }
 
@@ -342,11 +324,7 @@ export function DossierDocumentsPanel({
                       const url = await getSignedDocumentUrl(v.storagePath);
                       if (historyDoc) setPreview({ doc: historyDoc, url, version: v });
                     } catch (e) {
-                      toast({
-                        title: "Aperçu impossible",
-                        description: e instanceof Error ? e.message : "Erreur",
-                        variant: "destructive",
-                      });
+                      toastError(toast, e, { title: "Aperçu impossible", fallback: "Erreur" });
                     }
                   }}
                 >
@@ -371,13 +349,9 @@ export function DossierDocumentsPanel({
           if (!deleteTarget) return;
           try {
             await deleteDocument(deleteTarget.id);
-            toast({ title: "Document supprimé" });
+            toastSuccess(toast, { title: "Document supprimé" });
           } catch (e) {
-            toast({
-              title: "Suppression impossible",
-              description: e instanceof Error ? e.message : "Erreur",
-              variant: "destructive",
-            });
+            toastError(toast, e, { title: "Suppression impossible", fallback: "Erreur" });
           } finally {
             setDeleteTarget(null);
           }

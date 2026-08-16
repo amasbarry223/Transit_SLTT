@@ -12,28 +12,12 @@ export type PaiementMode =
 export type EcritureStatut = "Soldé" | "En attente";
 export type StockStatut = "Disponible" | "Stock faible";
 export type BonMotif = "Vente" | "Livraison" | "Transfert";
-export type ClientType = "Particulier" | "Entreprise";
+export type { ClientType, Client } from "@/features/clients/types";
 export type UserRole =
   | "Administrateur"
   | "Agent de transit"
   | "Comptable"
   | "Magasinier";
-
-export interface Client {
-  id: string;
-  nom: string;
-  type: ClientType;
-  telephone: string;
-  email: string;
-  adresse: string;
-  annexeId: string;
-  annexeNom?: string;
-  societeId: string;
-  societeNom?: string;
-  nbDossiers: number;
-  totalDu: number;
-  totalPaye: number;
-}
 
 export interface Dossier {
   id: string;
@@ -320,6 +304,8 @@ export interface AnnexeInput {
 export interface Societe {
   id: string;
   nom: string;
+  /** Nom légal complet pour les documents qui reproduisent le papier à en-tête officiel (ex. annuaire clients) — repli sur `nom` si absent. */
+  raisonSociale?: string;
   actif: boolean;
   /** true = société porteuse du transit. */
   isTransit?: boolean;
@@ -498,6 +484,8 @@ export interface ContratInput {
   societeId: string;
   clientId: string;
   clientNom: string;
+  /** Implantation Mali/CI — requis pour les contrats SLTT (transit). */
+  annexeId?: string;
   objet: string;
   dateDebut: string;
   dateFin?: string;
@@ -697,41 +685,7 @@ export interface DossierFichier {
   dataUrl: string;
 }
 
-export type DevisStatut = "Brouillon" | "Envoyé" | "Accepté" | "Refusé" | "Expiré";
-
-export interface Devis {
-  id: string;
-  reference: string;
-  clientId: string;
-  clientNom: string;
-  societeId: string;
-  societeNom: string;
-  annexeId: string;
-  annexeNom?: string;
-  nature: string;
-  droitDouane: number;
-  fraisCircuit: number;
-  fraisPrestation: number;
-  total: number;
-  statut: DevisStatut;
-  dateCreation: string;
-  dateValidite: string;
-  notes?: string;
-  /** Renseigné une fois converti — empêche une double conversion et permet de retrouver le dossier issu de ce devis. */
-  dossierId?: string | null;
-}
-
-export interface DevisInput {
-  clientId: string;
-  clientNom: string;
-  societeId: string;
-  nature: string;
-  droitDouane: number;
-  fraisCircuit: number;
-  fraisPrestation: number;
-  dateValidite: string;
-  notes?: string;
-}
+export type { DevisStatut, Devis, DevisInput } from "@/features/devis/types";
 
 export type TransporteurStatut = "Actif" | "Inactif";
 export type TypeVehicule = "Camion" | "Remorque" | "Semi-remorque" | "Benne" | "Fourgon";

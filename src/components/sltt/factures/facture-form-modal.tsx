@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Plus, Receipt, X } from "lucide-react";
+import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +19,8 @@ import { useStore, type FactureInput } from "@/lib/store";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-helpers";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { getErrorMessage } from "@/lib/utils";
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
 import { resolveDossierCoutLabels } from "@/lib/societe-brand";
@@ -62,6 +63,7 @@ export function FactureFormModal({
   const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? defaultDueDate);
   const [tvaOn,        setTvaOn]        = React.useState((prefill?.tauxTVA ?? DEFAULT_TVA_RATE) > 0);
   const [notes,        setNotes]        = React.useState(prefill?.notes ?? "");
+  const [saving,       setSaving]       = React.useState(false);
   const tauxTVA = tvaOn ? String(DEFAULT_TVA_RATE) : "0";
   const [lignes,       setLignes]       = React.useState<LigneForm[]>(
     prefill?.lignes?.map((l) => ({
@@ -121,7 +123,9 @@ export function FactureFormModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     if (!clientId || !annexeId || lignes.every((l) => !l.description)) return;
+    setSaving(true);
     try {
       const f = await addFacture({
         dossierId: dossierId || null,
@@ -144,11 +148,9 @@ export function FactureFormModal({
       onClose();
       go("facture-detail", { id: f.id });
     } catch (err) {
-      toast({
-        title: "Erreur",
-        description: getErrorMessage(err, "Impossible de créer la facture"),
-        variant: "destructive",
-      });
+      toastError(toast, err, { title: "Impossible de créer la facture", fallback: "Impossible de créer la facture" });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -288,7 +290,7 @@ export function FactureFormModal({
                     min="0"
                     value={l.prixUnitaire}
                     onChange={(e) => updateLigne(i, "prixUnitaire", e.target.value)}
-                    placeholder="0"
+                    placeholder={UI.placeholders.amountFCFA}
                     className="h-8 text-right text-xs"
                   />
                   <button
@@ -348,7 +350,7 @@ export function FactureFormModal({
           {/* Footer */}
           <div className="flex justify-end gap-2 px-6 py-4">
             <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={!clientId}>
+            <Button type="submit" disabled={!clientId || saving}>
               <Receipt className="mr-1.5 size-3.5" /> Créer la facture
             </Button>
           </div>

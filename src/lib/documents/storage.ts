@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { logError } from "@/shared/logger";
 import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
 
 export const DOCUMENTS_BUCKET = "documents";
@@ -55,7 +56,7 @@ export async function removeDocumentStoragePaths(paths: string[]): Promise<boole
   if (paths.length === 0) return true;
   const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
   if (error) {
-    console.error("[documents] Échec suppression storage:", error.message);
+    logError("[documents] Échec suppression storage", error, { message: error.message });
     return false;
   }
   return true;

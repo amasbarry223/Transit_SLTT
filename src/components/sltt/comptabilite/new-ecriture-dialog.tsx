@@ -1,4 +1,5 @@
 import type { Client, Dossier, PaiementMode, Societe } from "@/lib/domain-types";
+import { UI } from "@/lib/ui-messages";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,12 +84,12 @@ export function NewEcritureDialog(props: NewEcritureDialogProps) {
               <Label htmlFor="ne-investi" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Montant investi (FCFA) <span className="text-red-500">*</span>
               </Label>
-              <Input id="ne-investi" type="number" value={props.investi} onChange={(event) => props.onInvestiChange(event.target.value)} placeholder="0" className="h-10" disabled={!!props.dossierId} />
+              <Input id="ne-investi" type="number" value={props.investi} onChange={(event) => props.onInvestiChange(event.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" disabled={!!props.dossierId} />
               {props.dossierId && <p className="text-xs text-slate-400 dark:text-slate-500">Verrouillé sur le montant investi du dossier lié.</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="ne-paye" className="text-sm font-medium text-slate-700 dark:text-slate-300">Montant payé (FCFA)</Label>
-              <Input id="ne-paye" type="number" value={props.paye} onChange={(event) => props.onPayeChange(event.target.value)} placeholder="0" className="h-10" />
+              <Input id="ne-paye" type="number" value={props.paye} onChange={(event) => props.onPayeChange(event.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

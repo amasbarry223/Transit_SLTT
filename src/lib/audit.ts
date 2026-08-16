@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { logError, logWarn } from "@/shared/logger";
 
 export type AuditAction =
   | "Connexion"
@@ -105,7 +106,7 @@ async function resolveClientIp(): Promise<string> {
     }
   } catch (err) {
     if (process.env.NODE_ENV === "development") {
-      console.warn("[audit] Impossible de résoudre l'IP client:", err);
+      logWarn("[audit] Impossible de résoudre l'IP client", err);
     }
   }
   cachedClientIp = "N/A";
@@ -169,7 +170,7 @@ export async function insertAuditLog(params: {
         : typeof err === "object" && err !== null && "message" in err
           ? String((err as { message: unknown }).message)
           : String(err);
-    console.error(`[audit] Échec insert (${params.module}/${params.action}):`, message);
+    logError(`[audit] Échec insert (${params.module}/${params.action})`, err, { message });
     return null;
   }
 }

@@ -1,27 +1,13 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
-import type { Client } from "@/lib/domain-types";
-import type { ClientInput, SLTTState } from "@/lib/store";
-import type { ClientRow } from "@/lib/db-rows";
+import type { Client, ClientInput } from "@/features/clients/types";
+import { clientInputSchema } from "@/features/clients/schemas/client-schema";
+import { clientService } from "@/features/clients/services/client-service";
+import { mapClientFromDb } from "@/features/clients/services/client-mapper";
+import { ValidationError } from "@/shared/errors";
+import type { SLTTState } from "@/lib/store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
-export function mapClientFromDb(row: ClientRow): Client {
-  return {
-    id: row.id,
-    nom: row.nom,
-    type: row.type,
-    telephone: row.telephone,
-    email: row.email,
-    adresse: row.adresse,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom,
-    nbDossiers: 0,
-    totalDu: 0,
-    totalPaye: 0,
-  };
-}
+export { mapClientFromDb };
 
 export interface ClientsSlice {
   clients: Client[];
@@ -30,55 +16,54 @@ export interface ClientsSlice {
   getClient: (id: string) => Client | undefined;
 }
 
+function parseClientInput(input: ClientInput): ClientInput {
+  const parsed = clientInputSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new ValidationError(
+      "Les données du client sont invalides.",
+      parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    );
+  }
+  return parsed.data;
+}
+
 export const createClientsSlice: StateCreator<SLTTState, [], [], ClientsSlice> = (set, get) => ({
   clients: [],
 
   addClient: async (input) => {
+    const validInput = parseClientInput(input);
     const seq = get().clientSeq;
+    const result = await clientService.create(validInput);
+    if (!result.ok) throw result.error;
 
-    const { data, error } = await supabase
-      .from("clients")
-      .insert({
-        nom: input.nom,
-        type: input.type,
-        telephone: input.telephone,
-        email: input.email,
-        adresse: input.adresse,
-        annexe_id: input.annexeId,
-        societe_id: input.societeId,
-      })
-      .select("*, annexes(nom), societes(nom)")
-      .single();
-
-    if (error) throw error;
-    const newClient = mapClientFromDb(data);
+    const newClient = result.value;
     set((s) => ({
       clients: [newClient, ...s.clients],
       clientSeq: seq + 1,
     }));
-    await get().addAuditLog(AUDIT_MODULE.Clients, AUDIT_ACTION.Creation, `Client ${input.nom} créé`, newClient.id);
+    await get().addAuditLog(
+      AUDIT_MODULE.Clients,
+      AUDIT_ACTION.Creation,
+      `Client ${validInput.nom} créé`,
+      newClient.id,
+    );
     return newClient;
   },
 
   updateClient: async (id, input) => {
-    const { error } = await supabase
-      .from("clients")
-      .update({
-        nom: input.nom,
-        type: input.type,
-        telephone: input.telephone,
-        email: input.email,
-        adresse: input.adresse,
-        annexe_id: input.annexeId,
-        societe_id: input.societeId,
-      })
-      .eq("id", id);
-    if (error) throw error;
+    const validInput = parseClientInput(input);
+    const result = await clientService.update(id, validInput);
+    if (!result.ok) throw result.error;
 
     set((s) => ({
-      clients: s.clients.map((c) => (c.id === id ? { ...c, ...input } : c)),
+      clients: s.clients.map((c) => (c.id === id ? { ...c, ...validInput } : c)),
     }));
-    await get().addAuditLog(AUDIT_MODULE.Clients, AUDIT_ACTION.Modification, `Client ${input.nom} mis à jour`, id);
+    await get().addAuditLog(
+      AUDIT_MODULE.Clients,
+      AUDIT_ACTION.Modification,
+      `Client ${validInput.nom} mis à jour`,
+      id,
+    );
   },
 
   getClient: (id) => get().clients.find((c) => c.id === id),

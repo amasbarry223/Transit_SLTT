@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UI } from "@/lib/ui-messages";
 
 /**
  * Confirmation renforcée pour les actions destructives à fort impact
@@ -28,7 +29,8 @@ export function DangerConfirmDialog({
   description,
   consequences,
   confirmPhrase,
-  confirmLabel = "Confirmer",
+  confirmLabel,
+  cancelLabel = UI.buttons.cancel,
   onConfirm,
 }: {
   open: boolean;
@@ -38,7 +40,8 @@ export function DangerConfirmDialog({
   consequences?: string[];
   /** Phrase exacte à recopier pour activer le bouton de confirmation. */
   confirmPhrase: string;
-  confirmLabel?: string;
+  confirmLabel: string;
+  cancelLabel?: string;
   onConfirm: () => void | Promise<void>;
 }) {
   const [typed, setTyped] = useState("");
@@ -97,7 +100,7 @@ export function DangerConfirmDialog({
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Annuler</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             disabled={!matches || loading}
@@ -107,7 +110,7 @@ export function DangerConfirmDialog({
             }}
           >
             {loading && <Loader2 className="size-4 animate-spin" />}
-            {loading ? "En cours…" : confirmLabel}
+            {loading ? UI.loading.saving : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

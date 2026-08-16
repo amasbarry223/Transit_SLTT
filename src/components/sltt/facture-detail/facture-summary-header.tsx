@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ChevronRight,
   CreditCard,
-  FolderKanban,
   MoreHorizontal,
   Pencil,
   Printer,
@@ -12,6 +11,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 import type { Dossier, Facture, FactureStatut } from "@/lib/store";
 import type { SocieteBrand } from "@/lib/export";
 import { formatDateShort, formatFCFA } from "@/lib/format";
@@ -86,7 +86,7 @@ export function FactureSummaryHeader({
                     onClick={() => onOpenDossier(dossier.id)}
                     className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-300"
                   >
-                    <FolderKanban className="size-3" />
+                    <DossierIcon className="size-3" />
                     {dossier.reference}
                   </button>
                 )}
@@ -160,7 +160,7 @@ export function FactureSummaryHeader({
                     className="gap-2 text-indigo-700 dark:text-indigo-300 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
                     onClick={() => onOpenDossier(dossier.id)}
                   >
-                    <FolderKanban className="size-4" /> Voir le dossier
+                    <DossierIcon className="size-4" /> Voir le dossier
                   </Button>
                 )}
                 {canWrite && facture.statut !== "Annulée" && facture.statut !== "Soldée" && (

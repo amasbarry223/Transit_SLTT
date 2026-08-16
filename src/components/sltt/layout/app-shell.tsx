@@ -8,33 +8,30 @@ import { Topbar } from "./topbar";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 
+import { ArchivesScreen } from "@/features/archives";
+import { BilansScreen } from "@/features/bilans";
+import { BonsScreen } from "@/features/bons";
+import { CalendrierScreen } from "@/features/calendrier";
+import { ClientFicheScreen, ClientsScreen } from "@/features/clients";
+import { ComptabiliteScreen } from "@/features/comptabilite";
+import { ContratDetailScreen, ContratsScreen } from "@/features/contrats";
+import { DashboardScreen } from "@/features/dashboard";
+import { DevisDetailScreen, DevisScreen } from "@/features/devis";
 import {
-  ArchivesScreen,
-  BilansScreen,
-  BonsScreen,
-  CalendrierScreen,
-  ClientFicheScreen,
-  ClientsScreen,
-  ComptabiliteScreen,
-  ContratDetailScreen,
-  ContratsScreen,
-  DashboardScreen,
-  DevisDetailScreen,
-  DevisScreen,
   DossierDetailScreen,
   DossierFormScreen,
   DossiersListScreen,
-  EntreposageScreen,
-  FactureDetailScreen,
-  FacturesScreen,
-  FournisseursScreen,
-  ParametresScreen,
-  RecusPaiementScreen,
-  TransporteursScreen,
-} from "@/components/sltt/screens";
+} from "@/features/dossiers";
+import { EntreposageScreen } from "@/features/entreposage";
+import { FactureDetailScreen, FacturesScreen } from "@/features/factures";
+import { FournisseursScreen } from "@/features/fournisseurs";
+import { ParametresScreen } from "@/features/parametres";
+import { RecusPaiementScreen } from "@/features/recus-paiement";
+import { TransporteursScreen } from "@/features/transporteurs";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
 import { cn } from "@/lib/utils";
+import { UI } from "@/lib/ui-messages";
 
 export function AppShell() {
   const view = useNav((s) => s.view);
@@ -46,10 +43,6 @@ export function AppShell() {
   const fetchData = useStore((s) => s.fetchData);
   const clearLoadError = useStore((s) => s.clearLoadError);
   const clearPartialLoadWarning = useStore((s) => s.clearPartialLoadWarning);
-  // Dernier rempart de permission : la sidebar/le breadcrumb/la palette de
-  // commandes filtrent déjà ce qu'ils proposent, mais une URL tapée à la
-  // main ou un état restauré peut viser une vue interdite — on ne rend
-  // jamais l'écran cible dans ce cas, quel que soit le point d'entrée.
   const canViewCurrent = useCanView(view);
   const isInitialLoad = lastSyncedAt === null && !loadError;
   const isRecuWorkspace = view === "recus-paiement" && canViewCurrent && !isInitialLoad;
@@ -69,14 +62,16 @@ export function AppShell() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-red-200 bg-red-50 px-4 py-2.5 dark:border-red-900/60 dark:bg-red-950/40">
             <div className="flex items-start gap-2 text-sm text-red-800 dark:text-red-200">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-              <span>Impossible de charger les données : {loadError}</span>
+              <span>
+                {UI.empty.loadError.title}. {UI.empty.loadError.description}
+              </span>
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => { clearLoadError(); fetchData(); }}>
-                Réessayer
+                {UI.empty.loadError.action}
               </Button>
               <Button size="sm" variant="ghost" onClick={clearLoadError}>
-                Fermer
+                {UI.buttons.close}
               </Button>
             </div>
           </div>

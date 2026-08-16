@@ -525,7 +525,7 @@ export function isTransporteurFormValid(values: TransporteurInput): boolean {
 
 export function validateTransporteurForm(values: TransporteurInput): Partial<Record<keyof TransporteurInput, string>> {
   const errors: Partial<Record<keyof TransporteurInput, string>> = {};
-  if (!values.nom.trim()) errors.nom = "Nom requis";
+  if (!values.nom.trim()) errors.nom = "Le nom est obligatoire.";
   if (!values.contact.trim()) errors.contact = "Contact requis";
   if (!values.telephone.trim()) errors.telephone = "Téléphone requis";
   if (!values.immatriculation.trim()) errors.immatriculation = "Immatriculation requise";

@@ -1,6 +1,13 @@
+/** @deprecated Import from `@/shared/errors` instead. */
 export {
   type ApiErrorBody,
   apiErrorResponse,
   apiSuccessResponse,
   toApiErrorResponse,
-} from "./api-error";
+  AppError,
+  isAppError,
+  ValidationError,
+  isValidationError,
+  NotFoundError,
+  UnauthorizedError,
+} from "@/shared/errors";

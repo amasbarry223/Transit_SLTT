@@ -5,7 +5,8 @@ import { Download, Trash2, Upload } from "lucide-react";
 import { formatDateShort } from "@/lib/format";
 import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
 import { useToast } from "@/hooks/use-toast";
-import { toastError } from "@/lib/toast-error";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,26 @@ export type EntityFilePayload = {
   type: string;
   dataUrl: string;
 };
+
+// Types acceptés par défaut pour les pièces jointes (scans BL/DAU, contrats,
+// justificatifs) : documents et images courants. Volontairement restrictif —
+// bloque exécutables, scripts et HTML/SVG (risque XSS si le fichier est
+// réouvert depuis son URL signée) qu'aucun flux métier ne doit accepter ici.
+const DEFAULT_ACCEPTED_MIME_PREFIXES = ["image/", "application/pdf"];
+const DEFAULT_ACCEPTED_MIME_TYPES = [
+  "application/msword",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+  "text/csv",
+];
+
+function isAcceptedFileType(mimeType: string): boolean {
+  if (!mimeType) return false;
+  if (DEFAULT_ACCEPTED_MIME_PREFIXES.some((prefix) => mimeType.startsWith(prefix))) return true;
+  return DEFAULT_ACCEPTED_MIME_TYPES.includes(mimeType);
+}
 
 export type EntityFileDropZoneLabels = {
   dropTitle: string;
@@ -64,9 +85,12 @@ export function EntityFileDropZone<T extends EntityFileItem>({
     if (!fichierToDelete) return;
     try {
       await onDelete(fichierToDelete.id);
-      toast({ title: labels.deleted, description: fichierToDelete.nom });
+      toastSuccess(toast, { title: labels.deleted, description: fichierToDelete.nom });
     } catch (e) {
-      toastError(toast, e, "Erreur inattendue.", "Suppression impossible");
+      toastError(toast, e, {
+        title: "Suppression impossible",
+        fallback: UI.errors.generic,
+      });
     } finally {
       setFichierToDelete(null);
     }
@@ -75,11 +99,18 @@ export function EntityFileDropZone<T extends EntityFileItem>({
   function uploadSelectedFiles(fileList: FileList | null) {
     if (!fileList) return;
     Array.from(fileList).forEach((file) => {
+      const mimeType = file.type || "application/octet-stream";
+      if (!isAcceptedFileType(mimeType)) {
+        toastWarning(toast, {
+          title: "Type de fichier non autorisé",
+          description: `${file.name} : seuls les documents (PDF, images, Word, Excel, texte) sont acceptés.`,
+        });
+        return;
+      }
       if (file.size > maxBytes) {
-        toast({
+        toastWarning(toast, {
           title: "Fichier trop volumineux",
           description: `${file.name} dépasse la limite de ${maxMbLabel} Mo.`,
-          variant: "destructive",
         });
         return;
       }
@@ -92,9 +123,12 @@ export function EntityFileDropZone<T extends EntityFileItem>({
             type: file.type || "application/octet-stream",
             dataUrl: ev.target?.result as string,
           });
-          toast({ title: labels.added, description: file.name });
+          toastSuccess(toast, { title: labels.added, description: file.name });
         } catch (e) {
-          toastError(toast, e, "Erreur inattendue.", "Échec de l'upload");
+          toastError(toast, e, {
+            title: "Échec de l'upload",
+            fallback: UI.errors.generic,
+          });
         }
       };
       reader.readAsDataURL(file);
@@ -142,6 +176,7 @@ export function EntityFileDropZone<T extends EntityFileItem>({
             type="file"
             className="hidden"
             multiple
+            accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.csv,.txt"
             onChange={(e) => {
               uploadSelectedFiles(e.target.files);
               e.target.value = "";

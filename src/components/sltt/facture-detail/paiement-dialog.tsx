@@ -6,6 +6,8 @@ import { useStore, type Facture } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,28 +46,23 @@ export function PaiementDialog({
     e.preventDefault();
     const m = parseFloat(montant);
     if (!m || m <= 0) {
-      toast({ title: "Montant invalide", description: "Le montant doit être supérieur à 0.", variant: "destructive" });
+      toastWarning(toast, { title: "Montant invalide", description: "Le montant doit être supérieur à 0." });
       return;
     }
     if (m > reste) {
-      toast({
+      toastWarning(toast, {
         title: "Montant trop élevé",
         description: `Le reste à payer est de ${reste.toLocaleString("fr-FR")} FCFA.`,
-        variant: "destructive",
       });
       return;
     }
     setSaving(true);
     try {
       await recordPaiement(facture.id, m);
-      toast({ title: "Paiement enregistré", description: `${m.toLocaleString("fr-FR")} FCFA encaissés.` });
+      toastSuccess(toast, { title: "Paiement enregistré", description: `${m.toLocaleString("fr-FR")} FCFA encaissés.` });
       onOpenChange(false);
     } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        description: err instanceof Error ? err.message : "Impossible d'enregistrer le paiement.",
-        variant: "destructive",
-      });
+      toastError(toast, err, { title: "Impossible d'enregistrer le paiement", fallback: "Impossible d'enregistrer le paiement." });
     } finally {
       setSaving(false);
     }

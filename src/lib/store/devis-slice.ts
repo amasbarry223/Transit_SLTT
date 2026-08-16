@@ -4,6 +4,7 @@ import { useSession } from "@/lib/session/session-store";
 import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
+import { mapDevisFromDb } from "@/features/devis/services/devis-mapper";
 import { resolveTransitSociete } from "@/lib/societe-brand";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import type { DevisRow } from "@/lib/db-rows";
@@ -13,33 +14,13 @@ import {
   insertWithReferenceRetry,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+import { logError } from "@/shared/logger";
+
+export { mapDevisFromDb };
 
 function currentUserAnnexeIds(get: () => SLTTState): string[] {
   const userId = useSession.getState().currentUserId;
   return get().users.find((u) => u.id === userId)?.annexeIds ?? [];
-}
-
-export function mapDevisFromDb(row: DevisRow): Devis {
-  return {
-    id: row.id,
-    reference: row.reference,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || "—",
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    nature: row.nature,
-    droitDouane: Number(row.droit_douane),
-    fraisCircuit: Number(row.frais_circuit),
-    fraisPrestation: Number(row.frais_prestation),
-    total: Number(row.total),
-    statut: row.statut,
-    dateCreation: row.date_creation,
-    dateValidite: row.date_validite,
-    notes: row.notes || undefined,
-    dossierId: row.dossier_id ?? undefined,
-  };
 }
 
 export interface DevisSlice {
@@ -253,9 +234,10 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       try {
         await get().removeDossier(newDossier.id);
       } catch (rollbackError) {
-        console.error(
+        logError(
           "Rollback conversion devis→dossier échoué : dossier orphelin à purger manuellement",
-          { dossierId: newDossier.id, devisId: id, rollbackError },
+          rollbackError,
+          { dossierId: newDossier.id, devisId: id },
         );
       }
       throw linkError;

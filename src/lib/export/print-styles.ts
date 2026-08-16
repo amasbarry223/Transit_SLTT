@@ -46,3 +46,83 @@ export const PRINT_HTML_DOCUMENT_CSS = `
       body { padding: 0; }
       .no-print { display: none; }
     }`;
+
+/** En-tête papier officiel — marque à gauche, coordonnées à droite, double filet. */
+export const OFFICIAL_LETTERHEAD_CSS = `
+  .official-letterhead {
+    padding: 20px 28px 0;
+    background: #fff;
+  }
+  .official-letterhead-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+  }
+  .official-letterhead-brand {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex: 1;
+    min-width: 0;
+  }
+  .official-letterhead-logo-wrap {
+    flex-shrink: 0;
+    width: 130px;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+  .official-letterhead-logo {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    background: transparent;
+  }
+  .official-letterhead-name {
+    flex: 1;
+    min-width: 0;
+  }
+  .official-letterhead-name-l1,
+  .official-letterhead-name-l2 {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 23px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: ${BRAND.navy};
+    line-height: 1.15;
+  }
+  .official-letterhead-name-l2 {
+    margin-top: 2px;
+  }
+  .official-letterhead-legal-block {
+    flex-shrink: 0;
+    text-align: right;
+    align-self: center;
+  }
+  .official-letterhead-line {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: #374151;
+  }
+  .official-letterhead-line + .official-letterhead-line {
+    margin-top: 2px;
+  }
+  .official-letterhead-legal {
+    font-size: 13px;
+    color: #4b5563;
+  }
+  .official-letterhead-rule {
+    margin-top: 16px;
+    border-bottom: 3px solid ${BRAND.navy};
+    position: relative;
+  }
+  .official-letterhead-rule::after {
+    content: "";
+    display: block;
+    border-bottom: 1px solid ${BRAND.red};
+    margin-top: 3px;
+  }`;

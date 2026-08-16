@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useStore, type Devis } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { getErrorMessage } from "@/lib/utils";
+import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,17 +50,16 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
     try {
       const dossier = await convertDevisToDossier(devis.id, blValue, camionValue);
       if (dossier) {
-        toast({
+        toastSuccess(toast, {
           title: useDraft ? "Dossier brouillon créé" : "Dossier créé",
           description: `${dossier.reference} ouvert depuis ${devis.reference}${useDraft ? " — complétez BL et camion depuis la fiche dossier." : ""}`,
         });
         onConverted(dossier.id);
       }
     } catch (e) {
-      toast({
-        title: "Erreur",
-        description: getErrorMessage(e, "Impossible de convertir le devis"),
-        variant: "destructive",
+      toastError(toast, e, {
+        title: "Impossible de convertir le devis",
+        fallback: UI.errors.saveFailed,
       });
     } finally {
       setSaving(false);

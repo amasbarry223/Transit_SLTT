@@ -10,6 +10,7 @@ import type {
 import type { SLTTState } from "@/lib/store";
 import type { ClotureCaisseRow, OperationComptableRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+import { extractTrailingSeq, insertWithReferenceRetry } from "@/lib/store/reference";
 
 export function mapOperationComptableFromDb(row: OperationComptableRow): OperationComptable {
   return {
@@ -84,38 +85,46 @@ export const createComptabiliteGeneraleSlice: StateCreator<
 
   addOperationComptable: async (input) => {
     const seq = get().operationComptableSeq;
-    const reference = `OPC-${seq}`;
+    const initialReference = `OPC-${seq}`;
     const creePar = getConnectedUserName();
 
-    const { data, error } = await supabase
-      .from("operations_comptables")
-      .insert({
-        reference,
-        entite_type: input.entiteType,
-        annexe_id: input.annexeId || null,
-        societe_id: input.societeId || null,
-        date: input.date,
-        client_id: input.clientId || null,
-        dossier_id: input.dossierId || null,
-        client_nom: input.clientNom,
-        nature: input.nature,
-        type: input.type,
-        montant: Math.max(0, input.montant),
-        mode_paiement: input.modePaiement ?? "Espèces",
-        quantite: input.quantite ?? null,
-        prix_unitaire: input.prixUnitaire ?? null,
-        source: input.source ?? "saisie",
-        import_ref: input.importRef || null,
-        cree_par: creePar,
-      })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
-      .single();
-    if (error) throw error;
+    // Retry avec référence incrémentée si deux créations concurrentes ont
+    // calculé le même numéro — la contrainte unique en base
+    // (operations_comptables.reference) fait alors échouer l'un des deux
+    // inserts (même pattern que addBon/addDossier/addDevis/addFacture).
+    const { data, reference } = await insertWithReferenceRetry<OperationComptableRow>(
+      initialReference,
+      (ref) =>
+        supabase
+          .from("operations_comptables")
+          .insert({
+            reference: ref,
+            entite_type: input.entiteType,
+            annexe_id: input.annexeId || null,
+            societe_id: input.societeId || null,
+            date: input.date,
+            client_id: input.clientId || null,
+            dossier_id: input.dossierId || null,
+            client_nom: input.clientNom,
+            nature: input.nature,
+            type: input.type,
+            montant: Math.max(0, input.montant),
+            mode_paiement: input.modePaiement ?? "Espèces",
+            quantite: input.quantite ?? null,
+            prix_unitaire: input.prixUnitaire ?? null,
+            source: input.source ?? "saisie",
+            import_ref: input.importRef || null,
+            cree_par: creePar,
+          })
+          .select("*, clients(nom), societes(nom), annexes(nom)")
+          .single(),
+    );
 
     const newOperation = mapOperationComptableFromDb(data);
+    const finalSeq = extractTrailingSeq(reference) ?? seq;
     set((s) => ({
       operationsComptables: [newOperation, ...s.operationsComptables],
-      operationComptableSeq: seq + 1,
+      operationComptableSeq: finalSeq + 1,
     }));
 
     await get().addAuditLog(

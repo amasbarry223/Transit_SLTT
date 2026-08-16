@@ -6,13 +6,13 @@ import { formatDateShort } from "@/lib/format";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
-import { toastError } from "@/lib/toast-error";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
-import { getErrorMessage } from "@/lib/utils";
 
 export const PAGE_SIZE = 8;
 
@@ -181,12 +181,11 @@ export function useTransporteursScreen() {
     }
     try {
       await updateTransporteurStatut(t.id, next);
-      toast({ title: "Transporteur activé", description: t.nom });
+      toastSuccess(toast, { title: "Transporteur activé", description: t.nom });
     } catch (e) {
-      toast({
-        title: "Erreur",
-        description: getErrorMessage(e, "Impossible de modifier le statut"),
-        variant: "destructive",
+      toastError(toast, e, {
+        title: "Impossible de modifier le statut",
+        fallback: "Impossible de modifier le statut du transporteur.",
       });
     }
   };
@@ -195,12 +194,11 @@ export function useTransporteursScreen() {
     if (!deactivateTarget) return;
     try {
       await updateTransporteurStatut(deactivateTarget.id, "Inactif");
-      toast({ title: "Transporteur désactivé", description: deactivateTarget.nom });
+      toastSuccess(toast, { title: "Transporteur désactivé", description: deactivateTarget.nom });
     } catch (e) {
-      toast({
-        title: "Erreur",
-        description: getErrorMessage(e, "Impossible de modifier le statut"),
-        variant: "destructive",
+      toastError(toast, e, {
+        title: "Impossible de modifier le statut",
+        fallback: "Impossible de modifier le statut du transporteur.",
       });
     }
     setDeactivateTarget(null);
@@ -208,10 +206,9 @@ export function useTransporteursScreen() {
 
   const handleExportExcel = async () => {
     if (filtered.length === 0) {
-      toast({
+      toastWarning(toast, {
         title: "Rien à exporter",
-        description: "Aucun transporteur ne correspond aux filtres actuels.",
-        variant: "destructive",
+        description: UI.errors.exportEmpty,
       });
       return;
     }
@@ -235,10 +232,13 @@ export function useTransporteursScreen() {
         { module: "Transporteurs" },
       );
     } catch (error) {
-      toastError(toast, error, "Impossible de générer l'export Excel.");
+      toastError(toast, error, {
+        title: "Impossible de générer l'export Excel",
+        fallback: UI.errors.exportFailed,
+      });
       return;
     }
-    toast({
+    toastSuccess(toast, {
       title: "Export Excel généré",
       description: `${filtered.length} transporteur${filtered.length !== 1 ? "s" : ""} exporté${filtered.length !== 1 ? "s" : ""}.`,
     });

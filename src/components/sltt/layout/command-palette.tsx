@@ -13,6 +13,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import { UI } from "@/lib/ui-messages";
 import {
   Search,
   User as UserIcon,
@@ -21,10 +22,10 @@ import {
   Receipt,
   Plus,
   Wallet,
-  FolderKanban,
   FileSignature,
   ScrollText,
 } from "lucide-react";
+import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 import { usePermission, useCanView } from "@/hooks/use-permission";
 import type { NavItem } from "@/lib/nav-items";
 
@@ -75,7 +76,7 @@ export function CommandPalette() {
     canCreateDossier && {
       label: "Nouveau dossier",
       value: "action nouveau dossier transit",
-      icon: FolderKanban,
+      icon: DossierIcon,
       section: "Cycle commercial",
       run: () => goToNewDossier(),
     },
@@ -170,9 +171,9 @@ export function CommandPalette() {
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Rechercher un écran, un dossier, un client, une facture, un contrat…" />
+        <CommandInput placeholder={UI.placeholders.searchGlobal} />
         <CommandList>
-          <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
+          <CommandEmpty>{UI.empty.search.title}. {UI.empty.search.description}</CommandEmpty>
 
           {Object.entries(actionsBySection).map(([section, actions]) => (
             <CommandGroup key={section} heading={`Actions — ${section}`}>

@@ -311,6 +311,16 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         archives: s.archives.map((archive) =>
           archive.dossierId === id ? { ...archive, dossierId: undefined } : archive,
         ),
+        // documents.dossier_id et operations_comptables.dossier_id sont
+        // ON DELETE SET NULL en base (comme ecritures/factures/devis/archives
+        // ci-dessus) — sans ça, ces deux tableaux restaient périmés en mémoire
+        // (toujours liés au dossier supprimé) jusqu'au prochain refetch complet.
+        documents: s.documents.map((document) =>
+          document.dossierId === id ? { ...document, dossierId: undefined } : document,
+        ),
+        operationsComptables: s.operationsComptables.map((operation) =>
+          operation.dossierId === id ? { ...operation, dossierId: undefined } : operation,
+        ),
       };
     });
 

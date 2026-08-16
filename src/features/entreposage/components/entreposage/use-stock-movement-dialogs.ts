@@ -1,0 +1,128 @@
+"use client";
+
+import { useState } from "react";
+import { useStore, type StockItem } from "@/lib/store";
+import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
+import { useCurrentUser } from "@/hooks/use-permission";
+
+export const SORTIE_MOTIFS = ["Vente", "Livraison", "Transfert", "Autre"] as const;
+export type SortieMotif = (typeof SORTIE_MOTIFS)[number];
+
+export function useStockMovementDialogs(stock: StockItem[]) {
+  const { toast } = useToast();
+  const currentUser = useCurrentUser();
+  const addStockEntry = useStore((s) => s.addStockEntry);
+  const addStockExit = useStore((s) => s.addStockExit);
+
+  const [entryOpen, setEntryOpen] = useState(false);
+  const [entryStockId, setEntryStockId] = useState<string>("");
+  const [entryQty, setEntryQty] = useState<string>("1");
+  const [entryResp, setEntryResp] = useState<string>("");
+
+  const [exitOpen, setExitOpen] = useState(false);
+  const [exitStockId, setExitStockId] = useState<string>("");
+  const [exitQty, setExitQty] = useState<string>("1");
+  const [exitResp, setExitResp] = useState<string>("");
+  const [exitMotif, setExitMotif] = useState<SortieMotif>("Vente");
+  const [entrySaving, setEntrySaving] = useState(false);
+  const [exitSaving, setExitSaving] = useState(false);
+
+  function openEntry(stockId: string | null) {
+    const id = stockId ?? stock[0]?.id ?? "";
+    setEntryStockId(id);
+    setEntryQty("1");
+    setEntryResp(currentUser?.nom ?? "");
+    setEntryOpen(true);
+  }
+
+  function openExit(stockId: string | null) {
+    const id = stockId ?? stock[0]?.id ?? "";
+    setExitStockId(id);
+    setExitQty("1");
+    setExitResp(currentUser?.nom ?? "");
+    setExitMotif("Vente");
+    setExitOpen(true);
+  }
+
+  async function submitEntry() {
+    // Garde anti-double-soumission : sans elle, un double-clic pendant l'appel
+    // async (avant que le bouton ne se désactive au prochain rendu) déclenche
+    // deux entrées de stock pour un seul clic utilisateur.
+    if (entrySaving) return;
+    if (!entryStockId) return;
+    const qty = parseInt(entryQty, 10);
+    if (!qty || qty <= 0) return;
+    setEntrySaving(true);
+    try {
+      await addStockEntry(entryStockId, qty, entryResp.trim() || currentUser?.nom || "Système");
+      toastSuccess(toast, { title: "Entrée enregistrée — stock mis à jour" });
+      setEntryOpen(false);
+    } catch (err: unknown) {
+      toastError(toast, err, { title: "Impossible d'enregistrer l'entrée", fallback: "Impossible d'enregistrer l'entrée." });
+    } finally {
+      setEntrySaving(false);
+    }
+  }
+
+  async function submitExit() {
+    // Même garde côté sortie : une double soumission ici est plus grave,
+    // puisque chaque appel décrémente le stock — un double-clic pourrait
+    // faire passer la quantité disponible sous zéro alors que la validation
+    // ci-dessous ne voit qu'une seule sortie à la fois.
+    if (exitSaving) return;
+    if (!exitStockId) return;
+    const qty = parseInt(exitQty, 10);
+    if (!qty || qty <= 0) return;
+    const item = stock.find((s) => s.id === exitStockId);
+    if (!item || qty > item.quantite) return;
+    setExitSaving(true);
+    try {
+      await addStockExit(exitStockId, qty, exitResp.trim() || currentUser?.nom || "Système", undefined, exitMotif);
+      toastSuccess(toast, { title: "Sortie enregistrée — stock décrémenté" });
+      setExitOpen(false);
+    } catch (err: unknown) {
+      toastError(toast, err, { title: "Impossible d'enregistrer la sortie", fallback: "Impossible d'enregistrer la sortie." });
+    } finally {
+      setExitSaving(false);
+    }
+  }
+
+  const entryQtyNum = parseInt(entryQty, 10) || 0;
+  const entryDisabled = !entryStockId || entryQtyNum <= 0 || entrySaving;
+
+  const exitStock = stock.find((s) => s.id === exitStockId);
+  const exitQtyNum = parseInt(exitQty, 10) || 0;
+  const exitOverflow = exitStock != null && exitQtyNum > exitStock.quantite;
+  const exitDisabled = !exitStockId || exitQtyNum <= 0 || exitOverflow || exitSaving;
+
+  return {
+    entryOpen,
+    setEntryOpen,
+    entryStockId,
+    setEntryStockId,
+    entryQty,
+    setEntryQty,
+    entryResp,
+    setEntryResp,
+    exitOpen,
+    setExitOpen,
+    exitStockId,
+    setExitStockId,
+    exitQty,
+    setExitQty,
+    exitResp,
+    setExitResp,
+    exitMotif,
+    setExitMotif,
+    openEntry,
+    openExit,
+    submitEntry,
+    submitExit,
+    entryDisabled,
+    exitStock,
+    exitOverflow,
+    exitDisabled,
+  };
+}

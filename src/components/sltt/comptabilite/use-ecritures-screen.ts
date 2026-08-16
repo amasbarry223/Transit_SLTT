@@ -8,7 +8,8 @@ import { formatDateShort, formatFCFA } from "@/lib/format";
 import { useNav } from "@/lib/nav-store";
 import { LEGACY_TRANSIT_SOCIETE_ID, resolveTransitSociete } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
-import { toastError } from "@/lib/toast-error";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
@@ -135,22 +136,29 @@ export function useEcrituresScreen() {
     setPaymentOpen(true);
   }
 
-  function validatePayment() {
+  async function validatePayment() {
     if (!selected) return;
     const montantNum = Number(montant.replace(/\s/g, "")) || 0;
     const reste = resteAPayer(selected);
     if (montantNum <= 0 || montantNum > reste) {
-      toast({
+      toastWarning(toast, {
         title: "Montant invalide",
         description: montantNum <= 0
           ? "Le montant doit être supérieur à 0."
           : `Le paiement (${formatFCFA(montantNum)}) dépasse le reste à payer (${formatFCFA(reste)}).`,
-        variant: "destructive",
       });
       return;
     }
-    recordPayment(selected.id, montantNum, mode, datePaiement, note);
-    toast({ title: "Paiement enregistré", description: "Le solde du dossier a été mis à jour." });
+    try {
+      await recordPayment(selected.id, montantNum, mode, datePaiement, note);
+    } catch (error) {
+      toastError(toast, error, {
+        title: "Impossible d'enregistrer le paiement",
+        fallback: "Le paiement n'a pas pu être enregistré.",
+      });
+      return;
+    }
+    toastSuccess(toast, { title: "Paiement enregistré", description: "Le solde du dossier a été mis à jour." });
     setPaymentOpen(false);
     setSelected(null);
   }
@@ -168,7 +176,7 @@ export function useEcrituresScreen() {
 
   function createEcriture() {
     if (!neClientId) {
-      toast({ title: "Client requis", description: "Veuillez sélectionner un client.", variant: "destructive" });
+      toastWarning(toast, { title: "Client requis", description: "Veuillez sélectionner un client." });
       return;
     }
     const client = clients.find((item) => item.id === neClientId);
@@ -176,11 +184,11 @@ export function useEcrituresScreen() {
     const investi = Number(neInvesti.replace(/\s/g, "")) || 0;
     const paye = Number(nePaye.replace(/\s/g, "")) || 0;
     if (investi <= 0) {
-      toast({ title: "Montant invalide", description: "Le montant investi doit être supérieur à 0.", variant: "destructive" });
+      toastWarning(toast, { title: "Montant invalide", description: "Le montant investi doit être supérieur à 0." });
       return;
     }
     if (paye > investi) {
-      toast({
+      toastWarning(toast, {
         title: "Montant payé plafonné",
         description: `Le montant payé (${formatFCFA(paye)}) dépasse le montant investi (${formatFCFA(investi)}). Il a été ramené à ${formatFCFA(investi)}.`,
       });
@@ -197,14 +205,17 @@ export function useEcrituresScreen() {
       modePaiement: neMode,
       note: neNote || undefined,
     });
-    toast({ title: "Écriture créée", description: `${client.nom} — ${formatFCFA(investi)} investi.` });
+    toastSuccess(toast, { title: "Écriture créée", description: `${client.nom} — ${formatFCFA(investi)} investi.` });
     setNewOpen(false);
     resetNewEcriture();
   }
 
   async function exportExcel() {
     if (filtered.length === 0) {
-      toast({ title: "Rien à exporter", description: "Aucune écriture ne correspond aux filtres actuels.", variant: "destructive" });
+      toastWarning(toast, {
+        title: "Rien à exporter",
+        description: UI.errors.exportEmpty,
+      });
       return;
     }
     try {
@@ -226,10 +237,13 @@ export function useEcrituresScreen() {
         { module: "Comptabilité" },
       );
     } catch (error) {
-      toastError(toast, error, "Impossible de générer l'export Excel.");
+      toastError(toast, error, {
+        title: "Impossible de générer l'export Excel",
+        fallback: UI.errors.exportFailed,
+      });
       return;
     }
-    toast({ title: "Export Excel généré", description: `${filtered.length} écriture${filtered.length !== 1 ? "s" : ""} exportée${filtered.length !== 1 ? "s" : ""}.` });
+    toastSuccess(toast, { title: "Export Excel généré", description: `${filtered.length} écriture${filtered.length !== 1 ? "s" : ""} exportée${filtered.length !== 1 ? "s" : ""}.` });
   }
 
   return {

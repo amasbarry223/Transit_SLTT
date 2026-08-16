@@ -9,7 +9,8 @@ import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
 import { sommeFacturesEncaissees } from "@/lib/client-stats";
 import { useToast } from "@/hooks/use-toast";
-import { toastError } from "@/lib/toast-error";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
 import { filterBySociete } from "@/lib/filter-by-societe";
@@ -195,10 +196,9 @@ export function useBilansScreen() {
 
   async function handleExportExcel() {
     if (sortedRecap.length === 0) {
-      toast({
+      toastWarning(toast, {
         title: "Rien à exporter",
-        description: "Aucune écriture pour la période sélectionnée.",
-        variant: "destructive",
+        description: UI.errors.exportEmpty,
       });
       return;
     }
@@ -217,10 +217,13 @@ export function useBilansScreen() {
         { module: "Comptabilité" },
       );
     } catch (error) {
-      toastError(toast, error, "Impossible de générer l'export Excel.");
+      toastError(toast, error, {
+        title: "Impossible de générer l'export Excel",
+        fallback: UI.errors.exportFailed,
+      });
       return;
     }
-    toast({
+    toastSuccess(toast, {
       title: "Export Excel généré",
       description: `${sortedRecap.length} client${sortedRecap.length !== 1 ? "s" : ""} exportés — ${periodeLabel}.`,
     });

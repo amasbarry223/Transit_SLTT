@@ -8,6 +8,7 @@ import { mapOperationComptableFieldsFromText } from "@/lib/documents/ocr/mappers
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,7 +121,7 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
       if (ac.signal.aborted) return;
       const message = e instanceof Error ? e.message : "OCR échoué";
       setOcrError(message);
-      toast({ title: "OCR échoué", description: message, variant: "destructive" });
+      toastWarning(toast, { title: "OCR échoué", description: message });
     } finally {
       if (abortRef.current === ac) setRunning(false);
     }
@@ -158,16 +159,16 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
 
   async function handleValidate() {
     if (!form.clientNom.trim()) {
-      toast({ title: "Client / tiers requis", variant: "destructive" });
+      toastWarning(toast, { title: "Client / tiers requis" });
       return;
     }
     if (!form.nature.trim()) {
-      toast({ title: "Nature requise", variant: "destructive" });
+      toastWarning(toast, { title: "Nature requise" });
       return;
     }
     const montant = Number(form.montant.replace(/\s/g, "")) || 0;
     if (montant <= 0) {
-      toast({ title: "Montant invalide", description: "Le montant doit être supérieur à 0.", variant: "destructive" });
+      toastWarning(toast, { title: "Montant invalide", description: "Le montant doit être supérieur à 0." });
       return;
     }
     setSaving(true);
@@ -184,11 +185,11 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
         source: "import_ocr",
         importRef: fileName || undefined,
       });
-      toast({ title: "Opération enregistrée", description: "Données OCR validées." });
+      toastSuccess(toast, { title: "Opération enregistrée", description: "Données OCR validées." });
       onOpenChange(false);
       resetAll();
     } catch (e) {
-      toast({ title: "Enregistrement impossible", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
+      toastWarning(toast, { title: "Enregistrement impossible", description: e instanceof Error ? e.message : "Erreur" });
     } finally {
       setSaving(false);
     }

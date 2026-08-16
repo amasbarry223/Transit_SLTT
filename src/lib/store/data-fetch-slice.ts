@@ -1,4 +1,7 @@
 import type { StateCreator } from "zustand";
+import { logError, logWarn } from "@/shared/logger";
+import { mapErrorToUserMessage } from "@/lib/error-messages";
+import { UI } from "@/lib/ui-messages";
 import { supabase } from "@/lib/supabase";
 import type { ProfilePublicRow } from "@/lib/db-rows";
 import type { SLTTState } from "@/lib/store";
@@ -68,10 +71,9 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
       const anyTruncated = coreTruncated || secondaryResults.some((result) => result.truncated && !result.error);
 
       if (failed.length > 0) {
-        console.warn(
-          "[SLTT] Chargement secondaire partiel:",
-          failed.map((entry) => `${entry.key}: ${(entry.error as { message?: string })?.message || entry.error}`),
-        );
+        logWarn("[SLTT] Chargement secondaire partiel", undefined, {
+          failures: failed.map((entry) => `${entry.key}: ${(entry.error as { message?: string })?.message || entry.error}`),
+        });
         set({
           partialLoadWarning:
             "Certaines données n'ont pas pu être rechargées ; l'affichage conserve le cache précédent pour ces modules.",
@@ -90,11 +92,8 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         ...mapSecondaryFetchResults(secondaryResults, state),
       }));
     } catch (error) {
-      const raw = error instanceof Error ? error.message : "Impossible de charger les données.";
-      const message = /failed to fetch|networkerror|load failed/i.test(raw)
-        ? "Connexion à Supabase interrompue. Vérifiez le réseau, désactivez les bloqueurs, puis réessayez."
-        : raw;
-      console.error("[SLTT] Erreur de chargement Supabase:", error);
+      const message = mapErrorToUserMessage(error, UI.errors.loadData);
+      logError("[SLTT] Erreur de chargement Supabase", error);
       set({ loadError: message, dataLoading: false });
     }
   };

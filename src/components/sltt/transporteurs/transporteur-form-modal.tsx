@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Truck, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useStore, type Transporteur, type TransporteurInput } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast-helpers";
 import {
   TransporteurFormFields,
   TransporteurFormStepper,
@@ -117,15 +118,15 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
     try {
       if (isEdit && target) {
         await updateTransporteur(target.id, form);
-        toast({ title: "Transporteur modifié", description: form.nom });
+        toastSuccess(toast, { title: "Transporteur modifié", description: form.nom });
       } else {
         const t = await addTransporteur(form);
-        toast({ title: "Transporteur créé", description: t.nom });
+        toastSuccess(toast, { title: "Transporteur créé", description: t.nom });
       }
       onClose();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Impossible d'enregistrer le transporteur";
-      toast({ title: "Erreur", description: message, variant: "destructive" });
+      toastError(toast, err, { title: "Impossible d'enregistrer", fallback: message });
     } finally {
       setSaving(false);
     }

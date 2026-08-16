@@ -5,6 +5,7 @@ import { ScanText, Loader2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
+import { toastError } from "@/lib/toast-helpers";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,11 +53,7 @@ export function CreateDossierFromOcrButton({
       setUploadOpen(false);
       setOcrDocId(doc.id);
     } catch (e) {
-      toast({
-        title: "Upload impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Upload impossible", fallback: "Erreur" });
     } finally {
       setBusy(false);
     }

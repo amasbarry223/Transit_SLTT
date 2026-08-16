@@ -6,7 +6,11 @@ import type { BonInput, SLTTState } from "@/lib/store";
 import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
-import { computeAnnexeScopedReference } from "@/lib/store/reference";
+import {
+  computeAnnexeScopedReference,
+  extractTrailingSeq,
+  insertWithReferenceRetry,
+} from "@/lib/store/reference";
 
 export function mapBonFromDb(row: BonSortieRow): BonSortie {
   return {
@@ -79,7 +83,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   addBon: async (input) => {
     const societe = get().societes.find((s) => s.id === input.societeId);
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
-    const { reference: numero, useAnnexeNumbering, seq } = computeAnnexeScopedReference(
+    const { reference: initialNumero, useAnnexeNumbering } = computeAnnexeScopedReference(
       societe,
       annexe,
       "BS",
@@ -87,30 +91,36 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       get().bonSeq,
     );
 
-    const { data, error } = await supabase
-      .from("bons_sortie")
-      .insert({
-        reference: numero,
-        date: input.date,
-        client_id: input.clientId,
-        societe_id: input.societeId,
-        annexe_id: input.annexeId,
-        stock_id: input.stockId,
-        marchandise: input.marchandise,
-        quantite: input.quantite,
-        unite: input.unite,
-        motif: input.motif,
-        montant: input.montant,
-        statut: "Brouillon",
-      })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
-      .single();
+    // Retry avec référence incrémentée si deux créations concurrentes ont
+    // calculé le même numéro à partir d'un même snapshot client — la
+    // contrainte unique en base (bons_sortie.reference) fait alors échouer
+    // l'un des deux inserts (même pattern que addDossier/addDevis/addFacture).
+    const { data, reference: numero } = await insertWithReferenceRetry<BonSortieRow>(initialNumero, (ref) =>
+      supabase
+        .from("bons_sortie")
+        .insert({
+          reference: ref,
+          date: input.date,
+          client_id: input.clientId,
+          societe_id: input.societeId,
+          annexe_id: input.annexeId,
+          stock_id: input.stockId,
+          marchandise: input.marchandise,
+          quantite: input.quantite,
+          unite: input.unite,
+          motif: input.motif,
+          montant: input.montant,
+          statut: "Brouillon",
+        })
+        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .single(),
+    );
 
-    if (error) throw error;
     const newBon = mapBonFromDb(data);
+    const finalSeq = extractTrailingSeq(numero) ?? get().bonSeq;
     set((s) => ({
       bons: [newBon, ...s.bons],
-      bonSeq: useAnnexeNumbering ? s.bonSeq : seq + 1,
+      bonSeq: useAnnexeNumbering ? s.bonSeq : finalSeq + 1,
     }));
     await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Creation, `Bon ${numero} créé`);
 
@@ -175,23 +185,30 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
   addBonSortieCaisse: async (input) => {
     const seq = get().bonSortieCaisseSeq;
-    const reference = `N°${seq}`;
+    const initialReference = `N°${seq}`;
     const creePar = getConnectedUserName();
     const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
 
-    const { data: dbBon, error: errBon } = await supabase
-      .from("bons_sortie_caisse")
-      .insert({
-        reference,
-        date: input.date,
-        societe_id: input.societeId,
-        annexe_id: input.annexeId,
-        montant_total: montantTotal,
-        cree_par: creePar,
-      })
-      .select()
-      .single();
-    if (errBon) throw errBon;
+    // Retry avec référence incrémentée si deux créations concurrentes ont
+    // calculé le même numéro — la contrainte unique en base
+    // (bons_sortie_caisse.reference) fait alors échouer l'un des deux
+    // inserts (même pattern que addBon/addDossier/addDevis/addFacture).
+    const { data: dbBon, reference } = await insertWithReferenceRetry<BonSortieCaisseRow>(
+      initialReference,
+      (ref) =>
+        supabase
+          .from("bons_sortie_caisse")
+          .insert({
+            reference: ref,
+            date: input.date,
+            societe_id: input.societeId,
+            annexe_id: input.annexeId,
+            montant_total: montantTotal,
+            cree_par: creePar,
+          })
+          .select()
+          .single(),
+    );
 
     if (input.lignes.length > 0) {
       const { error: errLignes } = await supabase
@@ -216,9 +233,13 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     if (errFetch) throw errFetch;
 
     const newBon = mapBonSortieCaisseFromDb(fullBon);
+    // Format "N°{n}" (pas de tiret avant le chiffre) : extractTrailingSeq
+    // (qui exige un "-") ne matche pas, d'où ce parsing générique dédié.
+    const finalSeqMatch = reference.match(/(\d+)$/);
+    const finalSeq = finalSeqMatch ? Number.parseInt(finalSeqMatch[1], 10) : seq;
     set((s) => ({
       bonsSortieCaisse: [newBon, ...s.bonsSortieCaisse],
-      bonSortieCaisseSeq: seq + 1,
+      bonSortieCaisseSeq: finalSeq + 1,
     }));
     await get().addAuditLog(
       AUDIT_MODULE.Bons,

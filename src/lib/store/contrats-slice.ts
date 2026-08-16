@@ -98,6 +98,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const userId = useSession.getState().currentUserId;
     const client = get().clients.find((c) => c.id === input.clientId);
     const annexeId =
+      input.annexeId ??
       client?.annexeId ??
       requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
@@ -130,11 +131,19 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
   },
 
   updateContrat: async (id, input) => {
+    const existingForStatut = get().contrats.find((c) => c.id === id);
+    if (existingForStatut && existingForStatut.statut !== input.statut) {
+      const { canTransitionContrat } = await import("@/lib/status-flow");
+      if (!canTransitionContrat(existingForStatut.statut, input.statut)) {
+        throw new Error(`Transition contrat invalide : ${existingForStatut.statut} → ${input.statut}`);
+      }
+    }
     const { error } = await supabase
       .from("contrats")
       .update({
         societe_id: input.societeId,
         client_id: input.clientId,
+        ...(input.annexeId ? { annexe_id: input.annexeId } : {}),
         objet: input.objet,
         date_debut: input.dateDebut,
         date_fin: input.dateFin || null,
@@ -163,7 +172,15 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     set((s) => ({
       contrats: s.contrats.map((contrat) =>
         contrat.id === id
-          ? { ...contrat, ...input, clientNom: input.clientNom }
+          ? {
+              ...contrat,
+              ...input,
+              clientNom: input.clientNom,
+              annexeId: input.annexeId ?? contrat.annexeId,
+              annexeNom: input.annexeId
+                ? s.annexes.find((a) => a.id === input.annexeId)?.nom ?? contrat.annexeNom
+                : contrat.annexeNom,
+            }
           : contrat,
       ),
       depenses: societeChanged

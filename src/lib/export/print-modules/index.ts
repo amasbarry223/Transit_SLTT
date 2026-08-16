@@ -1,5 +1,5 @@
 export { shouldShowTva } from "./shared";
-export { printDevis, type DevisData } from "./devis";
+export { printDevis, printDevisList, type DevisData, type DevisListPrintRow } from "./devis";
 export { printFactureModule, type FactureModuleData } from "./facture";
 export {
   buildRecuPaiementHTML,
@@ -15,7 +15,7 @@ export { printInvoice, type InvoiceData } from "./invoice";
 export {
   printStockInventory,
   type StockInventoryRow,
-  type StockInventoryPrintOptions,
+  type StockInventoryGroup,
 } from "./stock-inventory";
 export { printClients, type ClientPrintRow } from "./clients";
 export {

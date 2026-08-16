@@ -52,6 +52,12 @@ function lookupProfile(id: string): FakeProfile | undefined {
 vi.mock("@/lib/supabase/server", () => ({
   createServerClient: () => ({
     auth: { getUser: async () => ({ data: { user: { id: fakeState.callerProfile.id } }, error: null }) },
+    rpc: async (fnName: string, params: { perm: string }) => {
+      if (fnName !== "has_permission") return { data: null, error: { message: "unknown rpc" } };
+      const p = fakeState.callerProfile;
+      const granted = Boolean(p.actif && (p.role === "Administrateur" || p.permissions.includes(params.perm)));
+      return { data: granted, error: null };
+    },
   }),
 }));
 

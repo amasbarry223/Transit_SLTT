@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { normalizePermissions } from "@/lib/permissions";
+import { logError } from "@/shared/logger";
 
 export class AuthError extends Error {
   status: number;
@@ -62,7 +62,7 @@ async function getAuthenticatedProfile(request: Request) {
     throw new AuthError("Profil introuvable.", 403);
   }
 
-  return { user, profile, admin };
+  return { user, profile, admin, supabase };
 }
 
 /**
@@ -73,10 +73,18 @@ async function getAuthenticatedProfile(request: Request) {
  * lequel des deux cas s'applique à l'appelant.
  */
 export async function requireUserManager(request: Request) {
-  const { user, profile, admin } = await getAuthenticatedProfile(request);
+  const { user, profile, admin, supabase } = await getAuthenticatedProfile(request);
 
   const isAdmin = profile.role === "Administrateur";
-  const canManageUsers = normalizePermissions(profile.permissions ?? []).includes("utilisateurs:manage");
+  // has_permission() (Postgres) fait autorité — appelée ici plutôt que
+  // réimplémentée en TS, pour ne jamais diverger de la même règle qui
+  // protège déjà les policies RLS (cf. doc.md §6).
+  const { data: canManageUsers, error: permError } = await supabase.rpc("has_permission", {
+    perm: "utilisateurs:manage",
+  });
+  if (permError) {
+    throw new AuthError("Erreur de vérification des permissions.", 500);
+  }
 
   if (!profile.actif || !(isAdmin || canManageUsers)) {
     throw new AuthError("Accès réservé à la gestion des utilisateurs.", 403);
@@ -99,6 +107,6 @@ export function authErrorResponse(error: unknown) {
   if (error instanceof AuthError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
-  console.error(error);
+  logError("Auth error response", error);
   return Response.json({ error: "Erreur serveur interne." }, { status: 500 });
 }

@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
   rules: {
     // TypeScript rules
-    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/ban-ts-comment": "off",
@@ -31,7 +31,7 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     // General JavaScript rules
     "prefer-const": "off",
     "no-unused-vars": "off",
-    "no-console": "off",
+    "no-console": "warn",
     "no-debugger": "off",
     "no-empty": "off",
     "no-irregular-whitespace": "off",
@@ -46,6 +46,18 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "complexity": "off",
   },
 }, {
+  files: ["src/features/**/*.{ts,tsx}"],
+  rules: {
+    // Appliqué progressivement sur le code refactoré — pas sur l'héritage migré.
+    "max-lines-per-function": "off",
+    "no-console": "error",
+  },
+}, {
+  files: ["src/shared/logger/**/*.{ts,tsx}"],
+  rules: {
+    "no-console": "off",
+  },
+}, {
   ignores: [
     "node_modules/**",
     ".next/**",
@@ -54,6 +66,7 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "next-env.d.ts",
     "examples/**",
     "skills",
+    "scripts/**",
     "public/ocr/**",
     "public/pdf.worker.min.mjs",
     "public/sw.js",

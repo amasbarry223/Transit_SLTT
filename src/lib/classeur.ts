@@ -7,6 +7,7 @@ import type { AuditEntry } from "@/lib/audit";
 import { mapAuditLogFromDb, type AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
 import { supabase } from "@/lib/supabase";
+import { logWarn } from "@/shared/logger";
 import {
   resolveSlttBrand,
   resolveSocieteDisplayNameById,
@@ -160,7 +161,9 @@ export async function fetchClasseurMouvements(clientId: string): Promise<Classeu
 
   if (error) {
     if (process.env.NODE_ENV === "development") {
-      console.warn("[classeur] Vue SQL indisponible, repli sur le calcul client-side :", error.message);
+      logWarn("[classeur] Vue SQL indisponible, repli sur le calcul client-side", error, {
+        message: error.message,
+      });
     }
     return null;
   }
@@ -235,7 +238,7 @@ export async function fetchMouvementSuivi(
 
   if (error) {
     if (process.env.NODE_ENV === "development") {
-      console.warn("[classeur] Suivi mouvement indisponible :", error.message);
+      logWarn("[classeur] Suivi mouvement indisponible", error, { message: error.message });
     }
     return [];
   }

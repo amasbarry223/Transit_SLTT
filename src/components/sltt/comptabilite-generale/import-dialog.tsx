@@ -15,6 +15,8 @@ import type { EntiteComptable } from "@/lib/domain-types";
 import { parseComptabiliteGeneraleXlsx, type OperationImportRow } from "@/lib/comptabilite-generale-import";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { formatFCFA } from "@/lib/format";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -119,11 +121,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
       const buf = await file.arrayBuffer();
       const parsed = await parseComptabiliteGeneraleXlsx(buf, { entiteType: entite.type });
       if (parsed.length === 0) {
-        toast({
-          title: "Aucune ligne exploitable",
-          description: "Vérifiez les en-têtes (Dates, Clients, Nature de la dépense, Entrée, Sortie…).",
-          variant: "destructive",
-        });
+        toastWarning(toast, { title: "Aucune ligne exploitable", description: "Vérifiez les en-têtes (Dates, Clients, Nature de la dépense, Entrée, Sortie…)." });
         return;
       }
       setRows(
@@ -134,7 +132,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
       );
       setPhase("review");
     } catch (e) {
-      toast({ title: "Lecture impossible", description: getErrorMessage(e, "Fichier Excel invalide."), variant: "destructive" });
+      toastError(toast, e, { title: "Lecture impossible", fallback: "Fichier Excel invalide." });
     } finally {
       setParsing(false);
     }
@@ -214,11 +212,12 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
       }
     }
 
-    toast({
-      title: failed === 0 ? "Import terminé" : "Import terminé avec erreurs",
-      description: `${created} opération${created !== 1 ? "s" : ""} créée${created !== 1 ? "s" : ""}${failed > 0 ? ` — ${failed} échec${failed !== 1 ? "s" : ""}` : ""}.`,
-      variant: failed > 0 ? "destructive" : undefined,
-    });
+    const importDescription = `${created} opération${created !== 1 ? "s" : ""} créée${created !== 1 ? "s" : ""}${failed > 0 ? ` — ${failed} échec${failed !== 1 ? "s" : ""}` : ""}.`;
+    if (failed === 0) {
+      toastSuccess(toast, { title: "Import terminé", description: importDescription });
+    } else {
+      toastWarning(toast, { title: "Import terminé avec erreurs", description: importDescription });
+    }
 
     onOpenChange(false);
     reset();

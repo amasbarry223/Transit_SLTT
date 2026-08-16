@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { UI } from "@/lib/ui-messages";
 
 /**
  * Dialogue de confirmation générique pour les actions non-suppression
@@ -22,7 +23,8 @@ export function ConfirmActionDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Confirmer",
+  confirmLabel,
+  cancelLabel = UI.buttons.cancel,
   variant = "default",
   onConfirm,
 }: {
@@ -30,7 +32,8 @@ export function ConfirmActionDialog({
   onOpenChange: (open: boolean) => void;
   title: string;
   description: ReactNode;
-  confirmLabel?: string;
+  confirmLabel: string;
+  cancelLabel?: string;
   variant?: "default" | "destructive";
   onConfirm: () => void | Promise<void>;
 }) {
@@ -54,7 +57,7 @@ export function ConfirmActionDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Annuler</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             className={cn(
               variant === "destructive" &&
@@ -66,7 +69,7 @@ export function ConfirmActionDialog({
               void handleConfirm();
             }}
           >
-            {loading ? "En cours…" : confirmLabel}
+            {loading ? UI.loading.saving : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { logError, logWarn } from "@/shared/logger";
 import { supabase } from "@/lib/supabase";
 import {
   createContratFichiersSlice,
@@ -249,15 +250,7 @@ export interface ImportDossierHistoriqueInput {
   notes?: string;
 }
 
-export interface ClientInput {
-  nom: string;
-  type: Client["type"];
-  telephone: string;
-  email: string;
-  adresse: string;
-  annexeId: string;
-  societeId: string;
-}
+export type { ClientInput } from "@/features/clients/types";
 
 export interface BonInput {
   date: string;
@@ -397,7 +390,7 @@ export const useStore = create<SLTTState>()(
             localStorage.setItem(name, value);
           } catch (e) {
             if (e instanceof DOMException && e.name === "QuotaExceededError") {
-              console.warn("[SLTT] localStorage quota dépassé — certaines données ne seront pas persistées.");
+              logWarn("[SLTT] localStorage quota dépassé — certaines données ne seront pas persistées.");
             }
           }
         },
@@ -407,7 +400,7 @@ export const useStore = create<SLTTState>()(
       })),
       // DX-01: log rehydration errors
       onRehydrateStorage: () => (_state, error) => {
-        if (error) console.error("[SLTT] Erreur réhydratation store:", error);
+        if (error) logError("[SLTT] Erreur réhydratation store", error);
       },
       partialize: (s) => ({
         dossierSeq: s.dossierSeq,

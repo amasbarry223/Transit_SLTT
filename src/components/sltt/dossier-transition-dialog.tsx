@@ -6,6 +6,7 @@ import { useStore, type DossierStatut } from "@/lib/store";
 import { resteAPayer, type Dossier, type PaiementMode } from "@/lib/domain-types";
 import { formatFCFA, parseAmount } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess } from "@/lib/toast-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,20 +191,13 @@ export function TransitionDialog({
         date,
       );
     } catch (e) {
-      toast({
-        title: "Erreur",
-        description: getErrorMessage(e, "Impossible de faire évoluer le statut du dossier."),
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Impossible de faire évoluer le statut du dossier", fallback: "Impossible de faire évoluer le statut du dossier." });
       return;
     } finally {
       setSaving(false);
     }
 
-    toast({
-      title: meta.confirmLabel,
-      description: `${dossier.reference} est maintenant "${meta.nextStatut}".`,
-    });
+    toastSuccess(toast, { title: meta.confirmLabel, description: `${dossier.reference} est maintenant "${meta.nextStatut}".` });
 
     onOpenChange(false);
     setNote("");

@@ -9,6 +9,7 @@ export function mapSocieteFromDb(row: SocieteRow): Societe {
   return {
     id: row.id,
     nom: row.nom,
+    raisonSociale: row.raison_sociale || undefined,
     actif: row.actif,
     logoUrl: row.logo_url || undefined,
     adresse: row.adresse || undefined,

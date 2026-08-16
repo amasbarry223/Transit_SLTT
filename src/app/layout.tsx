@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Inter, Sora } from "next/font/google";
 import { BRAND } from "@/lib/brand-colors";
-import "./globals.css";
+import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeEffect } from "@/components/sltt/theme-effect";
 import { AppRoot } from "@/components/sltt/app-root";

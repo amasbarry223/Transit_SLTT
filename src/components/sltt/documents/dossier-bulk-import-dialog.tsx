@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { resolveTransitSociete } from "@/lib/societe-brand";
@@ -146,12 +147,11 @@ export function DossierBulkImportButton() {
       const parsed = await parseDossierBulkXlsx(buf);
       if (parsed.length === 0) {
         const isJournalCaisse = await looksLikeJournalCaisseWorkbook(buf);
-        toast({
+        toastWarning(toast, {
           title: "Aucune ligne exploitable",
           description: isJournalCaisse
             ? "Ce fichier ressemble à un journal de caisse (colonnes Entrée/Sortie) — importez-le plutôt depuis Comptabilité → Journal de caisse → « Importer un document »."
             : "Vérifiez que le fichier contient des feuilles « Situation du Client X » avec un tableau Date/Nature/Total investi.",
-          variant: "destructive",
         });
         return;
       }
@@ -180,11 +180,7 @@ export function DossierBulkImportButton() {
       );
       setPhase("review");
     } catch (e) {
-      toast({
-        title: "Lecture impossible",
-        description: getErrorMessage(e, "Fichier Excel invalide."),
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Lecture impossible", fallback: "Fichier Excel invalide." });
     } finally {
       setParsing(false);
     }
@@ -316,13 +312,14 @@ export function DossierBulkImportButton() {
       }
     }
 
-    toast({
-      title: failed === 0 ? "Import terminé" : "Import terminé avec erreurs",
-      description: `${created} dossier${created !== 1 ? "s" : ""} créé${created !== 1 ? "s" : ""}${
+    const importDescription = `${created} dossier${created !== 1 ? "s" : ""} créé${created !== 1 ? "s" : ""}${
         failed > 0 ? ` — ${failed} échec${failed !== 1 ? "s" : ""}` : ""
-      }.`,
-      variant: failed > 0 ? "destructive" : undefined,
-    });
+      }.`;
+    if (failed === 0) {
+      toastSuccess(toast, { title: "Import terminé", description: importDescription });
+    } else {
+      toastWarning(toast, { title: "Import terminé avec erreurs", description: importDescription });
+    }
 
     setOpen(false);
     reset();

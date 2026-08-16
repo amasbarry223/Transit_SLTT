@@ -400,15 +400,15 @@ Champs calculés (non persistés) : `calculerEcart()` = `fraisPrestation − (dr
 
 | Entité | États | Transitions autorisées | Enforcement |
 |---|---|---|---|
-| **Dossier** | En cours, Dédouané, Livré, Soldé | En cours→Dédouané→Livré→Soldé (**flux linéaire strict, une seule transition à la fois, jamais en arrière**) | `src/lib/dossier-flow.ts` (`assertDossierTransition`) |
-| **Devis** | Brouillon, Envoyé, Accepté, Refusé, Expiré | Brouillon→{Envoyé,Refusé} · Envoyé→{Accepté,Refusé,Expiré} · Accepté→∅ (terminal) · Refusé→{Brouillon} · Expiré→{Brouillon} | `src/lib/status-flow.ts` (`canTransitionDevis`) |
-| **Facture** | Brouillon, Envoyée, Partielle, Soldée, Annulée | Brouillon→{Envoyée,Annulée} · Envoyée→{Partielle,Soldée,Annulée} · Partielle→{Soldée,Annulée} · Soldée→{Annulée} · Annulée→∅ | `src/lib/status-flow.ts` (`canTransitionFacture`) |
-| **Contrat** | Actif, Suspendu, Clôturé | Actif→{Suspendu,Clôturé} · Suspendu→{Actif,Clôturé} · Clôturé→{Actif} | `src/lib/status-flow.ts` + trigger DB `assert_contrat_transition` (double enforcement) |
-| **Bon de sortie (marchandise)** | Brouillon, Validé | Brouillon→Validé uniquement (irréversible, décrémente le stock via RPC) | `validate_bon_sortie` RPC |
+| **Dossier** | En cours, Dédouané, Livré, Soldé | En cours→Dédouané→Livré→Soldé (**flux linéaire strict, une seule transition à la fois, jamais en arrière**) | `src/lib/dossier-flow.ts` (`assertDossierTransition`) + trigger DB `assert_dossier_transition` |
+| **Devis** | Brouillon, Envoyé, Accepté, Refusé, Expiré | Brouillon→{Envoyé,Refusé} · Envoyé→{Accepté,Refusé,Expiré} · Accepté→∅ (terminal) · Refusé→{Brouillon} · Expiré→{Brouillon} | `src/lib/status-flow.ts` (`canTransitionDevis`) + trigger DB `assert_devis_transition` |
+| **Facture** | Brouillon, Envoyée, Partielle, Soldée, Annulée | Brouillon→{Envoyée,Annulée} · Envoyée→{Partielle,Soldée,Annulée} · Partielle→{Soldée,Annulée} · Soldée→{Annulée} · Annulée→∅ | `src/lib/status-flow.ts` (`canTransitionFacture`) + trigger DB `assert_facture_transition` |
+| **Contrat** | Actif, Suspendu, Clôturé | Actif→{Suspendu,Clôturé} · Suspendu→{Actif,Clôturé} · Clôturé→{Actif} | `src/lib/status-flow.ts` (`canTransitionContrat`, appliqué par `updateContrat` **et** `updateContratStatut`) + trigger DB `assert_contrat_transition` |
+| **Bon de sortie (marchandise)** | Brouillon, Validé | Brouillon→Validé uniquement (irréversible, décrémente le stock via RPC) | `validate_bon_sortie` RPC + trigger DB `assert_bon_sortie_statut_transition` (bloque toute écriture directe hors RPC) |
 | **Prestation de contrat** | Prévue, Réalisée, Annulée | libre (pas de FSM stricte codée) | — |
-| **Job OCR** | pending, processing, done, failed, validated | pending→processing→{done,failed}→validated (validation manuelle) | `documents-slice.ts` |
+| **Job OCR** | pending, processing, done, failed, validated | pending→processing→{done,failed}→validated (validation manuelle) | `src/lib/status-flow.ts` (`canTransitionOcrJob`, appliqué par `validateOcrFields`) — pas de trigger DB, seule FSM des 6 sans défense en profondeur base |
 
-Toute transition hors matrice est **rejetée** avec un message d'erreur explicite côté UI ; pour Contrat, également rejetée en base (défense en profondeur).
+Toute transition hors matrice est **rejetée** avec un message d'erreur explicite côté UI, et **également rejetée en base** par un trigger dédié pour Dossier/Devis/Facture/Contrat/Bon de sortie (défense en profondeur) — seul le Job OCR n'a qu'une garde applicative, sans trigger DB.
 
 ---
 
@@ -492,6 +492,8 @@ Chaque mutation métier significative (création, modification, validation, paie
 | Comptabilité | `comptabilite:read` | lecture | ✓ | ✓ | — | — |
 | Comptabilité | `comptabilite:write` | écriture | ✓ | ✓ | — | — |
 | Bilans & rapports | `rapports:read` | lecture | ✓ | ✓ | — | — |
+| Reçus de paiement | `recus-paiement:read` | lecture | ✓ | ✓ | — | — |
+| Reçus de paiement | `recus-paiement:write` | écriture | ✓ | ✓ | — | — |
 | Paramètres | `parametres:read` | lecture | ✓ | — | — | — |
 | Paramètres | `parametres:write` | écriture | ✓ | — | — | — |
 | Paramètres | `audit:read` | journal d'audit | ✓ | — | — | — |

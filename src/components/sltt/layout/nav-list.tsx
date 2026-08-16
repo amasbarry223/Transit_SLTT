@@ -52,7 +52,9 @@ export function NavList({
                 "transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
                 active
                   ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                  : "text-slate-600 hover:bg-accent/60 hover:pl-[0.875rem] hover:text-slate-900 dark:text-slate-400 dark:hover:bg-accent/30 dark:hover:text-slate-100",
+                  : item.pivot
+                    ? "bg-primary/5 font-semibold text-slate-700 hover:bg-accent/60 hover:pl-[0.875rem] hover:text-slate-900 dark:bg-primary/10 dark:text-slate-200 dark:hover:bg-accent/30 dark:hover:text-slate-100"
+                    : "text-slate-600 hover:bg-accent/60 hover:pl-[0.875rem] hover:text-slate-900 dark:text-slate-400 dark:hover:bg-accent/30 dark:hover:text-slate-100",
               )}
             >
               <span

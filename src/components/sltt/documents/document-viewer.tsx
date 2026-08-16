@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UI } from "@/lib/ui-messages";
 import { cn } from "@/lib/utils";
 
 function isDirectUrl(url: string): boolean {
@@ -159,11 +160,12 @@ export function DocumentViewer({
     return (
       <div
         className={cn(
-          "flex h-64 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-500 dark:bg-slate-800",
+          "flex h-64 flex-col items-center justify-center gap-1 rounded-lg bg-slate-100 text-center text-sm text-slate-500 dark:bg-slate-800",
           className,
         )}
       >
-        Aucun document à prévisualiser
+        <p className="font-medium text-slate-700 dark:text-slate-200">{UI.empty.documents.title}</p>
+        <p className="max-w-xs text-xs text-slate-500 dark:text-slate-400">{UI.empty.documents.description}</p>
       </div>
     );
   }

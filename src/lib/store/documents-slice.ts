@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
+import { toastWarning } from "@/lib/toast-helpers";
 import type {
   DocumentVersion,
   OcrField,
@@ -33,6 +34,7 @@ import {
 import type { AddDocumentInput, UpdateDocumentMetaInput } from "./documents";
 import type { SLTTState } from "@/lib/store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+import { canTransitionOcrJob } from "@/lib/status-flow";
 
 export type { AddDocumentInput, UpdateDocumentMetaInput } from "./documents";
 export {
@@ -290,8 +292,7 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
       // La ligne DB est déjà supprimée (succès affiché) mais le fichier peut
       // rester orphelin en Storage — le signaler au lieu d'avaler l'échec
       // silencieusement, pour qu'un nettoyage manuel reste possible.
-      toast({
-        variant: "destructive",
+      toastWarning(toast, {
         title: "Document supprimé partiellement",
         description: "La fiche a été supprimée mais un fichier associé n'a pas pu être effacé du stockage.",
       });
@@ -511,6 +512,11 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   },
 
   validateOcrFields: async (jobId, validated) => {
+    const existingJob = get().ocrJobs.find((j) => j.id === jobId);
+    if (existingJob && !canTransitionOcrJob(existingJob.status, "validated")) {
+      throw new Error(`Transition job OCR invalide : ${existingJob.status} → validated`);
+    }
+
     const entries = Object.entries(validated);
     // Chaque entrée cible un field_key distinct pour ce job — indépendantes
     // entre elles, donc parallélisables sans risque d'ordre ni de conflit

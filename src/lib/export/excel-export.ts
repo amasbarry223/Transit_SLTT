@@ -6,6 +6,9 @@ import { normalizeExportCell } from "@/lib/export/normalize-export-cell";
 import type { ExportModule } from "@/lib/export/export-modules";
 import { useStore } from "@/lib/store";
 import { toast } from "@/hooks/use-toast";
+import { toastError, toastLoading, toastSuccess } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
+import { logError } from "@/shared/logger";
 
 interface Column<T> {
   header: string;
@@ -83,9 +86,9 @@ export async function exportToExcel<T>(
   // Retour visuel immédiat : le mapping synchrone des lignes ci-dessous puis
   // l'aller-retour réseau peuvent prendre 1-3s sur de gros exports sans que
   // rien ne bouge à l'écran sinon — perçu comme un blocage.
-  const progress = toast({
+  const progress = toastLoading(toast, {
     title: "Génération du fichier Excel…",
-    description: "Veuillez patienter.",
+    description: UI.loading.exporting,
   });
 
   // Claim le geste utilisateur de façon synchrone (certains navigateurs
@@ -134,14 +137,10 @@ export async function exportToExcel<T>(
   } catch (error) {
     downloadTab?.close();
     progress.dismiss();
-    console.error("[SLTT] Export Excel:", error);
-    toast({
+    logError("[SLTT] Export Excel", error);
+    toastError(toast, error, {
       title: "Export Excel impossible",
-      description:
-        error instanceof Error
-          ? error.message
-          : "Une erreur est survenue lors de l'export.",
-      variant: "destructive",
+      fallback: UI.errors.exportFailed,
     });
     throw error;
   }

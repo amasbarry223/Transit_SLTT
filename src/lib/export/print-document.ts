@@ -12,8 +12,11 @@ import {
   type SocieteLegalInfo,
 } from "@/lib/societe-brand";
 import { toast } from "@/hooks/use-toast";
+import { toastLoading } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
+import { splitTextIntoLines } from "@/lib/recus-paiement-styles";
 import { htmlEscape } from "./html-escape";
-import { PRINT_HTML_DOCUMENT_CSS } from "./print-styles";
+import { OFFICIAL_LETTERHEAD_CSS, PRINT_HTML_DOCUMENT_CSS } from "./print-styles";
 
 /** Résout un chemin de logo en URL absolue pour la fenêtre d'impression. */
 export function resolveLogoUrl(path?: string): string | undefined {
@@ -22,10 +25,15 @@ export function resolveLogoUrl(path?: string): string | undefined {
   return `${window.location.origin}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
-export function brandLogoImgHTML(brand: SocieteBrand, className = "brand-logo"): string {
-  const url = resolveLogoUrl(brand.logoUrl);
+export function brandLogoImgHTML(
+  brand: SocieteBrand,
+  className = "brand-logo",
+  cacheBust?: string,
+): string {
+  let url = resolveLogoUrl(brand.logoUrl);
   if (!url) return "";
-  return `<img src="${url}" alt="${htmlEscape(brand.nom)}" class="${className}" onerror="this.style.display='none'">`;
+  if (cacheBust) url += `${url.includes("?") ? "&" : "?"}${cacheBust}`;
+  return `<img src="${url}" alt="${htmlEscape(brand.nom)}" class="${className}" style="background:transparent" onerror="this.style.display='none'">`;
 }
 
 function printHTMLLogoImg(brand: PrintHTMLBrand, className = "brand-logo"): string {
@@ -62,6 +70,68 @@ export function buildLegalLine(info?: SocieteLegalInfo): string {
  * via `.brand-name` — ce bloc ne contient que la ligne légale pour éviter
  * la duplication « nom + nom + NIF » sur devis, contrats, etc.
  */
+/** Découpe la raison sociale sur deux lignes (papier à en-tête officiel). */
+export function splitRaisonSocialeLines(raisonSociale: string): [string, string] {
+  const trimmed = raisonSociale.trim();
+  if (!trimmed) return ["", ""];
+
+  if (trimmed.includes("\n")) {
+    const parts = trimmed.split("\n").map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) return [parts[0], parts.slice(1).join(" ")];
+  }
+
+  const match = trimmed.match(/^(.+?)\s+(transit[-\s]transport)$/i);
+  if (match) return [match[1].trim(), match[2].trim()];
+
+  const [l1, l2] = splitTextIntoLines(trimmed, 2);
+  return [l1, l2];
+}
+
+/** HTML + CSS de l'en-tête officiel (logo + raison sociale + coordonnées légales). */
+export function buildOfficialLetterheadHTML(
+  brand: SocieteBrand,
+  options?: { logoClass?: string },
+): string {
+  const logoClass = options?.logoClass ?? "official-letterhead-logo";
+  const logoImg = brandLogoImgHTML(brand, logoClass, "v=transparent2");
+  const displayName = brand.raisonSociale || brand.nom;
+  const [line1, line2] = splitRaisonSocialeLines(displayName);
+  const l = brand.legal;
+
+  const legalHTML = [
+    l?.adresse
+      ? `<div class="official-letterhead-line">${htmlEscape(l.adresse)}</div>`
+      : "",
+    l?.telephone
+      ? `<div class="official-letterhead-line">Tél. : ${htmlEscape(l.telephone)}</div>`
+      : "",
+    l?.rccm
+      ? `<div class="official-letterhead-line official-letterhead-legal">RCCM : ${htmlEscape(l.rccm)}</div>`
+      : "",
+    l?.nif
+      ? `<div class="official-letterhead-line official-letterhead-legal">NIF : ${htmlEscape(l.nif)}</div>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return `<header class="official-letterhead">
+    <div class="official-letterhead-row">
+      <div class="official-letterhead-brand">
+        <div class="official-letterhead-logo-wrap">${logoImg}</div>
+        <div class="official-letterhead-name">
+          <div class="official-letterhead-name-l1">${htmlEscape(line1.toUpperCase())}</div>
+          ${line2 ? `<div class="official-letterhead-name-l2">${htmlEscape(line2.toUpperCase())}</div>` : ""}
+        </div>
+      </div>
+      ${legalHTML ? `<div class="official-letterhead-legal-block">${legalHTML}</div>` : ""}
+    </div>
+    <div class="official-letterhead-rule"></div>
+  </header>`;
+}
+
+export { OFFICIAL_LETTERHEAD_CSS };
+
 export function buildBrandSubHTML(brand: SocieteBrand): string {
   const legalLine = buildLegalLine(brand.legal);
   if (legalLine) return legalLine;
@@ -122,9 +192,9 @@ export function triggerPrint(win: Window, delayMs = PRINT_WINDOW_READY_MS): void
   // Retour visuel le temps de préparer le document (chargement du logo,
   // etc.) — sans ça le clic sur « Imprimer » ne montre rien avant que la
   // boîte de dialogue système n'apparaisse, ce qui se lit comme un blocage.
-  const progress = toast({
+  const progress = toastLoading(toast, {
     title: "Préparation de l'impression…",
-    description: "La boîte de dialogue va s'ouvrir dans un instant.",
+    description: UI.loading.processing,
   });
   const doPrint = () => {
     progress.dismiss();

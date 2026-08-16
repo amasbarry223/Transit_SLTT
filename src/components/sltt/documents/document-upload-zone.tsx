@@ -9,6 +9,7 @@ import {
   DOC_MAX_FILE_MB,
 } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { toastWarning } from "@/lib/toast-helpers";
 import { cn } from "@/lib/utils";
 import type { DocumentCategorie } from "@/lib/domain-types";
 
@@ -104,18 +105,16 @@ export function DocumentUploadZone({
 
     for (const raw of Array.from(fileList)) {
       if (raw.size > DOC_MAX_FILE_BYTES) {
-        toast({
+        toastWarning(toast, {
           title: "Fichier trop volumineux",
           description: `${raw.name} dépasse ${DOC_MAX_FILE_MB} Mo.`,
-          variant: "destructive",
         });
         continue;
       }
       if (!isAcceptedMime(raw.type, raw.name)) {
-        toast({
+        toastWarning(toast, {
           title: "Format non supporté",
           description: `${raw.name} — PDF, JPG, PNG ou HEIC uniquement.`,
-          variant: "destructive",
         });
         continue;
       }
@@ -130,10 +129,9 @@ export function DocumentUploadZone({
           categorie: guessCategorie(file.name),
         });
       } catch {
-        toast({
+        toastWarning(toast, {
           title: "Lecture impossible",
           description: raw.name,
-          variant: "destructive",
         });
       }
     }

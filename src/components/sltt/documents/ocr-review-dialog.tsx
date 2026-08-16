@@ -7,6 +7,9 @@ import type { DossierInput } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { logError, logWarn } from "@/shared/logger";
+import { UI } from "@/lib/ui-messages";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { runOcrOnStoragePath } from "@/lib/documents/ocr/run-ocr";
@@ -126,12 +129,12 @@ export function OcrReviewDialog({
       try {
         await failOcrJob(jobId, message);
       } catch (err) {
-        console.warn("[OCR] failOcrJob échoué, retry updateOcrJobResult:", err);
+        logWarn("[OCR] failOcrJob échoué, retry updateOcrJobResult", err);
         await updateOcrJobResult(jobId, {
           status: "failed",
           errorMessage: message,
         }).catch((e) => {
-          console.error("[OCR] Impossible de marquer le job failed:", e);
+          logError("[OCR] Impossible de marquer le job failed", e);
         });
       }
     },
@@ -343,7 +346,7 @@ export function OcrReviewDialog({
       } else if (currentJobId) {
         await markJobFailed(currentJobId, message);
       }
-      toast({ title: "OCR échoué", description: message, variant: "destructive" });
+      toastWarning(toast, { title: "OCR échoué", description: message });
     } finally {
       if (abortRef.current === ac) {
         setRunning(false);
@@ -404,20 +407,11 @@ export function OcrReviewDialog({
   async function handleValidate() {
     if (!doc) return;
     if (!canValidate) {
-      toast({
-        title: "Permission insuffisante",
-        description:
-          "La validation OCR nécessite documents:write et dossiers:write.",
-        variant: "destructive",
-      });
+      toastWarning(toast, { title: "Permission insuffisante", description: "La validation OCR nécessite documents:write et dossiers:write." });
       return;
     }
     if (!form.clientId) {
-      toast({
-        title: "Client requis",
-        description: "Sélectionnez un client avant d'enregistrer.",
-        variant: "destructive",
-      });
+      toastWarning(toast, { title: "Client requis", description: "Sélectionnez un client avant d'enregistrer." });
       return;
     }
     const client = clients.find((c) => c.id === form.clientId);
@@ -510,17 +504,10 @@ export function OcrReviewDialog({
         });
       }
 
-      toast({
-        title: existingDossierId ? "Dossier mis à jour" : "Dossier créé",
-        description: "Données OCR validées et document lié.",
-      });
+      toastSuccess(toast, { title: existingDossierId ? "Dossier mis à jour" : "Dossier créé", description: "Données OCR validées et document lié." });
       onOpenChange(false);
     } catch (e) {
-      toast({
-        title: "Enregistrement impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Enregistrement impossible", fallback: "Erreur" });
     } finally {
       setSaving(false);
     }

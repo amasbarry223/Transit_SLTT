@@ -4,8 +4,9 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { Upload } from "lucide-react";
 import { useStore, type TypeDocument } from "@/lib/store";
 import { deriveClientIdFromRattachement } from "@/lib/archives-utils";
-import { getErrorMessage } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -80,7 +81,7 @@ export function ArchiveUploadDialog({
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > MAX_FILE_SIZE) {
-      toast({ title: "Fichier trop volumineux", description: `${f.name} dépasse 50 Mo.`, variant: "destructive" });
+      toastWarning(toast, { title: "Fichier trop volumineux", description: `${f.name} dépasse 50 Mo.` });
       return;
     }
     setFile(f);
@@ -88,11 +89,11 @@ export function ArchiveUploadDialog({
 
   async function handleSubmit() {
     if (!file) {
-      toast({ title: "Sélectionnez un fichier", variant: "destructive" });
+      toastWarning(toast, { title: "Sélectionnez un fichier" });
       return;
     }
     if (!societeId) {
-      toast({ title: "Sélectionnez une société", variant: "destructive" });
+      toastWarning(toast, { title: "Sélectionnez une société" });
       return;
     }
     setSaving(true);
@@ -117,15 +118,11 @@ export function ArchiveUploadDialog({
         societeId,
       });
 
-      toast({ title: "Document archivé", description: file.name });
+      toastSuccess(toast, { title: "Document archivé", description: file.name });
       reset();
       onOpenChange(false);
     } catch (e) {
-      toast({
-        title: "Échec de l'archivage",
-        description: getErrorMessage(e, "Erreur inattendue."),
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Échec de l'archivage", fallback: "Erreur inattendue." });
     } finally {
       setSaving(false);
     }

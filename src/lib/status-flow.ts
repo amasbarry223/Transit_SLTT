@@ -1,4 +1,4 @@
-import type { ContratStatut, DevisStatut, FactureStatut } from "@/lib/domain-types";
+import type { ContratStatut, DevisStatut, FactureStatut, OcrJobStatus } from "@/lib/domain-types";
 
 /**
  * Transitions manuelles autorisées pour les devis et les factures.
@@ -38,4 +38,22 @@ export function canTransitionFacture(from: FactureStatut, to: FactureStatut): bo
 
 export function canTransitionContrat(from: ContratStatut, to: ContratStatut): boolean {
   return CONTRAT_ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+/**
+ * Matrice job OCR (§4 cahier des charges) : pending→processing→{done,failed}→validated.
+ * Une "relance OCR" crée un nouveau job (createOcrJob) plutôt que de faire
+ * régresser un job existant — validated/failed→pending n'est donc jamais
+ * un cas légitime pour un même job.
+ */
+export const OCR_JOB_ALLOWED_TRANSITIONS: Record<OcrJobStatus, OcrJobStatus[]> = {
+  pending: ["processing"],
+  processing: ["done", "failed"],
+  done: ["validated"],
+  failed: ["validated"],
+  validated: [],
+};
+
+export function canTransitionOcrJob(from: OcrJobStatus, to: OcrJobStatus): boolean {
+  return OCR_JOB_ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
 }

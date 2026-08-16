@@ -70,9 +70,12 @@ export function InstallPWA({ variant = "toolbar" }: InstallPWAProps) {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    void navigator.serviceWorker.getRegistration("/sw.js").then((reg) => {
-      setSwReady(Boolean(reg?.active));
-    });
+    void navigator.serviceWorker
+      .getRegistration("/sw.js")
+      .then((reg) => {
+        setSwReady(Boolean(reg?.active));
+      })
+      .catch(() => {});
   }, []);
 
   const handleInstall = useCallback(async () => {

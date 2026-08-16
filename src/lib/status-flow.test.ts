@@ -3,6 +3,7 @@ import {
   canTransitionContrat,
   canTransitionDevis,
   canTransitionFacture,
+  canTransitionOcrJob,
   CONTRAT_ALLOWED_TRANSITIONS,
   DEVIS_ALLOWED_TRANSITIONS,
   FACTURE_ALLOWED_TRANSITIONS,
@@ -33,6 +34,18 @@ describe("status-flow FSM", () => {
       ["Accepté", "Brouillon", "Envoyé", "Expiré", "Refusé"].sort(),
     );
     expect(Object.keys(FACTURE_ALLOWED_TRANSITIONS)).toContain("Annulée");
+  });
+
+  it("matrice job OCR : pending→processing→{done,failed}→validated", () => {
+    expect(canTransitionOcrJob("pending", "processing")).toBe(true);
+    expect(canTransitionOcrJob("processing", "done")).toBe(true);
+    expect(canTransitionOcrJob("processing", "failed")).toBe(true);
+    expect(canTransitionOcrJob("done", "validated")).toBe(true);
+    expect(canTransitionOcrJob("failed", "validated")).toBe(true);
+    // validated est terminal, et on ne peut pas sauter directement à validated
+    expect(canTransitionOcrJob("validated", "pending")).toBe(false);
+    expect(canTransitionOcrJob("pending", "validated")).toBe(false);
+    expect(canTransitionOcrJob("processing", "validated")).toBe(false);
   });
 });
 

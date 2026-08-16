@@ -26,6 +26,18 @@ vi.mock("@/lib/supabase/server", () => ({
       auth: {
         getUser: async () => fakeState.getUserResult,
       },
+      // Reproduit has_permission() (Postgres) contre le même fixture profilesById,
+      // pour que requireUserManager exerce le vrai chemin d'appel (RPC) plutôt
+      // qu'un court-circuit qui masquerait une régression de cet appel.
+      rpc: async (fnName: string, params: { perm: string }) => {
+        if (fnName !== "has_permission") return { data: null, error: { message: "unknown rpc" } };
+        const uid = fakeState.getUserResult.data.user?.id;
+        const profile = uid ? fakeState.profilesById[uid] : undefined;
+        const granted = Boolean(
+          profile?.actif && (profile.role === "Administrateur" || profile.permissions.includes(params.perm)),
+        );
+        return { data: granted, error: null };
+      },
     };
   },
 }));

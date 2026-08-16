@@ -13,6 +13,8 @@ import { permissionsFromSelection } from "@/components/sltt/permission-matrix";
 import type { User as UserAccount, UserInput } from "@/lib/store";
 import { matchesQuery } from "@/lib/search-filter";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
@@ -120,15 +122,24 @@ export function UsersTab() {
 
   async function handleCreate(state: UserFormState) {
     if (state.password.length < 8) {
-      toast({ title: "Mot de passe trop court", description: "Minimum 8 caractères.", variant: "destructive" });
+      toastWarning(toast, {
+        title: "Mot de passe trop court",
+        description: "Utilisez au moins 8 caractères avec lettres et chiffres.",
+      });
       return;
     }
     if (state.password !== state.confirmPassword) {
-      toast({ title: "Les mots de passe ne correspondent pas", variant: "destructive" });
+      toastWarning(toast, {
+        title: "Les mots de passe ne correspondent pas",
+        description: "Saisissez le même mot de passe dans les deux champs.",
+      });
       return;
     }
     if (users.some((u) => u.email.toLowerCase() === state.email.trim().toLowerCase())) {
-      toast({ title: "E-mail déjà utilisé", variant: "destructive" });
+      toastWarning(toast, {
+        title: "Cette adresse e-mail est déjà utilisée",
+        description: "Choisissez une autre adresse ou modifiez l'utilisateur existant.",
+      });
       return;
     }
     const input: UserInput = {
@@ -142,13 +153,15 @@ export function UsersTab() {
     setSaving(true);
     try {
       await addUser(input);
-      toast({ title: "Utilisateur créé avec succès" });
+      toastSuccess(toast, {
+        title: "Utilisateur créé",
+        description: `${state.nom.trim()} peut maintenant se connecter.`,
+      });
       setFormOpen(false);
     } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        description: err instanceof Error ? err.message : "Création impossible.",
-        variant: "destructive",
+      toastError(toast, err, {
+        title: "Impossible de créer l'utilisateur",
+        fallback: "Vérifiez les informations saisies et réessayez.",
       });
     } finally {
       setSaving(false);
@@ -166,14 +179,16 @@ export function UsersTab() {
     setSaving(true);
     try {
       await updateUser(id, input);
-      toast({ title: "Utilisateur mis à jour" });
+      toastSuccess(toast, {
+        title: "Utilisateur mis à jour",
+        description: "Les modifications ont été enregistrées.",
+      });
       setFormOpen(false);
       setEditingUserId(null);
     } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        description: err instanceof Error ? err.message : "Mise à jour impossible.",
-        variant: "destructive",
+      toastError(toast, err, {
+        title: "Impossible de mettre à jour l'utilisateur",
+        fallback: "Vérifiez les informations saisies et réessayez.",
       });
     } finally {
       setSaving(false);
@@ -184,12 +199,14 @@ export function UsersTab() {
     setSaving(true);
     try {
       await resetUserPassword(id, password);
-      toast({ title: "Mot de passe réinitialisé" });
+      toastSuccess(toast, {
+        title: "Mot de passe réinitialisé",
+        description: "L'utilisateur pourra se connecter avec son nouveau mot de passe.",
+      });
     } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        description: err instanceof Error ? err.message : "Réinitialisation impossible.",
-        variant: "destructive",
+      toastError(toast, err, {
+        title: "Impossible de réinitialiser le mot de passe",
+        fallback: "Réessayez dans quelques instants.",
       });
     } finally {
       setSaving(false);
@@ -204,15 +221,14 @@ export function UsersTab() {
     }
     try {
       await toggleUserActive(u.id);
-      toast({
-        title: "Statut mis à jour",
-        description: `${u.nom} est maintenant actif.`,
+      toastSuccess(toast, {
+        title: "Compte réactivé",
+        description: `${u.nom} peut à nouveau se connecter.`,
       });
     } catch (err: unknown) {
-      toast({
-        title: "Erreur",
-        variant: "destructive",
-        description: err instanceof Error ? err.message : undefined,
+      toastError(toast, err, {
+        title: "Impossible de modifier le statut",
+        fallback: "Réessayez dans quelques instants.",
       });
     }
   }
@@ -281,12 +297,11 @@ export function UsersTab() {
           if (!deleteId) return;
           try {
             await removeUser(deleteId);
-            toast({ title: "Utilisateur supprimé" });
+            toastSuccess(toast, { title: "Utilisateur supprimé" });
           } catch (err: unknown) {
-            toast({
-              title: "Erreur",
-              description: err instanceof Error ? err.message : "Suppression impossible.",
-              variant: "destructive",
+            toastError(toast, err, {
+              title: "Impossible de supprimer l'utilisateur",
+              fallback: "Vérifiez qu'aucune action en cours ne bloque la suppression.",
             });
           }
         }}
@@ -308,15 +323,14 @@ export function UsersTab() {
           if (!deactivateTarget) return;
           try {
             await toggleUserActive(deactivateTarget.id);
-            toast({
-              title: "Statut mis à jour",
-              description: `${deactivateTarget.nom} est maintenant inactif.`,
+            toastSuccess(toast, {
+              title: "Compte désactivé",
+              description: `${deactivateTarget.nom} ne peut plus se connecter.`,
             });
           } catch (err: unknown) {
-            toast({
-              title: "Erreur",
-              variant: "destructive",
-              description: err instanceof Error ? err.message : undefined,
+            toastError(toast, err, {
+              title: "Impossible de désactiver l'utilisateur",
+              fallback: "Réessayez dans quelques instants.",
             });
           }
           setDeactivateTarget(null);

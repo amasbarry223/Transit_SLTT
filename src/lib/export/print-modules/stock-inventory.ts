@@ -15,6 +15,8 @@ import { fmtFCFA } from "./shared";
 /* ------------------------------------------------------------------ */
 /* printStockInventory — inventaire du stock (Entreposage)              */
 /* Document A4 paysage : lecture magasin + validation opérationnelle.   */
+/* Une section complète (en-tête, logo, KPI, tableau, signatures) par   */
+/* groupe — jamais un article d'une société sous le logo d'une autre.   */
 /* ------------------------------------------------------------------ */
 
 export interface StockInventoryRow {
@@ -26,23 +28,17 @@ export interface StockInventoryRow {
   commercial: string;
   sommePayee: number;
   resteAPayer: number;
-  societeNom?: string;
   clientNom?: string;
 }
 
-export interface StockInventoryPrintOptions {
-  /** Libellé du filtre société actif (ex. « Top Doumani » ou « Toutes les sociétés »). */
-  societeLabel?: string;
-  /** Société sélectionnée (filtre précis, pas "Toutes") — sert à afficher sa véritable identité légale plutôt que celle de SLTT par défaut. */
-  societe?: SocieteBrand;
+export interface StockInventoryGroup {
+  /** Identité de la société propriétaire de ces lignes — son propre logo/en-tête. */
+  societe: SocieteBrand;
+  rows: StockInventoryRow[];
 }
 
-export function printStockInventory(
-  rows: StockInventoryRow[],
-  options: StockInventoryPrintOptions = {},
-): void {
-  if (!requireSocieteBrand(options.societe, "l'inventaire stock")) return;
-  const societe = options.societe!;
+function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
+  const societe = group.societe;
   const logoImg = brandLogoImgHTML(societe);
   const brandSubHTML = buildBrandSubHTML(societe);
   const now = new Date();
@@ -55,10 +51,8 @@ export function printStockInventory(
     hour: "2-digit",
     minute: "2-digit",
   });
-  const societeLabel = options.societeLabel?.trim() || "Toutes les sociétés";
-  const docRef = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
 
-  const sorted = [...rows].sort((a, b) => {
+  const sorted = [...group.rows].sort((a, b) => {
     const aLow = a.quantite < a.seuil ? 0 : 1;
     const bLow = b.quantite < b.seuil ? 0 : 1;
     if (aLow !== bLow) return aLow - bLow;
@@ -86,16 +80,13 @@ export function printStockInventory(
       const clientLine = r.clientNom
         ? `<div style="font-size:10px;color:#6b7280;margin-top:2px">${htmlEscape(r.clientNom)}</div>`
         : "";
-      const societeLine = r.societeNom
-        ? `<div style="font-size:10px;color:#92a3ba;margin-top:1px">${htmlEscape(r.societeNom)}</div>`
-        : "";
 
       return `
     <tr style="background:${rowBg}">
       <td class="td-idx">${i + 1}</td>
       <td class="td-march">
         <div class="march-name">${htmlEscape(r.marchandise)}</div>
-        ${clientLine}${societeLine}
+        ${clientLine}
       </td>
       <td class="td-num td-qte">
         <div class="qte-val">${r.quantite.toLocaleString("fr-FR")}</div>
@@ -116,6 +107,151 @@ export function printStockInventory(
     })
     .join("");
 
+  return `
+<div class="wrap">
+  <div class="doc-header">
+    <div class="brand">
+      ${logoImg}
+      <div>
+        ${societe.afficherNomAvecLogo === false ? "" : `<div class="brand-name">${htmlEscape(societe.nom)}</div>`}
+        <div class="brand-sub">${brandSubHTML}</div>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-type">Entreposage · Document interne</div>
+      <div class="doc-title">Inventaire stock</div>
+      <div class="doc-ref">${htmlEscape(docRef)}</div>
+      <div class="doc-date">Édité le ${today} à ${heure}</div>
+      <div class="scope-chip">Périmètre : ${htmlEscape(societe.nom)}</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div>
+      <div class="hero-title">État des stocks</div>
+      <div class="hero-sub">
+        Synthèse des articles en entrepôt — quantités, seuils d’alerte et valorisation.
+        Les lignes sous seuil sont listées en priorité.
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-band">
+    <div class="kpi">
+      <div class="kpi-lbl">Références</div>
+      <div class="kpi-val">${sorted.length}</div>
+      <div class="kpi-sub">articles suivis</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Quantité totale</div>
+      <div class="kpi-val">${qteTotale.toLocaleString("fr-FR")}</div>
+      <div class="kpi-sub">toutes unités</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Valeur totale</div>
+      <div class="kpi-val" style="font-size:14px">${fmtFCFA(valeurTotale)}</div>
+      <div class="kpi-sub">payé + reste</div>
+    </div>
+    <div class="kpi ok">
+      <div class="kpi-lbl">Disponibles</div>
+      <div class="kpi-val">${nbDisponibles}</div>
+      <div class="kpi-sub">au-dessus du seuil</div>
+    </div>
+    <div class="kpi${nbFaible > 0 ? " alert" : ""}">
+      <div class="kpi-lbl">Sous seuil</div>
+      <div class="kpi-val">${nbFaible}</div>
+      <div class="kpi-sub">à réapprovisionner</div>
+    </div>
+  </div>
+
+  <div class="tbl-outer">
+    <div class="tbl-wrap">
+      <table>
+        <thead class="tbl-head">
+          <tr>
+            <th>#</th>
+            <th>Marchandise</th>
+            <th class="num">Qté</th>
+            <th class="num">Seuil</th>
+            <th>Unité</th>
+            <th>Dépositaire</th>
+            <th>Commercial</th>
+            <th class="num">Payé</th>
+            <th class="num">Reste</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            rowsHTML ||
+            `<tr><td colspan="10" style="padding:28px;text-align:center;color:#92a3ba">Aucun article à inventorier</td></tr>`
+          }
+        </tbody>
+        <tfoot>
+          <tr class="tbl-foot">
+            <td colspan="7">Total — ${sorted.length} article${sorted.length !== 1 ? "s" : ""}</td>
+            <td class="amt">${fmtFCFA(sumPayee)}</td>
+            <td class="amt">${fmtFCFA(sumReste)}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  ${
+    nbFaible > 0
+      ? `<div class="alert-box">
+    <strong>${nbFaible} article${nbFaible > 1 ? "s" : ""}</strong>
+    ${nbFaible > 1 ? "sont" : "est"} sous le seuil de réapprovisionnement.
+    Prioriser une commande avant rupture.
+  </div>`
+      : ""
+  }
+
+  <div class="signatures">
+    <div class="sig-block">
+      <div class="sig-label">Magasinier</div>
+      <div class="sig-line">Nom &amp; visa</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-label">Responsable entrepôt</div>
+      <div class="sig-line">Nom &amp; visa</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-label">Direction</div>
+      <div class="sig-line">Visa</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">
+      Document confidentiel · usage interne ${htmlEscape(societe.nom)}<br>
+      Inventaire généré automatiquement · © ${now.getFullYear()}
+    </div>
+    <div class="footer-brand">${documentFooterHTML(societe.nom)}</div>
+  </div>
+</div>`;
+}
+
+export function printStockInventory(groups: StockInventoryGroup[]): void {
+  const validGroups = groups.filter((g) => g.societe?.nom?.trim());
+  if (validGroups.length === 0) {
+    requireSocieteBrand(undefined, "l'inventaire stock");
+    return;
+  }
+
+  const now = new Date();
+  const docRefBase = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+  const titleSuffix = validGroups.length === 1 ? ` — ${validGroups[0].societe.nom}` : "";
+
+  const sectionsHTML = validGroups
+    .map((group, i) => {
+      const docRef = validGroups.length > 1 ? `${docRefBase}-${i + 1}` : docRefBase;
+      return buildSectionHTML(group, docRef);
+    })
+    .join("\n");
+
   const win = acquirePrintTarget();
   if (!win) {
     warnPopupBlocked();
@@ -127,7 +263,7 @@ export function printStockInventory(
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Inventaire ${htmlEscape(docRef)} — SLTT</title>
+<title>Inventaire ${htmlEscape(docRefBase)}${htmlEscape(titleSuffix)}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,500&family=JetBrains+Mono:wght@500;600&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -309,6 +445,7 @@ table { width: 100%; border-collapse: collapse; }
   .no-print { display: none !important; }
   body { background: white; margin: 0; }
   .wrap { margin: 0; max-width: none; box-shadow: none; border: none; }
+  .wrap + .wrap { page-break-before: always; }
   .brand-logo { width: 78px; height: 78px; }
   .kpi-band { gap: 8px; }
   .signatures { padding-top: 28px; }
@@ -317,134 +454,10 @@ table { width: 100%; border-collapse: collapse; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="no-print">
-    <button class="btn-print" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
-  </div>
-
-  <div class="doc-header">
-    <div class="brand">
-      ${logoImg}
-      <div>
-        ${societe.afficherNomAvecLogo === false ? "" : `<div class="brand-name">${htmlEscape(societe.nom)}</div>`}
-        <div class="brand-sub">${brandSubHTML}</div>
-      </div>
-    </div>
-    <div class="doc-meta">
-      <div class="doc-type">Entreposage · Document interne</div>
-      <div class="doc-title">Inventaire stock</div>
-      <div class="doc-ref">${htmlEscape(docRef)}</div>
-      <div class="doc-date">Édité le ${today} à ${heure}</div>
-      <div class="scope-chip">Périmètre : ${htmlEscape(societeLabel)}</div>
-    </div>
-  </div>
-
-  <div class="hero">
-    <div>
-      <div class="hero-title">État des stocks</div>
-      <div class="hero-sub">
-        Synthèse des articles en entrepôt — quantités, seuils d’alerte et valorisation.
-        Les lignes sous seuil sont listées en priorité.
-      </div>
-    </div>
-  </div>
-
-  <div class="kpi-band">
-    <div class="kpi">
-      <div class="kpi-lbl">Références</div>
-      <div class="kpi-val">${sorted.length}</div>
-      <div class="kpi-sub">articles suivis</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-lbl">Quantité totale</div>
-      <div class="kpi-val">${qteTotale.toLocaleString("fr-FR")}</div>
-      <div class="kpi-sub">toutes unités</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-lbl">Valeur totale</div>
-      <div class="kpi-val" style="font-size:14px">${fmtFCFA(valeurTotale)}</div>
-      <div class="kpi-sub">payé + reste</div>
-    </div>
-    <div class="kpi ok">
-      <div class="kpi-lbl">Disponibles</div>
-      <div class="kpi-val">${nbDisponibles}</div>
-      <div class="kpi-sub">au-dessus du seuil</div>
-    </div>
-    <div class="kpi${nbFaible > 0 ? " alert" : ""}">
-      <div class="kpi-lbl">Sous seuil</div>
-      <div class="kpi-val">${nbFaible}</div>
-      <div class="kpi-sub">à réapprovisionner</div>
-    </div>
-  </div>
-
-  <div class="tbl-outer">
-    <div class="tbl-wrap">
-      <table>
-        <thead class="tbl-head">
-          <tr>
-            <th>#</th>
-            <th>Marchandise</th>
-            <th class="num">Qté</th>
-            <th class="num">Seuil</th>
-            <th>Unité</th>
-            <th>Dépositaire</th>
-            <th>Commercial</th>
-            <th class="num">Payé</th>
-            <th class="num">Reste</th>
-            <th>Statut</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${
-            rowsHTML ||
-            `<tr><td colspan="10" style="padding:28px;text-align:center;color:#92a3ba">Aucun article à inventorier</td></tr>`
-          }
-        </tbody>
-        <tfoot>
-          <tr class="tbl-foot">
-            <td colspan="7">Total général — ${sorted.length} article${sorted.length !== 1 ? "s" : ""}</td>
-            <td class="amt">${fmtFCFA(sumPayee)}</td>
-            <td class="amt">${fmtFCFA(sumReste)}</td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-
-  ${
-    nbFaible > 0
-      ? `<div class="alert-box">
-    <strong>${nbFaible} article${nbFaible > 1 ? "s" : ""}</strong>
-    ${nbFaible > 1 ? "sont" : "est"} sous le seuil de réapprovisionnement.
-    Prioriser une commande avant rupture.
-  </div>`
-      : ""
-  }
-
-  <div class="signatures">
-    <div class="sig-block">
-      <div class="sig-label">Magasinier</div>
-      <div class="sig-line">Nom &amp; visa</div>
-    </div>
-    <div class="sig-block">
-      <div class="sig-label">Responsable entrepôt</div>
-      <div class="sig-line">Nom &amp; visa</div>
-    </div>
-    <div class="sig-block">
-      <div class="sig-label">Direction</div>
-      <div class="sig-line">Visa</div>
-    </div>
-  </div>
-
-  <div class="footer">
-    <div class="footer-note">
-      Document confidentiel · usage interne ${htmlEscape(societe.nom)}<br>
-      Inventaire généré automatiquement · © ${now.getFullYear()}
-    </div>
-    <div class="footer-brand">${documentFooterHTML(societe.nom)}</div>
-  </div>
+<div class="no-print">
+  <button class="btn-print" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
 </div>
+${sectionsHTML}
 </body>
 </html>`);
   win.document.close();

@@ -7,6 +7,7 @@ import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
 import type { ArchiveRow } from "@/lib/db-rows";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+import { logError } from "@/shared/logger";
 
 const ARCHIVES_ALLOWED_MIME = new Set([
   "application/pdf",
@@ -155,7 +156,9 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
         // Non bloquant : la ligne DB reste la source de vérité de ce qui est
         // "archivé" — on continue la suppression, mais on garde une trace
         // du fichier physique potentiellement orphelin dans le bucket.
-        console.error(`[archives] Échec suppression fichier "${archive.nom}" du storage:`, storageError.message);
+        logError(`[archives] Échec suppression fichier "${archive.nom}" du storage`, storageError, {
+          message: storageError.message,
+        });
       }
     }
     const { error } = await supabase.from("archives").delete().eq("id", id);

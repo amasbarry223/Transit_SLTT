@@ -28,15 +28,15 @@ export interface GuideStepDef {
 export const GUIDE_STEP_DEFS: GuideStepDef[] = [
   {
     id: "clients",
-    label: "Ajoutez vos clients",
-    sub: "Annuaire et fiches clients",
+    label: "Constituez votre annuaire clients",
+    sub: "Nom, contacts et historique en un clic",
     view: "clients",
     roles: ["Administrateur", "Agent de transit", "Comptable"],
   },
   {
     id: "dossiers",
-    label: "Archivez un dossier",
-    sub: "Client, camion, BL, montants",
+    label: "Ouvrez votre premier dossier",
+    sub: "Camion, BL, montants — tout au même endroit",
     view: "dossiers",
     // Comptable n'a que dossiers:read (pas :write) — retiré pour éviter une
     // étape d'onboarding sans bouton "Nouveau dossier" disponible.
@@ -44,29 +44,29 @@ export const GUIDE_STEP_DEFS: GuideStepDef[] = [
   },
   {
     id: "paiements",
-    label: "Enregistrez les paiements",
-    sub: "Écritures comptables",
+    label: "Tracez vos encaissements",
+    sub: "Recettes, modes de paiement, soldes",
     view: "comptabilite",
     roles: ["Administrateur", "Comptable"],
   },
   {
     id: "bilans",
-    label: "Soldez votre premier dossier",
-    sub: "Le bilan s'alimente une fois un dossier clôturé",
+    label: "Clôturez et soldez un dossier",
+    sub: "Le bilan se remplit automatiquement",
     view: "bilans",
     roles: ["Administrateur", "Comptable"],
   },
   {
     id: "stock",
-    label: "Gérez le stock",
-    sub: "Entrées, sorties, dépositaires",
+    label: "Renseignez votre stock",
+    sub: "Articles, seuils et mouvements",
     view: "entreposage",
     roles: ["Administrateur", "Magasinier"],
   },
   {
     id: "bons",
-    label: "Émettez des bons de sortie",
-    sub: "Date, client, motif, montant",
+    label: "Autorisez une sortie de marchandise",
+    sub: "Bon de sortie en quelques champs",
     view: "bons",
     roles: ["Administrateur", "Magasinier"],
   },

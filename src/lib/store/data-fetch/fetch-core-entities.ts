@@ -66,7 +66,7 @@ export async function fetchCoreEntities(
         pagedSelect(
           supabase,
           "societes",
-          "id, nom, actif, logo_url, adresse, telephone, rccm, nif, afficher_nom_avec_logo, signataire_dg, signataire_pdg, is_transit",
+          "id, nom, raison_sociale, actif, logo_url, adresse, telephone, rccm, nif, afficher_nom_avec_logo, signataire_dg, signataire_pdg, is_transit",
         ),
       { softCap: caps.societes },
     ),

@@ -5,11 +5,12 @@ import { SESSION_TTL_SHORT, SESSION_TTL_LONG, IDLE_TIMEOUT, IDLE_WARNING_BEFORE,
 import { clearLegacyNavPersist } from "@/lib/session/legacy-persist";
 import { useStore } from "@/lib/store";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import { LoginScreen } from "@/components/sltt/screens/login";
-import { SupabaseRequiredScreen } from "@/components/sltt/screens/supabase-required";
+import { LoginScreen, SupabaseRequiredScreen } from "@/features/auth";
+import { logWarn } from "@/shared/logger";
 import { AppShell } from "@/components/sltt/layout/app-shell";
 import { useSupabaseRealtime } from "@/hooks/use-supabase-realtime";
 import { Loader2 } from "lucide-react";
+import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -106,7 +107,7 @@ function AppRootInner() {
     // Filet de sécurité : même si getSession / le réseau hang, afficher login/shell.
     const safetyTimer = setTimeout(() => {
       if (process.env.NODE_ENV === "development") {
-        console.warn("[SLTT] Timeout sync session — déblocage UI");
+        logWarn("[SLTT] Timeout sync session — déblocage UI");
       }
       markReady();
     }, AUTH_READY_TIMEOUT_MS);
@@ -133,7 +134,7 @@ function AppRootInner() {
             continue;
           }
           if (process.env.NODE_ENV === "development") {
-            console.warn("[SLTT] Lecture profil:", error.message);
+            logWarn("[SLTT] Lecture profil", error, { message: error.message });
           }
           return false;
         }
@@ -148,7 +149,7 @@ function AppRootInner() {
       }
 
       if (lastError && process.env.NODE_ENV === "development") {
-        console.warn("[SLTT] Lecture profil:", lastError);
+        logWarn("[SLTT] Lecture profil", lastError);
       }
       return false;
     }
@@ -193,7 +194,7 @@ function AppRootInner() {
               }
             } catch (e) {
               if (process.env.NODE_ENV === "development") {
-                console.warn("[SLTT] Auth state change:", e);
+                logWarn("[SLTT] Auth state change", e);
               }
               if (event === "INITIAL_SESSION") markReady();
             }
@@ -219,13 +220,13 @@ function AppRootInner() {
 
         if (result.ok) {
           if (result.r.error && process.env.NODE_ENV === "development") {
-            console.warn("[SLTT] getSession:", result.r.error.message);
+            logWarn("[SLTT] getSession", result.r.error, { message: result.r.error.message });
           }
           await handleSession(result.r.data.session);
         }
       } catch (e) {
         if (process.env.NODE_ENV === "development") {
-          console.warn("[SLTT] Sync session Auth:", e);
+          logWarn("[SLTT] Sync session Auth", e);
         }
       } finally {
         markReady();
@@ -337,7 +338,7 @@ function AppRootInner() {
       <div className="flex min-h-screen items-center justify-center bg-background text-slate-600 dark:text-slate-300">
         <div className="flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
-          Vérification de la session…
+          {UI.loading.verifying}
         </div>
       </div>
     );

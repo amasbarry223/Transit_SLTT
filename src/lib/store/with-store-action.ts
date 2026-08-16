@@ -1,4 +1,5 @@
 import { getErrorMessage } from "@/lib/utils";
+import { logError } from "@/shared/logger";
 
 type SetStateFn = (
   partial:
@@ -26,7 +27,7 @@ export async function withStoreAction<T>(
     return await action();
   } catch (error) {
     onError?.(error);
-    console.error("[SLTT store]", getErrorMessage(error));
+    logError("[SLTT store]", error, { message: getErrorMessage(error) });
     return null;
   } finally {
     if (loadingKey) set({ [loadingKey]: false });

@@ -5,6 +5,9 @@ import type { ClasseurEntry } from "@/lib/classeur";
 import { useStore } from "@/lib/store";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { UI } from "@/lib/ui-messages";
+import { logWarn } from "@/shared/logger";
 import { buildEmptyWorkbookData, ensureGrandLivreCapacity } from "@/lib/excel/template";
 import { DEFAULT_PAIEMENT_MODE } from "@/lib/constants";
 import {
@@ -93,8 +96,15 @@ export function useExcelWorkbook({
     const wb = api.getActiveWorkbook();
     if (!wb) return;
     setSaveStatus("saving");
+    const snapshot = wb.save() as Record<string, unknown>;
+    // Efface le flag "dirty" AVANT l'écriture réseau (pas après) : si une
+    // édition arrive pendant l'await ci-dessous, le listener markDirty()
+    // le remet à true, donc rien n'est perdu. Le remettre à false seulement
+    // après l'await (comme avant ce correctif) écrasait un dirty=true posé
+    // par une frappe concurrente pendant le save — un flush au démontage
+    // juste après passait alors à côté de cette édition non enregistrée.
+    dirtyRef.current = false;
     try {
-      const snapshot = wb.save() as Record<string, unknown>;
       let xlsxBlob: Blob | null = null;
       const size = new Blob([JSON.stringify(snapshot)]).size;
       if (size > SNAPSHOT_MAX_BYTES) {
@@ -107,18 +117,17 @@ export function useExcelWorkbook({
         xlsxBlob,
         silent,
       });
-      dirtyRef.current = false;
       setSaveStatus("saved");
       if (!silent) {
-        toast({ title: "Classeur enregistré" });
+        toastSuccess(toast, { title: "Classeur enregistré" });
       }
     } catch (e) {
+      // Le save a échoué : les modifications ne sont pas persistées, donc le
+      // classeur reste dirty (sauf si une édition concurrente l'a déjà remis
+      // à true, auquel cas ce set est un no-op).
+      dirtyRef.current = true;
       setSaveStatus("error");
-      toast({
-        title: "Enregistrement impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Enregistrement impossible", fallback: "Erreur" });
     }
   }
 
@@ -336,7 +345,7 @@ export function useExcelWorkbook({
             });
           }
         } catch (err) {
-          console.warn("[Excel] Flush unmount échoué:", err);
+          logWarn("[Excel] Flush unmount échoué", err);
         } finally {
           try {
             dispose?.();
@@ -371,24 +380,19 @@ export function useExcelWorkbook({
     try {
       const capacity = resolveGrandLivreRowCount(api) - 1;
       if (journalEntries.length > capacity) {
-        toast({
+        toastWarning(toast, {
           title: "Journal volumineux",
           description: `Plus de ${capacity} lignes : seules les premières seront injectées.`,
-          variant: "destructive",
         });
       }
       injectGrandLivre(api, journalEntries.slice(0, Math.max(0, capacity)));
       scheduleAutosave();
-      toast({
+      toastSuccess(toast, {
         title: "GrandLivre actualisé",
         description: `${Math.min(journalEntries.length, Math.max(0, capacity))} ligne(s) injectée(s) depuis SLTT.`,
       });
     } catch (e) {
-      toast({
-        title: "Actualisation impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Actualisation impossible", fallback: "Erreur" });
     } finally {
       setBusy(false);
     }
@@ -522,17 +526,19 @@ export function useExcelWorkbook({
         failed.length > 0
           ? ` — ${failed.slice(0, 6).join("; ")}${failed.length > 6 ? ` (+${failed.length - 6})` : ""}`
           : "";
-      toast({
-        title: failed.length ? "Appliqué avec alertes" : "Appliqué vers SLTT",
-        description: parts.join(" · ") + failDetail,
-        variant: failed.length ? "destructive" : undefined,
-      });
+      if (failed.length) {
+        toastWarning(toast, {
+          title: "Appliqué avec alertes",
+          description: parts.join(" · ") + failDetail,
+        });
+      } else {
+        toastSuccess(toast, {
+          title: "Appliqué vers SLTT",
+          description: parts.join(" · ") + failDetail,
+        });
+      }
     } catch (e) {
-      toast({
-        title: "Application impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Application impossible", fallback: "Erreur" });
     } finally {
       setBusy(false);
     }
@@ -546,10 +552,7 @@ export function useExcelWorkbook({
       const rows = readGrandLivre(api);
       const capacity = resolveGrandLivreRowCount(api) - 1;
       if (rows.length >= capacity) {
-        toast({
-          title: "Attention",
-          description: `Lecture plafonnée à ${capacity} lignes.`,
-        });
+        toastSuccess(toast, { title: "Attention", description: `Lecture plafonnée à ${capacity} lignes.` });
       }
       const byRef = new Map(
         journalEntries.map((e) => [normalizeClasseurRef(e.reference), e]),
@@ -650,12 +653,9 @@ export function useExcelWorkbook({
 
       const mutations = planned.filter((p) => p.kind !== "skip");
       if (mutations.length === 0 && preFailed.length === 0) {
-        toast({
-          title: "Rien à appliquer",
-          description: skipped
+        toastSuccess(toast, { title: "Rien à appliquer", description: skipped
             ? `${skipped} ligne(s) déjà synchronisée(s).`
-            : "Aucune ligne modifiable détectée.",
-        });
+            : "Aucune ligne modifiable détectée." });
         setBusy(false);
         return;
       }
@@ -682,11 +682,7 @@ export function useExcelWorkbook({
 
       setBusy(false);
     } catch (e) {
-      toast({
-        title: "Application impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Application impossible", fallback: "Erreur" });
       setBusy(false);
     }
   }
@@ -700,13 +696,9 @@ export function useExcelWorkbook({
         rows,
         `classeur-${clientNom.replace(/\s+/g, "-").toLowerCase()}.xlsx`,
       );
-      toast({ title: "Export Excel généré" });
+      toastSuccess(toast, { title: "Export Excel généré" });
     } catch (e) {
-      toast({
-        title: "Export impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Export impossible", fallback: "Erreur" });
     }
   }
 
@@ -737,19 +729,11 @@ export function useExcelWorkbook({
         })),
       );
       scheduleAutosave();
-      toast({
-        title: "Import terminé",
-        description:
-          parsed.length > rows.length
+      toastSuccess(toast, { title: "Import terminé", description: parsed.length > rows.length
             ? `${rows.length}/${parsed.length} ligne(s) importée(s) (capacité feuille). Appliquer pour pousser vers SLTT.`
-            : `${rows.length} ligne(s) chargée(s) dans GrandLivre. Utilisez Appliquer pour pousser vers SLTT.`,
-      });
+            : `${rows.length} ligne(s) chargée(s) dans GrandLivre. Utilisez Appliquer pour pousser vers SLTT.` });
     } catch (e) {
-      toast({
-        title: "Import impossible",
-        description: e instanceof Error ? e.message : "Erreur",
-        variant: "destructive",
-      });
+      toastError(toast, e, { title: "Import impossible", fallback: "Erreur" });
     } finally {
       setBusy(false);
     }
