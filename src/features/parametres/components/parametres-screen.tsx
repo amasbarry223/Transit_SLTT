@@ -43,7 +43,7 @@ const tabs: {
 function UsersTabBadge() {
   const count = useStore((s) => s.users.length);
   return (
-    <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
+    <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
       {count}
     </span>
   );
@@ -97,7 +97,7 @@ export function ParametresScreen() {
         >
           <TabsList
             className={cn(
-              "flex h-12 w-full items-stretch rounded-none bg-slate-50/80 dark:bg-slate-800/80 p-0",
+              "flex h-12 w-full items-stretch rounded-none bg-muted/80 p-0",
               "dark:bg-muted/30",
             )}
           >
@@ -116,16 +116,16 @@ export function ParametresScreen() {
                   className={cn(
                     "relative flex flex-1 items-center justify-center gap-2 rounded-none",
                     "border-0 border-b-2 border-transparent bg-transparent px-2 py-0",
-                    "text-sm font-medium text-slate-500 dark:text-slate-400 shadow-none transition-colors",
+                    "text-sm font-medium text-muted-foreground shadow-none transition-colors",
                     "hover:bg-white/60 hover:text-slate-900 dark:hover:text-slate-100",
-                    "data-[state=active]:border-primary data-[state=active]:bg-white dark:bg-slate-900",
+                    "data-[state=active]:border-primary data-[state=active]:bg-white bg-muted/40",
                     "data-[state=active]:text-primary data-[state=active]:shadow-none",
                     "focus-visible:ring-0 focus-visible:ring-offset-0",
                     "[&[data-state=active]_svg]:text-primary",
                     "min-w-0",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <Icon className="size-4 shrink-0 text-muted-foreground" />
                   <span className="hidden truncate sm:inline">{t.label}</span>
                   <span className="truncate sm:hidden">{t.shortLabel}</span>
                   {t.key === "users" && <UsersTabBadge />}

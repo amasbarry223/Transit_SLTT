@@ -60,8 +60,8 @@ export function KpiCard({
           <Icon className="size-4" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">{label}</p>
-          <p className="truncate text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">{value}</p>
+          <p className="truncate text-[11px] font-medium text-muted-foreground">{label}</p>
+          <p className="truncate text-sm font-bold tabular-nums text-foreground">{value}</p>
         </div>
       </Card>
     );
@@ -76,7 +76,7 @@ export function KpiCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="flex items-start gap-1 text-xs font-medium leading-snug text-slate-500 dark:text-slate-400">
+          <p className="flex items-start gap-1 text-xs font-medium leading-snug text-muted-foreground">
             <span className="text-pretty">{label}</span>
             {tooltip && (
               <TooltipProvider>
@@ -100,7 +100,7 @@ export function KpiCard({
           <p
             className={cn(
               "mt-2 text-xl font-bold tracking-tight tabular-nums sm:text-2xl break-words",
-              valueNegative ? "text-destructive" : "text-slate-900 dark:text-slate-100",
+              valueNegative ? "text-destructive" : "text-foreground",
             )}
           >
             {value}
@@ -137,10 +137,10 @@ export function KpiCard({
             </span>
           )}
           {variationLabel && (
-            <span className="text-slate-400 dark:text-slate-500">{variationLabel}</span>
+            <span className="text-muted-foreground">{variationLabel}</span>
           )}
           {sublabel && (
-            <span className="text-pretty text-slate-400 dark:text-slate-500">{sublabel}</span>
+            <span className="text-pretty text-muted-foreground">{sublabel}</span>
           )}
         </div>
       )}

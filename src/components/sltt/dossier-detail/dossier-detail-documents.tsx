@@ -46,7 +46,7 @@ export function DossierDetailDocuments({
           </div>
           <div>
             <h2 className="text-base font-semibold">Documents versionnés</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Upload PDF/images avec historique de versions et OCR
             </p>
           </div>
@@ -65,7 +65,7 @@ export function DossierDetailDocuments({
           </div>
           <div>
             <h2 className="text-base font-semibold">Fichiers joints (legacy)</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Scannez ou déposez les documents liés à ce dossier (PDF, images…)
             </p>
           </div>
@@ -85,7 +85,7 @@ export function DossierDetailDocuments({
             <h2 className="text-base font-semibold">
               <GlossaryLabel term="sousDossier" showIcon={false} /> ({subDossiers.length})
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Classez vos pièces par thème : douane, livraison, BL…
             </p>
           </div>

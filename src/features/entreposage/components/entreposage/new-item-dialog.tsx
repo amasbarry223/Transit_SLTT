@@ -140,7 +140,7 @@ export function NewItemDialog({
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>
               Étape {step} sur {STEPS.length} — {current.label}
             </span>
@@ -169,8 +169,8 @@ export function NewItemDialog({
             <CurrentIcon className="size-4" />
           </span>
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{current.label}</h3>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{current.hint}</p>
+            <h3 className="text-sm font-semibold text-foreground">{current.label}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">{current.hint}</p>
           </div>
         </div>
 
@@ -189,7 +189,7 @@ export function NewItemDialog({
             </div>
 
             <div className="sm:col-span-2 space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label className="text-sm font-medium text-foreground/90">
                 Société <span className="text-red-500">*</span>
               </Label>
               <Select value={niSocieteId} onValueChange={setNiSocieteId}>
@@ -206,7 +206,7 @@ export function NewItemDialog({
 
             {annexes.length > 1 && !isTopDoumani && (
               <div className="sm:col-span-2 space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <Label className="text-sm font-medium text-foreground/90">
                   Annexe <span className="text-red-500">*</span>
                 </Label>
                 <Select value={niAnnexeId} onValueChange={setNiAnnexeId}>
@@ -223,7 +223,7 @@ export function NewItemDialog({
             )}
 
             <div className="sm:col-span-2 space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label className="text-sm font-medium text-foreground/90">
                 Client (optionnel)
               </Label>
               <Select value={niClientId || "none"} onValueChange={(v) => setNiClientId(v === "none" ? "" : v)}>
@@ -316,9 +316,9 @@ export function NewItemDialog({
               />
             </FormField>
 
-            <div className="sm:col-span-2 flex items-center justify-between rounded-lg border border-border bg-slate-50/60 px-3 py-2.5 dark:bg-slate-900/40">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Reste à payer</span>
-              <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            <div className="sm:col-span-2 flex items-center justify-between rounded-lg border border-border px-3 py-2.5 bg-muted/40">
+              <span className="text-sm text-muted-foreground">Reste à payer</span>
+              <span className="text-sm font-semibold tabular-nums text-foreground">
                 {formatFCFA(Math.max(0, (Number(niValeurTotale) || 0) - (Number(niSommePayee) || 0)))}
               </span>
             </div>

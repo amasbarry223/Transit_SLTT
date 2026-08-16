@@ -77,7 +77,7 @@ function SortableHeader({
   return (
     <TableHead
       className={cn(
-        "h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400",
+        "h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground",
         align === "center" && "text-center",
         align === "right" && "text-right",
       )}
@@ -135,7 +135,7 @@ const ClientMobileCard = memo(function ClientMobileCard({
             {getInitials(client.nom)}
           </div>
           <div className="min-w-0">
-            <p className="truncate font-medium text-slate-900 dark:text-slate-100">{client.nom}</p>
+            <p className="truncate font-medium text-foreground">{client.nom}</p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <ClientTypeBadge type={client.type} size="sm" />
               <SocieteBadge societeNom={client.societeNom} societeId={client.societeId} size="sm" />
@@ -149,7 +149,7 @@ const ClientMobileCard = memo(function ClientMobileCard({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+            className="size-8 text-muted-foreground hover:text-primary"
             onClick={() => onOpenClient(client.id)}
             aria-label={`Voir la fiche de ${client.nom}`}
           >
@@ -159,7 +159,7 @@ const ClientMobileCard = memo(function ClientMobileCard({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+              className="size-8 text-muted-foreground hover:text-primary"
               onClick={(e) => onEditClient(client.id, e)}
               aria-label={`Modifier ${client.nom}`}
             >
@@ -171,16 +171,16 @@ const ClientMobileCard = memo(function ClientMobileCard({
       <dl className="mt-3 space-y-1.5 text-sm">
         {client.telephone && (
           <div className="flex justify-between gap-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">Téléphone</dt>
-            <dd className="font-mono text-xs text-slate-700 dark:text-slate-300">{client.telephone}</dd>
+            <dt className="text-xs text-muted-foreground">Téléphone</dt>
+            <dd className="font-mono text-xs text-foreground/90">{client.telephone}</dd>
           </div>
         )}
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Dossiers</dt>
-          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{client.nbDossiers}</dd>
+          <dt className="text-xs text-muted-foreground">Dossiers</dt>
+          <dd className="tabular-nums text-foreground/90">{client.nbDossiers}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Total dû</dt>
+          <dt className="text-xs text-muted-foreground">Total dû</dt>
           <dd className="tabular-nums">
             {client.totalDu > 0 ? (
               <span className="font-semibold text-amber-600 dark:text-amber-400">
@@ -212,7 +212,7 @@ const ClientTableRow = memo(function ClientTableRow({
       role="button"
       tabIndex={0}
       className={cn(
-        "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+        "cursor-pointer border-b border-border transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
         rowAccentClass(client.type),
       )}
       onClick={() => onOpenClient(client.id)}
@@ -233,7 +233,7 @@ const ClientTableRow = memo(function ClientTableRow({
           >
             {getInitials(client.nom)}
           </div>
-          <p className="truncate font-medium text-slate-900 dark:text-slate-100">{client.nom}</p>
+          <p className="truncate font-medium text-foreground">{client.nom}</p>
         </div>
       </TableCell>
       <TableCell className="w-[130px] px-4 py-3.5">
@@ -245,16 +245,16 @@ const ClientTableRow = memo(function ClientTableRow({
       <TableCell className="hidden min-w-[160px] px-4 py-3.5 md:table-cell">
         <div className="space-y-1 text-sm">
           {client.telephone ? (
-            <p className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-              <Phone className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+            <p className="flex items-center gap-1.5 text-muted-foreground">
+              <Phone className="size-3.5 shrink-0 text-muted-foreground" />
               <span className="font-mono text-xs">{client.telephone}</span>
             </p>
           ) : (
-            <p className="text-slate-400 dark:text-slate-500">—</p>
+            <p className="text-muted-foreground">—</p>
           )}
           {client.email && (
-            <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-              <Mail className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+            <p className="flex items-center gap-1.5 text-muted-foreground">
+              <Mail className="size-3.5 shrink-0 text-muted-foreground" />
               <span className="truncate text-xs">{client.email}</span>
             </p>
           )}
@@ -263,18 +263,18 @@ const ClientTableRow = memo(function ClientTableRow({
       <TableCell className="hidden max-w-[200px] px-4 py-3.5 lg:table-cell">
         {client.adresse ? (
           <p
-            className="flex items-start gap-1.5 text-sm text-slate-600 dark:text-slate-300"
+            className="flex items-start gap-1.5 text-sm text-muted-foreground"
             title={client.adresse}
           >
-            <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+            <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
             <span className="line-clamp-2">{client.adresse}</span>
           </p>
         ) : (
-          <span className="text-slate-400 dark:text-slate-500">—</span>
+          <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
       <TableCell className="px-4 py-3.5 text-center">
-        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-sm font-medium tabular-nums text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+        <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-medium tabular-nums text-slate-700 bg-muted dark:text-slate-300">
           <DossierIcon className="size-3.5" />
           {client.nbDossiers}
         </span>
@@ -296,7 +296,7 @@ const ClientTableRow = memo(function ClientTableRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+            className="size-8 text-muted-foreground hover:text-primary"
             onClick={() => onOpenClient(client.id)}
             aria-label={`Voir la fiche de ${client.nom}`}
             title="Voir la fiche"
@@ -307,7 +307,7 @@ const ClientTableRow = memo(function ClientTableRow({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+              className="size-8 text-muted-foreground hover:text-primary"
               onClick={(e) => onEditClient(client.id, e)}
               aria-label={`Modifier ${client.nom}`}
               title="Modifier"
@@ -380,24 +380,24 @@ export function ClientsTable({
 
       <div className="hidden overflow-x-auto md:block">
         <Table aria-label="Liste des clients" className="min-w-[960px]">
-          <TableHeader className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800">
-            <TableRow className="border-b border-border hover:bg-slate-50 dark:hover:bg-slate-800">
+          <TableHeader className="sticky top-0 z-10 bg-muted/50">
+            <TableRow className="border-b border-border hover:bg-muted">
               <SortableHeader
                 label="Client"
                 sortKey="nom"
                 activeSort={sortBy}
                 onSortChange={onSortChange}
               />
-              <TableHead className="h-10 w-[130px] px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <TableHead className="h-10 w-[130px] px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Type
               </TableHead>
-              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
                 Société
               </TableHead>
-              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                 Contact
               </TableHead>
-              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
                 Adresse
               </TableHead>
               <SortableHeader
@@ -414,7 +414,7 @@ export function ClientsTable({
                 align="right"
                 onSortChange={onSortChange}
               />
-              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Actions
               </TableHead>
             </TableRow>

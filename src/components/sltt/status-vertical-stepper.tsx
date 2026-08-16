@@ -68,8 +68,8 @@ export function StatusVerticalStepper<S extends string>({
                     : current
                       ? "cursor-default border-blue-600 bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-950"
                       : clickable
-                        ? "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500 dark:hover:border-slate-600 dark:hover:bg-slate-800"
-                        : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-700",
+                        ? "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted"
+                        : "cursor-not-allowed border-border/60 bg-muted/50 text-muted-foreground/80",
                 )}
               >
                 {done ? <CheckCircle2 className="size-4" /> : <Icon className="size-3.5" />}
@@ -78,7 +78,7 @@ export function StatusVerticalStepper<S extends string>({
                 <div
                   className={cn(
                     "min-h-[28px] w-0.5 flex-1",
-                    done ? "bg-emerald-200" : "bg-slate-100 dark:bg-slate-800",
+                    done ? "bg-emerald-200" : "bg-muted",
                   )}
                 />
               )}
@@ -91,7 +91,7 @@ export function StatusVerticalStepper<S extends string>({
                     ? "text-blue-700 dark:text-blue-300"
                     : done
                       ? "text-emerald-700 dark:text-emerald-300"
-                      : "text-slate-400 dark:text-slate-500",
+                      : "text-muted-foreground",
                 )}
               >
                 {s}
@@ -108,7 +108,7 @@ export function StatusVerticalStepper<S extends string>({
                     ? "text-blue-500"
                     : done
                       ? "text-emerald-500"
-                      : "text-slate-500 dark:text-slate-400",
+                      : "text-muted-foreground",
                 )}
               >
                 {cfg.desc}

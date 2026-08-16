@@ -76,10 +76,10 @@ export function ResponsiveDataList<T>({
             <dl className="space-y-2">
               {visibleMobileCols.map((col) => (
                 <div key={col.key} className="flex items-start justify-between gap-3 text-sm">
-                  <dt className="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <dt className="shrink-0 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {col.mobileLabel ?? col.header}
                   </dt>
-                  <dd className={cn("min-w-0 text-right font-medium text-slate-900 dark:text-slate-100", col.className)}>
+                  <dd className={cn("min-w-0 text-right font-medium text-foreground", col.className)}>
                     {col.cell(item)}
                   </dd>
                 </div>
@@ -101,13 +101,13 @@ export function ResponsiveDataList<T>({
       <div className="hidden overflow-x-auto md:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
               {tableHeader}
               {columns.map((col) => (
                 <TableHead
                   key={col.key}
                   className={cn(
-                    "h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400",
+                    "h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground",
                     col.headerClassName,
                   )}
                 >
@@ -115,7 +115,7 @@ export function ResponsiveDataList<T>({
                 </TableHead>
               ))}
               {renderActions && (
-                <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Actions
                 </TableHead>
               )}
@@ -128,7 +128,7 @@ export function ResponsiveDataList<T>({
                 role={onRowClick ? "button" : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
                 className={cn(
-                  "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+                  "border-b border-border hover:bg-muted/60",
                   onRowClick && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                 )}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}

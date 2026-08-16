@@ -42,30 +42,30 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embe
             <div className="space-y-3 p-4 md:hidden">
               {stockItems.map((item) => (
                 <Card key={item.id} className="border-border/80 p-4 shadow-sm">
-                  <p className="font-medium text-slate-900 dark:text-slate-100">{item.marchandise}</p>
+                  <p className="font-medium text-foreground">{item.marchandise}</p>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Quantité</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {item.quantite} {item.unite}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Dépositaire</dt>
-                      <dd className="text-slate-700 dark:text-slate-300">{item.depositaire}</dd>
+                      <dt className="text-xs text-muted-foreground">Dépositaire</dt>
+                      <dd className="text-foreground/90">{item.depositaire}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Commercial</dt>
-                      <dd className="text-slate-700 dark:text-slate-300">{item.commercial}</dd>
+                      <dt className="text-xs text-muted-foreground">Commercial</dt>
+                      <dd className="text-foreground/90">{item.commercial}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
+                      <dt className="text-xs text-muted-foreground">Payé</dt>
                       <dd className="tabular-nums text-emerald-700 dark:text-emerald-400">
                         {formatFCFA(item.sommePayee)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Reste</dt>
+                      <dt className="text-xs text-muted-foreground">Reste</dt>
                       <dd className="tabular-nums text-amber-700 dark:text-amber-400">
                         {formatFCFA(item.resteAPayer)}
                       </dd>
@@ -77,23 +77,23 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embe
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Qté
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Dépositaire
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Commercial
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Payé
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Reste
                     </TableHead>
                   </TableRow>
@@ -120,10 +120,10 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embe
             </div>
             {clientMouvements.length > 0 && (
               <div className="border-t border-border px-4 py-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Derniers mouvements
                 </p>
-                <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                <ul className="space-y-1 text-sm text-muted-foreground">
                   {clientMouvements.slice(0, 5).map((m) => (
                     <li key={m.id} className="flex justify-between gap-2">
                       <span>

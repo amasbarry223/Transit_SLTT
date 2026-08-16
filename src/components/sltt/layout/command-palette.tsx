@@ -154,17 +154,17 @@ export function CommandPalette() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-2 h-9 w-64 lg:w-80 rounded-md border border-input bg-slate-50 dark:bg-slate-800 px-3 text-sm text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        className="hidden md:flex items-center gap-2 h-9 w-64 lg:w-80 rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground hover:bg-muted transition-colors"
       >
         <Search className="size-4" />
         <span>Rechercher un dossier, un client, une facture…</span>
-        <kbd className="ml-auto pointer-events-none select-none rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400">
+        <kbd className="ml-auto pointer-events-none select-none rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-500 dark:border-slate-600 bg-muted/40 dark:text-slate-400">
           ⌘K
         </kbd>
       </button>
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden inline-flex items-center justify-center size-9 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:text-slate-400 dark:hover:bg-slate-800"
+        className="md:hidden inline-flex items-center justify-center size-9 rounded-md text-muted-foreground dark:hover:text-slate-400 hover:bg-muted"
         aria-label="Rechercher"
       >
         <Search className="size-5" />
@@ -204,10 +204,10 @@ export function CommandPalette() {
                   value={`page ${item.label} ${item.section ?? ""}`}
                   onSelect={() => run(() => navigateToItem(item))}
                 >
-                  <Icon className="size-4 text-slate-400 dark:text-slate-500" />
+                  <Icon className="size-4 text-muted-foreground" />
                   <span>{item.label}</span>
                   {item.section && (
-                    <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">{item.section}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{item.section}</span>
                   )}
                 </CommandItem>
               );
@@ -226,7 +226,7 @@ export function CommandPalette() {
                   >
                     <FileText className="size-4 text-blue-500" />
                     <span className="font-mono text-xs">{d.reference}</span>
-                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                    <span className="text-muted-foreground truncate">
                       {d.clientNom}
                     </span>
                   </CommandItem>
@@ -247,7 +247,7 @@ export function CommandPalette() {
                   >
                     <ClipboardList className="size-4 text-indigo-500" />
                     <span className="font-mono text-xs">{d.reference}</span>
-                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                    <span className="text-muted-foreground truncate">
                       {d.clientNom}
                     </span>
                   </CommandItem>
@@ -268,7 +268,7 @@ export function CommandPalette() {
                   >
                     <Receipt className="size-4 text-blue-500" />
                     <span className="font-mono text-xs">{f.numero}</span>
-                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                    <span className="text-muted-foreground truncate">
                       {f.clientNom}
                     </span>
                   </CommandItem>
@@ -289,7 +289,7 @@ export function CommandPalette() {
                   >
                     <FileSignature className="size-4 text-violet-500" />
                     <span className="font-mono text-xs">{c.reference}</span>
-                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                    <span className="text-muted-foreground truncate">
                       {c.clientNom}
                     </span>
                   </CommandItem>
@@ -310,7 +310,7 @@ export function CommandPalette() {
                   >
                     <UserIcon className="size-4 text-emerald-500" />
                     <span>{c.nom}</span>
-                    <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">
+                    <span className="ml-auto text-xs text-muted-foreground">
                       {c.type}
                     </span>
                   </CommandItem>

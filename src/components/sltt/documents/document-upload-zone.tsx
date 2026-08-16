@@ -153,7 +153,7 @@ export function DocumentUploadZone({
         "relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 transition-colors",
         dragging
           ? "border-primary bg-primary/5"
-          : "border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40",
+          : "border-slate-200 dark:border-border bg-muted/50",
         (disabled || busy) && "pointer-events-none opacity-60",
         className,
       )}

@@ -44,7 +44,7 @@ export function contratToInput(contrat: {
 export function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-sm text-slate-800 dark:text-slate-200">{value}</dd>
     </div>
   );

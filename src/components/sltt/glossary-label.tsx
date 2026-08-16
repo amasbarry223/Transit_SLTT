@@ -33,7 +33,7 @@ export function GlossaryLabel({
           >
             {short ? entry.short : entry.label}
             {showIcon && (
-              <Info className="size-3.5 text-slate-400 dark:text-slate-500" aria-hidden />
+              <Info className="size-3.5 text-muted-foreground" aria-hidden />
             )}
           </span>
         </TooltipTrigger>

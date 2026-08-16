@@ -107,7 +107,7 @@ export function FournisseurFormModal({
       <DialogContent className="gap-0 p-0 sm:max-w-lg">
         <div className="flex items-center gap-2 border-b border-border/60 px-6 py-4">
           <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-base font-semibold text-foreground">
             {editing ? "Modifier le fournisseur" : "Nouveau fournisseur"}
           </h2>
         </div>

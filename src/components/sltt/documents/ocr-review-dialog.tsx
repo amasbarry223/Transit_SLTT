@@ -556,7 +556,7 @@ export function OcrReviewDialog({
             )}
 
             {pdfPagesHint && !running && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-border bg-muted/50/50 dark:text-slate-300">
                 {pdfPagesHint}
               </div>
             )}
@@ -640,7 +640,7 @@ export function OcrReviewDialog({
                   {showRawText ? "Masquer le texte OCR" : "Voir le texte brut OCR"}
                 </button>
                 {showRawText && (
-                  <pre className="max-h-40 overflow-auto rounded-md border border-border bg-slate-50 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                  <pre className="max-h-40 overflow-auto rounded-md border border-border bg-slate-50 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 bg-card dark:text-slate-300">
                     {rawText}
                   </pre>
                 )}

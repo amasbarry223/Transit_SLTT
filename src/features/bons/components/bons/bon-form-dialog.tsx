@@ -205,7 +205,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
             <DialogTitle>Nouveau bon de sortie</DialogTitle>
             <Badge
               variant="outline"
-              className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-slate-500 dark:text-slate-400"
+              className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-muted-foreground"
             >
               {previewReference}
             </Badge>
@@ -218,7 +218,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="bs-date" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="bs-date" className="text-sm font-medium text-foreground/90">
                 Date
               </Label>
               <Input
@@ -231,7 +231,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bs-client" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="bs-client" className="text-sm font-medium text-foreground/90">
                 Client <span className="text-red-500">*</span>
               </Label>
               <div className="flex gap-2">
@@ -252,7 +252,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bs-stock" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="bs-stock" className="text-sm font-medium text-foreground/90">
                 Marchandise <span className="text-red-500">*</span>
               </Label>
               <Select value={formStockId} onValueChange={handleStockChange}>
@@ -268,15 +268,15 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
                 </SelectContent>
               </Select>
               {selectedStock && (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   Société :{" "}
-                  <span className="font-medium text-slate-700 dark:text-slate-300">{selectedStock.societeNom}</span>
+                  <span className="font-medium text-foreground/90">{selectedStock.societeNom}</span>
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bs-quantite" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="bs-quantite" className="text-sm font-medium text-foreground/90">
                 Quantité à sortir <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -297,7 +297,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bs-motif" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="bs-motif" className="text-sm font-medium text-foreground/90">
                 Motif <span className="text-red-500">*</span>
               </Label>
               <Select value={formMotif} onValueChange={(value) => setFormMotif(value as BonMotif)}>
@@ -315,7 +315,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bs-montant" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="bs-montant" className="text-sm font-medium text-foreground/90">
                 Montant <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
@@ -328,7 +328,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
                   placeholder={UI.placeholders.amountFCFA}
                   className="h-10 pr-16"
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 dark:text-slate-500">
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
                   FCFA
                 </span>
               </div>
@@ -446,11 +446,11 @@ function BonPreview({
     },
     {
       label: "Client",
-      value: client || <span className="text-slate-400 dark:text-slate-500">À renseigner</span>,
+      value: client || <span className="text-muted-foreground">À renseigner</span>,
     },
     {
       label: "Marchandise",
-      value: marchandise || <span className="text-slate-400 dark:text-slate-500">À renseigner</span>,
+      value: marchandise || <span className="text-muted-foreground">À renseigner</span>,
     },
     {
       label: "Quantité",
@@ -458,7 +458,7 @@ function BonPreview({
     },
     {
       label: "Motif",
-      value: motif || <span className="text-slate-400 dark:text-slate-500">À renseigner</span>,
+      value: motif || <span className="text-muted-foreground">À renseigner</span>,
     },
     {
       label: "Montant",
@@ -467,7 +467,7 @@ function BonPreview({
   ];
 
   return (
-    <div className="rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 font-[var(--font-heading)]">
+    <div className="rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white bg-muted/40 p-6 font-[var(--font-heading)]">
       <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
         {logoUrl ? (
           <img
@@ -484,15 +484,15 @@ function BonPreview({
         )}
         {afficherNomAvecLogo && (
           <div>
-            <p className="font-bold leading-tight text-slate-900 dark:text-slate-100">{societeNom || "—"}</p>
-            <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400">Bon de sortie — Marchandise</p>
+            <p className="font-bold leading-tight text-foreground">{societeNom || "—"}</p>
+            <p className="text-[11px] leading-tight text-muted-foreground">Bon de sortie — Marchandise</p>
           </div>
         )}
       </div>
 
       <div className="my-5 text-center">
-        <p className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">BON DE SORTIE — MARCHANDISE</p>
-        <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">{reference}</p>
+        <p className="text-lg font-bold tracking-tight text-foreground">BON DE SORTIE — MARCHANDISE</p>
+        <p className="mt-1 font-mono text-xs text-muted-foreground">{reference}</p>
       </div>
 
       <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
@@ -503,10 +503,10 @@ function BonPreview({
                 key={row.label}
                 className={cn(
                   "border-b border-slate-100 dark:border-slate-800 last:border-0",
-                  index % 2 === 0 && "bg-slate-50/50 dark:bg-slate-800/50",
+                  index % 2 === 0 && "bg-muted/50",
                 )}
               >
-                <td className="w-1/3 px-3 py-1.5 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                <td className="w-1/3 px-3 py-1.5 text-xs font-medium uppercase text-muted-foreground">
                   {row.label}
                 </td>
                 <td className="px-3 py-1.5 tabular-nums text-slate-800 dark:text-slate-200">{row.value}</td>
@@ -517,8 +517,8 @@ function BonPreview({
       </div>
 
       <div className="mt-8 flex items-end justify-between">
-        <div className="text-xs text-slate-500 dark:text-slate-400">Signature du responsable</div>
-        <div className="text-xs text-slate-400 dark:text-slate-500">__________</div>
+        <div className="text-xs text-muted-foreground">Signature du responsable</div>
+        <div className="text-xs text-muted-foreground">__________</div>
       </div>
     </div>
   );

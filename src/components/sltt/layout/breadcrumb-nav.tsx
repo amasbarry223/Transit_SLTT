@@ -55,7 +55,7 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
   if (parentKey && parentItem) {
     return (
       <div className="min-w-0">
-        <div className="flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
+        <div className="flex items-center text-sm font-medium text-muted-foreground">
           {canViewParent ? (
             <button
               type="button"
@@ -67,11 +67,11 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
           ) : (
             <span className="truncate">{parentItem.label}</span>
           )}
-          <ChevronRight className="mx-1.5 size-4 shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
-          <span className="text-slate-900 dark:text-slate-100 font-semibold truncate">{detailLabel}</span>
+          <ChevronRight className="mx-1.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="text-foreground font-semibold truncate">{detailLabel}</span>
         </div>
         {subtitle && (
-          <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block mt-0.5">{subtitle}</p>
+          <p className="hidden truncate text-xs text-muted-foreground sm:block mt-0.5">{subtitle}</p>
         )}
       </div>
     );
@@ -79,11 +79,11 @@ export function BreadcrumbNav({ title, subtitle }: { title: string; subtitle?: s
 
   return (
     <div className="min-w-0">
-      <div className="flex items-center text-base font-semibold leading-tight text-slate-900 dark:text-slate-100 truncate">
+      <div className="flex items-center text-base font-semibold leading-tight text-foreground truncate">
         {title}
       </div>
       {subtitle && (
-        <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block mt-0.5">{subtitle}</p>
+        <p className="hidden truncate text-xs text-muted-foreground sm:block mt-0.5">{subtitle}</p>
       )}
     </div>
   );

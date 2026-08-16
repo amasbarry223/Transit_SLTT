@@ -1,7 +1,12 @@
 "use client";
 
 import { resolveLogoUrl } from "@/lib/export/print-document";
-import { RECEIPT_BLUE, RECEIPT_LOGO_FALLBACK } from "@/lib/recus-paiement-styles";
+import {
+  RECEIPT_BLUE,
+  RECEIPT_LOGO_COL_MM,
+  RECEIPT_LOGO_FALLBACK,
+  RECEIPT_LOGO_MAX_HEIGHT_MM,
+} from "@/lib/recus-paiement-styles";
 import type { SocieteBrand } from "@/lib/societe-brand";
 
 interface RecuReceiptHeaderProps {
@@ -14,12 +19,22 @@ export function RecuReceiptHeader({ brand }: RecuReceiptHeaderProps) {
   const showName = brand.afficherNomAvecLogo !== false;
 
   return (
-    <header className="mb-3 flex items-start gap-4 border-b border-[#1e4a8a]/20 pb-3">
-      <div className="flex w-[18mm] shrink-0 items-center justify-center">
+    <header
+      className="mb-2 flex items-start gap-2 border-b border-[#1e4a8a]/30 pb-2"
+      style={{ color: RECEIPT_BLUE }}
+    >
+      <div
+        className="flex shrink-0 items-center justify-center"
+        style={{ width: `${RECEIPT_LOGO_COL_MM}mm` }}
+      >
         <img
           src={logoUrl}
           alt={brand.nom}
-          className="max-h-[16mm] max-w-[18mm] object-contain"
+          className="object-contain"
+          style={{
+            maxWidth: `${RECEIPT_LOGO_COL_MM}mm`,
+            maxHeight: `${RECEIPT_LOGO_MAX_HEIGHT_MM}mm`,
+          }}
           onError={(e) => {
             const img = e.currentTarget;
             if (img.src.includes(RECEIPT_LOGO_FALLBACK)) return;
@@ -30,38 +45,22 @@ export function RecuReceiptHeader({ brand }: RecuReceiptHeaderProps) {
 
       <div className="min-w-0 flex-1 text-center">
         {showName ? (
-          <div
-            className="text-[13px] font-extrabold uppercase leading-tight tracking-wide"
-            style={{ color: RECEIPT_BLUE }}
-          >
-            {brand.nom}
-          </div>
+          <div className="text-[12px] font-extrabold uppercase leading-tight tracking-wide">{brand.nom}</div>
         ) : null}
         {brand.legal?.adresse ? (
-          <div className="text-[8.5px] leading-snug" style={{ color: RECEIPT_BLUE }}>
-            {brand.legal.adresse}
-          </div>
+          <div className="text-[7.5px] leading-snug">{brand.legal.adresse}</div>
         ) : null}
         {brand.legal?.rccm ? (
-          <div className="text-[8.5px] leading-snug" style={{ color: RECEIPT_BLUE }}>
-            RCCM : {brand.legal.rccm}
-          </div>
+          <div className="text-[7.5px] leading-snug">RCCM : {brand.legal.rccm}</div>
         ) : null}
         {brand.legal?.telephone ? (
-          <div className="text-[8.5px] leading-snug" style={{ color: RECEIPT_BLUE }}>
-            Tél. : {brand.legal.telephone}
-          </div>
+          <div className="text-[7.5px] leading-snug">Tél. : {brand.legal.telephone}</div>
         ) : null}
-        <div
-          className="mt-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em]"
-          style={{ color: RECEIPT_BLUE }}
-        >
-          Reçu de paiement
-        </div>
+        <div className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.14em]">Reçu de paiement</div>
       </div>
 
       {/* Équilibre visuel — espace miroir du logo */}
-      <div className="w-[18mm] shrink-0" aria-hidden />
+      <div className="shrink-0" style={{ width: `${RECEIPT_LOGO_COL_MM}mm` }} aria-hidden />
     </header>
   );
 }

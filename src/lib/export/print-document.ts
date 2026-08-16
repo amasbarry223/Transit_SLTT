@@ -145,34 +145,55 @@ export function buildBrandSubHTML(brand: SocieteBrand): string {
  */
 const PRINT_FRAME_ID = "sltt-print-frame";
 
-export function acquirePrintTarget(): Window | null {
+/** Dimensions par défaut — A4 portrait (documents standards). */
+const DEFAULT_PRINT_WIDTH_MM = 210;
+const DEFAULT_PRINT_HEIGHT_MM = 297;
+
+export interface PrintTargetOptions {
+  /** Largeur iframe / page (mm). Défaut : A4 portrait. */
+  widthMm?: number;
+  /** Hauteur iframe / page (mm). Défaut : A4 portrait. */
+  heightMm?: number;
+  /** ID iframe dédié (ex. reçu carnet ≠ A4). */
+  frameId?: string;
+}
+
+export function acquirePrintTarget(options?: PrintTargetOptions): Window | null {
   if (typeof document === "undefined") return null;
 
-  let iframe = document.getElementById(PRINT_FRAME_ID) as HTMLIFrameElement | null;
+  const widthMm = options?.widthMm ?? DEFAULT_PRINT_WIDTH_MM;
+  const heightMm = options?.heightMm ?? DEFAULT_PRINT_HEIGHT_MM;
+  const frameId = options?.frameId ?? PRINT_FRAME_ID;
+
+  let iframe = document.getElementById(frameId) as HTMLIFrameElement | null;
   if (!iframe) {
     iframe = document.createElement("iframe");
-    iframe.id = PRINT_FRAME_ID;
-    iframe.name = PRINT_FRAME_ID;
+    iframe.id = frameId;
+    iframe.name = frameId;
     iframe.setAttribute("aria-hidden", "true");
     iframe.setAttribute("title", "Impression SLTT");
     iframe.setAttribute("tabindex", "-1");
-    // Dimensions réelles (A4) requises : une iframe 0×0 fait caler
-    // indéfiniment la génération d'aperçu du dialogue d'impression système
-    // (imprimante physique) sous Chromium, même si « Enregistrer en PDF »
-    // et les navigateurs mobiles (pas de round-trip vers un pilote système)
-    // ne sont pas affectés — d'où le symptôme desktop-only.
+    // Dimensions réelles requises : une iframe 0×0 fait caler indéfiniment
+    // la génération d'aperçu du dialogue d'impression système (Chromium).
+    // Pour le reçu carnet (19,5×8,2 cm), passer widthMm/heightMm dédiés.
     Object.assign(iframe.style, {
       position: "fixed",
       left: "-10000px",
       top: "0",
-      width: "21cm",
-      height: "29.7cm",
+      width: `${widthMm}mm`,
+      height: `${heightMm}mm`,
       border: "0",
       opacity: "0",
       pointerEvents: "none",
       visibility: "hidden",
     });
     document.body.appendChild(iframe);
+  } else {
+    // Resynchronise les dimensions si l'iframe existe déjà (ex. reçu vs A4).
+    Object.assign(iframe.style, {
+      width: `${widthMm}mm`,
+      height: `${heightMm}mm`,
+    });
   }
 
   return iframe.contentWindow;

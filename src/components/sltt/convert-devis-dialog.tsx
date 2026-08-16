@@ -79,14 +79,14 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
           </DialogDescription>
         </DialogHeader>
 
-        <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+        <p className="rounded-md px-3 py-2 text-xs text-slate-600 bg-muted/60 dark:text-slate-300">
           Le BL et le camion identifient physiquement la marchandise — renseignez-les dès que
           disponibles pour le suivi logistique et les documents douaniers.
         </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="conv-bl" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label htmlFor="conv-bl" className="text-sm font-medium text-foreground/90">
               N° BL {!draftMode && <span className="text-red-500">*</span>}
             </Label>
             <Input
@@ -102,7 +102,7 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
             {blError && <p className="text-xs text-red-600 dark:text-red-400">{blError}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="conv-camion" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label htmlFor="conv-camion" className="text-sm font-medium text-foreground/90">
               Camion {!draftMode && <span className="text-red-500">*</span>}
             </Label>
             <Input

@@ -65,7 +65,7 @@ export function TabEmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-sm text-muted-foreground">{label}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

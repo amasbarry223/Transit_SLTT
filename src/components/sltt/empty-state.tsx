@@ -75,7 +75,7 @@ export function EmptyState({
               "mb-3 flex size-11 items-center justify-center rounded-xl",
               isError
                 ? "bg-red-100 text-red-500 dark:bg-red-950/60 dark:text-red-400"
-                : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500",
+                : "text-slate-400 bg-muted text-muted-foreground",
             )}
           >
             <DisplayIcon className="size-5" />
@@ -86,13 +86,13 @@ export function EmptyState({
           "text-sm font-medium",
           isError
             ? "text-red-800 dark:text-red-200"
-            : "text-slate-700 dark:text-slate-200",
+            : "text-foreground/90",
         )}
       >
         {title}
       </p>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
       )}
       {actionButtons}
     </div>

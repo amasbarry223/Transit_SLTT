@@ -20,16 +20,16 @@ export function DevisActionsCard({
 }) {
   return (
     <Card className="border-border/80 shadow-sm">
-      <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
-        <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Actions</h2>
+      <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
+        <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Actions</h2>
       </div>
       <div className="space-y-2 p-4">
         <Button variant="outline" className="w-full justify-start gap-2.5 font-medium" onClick={onPrint}>
-          <Printer className="size-4 text-slate-400 dark:text-slate-500" /> Télécharger PDF
+          <Printer className="size-4 text-muted-foreground" /> Télécharger PDF
         </Button>
         {canEditContent && (
           <Button variant="outline" className="w-full justify-start gap-2.5 font-medium" onClick={onEdit}>
-            <Pencil className="size-4 text-slate-400 dark:text-slate-500" /> Modifier le devis
+            <Pencil className="size-4 text-muted-foreground" /> Modifier le devis
           </Button>
         )}
         {devis.dossierId ? (

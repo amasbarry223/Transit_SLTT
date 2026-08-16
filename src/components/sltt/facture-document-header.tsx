@@ -28,7 +28,7 @@ export function FactureDocumentHeader({ brand }: { brand: SocieteBrand }) {
         {brand.nom}
       </p>
       {legalLine ? (
-        <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           {legalLine}
         </p>
       ) : null}

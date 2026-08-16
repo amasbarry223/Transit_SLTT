@@ -17,10 +17,10 @@ export function FinancialBreakdown({ devis }: { devis: Devis }) {
         return (
           <div key={item.label}>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-slate-500 dark:text-slate-400">{item.label}</span>
+              <span className="text-xs text-muted-foreground">{item.label}</span>
               <span className={cn("text-xs font-bold tabular-nums", item.text)}>{formatFCFA(item.value)}</span>
             </div>
-            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div className={cn("h-full rounded-full", item.bar)} style={{ width: `${pct}%` }} />
             </div>
           </div>

@@ -48,31 +48,31 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
           >
             {f.numero}
           </button>
-          <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{f.clientNom}</p>
+          <p className="mt-0.5 truncate text-sm font-medium text-foreground/90">{f.clientNom}</p>
         </div>
         <FactureStatutBadge statut={f.statut} />
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
+          <dt className="text-xs text-muted-foreground">Société</dt>
           <dd><SocieteBadge societeNom={f.societeNom} size="sm" /></dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(f.date)}</dd>
+          <dt className="text-xs text-muted-foreground">Date</dt>
+          <dd className="tabular-nums text-foreground/90">{formatDateShort(f.date)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Échéance</dt>
-          <dd className={`tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-700 dark:text-slate-300"}`}>
+          <dt className="text-xs text-muted-foreground">Échéance</dt>
+          <dd className={`tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-foreground/90"}`}>
             {formatDateShort(f.dateEcheance)}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Montant TTC</dt>
-          <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(f.montantTTC)}</dd>
+          <dt className="text-xs text-muted-foreground">Montant TTC</dt>
+          <dd className="font-semibold tabular-nums text-foreground">{formatFCFA(f.montantTTC)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
+          <dt className="text-xs text-muted-foreground">Payé</dt>
           <dd className="tabular-nums text-emerald-700 dark:text-emerald-300">{formatFCFA(f.montantPaye)}</dd>
         </div>
       </dl>
@@ -83,7 +83,7 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
         <button
           title="Voir / Imprimer"
           onClick={onView}
-          className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-slate-700 dark:hover:text-slate-300"
         >
           <Eye className="size-4" />
         </button>
@@ -91,7 +91,7 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
           <button
             title="Marquer comme envoyée"
             onClick={onMarkEnvoyee}
-            className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
+            className="rounded p-1.5 text-muted-foreground hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
           >
             <Send className="size-4" />
           </button>
@@ -100,7 +100,7 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
           <button
             title="Supprimer"
             onClick={onDelete}
-            className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
+            className="rounded p-1.5 text-muted-foreground hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
           >
             <Trash2 className="size-4" />
           </button>
@@ -114,7 +114,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
   const isEchue = isFactureEchue(f);
 
   return (
-    <TableRow className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
+    <TableRow className="border-b border-border hover:bg-muted/60">
       <TableCell className="px-4 py-3.5">
         <button
           onClick={onView}
@@ -124,18 +124,18 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
         </button>
       </TableCell>
       <TableCell className="max-w-[180px] px-4 py-3.5">
-        <p className="truncate text-xs text-slate-700 dark:text-slate-300">{f.clientNom}</p>
+        <p className="truncate text-xs text-foreground/90">{f.clientNom}</p>
       </TableCell>
       <TableCell className="px-4 py-3.5">
         <SocieteBadge societeNom={f.societeNom} size="sm" />
       </TableCell>
-      <TableCell className="px-4 py-3.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">
+      <TableCell className="px-4 py-3.5 text-xs tabular-nums text-muted-foreground">
         {formatDateShort(f.date)}
       </TableCell>
-      <TableCell className={`px-4 py-3.5 text-xs tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
+      <TableCell className={`px-4 py-3.5 text-xs tabular-nums ${isEchue ? "font-semibold text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
         {formatDateShort(f.dateEcheance)}
       </TableCell>
-      <TableCell className="px-4 py-3.5 text-right text-xs font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+      <TableCell className="px-4 py-3.5 text-right text-xs font-semibold tabular-nums text-foreground">
         {formatFCFA(f.montantTTC)}
       </TableCell>
       <TableCell className="px-4 py-3.5 text-right text-xs tabular-nums text-emerald-700 dark:text-emerald-300">
@@ -149,7 +149,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
           <button
             title="Voir / Imprimer"
             onClick={onView}
-            className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-slate-700 dark:hover:text-slate-300"
           >
             <Eye className="size-3.5" />
           </button>
@@ -157,7 +157,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
             <button
               title="Marquer comme envoyée"
               onClick={onMarkEnvoyee}
-              className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
+              className="rounded p-1 text-muted-foreground hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
             >
               <Send className="size-3.5" />
             </button>
@@ -166,7 +166,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
             <button
               title="Supprimer"
               onClick={onDelete}
-              className="rounded p-1 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
+              className="rounded p-1 text-muted-foreground hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
             >
               <Trash2 className="size-3.5" />
             </button>
@@ -211,9 +211,9 @@ export function FacturesTable({
   return (
     <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <Receipt className="size-4 text-slate-400 dark:text-slate-500" />
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des factures</h2>
-        <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+        <Receipt className="size-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">Liste des factures</h2>
+        <span className="ml-auto text-xs tabular-nums text-muted-foreground">
           {totalItems} résultat{totalItems !== 1 ? "s" : ""}
         </span>
       </div>
@@ -248,32 +248,32 @@ export function FacturesTable({
           <div className="hidden overflow-x-auto md:block">
             <Table aria-label="Liste des factures">
               <TableHeader>
-                <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     N° Facture
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Client
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Société
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Date
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Échéance
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Montant TTC
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Payé
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Statut
                   </TableHead>
-                  <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Actions
                   </TableHead>
                 </TableRow>

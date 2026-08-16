@@ -61,7 +61,7 @@ export function getFileIconMeta(mimeType: string): {
   }
   return {
     icon: File,
-    wrapClass: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-    iconClass: "text-slate-600 dark:text-slate-300",
+    wrapClass: "text-muted-foreground bg-muted",
+    iconClass: "text-muted-foreground",
   };
 }

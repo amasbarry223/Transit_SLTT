@@ -201,7 +201,7 @@ export function ClasseurTab({
       </div>
 
       {isSyncing && (
-        <p className="text-xs text-slate-400 dark:text-slate-500">Synchronisation…</p>
+        <p className="text-xs text-muted-foreground">Synchronisation…</p>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -230,7 +230,7 @@ export function ClasseurTab({
 
       {classeurTotals.parSociete.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Solde par société (sélection filtrée) :
           </span>
           {classeurTotals.parSociete.map((p) => (
@@ -242,7 +242,7 @@ export function ClasseurTab({
       )}
 
       {classeurPeriodFiltered && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-muted-foreground">
           Le solde cumulé affiché est calculé sur l&apos;historique complet du client (hors filtre
           période).
         </p>
@@ -262,10 +262,10 @@ export function ClasseurTab({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
+                      <p className="font-mono text-xs font-medium text-foreground">
                         {entry.reference}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {entry.type} · {entry.societeNom}
                       </p>
                     </div>
@@ -273,31 +273,31 @@ export function ClasseurTab({
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Date</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {formatDateShort(entry.date)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Libellé</dt>
-                      <dd className="truncate text-right text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Libellé</dt>
+                      <dd className="truncate text-right text-foreground/90">
                         {entry.libelle}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Débit</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Débit</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {entry.debit > 0 ? formatFCFA(entry.debit) : "—"}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Crédit</dt>
+                      <dt className="text-xs text-muted-foreground">Crédit</dt>
                       <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
                         {entry.credit > 0 ? formatFCFA(entry.credit) : "—"}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Solde cumulé</dt>
+                      <dt className="text-xs text-muted-foreground">Solde cumulé</dt>
                       <dd
                         className={cn(
                           "tabular-nums font-semibold",
@@ -326,13 +326,13 @@ export function ClasseurTab({
 
       <Card className="border-border/80 p-4 shadow-sm">
         <div className="mb-3 flex items-center gap-2">
-          <History className="size-4 text-slate-400 dark:text-slate-500" />
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <History className="size-4 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">
             Suivi des mouvements
           </p>
         </div>
         {clientAuditHistory.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Aucun historique enregistré pour ce client.
           </p>
         ) : (
@@ -343,12 +343,12 @@ export function ClasseurTab({
                 className="flex items-start justify-between gap-3 border-b border-border/60 pb-2 last:border-0 last:pb-0"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-slate-700 dark:text-slate-300">{a.detail}</p>
-                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                  <p className="truncate text-foreground/90">{a.detail}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {a.module} · {a.action} · {a.user}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs tabular-nums text-slate-400 dark:text-slate-500">
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   {formatDateShort(a.date)}
                 </span>
               </li>

@@ -111,7 +111,7 @@ export function GuideDemarrage({
       <div className="flex items-center justify-between gap-2 px-5 pt-4">
         <div className="flex items-center gap-2">
           <Compass className="size-4 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-sm font-semibold text-foreground">
             {UI.onboarding.guideTitle}
           </h2>
           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
@@ -121,7 +121,7 @@ export function GuideDemarrage({
         <button
           onClick={dismiss}
           aria-label="Masquer le guide de démarrage"
-          className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100/60 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-blue-900/40 dark:hover:text-slate-200"
+          className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100/60 hover:text-slate-700 text-muted-foreground dark:hover:bg-blue-900/40 dark:hover:text-slate-200"
         >
           <X className="size-4" />
         </button>
@@ -145,8 +145,8 @@ export function GuideDemarrage({
                 done
                   ? "border-emerald-200/80 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
                   : isNext
-                    ? "border-blue-300 bg-white dark:border-blue-700 dark:bg-slate-900"
-                    : "border-border/60 bg-white dark:bg-slate-900",
+                    ? "border-blue-300 bg-white dark:border-blue-700 bg-muted/40"
+                    : "border-border/60 bg-white bg-muted/40",
                 !done && "hover:border-blue-300 dark:hover:border-blue-700",
               )}
             >
@@ -161,15 +161,15 @@ export function GuideDemarrage({
                 {done ? <Check className="size-3.5" /> : i + 1}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                <span className="block truncate text-sm font-medium text-foreground">
                   {s.label}
                 </span>
-                <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                <span className="block truncate text-xs text-muted-foreground">
                   {done ? UI.onboarding.stepDone : s.sub}
                 </span>
               </span>
               {!done && (
-                <ArrowRight className="size-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-blue-500 dark:text-slate-600" />
+                <ArrowRight className="size-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-blue-500 text-muted-foreground" />
               )}
             </button>
           );

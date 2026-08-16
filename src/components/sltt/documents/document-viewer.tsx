@@ -60,7 +60,7 @@ function FetchedDocumentPreview({
     return (
       <div
         className={cn(
-          "flex h-64 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800",
+          "flex h-64 items-center justify-center rounded-lg bg-muted",
           className,
         )}
       >
@@ -73,7 +73,7 @@ function FetchedDocumentPreview({
     return (
       <div
         className={cn(
-          "flex h-64 flex-col items-center justify-center gap-2 rounded-lg bg-slate-100 text-sm text-slate-500 dark:bg-slate-800",
+          "flex h-64 flex-col items-center justify-center gap-2 rounded-lg text-sm text-slate-500 bg-muted",
           className,
         )}
       >
@@ -122,7 +122,7 @@ function DocumentPreviewBody({
           </a>
         </Button>
       </div>
-      <div className="overflow-hidden rounded-lg border border-border bg-slate-50 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-lg border border-border bg-muted/40">
         {isPdf ? (
           <iframe
             title={fileName || "PDF"}
@@ -160,12 +160,12 @@ export function DocumentViewer({
     return (
       <div
         className={cn(
-          "flex h-64 flex-col items-center justify-center gap-1 rounded-lg bg-slate-100 text-center text-sm text-slate-500 dark:bg-slate-800",
+          "flex h-64 flex-col items-center justify-center gap-1 rounded-lg text-center text-sm text-slate-500 bg-muted",
           className,
         )}
       >
-        <p className="font-medium text-slate-700 dark:text-slate-200">{UI.empty.documents.title}</p>
-        <p className="max-w-xs text-xs text-slate-500 dark:text-slate-400">{UI.empty.documents.description}</p>
+        <p className="font-medium text-foreground/90">{UI.empty.documents.title}</p>
+        <p className="max-w-xs text-xs text-muted-foreground">{UI.empty.documents.description}</p>
       </div>
     );
   }

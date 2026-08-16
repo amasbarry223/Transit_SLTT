@@ -19,9 +19,9 @@ export function RecuFormSection({ title, description, icon: Icon, children, clas
           <Icon className="size-4" aria-hidden />
         </div>
         <div className="min-w-0 pt-0.5">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           {description ? (
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           ) : null}
         </div>
       </div>

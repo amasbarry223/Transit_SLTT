@@ -30,21 +30,21 @@ export function RolePicker({
               "hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               meta.gradient,
               selected
-                ? "ring-2 ring-primary border-primary/40 bg-white dark:bg-slate-900"
-                : "bg-white/60 dark:bg-slate-900/40",
+                ? "ring-2 ring-primary border-primary/40 bg-white bg-muted/40"
+                : "bg-white/60 bg-muted/40",
             )}
           >
             <div
               className={cn(
                 "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                selected ? "bg-primary text-primary-foreground" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+                selected ? "bg-primary text-primary-foreground" : "text-muted-foreground bg-muted",
               )}
             >
               <Icon className="size-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{r}</p>
-              <p className="mt-0.5 text-xs leading-snug text-slate-500 dark:text-slate-400">
+              <p className="text-sm font-semibold text-foreground">{r}</p>
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                 {meta.description}
               </p>
             </div>

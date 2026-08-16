@@ -121,7 +121,7 @@ export function LoginScreen() {
       <LoginBackground />
 
       <div className="relative z-10 w-full max-w-[420px]">
-        <div className="overflow-hidden rounded-2xl border border-white/25 bg-card shadow-[0_24px_80px_-12px_rgba(45,52,140,0.35)] dark:border-slate-700/50 dark:bg-card">
+        <div className="overflow-hidden rounded-2xl border border-white/25 bg-card shadow-[0_24px_80px_-12px_rgba(45,52,140,0.35)] dark:border-border/60">
           <div className="flex flex-col items-center px-8 pb-6 pt-9">
             <Image
               src="/logoV.png"
@@ -134,14 +134,14 @@ export function LoginScreen() {
             />
           </div>
 
-          <Separator className="bg-slate-200 dark:bg-slate-800" />
+          <Separator className="bg-muted" />
 
           <div className="px-8 py-7">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              <h2 className="text-lg font-semibold text-foreground">
                 Connexion à votre espace
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Vos données sont protégées. Connectez-vous pour accéder à votre espace de travail.
               </p>
             </div>
@@ -150,12 +150,12 @@ export function LoginScreen() {
               <div className="space-y-2">
                 <Label
                   htmlFor="email"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                  className="text-sm font-medium text-foreground/90"
                 >
                   Adresse e-mail
                 </Label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -177,13 +177,13 @@ export function LoginScreen() {
                 <div className="flex items-center justify-between gap-2">
                   <Label
                     htmlFor="password"
-                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                    className="text-sm font-medium text-foreground/90"
                   >
                     Mot de passe
                   </Label>
                 </div>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPwd ? "text" : "password"}
@@ -201,7 +201,7 @@ export function LoginScreen() {
                   <button
                     type="button"
                     onClick={() => setShowPwd((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-slate-600 dark:hover:text-slate-300"
                     aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                     tabIndex={-1}
                   >
@@ -222,7 +222,7 @@ export function LoginScreen() {
                 />
                 <Label
                   htmlFor="remember"
-                  className="cursor-pointer text-sm text-slate-600 dark:text-slate-300"
+                  className="cursor-pointer text-sm text-muted-foreground"
                 >
                   Rester connecté (3 jours)
                 </Label>
@@ -243,13 +243,13 @@ export function LoginScreen() {
                 {loading ? UI.loading.verifying : "Se connecter"}
               </Button>
 
-              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-center text-xs text-muted-foreground">
                 Mot de passe oublié ou compte bloqué ? Contactez l&apos;administrateur de votre société pour
                 obtenir une réinitialisation.
               </p>
           </form>
 
-            <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+            <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5" />
               Accès sécurisé · Transit © {new Date().getFullYear()}
             </div>

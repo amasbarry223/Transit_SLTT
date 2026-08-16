@@ -16,18 +16,18 @@ export function StockRepartitionChart({
     <Card className="gap-0 rounded-xl border-border/80 p-0 shadow-sm">
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-5 py-3.5">
         <div className="flex items-center gap-2">
-          <PieChartIcon className="size-4 text-slate-400 dark:text-slate-500" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Répartition du stock</h2>
+          <PieChartIcon className="size-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">Répartition du stock</h2>
         </div>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+        <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500 bg-muted dark:text-slate-400">
           {formatFCFA(totalValue, false)}
         </span>
       </div>
 
       {totalValue === 0 ? (
         <div className="flex flex-col items-center justify-center py-12">
-          <Package className="size-7 text-slate-200 dark:text-slate-700" />
-          <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">Aucune valeur en stock</p>
+          <Package className="size-7 text-muted-foreground/70" />
+          <p className="mt-2 text-xs text-muted-foreground">Aucune valeur en stock</p>
         </div>
       ) : (
         <div className="flex items-center gap-4 px-5 py-4">
@@ -57,9 +57,9 @@ export function StockRepartitionChart({
                 <div key={entry.name} className="flex items-center justify-between gap-2 text-xs">
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="size-2 shrink-0 rounded-full" style={{ background: entry.color }} />
-                    <span className="truncate text-slate-600 dark:text-slate-300">{entry.name}</span>
+                    <span className="truncate text-muted-foreground">{entry.name}</span>
                   </div>
-                  <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100">{pct}%</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">{pct}%</span>
                 </div>
               );
             })}

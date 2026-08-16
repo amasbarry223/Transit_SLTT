@@ -52,19 +52,19 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Date</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {formatDateShort(f.date)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Montant TTC</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Montant TTC</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {formatFCFA(f.montantTTC)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Payé</dt>
+                      <dt className="text-xs text-muted-foreground">Payé</dt>
                       <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
                         {formatFCFA(f.montantPaye)}
                       </dd>
@@ -76,20 +76,20 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Numéro
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Date
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Montant TTC
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Payé
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Statut
                     </TableHead>
                   </TableRow>
@@ -98,16 +98,16 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
                   {factures.map((f) => (
                     <TableRow
                       key={f.id}
-                      className="cursor-pointer border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                      className="cursor-pointer border-b border-border hover:bg-muted/60"
                       onClick={() => onOpenFacture(f.id)}
                     >
                       <TableCell className="px-4 py-3.5 font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">
                         {f.numero}
                       </TableCell>
-                      <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+                      <TableCell className="px-4 py-3.5 tabular-nums text-muted-foreground">
                         {formatDateShort(f.date)}
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 sm:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-foreground/90 sm:table-cell">
                         {formatFCFA(f.montantTTC)}
                       </TableCell>
                       <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 dark:text-emerald-300 md:table-cell">

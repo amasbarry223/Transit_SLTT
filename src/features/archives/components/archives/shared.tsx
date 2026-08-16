@@ -14,7 +14,7 @@ export const TYPE_DOC_BADGE: Record<TypeDocument, string> = {
   Contrat:
     "border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200",
   Autre:
-    "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200",
+    "border-slate-200 text-slate-700 dark:border-slate-700 bg-muted/80 dark:text-slate-200",
 };
 
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 Mo — aligné sur la limite du bucket `archives`
@@ -58,9 +58,9 @@ export const TAB_META: (MetaTabItem<ArchiveTab> & {
     emptyTitle: "Aucun document archivé",
     emptyDescription: "Archivez un scan (upload ou capture caméra) pour le retrouver ici.",
     icon: FileStack,
-    accent: "text-slate-700 dark:text-slate-200",
+    accent: "text-foreground/90",
     iconWrap:
-      "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 group-data-[state=inactive]:bg-slate-200/70 group-data-[state=inactive]:text-slate-500 dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-400",
+      "text-slate-700 bg-muted dark:text-slate-200 group-data-[state=inactive]:bg-slate-200/70 group-data-[state=inactive]:text-slate-500 dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-400",
     badge:
       "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 group-data-[state=inactive]:bg-slate-200/80 group-data-[state=inactive]:text-slate-600 dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-300",
   },

@@ -8,7 +8,7 @@ import { FinancialSummary } from "./financial-summary";
 export function LignesCard({ facture }: { facture: Facture }) {
   return (
     <Card className="overflow-hidden border-border/80 shadow-sm">
-      <div className="flex items-center justify-between border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+      <div className="flex items-center justify-between border-b border-border/60 px-5 py-3 bg-muted/60">
         <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">
           Lignes de facturation
         </h2>
@@ -17,7 +17,7 @@ export function LignesCard({ facture }: { facture: Facture }) {
         </span>
       </div>
       <LignesTable lignes={facture.lignes} />
-      <div className="border-t border-border/60 bg-slate-50/30 dark:bg-slate-800/30">
+      <div className="border-t border-border/60 bg-muted/30">
         <FinancialSummary
           montantHT={facture.montantHT}
           tauxTVA={facture.tauxTVA}

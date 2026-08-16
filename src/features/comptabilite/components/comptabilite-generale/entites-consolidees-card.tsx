@@ -39,17 +39,17 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
   return (
     <Card className="border-border/80 gap-0 overflow-hidden p-0 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <Building2 className="size-4 text-slate-400 dark:text-slate-500" />
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Vue consolidée — groupe</h2>
+        <Building2 className="size-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">Vue consolidée — groupe</h2>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
-              <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Entité</TableHead>
-              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Entrées</TableHead>
-              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Sorties</TableHead>
-              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Écart</TableHead>
+            <TableRow className="border-b border-border bg-slate-50 hover:bg-muted/50 hover:bg-muted">
+              <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Entité</TableHead>
+              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Entrées</TableHead>
+              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Sorties</TableHead>
+              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Écart</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -63,7 +63,7 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
                   tabIndex={0}
                   aria-label={`Voir le détail de ${entite.label}`}
                   className={cn(
-                    "cursor-pointer border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+                    "cursor-pointer border-b border-border hover:bg-muted/60",
                     active && "bg-primary/5 hover:bg-primary/5",
                   )}
                   onClick={() => onSelectEntite(key)}
@@ -74,7 +74,7 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
                     }
                   }}
                 >
-                  <TableCell className={cn("px-4 py-3 font-medium", active ? "text-primary" : "text-slate-900 dark:text-slate-100")}>
+                  <TableCell className={cn("px-4 py-3 font-medium", active ? "text-primary" : "text-foreground")}>
                     {entite.label}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
@@ -86,7 +86,7 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
                   <TableCell
                     className={cn(
                       "px-4 py-3 text-right font-medium tabular-nums",
-                      totals.soldeTheorique >= 0 ? "text-slate-700 dark:text-slate-200" : "text-red-600 dark:text-red-400",
+                      totals.soldeTheorique >= 0 ? "text-foreground/90" : "text-red-600 dark:text-red-400",
                     )}
                   >
                     {formatFCFA(totals.soldeTheorique)}
@@ -94,8 +94,8 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
                 </TableRow>
               );
             })}
-            <TableRow className="border-t-2 border-border bg-slate-50/80 font-semibold dark:bg-slate-900/40">
-              <TableCell className="px-4 py-3 text-slate-900 dark:text-slate-100">Groupe (total)</TableCell>
+            <TableRow className="border-t-2 border-border font-semibold bg-muted/40">
+              <TableCell className="px-4 py-3 text-foreground">Groupe (total)</TableCell>
               <TableCell className="px-4 py-3 text-right tabular-nums text-emerald-700 dark:text-emerald-400">
                 {formatFCFA(groupTotals.totalEntree)}
               </TableCell>
@@ -105,7 +105,7 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
               <TableCell
                 className={cn(
                   "px-4 py-3 text-right tabular-nums",
-                  groupTotals.soldeTheorique >= 0 ? "text-slate-900 dark:text-slate-100" : "text-red-700 dark:text-red-400",
+                  groupTotals.soldeTheorique >= 0 ? "text-foreground" : "text-red-700 dark:text-red-400",
                 )}
               >
                 {formatFCFA(groupTotals.soldeTheorique)}

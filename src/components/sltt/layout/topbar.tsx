@@ -66,7 +66,7 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   "dossier-form": { title: "Dossier de transit", sub: "Création et édition" },
   "dossier-detail": { title: "Dossier de transit", sub: "Statut, montants et documents du dossier" },
   comptabilite: { title: "Comptabilité", sub: "Écritures dossiers et journal de caisse par entité" },
-  "recus-paiement": { title: "Gestion des reçus", sub: "Créer un reçu de paiement — format horizontal, aperçu en temps réel" },
+  "recus-paiement": { title: "Gestion des reçus", sub: "Créer un reçu de paiement — format 19,5 × 8,2 cm paysage" },
   bilans: { title: "Bilans", sub: "Analyse financière périodique" },
   entreposage: { title: "Entreposage", sub: "Entrées, sorties et suivi du stock" },
   bons: { title: "Bons de sortie", sub: "Sorties de marchandises entreposées" },
@@ -159,7 +159,7 @@ export function Topbar() {
         <Button
           variant="ghost"
           size="icon"
-          className="shrink-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 lg:hidden"
+          className="shrink-0 text-muted-foreground hover:text-slate-900 dark:hover:text-slate-100 lg:hidden"
           onClick={() => setMobileOpen(true)}
           aria-label="Ouvrir le menu"
         >
@@ -182,7 +182,7 @@ export function Topbar() {
         <Button
           variant="ghost"
           size="icon"
-          className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+          className="text-muted-foreground hover:bg-muted hover:text-slate-900 dark:hover:text-slate-100"
           onClick={() => setHelpOpen(true)}
           aria-label="Aide"
           title="Aide et lexique"
@@ -194,7 +194,7 @@ export function Topbar() {
         <Button
           variant="ghost"
           size="icon"
-          className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+          className="text-muted-foreground hover:bg-muted hover:text-slate-900 dark:hover:text-slate-100"
           onClick={toggleTheme}
           aria-label={theme === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
         >
@@ -207,7 +207,7 @@ export function Topbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="relative text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+              className="relative text-muted-foreground hover:bg-muted hover:text-slate-900 dark:hover:text-slate-100"
               aria-label={hasUnread ? `${alertCount} notifications non lues` : "Notifications"}
             >
               <Bell className="size-5" />
@@ -238,7 +238,7 @@ export function Topbar() {
                 <span className="text-sm font-medium text-red-600">
                   Stock faible · {s.marchandise}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   {s.quantite} {s.unite} restant{s.quantite > 1 ? "s" : ""} — {s.depositaire}
                 </span>
               </DropdownMenuItem>
@@ -252,7 +252,7 @@ export function Topbar() {
                 <span className="text-sm font-medium text-amber-600">
                   Dossier non soldé · {d.reference}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   Reste : {formatFCFA(resteAPayer(d))} — {d.clientNom}
                 </span>
               </DropdownMenuItem>
@@ -261,7 +261,7 @@ export function Topbar() {
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="justify-center text-xs text-slate-500 dark:text-slate-400"
+                  className="justify-center text-xs text-muted-foreground"
                   onClick={() => goToView("dossiers")}
                 >
                   Voir les {unpaidDossiers.length - 5} autres dossiers non soldés →
@@ -269,7 +269,7 @@ export function Topbar() {
               </>
             )}
             {alertCount === 0 && (
-              <div className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+              <div className="py-8 text-center text-sm text-muted-foreground">
                 Aucune notification.
               </div>
             )}
@@ -279,21 +279,21 @@ export function Topbar() {
         {/* Avatar + menu utilisateur */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
+            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-muted">
               <Avatar className="size-8 border border-border">
                 <AvatarFallback className={cn("text-xs font-semibold text-white", USER_AVATAR_GRADIENT)}>
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-semibold leading-none text-slate-900 dark:text-slate-100">
+                <p className="text-xs font-semibold leading-none text-foreground">
                   {shortName}
                 </p>
-                <p className="mt-0.5 text-[10px] leading-none text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-[10px] leading-none text-muted-foreground">
                   {currentRole}
                 </p>
               </div>
-              <ChevronDown className="hidden size-3.5 text-slate-400 dark:text-slate-500 sm:block" />
+              <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
@@ -346,12 +346,12 @@ export function Topbar() {
           <div className="max-h-[60vh] space-y-4 overflow-y-auto sltt-scroll pr-1">
             {Object.values(GLOSSARY).map((entry) => (
               <div key={entry.label} className="space-y-0.5">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{entry.label}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{entry.definition}</p>
+                <p className="text-sm font-semibold text-foreground">{entry.label}</p>
+                <p className="text-sm text-muted-foreground">{entry.definition}</p>
               </div>
             ))}
           </div>
-          <p className="border-t border-border pt-3 text-xs text-slate-400 dark:text-slate-500">
+          <p className="border-t border-border pt-3 text-xs text-muted-foreground">
             Une question qui n&apos;est pas ici ? Contactez votre administrateur.
           </p>
         </DialogContent>
@@ -407,8 +407,8 @@ export function Topbar() {
                 {initials}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{shortName}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{currentRole}</p>
+                <p className="text-sm font-semibold text-foreground truncate">{shortName}</p>
+                <p className="text-xs text-muted-foreground">{currentRole}</p>
               </div>
             </div>
           </div>

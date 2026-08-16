@@ -50,7 +50,7 @@ export function ClientProfileCard({
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                <h2 className="text-xl font-bold tracking-tight text-foreground">
                   {client.nom}
                 </h2>
                 <ToneBadge tone={client.type === "Entreprise" ? "blue" : "slate"}>
@@ -61,20 +61,20 @@ export function ClientProfileCard({
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 {client.telephone && (
-                  <span className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                    <Phone className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <span className="inline-flex items-center gap-2 text-muted-foreground">
+                    <Phone className="size-3.5 shrink-0 text-muted-foreground" />
                     <span className="font-mono text-xs">{client.telephone}</span>
                   </span>
                 )}
                 {client.email && (
-                  <span className="inline-flex items-center gap-2 truncate text-slate-600 dark:text-slate-300">
-                    <Mail className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <span className="inline-flex items-center gap-2 truncate text-muted-foreground">
+                    <Mail className="size-3.5 shrink-0 text-muted-foreground" />
                     <span className="truncate text-xs">{client.email}</span>
                   </span>
                 )}
                 {client.adresse && (
-                  <span className="inline-flex items-start gap-2 text-slate-600 dark:text-slate-300 sm:col-span-2 lg:col-span-1">
-                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <span className="inline-flex items-start gap-2 text-muted-foreground sm:col-span-2 lg:col-span-1">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-xs leading-relaxed">{client.adresse}</span>
                   </span>
                 )}

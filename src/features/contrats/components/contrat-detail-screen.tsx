@@ -117,9 +117,9 @@ export function ContratDetailScreen() {
   if (!contrat) {
     return (
       <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
-        <FileSignature className="size-10 text-slate-300 dark:text-slate-700" />
-        <h2 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100">Contrat introuvable</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Ce contrat n'existe pas ou a été supprimé.</p>
+        <FileSignature className="size-10 text-slate-300 text-muted-foreground" />
+        <h2 className="mt-4 text-lg font-semibold text-foreground">Contrat introuvable</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Ce contrat n'existe pas ou a été supprimé.</p>
         <Button className="mt-5" onClick={() => go("contrats")}>
           <ArrowLeft className="size-4" />
           Retour aux contrats
@@ -209,7 +209,7 @@ export function ContratDetailScreen() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="font-mono text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                  <h1 className="font-mono text-2xl font-extrabold tracking-tight text-foreground">
                     {contrat.reference}
                   </h1>
                   {canWrite ? (
@@ -276,8 +276,8 @@ export function ContratDetailScreen() {
                     </span>
                   )}
                 </div>
-                <p className="mt-1.5 text-base font-semibold text-slate-700 dark:text-slate-300">{contrat.clientNom}</p>
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                <p className="mt-1.5 text-base font-semibold text-foreground/90">{contrat.clientNom}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
                   {contrat.objet} &nbsp;·&nbsp; Début {formatDateShort(contrat.dateDebut)}
                   {contrat.dateFin && <> &nbsp;·&nbsp; Fin {formatDateShort(contrat.dateFin)}</>}
                   {contrat.creePar && <> &nbsp;·&nbsp; Créé par {contrat.creePar}</>}
@@ -350,8 +350,8 @@ export function ContratDetailScreen() {
             </dl>
             {contrat.notes && (
               <div className="mt-4 border-t border-border pt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Notes</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{contrat.notes}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Notes</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground/90">{contrat.notes}</p>
               </div>
             )}
           </Card>
@@ -359,7 +359,7 @@ export function ContratDetailScreen() {
 
         <TabsContent value="depenses" className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-muted-foreground">
               Total dépenses : <span className="font-semibold tabular-nums">{formatFCFA(contrat.totalDepenses)}</span>
             </p>
             {canWrite && (
@@ -393,18 +393,18 @@ export function ContratDetailScreen() {
                     <Card key={d.id} className="border-border/80 p-4 shadow-sm">
                       <div className="flex items-start justify-between gap-2">
                         <p className="min-w-0 truncate font-medium text-slate-800 dark:text-slate-200">{d.libelle}</p>
-                        <p className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                        <p className="shrink-0 tabular-nums font-semibold text-foreground">
                           {formatFCFA(d.montant)}
                         </p>
                       </div>
                       <dl className="mt-2 space-y-1 text-sm">
                         <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-                          <dd className="tabular-nums text-slate-600 dark:text-slate-300">{formatDateShort(d.dateDepense)}</dd>
+                          <dt className="text-xs text-muted-foreground">Date</dt>
+                          <dd className="tabular-nums text-muted-foreground">{formatDateShort(d.dateDepense)}</dd>
                         </div>
                         <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500 dark:text-slate-400">Mode</dt>
-                          <dd className="text-slate-600 dark:text-slate-300">{d.modePaiement}</dd>
+                          <dt className="text-xs text-muted-foreground">Mode</dt>
+                          <dd className="text-muted-foreground">{d.modePaiement}</dd>
                         </div>
                       </dl>
                       {canWrite && (
@@ -426,11 +426,11 @@ export function ContratDetailScreen() {
                 <div className="hidden overflow-x-auto md:block">
                 <Table aria-label="Dépenses du contrat">
                   <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
-                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Libellé</TableHead>
-                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Date</TableHead>
-                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Mode</TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs uppercase text-slate-500 dark:text-slate-400">Montant</TableHead>
+                    <TableRow className="border-b border-border bg-muted/50">
+                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Libellé</TableHead>
+                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Date</TableHead>
+                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Mode</TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs uppercase text-muted-foreground">Montant</TableHead>
                       {canWrite && <TableHead className="h-10 px-4" />}
                     </TableRow>
                   </TableHeader>
@@ -438,8 +438,8 @@ export function ContratDetailScreen() {
                     {contratDepenses.map((d) => (
                       <TableRow key={d.id} className="border-b border-border">
                         <TableCell className="px-4 py-3">{d.libelle}</TableCell>
-                        <TableCell className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatDateShort(d.dateDepense)}</TableCell>
-                        <TableCell className="px-4 py-3 text-slate-600 dark:text-slate-300">{d.modePaiement}</TableCell>
+                        <TableCell className="px-4 py-3 tabular-nums text-muted-foreground">{formatDateShort(d.dateDepense)}</TableCell>
+                        <TableCell className="px-4 py-3 text-muted-foreground">{d.modePaiement}</TableCell>
                         <TableCell className="px-4 py-3 text-right tabular-nums font-medium">{formatFCFA(d.montant)}</TableCell>
                         {canWrite && (
                           <TableCell className="px-4 py-3 text-right">
@@ -466,7 +466,7 @@ export function ContratDetailScreen() {
 
         <TabsContent value="prestations" className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-muted-foreground">
               {contrat.nbPrestationsRealisees} réalisée{contrat.nbPrestationsRealisees > 1 ? "s" : ""} sur {contrat.nbPrestations}
             </p>
             {canWrite && (
@@ -502,10 +502,10 @@ export function ContratDetailScreen() {
                         <div className="min-w-0">
                           <p className="truncate font-medium text-slate-800 dark:text-slate-200">{p.libelle}</p>
                           {p.description && (
-                            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{p.description}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{p.description}</p>
                           )}
                         </div>
-                        <p className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                        <p className="shrink-0 tabular-nums font-semibold text-foreground">
                           {p.montant != null ? formatFCFA(p.montant) : "—"}
                         </p>
                       </div>
@@ -560,10 +560,10 @@ export function ContratDetailScreen() {
                 <div className="hidden overflow-x-auto md:block">
                 <Table aria-label="Prestations optionnelles du contrat">
                   <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800">
-                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Libellé</TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs uppercase text-slate-500 dark:text-slate-400">Montant</TableHead>
-                      <TableHead className="h-10 px-4 text-xs uppercase text-slate-500 dark:text-slate-400">Statut</TableHead>
+                    <TableRow className="border-b border-border bg-muted/50">
+                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Libellé</TableHead>
+                      <TableHead className="h-10 px-4 text-right text-xs uppercase text-muted-foreground">Montant</TableHead>
+                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Statut</TableHead>
                       {canWrite && <TableHead className="h-10 px-4" />}
                     </TableRow>
                   </TableHeader>
@@ -572,7 +572,7 @@ export function ContratDetailScreen() {
                       <TableRow key={p.id} className="border-b border-border">
                         <TableCell className="px-4 py-3">
                           <p className="font-medium text-slate-800 dark:text-slate-200">{p.libelle}</p>
-                          {p.description && <p className="text-xs text-slate-500 dark:text-slate-400">{p.description}</p>}
+                          {p.description && <p className="text-xs text-muted-foreground">{p.description}</p>}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-right tabular-nums">
                           {p.montant != null ? formatFCFA(p.montant) : "—"}

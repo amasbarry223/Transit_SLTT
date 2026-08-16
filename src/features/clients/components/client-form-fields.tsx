@@ -49,7 +49,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-nom`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <Label htmlFor={`${idPrefix}-nom`} className="text-sm font-medium text-foreground/90">
           Nom / Raison sociale <span className="text-red-500">*</span>
         </Label>
         <Input
@@ -63,7 +63,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-societe`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <Label htmlFor={`${idPrefix}-societe`} className="text-sm font-medium text-foreground/90">
           Société <span className="text-red-500">*</span>
         </Label>
         <Select value={values.societeId || undefined} onValueChange={(v) => onChange({ societeId: v })}>
@@ -84,7 +84,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
 
       {showAnnexe && (
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-annexe`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label htmlFor={`${idPrefix}-annexe`} className="text-sm font-medium text-foreground/90">
             Annexe <span className="text-red-500">*</span>
           </Label>
           <Select value={values.annexeId} onValueChange={(v) => onChange({ annexeId: v })}>
@@ -103,7 +103,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
       )}
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type de client</Label>
+        <Label className="text-sm font-medium text-foreground/90">Type de client</Label>
         <div className="grid grid-cols-2 gap-2">
           {clientTypes.map((t) => {
             const Icon = t === "Entreprise" ? Building2 : User;
@@ -118,7 +118,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
                   "flex flex-col items-center gap-2 rounded-lg border-2 px-3 py-3 text-sm font-medium transition-colors",
                   selected
                     ? "border-primary bg-primary/5 text-primary"
-                    : "border-border bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50",
+                    : "border-border bg-white bg-muted/40 text-muted-foreground hover:border-slate-300 hover:bg-slate-50",
                 )}
               >
                 <Icon className="size-5" />
@@ -131,7 +131,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-tel`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label htmlFor={`${idPrefix}-tel`} className="text-sm font-medium text-foreground/90">
             Téléphone
           </Label>
           <Input
@@ -143,7 +143,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-email`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <Label htmlFor={`${idPrefix}-email`} className="text-sm font-medium text-foreground/90">
             E-mail
           </Label>
           <Input
@@ -158,7 +158,7 @@ export function ClientFormFields({ values, onChange, annexes, societes, idPrefix
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-adresse`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <Label htmlFor={`${idPrefix}-adresse`} className="text-sm font-medium text-foreground/90">
           Adresse
         </Label>
         <Input

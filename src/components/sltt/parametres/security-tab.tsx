@@ -59,22 +59,22 @@ export function SecurityTab() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
+      <p className="text-sm text-muted-foreground">
         Mot de passe, authentification et options de sécurité du compte.
       </p>
 
       {/* Mot de passe */}
       <Card className="p-6 shadow-sm border-border/80">
         <div className="flex items-center gap-2">
-          <Lock className="size-4 text-slate-500 dark:text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Mot de passe</h3>
+          <Lock className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">Mot de passe</h3>
         </div>
         <form
           onSubmit={handlePasswordSubmit}
           className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
         >
           <div className="space-y-2">
-            <Label htmlFor="cur-pwd" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label htmlFor="cur-pwd" className="text-sm font-medium text-foreground/90">
               Mot de passe actuel
             </Label>
             <Input
@@ -86,7 +86,7 @@ export function SecurityTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-pwd" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label htmlFor="new-pwd" className="text-sm font-medium text-foreground/90">
               Nouveau mot de passe
             </Label>
             <Input
@@ -98,7 +98,7 @@ export function SecurityTab() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="conf-pwd" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label htmlFor="conf-pwd" className="text-sm font-medium text-foreground/90">
               Confirmer
             </Label>
             <Input
@@ -120,15 +120,15 @@ export function SecurityTab() {
       {/* Options avancées — bientôt disponibles */}
       <Card className="p-6 shadow-sm border-border/80 border-dashed">
         <div className="flex items-center gap-2">
-          <Shield className="size-4 text-slate-500 dark:text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <Shield className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">
             Options avancées
           </h3>
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
             Bientôt
           </span>
         </div>
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-3 text-sm text-muted-foreground">
           La déconnexion automatique personnalisée et l&apos;authentification à deux facteurs seront disponibles dans une prochaine version.
           La session actuelle utilise déjà une déconnexion automatique après 30 min d&apos;inactivité, avec un plafond de 8 h (ou 3 jours avec « Rester connecté »).
         </p>

@@ -56,7 +56,7 @@ export function DevisEditForm({
           <div className="p-6 space-y-6">
             {/* Société */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Société <span className="text-red-500 normal-case">*</span>
               </Label>
               <Select value={fSocieteId || undefined} onValueChange={setFSocieteId}>
@@ -76,7 +76,7 @@ export function DevisEditForm({
             {/* Client + Nature */}
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   Client <span className="text-red-500 normal-case">*</span>
                 </Label>
                 <Select value={fClientId} onValueChange={handleClientChange}>
@@ -91,7 +91,7 @@ export function DevisEditForm({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   Nature de la marchandise <span className="text-red-500 normal-case">*</span>
                 </Label>
                 <Input value={fNature} onChange={(e) => setFNature(e.target.value)}
@@ -101,7 +101,7 @@ export function DevisEditForm({
 
             {/* Montants */}
             <div className="space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Estimation financière</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimation financière</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
                   { label: "Droits de douane (FCFA)", val: fDroitDouane, set: setFDroitDouane },
@@ -109,7 +109,7 @@ export function DevisEditForm({
                   { label: "Prestation SLTT (FCFA)",   val: fFraisPrestation, set: setFFraisPrestation },
                 ].map((f) => (
                   <div key={f.label} className="space-y-2">
-                    <Label className="text-xs text-slate-500 dark:text-slate-400">{f.label}</Label>
+                    <Label className="text-xs text-muted-foreground">{f.label}</Label>
                     <Input value={f.val} onChange={(e) => f.set(e.target.value)}
                       placeholder={UI.placeholders.amountFCFA} className="h-10 text-right tabular-nums" />
                   </div>
@@ -126,14 +126,14 @@ export function DevisEditForm({
             {/* Date + Notes */}
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   Date de validité <span className="text-red-500 normal-case">*</span>
                 </Label>
                 <Input type="date" value={fDateValidite}
                   onChange={(e) => setFDateValidite(e.target.value)} className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</Label>
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Notes</Label>
                 <Textarea value={fNotes} onChange={(e) => setFNotes(e.target.value)}
                   placeholder="Conditions, remarques..." rows={3} className="resize-none" />
               </div>
@@ -141,7 +141,7 @@ export function DevisEditForm({
 
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-border pt-5">
-              <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400" onClick={handleCancelEdit}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={handleCancelEdit}>
                 <X className="mr-2 size-4" /> Annuler
               </Button>
               <Button className="gap-2 bg-primary hover:bg-primary/90"

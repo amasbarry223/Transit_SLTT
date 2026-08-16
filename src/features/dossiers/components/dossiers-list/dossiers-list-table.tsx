@@ -65,8 +65,8 @@ const DossierMobileCard = memo(function DossierMobileCard({
         <div className="flex min-w-0 items-start gap-2">
           <DossierIcon className="mt-0.5 size-5 shrink-0" />
           <div className="min-w-0">
-            <p className="font-medium text-slate-900 dark:text-slate-100">{dossier.reference}</p>
-            <p className="truncate text-sm text-slate-600 dark:text-slate-300">{dossier.clientNom}</p>
+            <p className="font-medium text-foreground">{dossier.reference}</p>
+            <p className="truncate text-sm text-muted-foreground">{dossier.clientNom}</p>
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
@@ -76,11 +76,11 @@ const DossierMobileCard = memo(function DossierMobileCard({
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(dossier.date)}</dd>
+          <dt className="text-xs text-muted-foreground">Date</dt>
+          <dd className="tabular-nums text-foreground/90">{formatDateShort(dossier.date)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">
+          <dt className="text-xs text-muted-foreground">
             <GlossaryLabel term="margeDossier" short className="text-xs" />
           </dt>
           <dd><EcartValue value={calculerEcart(dossier)} /></dd>
@@ -111,7 +111,7 @@ const DossierTableRow = memo(function DossierTableRow({
       role="button"
       tabIndex={0}
       className={cn(
-        "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+        "cursor-pointer border-b border-border transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
         enCours && "bg-blue-50/30 dark:bg-blue-950/20",
       )}
       onClick={() => onOpenDetail(dossier.id)}
@@ -125,7 +125,7 @@ const DossierTableRow = memo(function DossierTableRow({
       <TableCell className="px-4 py-3.5">
         <div className="flex items-center gap-2">
           <DossierIcon className="size-4 shrink-0" />
-          <p className="font-medium text-slate-900 dark:text-slate-100">
+          <p className="font-medium text-foreground">
             {dossier.reference}
           </p>
         </div>
@@ -134,25 +134,25 @@ const DossierTableRow = memo(function DossierTableRow({
         <SocieteBadge societeNom={dossier.societeNom} size="sm" />
       </TableCell>
       <TableCell className="max-w-[180px] px-4 py-3.5">
-        <p className="truncate font-medium text-slate-700 dark:text-slate-300">
+        <p className="truncate font-medium text-foreground/90">
           {dossier.clientNom}
         </p>
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 tabular-nums text-sm text-slate-600 dark:text-slate-300 sm:table-cell">
+      <TableCell className="hidden px-4 py-3.5 tabular-nums text-sm text-muted-foreground sm:table-cell">
         {formatDateShort(dossier.date)}
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300 md:table-cell">
+      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-muted-foreground md:table-cell">
         {dossier.bl}
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300 lg:table-cell">
+      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-muted-foreground lg:table-cell">
         {dossier.camion}
       </TableCell>
       <TableCell className="hidden max-w-[160px] px-4 py-3.5 xl:table-cell">
-        <span className="line-clamp-1 text-slate-600 dark:text-slate-300">
+        <span className="line-clamp-1 text-muted-foreground">
           {dossier.nature}
         </span>
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300 md:table-cell">
+      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-foreground/90 md:table-cell">
         {formatFCFA(dossier.fraisPrestation)}
       </TableCell>
       <TableCell className="px-4 py-3.5 text-right tabular-nums">
@@ -182,7 +182,7 @@ const DossierTableRow = memo(function DossierTableRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+            className="size-8 text-muted-foreground hover:text-primary"
             aria-label={`Modifier ${dossier.reference}`}
             title="Modifier"
             onClick={() => onEdit(dossier.id)}
@@ -229,10 +229,10 @@ export function DossiersListTable({
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
           <DossierIcon className="size-4" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-sm font-semibold text-foreground">
             Liste des dossiers
           </h2>
-          <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -261,38 +261,38 @@ export function DossiersListTable({
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Référence
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Société
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Date
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       N° BL
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
                       Camion
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 xl:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground xl:table-cell">
                       Nature
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Prestation
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       <GlossaryLabel term="margeDossier" short className="justify-end" />
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Actions
                     </TableHead>
                   </TableRow>

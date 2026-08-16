@@ -32,17 +32,17 @@ function InfoTile({
   warn?: boolean;
 }) {
   return (
-    <div className="flex gap-3 rounded-lg border border-border/70 bg-slate-50/50 p-3 dark:bg-slate-900/40">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+    <div className="flex gap-3 rounded-lg border border-border/70 p-3 bg-muted/40">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm bg-muted dark:text-slate-400">
         <Icon className="size-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-muted-foreground">
           {glossaryTerm ? <GlossaryLabel term={glossaryTerm} showIcon /> : label}
         </p>
         <p
           className={cn(
-            "mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-100",
+            "mt-0.5 text-sm font-medium text-foreground",
             warn && "text-amber-600 dark:text-amber-400",
           )}
         >

@@ -34,13 +34,13 @@ export function FinancialSummary({
   return (
     <div className="space-y-2 p-5">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-slate-500 dark:text-slate-400">Sous-total HT</span>
-        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(ht)}</span>
+        <span className="text-muted-foreground">Sous-total HT</span>
+        <span className="font-semibold tabular-nums text-foreground/90">{formatFCFA(ht)}</span>
       </div>
       {shouldShowTva(tva) && (
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500 dark:text-slate-400">TVA {tva}%</span>
-          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(tvaAmt)}</span>
+          <span className="text-muted-foreground">TVA {tva}%</span>
+          <span className="font-semibold tabular-nums text-foreground/90">{formatFCFA(tvaAmt)}</span>
         </div>
       )}
       <div className="flex items-center justify-between rounded-xl bg-primary px-4 py-3">
@@ -54,7 +54,7 @@ export function FinancialSummary({
             <span className="font-semibold tabular-nums">- {formatFCFA(montantPaye)}</span>
           </div>
           <div className="flex items-center justify-between border-t border-border/50 pt-2 text-sm font-bold">
-            <span className="text-slate-700 dark:text-slate-300">Reste à payer</span>
+            <span className="text-foreground/90">Reste à payer</span>
             <span className={cn("tabular-nums", reste > 0 ? "text-amber-700 dark:text-amber-300" : "text-emerald-600")}>
               {formatFCFA(reste)}
             </span>

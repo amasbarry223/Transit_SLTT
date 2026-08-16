@@ -289,17 +289,17 @@ export function EntreposageScreen() {
                   value={t.key}
                   className={cn(
                     "relative shrink-0 rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 py-3",
-                    "text-sm font-medium text-slate-500 dark:text-slate-400 shadow-none transition-colors",
+                    "text-sm font-medium text-muted-foreground shadow-none transition-colors",
                     "hover:text-slate-900 dark:hover:text-slate-100 data-[state=active]:border-primary data-[state=active]:bg-transparent",
                     "data-[state=active]:text-primary data-[state=active]:shadow-none",
                     "focus-visible:ring-0 focus-visible:ring-offset-0",
                     "[&[data-state=active]_svg]:text-primary",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <Icon className="size-4 shrink-0 text-muted-foreground" />
                   <span className="hidden sm:inline">{t.label}</span>
                   <span className="sm:hidden">{t.shortLabel}</span>
-                  <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
+                  <span className="ml-1.5 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
                     {count}
                   </span>
                 </TabsTrigger>

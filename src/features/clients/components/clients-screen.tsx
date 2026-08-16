@@ -277,7 +277,7 @@ export function ClientsScreen() {
       <Card className="border-border/80 p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => {
@@ -332,14 +332,14 @@ export function ClientsScreen() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 dark:text-slate-400"
+              className="h-10 text-muted-foreground"
               onClick={clearFilters}
             >
               Réinitialiser
             </Button>
           )}
 
-          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filtered.length} client{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>

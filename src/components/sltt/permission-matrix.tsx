@@ -61,10 +61,10 @@ export function PermissionMatrix({
   return (
     <div className="space-y-3">
       {presetFirst && (
-        <div className="space-y-3 rounded-lg border border-border bg-white p-3 dark:bg-slate-900">
+        <div className="space-y-3 rounded-lg border border-border bg-white p-3 bg-muted/40">
           <div>
             <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Profil métier</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs text-muted-foreground">
               Applique un jeu de permissions standard — ajustez en mode avancé si besoin.
             </p>
           </div>
@@ -82,14 +82,14 @@ export function PermissionMatrix({
               </Button>
             ))}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-muted-foreground">
             <span className="font-semibold tabular-nums text-primary">{activeCount}</span> permission
             {activeCount > 1 ? "s" : ""} active{activeCount > 1 ? "s" : ""}
           </p>
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
-            className="flex w-full items-center justify-between border-t border-border pt-3 text-left text-sm font-medium text-slate-600 dark:text-slate-300"
+            className="flex w-full items-center justify-between border-t border-border pt-3 text-left text-sm font-medium text-muted-foreground"
           >
             Mode avancé — matrice détaillée
             <ChevronDown className={cn("size-4 transition-transform", advancedOpen && "rotate-180")} />
@@ -98,7 +98,7 @@ export function PermissionMatrix({
       )}
 
       {(!presetFirst || advancedOpen) && (
-        <div className="max-h-[360px] space-y-2 overflow-y-auto rounded-lg border border-border bg-slate-50/50 p-3 dark:bg-slate-800/50">
+        <div className="max-h-[360px] space-y-2 overflow-y-auto rounded-lg border border-border p-3 bg-muted/50">
           {PERMISSION_MODULES.map((permModule) => {
             const moduleKeys = permModule.permissions.map((p) => p.key);
             const allChecked = moduleKeys.every((k) => selection[k]);
@@ -108,7 +108,7 @@ export function PermissionMatrix({
             return (
               <details
                 key={permModule.id}
-                className="group rounded-md border border-border/60 bg-white dark:bg-slate-900"
+                className="group rounded-md border border-border/60 bg-white bg-muted/40"
                 open={permModule.id === "dashboard"}
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
@@ -117,12 +117,12 @@ export function PermissionMatrix({
                     <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                       {permModule.label}
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       {moduleActiveCount}/{moduleKeys.length}
                     </span>
                   </div>
                   <label
-                    className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"
+                    className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Checkbox
@@ -138,7 +138,7 @@ export function PermissionMatrix({
                     {permModule.permissions.map((perm) => (
                       <label
                         key={perm.key}
-                        className="flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                        className="flex cursor-pointer items-center gap-2 text-sm text-foreground/90"
                       >
                         <Checkbox
                           checked={selection[perm.key] ?? false}

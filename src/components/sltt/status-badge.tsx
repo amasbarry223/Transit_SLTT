@@ -32,7 +32,7 @@ export const TONE_CLASSES: Record<Tone, string> = {
   amber: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-900",
   red: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-900",
   indigo: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-900",
-  slate: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+  slate: "text-slate-700 border-slate-200 bg-muted dark:text-slate-300 dark:border-slate-700",
 };
 
 const dotClasses: Record<Tone, string> = {
@@ -202,7 +202,7 @@ export function EcartValue({ value }: { value: number }) {
     );
   }
   return (
-    <span className="font-medium text-slate-500 dark:text-slate-400 tabular-nums">
+    <span className="font-medium text-muted-foreground tabular-nums">
       {value.toLocaleString("fr-FR")}
     </span>
   );

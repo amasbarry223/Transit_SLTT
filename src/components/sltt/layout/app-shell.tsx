@@ -54,7 +54,7 @@ export function AppShell() {
         <Topbar />
         <OfflineIndicator />
         {dataLoading && lastSyncedAt !== null && (
-          <div className="h-0.5 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div className="h-0.5 w-full overflow-hidden bg-muted">
             <div className="h-full w-1/3 animate-pulse bg-primary/70" />
           </div>
         )}
@@ -99,14 +99,16 @@ export function AppShell() {
           )}
         >
           <div className={cn("w-full", isRecuWorkspace && "h-full min-h-0")}>
-            {!canViewCurrent ? (
+            {isInitialLoad ? (
+              <ScreenSkeleton view={view} />
+            ) : !canViewCurrent ? (
               <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
                 <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">
                   <ShieldAlert className="size-7" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Accès non autorisé</h2>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  <h2 className="text-lg font-semibold text-foreground">Accès non autorisé</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Vous n&apos;avez pas la permission de consulter cette page.
                   </p>
                 </div>
@@ -114,8 +116,6 @@ export function AppShell() {
                   Retour au tableau de bord
                 </Button>
               </div>
-            ) : isInitialLoad ? (
-              <ScreenSkeleton view={view} />
             ) : (
             <>
             {view === "dashboard" && <DashboardScreen />}

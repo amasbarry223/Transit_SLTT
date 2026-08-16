@@ -74,7 +74,7 @@ function ProfileTabForm({
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
+      <p className="text-sm text-muted-foreground">
         Vos informations personnelles et professionnelles.
       </p>
       <Card className="p-6 shadow-sm border-border/80">
@@ -84,14 +84,14 @@ function ProfileTabForm({
               {getInitials(pNom || currentUserName)}
             </div>
             <div>
-              <p className="font-semibold text-slate-900 dark:text-slate-100">{pNom || currentUserName}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{currentUser?.role || currentRole}</p>
+              <p className="font-semibold text-foreground">{pNom || currentUserName}</p>
+              <p className="text-sm text-muted-foreground">{currentUser?.role || currentRole}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="p-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="p-nom" className="text-sm font-medium text-foreground/90">
                 Nom complet
               </Label>
               <Input
@@ -101,7 +101,7 @@ function ProfileTabForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="p-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="p-email" className="text-sm font-medium text-foreground/90">
                 E-mail
               </Label>
               <Input
@@ -112,14 +112,14 @@ function ProfileTabForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="p-poste" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="p-poste" className="text-sm font-medium text-foreground/90">
                 Poste
               </Label>
               <Input
                 id="p-poste"
                 value={currentUser?.role || currentRole}
                 disabled
-                className="bg-slate-50 dark:bg-slate-800"
+                className="bg-muted/50"
               />
               <p className="text-xs text-slate-400">Le poste est géré par un administrateur.</p>
             </div>

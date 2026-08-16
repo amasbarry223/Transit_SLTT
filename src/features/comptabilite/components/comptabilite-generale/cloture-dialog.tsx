@@ -124,8 +124,8 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
             </div>
           </div>
           <div className="rounded-lg border border-border bg-muted/30 p-3">
-            <p className="text-xs text-slate-500 dark:text-slate-400">Solde théorique (entrées − sorties de la période)</p>
-            <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(soldeTheorique)}</p>
+            <p className="text-xs text-muted-foreground">Solde théorique (entrées − sorties de la période)</p>
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">{formatFCFA(soldeTheorique)}</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="cl-constate">
@@ -134,7 +134,7 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
             <Input id="cl-constate" type="number" value={soldeConstate} onChange={(e) => setSoldeConstate(e.target.value)} placeholder="Compté en caisse / relevé bancaire" className="h-10" />
           </div>
           <div className="rounded-lg border border-border p-3">
-            <p className="text-xs text-slate-500 dark:text-slate-400">Écart (théorique − constaté)</p>
+            <p className="text-xs text-muted-foreground">Écart (théorique − constaté)</p>
             <p className={cn("mt-0.5 text-lg font-semibold tabular-nums", ecart === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
               {formatFCFA(ecart)}
             </p>

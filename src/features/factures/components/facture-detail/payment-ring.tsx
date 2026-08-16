@@ -31,7 +31,7 @@ export function PaymentRing({ pct, reste, isEchue }: { pct: number; reste: numbe
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-lg font-extrabold tabular-nums text-slate-900 dark:text-slate-100">{pct}%</span>
+          <span className="text-lg font-extrabold tabular-nums text-foreground">{pct}%</span>
           <span className="text-[9px] font-medium uppercase tracking-wide text-slate-400">payé</span>
         </div>
       </div>

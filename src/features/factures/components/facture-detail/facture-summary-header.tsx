@@ -79,7 +79,7 @@ export function FactureSummaryHeader({
           <div className={cn("flex flex-wrap items-start justify-between gap-4", factureBrand && "mt-4")}>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="font-mono text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                <h1 className="font-mono text-2xl font-extrabold tracking-tight text-foreground">
                   {facture.numero}
                 </h1>
                 <FactureStatutBadge statut={facture.statut} showIcon size="md" />
@@ -93,8 +93,8 @@ export function FactureSummaryHeader({
                   </button>
                 )}
               </div>
-              <p className="mt-1.5 text-base font-semibold text-slate-700 dark:text-slate-300">{facture.clientNom}</p>
-              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+              <p className="mt-1.5 text-base font-semibold text-foreground/90">{facture.clientNom}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Émise le {formatDateShort(facture.date)}
                 &nbsp;·&nbsp; Échéance {formatDateShort(facture.dateEcheance)}
                 &nbsp;·&nbsp; Créée par {facture.creePar}

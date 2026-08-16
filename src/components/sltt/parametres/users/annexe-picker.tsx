@@ -28,7 +28,7 @@ export function AnnexePicker({
               "flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-medium transition-all",
               selected
                 ? "border-primary bg-primary/5 text-primary ring-2 ring-primary"
-                : "border-border bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300 hover:border-slate-300",
+                : "border-border bg-white text-slate-600 bg-muted/40 dark:text-slate-300 hover:border-slate-300",
             )}
           >
             {a.nom}

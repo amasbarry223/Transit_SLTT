@@ -20,7 +20,7 @@ const STATUT_LABELS: Record<RecuPaiementStatut, string> = {
 const STATUT_BADGE_CLASS: Record<RecuPaiementStatut, string> = {
   SOLDE: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400",
   PARTIEL: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-400",
-  EN_ATTENTE: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400",
+  EN_ATTENTE: "border-slate-200 text-slate-600 dark:border-border bg-muted/50 dark:text-slate-400",
 };
 
 interface RecuGeneratorFormProps {
@@ -41,11 +41,11 @@ function PaymentProgress({ somme, montantPaye }: { somme: number; montantPaye: n
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Progression</span>
         <span className="font-medium tabular-nums">{pct}%</span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-primary transition-all duration-150 ease-out"
           style={{ width: `${pct}%` }}
@@ -59,8 +59,8 @@ function ResteSummary({ reste, statut }: { reste: number; statut: RecuPaiementSt
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
       <div>
-        <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Reste à payer</p>
-        <p className="text-lg font-bold tabular-nums tracking-tight text-slate-900 dark:text-slate-100">{formatFCFA(reste)}</p>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Reste à payer</p>
+        <p className="text-lg font-bold tabular-nums tracking-tight text-foreground">{formatFCFA(reste)}</p>
       </div>
       <Badge variant="outline" className={cn("px-2 py-0.5 text-[10px] font-medium", STATUT_BADGE_CLASS[statut])}>
         {STATUT_LABELS[statut]}

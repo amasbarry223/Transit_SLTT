@@ -48,10 +48,10 @@ export function RecapClientCard({
   return (
     <Card className="p-5 shadow-sm border-border/80 lg:col-span-2 gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+        <h2 className="text-base font-semibold text-foreground">
           Récapitulatif par client
         </h2>
-        <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
+        <span className="text-xs tabular-nums text-muted-foreground">
           {totalClients} client{totalClients !== 1 ? "s" : ""} · {periodeLabel}
         </span>
       </div>
@@ -65,43 +65,43 @@ export function RecapClientCard({
                 <p className="font-medium text-slate-800 dark:text-slate-200">{r.client}</p>
                 <dl className="mt-2 space-y-1 text-sm">
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400">Investi</dt>
-                    <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatFCFA(r.investi)}</dd>
+                    <dt className="text-xs text-muted-foreground">Investi</dt>
+                    <dd className="tabular-nums text-foreground/90">{formatFCFA(r.investi)}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400">Encaissé</dt>
+                    <dt className="text-xs text-muted-foreground">Encaissé</dt>
                     <dd className="tabular-nums text-emerald-600 dark:text-emerald-400">{formatFCFA(r.encaisse)}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400"><GlossaryLabel term="resteAPayer" short /></dt>
+                    <dt className="text-xs text-muted-foreground"><GlossaryLabel term="resteAPayer" short /></dt>
                     <dd className="font-medium tabular-nums text-amber-600 dark:text-amber-400">{formatFCFA(r.reste)}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400"><GlossaryLabel term="ecartReglement" short /></dt>
+                    <dt className="text-xs text-muted-foreground"><GlossaryLabel term="ecartReglement" short /></dt>
                     <dd><EcartValue value={r.ecart} /></dd>
                   </div>
                 </dl>
               </Card>
             ))}
             {hasData && (
-              <Card className="border-border/80 bg-slate-50 p-4 shadow-sm dark:bg-slate-800">
-                <p className="font-bold text-slate-900 dark:text-slate-100">Total</p>
+              <Card className="border-border/80 p-4 shadow-sm bg-muted">
+                <p className="font-bold text-foreground">Total</p>
                 <dl className="mt-2 space-y-1 text-sm">
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400">Investi</dt>
-                    <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.investi)}</dd>
+                    <dt className="text-xs text-muted-foreground">Investi</dt>
+                    <dd className="font-bold tabular-nums text-foreground">{formatFCFA(recapTotaux.investi)}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400">Encaissé</dt>
-                    <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.encaisse)}</dd>
+                    <dt className="text-xs text-muted-foreground">Encaissé</dt>
+                    <dd className="font-bold tabular-nums text-foreground">{formatFCFA(recapTotaux.encaisse)}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400">Reste</dt>
-                    <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.reste)}</dd>
+                    <dt className="text-xs text-muted-foreground">Reste</dt>
+                    <dd className="font-bold tabular-nums text-foreground">{formatFCFA(recapTotaux.reste)}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-xs text-slate-500 dark:text-slate-400">Écart</dt>
-                    <dd className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(recapTotaux.ecart)}</dd>
+                    <dt className="text-xs text-muted-foreground">Écart</dt>
+                    <dd className="font-bold tabular-nums text-foreground">{formatFCFA(recapTotaux.ecart)}</dd>
                   </div>
                 </dl>
               </Card>
@@ -153,12 +153,12 @@ export function RecapClientCard({
               {sortedRecap.map((r) => (
                 <TableRow
                   key={r.client}
-                  className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                  className="border-b border-border hover:bg-muted/60"
                 >
-                  <TableCell className="font-medium text-slate-700 dark:text-slate-300">
+                  <TableCell className="font-medium text-foreground/90">
                     {r.client}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-slate-700 dark:text-slate-300">
+                  <TableCell className="text-right tabular-nums text-foreground/90">
                     {formatFCFA(r.investi)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
@@ -175,20 +175,20 @@ export function RecapClientCard({
             </TableBody>
             {hasData && (
               <TableFooter>
-                <TableRow className="border-0 bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <TableCell className="font-bold text-slate-900 dark:text-slate-100">
+                <TableRow className="border-0 bg-muted/50 hover:bg-muted">
+                  <TableCell className="font-bold text-foreground">
                     Total
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                  <TableCell className="text-right font-bold tabular-nums text-foreground">
                     {formatFCFA(recapTotaux.investi)}
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                  <TableCell className="text-right font-bold tabular-nums text-foreground">
                     {formatFCFA(recapTotaux.encaisse)}
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                  <TableCell className="text-right font-bold tabular-nums text-foreground">
                     {formatFCFA(recapTotaux.reste)}
                   </TableCell>
-                  <TableCell className="text-right font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                  <TableCell className="text-right font-bold tabular-nums text-foreground">
                     {formatFCFA(recapTotaux.ecart)}
                   </TableCell>
                 </TableRow>

@@ -96,10 +96,10 @@ function DossierFormInner() {
           <Info className="size-7" />
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-lg font-semibold text-foreground">
             Dossier introuvable
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Le dossier demandé n&apos;existe pas ou a été supprimé.
           </p>
         </div>
@@ -124,10 +124,10 @@ function DossierFormInner() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {isEdit ? `Dossier ${form.reference}` : "Nouveau dossier de transit"}
           </h1>
-          <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <span className="rounded-md px-2 py-1 font-mono text-xs text-slate-500 bg-muted dark:text-slate-400">
             {form.reference}
           </span>
           <DossierStatutBadge statut={form.statut} />
@@ -272,7 +272,7 @@ function DossierFormInner() {
               </div>
 
               <div className="mt-4 border-t border-border pt-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400">Marge</div>
+                <div className="text-xs text-muted-foreground">Marge</div>
                 <div
                   className={cn(
                     "mt-1 text-2xl font-bold tabular-nums",
@@ -284,7 +284,7 @@ function DossierFormInner() {
                   {form.ecart >= 0 ? "+" : ""}
                   {formatFCFA(form.ecart)}
                 </div>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {form.ecart >= 0
                     ? "Marge positive sur ce dossier."
                     : "Marge négative — à surveiller."}

@@ -28,8 +28,8 @@ export function AgentPanel({
     <Card className="border-border/80 p-5 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Pipeline dossiers</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">État de votre portefeuille</p>
+          <h2 className="text-sm font-semibold text-foreground">Pipeline dossiers</h2>
+          <p className="text-xs text-muted-foreground">État de votre portefeuille</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => go("dossiers")}>
@@ -43,15 +43,15 @@ export function AgentPanel({
       {dossiers.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
           <DossierIcon className="size-7" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun dossier pour l'instant.</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500">Créez un devis ou un dossier pour démarrer.</p>
+          <p className="text-sm text-muted-foreground">Aucun dossier pour l'instant.</p>
+          <p className="text-xs text-muted-foreground">Créez un devis ou un dossier pour démarrer.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {steps.map((s) => (
             <div key={s.label} className={`rounded-xl p-4 text-center ${s.bg}`}>
               <p className={`text-2xl font-bold tabular-nums ${s.text}`}>{s.count}</p>
-              <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400">{s.label}</p>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">{s.label}</p>
               <div className={`mx-auto mt-2 h-1 w-8 rounded-full ${s.color}`} />
             </div>
           ))}

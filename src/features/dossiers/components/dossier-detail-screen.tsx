@@ -171,10 +171,10 @@ export function DossierDetailScreen() {
           <Info className="size-7" />
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-lg font-semibold text-foreground">
             Dossier introuvable
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Ce dossier n&apos;existe pas ou a été supprimé.
           </p>
         </div>
@@ -477,7 +477,7 @@ export function DossierDetailScreen() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="sd-nom" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="sd-nom" className="text-sm font-medium text-foreground/90">
                 Nom <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -493,7 +493,7 @@ export function DossierDetailScreen() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sd-desc" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="sd-desc" className="text-sm font-medium text-foreground/90">
                 Description (optionnel)
               </Label>
               <Input
@@ -565,7 +565,7 @@ export function DossierDetailScreen() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label className="text-sm font-medium text-foreground/90">
                 Fournisseur <span className="text-red-500">*</span>
               </Label>
               <Select value={selectedFournisseurId} onValueChange={setSelectedFournisseurId}>
@@ -574,7 +574,7 @@ export function DossierDetailScreen() {
                 </SelectTrigger>
                 <SelectContent>
                   {fournisseurs.length === 0 ? (
-                    <div className="px-2 py-1.5 text-xs text-slate-400 dark:text-slate-500">
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
                       Aucun fournisseur — créez-en un dans le module Fournisseurs.
                     </div>
                   ) : (
@@ -588,7 +588,7 @@ export function DossierDetailScreen() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label className="text-sm font-medium text-foreground/90">
                 Description
               </Label>
               <Input
@@ -600,7 +600,7 @@ export function DossierDetailScreen() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <Label className="text-sm font-medium text-foreground/90">
                   Montant budgété (FCFA)
                 </Label>
                 <Input
@@ -612,7 +612,7 @@ export function DossierDetailScreen() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <Label className="text-sm font-medium text-foreground/90">
                   Montant réel (FCFA)
                 </Label>
                 <Input
@@ -626,7 +626,7 @@ export function DossierDetailScreen() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Date</Label>
+                <Label className="text-sm font-medium text-foreground/90">Date</Label>
                 <Input
                   type="date"
                   value={fournisseurDate}
@@ -635,7 +635,7 @@ export function DossierDetailScreen() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Statut</Label>
+                <Label className="text-sm font-medium text-foreground/90">Statut</Label>
                 <Select
                   value={fournisseurStatut}
                   onValueChange={(value) =>

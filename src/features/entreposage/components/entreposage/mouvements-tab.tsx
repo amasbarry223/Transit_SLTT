@@ -85,7 +85,7 @@ export function MouvementsTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Suivez toutes les entrées et sorties de marchandises enregistrées.
         </p>
         {marchandiseFilter && (
@@ -113,7 +113,7 @@ export function MouvementsTab({
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => {
@@ -142,7 +142,7 @@ export function MouvementsTab({
             </SelectContent>
           </Select>
           <SocieteFilterSelect className="w-full sm:w-40" />
-          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filtered.length} mouvement{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -165,8 +165,8 @@ export function MouvementsTab({
                   <Card key={m.id} className="border-border/80 p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-900 dark:text-slate-100">{m.marchandise}</p>
-                        <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(m.date)}</p>
+                        <p className="font-medium text-foreground">{m.marchandise}</p>
+                        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{formatDateShort(m.date)}</p>
                       </div>
                       <ToneBadge tone={isEntree ? "emerald" : "amber"} dot={false} className="gap-1">
                         {isEntree ? <ArrowDownToLine className="size-3" /> : <ArrowUpFromLine className="size-3" />}
@@ -175,27 +175,27 @@ export function MouvementsTab({
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
+                        <dt className="text-xs text-muted-foreground">Société</dt>
                         <dd><SocieteBadge societeNom={m.societeNom} size="sm" /></dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
-                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{m.quantite} {m.unite}</dd>
+                        <dt className="text-xs text-muted-foreground">Quantité</dt>
+                        <dd className="tabular-nums text-foreground/90">{m.quantite} {m.unite}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Responsable</dt>
-                        <dd className="text-slate-700 dark:text-slate-300">{m.responsable}</dd>
+                        <dt className="text-xs text-muted-foreground">Responsable</dt>
+                        <dd className="text-foreground/90">{m.responsable}</dd>
                       </div>
                       {hasBon && (
                         <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500 dark:text-slate-400">Bon lié</dt>
+                          <dt className="text-xs text-muted-foreground">Bon lié</dt>
                           <dd className="font-mono text-xs text-primary">{m.bonRef}</dd>
                         </div>
                       )}
                       {m.motif && (
                         <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
-                          <dd className="text-right text-slate-700 dark:text-slate-300">{m.motif}</dd>
+                          <dt className="text-xs text-muted-foreground">Motif</dt>
+                          <dd className="text-right text-foreground/90">{m.motif}</dd>
                         </div>
                       )}
                     </dl>
@@ -206,29 +206,29 @@ export function MouvementsTab({
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Date
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Type
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Marchandise
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Société
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Quantité
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Responsable
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Bon lié
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
                       Motif
                     </TableHead>
                   </TableRow>
@@ -240,9 +240,9 @@ export function MouvementsTab({
                     return (
                       <TableRow
                         key={m.id}
-                        className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                        className="border-b border-border hover:bg-muted/60"
                       >
-                        <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+                        <TableCell className="px-4 py-3.5 tabular-nums text-muted-foreground">
                           {formatDateShort(m.date)}
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
@@ -259,16 +259,16 @@ export function MouvementsTab({
                             {m.type}
                           </ToneBadge>
                         </TableCell>
-                        <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
+                        <TableCell className="px-4 py-3.5 font-medium text-foreground">
                           {m.marchandise}
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 sm:table-cell">
                           <SocieteBadge societeNom={m.societeNom} size="sm" />
                         </TableCell>
-                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                        <TableCell className="px-4 py-3.5 text-right tabular-nums text-foreground/90">
                           {m.quantite} {m.unite}
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 text-slate-600 dark:text-slate-300 sm:table-cell">
+                        <TableCell className="hidden px-4 py-3.5 text-muted-foreground sm:table-cell">
                           {m.responsable}
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 md:table-cell">
@@ -277,11 +277,11 @@ export function MouvementsTab({
                               {m.bonRef}
                             </span>
                           ) : (
-                            <span className="text-slate-400 dark:text-slate-500">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 text-slate-600 dark:text-slate-300 lg:table-cell">
-                          {m.motif ?? <span className="text-slate-400 dark:text-slate-500">—</span>}
+                        <TableCell className="hidden px-4 py-3.5 text-muted-foreground lg:table-cell">
+                          {m.motif ?? <span className="text-muted-foreground">—</span>}
                         </TableCell>
                       </TableRow>
                     );

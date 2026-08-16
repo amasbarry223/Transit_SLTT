@@ -42,8 +42,8 @@ export function ClasseurSuiviDialog({
           {entry && (
             <DialogDescription asChild>
               <div className="space-y-1 pt-1 text-left">
-                <p className="font-mono text-sm text-slate-900 dark:text-slate-100">{entry.reference}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="font-mono text-sm text-foreground">{entry.reference}</p>
+                <p className="text-xs text-muted-foreground">
                   {entry.type} · {entry.societeNom} · {formatDateShort(entry.date)}
                 </p>
                 <ToneBadge tone={classeurStatutTone(entry.statut)}>{entry.statut}</ToneBadge>
@@ -54,9 +54,9 @@ export function ClasseurSuiviDialog({
 
         <div className="max-h-72 overflow-y-auto">
           {loading ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Chargement…</p>
+            <p className="text-sm text-muted-foreground">Chargement…</p>
           ) : logs.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Aucun événement enregistré pour ce mouvement.
             </p>
           ) : (
@@ -67,12 +67,12 @@ export function ClasseurSuiviDialog({
                   className="flex items-start justify-between gap-3 border-b border-border/60 pb-2 last:border-0 last:pb-0"
                 >
                   <div className="min-w-0">
-                    <p className="text-slate-700 dark:text-slate-300">{log.detail}</p>
-                    <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                    <p className="text-foreground/90">{log.detail}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       {log.module} · {log.action} · {log.user}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs tabular-nums text-slate-400 dark:text-slate-500">
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {formatDateShort(log.date)}
                   </span>
                 </li>

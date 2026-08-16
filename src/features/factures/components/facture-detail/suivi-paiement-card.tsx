@@ -24,7 +24,7 @@ export function SuiviPaiementCard({
 }) {
   return (
     <Card className="overflow-hidden border-border/80 shadow-sm">
-      <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+      <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
         <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Suivi paiement</h2>
       </div>
       <div className="space-y-4 p-5">

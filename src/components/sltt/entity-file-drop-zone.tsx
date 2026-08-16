@@ -146,7 +146,7 @@ export function EntityFileDropZone<T extends EntityFileItem>({
             "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
             dragging
               ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/40 hover:bg-slate-50/50 dark:hover:bg-slate-800/60",
+              : "border-border hover:border-primary/40 hover:bg-muted/60",
           )}
           onDragOver={(e) => {
             e.preventDefault();
@@ -166,10 +166,10 @@ export function EntityFileDropZone<T extends EntityFileItem>({
             }
           }}
         >
-          <Upload className={cn("size-7", dragging ? "text-primary" : "text-slate-300 dark:text-slate-700")} />
+          <Upload className={cn("size-7", dragging ? "text-primary" : "text-slate-300 text-muted-foreground")} />
           <div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{labels.dropTitle}</p>
-            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{labels.dropSubtitle}</p>
+            <p className="text-sm font-medium text-foreground/90">{labels.dropTitle}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{labels.dropSubtitle}</p>
           </div>
           <input
             ref={inputRef}
@@ -192,14 +192,14 @@ export function EntityFileDropZone<T extends EntityFileItem>({
             return (
               <div
                 key={f.id}
-                className="flex items-center gap-3 rounded-lg border border-border bg-white px-3 py-2.5 dark:bg-slate-900"
+                className="flex items-center gap-3 rounded-lg border border-border bg-white px-3 py-2.5 bg-muted/40"
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 bg-muted dark:text-slate-400">
                   <Icon className="size-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{f.nom}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="truncate text-sm font-medium text-foreground">{f.nom}</p>
+                  <p className="text-xs text-muted-foreground">
                     {formatFileSize(f.taille)} · {formatDateShort(f.dateUpload)}
                   </p>
                 </div>
@@ -230,7 +230,7 @@ export function EntityFileDropZone<T extends EntityFileItem>({
           })}
         </div>
       ) : (
-        <p className="py-2 text-center text-xs text-slate-400 dark:text-slate-500 sm:text-sm">{labels.empty}</p>
+        <p className="py-2 text-center text-xs text-muted-foreground sm:text-sm">{labels.empty}</p>
       )}
 
       <ConfirmDeleteDialog

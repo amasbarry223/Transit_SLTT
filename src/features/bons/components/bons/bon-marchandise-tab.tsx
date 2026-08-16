@@ -121,7 +121,7 @@ export function BonMarchandiseTab({
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Référence, client, marchandise…"
               value={filters.search}
@@ -184,14 +184,14 @@ export function BonMarchandiseTab({
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 dark:text-slate-400"
+              className="h-10 text-muted-foreground"
               onClick={filters.clearFilters}
             >
               Réinitialiser
             </Button>
           )}
 
-          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filters.filtered.length} bon{filters.filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -199,8 +199,8 @@ export function BonMarchandiseTab({
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <Truck className="size-4 text-slate-400 dark:text-slate-500" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des bons de sortie</h2>
+          <Truck className="size-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">Liste des bons de sortie</h2>
         </div>
 
         {filters.filtered.length === 0 ? (
@@ -235,35 +235,35 @@ export function BonMarchandiseTab({
             <div className="hidden overflow-x-auto md:block">
               <Table aria-label="Liste des bons de sortie">
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Référence
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Date
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Société
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Motif
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Qté
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Montant
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -323,41 +323,41 @@ function BonMobileCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{bon.reference}</p>
-          <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{bon.clientNom}</p>
+          <p className="font-mono text-xs font-medium text-foreground">{bon.reference}</p>
+          <p className="mt-0.5 truncate text-sm font-medium text-foreground/90">{bon.clientNom}</p>
         </div>
         <ToneBadge tone={BON_STATUT_TONE[bon.statut]}>{bon.statut}</ToneBadge>
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(bon.date)}</dd>
+          <dt className="text-xs text-muted-foreground">Date</dt>
+          <dd className="tabular-nums text-foreground/90">{formatDateShort(bon.date)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
+          <dt className="text-xs text-muted-foreground">Société</dt>
           <dd>
             <SocieteBadge societeNom={bon.societeNom} size="sm" />
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Marchandise</dt>
-          <dd className="truncate text-right text-slate-700 dark:text-slate-300">{bon.marchandise}</dd>
+          <dt className="text-xs text-muted-foreground">Marchandise</dt>
+          <dd className="truncate text-right text-foreground/90">{bon.marchandise}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
+          <dt className="text-xs text-muted-foreground">Motif</dt>
           <dd>
             <ToneBadge tone={BON_MOTIF_TONE[bon.motif]}>{bon.motif}</ToneBadge>
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
-          <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+          <dt className="text-xs text-muted-foreground">Quantité</dt>
+          <dd className="tabular-nums text-foreground/90">
             {bon.quantite} {bon.unite}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
-          <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(bon.montant)}</dd>
+          <dt className="text-xs text-muted-foreground">Montant</dt>
+          <dd className="tabular-nums font-medium text-foreground">{formatFCFA(bon.montant)}</dd>
         </div>
       </dl>
       <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
@@ -377,7 +377,7 @@ function BonMobileCard({
         <Button
           variant="ghost"
           size="icon"
-          className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+          className="size-11 text-muted-foreground hover:text-primary"
           aria-label={`Visualiser ${bon.reference}`}
           title="Visualiser"
           onClick={() => onView(bon.reference)}
@@ -387,7 +387,7 @@ function BonMobileCard({
         <Button
           variant="ghost"
           size="icon"
-          className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+          className="size-11 text-muted-foreground hover:text-primary"
           aria-label={`Imprimer ${bon.reference}`}
           title="PDF / Imprimer"
           onClick={() => onPrint(bon.reference)}
@@ -419,38 +419,38 @@ function BonTableRow({
   return (
     <TableRow
       className={cn(
-        "border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60",
+        "border-b border-border hover:bg-muted/60",
         isBrouillon && "bg-amber-50/25 dark:bg-amber-950/20",
       )}
     >
       <TableCell className="px-4 py-3.5">
-        <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{bon.reference}</p>
-        <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400 sm:hidden">
+        <p className="font-mono text-xs font-medium text-foreground">{bon.reference}</p>
+        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground sm:hidden">
           {formatDateShort(bon.date)}
         </p>
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300 sm:table-cell">
+      <TableCell className="hidden px-4 py-3.5 tabular-nums text-muted-foreground sm:table-cell">
         {formatDateShort(bon.date)}
       </TableCell>
       <TableCell className="max-w-[160px] px-4 py-3.5">
-        <p className="truncate font-medium text-slate-700 dark:text-slate-300">{bon.clientNom}</p>
+        <p className="truncate font-medium text-foreground/90">{bon.clientNom}</p>
       </TableCell>
       <TableCell className="hidden px-4 py-3.5 sm:table-cell">
         <SocieteBadge societeNom={bon.societeNom} size="sm" />
       </TableCell>
       <TableCell className="hidden max-w-[140px] px-4 py-3.5 md:table-cell">
-        <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-          <Package className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Package className="size-3.5 shrink-0 text-muted-foreground" />
           <span className="truncate">{bon.marchandise}</span>
         </span>
       </TableCell>
       <TableCell className="px-4 py-3.5">
         <ToneBadge tone={BON_MOTIF_TONE[bon.motif]}>{bon.motif}</ToneBadge>
       </TableCell>
-      <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
-        {bon.quantite} <span className="text-xs text-slate-500 dark:text-slate-400">{bon.unite}</span>
+      <TableCell className="px-4 py-3.5 text-right tabular-nums text-foreground/90">
+        {bon.quantite} <span className="text-xs text-muted-foreground">{bon.unite}</span>
       </TableCell>
-      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 sm:table-cell">
+      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-foreground sm:table-cell">
         {formatFCFA(bon.montant)}
       </TableCell>
       <TableCell className="px-4 py-3.5">
@@ -474,7 +474,7 @@ function BonTableRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+            className="size-11 text-muted-foreground hover:text-primary"
             aria-label={`Visualiser ${bon.reference}`}
             title="Visualiser"
             onClick={() => onView(bon.reference)}
@@ -484,7 +484,7 @@ function BonTableRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+            className="size-11 text-muted-foreground hover:text-primary"
             aria-label={`Imprimer ${bon.reference}`}
             title="PDF / Imprimer"
             onClick={() => onPrint(bon.reference)}

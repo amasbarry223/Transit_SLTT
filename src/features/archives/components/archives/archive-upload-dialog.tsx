@@ -194,7 +194,7 @@ export function ArchiveUploadDialog({
               </Button>
             </div>
             {file && (
-              <p className="text-xs text-slate-500 dark:text-slate-400">{file.name}</p>
+              <p className="text-xs text-muted-foreground">{file.name}</p>
             )}
           </div>
 

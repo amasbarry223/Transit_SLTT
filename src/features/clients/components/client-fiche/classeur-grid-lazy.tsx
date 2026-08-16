@@ -9,7 +9,7 @@ const ClasseurGridImpl = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[420px] items-center justify-center rounded-lg border border-border bg-slate-50 text-sm text-slate-500 dark:bg-slate-900">
+      <div className="flex h-[420px] items-center justify-center rounded-lg border border-border text-sm text-slate-500 bg-muted/40">
         <Loader2 className="mr-2 size-5 animate-spin text-primary" />
         Chargement du classeur…
       </div>

@@ -144,7 +144,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
             <DialogTitle>Nouvelle sortie de caisse</DialogTitle>
             <Badge
               variant="outline"
-              className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-slate-500 dark:text-slate-400"
+              className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-muted-foreground"
             >
               {nextReference}
             </Badge>
@@ -154,7 +154,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="caisse-date" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label htmlFor="caisse-date" className="text-sm font-medium text-foreground/90">
               Date du bon
             </Label>
             <Input
@@ -167,7 +167,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="caisse-societe" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label htmlFor="caisse-societe" className="text-sm font-medium text-foreground/90">
               Société <span className="text-red-500">*</span>
             </Label>
             <Select value={caisseSocieteId} onValueChange={setCaisseSocieteId}>
@@ -186,7 +186,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
 
           {showAnnexe && (
             <div className="space-y-2">
-              <Label htmlFor="caisse-annexe" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="caisse-annexe" className="text-sm font-medium text-foreground/90">
                 Annexe <span className="text-red-500">*</span>
               </Label>
               <Select value={caisseAnnexeId} onValueChange={setCaisseAnnexeId}>
@@ -206,7 +206,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Bénéficiaires
               </p>
               <Button type="button" variant="ghost" size="sm" onClick={addCaisseLigne} className="h-8 text-primary">
@@ -215,7 +215,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
               </Button>
             </div>
 
-            <div className="mb-1 grid grid-cols-[100px_1fr_1fr_110px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <div className="mb-1 grid grid-cols-[100px_1fr_1fr_110px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               <span>Date</span>
               <span>Prénom et Nom</span>
               <span>Motif</span>
@@ -256,7 +256,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
                     type="button"
                     onClick={() => removeCaisseLigne(index)}
                     disabled={caisseLignes.length === 1}
-                    className="flex size-6 items-center justify-center rounded text-slate-300 dark:text-slate-600 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500 disabled:pointer-events-none"
+                    className="flex size-6 items-center justify-center rounded text-slate-300 text-muted-foreground hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500 disabled:pointer-events-none"
                   >
                     <X className="size-3" />
                   </button>
@@ -265,8 +265,8 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-border/60 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-3">
-            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Total</span>
+          <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/60 px-4 py-3">
+            <span className="text-sm font-semibold text-foreground">Total</span>
             <span className="text-base font-bold tabular-nums text-blue-700 dark:text-blue-300">{formatFCFA(caisseTotalSaisi)}</span>
           </div>
         </div>

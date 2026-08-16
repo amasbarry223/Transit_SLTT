@@ -41,10 +41,10 @@ export function AdminPanel({
     <Card className="rounded-xl border-border/80 p-5 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-base font-semibold text-foreground">
             Vue administrateur
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Synthèse cross-modules et alertes critiques
           </p>
         </div>
@@ -70,13 +70,13 @@ export function AdminPanel({
             key={item.label}
             className="rounded-xl border border-border bg-card p-4 shadow-sm"
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {item.label}
             </p>
             <p
               className={cn(
                 "mt-1 text-2xl font-bold tabular-nums",
-                item.danger ? "text-[var(--brand-secondary)]" : "text-slate-900 dark:text-slate-100",
+                item.danger ? "text-[var(--brand-secondary)]" : "text-foreground",
               )}
             >
               {item.value}
@@ -87,13 +87,13 @@ export function AdminPanel({
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Alertes prioritaires
           </p>
           {critical.length === 0 ? (
             <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Aucune alerte critique.</p>
-              <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Tout est sous contrôle pour le moment.</p>
+              <p className="text-sm text-muted-foreground">Aucune alerte critique.</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Tout est sous contrôle pour le moment.</p>
             </div>
           ) : (
             <ul className="space-y-2">
@@ -122,13 +122,13 @@ export function AdminPanel({
           )}
         </div>
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Utilisateurs récents
           </p>
           {recentUsers.length === 0 ? (
             <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Aucun utilisateur enregistré.</p>
-              <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Invitez des collaborateurs depuis les paramètres.</p>
+              <p className="text-sm text-muted-foreground">Aucun utilisateur enregistré.</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Invitez des collaborateurs depuis les paramètres.</p>
             </div>
           ) : (
             <ul className="space-y-2">
@@ -143,8 +143,8 @@ export function AdminPanel({
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-slate-900 dark:text-slate-100">{u.nom}</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{u.role}</span>
+                    <span className="block truncate font-medium text-foreground">{u.nom}</span>
+                    <span className="text-xs text-muted-foreground">{u.role}</span>
                   </div>
                 </li>
               ))}

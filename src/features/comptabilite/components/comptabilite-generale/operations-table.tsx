@@ -58,8 +58,8 @@ export function OperationsTable({
   return (
     <Card className="border-border/80 gap-0 overflow-hidden p-0 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <Wallet className="size-4 text-slate-400 dark:text-slate-500" />
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Journal unique des opérations</h2>
+        <Wallet className="size-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">Journal unique des opérations</h2>
       </div>
       {totalItems === 0 ? (
         <EmptyState
@@ -80,26 +80,26 @@ export function OperationsTable({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="font-medium text-slate-900 dark:text-slate-100">{o.clientNom}</p>
+                      <p className="font-medium text-foreground">{o.clientNom}</p>
                       {o.dossierRef && (
                         <Badge variant="secondary" className="text-[10px] font-mono py-0 px-1.5 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                           {o.dossierRef}
                         </Badge>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(o.date)} · {o.nature}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{formatDateShort(o.date)} · {o.nature}</p>
                   </div>
                   <span className={cn("text-sm font-semibold tabular-nums", o.type === "Entrée" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
                     {o.type === "Entrée" ? "+" : "-"}{formatFCFA(o.montant)}
                   </span>
                 </div>
                 {showQuantitePrixUnitaire && o.quantite != null && o.prixUnitaire != null && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{o.quantite} × {formatFCFA(o.prixUnitaire)}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{o.quantite} × {formatFCFA(o.prixUnitaire)}</p>
                 )}
                 {ecartClientCumuleById?.has(o.id) && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-muted-foreground">
                     Écart Client :{" "}
-                    <span className={cn("font-medium tabular-nums", (ecartClientCumuleById.get(o.id) ?? 0) >= 0 ? "text-slate-700 dark:text-slate-200" : "text-red-600 dark:text-red-400")}>
+                    <span className={cn("font-medium tabular-nums", (ecartClientCumuleById.get(o.id) ?? 0) >= 0 ? "text-foreground/90" : "text-red-600 dark:text-red-400")}>
                       {formatFCFA(ecartClientCumuleById.get(o.id) ?? 0)}
                     </span>
                   </p>
@@ -121,7 +121,7 @@ export function OperationsTable({
           <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
+                <TableRow className="border-b border-border bg-slate-50 hover:bg-muted/50 hover:bg-muted">
                   <Heading>Date</Heading>
                   <Heading>Client / Tiers</Heading>
                   <Heading>Dossier</Heading>
@@ -137,11 +137,11 @@ export function OperationsTable({
               </TableHeader>
               <TableBody>
                 {operations.map((o) => (
-                  <TableRow key={o.id} className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
-                    <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">{formatDateShort(o.date)}</TableCell>
+                  <TableRow key={o.id} className="border-b border-border hover:bg-muted/60">
+                    <TableCell className="px-4 py-3.5 tabular-nums text-muted-foreground">{formatDateShort(o.date)}</TableCell>
                     <TableCell className="px-4 py-3.5">
-                      <p className="font-medium text-slate-900 dark:text-slate-100">{o.clientNom}</p>
-                      <p className="mt-0.5 font-mono text-xs text-slate-400 dark:text-slate-500">{o.reference}</p>
+                      <p className="font-medium text-foreground">{o.clientNom}</p>
+                      <p className="mt-0.5 font-mono text-xs text-muted-foreground">{o.reference}</p>
                     </TableCell>
                     <TableCell className="px-4 py-3.5">
                       {o.dossierRef ? (
@@ -152,10 +152,10 @@ export function OperationsTable({
                         <span className="text-xs text-slate-400">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="px-4 py-3.5 text-slate-600 dark:text-slate-300">{o.nature}</TableCell>
+                    <TableCell className="px-4 py-3.5 text-muted-foreground">{o.nature}</TableCell>
                     <TableCell className="px-4 py-3.5 text-xs text-slate-500">{o.modePaiement || "Espèces"}</TableCell>
                     {showQuantitePrixUnitaire && (
-                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-500 dark:text-slate-400">
+                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-muted-foreground">
                         {o.quantite != null && o.prixUnitaire != null ? `${o.quantite} × ${formatFCFA(o.prixUnitaire)}` : "—"}
                       </TableCell>
                     )}
@@ -168,7 +168,7 @@ export function OperationsTable({
                     <TableCell
                       className={cn(
                         "px-4 py-3.5 text-right tabular-nums font-semibold",
-                        ((ecartClientCumuleById?.get(o.id) ?? ecartCumuleById.get(o.id) ?? 0)) >= 0 ? "text-slate-700 dark:text-slate-200" : "text-red-600 dark:text-red-400",
+                        ((ecartClientCumuleById?.get(o.id) ?? ecartCumuleById.get(o.id) ?? 0)) >= 0 ? "text-foreground/90" : "text-red-600 dark:text-red-400",
                       )}
                     >
                       {formatFCFA(ecartClientCumuleById?.get(o.id) ?? ecartCumuleById.get(o.id) ?? 0)}
@@ -204,5 +204,5 @@ export function OperationsTable({
 }
 
 function Heading({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <TableHead className={cn("h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400", className)}>{children}</TableHead>;
+  return <TableHead className={cn("h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground", className)}>{children}</TableHead>;
 }

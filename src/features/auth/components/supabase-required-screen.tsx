@@ -11,7 +11,7 @@ export function SupabaseRequiredScreen() {
   const isDev = process.env.NODE_ENV !== "production";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <Card className="max-w-lg border-border/80 p-8 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
@@ -19,10 +19,10 @@ export function SupabaseRequiredScreen() {
           </div>
           {isDev ? (
             <div>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h1 className="text-lg font-bold text-foreground">
                 Configuration Supabase requise
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Cette application fonctionne exclusivement avec une base de données Supabase.
                 Aucune donnée fictive n&apos;est embarquée dans le frontend.
               </p>
@@ -36,17 +36,17 @@ export function SupabaseRequiredScreen() {
                   <li>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (ou ANON_KEY)</li>
                 </ul>
               </div>
-              <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                Ajoutez ces variables dans votre fichier <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">.env.local</code>,
+              <p className="mt-4 text-xs text-muted-foreground">
+                Ajoutez ces variables dans votre fichier <code className="rounded bg-muted px-1">.env.local</code>,
                 puis redémarrez le serveur de développement.
               </p>
             </div>
           ) : (
             <div>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h1 className="text-lg font-bold text-foreground">
                 Service indisponible
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 L&apos;application ne parvient pas à se connecter à ses services. Réessayez dans quelques
                 instants ; si le problème persiste, contactez votre administrateur ou le support.
               </p>

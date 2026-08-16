@@ -171,7 +171,7 @@ export function DossierDocumentsPanel({
               className="flex flex-col gap-3 border-border/80 p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                <p className="truncate text-sm font-medium text-foreground">
                   {doc.nom}
                 </p>
                 <p className="text-xs text-slate-500">

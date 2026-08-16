@@ -60,7 +60,7 @@ export function BilansScreen() {
             </TabsList>
           </Tabs>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500 dark:text-slate-400">Mois de référence :</span>
+            <span className="text-sm text-muted-foreground">Mois de référence :</span>
             <Input
               type="month"
               value={screen.mois}
@@ -112,7 +112,7 @@ export function BilansScreen() {
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <h2 className="text-sm font-semibold text-foreground">
           Bénéfice entreposage — {screen.beneficeMoisLabel}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -139,7 +139,7 @@ export function BilansScreen() {
 
       {screen.isMultiAnnexe && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-sm font-semibold text-foreground">
             Vue consolidée par annexe — {screen.beneficeMoisLabel}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -27,14 +27,14 @@ function AmountRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 last:border-0">
-      <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-sm text-muted-foreground">{label}</span>
       <span
         className={cn(
           "text-sm font-semibold tabular-nums",
           tone === "emerald" && "text-emerald-700 dark:text-emerald-400",
           tone === "amber" && "text-amber-700 dark:text-amber-300",
           tone === "red" && "text-red-600 dark:text-red-400",
-          !tone && "text-slate-900 dark:text-slate-100",
+          !tone && "text-foreground",
         )}
       >
         {formatFCFA(value)}
@@ -84,8 +84,8 @@ export function DossierDetailOverview({
                     <Icon className="size-5" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Prochaine étape</h2>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{meta.actionDescription}</p>
+                    <h2 className="text-sm font-semibold text-foreground">Prochaine étape</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{meta.actionDescription}</p>
                   </div>
                 </div>
                 <Button
@@ -108,7 +108,7 @@ export function DossierDetailOverview({
             </div>
             <div>
               <h2 className="text-sm font-semibold">Dossier clôturé</h2>
-              <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
+              <p className="mt-0.5 text-sm text-muted-foreground">
                 Ce dossier est soldé. Tous les paiements ont été enregistrés.
               </p>
             </div>
@@ -117,8 +117,8 @@ export function DossierDetailOverview({
       )}
 
       <Card className="border-border/80 p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Informations du voyage</h2>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        <h2 className="text-base font-semibold text-foreground">Informations du voyage</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Transport, marchandise et dates clés de ce dossier.
         </p>
         <div className="mt-4">
@@ -134,7 +134,7 @@ export function DossierDetailOverview({
       {dossier.notes && (
         <Card className="border-border/80 p-5 shadow-sm">
           <h2 className="text-base font-semibold">Notes</h2>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
             {dossier.notes}
           </p>
         </Card>
@@ -148,7 +148,7 @@ export function DossierDetailOverview({
         >
           <div>
             <h2 className="text-base font-semibold">Détail des montants</h2>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Douane, circuit, prestation et marge</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Douane, circuit, prestation et marge</p>
           </div>
           {amountsOpen ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
         </button>
@@ -162,7 +162,7 @@ export function DossierDetailOverview({
             <AmountRow label="Montant payé" value={dossier.montantPaye} tone="emerald" />
             <AmountRow label="Reste à payer" value={reste} tone={reste > 0 ? "amber" : "emerald"} />
             <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
-              <span className="text-sm text-slate-500 dark:text-slate-400">Marge calculée</span>
+              <span className="text-sm text-muted-foreground">Marge calculée</span>
               <EcartValue value={ecart} />
             </div>
             <p className="mt-1 text-xs text-slate-400">Prestation − (Douane + Circuit)</p>

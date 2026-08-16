@@ -138,11 +138,11 @@ export function InstallPWA({ variant = "toolbar" }: InstallPWAProps) {
   if (swReady && isDesktopChromium() && variant === "login") {
     return (
       <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2.5 text-center">
-        <div className="flex items-center justify-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+        <div className="flex items-center justify-center gap-2 text-sm font-medium text-foreground/90">
           <MonitorSmartphone className="size-4 shrink-0 text-primary" />
           Application installable
         </div>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-xs text-muted-foreground">
           Chrome / Edge : menu <strong>⋮</strong> → « Installer Transit » ou icône <strong>+</strong> dans la barre d&apos;adresse.
         </p>
       </div>

@@ -22,8 +22,8 @@ export const ARCHIVE_COLUMNS: ResponsiveColumn<UnifiedDoc>[] = [
             <Icon className="size-[18px]" />
           </div>
           <div className="min-w-0">
-            <p className="truncate font-medium text-slate-900 dark:text-slate-100">{d.nom}</p>
-            <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+            <p className="truncate font-medium text-foreground">{d.nom}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               <span className={cn("font-medium", cat?.accent)}>{d.rattachement}</span>
               {d.clientNom ? ` · ${d.clientNom}` : ""}
             </p>

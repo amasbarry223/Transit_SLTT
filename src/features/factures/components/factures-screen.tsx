@@ -53,12 +53,12 @@ export function FacturesScreen() {
 
       {/* Taux de recouvrement bar */}
       {screen.kpi.total > 0 && (
-        <div className="rounded-xl border border-border/80 bg-white dark:bg-slate-900 px-5 py-3.5 shadow-sm">
+        <div className="rounded-xl border border-border/80 bg-white bg-muted/40 px-5 py-3.5 shadow-sm">
           <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-medium text-slate-700 dark:text-slate-300">Taux de recouvrement</span>
-            <span className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{screen.kpi.tauxRecouvrement}%</span>
+            <span className="font-medium text-foreground/90">Taux de recouvrement</span>
+            <span className="font-bold tabular-nums text-foreground">{screen.kpi.tauxRecouvrement}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-emerald-500 transition-[width]"
               style={{ width: `${screen.kpi.tauxRecouvrement}%` }}
@@ -79,11 +79,11 @@ export function FacturesScreen() {
                 className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   screen.activeTab === tab.key
                     ? "bg-blue-600 text-white"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                    : "bg-muted text-muted-foreground hover:bg-slate-200"
                 }`}
               >
                 {tab.label}
-                <span className={`rounded-full px-1.5 py-px text-[10px] font-bold ${screen.activeTab === tab.key ? "bg-white/20 text-white" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400"}`}>
+                <span className={`rounded-full px-1.5 py-px text-[10px] font-bold ${screen.activeTab === tab.key ? "bg-white/20 text-white" : "bg-white bg-muted/40 text-muted-foreground"}`}>
                   {count}
                 </span>
               </button>
@@ -94,7 +94,7 @@ export function FacturesScreen() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <SocieteFilterSelect className="h-8 w-full sm:w-44" />
           <div className="relative w-full sm:w-56">
-            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Rechercher…"
               value={screen.search}

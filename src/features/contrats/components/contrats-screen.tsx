@@ -226,29 +226,29 @@ export function ContratsScreen() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{c.reference}</p>
-                      <p className="mt-1 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{c.clientNom}</p>
+                      <p className="font-mono text-xs font-medium text-foreground">{c.reference}</p>
+                      <p className="mt-1 truncate text-sm font-medium text-foreground/90">{c.clientNom}</p>
                     </div>
                     <ToneBadge tone={CONTRAT_STATUT_TONE[c.statut]}>{c.statut}</ToneBadge>
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Société</dt>
+                      <dt className="text-xs text-muted-foreground">Société</dt>
                       <dd><SocieteBadge societeNom={c.societeNom} size="sm" /></dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
-                      <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(c.montant)}</dd>
+                      <dt className="text-xs text-muted-foreground">Montant</dt>
+                      <dd className="tabular-nums font-medium text-foreground">{formatFCFA(c.montant)}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Prestations</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Prestations</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {c.nbPrestationsRealisees}/{c.nbPrestations}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Début</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(c.dateDebut)}</dd>
+                      <dt className="text-xs text-muted-foreground">Début</dt>
+                      <dd className="tabular-nums text-foreground/90">{formatDateShort(c.dateDebut)}</dd>
                     </div>
                   </dl>
                 </Card>
@@ -257,26 +257,26 @@ export function ContratsScreen() {
             <div className="hidden overflow-x-auto md:block">
               <Table aria-label="Liste des contrats">
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Référence</TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Société</TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Client</TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">Objet</TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">Montant</TableHead>
-                    <TableHead className="h-10 px-4 text-center text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Prestations</TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</TableHead>
+                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Référence</TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Société</TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Client</TableHead>
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">Objet</TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">Montant</TableHead>
+                    <TableHead className="h-10 px-4 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Prestations</TableHead>
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Statut</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paged.map((c) => (
                     <TableRow
                       key={c.id}
-                      className="cursor-pointer border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                      className="cursor-pointer border-b border-border hover:bg-muted/60"
                       onClick={() => goToContrat(c.id)}
                     >
                       <TableCell className="px-4 py-3.5">
-                        <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{c.reference}</p>
-                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="font-mono text-xs font-medium text-foreground">{c.reference}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           Début {formatDateShort(c.dateDebut)}
                         </p>
                       </TableCell>
@@ -284,15 +284,15 @@ export function ContratsScreen() {
                         <SocieteBadge societeNom={c.societeNom} size="sm" />
                       </TableCell>
                       <TableCell className="max-w-[160px] px-4 py-3.5">
-                        <p className="truncate font-medium text-slate-700 dark:text-slate-300">{c.clientNom}</p>
+                        <p className="truncate font-medium text-foreground/90">{c.clientNom}</p>
                       </TableCell>
                       <TableCell className="hidden max-w-[220px] px-4 py-3.5 md:table-cell">
-                        <p className="truncate text-sm text-slate-600 dark:text-slate-300">{c.objet}</p>
+                        <p className="truncate text-sm text-muted-foreground">{c.objet}</p>
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 sm:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-foreground sm:table-cell">
                         {formatFCFA(c.montant)}
                       </TableCell>
-                      <TableCell className="px-4 py-3.5 text-center tabular-nums text-slate-600 dark:text-slate-300">
+                      <TableCell className="px-4 py-3.5 text-center tabular-nums text-muted-foreground">
                         {c.nbPrestationsRealisees}/{c.nbPrestations}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">
@@ -493,7 +493,7 @@ function ContratFormModal({
                 placeholder={UI.placeholders.amountFCFA}
                 className="h-10 pr-16"
               />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 dark:text-slate-500">
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
                 FCFA
               </span>
             </div>

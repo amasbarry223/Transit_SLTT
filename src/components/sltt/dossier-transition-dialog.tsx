@@ -223,7 +223,7 @@ export function TransitionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <p className="text-sm text-slate-600 dark:text-slate-300">{meta.description}</p>
+        <p className="text-sm text-muted-foreground">{meta.description}</p>
 
         <div className="space-y-4">
           {transition === "solder" && (
@@ -254,7 +254,7 @@ export function TransitionDialog({
                         errors.montantRecu && "border-red-400",
                       )}
                     />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500">
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                       FCFA
                     </span>
                   </div>

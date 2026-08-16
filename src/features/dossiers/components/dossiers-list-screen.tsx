@@ -226,7 +226,7 @@ export function DossiersListScreen() {
               }}
             >
               <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Trier par">
-                <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                <ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder="Trier par…" />
               </SelectTrigger>
               <SelectContent>

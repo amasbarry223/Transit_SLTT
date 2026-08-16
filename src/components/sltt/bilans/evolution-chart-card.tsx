@@ -34,10 +34,10 @@ export function EvolutionChartCard({ chartData, mois }: EvolutionChartCardProps)
   return (
     <Card className="p-5 shadow-sm border-border/80 gap-4">
       <div>
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+        <h2 className="text-base font-semibold text-foreground">
           Évolution des encaissements
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Investi vs encaissé — mois par mois —{" "}
           {(mois || currentYearMonth()).split("-")[0]}
         </p>

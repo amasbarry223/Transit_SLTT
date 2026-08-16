@@ -164,14 +164,14 @@ export function FactureFormModal({
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-border/60 px-6 py-4">
           <Receipt className="size-4 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Nouvelle facture</h2>
+          <h2 className="text-base font-semibold text-foreground">Nouvelle facture</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="divide-y divide-border/40">
           {/* Section 1 : client + dossier */}
           <div className="grid grid-cols-1 gap-4 px-6 py-5 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Dossier lié (optionnel)</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Dossier lié (optionnel)</Label>
               <Select value={dossierId || "none"} onValueChange={(v) => handleDossierChange(v === "none" ? "" : v)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="— Aucun dossier —" />
@@ -186,7 +186,7 @@ export function FactureFormModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Client *</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Client *</Label>
               <Select
                 value={clientId || "none"}
                 onValueChange={(v) => handleClientChange(v === "none" ? "" : v)}
@@ -203,14 +203,14 @@ export function FactureFormModal({
                 </SelectContent>
               </Select>
               {dossierId && (
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                <p className="text-[11px] text-muted-foreground">
                   Verrouillé sur le client du dossier lié.
                 </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Société (optionnel)</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Société (optionnel)</Label>
               <Select value={societeId || "none"} onValueChange={(v) => setSocieteId(v === "none" ? "" : v)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="— Aucune (transit) —" />
@@ -226,7 +226,7 @@ export function FactureFormModal({
 
             {annexes.length > 1 && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Annexe *</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Annexe *</Label>
                 <Select value={annexeId} onValueChange={setAnnexeId}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sélectionner une annexe" />
@@ -241,12 +241,12 @@ export function FactureFormModal({
             )}
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Date de facture *</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Date de facture *</Label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="h-9 text-sm" />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Date d&apos;échéance *</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Date d&apos;échéance *</Label>
               <Input type="date" value={dateEcheance} onChange={(e) => setDateEcheance(e.target.value)} required className="h-9 text-sm" />
             </div>
           </div>
@@ -254,7 +254,7 @@ export function FactureFormModal({
           {/* Section 2 : lignes */}
           <div className="px-6 py-5">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lignes de facturation</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lignes de facturation</span>
               <button
                 type="button"
                 onClick={addLigne}
@@ -265,7 +265,7 @@ export function FactureFormModal({
             </div>
 
             {/* En-têtes colonnes */}
-            <div className="mb-1.5 hidden grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:grid">
+            <div className="mb-1.5 hidden grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:grid">
               <span>Description</span>
               <span className="text-center">Qté</span>
               <span className="text-right">Prix unitaire</span>
@@ -301,7 +301,7 @@ export function FactureFormModal({
                     type="button"
                     onClick={() => removeLigne(i)}
                     disabled={lignes.length === 1}
-                    className="flex size-6 items-center justify-center rounded text-slate-300 dark:text-slate-600 hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500 disabled:pointer-events-none"
+                    className="flex size-6 items-center justify-center rounded text-slate-300 text-muted-foreground hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500 disabled:pointer-events-none"
                   >
                     <X className="size-3" />
                   </button>
@@ -314,36 +314,36 @@ export function FactureFormModal({
           <div className="grid grid-cols-1 gap-6 px-6 py-5 sm:grid-cols-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
-                <Label htmlFor="tva-switch" className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <Label htmlFor="tva-switch" className="text-xs font-medium text-muted-foreground">
                   Appliquer la TVA ({DEFAULT_TVA_RATE} %)
                 </Label>
                 <Switch id="tva-switch" checked={tvaOn} onCheckedChange={setTvaOn} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600 dark:text-slate-300">Notes</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Notes</Label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   placeholder="Conditions de paiement, références…"
-                  className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 dark:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-foreground/90 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 />
               </div>
             </div>
 
             <div className="flex flex-col justify-end">
-              <div className="rounded-xl border border-border/60 bg-slate-50/60 dark:bg-slate-800/60 p-4 text-sm">
-                <div className="flex justify-between text-slate-600 dark:text-slate-300">
+              <div className="rounded-xl border border-border/60 bg-muted/60 p-4 text-sm">
+                <div className="flex justify-between text-muted-foreground">
                   <span>Sous-total HT</span>
                   <span className="tabular-nums">{formatFCFA(montantHT)}</span>
                 </div>
                 {shouldShowTva(tva) && (
-                  <div className="mt-1.5 flex justify-between text-slate-600 dark:text-slate-300">
+                  <div className="mt-1.5 flex justify-between text-muted-foreground">
                     <span>TVA {tva}%</span>
                     <span className="tabular-nums">{formatFCFA(montantTVA)}</span>
                   </div>
                 )}
-                <div className="mt-3 flex justify-between border-t border-border/60 pt-3 font-semibold text-slate-900 dark:text-slate-100">
+                <div className="mt-3 flex justify-between border-t border-border/60 pt-3 font-semibold text-foreground">
                   <span>Total TTC</span>
                   <span className="text-base tabular-nums text-blue-700 dark:text-blue-300">{formatFCFA(montantTTC)}</span>
                 </div>

@@ -130,20 +130,20 @@ export function DashboardScreen() {
       {/* En-tête — greeting + filtres (maquette) */}
       <div className="space-y-4">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
             Tableau de bord
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             {UI.onboarding.welcome(firstName)} Voici l&apos;ensemble de votre activité ce mois-ci.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 rounded-full border border-border/80 bg-white px-3 py-1.5 text-sm shadow-sm dark:bg-slate-800">
-            <span className="text-slate-500 dark:text-slate-400">Période :</span>
-            <span className="font-medium text-slate-900 dark:text-slate-100">{periodeLabel}</span>
+          <div className="flex items-center gap-2 rounded-full border border-border/80 bg-white px-3 py-1.5 text-sm shadow-sm bg-muted">
+            <span className="text-muted-foreground">Période :</span>
+            <span className="font-medium text-foreground">{periodeLabel}</span>
           </div>
           {syncLabel && (
-            <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-white px-3 py-1.5 text-xs text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+            <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-white px-3 py-1.5 text-xs text-slate-500 shadow-sm bg-muted dark:text-slate-400">
               <span className="size-1.5 rounded-full bg-emerald-500" />
               {syncLabel}
             </div>

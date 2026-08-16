@@ -55,8 +55,8 @@ export function PrestatairesTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm dark:bg-slate-900">
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-800 dark:text-slate-500 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
+    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm bg-muted/40">
+      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-muted text-muted-foreground sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
         <span className="sr-only sm:not-sr-only sm:w-9">Type</span>
         <span>Prestataire</span>
         <span className="hidden text-right sm:block">Contact</span>
@@ -69,27 +69,27 @@ export function PrestatairesTable({
         return (
           <div
             key={f.id}
-            className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5"
+            className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5"
           >
             <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", m.bg)}>
               <Icon className={cn("size-[18px]", m.color)} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="truncate text-sm font-semibold text-foreground">
                 {f.nom}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <TypeBadge type={f.type} />
-                <span className="truncate text-xs text-slate-400 dark:text-slate-500 sm:hidden">
+                <span className="truncate text-xs text-muted-foreground sm:hidden">
                   {f.contact || f.telephone || "—"}
                 </span>
               </div>
             </div>
             <div className="hidden min-w-0 text-right sm:block">
-              <p className="truncate text-sm text-slate-700 dark:text-slate-200">
+              <p className="truncate text-sm text-foreground/90">
                 {f.contact || "—"}
               </p>
-              <p className="truncate text-xs text-slate-400 dark:text-slate-500">
+              <p className="truncate text-xs text-muted-foreground">
                 {f.telephone || f.email || "—"}
               </p>
             </div>
@@ -148,8 +148,8 @@ export function TarifsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm dark:bg-slate-900">
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-800 dark:text-slate-500 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
+    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm bg-muted/40">
+      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-muted text-muted-foreground sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
         <span className="w-10" />
         <span>Prestataire</span>
         <span className="text-right">Tarif contractuel</span>
@@ -163,16 +163,16 @@ export function TarifsTable({
         return (
           <div
             key={f.id}
-            className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5"
+            className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5"
           >
             <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", m.bg)}>
               <Icon className={cn("size-[18px]", m.color)} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="truncate text-sm font-semibold text-foreground">
                 {f.nom}
               </p>
-              <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 <TypeBadge type={f.type} />
                 <span className="text-slate-400">
                   {f.nbDossiers} dossier{f.nbDossiers === 1 ? "" : "s"}
@@ -184,7 +184,7 @@ export function TarifsTable({
                 "text-right text-sm tabular-nums",
                 hasTarif
                   ? "font-semibold text-violet-700 dark:text-violet-300"
-                  : "text-slate-400 dark:text-slate-500",
+                  : "text-muted-foreground",
               )}
             >
               {hasTarif ? formatFCFA(f.tarifContractuel!) : "Non défini"}
@@ -222,7 +222,7 @@ export function CoutsTable({
   onOpenDossier: (dossierId: string) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm dark:bg-slate-900">
+    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm bg-muted/40">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
         <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
           Liaisons dossiers
@@ -242,7 +242,7 @@ export function CoutsTable({
         />
       ) : (
         <>
-          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 bg-slate-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-800 dark:text-slate-500 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-muted text-muted-foreground sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5">
             <span>Prestataire / Dossier</span>
             <span className="hidden sm:block">Description</span>
             <span className="text-right">Budgété</span>
@@ -257,7 +257,7 @@ export function CoutsTable({
             return (
               <div
                 key={df.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5"
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <div
@@ -281,10 +281,10 @@ export function CoutsTable({
                     </button>
                   </div>
                 </div>
-                <p className="hidden max-w-[160px] truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
+                <p className="hidden max-w-[160px] truncate text-xs text-muted-foreground sm:block">
                   {df.description}
                 </p>
-                <p className="text-right text-sm tabular-nums text-slate-500 dark:text-slate-400">
+                <p className="text-right text-sm tabular-nums text-muted-foreground">
                   {formatFCFA(df.montantBudgete)}
                 </p>
                 <p className="text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">
@@ -297,7 +297,7 @@ export function CoutsTable({
                       ? "text-red-600 dark:text-red-400"
                       : ecart < 0
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-slate-400 dark:text-slate-500",
+                        : "text-muted-foreground",
                   )}
                 >
                   {ecart > 0 ? "+" : ""}

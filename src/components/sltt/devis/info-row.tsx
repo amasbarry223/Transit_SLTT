@@ -11,10 +11,10 @@ export function InfoRow({ icon: Icon, label, value, mono }: {
 }) {
   return (
     <div className="flex items-start gap-3 border-b border-border/40 py-3.5 last:border-0">
-      <Icon className="mt-0.5 size-4 shrink-0 text-slate-400 dark:text-slate-500" />
+      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</p>
-        <p className={cn("mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100", mono && "font-mono")}>{value || "—"}</p>
+        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className={cn("mt-0.5 text-sm font-semibold text-foreground", mono && "font-mono")}>{value || "—"}</p>
       </div>
     </div>
   );

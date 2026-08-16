@@ -26,7 +26,7 @@ export function PwaUpdatePrompt() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto flex max-w-md items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg sm:left-auto">
-      <p className="text-sm text-slate-700 dark:text-slate-200">Une mise à jour est disponible.</p>
+      <p className="text-sm text-foreground/90">Une mise à jour est disponible.</p>
       <Button
         size="sm"
         onClick={() => {

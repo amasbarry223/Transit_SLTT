@@ -25,7 +25,7 @@ export function SortableHead({
     <TableHead
       className={cn(
         "cursor-pointer select-none bg-slate-50 text-xs font-medium uppercase hover:text-slate-900 dark:hover:text-slate-100",
-        align === "right" ? "text-right text-slate-500 dark:text-slate-400" : "text-slate-500 dark:text-slate-400",
+        align === "right" ? "text-right text-muted-foreground" : "text-muted-foreground",
         active && "text-primary",
       )}
       onClick={() => onSort(col)}

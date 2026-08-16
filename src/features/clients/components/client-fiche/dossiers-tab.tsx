@@ -62,19 +62,19 @@ export function DossiersTab({
                   onClick={() => onOpenDossier(d.id)}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{d.reference}</p>
+                    <p className="font-medium text-foreground">{d.reference}</p>
                     <DossierStatutBadge statut={d.statut} />
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Date</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {formatDateShort(d.date)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
-                      <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">
+                      <dt className="text-xs text-muted-foreground">Montant</dt>
+                      <dd className="tabular-nums font-medium text-foreground">
                         {formatFCFA(d.montantInvesti)}
                       </dd>
                     </div>
@@ -85,23 +85,23 @@ export function DossiersTab({
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Référence
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Date
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       N° BL
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Montant
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -110,22 +110,22 @@ export function DossiersTab({
                   {pagedDossiers.map((d) => (
                     <TableRow
                       key={d.id}
-                      className="cursor-pointer border-b border-border hover:bg-slate-50/80 dark:hover:bg-slate-800/80"
+                      className="cursor-pointer border-b border-border hover:bg-muted/80"
                       onClick={() => onOpenDossier(d.id)}
                     >
-                      <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
+                      <TableCell className="px-4 py-3.5 font-medium text-foreground">
                         {d.reference}
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300 sm:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 tabular-nums text-muted-foreground sm:table-cell">
                         {formatDateShort(d.date)}
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300 md:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-muted-foreground md:table-cell">
                         {d.bl}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">
                         <DossierStatutBadge statut={d.statut} />
                       </TableCell>
-                      <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100">
+                      <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-foreground">
                         {formatFCFA(d.montantInvesti)}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">

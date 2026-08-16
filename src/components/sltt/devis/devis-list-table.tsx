@@ -48,9 +48,9 @@ export function DevisListTable({
   return (
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <ClipboardList className="size-4 text-slate-400 dark:text-slate-500" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des devis</h2>
-          <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <ClipboardList className="size-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">Liste des devis</h2>
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -86,8 +86,8 @@ export function DevisListTable({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">{d.reference}</p>
-                        <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
+                        <p className="font-mono text-xs font-semibold text-foreground">{d.reference}</p>
+                        <p className="mt-0.5 truncate text-sm font-medium text-foreground/90">{d.clientNom}</p>
                         {d.societeNom && (
                           <div className="mt-1">
                             <SocieteBadge societeNom={d.societeNom} size="sm" />
@@ -115,33 +115,33 @@ export function DevisListTable({
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Nature</dt>
-                        <dd className="truncate text-right text-slate-700 dark:text-slate-300">{d.nature}</dd>
+                        <dt className="text-xs text-muted-foreground">Nature</dt>
+                        <dd className="truncate text-right text-foreground/90">{d.nature}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Total estimé</dt>
-                        <dd className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(d.total)}</dd>
+                        <dt className="text-xs text-muted-foreground">Total estimé</dt>
+                        <dd className="font-semibold tabular-nums text-foreground">{formatFCFA(d.total)}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Validité</dt>
-                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(d.dateValidite)}</dd>
+                        <dt className="text-xs text-muted-foreground">Validité</dt>
+                        <dd className="tabular-nums text-foreground/90">{formatDateShort(d.dateValidite)}</dd>
                       </div>
                     </dl>
                     <div
                       className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Voir" onClick={() => handleOpenDevis(d)}>
+                      <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Voir" onClick={() => handleOpenDevis(d)}>
                         <Eye className="size-4" />
                       </Button>
                       {canWrite && !d.dossierId && d.statut !== "Accepté" && (
-                        <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary" title="Modifier" onClick={() => handleOpenEdit(d)}>
+                        <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Modifier" onClick={() => handleOpenEdit(d)}>
                           <Pencil className="size-4" />
                         </Button>
                       )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
+                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary">
                             <MoreHorizontal className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -183,29 +183,29 @@ export function DevisListTable({
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Référence
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
                       Société
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Nature marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Total estimé
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Validité
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -218,18 +218,18 @@ export function DevisListTable({
                       <TableRow
                         key={d.id}
                         className={cn(
-                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80",
+                          "cursor-pointer border-b border-border transition-colors hover:bg-muted/80",
                           isEnAttente && "bg-blue-50/30 dark:bg-blue-950/20",
                         )}
                         onClick={() => handleOpenDevis(d)}
                       >
                         <TableCell className="px-4 py-3.5">
-                          <p className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">{d.reference}</p>
-                          <p className="mt-0.5 text-xs tabular-nums text-slate-400 dark:text-slate-500">{formatDateShort(d.dateCreation)}</p>
+                          <p className="font-mono text-xs font-semibold text-foreground">{d.reference}</p>
+                          <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{formatDateShort(d.dateCreation)}</p>
                         </TableCell>
 
                         <TableCell className="max-w-[180px] px-4 py-3.5">
-                          <p className="truncate font-medium text-slate-700 dark:text-slate-300">{d.clientNom}</p>
+                          <p className="truncate font-medium text-foreground/90">{d.clientNom}</p>
                         </TableCell>
 
                         <TableCell className="hidden px-4 py-3.5 lg:table-cell">
@@ -237,15 +237,15 @@ export function DevisListTable({
                         </TableCell>
 
                         <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
-                          <span className="line-clamp-1 text-sm text-slate-600 dark:text-slate-300">{d.nature}</span>
+                          <span className="line-clamp-1 text-sm text-muted-foreground">{d.nature}</span>
                         </TableCell>
 
                         <TableCell className="px-4 py-3.5 text-right">
-                          <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(d.total)}</span>
+                          <span className="font-semibold tabular-nums text-foreground">{formatFCFA(d.total)}</span>
                         </TableCell>
 
                         <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-                          <span className="text-sm tabular-nums text-slate-500 dark:text-slate-400">{formatDateShort(d.dateValidite)}</span>
+                          <span className="text-sm tabular-nums text-muted-foreground">{formatDateShort(d.dateValidite)}</span>
                         </TableCell>
 
                         <TableCell className="px-4 py-3.5">
@@ -272,14 +272,14 @@ export function DevisListTable({
                         <TableCell className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
-                              variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                              variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary"
                               title="Voir" onClick={() => handleOpenDevis(d)}
                             >
                               <Eye className="size-4" />
                             </Button>
                             {canWrite && !d.dossierId && d.statut !== "Accepté" && (
                               <Button
-                                variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                                variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary"
                                 title="Modifier" onClick={() => handleOpenEdit(d)}
                               >
                                 <Pencil className="size-4" />
@@ -287,7 +287,7 @@ export function DevisListTable({
                             )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary">
+                                <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary">
                                   <MoreHorizontal className="size-4" />
                                 </Button>
                               </DropdownMenuTrigger>

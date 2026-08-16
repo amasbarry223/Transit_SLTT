@@ -142,12 +142,12 @@ function SocieteCard({
           </div>
         )}
         <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
             <Building2 className="size-5" />
           </div>
           <div>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">{societe.nom}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="font-semibold text-foreground">{societe.nom}</p>
+            <p className="text-xs text-muted-foreground">
               Ces informations apparaissent sur tous les documents imprimés (devis, factures, bons…).
             </p>
           </div>
@@ -155,11 +155,11 @@ function SocieteCard({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Nom</Label>
+            <Label className="text-sm font-medium text-foreground/90">Nom</Label>
             <Input value={values.nom} onChange={(e) => set("nom", e.target.value)} />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</Label>
+            <Label className="text-sm font-medium text-foreground/90">Adresse</Label>
             <Input
               value={values.adresse}
               onChange={(e) => set("adresse", e.target.value)}
@@ -167,11 +167,11 @@ function SocieteCard({
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
+            <Label className="text-sm font-medium text-foreground/90">Téléphone</Label>
             <Input value={values.telephone} onChange={(e) => set("telephone", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Logo</Label>
+            <Label className="text-sm font-medium text-foreground/90">Logo</Label>
             <input
               ref={logoInputRef}
               type="file"
@@ -180,7 +180,7 @@ function SocieteCard({
               onChange={handleLogoFile}
             />
             <div className="flex items-center gap-3">
-              <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-slate-50 dark:bg-slate-900">
+              <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/40">
                 {uploadingLogo ? (
                   <Loader2 className="size-5 animate-spin text-slate-400" />
                 ) : values.logoUrl ? (
@@ -192,7 +192,7 @@ function SocieteCard({
                     className="size-full object-contain"
                   />
                 ) : (
-                  <ImagePlus className="size-5 text-slate-300 dark:text-slate-600" />
+                  <ImagePlus className="size-5 text-slate-300 text-muted-foreground" />
                 )}
               </div>
               <div className="flex flex-col gap-1.5">
@@ -221,16 +221,16 @@ function SocieteCard({
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-slate-400 dark:text-slate-500">PNG, JPEG, WebP ou SVG · 5 Mo max.</p>
+                <p className="text-xs text-muted-foreground">PNG, JPEG, WebP ou SVG · 5 Mo max.</p>
               </div>
             </div>
           </div>
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2.5 sm:col-span-2">
             <div>
-              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label className="text-sm font-medium text-foreground/90">
                 Répéter le nom à côté du logo
               </Label>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 À désactiver si le logo contient déjà le nom en toutes lettres — sinon il apparaît en double
                 sur les devis, factures, contrats et bons imprimés.
               </p>
@@ -242,21 +242,21 @@ function SocieteCard({
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">RCCM</Label>
+            <Label className="text-sm font-medium text-foreground/90">RCCM</Label>
             <Input value={values.rccm} onChange={(e) => set("rccm", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">NIF</Label>
+            <Label className="text-sm font-medium text-foreground/90">NIF</Label>
             <Input value={values.nif} onChange={(e) => set("nif", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label className="text-sm font-medium text-foreground/90">
               Signataire — Directeur Général
             </Label>
             <Input value={values.signataireDg} onChange={(e) => set("signataireDg", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Label className="text-sm font-medium text-foreground/90">
               Signataire — PDG
             </Label>
             <Input value={values.signatairePdg} onChange={(e) => set("signatairePdg", e.target.value)} />
@@ -355,12 +355,12 @@ function AnnexeCard({
           </div>
         )}
         <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
             <MapPin className="size-5" />
           </div>
           <div>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">{annexe.nom}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="font-semibold text-foreground">{annexe.nom}</p>
+            <p className="text-xs text-muted-foreground">
               Identité légale locale — imprimée sur les factures émises depuis cette annexe (le nom du logo/société reste celui de la société liée au dossier).
             </p>
           </div>
@@ -368,15 +368,15 @@ function AnnexeCard({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Ville de siège</Label>
+            <Label className="text-sm font-medium text-foreground/90">Ville de siège</Label>
             <Input value={values.villeSiege} onChange={(e) => set("villeSiege", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Téléphone</Label>
+            <Label className="text-sm font-medium text-foreground/90">Téléphone</Label>
             <Input value={values.telephone} onChange={(e) => set("telephone", e.target.value)} />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Adresse</Label>
+            <Label className="text-sm font-medium text-foreground/90">Adresse</Label>
             <Input
               value={values.adresse}
               onChange={(e) => set("adresse", e.target.value)}
@@ -384,7 +384,7 @@ function AnnexeCard({
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">RCCM</Label>
+            <Label className="text-sm font-medium text-foreground/90">RCCM</Label>
             <Input
               value={values.rccm}
               onChange={(e) => set("rccm", e.target.value)}
@@ -392,7 +392,7 @@ function AnnexeCard({
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">NIF</Label>
+            <Label className="text-sm font-medium text-foreground/90">NIF</Label>
             <Input value={values.nif} onChange={(e) => set("nif", e.target.value)} />
           </div>
         </div>
@@ -417,7 +417,7 @@ export function SocietesTab() {
   return (
     <div className="space-y-10">
       <div className="space-y-5">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Identité légale de chaque société — utilisée automatiquement sur les devis, factures,
           bons de sortie et autres documents imprimés. Modifier ces champs ne nécessite plus
           d&apos;intervention technique.
@@ -434,8 +434,8 @@ export function SocietesTab() {
 
       <div className="space-y-5 border-t border-border/60 pt-8">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Annexes</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h3 className="text-sm font-semibold text-foreground">Annexes</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
             Coordonnées et identité légale (RCCM/NIF) de chaque implantation physique (Mali,
             Côte d&apos;Ivoire) — indépendante de la société. C&apos;est l&apos;annexe qui
             détermine l&apos;en-tête légal imprimé sur une facture, quelle que soit la société

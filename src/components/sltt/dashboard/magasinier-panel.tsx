@@ -17,8 +17,8 @@ export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?:
       <Card className="border-border/80 p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">État du stock</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{stock.length} articles gérés</p>
+            <h2 className="text-sm font-semibold text-foreground">État du stock</h2>
+            <p className="text-xs text-muted-foreground">{stock.length} articles gérés</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => go("entreposage")}>
             Stock <ArrowRight className="ml-1 size-3.5" />
@@ -26,9 +26,9 @@ export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?:
         </div>
         {stock.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
-            <Warehouse className="size-7 text-slate-200 dark:text-slate-700" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">Aucun article en stock.</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Ajoutez votre premier article depuis l'Entreposage.</p>
+            <Warehouse className="size-7 text-muted-foreground/70" />
+            <p className="text-sm text-muted-foreground">Aucun article en stock.</p>
+            <p className="text-xs text-muted-foreground">Ajoutez votre premier article depuis l'Entreposage.</p>
           </div>
         ) : stock.slice(0, 4).map((s) => {
           const pct = Math.min(100, Math.round((s.quantite / Math.max(1, s.seuil * 2)) * 100));
@@ -36,12 +36,12 @@ export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?:
           return (
             <div key={s.id} className="mb-3 last:mb-0">
               <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[60%]">{s.marchandise}</span>
-                <span className={`tabular-nums font-semibold ${low ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-300"}`}>
+                <span className="font-medium text-foreground/90 truncate max-w-[60%]">{s.marchandise}</span>
+                <span className={`tabular-nums font-semibold ${low ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
                   {s.quantite} {s.unite}
                 </span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+              <div className="h-1.5 w-full rounded-full bg-muted">
                 <div
                   className={`h-1.5 rounded-full transition-[width] ${low ? "bg-red-400" : "bg-emerald-500"}`}
                   style={{ width: `${pct}%` }}
@@ -58,8 +58,8 @@ export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?:
       <Card className="border-border/80 p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bons en attente</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{bonsBrouillon.length} brouillon{bonsBrouillon.length !== 1 ? "s" : ""} à valider</p>
+            <h2 className="text-sm font-semibold text-foreground">Bons en attente</h2>
+            <p className="text-xs text-muted-foreground">{bonsBrouillon.length} brouillon{bonsBrouillon.length !== 1 ? "s" : ""} à valider</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => go("bons")}>
@@ -73,8 +73,8 @@ export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?:
         {bonsBrouillon.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <CheckCircle2 className="size-8 text-emerald-300" />
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Aucun bon en attente</p>
-            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Tous les bons sont validés ou émis.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Aucun bon en attente</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Tous les bons sont validés ou émis.</p>
           </div>
         ) : (
           bonsBrouillon.slice(0, 4).map((b) => (
@@ -83,8 +83,8 @@ export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?:
                 <Package className="size-3.5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">{b.reference}</p>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{b.marchandise} · {b.quantite} {b.unite}</p>
+                <p className="truncate text-xs font-semibold text-foreground">{b.reference}</p>
+                <p className="truncate text-xs text-muted-foreground">{b.marchandise} · {b.quantite} {b.unite}</p>
               </div>
             </div>
           ))

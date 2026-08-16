@@ -46,8 +46,8 @@ export const TYPE_META: Record<
   },
   Autre: {
     icon: MoreHorizontal,
-    color: "text-slate-500 dark:text-slate-400",
-    bg: "bg-slate-100 dark:bg-slate-800",
+    color: "text-muted-foreground",
+    bg: "bg-muted",
     short: "Autre",
   },
 };

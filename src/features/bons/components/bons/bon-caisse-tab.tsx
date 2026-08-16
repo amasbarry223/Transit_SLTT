@@ -216,7 +216,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
         <Card className="p-4 shadow-sm border-border/80">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative w-full sm:w-64">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Référence, bénéficiaire, motif…"
                 value={caisseSearch}
@@ -225,7 +225,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
                 aria-label="Rechercher un bon de sortie de caisse"
               />
             </div>
-            <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+            <p className="ml-auto text-xs tabular-nums text-muted-foreground">
               {filteredCaisse.length} bon{filteredCaisse.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -233,8 +233,8 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
 
         <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-            <Banknote className="size-4 text-slate-400 dark:text-slate-500" />
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sorties de caisse</h2>
+            <Banknote className="size-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Sorties de caisse</h2>
           </div>
 
           {filteredCaisse.length === 0 ? (
@@ -271,26 +271,26 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
               <div className="hidden overflow-x-auto md:block">
                 <Table aria-label="Liste des bons de sortie de caisse">
                   <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         Référence
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         Date
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         Bénéficiaire(s)
                       </TableHead>
-                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                         Société
                       </TableHead>
-                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                         Motif
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         Montant
                       </TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         Actions
                       </TableHead>
                     </TableRow>
@@ -329,7 +329,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
             </DialogDescription>
           </DialogHeader>
 
-          <div className="min-h-[420px] flex-1 bg-slate-100 dark:bg-slate-900">
+          <div className="min-h-[420px] flex-1 bg-muted/40">
             {preview.status === "loading" && (
               <div className="flex h-[420px] flex-col items-center justify-center gap-3 text-slate-500">
                 <Loader2 className="size-6 animate-spin text-primary" />
@@ -341,8 +341,8 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
                 <div className="flex size-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
                   <AlertTriangle className="size-5" />
                 </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Document introuvable</p>
-                <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">{preview.message}</p>
+                <p className="text-sm font-medium text-foreground">Document introuvable</p>
+                <p className="max-w-md text-sm text-muted-foreground">{preview.message}</p>
               </div>
             )}
             {preview.status === "ready" && (
@@ -396,8 +396,8 @@ function CaisseMobileCard({
     <Card className="border-border/80 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{bon.reference}</p>
-          <p className="mt-0.5 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+          <p className="font-mono text-xs font-medium text-foreground">{bon.reference}</p>
+          <p className="mt-0.5 truncate text-sm font-medium text-foreground/90">
             {beneficiairesSummary(bon)}
           </p>
         </div>
@@ -405,25 +405,25 @@ function CaisseMobileCard({
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-          <dd className="tabular-nums text-slate-700 dark:text-slate-300">{formatDateShort(bon.date)}</dd>
+          <dt className="text-xs text-muted-foreground">Date</dt>
+          <dd className="tabular-nums text-foreground/90">{formatDateShort(bon.date)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
-          <dd className="truncate text-right text-slate-700 dark:text-slate-300">
+          <dt className="text-xs text-muted-foreground">Motif</dt>
+          <dd className="truncate text-right text-foreground/90">
             {bon.lignes.map((ligne) => ligne.motif).join(", ")}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
-          <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatFCFA(bon.montantTotal)}</dd>
+          <dt className="text-xs text-muted-foreground">Montant</dt>
+          <dd className="tabular-nums font-medium text-foreground">{formatFCFA(bon.montantTotal)}</dd>
         </div>
       </dl>
       <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
         <Button
           variant="ghost"
           size="icon"
-          className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+          className="size-11 text-muted-foreground hover:text-primary"
           aria-label={`Aperçu PDF ${bon.reference}`}
           title="PDF / Imprimer"
           onClick={() => onPrint(bon)}
@@ -459,25 +459,25 @@ function CaisseTableRow({
   onDelete: (bon: BonSortieCaisse) => void;
 }) {
   return (
-    <TableRow className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
+    <TableRow className="border-b border-border hover:bg-muted/60">
       <TableCell className="px-4 py-3.5">
-        <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">{bon.reference}</p>
+        <p className="font-mono text-xs font-medium text-foreground">{bon.reference}</p>
       </TableCell>
-      <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+      <TableCell className="px-4 py-3.5 tabular-nums text-muted-foreground">
         {formatDateShort(bon.date)}
       </TableCell>
       <TableCell className="max-w-[180px] px-4 py-3.5">
-        <p className="truncate font-medium text-slate-700 dark:text-slate-300">{beneficiairesSummary(bon)}</p>
+        <p className="truncate font-medium text-foreground/90">{beneficiairesSummary(bon)}</p>
       </TableCell>
       <TableCell className="hidden px-4 py-3.5 md:table-cell">
         <SocieteBadge societeNom={bon.societeNom} size="sm" />
       </TableCell>
       <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
-        <p className="truncate text-sm text-slate-600 dark:text-slate-300">
+        <p className="truncate text-sm text-muted-foreground">
           {bon.lignes.map((ligne) => ligne.motif).join(", ")}
         </p>
       </TableCell>
-      <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100">
+      <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-foreground">
         {formatFCFA(bon.montantTotal)}
       </TableCell>
       <TableCell className="px-4 py-3.5">
@@ -485,7 +485,7 @@ function CaisseTableRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-11 text-slate-500 dark:text-slate-400 hover:text-primary"
+            className="size-11 text-muted-foreground hover:text-primary"
             aria-label={`Aperçu PDF ${bon.reference}`}
             title="PDF / Imprimer"
             onClick={() => onPrint(bon)}

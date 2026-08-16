@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import type { RecuPaiementModuleData } from "@/lib/export";
 import { printRecuPaiementModule } from "@/lib/export";
 import { computeReste, computeStatut } from "@/lib/recus-paiement";
@@ -123,7 +124,10 @@ export function useRecuGenerator() {
           return false;
         }
         if (asPdf) {
-          toastSuccess(toast, { title: "Enregistrer en PDF", description: "Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF ».", });
+          toastSuccess(toast, {
+            title: "Enregistrer en PDF",
+            description: `Format ${RECEIPT_FORMAT_LABEL} paysage uniquement. Choisissez « Enregistrer au format PDF » — vérifiez que le format papier n'est pas A4.`,
+          });
         }
         return true;
       } finally {

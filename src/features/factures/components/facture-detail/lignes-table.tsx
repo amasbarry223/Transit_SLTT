@@ -9,7 +9,7 @@ export function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
   if (lignes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 text-center">
-        <FileText className="size-8 text-slate-200 dark:text-slate-700" />
+        <FileText className="size-8 text-muted-foreground/70" />
         <p className="mt-2 text-sm text-slate-400">Aucune ligne de facturation</p>
       </div>
     );
@@ -24,11 +24,11 @@ export function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
             <dl className="mt-1.5 space-y-1">
               <div className="flex justify-between gap-3">
                 <dt className="text-xs text-slate-400">Qté × P.U. HT</dt>
-                <dd className="text-sm tabular-nums text-slate-600 dark:text-slate-300">{l.quantite} × {formatFCFA(l.prixUnitaire)}</dd>
+                <dd className="text-sm tabular-nums text-muted-foreground">{l.quantite} × {formatFCFA(l.prixUnitaire)}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-xs text-slate-400">Total HT</dt>
-                <dd className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(l.montantHT)}</dd>
+                <dd className="text-sm font-semibold tabular-nums text-foreground">{formatFCFA(l.montantHT)}</dd>
               </div>
             </dl>
           </div>
@@ -37,7 +37,7 @@ export function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border/60 bg-slate-50/80 dark:bg-slate-800/50">
+            <tr className="border-b border-border/60 bg-muted/50">
               <th className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">
                 Description
               </th>
@@ -54,13 +54,13 @@ export function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
           </thead>
           <tbody className="divide-y divide-border/30">
             {lignes.map((l, i) => (
-              <tr key={l.id} className={cn(i % 2 === 1 && "bg-slate-50/40 dark:bg-slate-800/20")}>
+              <tr key={l.id} className={cn(i % 2 === 1 && "bg-muted/20")}>
                 <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-200">{l.description}</td>
-                <td className="px-3 py-3 text-center tabular-nums text-slate-500 dark:text-slate-400">{l.quantite}</td>
-                <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                <td className="px-3 py-3 text-center tabular-nums text-muted-foreground">{l.quantite}</td>
+                <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
                   {formatFCFA(l.prixUnitaire)}
                 </td>
-                <td className="px-5 py-3 text-right font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                <td className="px-5 py-3 text-right font-semibold tabular-nums text-foreground">
                   {formatFCFA(l.montantHT)}
                 </td>
               </tr>

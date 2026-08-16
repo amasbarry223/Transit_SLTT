@@ -45,7 +45,7 @@ export function FormField({
     <div className="flex flex-col gap-1.5">
       <Label
         htmlFor={fieldId}
-        className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300"
+        className="flex items-center gap-1.5 text-sm font-medium text-foreground/90"
       >
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}
@@ -54,7 +54,7 @@ export function FormField({
             <TooltipTrigger asChild>
               <span
                 tabIndex={0}
-                className="cursor-help text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                className="cursor-help text-slate-400 hover:text-slate-600 text-muted-foreground dark:hover:text-slate-300"
               >
                 <Info className="size-3.5" />
               </span>

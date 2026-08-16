@@ -109,7 +109,7 @@ export function TransporteursTable({
       <Card className="border-border/80 p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-10 pl-9"
               placeholder="Société, contact, trajet, immat…"
@@ -145,7 +145,7 @@ export function TransporteursTable({
 
           <Select value={sortBy} onValueChange={(v) => onSortByChange(v as SortKey)}>
             <SelectTrigger className="h-10 w-full sm:w-52">
-              <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+              <ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" />
               <SelectValue placeholder="Trier par…" />
             </SelectTrigger>
             <SelectContent>
@@ -161,11 +161,11 @@ export function TransporteursTable({
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 gap-1.5 text-slate-500 dark:text-slate-400"
+              className="h-10 gap-1.5 text-muted-foreground"
               onClick={onClearFilters}
             >
               Réinitialiser
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-foreground/90">
                 {activeFiltersCount}
               </span>
             </Button>
@@ -202,9 +202,9 @@ export function TransporteursTable({
 
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <Truck className="size-4 text-slate-400 dark:text-slate-500" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Liste des transporteurs</h2>
-          <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <Truck className="size-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">Liste des transporteurs</h2>
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -243,30 +243,30 @@ export function TransporteursTable({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">{t.nom}</p>
-                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{t.contact}</p>
+                        <p className="font-semibold text-foreground">{t.nom}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{t.contact}</p>
                       </div>
                       <ActifStatutBadge statut={t.statut} />
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Véhicule</dt>
-                        <dd className="text-right text-slate-700 dark:text-slate-300">
+                        <dt className="text-xs text-muted-foreground">Véhicule</dt>
+                        <dd className="text-right text-foreground/90">
                           {t.vehicule}{" "}
-                          <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{t.immatriculation}</span>
+                          <span className="font-mono text-xs text-muted-foreground">{t.immatriculation}</span>
                         </dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Téléphone</dt>
-                        <dd className="font-mono text-xs text-slate-700 dark:text-slate-300">{t.telephone}</dd>
+                        <dt className="text-xs text-muted-foreground">Téléphone</dt>
+                        <dd className="font-mono text-xs text-foreground/90">{t.telephone}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Trajet</dt>
-                        <dd className="truncate text-right text-slate-700 dark:text-slate-300">{t.trajet}</dd>
+                        <dt className="text-xs text-muted-foreground">Trajet</dt>
+                        <dd className="truncate text-right text-foreground/90">{t.trajet}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-slate-500 dark:text-slate-400">Capacité</dt>
-                        <dd className="tabular-nums text-slate-700 dark:text-slate-300">{t.capacite} t</dd>
+                        <dt className="text-xs text-muted-foreground">Capacité</dt>
+                        <dd className="tabular-nums text-foreground/90">{t.capacite} t</dd>
                       </div>
                     </dl>
                     {canWrite && (
@@ -280,7 +280,7 @@ export function TransporteursTable({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                          className="size-8 text-muted-foreground hover:text-primary"
                           title="Modifier"
                           onClick={() => onEdit(t)}
                         >
@@ -289,7 +289,7 @@ export function TransporteursTable({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-8 text-slate-500 dark:text-slate-400 hover:text-destructive"
+                          className="size-8 text-muted-foreground hover:text-destructive"
                           title="Supprimer"
                           onClick={() => onDelete(t)}
                         >
@@ -304,26 +304,26 @@ export function TransporteursTable({
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Société / Contact
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Coordonnées
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Véhicule
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Trajet
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
                       Capacité
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Statut
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -335,38 +335,38 @@ export function TransporteursTable({
                       <TableRow
                         key={t.id}
                         className={cn(
-                          "cursor-pointer border-b border-border transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/80",
-                          isInactif && "bg-slate-50/40 dark:bg-slate-800/40 opacity-80",
+                          "cursor-pointer border-b border-border transition-colors hover:bg-muted/80",
+                          isInactif && "bg-muted/40 opacity-80",
                           !canWrite && "cursor-default",
                         )}
                         onClick={canWrite ? () => onEdit(t) : undefined}
                       >
                         <TableCell className="px-4 py-3.5">
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">{t.nom}</p>
-                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{t.contact}</p>
+                          <p className="font-semibold text-foreground">{t.nom}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{t.contact}</p>
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                            <Phone className="size-3 shrink-0 text-slate-400 dark:text-slate-500" /> {t.telephone}
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Phone className="size-3 shrink-0 text-muted-foreground" /> {t.telephone}
                           </div>
                           {t.email && (
-                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                               <Mail className="size-3 shrink-0" /> {t.email}
                             </div>
                           )}
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.vehicule}</p>
-                          <p className="mt-0.5 font-mono text-xs text-slate-500 dark:text-slate-400">{t.immatriculation}</p>
+                          <p className="text-sm font-medium text-foreground/90">{t.vehicule}</p>
+                          <p className="mt-0.5 font-mono text-xs text-muted-foreground">{t.immatriculation}</p>
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 md:table-cell">
-                          <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-                            <MapPin className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
                             <span className="line-clamp-1">{t.trajet}</span>
                           </div>
                         </TableCell>
                         <TableCell className="hidden px-4 py-3.5 text-right tabular-nums lg:table-cell">
-                          <span className="font-medium text-slate-700 dark:text-slate-300">{t.capacite} t</span>
+                          <span className="font-medium text-foreground/90">{t.capacite} t</span>
                         </TableCell>
                         <TableCell className="px-4 py-3.5">
                           <div className="flex flex-col gap-1">
@@ -376,7 +376,7 @@ export function TransporteursTable({
                                 className={cn(
                                   "inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80",
                                   t.statut === "Actif"
-                                    ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                                    ? "bg-muted text-muted-foreground"
                                     : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700",
                                 )}
                                 onClick={(e) => {
@@ -396,7 +396,7 @@ export function TransporteursTable({
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                                  className="size-8 text-muted-foreground hover:text-primary"
                                   title="Modifier"
                                   onClick={() => onEdit(t)}
                                 >
@@ -407,7 +407,7 @@ export function TransporteursTable({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="size-8 text-slate-500 dark:text-slate-400 hover:text-primary"
+                                      className="size-8 text-muted-foreground hover:text-primary"
                                     >
                                       <MoreHorizontal className="size-4" />
                                     </Button>

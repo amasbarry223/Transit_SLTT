@@ -129,7 +129,7 @@ export function UserFormModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="space-y-3 border-b border-border bg-gradient-to-br from-slate-50 to-white px-6 py-5 dark:from-slate-900 dark:to-slate-950">
+        <DialogHeader className="space-y-3 border-b border-border bg-gradient-to-br from-slate-50 to-white px-6 py-5 dark:from-card dark:to-background">
           <div className="flex items-center gap-4">
             <div className={cn("flex size-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-md", USER_AVATAR_GRADIENT)}>
               {form.nom ? getInitials(form.nom) : <UserPlus className="size-5" />}
@@ -151,7 +151,7 @@ export function UserFormModal({
           {mode === "create" ? (
             <>
               <div className="border-b border-border px-6 py-3">
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Étape {createStep} sur 2 — {createStep === 1 ? "Identité" : "Rôle et accès"}</span>
                 </div>
                 <div className="mt-2 flex gap-2">
@@ -212,19 +212,19 @@ export function UserFormModal({
                   <div className="space-y-4">
                     <div className="space-y-3">
                       <Label>Rôle prédéfini</Label>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-muted-foreground">
                         Choisissez un profil métier — les permissions standard sont appliquées automatiquement.
                       </p>
                       <RolePicker value={form.role} onChange={applyRole} roles={selectableRoles} />
                       {!isCurrentActorAdmin && (
-                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                        <p className="text-xs text-muted-foreground">
                           Seul un administrateur peut créer un compte Administrateur.
                         </p>
                       )}
                     </div>
                     <div className="space-y-3">
                       <Label>Annexes assignées <span className="text-red-500">*</span></Label>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-muted-foreground">
                         Détermine les données visibles par l&apos;utilisateur — plusieurs annexes donnent accès au reporting consolidé.
                       </p>
                       <AnnexePicker
@@ -236,7 +236,7 @@ export function UserFormModal({
                     <button
                       type="button"
                       onClick={() => setAdvancedPermsOpen((v) => !v)}
-                      className="flex w-full items-center justify-between border-t border-border pt-3 text-left text-sm font-medium text-slate-600 dark:text-slate-300"
+                      className="flex w-full items-center justify-between border-t border-border pt-3 text-left text-sm font-medium text-muted-foreground"
                     >
                       Avancé — matrice des permissions
                       <ChevronRight className={cn("size-4 transition-transform", advancedPermsOpen && "rotate-90")} />
@@ -260,7 +260,7 @@ export function UserFormModal({
                   </div>
                 )}
               </div>
-              <DialogFooter className="flex-col gap-2 border-t border-border bg-slate-50/50 px-6 py-4 dark:bg-slate-900/50 sm:flex-row sm:justify-between">
+              <DialogFooter className="flex-col gap-2 border-t border-border bg-slate-50/50 px-6 py-4 bg-muted/40/50 sm:flex-row sm:justify-between">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Annuler
                 </Button>
@@ -308,7 +308,7 @@ export function UserFormModal({
               </div>
             )}
             <div className="border-b border-border px-6 pt-4">
-              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-slate-100/80 p-1 dark:bg-slate-800/80">
+              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 p-1 bg-muted/80">
                 {tabs.map((t) => {
                   const Icon = t.icon;
                   return (
@@ -362,7 +362,7 @@ export function UserFormModal({
                 </div>
                 <div className="space-y-3">
                   <Label>Rôle métier</Label>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     Le rôle pré-remplit les permissions — vous pourrez les ajuster à l'étape suivante.
                   </p>
                   <RolePicker value={form.role} onChange={applyRole} roles={selectableRoles} />
@@ -374,7 +374,7 @@ export function UserFormModal({
                 </div>
                 <div className="space-y-3">
                   <Label>Annexes assignées</Label>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     Détermine les données visibles par l&apos;utilisateur — plusieurs annexes donnent accès au reporting consolidé.
                   </p>
                   <AnnexePicker
@@ -386,16 +386,16 @@ export function UserFormModal({
               </TabsContent>
 
               <TabsContent value="access" className="mt-0 space-y-5 focus-visible:outline-none">
-                  <div className="rounded-xl border border-border bg-slate-50/50 p-4 dark:bg-slate-800/30">
+                  <div className="rounded-xl border border-border p-4 bg-muted/30">
                     <div className="flex items-start gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm dark:bg-slate-900">
-                        <Lock className="size-4 text-slate-600 dark:text-slate-300" />
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm bg-muted/40">
+                        <Lock className="size-4 text-muted-foreground" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <p className="text-sm font-semibold text-foreground">
                           Réinitialiser le mot de passe
                         </p>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           L&apos;utilisateur devra se reconnecter avec le nouveau mot de passe.
                         </p>
                       </div>
@@ -434,7 +434,7 @@ export function UserFormModal({
 
               <TabsContent value="permissions" className="mt-0 space-y-3 focus-visible:outline-none">
                 <div className="flex items-center justify-between gap-2 rounded-lg bg-primary/5 px-3 py-2">
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                  <p className="text-xs text-muted-foreground">
                     <span className="font-semibold tabular-nums text-primary">{permCount}</span> permission
                     {permCount > 1 ? "s" : ""} sélectionnée{permCount > 1 ? "s" : ""}
                     {isCustomPermissionSet(form.role, selectionToPermissions(form.perms)) && (
@@ -468,7 +468,7 @@ export function UserFormModal({
               </TabsContent>
             </div>
 
-            <DialogFooter className="flex-col gap-2 border-t border-border bg-slate-50/50 px-6 py-4 dark:bg-slate-900/50 sm:flex-row sm:justify-between">
+            <DialogFooter className="flex-col gap-2 border-t border-border bg-slate-50/50 px-6 py-4 bg-muted/40/50 sm:flex-row sm:justify-between">
               <div className="flex w-full gap-2 sm:w-auto">
                 {tab !== "identity" && (
                   <Button

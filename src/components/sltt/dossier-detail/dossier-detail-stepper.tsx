@@ -33,7 +33,7 @@ export function DossierDetailStepper({ statut }: { statut: DossierStatut }) {
                     ? "bg-primary text-white"
                     : active
                       ? "bg-primary text-white ring-4 ring-primary/20"
-                      : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500",
+                      : "text-slate-400 bg-muted text-muted-foreground",
                 )}
               >
                 {done ? <Check className="size-3.5" /> : i + 1}
@@ -54,8 +54,8 @@ export function DossierDetailStepper({ statut }: { statut: DossierStatut }) {
                 active
                   ? "font-semibold text-primary"
                   : done
-                    ? "text-slate-600 dark:text-slate-300"
-                    : "text-slate-400 dark:text-slate-500",
+                    ? "text-muted-foreground"
+                    : "text-muted-foreground",
               )}
             >
               {s}

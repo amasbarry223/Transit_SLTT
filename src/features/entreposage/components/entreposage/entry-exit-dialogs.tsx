@@ -43,7 +43,7 @@ export function EntryExitDialogs({
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="entry-marchandise" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="entry-marchandise" className="text-sm font-medium text-foreground/90">
                 Marchandise
               </Label>
               <Select value={dialogs.entryStockId} onValueChange={dialogs.setEntryStockId}>
@@ -92,7 +92,7 @@ export function EntryExitDialogs({
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="exit-marchandise" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="exit-marchandise" className="text-sm font-medium text-foreground/90">
                 Marchandise
               </Label>
               <Select value={dialogs.exitStockId} onValueChange={dialogs.setExitStockId}>
@@ -110,7 +110,7 @@ export function EntryExitDialogs({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exit-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="exit-qty" className="text-sm font-medium text-foreground/90">
                 Quantité à sortir
               </Label>
               <Input
@@ -131,7 +131,7 @@ export function EntryExitDialogs({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exit-resp" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="exit-resp" className="text-sm font-medium text-foreground/90">
                 Responsable
               </Label>
               <Input
@@ -143,7 +143,7 @@ export function EntryExitDialogs({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exit-motif" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Label htmlFor="exit-motif" className="text-sm font-medium text-foreground/90">
                 Motif
               </Label>
               <Select

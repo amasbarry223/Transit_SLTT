@@ -31,7 +31,7 @@ export function MetaTabsList<K extends string>({
   return (
     <TabsList
       className={cn(
-        "grid h-auto w-full gap-1 rounded-xl bg-slate-100/90 p-1.5 dark:bg-slate-800/60",
+        "grid h-auto w-full gap-1 rounded-xl p-1.5 bg-muted/60",
         gridClassName ?? "grid-cols-1 sm:grid-cols-3",
       )}
     >
@@ -58,7 +58,7 @@ export function MetaTabsList<K extends string>({
                   {t.renderIcon ? t.renderIcon() : <Icon className="size-4" />}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <span className="block text-sm font-semibold text-foreground">
                     <span className="hidden sm:inline">{t.label}</span>
                     <span className="sm:hidden">{t.shortLabel}</span>
                   </span>

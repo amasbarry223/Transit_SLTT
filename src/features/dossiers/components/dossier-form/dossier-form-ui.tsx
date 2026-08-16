@@ -36,9 +36,9 @@ export function SectionTitle({
         {icon}
       </span>
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
         {description && (
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
         )}
       </div>
     </div>
@@ -81,20 +81,20 @@ export function CollapsibleSection({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+            <h2 className="text-base font-semibold text-foreground">{title}</h2>
             {badge && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 bg-muted dark:text-slate-400">
                 {badge}
               </span>
             )}
           </div>
           {description && (
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           )}
         </div>
         <ChevronDown
           className={cn(
-            "size-4 shrink-0 text-slate-400 transition-transform dark:text-slate-500",
+            "size-4 shrink-0 text-slate-400 transition-transform text-muted-foreground",
             open && "rotate-180",
           )}
         />
@@ -123,8 +123,8 @@ export function SummaryRow({
   }
   return (
     <div className="flex items-center justify-between py-3 first:pt-0">
-      <span className="text-sm text-slate-600 dark:text-slate-300">{label}</span>
-      <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold tabular-nums text-foreground">
         {value}
       </span>
     </div>

@@ -310,3 +310,33 @@
     min-height: 360px;
   }
 }
+
+/* Dark mode — charcoal désaturé, moins agressif que le blanc pur */
+.dark .sltt-excel-shell {
+  --excel-ribbon: #292c37;
+  --excel-border: #343948;
+  --excel-grid-line: #343948;
+  --excel-header-bg: #23262f;
+  background: #1e2028;
+  border-color: var(--excel-border);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 28px -12px rgba(0, 0, 0, 0.35);
+}
+
+.dark .sltt-excel-ribbon {
+  background: var(--excel-ribbon);
+  border-color: var(--excel-border);
+  color: #dfe1e8;
+}
+
+.dark .sltt-excel-formula-bar,
+.dark .sltt-excel-statusbar {
+  background: #1a1b22;
+  border-color: var(--excel-border);
+  color: #9da2b3;
+}
+
+.dark .sltt-excel-viewport {
+  background: #1e2028;
+}

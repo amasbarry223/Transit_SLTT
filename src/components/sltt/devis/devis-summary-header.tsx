@@ -53,7 +53,7 @@ export function DevisSummaryHeader({
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">{devis.reference}</h1>
+                  <h1 className="text-2xl font-extrabold tracking-tight text-foreground">{devis.reference}</h1>
                   <DevisStatutBadge statut={devis.statut} size="md" />
                   <SocieteBadge societeNom={devis.societeNom} size="sm" />
                   {devis.dossierId && (
@@ -65,19 +65,19 @@ export function DevisSummaryHeader({
                     </button>
                   )}
                 </div>
-                <p className="mt-1.5 text-base font-semibold text-slate-700 dark:text-slate-300">{devis.clientNom}</p>
-                <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{devis.nature}</p>
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                <p className="mt-1.5 text-base font-semibold text-foreground/90">{devis.clientNom}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{devis.nature}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
                   Créé le {formatDateShort(devis.dateCreation)}
                   &nbsp;·&nbsp; Valide jusqu'au {formatDateShort(devis.dateValidite)}
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total estimé</p>
+                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">Total estimé</p>
                 <p className="mt-0.5 text-3xl font-extrabold tabular-nums text-blue-700 dark:text-blue-300 leading-tight">
                   {formatFCFA(devis.total, false)}
                 </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">FCFA</p>
+                <p className="text-xs text-muted-foreground mt-0.5">FCFA</p>
               </div>
             </div>
 
@@ -116,7 +116,7 @@ export function DevisSummaryHeader({
                   {canWrite && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button size="sm" variant="ghost" className="ml-auto text-slate-400 dark:text-slate-500">
+                      <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground">
                         <MoreHorizontal className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -133,7 +133,7 @@ export function DevisSummaryHeader({
                           >
                             <SIcon className="mr-2 size-3.5" />
                             {s}
-                            {s === devis.statut && <span className="ml-auto text-[10px] text-slate-400 dark:text-slate-500">actuel</span>}
+                            {s === devis.statut && <span className="ml-auto text-[10px] text-muted-foreground">actuel</span>}
                           </DropdownMenuItem>
                         );
                       })}

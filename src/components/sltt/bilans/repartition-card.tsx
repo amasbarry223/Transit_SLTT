@@ -22,7 +22,7 @@ interface RepartitionCardProps {
 export function RepartitionCard({ pieData, pieTotal, tauxRecouvrement }: RepartitionCardProps) {
   return (
     <Card className="p-5 shadow-sm border-border/80 lg:col-span-1 gap-4">
-      <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Répartition</h2>
+      <h2 className="text-base font-semibold text-foreground">Répartition</h2>
       {pieTotal === 0 ? (
         <EmptyState icon={Percent} title="Aucune donnée pour cette période." />
       ) : (
@@ -47,8 +47,8 @@ export function RepartitionCard({ pieData, pieTotal, tauxRecouvrement }: Reparti
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
-              <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
+              <span className="text-xs text-muted-foreground">Total</span>
+              <span className="text-sm font-bold tabular-nums text-foreground">
                 {formatFCFA(pieTotal)}
               </span>
             </div>
@@ -66,18 +66,18 @@ export function RepartitionCard({ pieData, pieTotal, tauxRecouvrement }: Reparti
                     className="size-2.5 shrink-0 rounded-full"
                     style={{ background: d.color }}
                   />
-                  <span className="text-slate-600 dark:text-slate-300">{d.name}</span>
-                  <span className="ml-auto font-medium tabular-nums text-slate-900 dark:text-slate-100">
+                  <span className="text-muted-foreground">{d.name}</span>
+                  <span className="ml-auto font-medium tabular-nums text-foreground">
                     {formatFCFA(d.value)}
                   </span>
-                  <span className="w-10 text-right text-xs tabular-nums text-slate-400 dark:text-slate-500">
+                  <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
                     {pct.toFixed(0)}%
                   </span>
                 </div>
               );
             })}
-            <div className="mt-2 rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-center">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Taux de recouvrement</p>
+            <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2.5 text-center">
+              <p className="text-xs text-muted-foreground">Taux de recouvrement</p>
               <p
                 className={cn(
                   "mt-0.5 text-xl font-bold tabular-nums",

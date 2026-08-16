@@ -7,12 +7,12 @@ import { cn, isNavActive } from "@/lib/utils";
 function NavSectionLabel({ label, first }: { label: string; first?: boolean }) {
   return (
     <div className={cn("flex items-center gap-2 px-3 pb-1.5", first ? "pt-0" : "pt-5")}>
-      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </span>
       <span
         aria-hidden
-        className="h-px flex-1 bg-gradient-to-r from-slate-200/90 to-transparent dark:from-slate-700/80"
+        className="h-px flex-1 bg-gradient-to-r from-border/80 to-transparent"
       />
     </div>
   );
@@ -53,8 +53,8 @@ export function NavList({
                 active
                   ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
                   : item.pivot
-                    ? "bg-primary/5 font-semibold text-slate-700 hover:bg-accent/60 hover:pl-[0.875rem] hover:text-slate-900 dark:bg-primary/10 dark:text-slate-200 dark:hover:bg-accent/30 dark:hover:text-slate-100"
-                    : "text-slate-600 hover:bg-accent/60 hover:pl-[0.875rem] hover:text-slate-900 dark:text-slate-400 dark:hover:bg-accent/30 dark:hover:text-slate-100",
+                    ? "bg-primary/5 font-semibold text-foreground/90 hover:bg-accent/60 hover:pl-[0.875rem] hover:text-foreground dark:bg-primary/15"
+                    : "text-muted-foreground hover:bg-accent/60 hover:pl-[0.875rem] hover:text-foreground dark:hover:bg-accent/40",
               )}
             >
               <span
@@ -71,7 +71,7 @@ export function NavList({
                   "size-[18px] shrink-0 transition-all duration-200 ease-out motion-reduce:transition-none",
                   active
                     ? "text-primary-foreground"
-                    : "text-slate-400 group-hover:scale-110 group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary",
+                    : "text-muted-foreground group-hover:scale-110 group-hover:text-primary",
                 )}
               />
               <span

@@ -64,13 +64,13 @@ export function DossierAmountsSection({
           hint={labels.fraisPrestationHint}
         />
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label className="text-sm font-medium text-foreground/90">
             Montant investi (calculé)
           </label>
-          <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-100 px-3 tabular-nums text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <div className="flex h-10 items-center rounded-md border border-slate-200 px-3 tabular-nums text-sm font-semibold text-slate-800 dark:border-slate-700 bg-muted dark:text-slate-200">
             {formatFCFA(montantInvesti)}
           </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">
+          <p className="text-[11px] text-muted-foreground">
             {labels.droitDouane} + {labels.fraisCircuit} + {labels.fraisPrestation}
           </p>
         </div>
@@ -116,14 +116,14 @@ function AmountField({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+      <Label className="flex items-center gap-1.5 text-sm font-medium text-foreground/90">
         {label}
         {hint && (
           <Tooltip>
             <TooltipTrigger asChild>
               <span
                 tabIndex={0}
-                className="cursor-help text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                className="cursor-help text-slate-400 hover:text-slate-600 text-muted-foreground dark:hover:text-slate-300"
               >
                 <Info className="size-3.5" />
               </span>
@@ -144,7 +144,7 @@ function AmountField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={UI.placeholders.amountFCFA}
         />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
           FCFA
         </span>
       </div>

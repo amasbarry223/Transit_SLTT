@@ -100,7 +100,7 @@ export function SignaturePad({ value, onChange, className, compact = false }: Si
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="overflow-hidden rounded-lg border border-border bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <canvas
           ref={canvasRef}
           className={cn("w-full touch-none cursor-crosshair", compact ? "h-20" : "h-28")}

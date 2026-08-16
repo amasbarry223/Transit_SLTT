@@ -38,6 +38,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-sunken: var(--surface-sunken);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -131,47 +133,63 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #2d348c;
+
+  --surface-elevated: #ffffff;
+  --surface-sunken: #f3f4f6;
 }
 
+/*
+ * Dark mode contract — charcoal SLTT (v2, désaturé)
+ * - Texte secondaire jamais plus sombre qu'en light mode
+ * - Surfaces : background < surface-sunken < card < popover/elevated < muted < accent < border
+ * - Neutres à peine teintés de bleu (pas de navy saturé) : la couleur de marque reste
+ *   réservée aux accents (primary, ring, liens) pour ne pas fatiguer les yeux sur de
+ *   grandes surfaces lues longtemps.
+ * - Blanc jamais pur sur fond jamais pur noir : foreground légèrement rabattu pour
+ *   éviter l'éblouissement (halation) en lecture prolongée.
+ */
 .dark {
-  --background: #181d42;
-  --foreground: #e8eaf6;
-  --card: #222860;
-  --card-foreground: #e8eaf6;
-  --popover: #222860;
-  --popover-foreground: #e8eaf6;
+  --background: #15161c;
+  --foreground: #dfe1e8;
+  --card: #1e2028;
+  --card-foreground: #dfe1e8;
+  --popover: #23252f;
+  --popover-foreground: #dfe1e8;
 
-  --primary: #5a63b8;
+  --primary: #5c65b8;
   --primary-hover: #6b74c8;
   --primary-foreground: #ffffff;
 
-  --secondary: #2a3068;
-  --secondary-foreground: #e8eaf6;
-  --muted: #2a3068;
-  --muted-foreground: #9ca3af;
-  --accent: #2a3068;
-  --accent-foreground: #c5c9f0;
+  --secondary: #292c37;
+  --secondary-foreground: #dfe1e8;
+  --muted: #292c37;
+  --muted-foreground: #9da2b3;
+  --accent: #2f323f;
+  --accent-foreground: #d7dae4;
 
-  --destructive: #ef4444;
+  --destructive: #f2726d;
 
-  --border: #2e3568;
-  --input: #2e3568;
-  --ring: #5a63b8;
+  --border: #343948;
+  --input: #1a1b22;
+  --ring: #7b85d6;
 
-  --chart-1: #5a63b8;
-  --chart-2: #22c55e;
-  --chart-3: #f59e0b;
-  --chart-4: #3b82f6;
-  --chart-5: #f87171;
+  --surface-elevated: #262933;
+  --surface-sunken: #1a1b22;
 
-  --sidebar: #181d42;
-  --sidebar-foreground: #e8eaf6;
-  --sidebar-primary: #5a63b8;
+  --chart-1: #8890d6;
+  --chart-2: #66c98a;
+  --chart-3: #e0b464;
+  --chart-4: #74a3e0;
+  --chart-5: #e08a86;
+
+  --sidebar: #15161c;
+  --sidebar-foreground: #dfe1e8;
+  --sidebar-primary: #5c65b8;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2d348c;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2e3568;
-  --sidebar-ring: #5a63b8;
+  --sidebar-accent: #292c37;
+  --sidebar-accent-foreground: #dfe1e8;
+  --sidebar-border: #343948;
+  --sidebar-ring: #7b85d6;
 }
 
 @layer base {
@@ -219,11 +237,11 @@
   background-clip: content-box;
 }
 .dark .sltt-scroll {
-  scrollbar-color: #3a4080 transparent;
+  scrollbar-color: #3a3e4c transparent;
 }
 .dark .sltt-scroll::-webkit-scrollbar-thumb {
-  background-color: #3a4080;
+  background-color: #3a3e4c;
 }
 .dark .sltt-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #4a5090;
+  background-color: #4a5063;
 }

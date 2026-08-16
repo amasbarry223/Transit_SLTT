@@ -43,39 +43,39 @@ export function BonsTab({
               {pagedBons.map((b) => (
                 <Card key={b.id} className="border-border/80 p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
+                    <p className="font-mono text-xs font-medium text-foreground">
                       {b.reference}
                     </p>
                     <ToneBadge tone={bonStatutTone(b.statut)}>{b.statut}</ToneBadge>
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Date</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Date</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {formatDateShort(b.date)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Marchandise</dt>
-                      <dd className="truncate text-right text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Marchandise</dt>
+                      <dd className="truncate text-right text-foreground/90">
                         {b.marchandise}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Quantité</dt>
-                      <dd className="tabular-nums text-slate-700 dark:text-slate-300">
+                      <dt className="text-xs text-muted-foreground">Quantité</dt>
+                      <dd className="tabular-nums text-foreground/90">
                         {b.quantite} {b.unite}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Motif</dt>
+                      <dt className="text-xs text-muted-foreground">Motif</dt>
                       <dd>
                         <ToneBadge tone={BON_MOTIF_TONE[b.motif]}>{b.motif}</ToneBadge>
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Montant</dt>
-                      <dd className="tabular-nums font-medium text-slate-900 dark:text-slate-100">
+                      <dt className="text-xs text-muted-foreground">Montant</dt>
+                      <dd className="tabular-nums font-medium text-foreground">
                         {formatFCFA(b.montant)}
                       </dd>
                     </div>
@@ -86,26 +86,26 @@ export function BonsTab({
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-slate-50 hover:bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Référence
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Date
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Marchandise
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Qté
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Motif
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Montant
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Statut
                     </TableHead>
                   </TableRow>
@@ -114,27 +114,27 @@ export function BonsTab({
                   {pagedBons.map((b) => (
                     <TableRow
                       key={b.id}
-                      className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                      className="border-b border-border hover:bg-muted/60"
                     >
-                      <TableCell className="px-4 py-3.5 font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
+                      <TableCell className="px-4 py-3.5 font-mono text-xs font-medium text-foreground">
                         {b.reference}
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300 sm:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 tabular-nums text-muted-foreground sm:table-cell">
                         {formatDateShort(b.date)}
                       </TableCell>
                       <TableCell className="max-w-[140px] px-4 py-3.5">
-                        <span className="line-clamp-1 text-sm text-slate-600 dark:text-slate-300">
+                        <span className="line-clamp-1 text-sm text-muted-foreground">
                           {b.marchandise}
                         </span>
                       </TableCell>
-                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                      <TableCell className="px-4 py-3.5 text-right tabular-nums text-foreground/90">
                         {b.quantite}{" "}
-                        <span className="text-xs text-slate-500 dark:text-slate-400">{b.unite}</span>
+                        <span className="text-xs text-muted-foreground">{b.unite}</span>
                       </TableCell>
                       <TableCell className="hidden px-4 py-3.5 md:table-cell">
                         <ToneBadge tone={BON_MOTIF_TONE[b.motif]}>{b.motif}</ToneBadge>
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 sm:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-foreground sm:table-cell">
                         {formatFCFA(b.montant)}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">

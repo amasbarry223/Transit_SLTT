@@ -201,7 +201,7 @@ export function BonsScreen() {
 
         <TabsList
           className={cn(
-            "grid h-auto w-full grid-cols-1 gap-1 bg-slate-100/90 p-1.5 dark:bg-slate-800/60 sm:grid-cols-2",
+            "grid h-auto w-full grid-cols-1 gap-1 p-1.5 bg-muted/60 sm:grid-cols-2",
             "rounded-xl",
           )}
         >
@@ -225,8 +225,8 @@ export function BonsScreen() {
                   <Package className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">Marchandises</span>
-                  <span className="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                  <span className="block text-sm font-semibold text-foreground">Marchandises</span>
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                     Entreposage · sorties stock
                   </span>
                 </span>
@@ -264,8 +264,8 @@ export function BonsScreen() {
                   <Banknote className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">Caisse</span>
-                  <span className="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                  <span className="block text-sm font-semibold text-foreground">Caisse</span>
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                     Décaissements · espèces
                   </span>
                 </span>

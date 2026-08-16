@@ -70,7 +70,7 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
 
       {screen.dernieresClotures.length > 0 && (
         <Card className="border-border/80 p-4 shadow-sm">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Dernières clôtures
           </p>
           <div className="flex flex-wrap gap-2">

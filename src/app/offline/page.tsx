@@ -15,8 +15,8 @@ export default function OfflinePage() {
         <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
           <WifiOff className="size-6" />
         </div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Vous êtes hors connexion</h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        <h1 className="text-xl font-semibold text-foreground">Vous êtes hors connexion</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           L&apos;application nécessite une connexion Internet pour charger vos dossiers, clients et données
           comptables. Vérifiez votre réseau puis réessayez.
         </p>

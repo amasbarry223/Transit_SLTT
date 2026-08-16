@@ -87,11 +87,11 @@ export function PaiementDialog({
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
-              { label: "Total TTC", value: formatFCFA(facture.montantTTC), color: "text-slate-700 dark:text-slate-300" },
+              { label: "Total TTC", value: formatFCFA(facture.montantTTC), color: "text-foreground/90" },
               { label: "Déjà payé", value: formatFCFA(facture.montantPaye), color: "text-emerald-700 dark:text-emerald-400" },
               { label: "Reste", value: formatFCFA(reste), color: "text-amber-700 dark:text-amber-400" },
             ].map((item) => (
-              <div key={item.label} className="min-w-0 rounded-xl border border-border/60 bg-slate-50/80 p-2 dark:bg-slate-800/50 sm:p-3">
+              <div key={item.label} className="min-w-0 rounded-xl border border-border/60 p-2 bg-muted/50 sm:p-3">
                 <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
                 <p className={cn("mt-1 break-words text-xs font-bold tabular-nums sm:text-sm", item.color)}>{item.value}</p>
               </div>
@@ -99,7 +99,7 @@ export function PaiementDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="paiement-montant" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <Label htmlFor="paiement-montant" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Montant reçu (FCFA)
             </Label>
             <Input
@@ -119,7 +119,7 @@ export function PaiementDialog({
                   key={pct}
                   type="button"
                   onClick={() => setMontant(String(Math.round((reste * pct) / 100)))}
-                  className="rounded-lg border border-border/60 px-2.5 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-slate-800"
+                  className="rounded-lg border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-slate-800 hover:bg-muted"
                 >
                   {pct}%
                 </button>

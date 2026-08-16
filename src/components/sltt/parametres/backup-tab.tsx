@@ -130,7 +130,7 @@ export function BackupTab() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
+      <p className="text-sm text-muted-foreground">
         Sauvegarde, restauration et suppression complète des données métier (dossiers, clients,
         factures, comptabilité…). Les comptes utilisateurs, sociétés et annexes ne sont jamais
         touchés par ces actions.
@@ -138,12 +138,12 @@ export function BackupTab() {
 
       <Card className="p-6 shadow-sm border-border/80">
         <div className="flex items-center gap-2">
-          <DatabaseBackup className="size-4 text-slate-500 dark:text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <DatabaseBackup className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">
             Exporter une sauvegarde
           </h3>
         </div>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           Télécharge un fichier .json contenant l&apos;intégralité des données métier actuelles.
           Réimportable depuis cet écran pour restaurer l&apos;état exact au moment de l&apos;export.
         </p>
@@ -155,12 +155,12 @@ export function BackupTab() {
 
       <Card className="p-6 shadow-sm border-border/80">
         <div className="flex items-center gap-2">
-          <Upload className="size-4 text-slate-500 dark:text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <Upload className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">
             Importer une sauvegarde
           </h3>
         </div>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           Remplace <strong>toutes</strong> les données métier actuelles par celles d&apos;un fichier
           exporté précédemment. Les données en cours seront d&apos;abord entièrement effacées.
         </p>

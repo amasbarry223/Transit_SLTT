@@ -71,7 +71,7 @@ function StatPill({
         "inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs",
         tone === "primary" && "border-primary/30 bg-primary/5 text-primary",
         tone === "warning" && "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
-        tone === "default" && "border-border bg-slate-50 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300",
+        tone === "default" && "border-border text-slate-600 bg-muted/60 dark:text-slate-300",
       )}
     >
       <Icon className="size-3.5 shrink-0" />
@@ -260,7 +260,7 @@ export function ClasseurImportDialog({
 
         {phase === "pick" && (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-            <div className="w-full max-w-md rounded-xl border-2 border-dashed border-border bg-slate-50/60 p-8 text-center dark:bg-slate-900/40">
+            <div className="w-full max-w-md rounded-xl border-2 border-dashed border-border p-8 text-center bg-muted/40">
               <input
                 id="classeur-import-file"
                 type="file"
@@ -287,7 +287,7 @@ export function ClasseurImportDialog({
               >
                 {parsing ? "Analyse du fichier…" : "Sélectionner le fichier .xlsx"}
               </label>
-              {fileName && !parsing && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{fileName}</p>}
+              {fileName && !parsing && <p className="mt-2 text-xs text-muted-foreground">{fileName}</p>}
             </div>
           </div>
         )}
@@ -316,7 +316,7 @@ export function ClasseurImportDialog({
                 <TableBody>
                   {reviewRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                      <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
                         Aucune ligne applicable avec vos permissions actuelles.
                       </TableCell>
                     </TableRow>
@@ -362,7 +362,7 @@ export function ClasseurImportDialog({
             )}
 
             {phase === "importing" && (
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
                 Import en cours…
               </div>

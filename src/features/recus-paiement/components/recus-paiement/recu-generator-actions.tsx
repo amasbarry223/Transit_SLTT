@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Download, Printer, RotateCcw, Save } from "lucide-react";
+import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +50,14 @@ export function RecuGeneratorActions({
               {submitting ? "Enregistrement…" : "Enregistrer"}
             </Button>
           ) : null}
-          <Button size="sm" variant="outline" onClick={() => void onPrint()} disabled={busy} className="h-9 gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void onPrint()}
+            disabled={busy}
+            className="h-9 gap-1.5"
+            title={`Impression ${RECEIPT_FORMAT_LABEL} paysage (pas A4)`}
+          >
             <Printer className="size-3.5" />
             {printing ? "Préparation…" : "Imprimer"}
           </Button>
@@ -100,8 +108,8 @@ export function RecuGeneratorActions({
     <>
       <div className="space-y-4">
         <div>
-          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Actions</p>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-medium text-foreground">Actions</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Enregistrez, imprimez ou exportez le reçu une fois les informations complétées.
           </p>
         </div>
@@ -113,7 +121,13 @@ export function RecuGeneratorActions({
               {submitting ? "Enregistrement…" : "Enregistrer le reçu"}
             </Button>
           ) : null}
-          <Button variant="outline" onClick={() => void onPrint()} disabled={busy} className="h-11 justify-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void onPrint()}
+            disabled={busy}
+            className="h-11 justify-center gap-2"
+            title={`Impression ${RECEIPT_FORMAT_LABEL} paysage (pas A4)`}
+          >
             <Printer className="size-4" />
             {printing ? "Préparation…" : "Imprimer"}
           </Button>

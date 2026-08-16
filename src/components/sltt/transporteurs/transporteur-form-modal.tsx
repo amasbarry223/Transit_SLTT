@@ -151,10 +151,10 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
               </DialogDescription>
               {isEdit && target && (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  <span className="rounded-full px-2.5 py-0.5 text-xs font-medium text-muted-foreground bg-muted">
                     {target.vehicule}
                   </span>
-                  <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{target.immatriculation}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{target.immatriculation}</span>
                 </div>
               )}
             </div>
@@ -180,12 +180,12 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
             />
           </div>
 
-          <DialogFooter className="flex-col gap-3 border-t border-border/60 bg-slate-50/60 px-6 py-4 dark:bg-slate-800/40 sm:flex-row sm:justify-between">
+          <DialogFooter className="flex-col gap-3 border-t border-border/60 px-6 py-4 bg-muted/40 sm:flex-row sm:justify-between">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
-              <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-slate-500 dark:text-slate-400">
+              <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-muted-foreground">
                 Annuler
               </Button>
-              <span className="text-xs text-slate-400 dark:text-slate-500">
+              <span className="text-xs text-muted-foreground">
                 {step + 1}/{TRANSPORTEUR_FORM_STEPS.length}
               </span>
             </div>

@@ -83,7 +83,7 @@ export function AuditTab() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
+      <p className="text-sm text-muted-foreground">
         Journal des actions utilisateurs — connexions, modifications et opérations
         sensibles.
       </p>
@@ -91,7 +91,7 @@ export function AuditTab() {
       <Card className="p-4 shadow-sm border-border/80">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => {
@@ -148,7 +148,7 @@ export function AuditTab() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-slate-500 dark:text-slate-400"
+              className="h-10 text-muted-foreground"
               onClick={() => {
                 setQuery("");
                 setModuleFilter("all");
@@ -160,7 +160,7 @@ export function AuditTab() {
             </Button>
           )}
 
-          <p className="ml-auto text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filtered.length} entrée{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -168,14 +168,14 @@ export function AuditTab() {
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <ScrollText className="size-4 text-slate-400 dark:text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <ScrollText className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">
             Journal d&apos;audit
           </h3>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
+          <div className="py-16 text-center text-sm text-muted-foreground">
             Aucune entrée ne correspond aux filtres sélectionnés.
           </div>
         ) : (
@@ -185,23 +185,23 @@ export function AuditTab() {
                 <Card key={row.id} className="border-border/80 p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900 dark:text-slate-100">{row.user}</p>
-                      <p className="mt-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{formatDateTime(row.date)}</p>
+                      <p className="font-medium text-foreground">{row.user}</p>
+                      <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{formatDateTime(row.date)}</p>
                     </div>
                     <ToneBadge tone={actionTone[row.action]}>{row.action}</ToneBadge>
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">Module</dt>
+                      <dt className="text-xs text-muted-foreground">Module</dt>
                       <dd><ToneBadge tone="slate">{row.module}</ToneBadge></dd>
                     </div>
                     <div className="flex items-start justify-between gap-3">
-                      <dt className="shrink-0 text-xs text-slate-500 dark:text-slate-400">Détail</dt>
-                      <dd className="text-right text-slate-700 dark:text-slate-300">{row.detail}</dd>
+                      <dt className="shrink-0 text-xs text-muted-foreground">Détail</dt>
+                      <dd className="text-right text-foreground/90">{row.detail}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-slate-500 dark:text-slate-400">IP</dt>
-                      <dd className="font-mono text-xs text-slate-500 dark:text-slate-400">{row.ip}</dd>
+                      <dt className="text-xs text-muted-foreground">IP</dt>
+                      <dd className="font-mono text-xs text-muted-foreground">{row.ip}</dd>
                     </div>
                   </dl>
                 </Card>
@@ -210,23 +210,23 @@ export function AuditTab() {
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Date / Heure
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Utilisateur
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
                       Module
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Action
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Détail
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 md:table-cell">
+                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       IP
                     </TableHead>
                   </TableRow>
@@ -235,12 +235,12 @@ export function AuditTab() {
                   {paged.map((row) => (
                     <TableRow
                       key={row.id}
-                      className="border-b border-border hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+                      className="border-b border-border hover:bg-muted/60"
                     >
-                      <TableCell className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-300">
+                      <TableCell className="px-4 py-3.5 tabular-nums text-muted-foreground">
                         {formatDateTime(row.date)}
                       </TableCell>
-                      <TableCell className="px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
+                      <TableCell className="px-4 py-3.5 font-medium text-foreground">
                         {row.user}
                       </TableCell>
                       <TableCell className="hidden px-4 py-3.5 sm:table-cell">
@@ -249,12 +249,12 @@ export function AuditTab() {
                       <TableCell className="px-4 py-3.5">
                         <ToneBadge tone={actionTone[row.action]}>{row.action}</ToneBadge>
                       </TableCell>
-                      <TableCell className="max-w-[280px] px-4 py-3.5 text-sm text-slate-600 dark:text-slate-300">
+                      <TableCell className="max-w-[280px] px-4 py-3.5 text-sm text-muted-foreground">
                         <span className="line-clamp-2" title={row.detail}>
                           {row.detail}
                         </span>
                       </TableCell>
-                      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-slate-500 dark:text-slate-400 md:table-cell">
+                      <TableCell className="hidden px-4 py-3.5 font-mono text-xs text-muted-foreground md:table-cell">
                         {row.ip}
                       </TableCell>
                     </TableRow>
@@ -264,7 +264,7 @@ export function AuditTab() {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
+              <p className="text-xs tabular-nums text-muted-foreground">
                 {startIdx}–{endIdx} sur {filtered.length} entrée
                 {filtered.length !== 1 ? "s" : ""}
               </p>
@@ -279,7 +279,7 @@ export function AuditTab() {
                 >
                   <ChevronLeft className="size-4" />
                 </Button>
-                <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600 dark:text-slate-300">
+                <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-muted-foreground">
                   {safePage} / {totalPages}
                 </span>
                 <Button

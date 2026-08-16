@@ -53,7 +53,7 @@ export function ListFilters({
                   "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                   chip.active
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800",
+                    : "border-border bg-white text-slate-600 bg-muted/40 dark:text-slate-300 hover:bg-muted",
                 )}
               >
                 {chip.label}
@@ -64,7 +64,7 @@ export function ListFilters({
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-10 pl-9"
               placeholder={searchPlaceholder}
@@ -94,7 +94,7 @@ export function ListFilters({
               type="button"
               variant="ghost"
               size="sm"
-              className="h-10 gap-1.5 text-slate-500 dark:text-slate-400"
+              className="h-10 gap-1.5 text-muted-foreground"
               onClick={onClear}
             >
               <X className="size-3.5" />

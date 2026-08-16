@@ -409,13 +409,13 @@ export function ClientFicheScreen() {
   if (!client) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => go("clients")} className="text-slate-600 dark:text-slate-300">
+        <Button variant="ghost" onClick={() => go("clients")} className="text-muted-foreground">
           <ArrowLeft className="size-4" />
           Retour aux clients
         </Button>
         <Card className="border-border/80 p-10 text-center shadow-sm">
-          <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Client introuvable</p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-lg font-semibold text-foreground">Client introuvable</p>
+          <p className="mt-1 text-sm text-muted-foreground">
             Le client demandé n&apos;existe pas ou a été supprimé.
           </p>
         </Card>
@@ -459,11 +459,11 @@ export function ClientFicheScreen() {
             </div>
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Investi</p>
-              <p className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatFCFA(totalInvesti)}</p>
+              <p className="text-lg font-bold tabular-nums text-foreground">{formatFCFA(totalInvesti)}</p>
             </div>
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Prochaine action</p>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              <p className="text-sm font-medium text-foreground/90">
                 {totalDu > 0
                   ? `${pendingCount} solde${pendingCount !== 1 ? "s" : ""} ouvert${pendingCount !== 1 ? "s" : ""}`
                   : "Compte à jour"}
@@ -505,7 +505,7 @@ export function ClientFicheScreen() {
             "supports-[backdrop-filter]:bg-background/80",
           )}
         >
-          <TabsList className="flex h-12 w-full items-stretch rounded-none bg-slate-50/80 p-0 dark:bg-slate-800/80">
+          <TabsList className="flex h-12 w-full items-stretch rounded-none p-0 bg-muted/80">
             {visibleFicheTabs.map((t) => {
               const Icon = t.icon;
               const count =
@@ -532,10 +532,10 @@ export function ClientFicheScreen() {
                     "min-w-0",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <Icon className="size-4 shrink-0 text-muted-foreground" />
                   <span className="hidden truncate sm:inline">{t.label}</span>
                   <span className="truncate sm:hidden">{t.shortLabel}</span>
-                  <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
+                  <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
                     {count}
                   </span>
                 </TabsTrigger>

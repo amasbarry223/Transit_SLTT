@@ -255,8 +255,8 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
                 <Label htmlFor="opc-pu">Prix unitaire (FCFA)</Label>
                 <Input id="opc-pu" type="number" min="0" value={prixUnitaire} onChange={(e) => setPrixUnitaire(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
               </div>
-              <p className="col-span-full text-sm text-slate-500 dark:text-slate-400">
-                Montant (Sortie) : <span className="font-semibold text-slate-700 dark:text-slate-200">{formatFCFA(montantEffectif)}</span>
+              <p className="col-span-full text-sm text-muted-foreground">
+                Montant (Sortie) : <span className="font-semibold text-foreground/90">{formatFCFA(montantEffectif)}</span>
               </p>
             </div>
           ) : (

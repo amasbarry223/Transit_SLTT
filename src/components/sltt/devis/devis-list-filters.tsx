@@ -50,7 +50,7 @@ export function DevisListFilters({
       <Card className="border-border/80 p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-10 pl-9"
               placeholder="Référence, client, nature…"
@@ -87,7 +87,7 @@ export function DevisListFilters({
 
           <Select value={sortBy} onValueChange={(v) => { setSortBy(v as DevisSortKey); setPage(1); }}>
             <SelectTrigger className="h-10 w-full sm:w-52">
-              <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+              <ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" />
               <SelectValue placeholder="Trier par…" />
             </SelectTrigger>
             <SelectContent>
@@ -98,9 +98,9 @@ export function DevisListFilters({
           </Select>
 
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-10 gap-1.5 text-slate-500 dark:text-slate-400" onClick={clearFilters}>
+            <Button variant="ghost" size="sm" className="h-10 gap-1.5 text-muted-foreground" onClick={clearFilters}>
               Réinitialiser
-              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-foreground/90">
                 {activeFiltersCount}
               </span>
             </Button>

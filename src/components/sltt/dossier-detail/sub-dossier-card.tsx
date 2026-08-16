@@ -34,9 +34,9 @@ export function SubDossierCard({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-slate-900">
+    <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm bg-muted/40">
       <div
-        className="flex cursor-pointer items-center gap-3 px-4 py-3.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/60"
+        className="flex cursor-pointer items-center gap-3 px-4 py-3.5 hover:bg-muted/60"
         onClick={() => setExpanded((v) => !v)}
       >
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-primary dark:bg-blue-950/40">
@@ -44,7 +44,7 @@ export function SubDossierCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{sd.nom}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-muted-foreground">
             <GlossaryLabel term="sousDossier" showIcon={false} className="text-xs" /> ·{" "}
             {fichiers.length} fichier{fichiers.length !== 1 ? "s" : ""}
           </p>
@@ -63,7 +63,7 @@ export function SubDossierCard({
       </div>
       {expanded && (
         <div className="border-t border-border px-4 pb-4 pt-3">
-          {sd.description && <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">{sd.description}</p>}
+          {sd.description && <p className="mb-3 text-sm text-muted-foreground">{sd.description}</p>}
           <FileDropZone
             dossierId={sd.dossierId}
             sousDossierId={sd.id}

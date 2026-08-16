@@ -133,15 +133,15 @@ export function DossierDetailHero({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-mono text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
+                  <h1 className="font-mono text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
                     {dossier.reference}
                   </h1>
                   <SocieteBadge societeNom={dossier.societeNom} size="sm" />
                   <DossierStatutBadge statut={dossier.statut} />
                 </div>
-                <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300">
+                <p className="mt-1.5 text-sm text-muted-foreground">
                   <span className="font-medium">{dossier.clientNom}</span>
-                  <span className="text-slate-400 dark:text-slate-500"> · </span>
+                  <span className="text-muted-foreground"> · </span>
                   {dossier.nature}
                 </p>
               </div>

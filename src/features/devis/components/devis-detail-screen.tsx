@@ -72,7 +72,7 @@ export function DevisDetailScreen() {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-center">
         <DossierIcon className="size-14" />
-        <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Devis introuvable</p>
+        <p className="mt-4 text-sm font-semibold text-muted-foreground">Devis introuvable</p>
         <Button variant="outline" className="mt-5" onClick={() => go("devis")}>
           <ArrowLeft className="mr-2 size-4" /> Retour aux devis
         </Button>
@@ -171,8 +171,8 @@ export function DevisDetailScreen() {
         <div className="grid gap-5 lg:grid-cols-5">
           <div className="space-y-5 lg:col-span-3">
             <Card className="border-border/80 shadow-sm">
-              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Informations</h2>
+              <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Informations</h2>
               </div>
               <div className="px-5">
                 <InfoRow icon={Building2} label="Société" value={devis.societeNom} />
@@ -185,18 +185,18 @@ export function DevisDetailScreen() {
             </Card>
             {devis.notes && (
               <Card className="border-border/80 shadow-sm">
-                <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
-                  <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Notes & conditions</h2>
+                <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Notes & conditions</h2>
                 </div>
-                <p className="whitespace-pre-wrap px-5 py-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{devis.notes}</p>
+                <p className="whitespace-pre-wrap px-5 py-4 text-sm leading-relaxed text-muted-foreground">{devis.notes}</p>
               </Card>
             )}
           </div>
           <div className="space-y-5 lg:col-span-2">
             <DevisPipelineCard statut={devis.statut} canWrite={canWrite} onSelect={handleStatutChange} />
             <Card className="overflow-hidden border-border/80 shadow-sm">
-              <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Estimation financière</h2>
+              <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimation financière</h2>
               </div>
               <FinancialBreakdown devis={devis} />
             </Card>

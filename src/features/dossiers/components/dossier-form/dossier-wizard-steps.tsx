@@ -40,10 +40,10 @@ export function DossierWizardProgress({ wizardStep, mode = "wizard" }: DossierWi
           {WIZARD_STEPS.map((step) => (
             <div
               key={step.id}
-              className="rounded-lg border border-border/70 bg-slate-50/80 px-3 py-2.5 dark:bg-slate-800/40"
+              className="rounded-lg border border-border/70 px-3 py-2.5 bg-muted/40"
             >
               <p className="text-xs font-semibold text-primary">{step.label}</p>
-              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{step.hint}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{step.hint}</p>
             </div>
           ))}
         </div>
@@ -53,7 +53,7 @@ export function DossierWizardProgress({ wizardStep, mode = "wizard" }: DossierWi
 
   return (
     <Card className="border-border/80 p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
           Étape {wizardStep} sur {WIZARD_STEPS.length} — {WIZARD_STEPS[wizardStep - 1]?.label}
         </span>
@@ -408,11 +408,11 @@ export function DossierSuiviSection({
                   {TRANSITION_META[nextTransition].actionLabel}
                 </Button>
               ) : nextTransition ? (
-                <span className="text-xs text-slate-400 dark:text-slate-500">
+                <span className="text-xs text-muted-foreground">
                   Vous n'avez pas la permission de changer le statut de ce dossier.
                 </span>
               ) : (
-                <span className="text-xs text-slate-400 dark:text-slate-500">
+                <span className="text-xs text-muted-foreground">
                   Statut final — aucune transition possible
                 </span>
               )}
@@ -420,14 +420,14 @@ export function DossierSuiviSection({
           ) : (
             <div className="flex flex-wrap items-center gap-2.5">
               <DossierStatutBadge statut="En cours" />
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-muted-foreground">
                 Tout nouveau dossier démarre à « En cours ». Les transitions se font ensuite depuis
                 la fiche dossier.
               </span>
             </div>
           )}
           {isEdit && (
-            <p className="text-xs text-slate-400 dark:text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Le statut se fait uniquement avancer via une transition guidée, qui enregistre le
               paiement associé.
             </p>

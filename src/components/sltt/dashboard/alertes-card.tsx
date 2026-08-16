@@ -16,7 +16,7 @@ export function AlertesCard({
     <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80 rounded-xl">
       <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3.5">
         <AlertTriangle className="size-4 text-amber-500" />
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Alertes</h2>
+        <h2 className="text-sm font-semibold text-foreground">Alertes</h2>
         {alertes.length > 0 && (
           <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-semibold leading-none text-white">
             {alertes.length}
@@ -28,8 +28,8 @@ export function AlertesCard({
         {alertes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8">
             <CheckCircle2 className="size-7 text-emerald-300" />
-            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">{UI.empty.notifications.title}</p>
-            <p className="mt-0.5 max-w-[14rem] text-[11px] text-slate-400 dark:text-slate-500">{UI.empty.notifications.description}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{UI.empty.notifications.title}</p>
+            <p className="mt-0.5 max-w-[14rem] text-[11px] text-muted-foreground">{UI.empty.notifications.description}</p>
           </div>
         ) : (
           alertes.map((alert) => {
@@ -40,7 +40,7 @@ export function AlertesCard({
                 key={alert.id}
                 role="button"
                 tabIndex={0}
-                className="flex cursor-pointer items-start gap-3 px-5 py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex cursor-pointer items-start gap-3 px-5 py-3 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 onClick={() => onAlertClick(alert)}
                 onKeyDown={(e) => e.key === "Enter" && onAlertClick(alert)}
               >
@@ -55,7 +55,7 @@ export function AlertesCard({
                   <p className="truncate text-xs font-semibold leading-snug text-slate-800 dark:text-slate-200">
                     {alert.message}
                   </p>
-                  <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-400 dark:text-slate-500">
+                  <p className="mt-0.5 truncate text-[11px] leading-snug text-muted-foreground">
                     {alert.detail}
                   </p>
                 </div>

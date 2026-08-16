@@ -107,8 +107,8 @@ export function TransporteurFormStepper({
                     "flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all",
                     done && "border-primary bg-primary text-white",
                     active && "border-primary bg-primary text-white ring-4 ring-primary/20",
-                    !done && !active && reachable && "border-slate-200 bg-white text-slate-500 dark:text-slate-400 hover:border-primary/40 dark:border-slate-700 dark:bg-slate-900",
-                    !reachable && "cursor-default border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900/50",
+                    !done && !active && reachable && "border-slate-200 bg-white text-muted-foreground hover:border-primary/40 dark:border-border bg-muted/50",
+                    !reachable && "cursor-default border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 bg-muted/40/50",
                   )}
                   title={step.label}
                 >
@@ -127,12 +127,12 @@ export function TransporteurFormStepper({
                 <p
                   className={cn(
                     "text-xs font-semibold leading-tight",
-                    active ? "text-primary" : done ? "text-slate-700 dark:text-slate-300" : "text-slate-400",
+                    active ? "text-primary" : done ? "text-foreground/90" : "text-slate-400",
                   )}
                 >
                   {step.label}
                 </p>
-                <p className="mt-0.5 text-[10px] leading-tight text-slate-400 dark:text-slate-500">
+                <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
                   {step.description}
                 </p>
               </div>
@@ -140,7 +140,7 @@ export function TransporteurFormStepper({
           );
         })}
       </ol>
-      <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400 sm:hidden">
+      <p className="mt-3 text-center text-xs text-muted-foreground sm:hidden">
         Étape {currentStep + 1} / {TRANSPORTEUR_FORM_STEPS.length} — {TRANSPORTEUR_FORM_STEPS[currentStep].label}
       </p>
     </nav>
@@ -175,8 +175,8 @@ export function TransporteurFormFields({
       {showPartenaire && (
         <section className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Identité du partenaire</h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <h3 className="text-sm font-semibold text-foreground">Identité du partenaire</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               Renseignez la société et la personne référente pour ce transporteur.
             </p>
           </div>
@@ -210,8 +210,8 @@ export function TransporteurFormFields({
       {showCoordonnees && (
         <section className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Coordonnées</h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <h3 className="text-sm font-semibold text-foreground">Coordonnées</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               Comment joindre ce partenaire pour une mission ou un suivi.
             </p>
           </div>
@@ -249,8 +249,8 @@ export function TransporteurFormFields({
       {showFlotte && (
         <section className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Véhicule & trajet</h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <h3 className="text-sm font-semibold text-foreground">Véhicule & trajet</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               Décrivez la flotte et les axes habituellement couverts.
             </p>
           </div>
@@ -270,7 +270,7 @@ export function TransporteurFormFields({
                       "flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-center transition-colors",
                       selected
                         ? "border-primary bg-primary/5 text-primary"
-                        : "border-border bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800",
+                        : "border-border bg-white text-slate-600 hover:border-slate-300 bg-muted/40 dark:text-slate-300 hover:bg-muted",
                     )}
                   >
                     <Icon className="size-5 shrink-0" />
@@ -328,7 +328,7 @@ export function TransporteurFormFields({
                         "rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
                         values.capacite === t
                           ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
+                          : "border-border text-muted-foreground hover:border-slate-300 hover:bg-muted",
                       )}
                     >
                       {t} t
@@ -361,7 +361,7 @@ export function TransporteurFormFields({
                       "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
                       values.trajet === t
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
+                        : "border-border text-muted-foreground hover:border-slate-300 hover:bg-muted",
                     )}
                   >
                     {t}
@@ -376,8 +376,8 @@ export function TransporteurFormFields({
       {showValidation && (
         <section className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Disponibilité & notes</h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <h3 className="text-sm font-semibold text-foreground">Disponibilité & notes</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               Indiquez si le partenaire peut recevoir de nouvelles missions.
             </p>
           </div>
@@ -395,8 +395,8 @@ export function TransporteurFormFields({
                     className={cn(
                       "flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors",
                       selected && s === "Actif" && "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30",
-                      selected && s === "Inactif" && "border-slate-400 bg-slate-50 dark:bg-slate-800/60",
-                      !selected && "border-border hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
+                      selected && s === "Inactif" && "border-slate-400 bg-muted/50/60",
+                      !selected && "border-border hover:border-slate-300 hover:bg-muted",
                     )}
                   >
                     <span
@@ -406,8 +406,8 @@ export function TransporteurFormFields({
                       )}
                     />
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{s}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-sm font-semibold text-foreground">{s}</p>
+                      <p className="text-xs text-muted-foreground">
                         {s === "Actif" ? "Disponible pour missions" : "Suspendu ou en maintenance"}
                       </p>
                     </div>
@@ -453,18 +453,18 @@ function TransporteurFormSummary({ values }: { values: TransporteurInput }) {
   ] as const;
 
   return (
-    <div className="rounded-xl border border-border/80 bg-slate-50/80 p-4 dark:bg-slate-800/40">
+    <div className="rounded-xl border border-border/80 p-4 bg-muted/40">
       <div className="mb-3 flex items-center gap-2">
         <CheckCircle2 className="size-4 text-primary" />
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Récapitulatif</p>
+        <p className="text-sm font-semibold text-foreground">Récapitulatif</p>
       </div>
       <dl className="space-y-2">
         {rows.map((row) => (
           <div key={row.label} className="flex items-start justify-between gap-4 text-sm">
-            <dt className="shrink-0 text-slate-500 dark:text-slate-400">{row.label}</dt>
+            <dt className="shrink-0 text-muted-foreground">{row.label}</dt>
             <dd
               className={cn(
-                "text-right font-medium text-slate-900 dark:text-slate-100",
+                "text-right font-medium text-foreground",
                 "mono" in row && row.mono && "font-mono text-xs uppercase tracking-wide",
               )}
             >
@@ -488,8 +488,8 @@ function TransporteurFormSummary({ values }: { values: TransporteurInput }) {
       </dl>
       {values.notes?.trim() && (
         <div className="mt-3 border-t border-border/60 pt-3">
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Notes</p>
-          <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{values.notes}</p>
+          <p className="text-xs font-medium text-muted-foreground">Notes</p>
+          <p className="mt-1 text-sm text-foreground/90">{values.notes}</p>
         </div>
       )}
     </div>

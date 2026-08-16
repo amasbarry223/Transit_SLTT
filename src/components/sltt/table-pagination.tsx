@@ -26,7 +26,7 @@ export function TablePagination({
 
   return (
     <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
+      <p className="text-xs tabular-nums text-muted-foreground">
         {startIdx}–{endIdx} sur {totalItems}
         {itemLabel ? ` ${itemLabel}` : ""}
       </p>
@@ -41,7 +41,7 @@ export function TablePagination({
         >
           <ChevronLeft className="size-4" />
         </Button>
-        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-slate-600 dark:text-slate-300">
+        <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-muted-foreground">
           {page} / {totalPages}
         </span>
         <Button

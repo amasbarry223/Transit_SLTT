@@ -55,13 +55,13 @@ function StatPill({
   tone?: "default" | "primary" | "warning";
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border bg-slate-50/60 px-3 py-2 dark:bg-slate-900/40">
+    <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 bg-muted/40">
       <Icon
         className={cn(
           "size-4 shrink-0",
           tone === "primary" && "text-primary",
           tone === "warning" && "text-amber-600 dark:text-amber-400",
-          tone === "default" && "text-slate-400 dark:text-slate-500",
+          tone === "default" && "text-muted-foreground",
         )}
       />
       <div className="min-w-0 leading-tight">
@@ -70,12 +70,12 @@ function StatPill({
             "text-sm font-semibold tabular-nums",
             tone === "primary" && "text-primary",
             tone === "warning" && "text-amber-700 dark:text-amber-400",
-            tone === "default" && "text-slate-900 dark:text-slate-100",
+            tone === "default" && "text-foreground",
           )}
         >
           {value}
         </p>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">{label}</p>
+        <p className="text-[11px] text-muted-foreground">{label}</p>
       </div>
     </div>
   );
@@ -280,7 +280,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
               <label htmlFor="cg-import-file" className={cn("inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary hover:underline", parsing && "pointer-events-none opacity-60")}>
                 {parsing ? "Analyse du fichier…" : "Sélectionner le fichier .xlsx"}
               </label>
-              {fileName && !parsing && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{fileName}</p>}
+              {fileName && !parsing && <p className="mt-2 text-xs text-muted-foreground">{fileName}</p>}
             </div>
           </div>
         )}
@@ -381,11 +381,11 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
 
             {phase === "importing" && (
               <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />
                   Import en cours… {progress.done}/{progress.total}
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out" style={{ width: `${importPct}%` }} />
                 </div>
               </div>

@@ -335,7 +335,7 @@ function AppRootInner() {
 
   if (!authReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-slate-600 dark:text-slate-300">
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
         <div className="flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
           {UI.loading.verifying}

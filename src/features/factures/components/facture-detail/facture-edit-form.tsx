@@ -60,11 +60,11 @@ export function FactureEditForm({
       <div className="space-y-6 p-6">
         <div className="grid gap-5 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="edit-facture-date" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Date d'émission</Label>
+            <Label htmlFor="edit-facture-date" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Date d'émission</Label>
             <Input id="edit-facture-date" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="h-10" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-facture-date-echeance" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Date d'échéance</Label>
+            <Label htmlFor="edit-facture-date-echeance" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Date d'échéance</Label>
             <Input
               id="edit-facture-date-echeance"
               type="date"
@@ -74,12 +74,12 @@ export function FactureEditForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-facture-societe" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Société</Label>
+            <Label htmlFor="edit-facture-societe" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Société</Label>
             <select
               id="edit-facture-societe"
               value={editSocieteId}
               onChange={(e) => setEditSocieteId(e.target.value)}
-              className="h-10 w-full appearance-none rounded-lg border border-border bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="h-10 w-full appearance-none rounded-lg border border-border bg-white bg-muted/40 px-3 text-sm text-foreground/90 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
               <option value="">— Aucune (transit) —</option>
               {societes.map((s) => (
@@ -90,7 +90,7 @@ export function FactureEditForm({
         </div>
 
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
-          <Label htmlFor="edit-tva-switch" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <Label htmlFor="edit-tva-switch" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
             Appliquer la TVA ({DEFAULT_TVA_RATE} %)
           </Label>
           <Switch id="edit-tva-switch" checked={editTvaOn} onCheckedChange={setEditTvaOn} />
@@ -98,7 +98,7 @@ export function FactureEditForm({
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lignes de facturation</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Lignes de facturation</p>
             <button
               onClick={() => setEditLignes((l) => [...l, { description: "", quantite: "1", prixUnitaire: "" }])}
               className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400"
@@ -107,7 +107,7 @@ export function FactureEditForm({
             </button>
           </div>
           <div className="overflow-hidden rounded-xl border border-border/80">
-            <div className="grid grid-cols-[1fr_72px_120px_120px_36px] gap-x-2 border-b border-border/60 bg-slate-50/80 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:bg-slate-800/50">
+            <div className="grid grid-cols-[1fr_72px_120px_120px_36px] gap-x-2 border-b border-border/60 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 bg-muted/50">
               <span>Description</span>
               <span className="text-center">Qté</span>
               <span className="text-right">P.U. HT</span>
@@ -148,7 +148,7 @@ export function FactureEditForm({
                     }
                     className="h-9 text-right text-sm tabular-nums"
                   />
-                  <p className="text-right text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+                  <p className="text-right text-sm font-semibold tabular-nums text-foreground/90">
                     {formatFCFA(
                       (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
                     )}
@@ -177,7 +177,7 @@ export function FactureEditForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="edit-facture-notes" className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</Label>
+          <Label htmlFor="edit-facture-notes" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Notes</Label>
           <Textarea
             id="edit-facture-notes"
             value={editNotes}

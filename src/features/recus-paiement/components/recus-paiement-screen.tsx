@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { RecuGeneratorActions } from "@/components/sltt/recus-paiement/recu-generator-actions";
-import { RecuGeneratorForm } from "@/components/sltt/recus-paiement/recu-generator-form";
-import { RecuReceiptPreview } from "@/components/sltt/recus-paiement/recu-receipt-preview";
-import { RecuWorkspace } from "@/components/sltt/recus-paiement/recu-workspace";
-import { useRecuGenerator } from "@/components/sltt/recus-paiement/use-recu-generator";
+import { RecuGeneratorActions } from "./recus-paiement/recu-generator-actions";
+import { RecuGeneratorForm } from "./recus-paiement/recu-generator-form";
+import { RecuReceiptPreview } from "./recus-paiement/recu-receipt-preview";
+import { RecuWorkspace } from "./recus-paiement/recu-workspace";
+import { useRecuGenerator } from "./recus-paiement/use-recu-generator";
 
 export function RecusPaiementScreen() {
   const gen = useRecuGenerator();

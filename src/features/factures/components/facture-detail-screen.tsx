@@ -79,8 +79,8 @@ export function FactureDetailScreen() {
   if (!facture) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-center">
-        <Receipt className="size-14 text-slate-200 dark:text-slate-700" />
-        <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Facture introuvable</p>
+        <Receipt className="size-14 text-muted-foreground/70" />
+        <p className="mt-4 text-sm font-semibold text-muted-foreground">Facture introuvable</p>
         <Button variant="outline" className="mt-5" onClick={() => go("factures")}>
           <ArrowLeft className="mr-2 size-4" /> Retour aux factures
         </Button>
@@ -220,10 +220,10 @@ export function FactureDetailScreen() {
 
             {facture.notes && (
               <Card className="border-border/80 shadow-sm">
-                <div className="border-b border-border/60 bg-slate-50/60 px-5 py-3 dark:bg-slate-800/60">
+                <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
                   <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Notes</h2>
                 </div>
-                <p className="px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-300">
+                <p className="px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
                   {facture.notes}
                 </p>
               </Card>

@@ -104,17 +104,17 @@ function DayPanel({
   return (
     <Card className="border-border/80 shadow-md">
       <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-        <p className="text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">{label}</p>
+        <p className="text-sm font-semibold capitalize text-foreground">{label}</p>
         <button
           onClick={onClose}
-          className="flex size-7 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-slate-700 dark:hover:text-slate-300"
         >
           <X className="size-4" />
         </button>
       </div>
 
       {events.length === 0 ? (
-        <div className="py-10 text-center text-sm text-slate-400 dark:text-slate-500">Aucun événement ce jour.</div>
+        <div className="py-10 text-center text-sm text-muted-foreground">Aucun événement ce jour.</div>
       ) : (
         <div className="divide-y divide-border">
           {events.map((ev) => {
@@ -124,7 +124,7 @@ function DayPanel({
                 key={ev.id}
                 role="button"
                 tabIndex={0}
-                className="flex cursor-pointer items-start gap-3 px-5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                className="flex cursor-pointer items-start gap-3 px-5 py-3.5 hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                 onClick={() => {
                   if (ev.type === "dossier") onOpenDossier(ev.payload.id as string);
                   if (ev.type === "bon") onOpenBon();
@@ -141,8 +141,8 @@ function DayPanel({
                   <Icon className="size-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{ev.label}</p>
-                  <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{ev.sub}</p>
+                  <p className="truncate text-sm font-medium text-foreground">{ev.label}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{ev.sub}</p>
                 </div>
                 {ev.type === "dossier" && (
                   <DossierStatutBadge statut={ev.payload.statut as Parameters<typeof DossierStatutBadge>[0]["statut"]} />
@@ -286,28 +286,28 @@ export function CalendrierScreen() {
           <Button variant="outline" size="icon" className="size-9" onClick={prevMonth}>
             <ChevronLeft className="size-4" />
           </Button>
-          <h2 className="min-w-[180px] text-center text-base font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="min-w-[180px] text-center text-base font-semibold text-foreground">
             {FR_MONTHS[month]} {year}
           </h2>
           <Button variant="outline" size="icon" className="size-9" onClick={nextMonth}>
             <ChevronRight className="size-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="ml-2 text-slate-500 dark:text-slate-400" onClick={goToday}>
+          <Button variant="ghost" size="sm" className="ml-2 text-muted-foreground" onClick={goToday}>
             Aujourd&apos;hui
           </Button>
         </div>
 
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-3 text-xs">
-          <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="size-2 rounded-full bg-blue-500" />
             Dossiers ({monthEvents.dossier})
           </span>
-          <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="size-2 rounded-full bg-emerald-500" />
             Bons ({monthEvents.bon})
           </span>
-          <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="size-2 rounded-full bg-amber-500" />
             Paiements ({monthEvents.paiement})
           </span>
@@ -317,9 +317,9 @@ export function CalendrierScreen() {
       {/* Calendar grid */}
       <Card className="overflow-hidden border-border/80 shadow-sm">
         {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-border bg-slate-50/70 dark:bg-slate-800/70">
+        <div className="grid grid-cols-7 border-b border-border bg-muted/70">
           {FR_DAYS.map((d) => (
-            <div key={d} className="py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <div key={d} className="py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {d}
             </div>
           ))}
@@ -329,7 +329,7 @@ export function CalendrierScreen() {
         <div className="grid grid-cols-7 divide-x divide-y divide-border">
           {cells.map((day, idx) => {
             if (day === null) {
-              return <div key={`empty-${idx}`} className="min-h-[96px] bg-slate-50/40 dark:bg-slate-800/40" />;
+              return <div key={`empty-${idx}`} className="min-h-[96px] bg-muted/40" />;
             }
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const events = eventsByDate[dateStr] ?? [];
@@ -358,8 +358,8 @@ export function CalendrierScreen() {
                   isSelected
                     ? "bg-blue-50/80 dark:bg-blue-950/40"
                     : events.length > 0
-                    ? "hover:bg-slate-50/80 dark:hover:bg-slate-800/80"
-                    : "hover:bg-slate-50/40 dark:hover:bg-slate-800/40",
+                    ? "hover:bg-muted/80"
+                    : "hover:bg-muted/40",
                 )}
               >
                 {/* Day number */}
@@ -369,13 +369,13 @@ export function CalendrierScreen() {
                       "flex size-6 items-center justify-center rounded-full text-xs font-semibold",
                       isToday
                         ? "bg-primary text-white"
-                        : "text-slate-700 dark:text-slate-300",
+                        : "text-foreground/90",
                     )}
                   >
                     {day}
                   </span>
                   {events.length > 3 && (
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500">+{events.length - 3}</span>
+                    <span className="text-[10px] text-muted-foreground">+{events.length - 3}</span>
                   )}
                 </div>
 

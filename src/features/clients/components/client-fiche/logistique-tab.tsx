@@ -33,8 +33,8 @@ export function LogistiqueTab({
       <section>
         <div className="mb-3 flex items-center gap-2">
           <Package className="size-4 text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Stock entreposé</h3>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <h3 className="text-sm font-semibold text-foreground">Stock entreposé</h3>
+          <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500 bg-muted dark:text-slate-400">
             {stockItems.length}
           </span>
         </div>
@@ -49,8 +49,8 @@ export function LogistiqueTab({
       <section>
         <div className="mb-3 flex items-center gap-2">
           <Package className="size-4 text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bons de sortie</h3>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <h3 className="text-sm font-semibold text-foreground">Bons de sortie</h3>
+          <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500 bg-muted dark:text-slate-400">
             {bons.length}
           </span>
         </div>

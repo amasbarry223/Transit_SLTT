@@ -23,7 +23,7 @@ export function PasswordField({
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+      <Label htmlFor={id} className="text-sm font-medium text-foreground/90">
         {label}
       </Label>
       <div className="relative">
@@ -34,7 +34,7 @@ export function PasswordField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           minLength={8}
-          className="h-11 pr-10 bg-white dark:bg-slate-950"
+          className="h-11 pr-10 bg-card"
         />
         <button
           type="button"

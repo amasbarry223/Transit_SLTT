@@ -15,8 +15,8 @@ export type DevisStatutConfig = {
 export const STATUT_CONFIG: Record<DevisStatut, DevisStatutConfig> = {
   Brouillon: {
     label: "Brouillon", icon: Clock,
-    badge: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-    dot: "bg-slate-400", text: "text-slate-700 dark:text-slate-300",
+    badge: "bg-muted text-muted-foreground border-slate-200 dark:border-slate-700",
+    dot: "bg-slate-400", text: "text-foreground/90",
     desc: "Ce devis est en cours de rédaction.",
   },
   Envoyé: {

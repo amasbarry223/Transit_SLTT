@@ -22,20 +22,20 @@ export function DossiersEvolutionChart({
     <Card className="rounded-xl border-border/80 p-5 shadow-sm">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="text-base font-semibold text-foreground">
             Évolution des dossiers
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">6 derniers mois</p>
+          <p className="text-xs text-muted-foreground">6 derniers mois</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="inline-block size-2.5 rounded-sm" style={{ background: SLTT_BLUE }} />
           Dossiers créés
         </div>
       </div>
       {!hasData ? (
         <div className="flex h-[280px] flex-col items-center justify-center gap-1 text-center">
-          <BarChart3 className="size-7 text-slate-200 dark:text-slate-700" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun dossier sur cette période.</p>
+          <BarChart3 className="size-7 text-muted-foreground/70" />
+          <p className="text-sm text-muted-foreground">Aucun dossier sur cette période.</p>
         </div>
       ) : (
         <div className="h-[280px] w-full">

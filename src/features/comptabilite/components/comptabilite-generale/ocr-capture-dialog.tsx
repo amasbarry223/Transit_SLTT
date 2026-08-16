@@ -247,7 +247,7 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
             <label htmlFor="cg-ocr-file" className={cn("inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary hover:underline", running && "pointer-events-none opacity-60")}>
               {running ? "Extraction OCR en cours…" : fileName ? "Changer de fichier" : "Sélectionner une photo ou un PDF"}
             </label>
-            {fileName && !running && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{fileName}</p>}
+            {fileName && !running && <p className="mt-2 text-xs text-muted-foreground">{fileName}</p>}
           </div>
 
           {ocrError && (
@@ -312,7 +312,7 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
                 {showRawText ? "Masquer le texte OCR" : "Voir le texte brut OCR"}
               </button>
               {showRawText && (
-                <pre className="max-h-32 overflow-auto rounded-md border border-border bg-slate-50 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                <pre className="max-h-32 overflow-auto rounded-md border border-border bg-slate-50 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 bg-card dark:text-slate-300">
                   {rawText}
                 </pre>
               )}
