@@ -23,3 +23,8 @@ export {
   type ClasseurPrintRow,
   type ClasseurPrintTotals,
 } from "./classeur";
+export {
+  printBilan,
+  type BilanPrintRow,
+  type BilanPrintTotals,
+} from "./bilan";

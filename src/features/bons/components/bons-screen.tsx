@@ -133,17 +133,10 @@ export function BonsScreen() {
     };
   }
 
-  function handleView(reference: string) {
-    const bon = bons.find((item) => item.reference === reference);
-    if (!bon) return;
-    printHTML(`Bon ${reference}`, buildBonHTML(bon), bonBrand(bon.societeId));
-  }
-
   function handlePrint(reference: string) {
     const bon = bons.find((item) => item.reference === reference);
     if (!bon) return;
     printHTML(`Bon ${reference}`, buildBonHTML(bon), bonBrand(bon.societeId));
-    toastSuccess(toast, { title: "Bon prêt à imprimer", description: `${reference} — ${bon.clientNom}.` });
   }
 
   async function handleValidateBon(id: string, reference: string) {
@@ -290,7 +283,7 @@ export function BonsScreen() {
           validatingIds={validatingIds}
           onOpenCreateDialog={() => setMarchandiseDialogOpen(true)}
           onConfirmValidate={setConfirmValidate}
-          onView={handleView}
+          onView={handlePrint}
           onPrint={handlePrint}
         />
 

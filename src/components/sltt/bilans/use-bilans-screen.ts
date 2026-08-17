@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useStore } from "@/lib/store";
-import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
-import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
+import { parseLocalDate } from "@/lib/format";
+import { exportToExcel, printBilan } from "@/lib/export";
+import { resolveClasseurPrintBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
 import { sommeFacturesEncaissees } from "@/lib/client-stats";
 import { useToast } from "@/hooks/use-toast";
@@ -230,35 +230,19 @@ export function useBilansScreen() {
   }
 
   function handleExportPDF() {
-    const rowsHTML = sortedRecap
-      .map(
-        (r) => `<tr>
-          <td>${htmlEscape(r.client)}</td>
-          <td class="num">${formatFCFA(r.investi, false)}</td>
-          <td class="num">${formatFCFA(r.encaisse, false)}</td>
-          <td class="num">${formatFCFA(r.reste, false)}</td>
-          <td class="num">${r.ecart.toLocaleString("fr-FR")}</td>
-        </tr>`,
-      )
-      .join("");
-    printHTML(`Bilan ${periodeLabel}`, `
-      <h1>Bilan financier — ${periodeLabel}</h1>
-      <div class="subtitle">Taux de recouvrement : ${tauxRecouvrement}% · Édité le ${formatDateShort(new Date())}</div>
-      <table>
-        <thead><tr>
-          <th>Client</th><th class="num">Investi</th><th class="num">Encaissé</th>
-          <th class="num">Reste à payer</th><th class="num">Écart de règlement</th>
-        </tr></thead>
-        <tbody>${rowsHTML}</tbody>
-        <tfoot><tr class="total-row">
-          <td>Total</td>
-          <td class="num">${formatFCFA(recapTotaux.investi, false)}</td>
-          <td class="num">${formatFCFA(recapTotaux.encaisse, false)}</td>
-          <td class="num">${formatFCFA(recapTotaux.reste, false)}</td>
-          <td class="num">${recapTotaux.ecart.toLocaleString("fr-FR")}</td>
-        </tr></tfoot>
-      </table>
-    `, resolvePrintHTMLBrand(societes));
+    printBilan(
+      periodeLabel,
+      sortedRecap.map((r) => ({
+        client: r.client,
+        investi: r.investi,
+        encaisse: r.encaisse,
+        reste: r.reste,
+        ecart: r.ecart,
+      })),
+      recapTotaux,
+      tauxRecouvrement,
+      resolveClasseurPrintBrand(societes, selectedSocieteId ?? undefined),
+    );
   }
 
   return {

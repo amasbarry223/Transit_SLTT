@@ -6,6 +6,7 @@ export { exportToExcel } from "./excel-export";
 
 export {
   buildBonSortieCaisseHTML,
+  printBilan,
   printBonSortieCaisseModule,
   printClasseur,
   printClients,
@@ -17,6 +18,8 @@ export {
   printRecuPaiementModule,
   printStockInventory,
   shouldShowTva,
+  type BilanPrintRow,
+  type BilanPrintTotals,
   type BonSortieCaisseModuleData,
   type ClasseurPrintRow,
   type ClientPrintRow,

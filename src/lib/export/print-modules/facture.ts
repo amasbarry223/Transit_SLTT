@@ -53,8 +53,10 @@ export interface FactureModuleData {
   montantTTC: number;
   montantPaye: number;
   notes: string;
-  creePar: string;
-  creeLe: string;
+  /** Utilisateur connecté qui télécharge/imprime le PDF maintenant — distinct
+   * du créateur historique de la facture (qui peut être quelqu'un d'autre,
+   * des mois plus tôt) : "généré" désigne cette action-ci, pas la création. */
+  genereParNom: string;
   dossierReference?: string;
   dossierBl?: string;
 }
@@ -407,7 +409,7 @@ tbody td:last-child { border-right: none; }
   </div>
 
   <footer class="footer">
-    <div class="footer-note">Facture générée · ${htmlEscape(data.creePar)} · ${fmtDate(data.creeLe)}<br>${platformFooterHTML(societe.nom)}</div>
+    <div class="footer-note">Facture générée · ${htmlEscape(data.genereParNom)} · ${fmtDate(new Date().toISOString())}<br>${platformFooterHTML(societe.nom)}</div>
     <div class="footer-brand">${documentFooterHTML(societe.nom)}</div>
   </footer>
 

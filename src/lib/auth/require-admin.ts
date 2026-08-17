@@ -33,6 +33,26 @@ export function getServerClient(token?: string) {
   }
 }
 
+const PROFILE_SELECT = "id, nom, email, role, permissions, actif";
+
+/**
+ * Extrait le claim "sub" (user id) d'un JWT sans vérifier sa signature.
+ * Sert uniquement à lancer la requête profil de façon optimiste, en parallèle
+ * de la vérification réseau du token — son résultat n'est jamais utilisé sans
+ * confirmation par `supabase.auth.getUser()` juste après (voir plus bas).
+ */
+function decodeJwtSubUnsafe(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = Buffer.from(payload, "base64url").toString("utf8");
+    const claims = JSON.parse(json) as { sub?: unknown };
+    return typeof claims.sub === "string" ? claims.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Authentifie la requête et charge le profil appelant — brique commune à requireUserManager/requireUser. */
 async function getAuthenticatedProfile(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -42,24 +62,45 @@ async function getAuthenticatedProfile(request: Request) {
 
   const token = authHeader.slice(7);
   const supabase = getServerClient(token);
+  const admin = getAdminClient();
+
+  // Les deux appels Supabase (vérification du token + lecture du profil)
+  // partent en parallèle au lieu de se suivre — économise un aller-retour
+  // réseau complet sur chaque requête protégée (ex. exports Excel). L'id
+  // optimiste vient d'un décodage non vérifié du JWT ; son résultat n'est
+  // retenu que si `getUser()` confirme ensuite le même id, sinon repli sur
+  // une lecture séquentielle classique avec l'id vérifié.
+  const optimisticId = decodeJwtSubUnsafe(token);
+  const [userResult, optimisticProfileResult] = await Promise.all([
+    supabase.auth.getUser(token),
+    optimisticId
+      ? admin.from("profiles").select(PROFILE_SELECT).eq("id", optimisticId).single()
+      : Promise.resolve(null),
+  ]);
+
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser(token);
+  } = userResult;
 
   if (error || !user) {
     throw new AuthError("Session invalide ou expirée.", 401);
   }
 
-  const admin = getAdminClient();
-  const { data: profile, error: profileError } = await admin
-    .from("profiles")
-    .select("id, nom, email, role, permissions, actif")
-    .eq("id", user.id)
-    .single();
+  let profile =
+    optimisticId === user.id ? optimisticProfileResult?.data : null;
 
-  if (profileError || !profile) {
-    throw new AuthError("Profil introuvable.", 403);
+  if (!profile) {
+    const { data, error: profileError } = await admin
+      .from("profiles")
+      .select(PROFILE_SELECT)
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !data) {
+      throw new AuthError("Profil introuvable.", 403);
+    }
+    profile = data;
   }
 
   return { user, profile, admin, supabase };

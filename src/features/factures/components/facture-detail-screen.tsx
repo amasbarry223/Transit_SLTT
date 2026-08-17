@@ -19,6 +19,7 @@ import {
   type FactureStatut,
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
+import { useSession } from "@/lib/session/session-store";
 import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
@@ -52,6 +53,7 @@ export function FactureDetailScreen() {
   const dossiers = useStore((s) => s.dossiers);
   const { toast } = useToast();
   const canWrite = usePermission("factures:write");
+  const currentUserName = useSession((s) => s.currentUserName);
 
   const facture = factures.find((f) => f.id === selectedId);
 
@@ -165,8 +167,7 @@ export function FactureDetailScreen() {
       montantTTC: facture.montantTTC,
       montantPaye: facture.montantPaye,
       notes: facture.notes,
-      creePar: facture.creePar,
-      creeLe: facture.creeLe,
+      genereParNom: currentUserName || facture.creePar,
       dossierReference: dossier?.reference,
       dossierBl: dossier?.bl,
     }, factureBrand);
