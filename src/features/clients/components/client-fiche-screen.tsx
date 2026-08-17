@@ -10,8 +10,8 @@ import {
   Copy,
   MessageCircle,
   Check,
+  FolderKanban,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { ClientInput } from "@/features/clients/types";
@@ -472,7 +472,7 @@ export function ClientFicheScreen() {
           </div>
           {canWriteDossiers && (
             <Button className="shrink-0" onClick={() => openDossier(null, "create")}>
-              <DossierIcon className="size-4" />
+              <FolderKanban className="size-4" />
               Nouveau dossier
             </Button>
           )}

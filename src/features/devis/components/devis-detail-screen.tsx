@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Banknote, Building2, CalendarDays, Package, User } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
+import { ArrowLeft, Banknote, Building2, CalendarDays, FolderKanban, Package, User } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { usePermission } from "@/hooks/use-permission";
@@ -71,7 +70,7 @@ export function DevisDetailScreen() {
   if (!devis) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-center">
-        <DossierIcon className="size-14" />
+        <FolderKanban className="size-14" />
         <p className="mt-4 text-sm font-semibold text-muted-foreground">Devis introuvable</p>
         <Button variant="outline" className="mt-5" onClick={() => go("devis")}>
           <ArrowLeft className="mr-2 size-4" /> Retour aux devis

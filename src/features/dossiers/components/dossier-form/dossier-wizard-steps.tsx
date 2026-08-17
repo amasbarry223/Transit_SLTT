@@ -2,11 +2,11 @@
 
 import {
   ArrowRight,
+  FolderKanban,
   ListChecks,
   Save,
   Truck,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 import type { Annexe, Client, DossierStatut, Societe } from "@/lib/domain-types";
 import { UI } from "@/lib/ui-messages";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
@@ -126,7 +126,7 @@ export function DossierIdentityStep({
   return (
     <Card className="border-border/80 p-5 shadow-sm">
       <SectionTitle
-        icon={<DossierIcon className="size-4" />}
+        icon={<FolderKanban className="size-4" />}
         tone="blue"
         title="Informations générales"
         description="Société, client et caractéristiques de la marchandise"

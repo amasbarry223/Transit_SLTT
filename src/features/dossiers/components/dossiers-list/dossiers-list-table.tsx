@@ -1,8 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Plus, Pencil } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
+import { Plus, Pencil, FolderKanban } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { calculerEcart } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -63,7 +62,7 @@ const DossierMobileCard = memo(function DossierMobileCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2">
-          <DossierIcon className="mt-0.5 size-5 shrink-0" />
+          <FolderKanban className="mt-0.5 size-5 shrink-0" />
           <div className="min-w-0">
             <p className="font-medium text-foreground">{dossier.reference}</p>
             <p className="truncate text-sm text-muted-foreground">{dossier.clientNom}</p>
@@ -124,7 +123,7 @@ const DossierTableRow = memo(function DossierTableRow({
     >
       <TableCell className="px-4 py-3.5">
         <div className="flex items-center gap-2">
-          <DossierIcon className="size-4 shrink-0" />
+          <FolderKanban className="size-4 shrink-0" />
           <p className="font-medium text-foreground">
             {dossier.reference}
           </p>
@@ -228,7 +227,7 @@ export function DossiersListTable({
     <>
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <DossierIcon className="size-4" />
+          <FolderKanban className="size-4" />
           <h2 className="text-sm font-semibold text-foreground">
             Liste des dossiers
           </h2>
@@ -239,7 +238,7 @@ export function DossiersListTable({
 
         {filtered.length === 0 ? (
           <EmptyState
-            icon={DossierIcon}
+            icon={FolderKanban}
             title={hasActiveFilters ? UI.empty.dossiers.filtered.title : UI.empty.dossiers.zero.title}
             description={hasActiveFilters ? UI.empty.dossiers.filtered.description : UI.empty.dossiers.zero.description}
             action={

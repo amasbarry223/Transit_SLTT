@@ -1,7 +1,6 @@
 "use client";
 
-import { Building2, CalendarDays, Clock, Percent, Receipt, User } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
+import { Building2, CalendarDays, Clock, FolderKanban, Percent, Receipt, User } from "lucide-react";
 import type { Dossier, Facture } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
@@ -37,7 +36,7 @@ export function InformationsCard({
         )}
         <InfoRow icon={Building2} label="Société" value={facture.societeNom ?? "—"} />
         <InfoRow
-          icon={DossierIcon}
+          icon={FolderKanban}
           label="Dossier lié"
           value={dossier ? `${dossier.reference} · BL ${dossier.bl}` : "—"}
         />

@@ -5,10 +5,10 @@ import {
   ChevronLeft,
   ChevronRight,
   FileOutput,
+  FolderKanban,
   Wallet,
   X,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -49,7 +49,7 @@ const TYPE_PILL: Record<EventType, string> = {
 };
 
 const TYPE_ICON: Record<EventType, React.ComponentType<{ className?: string }>> = {
-  dossier:  DossierIcon,
+  dossier:  FolderKanban,
   bon:      FileOutput,
   paiement: Wallet,
 };

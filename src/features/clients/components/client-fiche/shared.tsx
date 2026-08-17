@@ -2,10 +2,10 @@ import type { BonMotif } from "@/lib/domain-types";
 import type { Tone } from "@/components/sltt/status-badge";
 import {
   BookOpen,
+  FolderKanban,
   Receipt,
   Package,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 
 export const PAGE_SIZE = 6;
 
@@ -18,7 +18,7 @@ export const FICHE_TABS: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { key: "classeur", label: "Classeur", shortLabel: "Classeur", icon: BookOpen },
-  { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: DossierIcon },
+  { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban },
   { key: "factures", label: "Factures", shortLabel: "Factures", icon: Receipt },
   { key: "logistique", label: "Logistique", shortLabel: "Logistique", icon: Package },
 ];

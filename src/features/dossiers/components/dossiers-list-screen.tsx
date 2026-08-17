@@ -8,8 +8,8 @@ import {
   CheckCircle2,
   TrendingUp,
   ArrowUpDown,
+  FolderKanban,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA } from "@/lib/format";
@@ -64,7 +64,7 @@ export function DossiersListScreen() {
         <KpiCard
           label="Total dossiers"
           value={String(screen.stats.total)}
-          icon={DossierIcon}
+          icon={FolderKanban}
           tone="blue"
           sublabel="dossiers enregistrés"
         />

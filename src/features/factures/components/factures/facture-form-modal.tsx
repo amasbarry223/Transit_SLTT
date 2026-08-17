@@ -23,7 +23,7 @@ import { toastError } from "@/lib/toast-helpers";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
-import { resolveDossierCoutLabels } from "@/lib/societe-brand";
+import { resolveDossierCoutLabels, shouldShowAnnexeForSociete } from "@/lib/societe-brand";
 import { FACTURE_ECHEANCE_JOURS, MS_PER_DAY } from "@/lib/constants";
 
 interface LigneForm { description: string; quantite: string; prixUnitaire: string; }
@@ -72,6 +72,12 @@ export function FactureFormModal({
       prixUnitaire: String(l.prixUnitaire),
     })) ?? [{ ...EMPTY_LIGNE }]
   );
+
+  // Top Doumani (et toute société hors transit) n'a pas de découpage par
+  // annexe — masquer le champ plutôt que de faire choisir une annexe qui ne
+  // s'applique pas à cette société (même règle que contrats/bons de caisse).
+  const showAnnexe = shouldShowAnnexeForSociete(societeId, societes, annexes);
+  const resolvedAnnexeId = showAnnexe ? annexeId : (activeAnnexeId ?? "");
 
   // Seules les lignes avec une description non vide sont envoyées à
   // addFacture (voir handleSubmit) — le total affiché doit porter sur le même
@@ -130,7 +136,7 @@ export function FactureFormModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
-    if (!clientId || !annexeId || lignes.every((l) => !l.description)) return;
+    if (!clientId || !resolvedAnnexeId || lignes.every((l) => !l.description)) return;
     setSaving(true);
     try {
       const f = await addFacture({
@@ -138,7 +144,7 @@ export function FactureFormModal({
         clientId,
         clientNom,
         societeId: societeId || null,
-        annexeId,
+        annexeId: resolvedAnnexeId,
         date,
         dateEcheance,
         lignes: lignesValides.map((l) => ({
@@ -224,7 +230,7 @@ export function FactureFormModal({
               </Select>
             </div>
 
-            {annexes.length > 1 && (
+            {showAnnexe && (
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Annexe *</Label>
                 <Select value={annexeId} onValueChange={setAnnexeId}>

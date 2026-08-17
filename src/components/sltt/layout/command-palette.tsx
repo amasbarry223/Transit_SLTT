@@ -24,8 +24,8 @@ import {
   Wallet,
   FileSignature,
   ScrollText,
+  FolderKanban,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 import { usePermission, useCanView } from "@/hooks/use-permission";
 import type { NavItem } from "@/lib/nav-items";
 
@@ -76,7 +76,7 @@ export function CommandPalette() {
     canCreateDossier && {
       label: "Nouveau dossier",
       value: "action nouveau dossier transit",
-      icon: DossierIcon,
+      icon: FolderKanban,
       section: "Cycle commercial",
       run: () => goToNewDossier(),
     },

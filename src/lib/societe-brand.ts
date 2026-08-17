@@ -262,35 +262,6 @@ export function requirePrintHTMLBrand(
   return warnMissingBrand(context);
 }
 
-function escapeHtml(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function resolveBrandLogoUrl(path?: string, origin?: string): string | undefined {
-  if (!path?.trim()) return undefined;
-  if (/^https?:\/\//.test(path)) return path;
-  const base = origin ?? (typeof window !== "undefined" ? window.location.origin : "");
-  if (!base) return path;
-  return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
-}
-
-function buildLegalLineHTML(info?: SocieteLegalInfo): string {
-  if (!info) return "";
-  return [
-    info.adresse ? escapeHtml(info.adresse) : "",
-    info.telephone ? `Tél. : ${escapeHtml(info.telephone)}` : "",
-    info.rccm ? `RCCM : ${escapeHtml(info.rccm)}` : "",
-    info.nif ? `NIF : ${escapeHtml(info.nif)}` : "",
-  ]
-    .filter(Boolean)
-    .join(" &nbsp;·&nbsp; ");
-}
-
 /** Ligne légale en texte brut (aperçu UI facture). */
 export function formatSocieteLegalLine(info?: SocieteLegalInfo): string {
   if (!info) return "";
@@ -306,41 +277,4 @@ export function formatSocieteLegalLine(info?: SocieteLegalInfo): string {
 
 export function hasSocieteLogo(brand: SocieteBrand): boolean {
   return Boolean(brand.logoUrl?.trim());
-}
-
-export interface InvoiceBrandBlocks {
-  headerHTML: string;
-  footerLegalHTML: string;
-  hasLogo: boolean;
-}
-
-/**
- * En-tête facture : logo seul agrandi si logoUrl présent (sans nom/NIF à côté).
- * Infos légales déplacées en pied de page en mode logo-only.
- */
-export function buildInvoiceBrandBlocks(
-  brand: SocieteBrand,
-  origin?: string,
-): InvoiceBrandBlocks {
-  const hasLogo = hasSocieteLogo(brand);
-  const legalLineHTML = buildLegalLineHTML(brand.legal);
-
-  if (hasLogo) {
-    const url = resolveBrandLogoUrl(brand.logoUrl, origin);
-    const logoImg = url
-      ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(brand.nom)}" class="brand-logo" onerror="this.style.display='none'">`
-      : "";
-    return {
-      hasLogo: true,
-      headerHTML: `<div class="brand brand--logo-only">${logoImg}</div>`,
-      footerLegalHTML: legalLineHTML,
-    };
-  }
-
-  const subBlock = legalLineHTML ? `<div class="brand-sub">${legalLineHTML}</div>` : "";
-  return {
-    hasLogo: false,
-    headerHTML: `<div class="brand"><div><div class="brand-name">${escapeHtml(brand.nom)}</div>${subBlock}</div></div>`,
-    footerLegalHTML: "",
-  };
 }

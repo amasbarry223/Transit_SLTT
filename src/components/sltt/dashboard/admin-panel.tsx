@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { AlertTriangle, Users } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
+import { AlertTriangle, FolderKanban, Users } from "lucide-react";
 import type { ViewKey } from "@/lib/nav-store";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
 import { Card } from "@/components/ui/card";
@@ -54,7 +53,7 @@ export function AdminPanel({
             Utilisateurs
           </Button>
           <Button variant="outline" size="sm" onClick={() => go("dossiers")}>
-            <DossierIcon className="size-3.5" />
+            <FolderKanban className="size-3.5" />
             Tous les dossiers
           </Button>
         </div>

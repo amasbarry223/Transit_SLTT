@@ -1,7 +1,6 @@
 "use client";
 
-import { ClipboardList, ExternalLink, Eye, FileText, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
+import { ClipboardList, ExternalLink, Eye, FileText, FolderKanban, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Devis, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -101,7 +100,7 @@ export function DevisListTable({
                             className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
                             onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
                           >
-                            <DossierIcon className="size-3" /> Dossier
+                            <FolderKanban className="size-3" /> Dossier
                           </button>
                         ) : next && canWrite && (
                           <StatusQuickAction
@@ -155,14 +154,14 @@ export function DevisListTable({
                           <DropdownMenuSeparator />
                           {d.dossierId ? (
                             <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
-                              <DossierIcon className="mr-2 size-3.5" /> Voir le dossier
+                              <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
                             </DropdownMenuItem>
                           ) : canWrite && d.statut === "Accepté" && (
                             <DropdownMenuItem
                               className="text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-950/40 focus:text-emerald-800"
                               onClick={() => setConvertTarget(d)}
                             >
-                              <DossierIcon className="mr-2 size-3.5" /> Convertir en dossier
+                              <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
                             </DropdownMenuItem>
                           )}
                           {canWrite && (
@@ -256,7 +255,7 @@ export function DevisListTable({
                                 className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 transition-colors hover:bg-emerald-50 dark:bg-emerald-950/40"
                                 onClick={(e) => { e.stopPropagation(); openDossierDetail(d.dossierId!); }}
                               >
-                                <DossierIcon className="size-3" /> Dossier créé
+                                <FolderKanban className="size-3" /> Dossier créé
                               </button>
                             ) : next && canWrite && (
                               <StatusQuickAction
@@ -301,14 +300,14 @@ export function DevisListTable({
                                 <DropdownMenuSeparator />
                                 {d.dossierId ? (
                                   <DropdownMenuItem onClick={() => openDossierDetail(d.dossierId!)}>
-                                    <DossierIcon className="mr-2 size-3.5" /> Voir le dossier
+                                    <FolderKanban className="mr-2 size-3.5" /> Voir le dossier
                                   </DropdownMenuItem>
                                 ) : canWrite && d.statut === "Accepté" && (
                                   <DropdownMenuItem
                                     className="text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-950/40 focus:text-emerald-800"
                                     onClick={() => setConvertTarget(d)}
                                   >
-                                    <DossierIcon className="mr-2 size-3.5" /> Convertir en dossier
+                                    <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
                                   </DropdownMenuItem>
                                 )}
                                 {canWrite && (

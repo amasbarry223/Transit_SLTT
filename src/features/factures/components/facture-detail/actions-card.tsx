@@ -1,7 +1,6 @@
 "use client";
 
-import { CreditCard, Pencil, Printer, XCircle } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
+import { CreditCard, FolderKanban, Pencil, Printer, XCircle } from "lucide-react";
 import type { Dossier, Facture } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,7 @@ export function ActionsCard({
             className="w-full justify-start gap-2.5 font-medium text-indigo-700 dark:text-indigo-300 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/40"
             onClick={() => onOpenDossier(dossier.id)}
           >
-            <DossierIcon className="size-4" /> Voir le dossier lié
+            <FolderKanban className="size-4" /> Voir le dossier lié
           </Button>
         )}
         {canWrite && facture.statut !== "Annulée" && facture.statut !== "Soldée" && (

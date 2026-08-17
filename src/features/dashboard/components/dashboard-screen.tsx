@@ -10,8 +10,8 @@ import {
   Clock,
   Warehouse,
   TrendingUp,
+  FolderKanban,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 
 import { KpiCard } from "@/components/sltt/kpi-card";
 
@@ -180,7 +180,7 @@ export function DashboardScreen() {
         <KpiCard
           label="Dossiers en cours"
           value={String(dossiersEnCours)}
-          icon={DossierIcon}
+          icon={FolderKanban}
           tone="blue"
           sublabel={dossiersALivrer > 0 ? `${dossiersALivrer} dédouané${dossiersALivrer > 1 ? "s" : ""} à livrer` : "Aucun en attente de livraison"}
         />

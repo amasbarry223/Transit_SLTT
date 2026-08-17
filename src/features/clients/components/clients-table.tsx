@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   Eye,
+  FolderKanban,
   Mail,
   MapPin,
   Pencil,
@@ -12,7 +13,6 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
 import type { Client } from "@/features/clients/types";
 import { formatFCFA } from "@/lib/format";
 import { cn, getInitials } from "@/shared/utils/cn";
@@ -275,7 +275,7 @@ const ClientTableRow = memo(function ClientTableRow({
       </TableCell>
       <TableCell className="px-4 py-3.5 text-center">
         <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-medium tabular-nums text-slate-700 bg-muted dark:text-slate-300">
-          <DossierIcon className="size-3.5" />
+          <FolderKanban className="size-3.5" />
           {client.nbDossiers}
         </span>
       </TableCell>

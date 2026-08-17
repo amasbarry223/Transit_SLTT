@@ -69,10 +69,8 @@ function isValidXlsxBytes(bytes: Uint8Array): boolean {
  * Ne se replie jamais sur un CSV : en cas d'échec, une erreur est levée et
  * l'appelant ne doit pas afficher de message de succès (voir chaque écran).
  *
- * Le téléchargement passe toujours par `<a download="…xlsx">` pour garantir
- * le nom de fichier et le contenu. Un onglet synchrone est ouvert pendant le
- * geste de clic (filet anti-bloqueur) puis refermé — il ne sert jamais de
- * destination du blob.
+ * Le téléchargement passe toujours par `<a download="…xlsx">` déclenché en
+ * JS — ça ne rouvre pas d'onglet ni ne nécessite de fenêtre intermédiaire.
  */
 export async function exportToExcel<T>(
   module: ExportModule,
@@ -90,11 +88,6 @@ export async function exportToExcel<T>(
     title: "Génération du fichier Excel…",
     description: UI.loading.exporting,
   });
-
-  // Claim le geste utilisateur de façon synchrone (certains navigateurs
-  // sinon bloquent le téléchargement après l'await fetch).
-  const downloadTab =
-    typeof window !== "undefined" ? window.open("", "_blank") : null;
 
   const baseName = sanitizeFilename(filename.replace(/\.(csv|xls|xlsx)$/i, ""));
   const headers = columns.map((c) => c.header);
@@ -124,7 +117,6 @@ export async function exportToExcel<T>(
 
     const blob = new Blob([bytes], { type: XLSX_MIME });
     downloadBlob(blob, `${baseName}.xlsx`);
-    downloadTab?.close();
     progress.dismiss();
 
     if (audit) {
@@ -135,7 +127,6 @@ export async function exportToExcel<T>(
       );
     }
   } catch (error) {
-    downloadTab?.close();
     progress.dismiss();
     logError("[SLTT] Export Excel", error);
     toastError(toast, error, {

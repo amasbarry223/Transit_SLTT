@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowRight, Plus } from "lucide-react";
-import { DossierIcon } from "@/shared/components/icons/dossier-icon";
+import { ArrowRight, FolderKanban, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,7 @@ export function AgentPanel({
       </div>
       {dossiers.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
-          <DossierIcon className="size-7" />
+          <FolderKanban className="size-7" />
           <p className="text-sm text-muted-foreground">Aucun dossier pour l'instant.</p>
           <p className="text-xs text-muted-foreground">Créez un devis ou un dossier pour démarrer.</p>
         </div>
