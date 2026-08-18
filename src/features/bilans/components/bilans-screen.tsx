@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatFCFA } from "@/lib/format";
 import { getRecoveryRateColor } from "@/lib/constants";
-import { EvolutionChartCard } from "@/components/sltt/bilans/evolution-chart-card";
+import { EvolutionChartCardLazy } from "@/components/sltt/bilans/evolution-chart-card-lazy";
 import { RecapClientCard } from "@/components/sltt/bilans/recap-client-card";
-import { RepartitionCard } from "@/components/sltt/bilans/repartition-card";
+import { RepartitionCardLazy } from "@/components/sltt/bilans/repartition-card-lazy";
 import { useBilansScreen } from "@/components/sltt/bilans/use-bilans-screen";
 import { PERIODES, type Periode } from "@/components/sltt/bilans/shared";
 
@@ -165,7 +165,7 @@ export function BilansScreen() {
         </div>
       )}
 
-      <EvolutionChartCard chartData={screen.chartData} mois={screen.mois} />
+      <EvolutionChartCardLazy chartData={screen.chartData} mois={screen.mois} />
 
       {/* Recap table + Pie */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -179,7 +179,7 @@ export function BilansScreen() {
           periodeLabel={screen.periodeLabel}
           totalClients={screen.recapParClient.length}
         />
-        <RepartitionCard
+        <RepartitionCardLazy
           pieData={screen.pieData}
           pieTotal={screen.pieTotal}
           tauxRecouvrement={screen.tauxRecouvrement}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { FileUp, UploadCloud } from "lucide-react";
 import type { EntiteComptable } from "@/lib/domain-types";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ComptabiliteGeneraleImportDialog } from "./import-dialog";
-import { OcrCaptureDialog } from "./ocr-capture-dialog";
+
+// Charge tesseract.js/pdfjs-dist (via run-ocr) uniquement quand la route OCR
+// est effectivement choisie, pas au chargement du module import-any-dialog.
+const OcrCaptureDialog = dynamic(
+  () => import("./ocr-capture-dialog").then((m) => ({ default: m.OcrCaptureDialog })),
+  { ssr: false },
+);
 
 const ACCEPTED_MIME = ".xlsx,application/pdf,image/jpeg,image/png,image/heic,image/heif,image/webp";
 const EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

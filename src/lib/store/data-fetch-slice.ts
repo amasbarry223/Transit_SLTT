@@ -43,29 +43,33 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         throw new Error("Session Supabase absente. Reconnectez-vous pour charger les données.");
       }
 
-      const coreResults = await fetchCoreEntities(supabase);
+      // Les 3 groupes ci-dessous ne dépendent pas les uns des autres (secondarySpecs
+      // ne lit aucun résultat du core) : on les lance en parallèle plutôt qu'en
+      // 3 vagues séquentielles pour diviser le temps de chargement par ~2.
+      const secondarySpecs = buildSecondaryFetchSpecs(supabase);
+      const [coreResults, profilesPublic, secondaryResults] = await Promise.all([
+        fetchCoreEntities(supabase),
+        (async (): Promise<ProfilePublicRow[] | null> => {
+          try {
+            // Colonnes lues par mapCoreFetchResults (usersPublic) — voir
+            // map-core-fetch-results.ts.
+            const { data, error } = await supabase
+              .from("profiles_public")
+              .select("id, nom, role, actif, derniere_connexion");
+            if (error) throw error;
+            return data;
+          } catch {
+            return null;
+          }
+        })(),
+        fetchSecondaryEntities(secondarySpecs),
+      ]);
       const coreTruncated = coreResults.some((result) => result.truncated);
-
-      let profilesPublic: ProfilePublicRow[] | null = null;
-      try {
-        // Colonnes lues par mapCoreFetchResults (usersPublic) — voir
-        // map-core-fetch-results.ts.
-        const { data, error } = await supabase
-          .from("profiles_public")
-          .select("id, nom, role, actif, derniere_connexion");
-        if (error) throw error;
-        profilesPublic = data;
-      } catch {
-        profilesPublic = null;
-      }
 
       set((state) => ({
         ...state,
         ...mapCoreFetchResults(coreResults, profilesPublic, state),
       }));
-
-      const secondarySpecs = buildSecondaryFetchSpecs(supabase);
-      const secondaryResults = await fetchSecondaryEntities(secondarySpecs);
 
       const failed = secondaryResults.filter((result) => result.error);
       const anyTruncated = coreTruncated || secondaryResults.some((result) => result.truncated && !result.error);

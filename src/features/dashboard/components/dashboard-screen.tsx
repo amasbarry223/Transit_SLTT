@@ -32,8 +32,8 @@ import { MagasinierPanel } from "@/components/sltt/dashboard/magasinier-panel";
 import { ComptablePanel } from "@/components/sltt/dashboard/comptable-panel";
 import { AdminPanel } from "@/components/sltt/dashboard/admin-panel";
 import { GuideDemarrage } from "@/components/sltt/dashboard/guide-demarrage";
-import { DossiersEvolutionChart } from "@/components/sltt/dashboard/dossiers-evolution-chart";
-import { StockRepartitionChart } from "@/components/sltt/dashboard/stock-repartition-chart";
+import { DossiersEvolutionChartLazy } from "@/components/sltt/dashboard/dossiers-evolution-chart-lazy";
+import { StockRepartitionChartLazy } from "@/components/sltt/dashboard/stock-repartition-chart-lazy";
 import { DerniersDossiersCard } from "@/components/sltt/dashboard/derniers-dossiers-card";
 import { AlertesCard } from "@/components/sltt/dashboard/alertes-card";
 import { useDashboardMetrics } from "@/components/sltt/dashboard/use-dashboard-metrics";
@@ -234,7 +234,7 @@ export function DashboardScreen() {
       {showChartsRow && (
       <div className={cn("grid grid-cols-1 gap-6", hasSection("chart_dossiers_evolution") && hasSection("chart_stock_repartition") && "lg:grid-cols-2")}>
         {hasSection("chart_dossiers_evolution") && (
-          <DossiersEvolutionChart
+          <DossiersEvolutionChartLazy
             data={dossiersParMois}
             gridColor={gridColor}
             tickColor={tickColor}
@@ -243,7 +243,7 @@ export function DashboardScreen() {
         )}
 
         {hasSection("chart_stock_repartition") && (
-          <StockRepartitionChart
+          <StockRepartitionChartLazy
             data={stockRepartition}
             totalValue={valeurStock}
           />

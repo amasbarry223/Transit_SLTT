@@ -58,7 +58,7 @@ import { DossierDetailHero } from "@/components/sltt/dossier-detail/dossier-deta
 import { DossierDetailOverview } from "@/components/sltt/dossier-detail/dossier-detail-overview";
 import { DossierDetailDocuments } from "@/components/sltt/dossier-detail/dossier-detail-documents";
 import { DossierDetailSuivi } from "@/components/sltt/dossier-detail/dossier-detail-suivi";
-import { OcrReviewDialog } from "@/components/sltt/documents/ocr-review-dialog";
+import { OcrReviewDialogLazy } from "@/components/sltt/documents/ocr-review-dialog-lazy";
 
 export function DossierDetailScreen() {
   const { selectedId, go, openDossier } = useNav();
@@ -455,7 +455,7 @@ export function DossierDetailScreen() {
         />
       )}
 
-      <OcrReviewDialog
+      <OcrReviewDialogLazy
         open={!!ocrDocumentId}
         onOpenChange={(o) => !o && setOcrDocumentId(null)}
         documentId={ocrDocumentId}

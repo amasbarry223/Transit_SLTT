@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DocumentUploadZone, type DocumentUploadFile } from "./document-upload-zone";
-import { OcrReviewDialog } from "./ocr-review-dialog";
+import { OcrReviewDialogLazy } from "./ocr-review-dialog-lazy";
 
 /**
  * Entrée « créer un dossier depuis un document » (hors fiche dossier).
@@ -94,7 +94,7 @@ export function CreateDossierFromOcrButton({
         </DialogContent>
       </Dialog>
 
-      <OcrReviewDialog
+      <OcrReviewDialogLazy
         open={!!ocrDocId}
         onOpenChange={(open) => {
           if (!open) setOcrDocId(null);
