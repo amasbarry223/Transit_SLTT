@@ -19,6 +19,8 @@ export function pathForView(
       return id ? `/dossiers/${id}/edit` : "/dossiers/new";
     case "dossier-detail":
       return id ? `/dossiers/${id}` : "/dossiers";
+    case "dossier-ocr-review":
+      return id ? `/dossiers/ocr/${id}` : "/dossiers";
     case "comptabilite":
       return comptaTab ? `/comptabilite?tab=${comptaTab}` : "/comptabilite";
     case "recus-paiement":
@@ -101,6 +103,14 @@ export function useAppNavigation() {
     [nav, pushPath],
   );
 
+  const goToDossierOcrReview = useCallback(
+    (documentId: string) => {
+      nav.openDossierOcrReview(documentId);
+      pushPath(pathForView("dossier-ocr-review", documentId));
+    },
+    [nav, pushPath],
+  );
+
   const goToFacture = useCallback(
     (id: string) => {
       nav.go("facture-detail", { id });
@@ -173,6 +183,7 @@ export function useAppNavigation() {
     ...nav,
     goToClient,
     goToDossier,
+    goToDossierOcrReview,
     goToFacture,
     goToDevis,
     goToContrat,

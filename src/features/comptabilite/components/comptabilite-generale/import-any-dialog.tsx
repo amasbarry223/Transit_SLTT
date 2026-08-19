@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { FileUp, UploadCloud } from "lucide-react";
 import type { EntiteComptable } from "@/lib/domain-types";
+import { entiteKeyOf } from "@/lib/comptabilite-generale";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ComptabiliteGeneraleImportDialog } from "./import-dialog";
 
 // Charge tesseract.js/pdfjs-dist (via run-ocr) uniquement quand la route OCR
@@ -33,6 +41,7 @@ interface ImportAnyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entite: EntiteComptable;
+  entites: EntiteComptable[];
 }
 
 /**
@@ -41,14 +50,20 @@ interface ImportAnyDialogProps {
  * validation ligne par ligne) ou OCR (revue des champs extraits) déjà
  * existants, sans dupliquer leur logique. Jamais d'enregistrement ici même :
  * ce composant ne fait que choisir la bonne destination.
+ *
+ * `entite` ne fixe que la présélection (l'onglet actif au moment de
+ * l'ouverture) — l'utilisateur peut choisir une autre entité (une autre
+ * annexe, ou Top Doumani) avant d'importer, sans avoir à fermer le dialogue.
  */
-export function ImportAnyDialog({ open, onOpenChange, entite }: ImportAnyDialogProps) {
+export function ImportAnyDialog({ open, onOpenChange, entite, entites }: ImportAnyDialogProps) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [route, setRoute] = useState<"excel" | "ocr" | null>(null);
+  const [selectedEntite, setSelectedEntite] = useState(entite);
 
   function reset() {
     setPendingFile(null);
     setRoute(null);
+    setSelectedEntite(entite);
   }
 
   function handleDelegateOpenChange(v: boolean) {
@@ -57,10 +72,10 @@ export function ImportAnyDialog({ open, onOpenChange, entite }: ImportAnyDialogP
   }
 
   if (route === "excel") {
-    return <ComptabiliteGeneraleImportDialog open={open} onOpenChange={handleDelegateOpenChange} entite={entite} initialFile={pendingFile} />;
+    return <ComptabiliteGeneraleImportDialog open={open} onOpenChange={handleDelegateOpenChange} entite={selectedEntite} initialFile={pendingFile} />;
   }
   if (route === "ocr") {
-    return <OcrCaptureDialog open={open} onOpenChange={handleDelegateOpenChange} entite={entite} initialFile={pendingFile} />;
+    return <OcrCaptureDialog open={open} onOpenChange={handleDelegateOpenChange} entite={selectedEntite} initialFile={pendingFile} />;
   }
 
   return (
@@ -69,12 +84,33 @@ export function ImportAnyDialog({ open, onOpenChange, entite }: ImportAnyDialogP
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileUp className="size-5 text-primary" />
-            Importer un document — {entite.label}
+            Importer un document
           </DialogTitle>
           <DialogDescription>
             Excel (.xlsx), PDF ou photo (JPG/PNG/HEIC) d&apos;un bon de caisse — le type est détecté automatiquement.
           </DialogDescription>
         </DialogHeader>
+
+        {entites.length > 1 && (
+          <Select
+            value={entiteKeyOf(selectedEntite)}
+            onValueChange={(key) => {
+              const found = entites.find((e) => entiteKeyOf(e) === key);
+              if (found) setSelectedEntite(found);
+            }}
+          >
+            <SelectTrigger className="h-10 w-full">
+              <SelectValue placeholder="Entité" />
+            </SelectTrigger>
+            <SelectContent>
+              {entites.map((e) => (
+                <SelectItem key={entiteKeyOf(e)} value={entiteKeyOf(e)}>
+                  {e.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <div className="rounded-xl border-2 border-dashed border-slate-200 px-4 py-8 text-center dark:border-slate-700">
           <input

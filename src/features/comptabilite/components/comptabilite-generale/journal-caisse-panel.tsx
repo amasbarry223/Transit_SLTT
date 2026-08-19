@@ -1,8 +1,8 @@
 "use client";
 
 import { EmptyState } from "@/components/sltt/empty-state";
+import { ListFilters } from "@/components/sltt/list-filters";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -92,91 +92,98 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
         </Card>
       )}
 
-      <Card className="flex flex-wrap items-center gap-3 border-border/80 p-4 shadow-sm">
-        <Input
-          value={screen.query}
-          onChange={(e) => {
-            screen.setQuery(e.target.value);
-            screen.setPage(1);
-          }}
-          placeholder="Rechercher (client, nature, référence)…"
-          className="h-10 min-w-[220px] flex-1"
-        />
-        <Select
-          value={screen.scopeFilter}
-          onValueChange={(v) => {
-            screen.setScopeFilter(v as typeof screen.scopeFilter);
-            screen.setPage(1);
-          }}
-        >
-          <SelectTrigger className="h-10 w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tous">Toutes opérations</SelectItem>
-            <SelectItem value="dossiers">Dossiers transit</SelectItem>
-            <SelectItem value="generales">Frais généraux</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={screen.typeFilter}
-          onValueChange={(v) => {
-            screen.setTypeFilter(v as typeof screen.typeFilter);
-            screen.setPage(1);
-          }}
-        >
-          <SelectTrigger className="h-10 w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous types</SelectItem>
-            <SelectItem value="Entrée">Entrée</SelectItem>
-            <SelectItem value="Sortie">Sortie</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={screen.clientFilter || "all"}
-          onValueChange={(v) => {
-            screen.setClientFilter(v === "all" ? "" : v);
-            screen.setPage(1);
-          }}
-        >
-          <SelectTrigger className="h-10 w-48">
-            <SelectValue placeholder="Tous les clients" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les clients</SelectItem>
-            {screen.clientOptions.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          type="date"
-          value={screen.dateFrom}
-          onChange={(e) => {
-            screen.setDateFrom(e.target.value);
-            screen.setPage(1);
-          }}
-          className="h-10 w-40"
-        />
-        <Input
-          type="date"
-          value={screen.dateTo}
-          onChange={(e) => {
-            screen.setDateTo(e.target.value);
-            screen.setPage(1);
-          }}
-          className="h-10 w-40"
-        />
-        {screen.hasActiveFilters && (
-          <Button variant="ghost" onClick={screen.clearFilters}>
-            Réinitialiser
-          </Button>
-        )}
-      </Card>
+      <ListFilters
+        search={screen.query}
+        onSearchChange={(v) => {
+          screen.setQuery(v);
+          screen.setPage(1);
+        }}
+        searchPlaceholder="Rechercher (client, nature, référence)…"
+        chips={[
+          {
+            id: "dossiers",
+            label: "Dossiers transit",
+            active: screen.scopeFilter === "dossiers",
+            onToggle: () => {
+              screen.setScopeFilter(screen.scopeFilter === "dossiers" ? "tous" : "dossiers");
+              screen.setPage(1);
+            },
+          },
+          {
+            id: "generales",
+            label: "Frais généraux",
+            active: screen.scopeFilter === "generales",
+            onToggle: () => {
+              screen.setScopeFilter(screen.scopeFilter === "generales" ? "tous" : "generales");
+              screen.setPage(1);
+            },
+          },
+          {
+            id: "entree",
+            label: "Entrée",
+            active: screen.typeFilter === "Entrée",
+            onToggle: () => {
+              screen.setTypeFilter(screen.typeFilter === "Entrée" ? "all" : "Entrée");
+              screen.setPage(1);
+            },
+          },
+          {
+            id: "sortie",
+            label: "Sortie",
+            active: screen.typeFilter === "Sortie",
+            onToggle: () => {
+              screen.setTypeFilter(screen.typeFilter === "Sortie" ? "all" : "Sortie");
+              screen.setPage(1);
+            },
+          },
+        ]}
+        activeCount={screen.activeFilterCount}
+        onClear={screen.clearFilters}
+        advanced={
+          <>
+            <Select
+              value={screen.clientFilter || "all"}
+              onValueChange={(v) => {
+                screen.setClientFilter(v === "all" ? "" : v);
+                screen.setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-10 w-48">
+                <SelectValue placeholder="Tous les clients" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les clients</SelectItem>
+                {screen.clientOptions.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={screen.dateFrom}
+                onChange={(e) => {
+                  screen.setDateFrom(e.target.value);
+                  screen.setPage(1);
+                }}
+                className="h-10 w-40"
+              />
+              <span className="text-xs text-muted-foreground">→</span>
+              <Input
+                type="date"
+                value={screen.dateTo}
+                onChange={(e) => {
+                  screen.setDateTo(e.target.value);
+                  screen.setPage(1);
+                }}
+                className="h-10 w-40"
+              />
+            </div>
+          </>
+        }
+      />
 
       <OperationsTable
         operations={screen.paged}
@@ -210,7 +217,7 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
       />
 
       <OperationFormDialog open={screen.formOpen} onOpenChange={screen.setFormOpen} entite={screen.resolvedEntite} />
-      <ImportAnyDialog open={importOpen} onOpenChange={setImportOpen} entite={screen.resolvedEntite} />
+      <ImportAnyDialog open={importOpen} onOpenChange={setImportOpen} entite={screen.resolvedEntite} entites={screen.entites} />
       <ClotureDialog
         open={screen.clotureOpen}
         onOpenChange={screen.setClotureOpen}

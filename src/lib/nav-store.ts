@@ -9,6 +9,7 @@ export type ViewKey =
   | "dossiers"
   | "dossier-form"
   | "dossier-detail"
+  | "dossier-ocr-review"
   | "comptabilite"
   | "recus-paiement"
   | "bilans"
@@ -48,6 +49,7 @@ interface NavState {
   go: (view: ViewKey, opts?: { id?: string | null; comptaTab?: ComptaTab }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
   openDossierDetail: (id: string) => void;
+  openDossierOcrReview: (documentId: string) => void;
   openDevisDetail: (id: string, edit?: boolean) => void;
   openClient: (id: string | null) => void;
   openContratDetail: (id: string) => void;
@@ -74,6 +76,8 @@ export const useNav = create<NavState>()((set) => ({
     set({ view: "dossier-form", selectedId: id, dossierFormMode: mode }),
   openDossierDetail: (id) =>
     set({ view: "dossier-detail", selectedId: id }),
+  openDossierOcrReview: (documentId) =>
+    set({ view: "dossier-ocr-review", selectedId: documentId }),
   openDevisDetail: (id, edit = false) =>
     set({ view: "devis-detail", selectedId: id, devisEditMode: edit }),
   openClient: (id) => set({ view: "client-fiche", selectedId: id }),

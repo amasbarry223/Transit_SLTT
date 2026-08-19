@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Eye, Plus, Receipt, Send, Trash2 } from "lucide-react";
 import type { Facture } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -30,12 +31,18 @@ function isFactureEchue(f: Facture): boolean {
 interface FactureRowProps {
   facture: Facture;
   canWrite: boolean;
-  onView: () => void;
-  onMarkEnvoyee: () => void;
-  onDelete: () => void;
+  onView: (facture: Facture) => void;
+  onMarkEnvoyee: (facture: Facture) => void;
+  onDelete: (facture: Facture) => void;
 }
 
-function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete }: FactureRowProps) {
+const FactureMobileCard = memo(function FactureMobileCard({
+  facture: f,
+  canWrite,
+  onView,
+  onMarkEnvoyee,
+  onDelete,
+}: FactureRowProps) {
   const isEchue = isFactureEchue(f);
 
   return (
@@ -43,7 +50,7 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <button
-            onClick={onView}
+            onClick={() => onView(f)}
             className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300 hover:underline"
           >
             {f.numero}
@@ -82,7 +89,7 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
       >
         <button
           title="Voir / Imprimer"
-          onClick={onView}
+          onClick={() => onView(f)}
           className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-slate-700 dark:hover:text-slate-300"
         >
           <Eye className="size-4" />
@@ -90,7 +97,7 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
         {canWrite && f.statut === "Brouillon" && (
           <button
             title="Marquer comme envoyée"
-            onClick={onMarkEnvoyee}
+            onClick={() => onMarkEnvoyee(f)}
             className="rounded p-1.5 text-muted-foreground hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
           >
             <Send className="size-4" />
@@ -99,7 +106,7 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
         {canWrite && (
           <button
             title="Supprimer"
-            onClick={onDelete}
+            onClick={() => onDelete(f)}
             className="rounded p-1.5 text-muted-foreground hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
           >
             <Trash2 className="size-4" />
@@ -108,16 +115,22 @@ function FactureMobileCard({ facture: f, canWrite, onView, onMarkEnvoyee, onDele
       </div>
     </Card>
   );
-}
+});
 
-function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete }: FactureRowProps) {
+const FactureTableRow = memo(function FactureTableRow({
+  facture: f,
+  canWrite,
+  onView,
+  onMarkEnvoyee,
+  onDelete,
+}: FactureRowProps) {
   const isEchue = isFactureEchue(f);
 
   return (
     <TableRow className="border-b border-border hover:bg-muted/60">
       <TableCell className="px-4 py-3.5">
         <button
-          onClick={onView}
+          onClick={() => onView(f)}
           className="flex items-center gap-1.5 font-mono text-xs font-semibold text-blue-700 dark:text-blue-300 hover:underline"
         >
           {f.numero}
@@ -148,7 +161,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
         <div className="flex items-center justify-end gap-1">
           <button
             title="Voir / Imprimer"
-            onClick={onView}
+            onClick={() => onView(f)}
             className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-slate-700 dark:hover:text-slate-300"
           >
             <Eye className="size-3.5" />
@@ -156,7 +169,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
           {canWrite && f.statut === "Brouillon" && (
             <button
               title="Marquer comme envoyée"
-              onClick={onMarkEnvoyee}
+              onClick={() => onMarkEnvoyee(f)}
               className="rounded p-1 text-muted-foreground hover:bg-blue-50 dark:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
             >
               <Send className="size-3.5" />
@@ -165,7 +178,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
           {canWrite && (
             <button
               title="Supprimer"
-              onClick={onDelete}
+              onClick={() => onDelete(f)}
               className="rounded p-1 text-muted-foreground hover:bg-red-50 dark:bg-red-950/40 hover:text-red-500"
             >
               <Trash2 className="size-3.5" />
@@ -175,7 +188,7 @@ function FactureTableRow({ facture: f, canWrite, onView, onMarkEnvoyee, onDelete
       </TableCell>
     </TableRow>
   );
-}
+});
 
 interface FacturesTableProps {
   factures: Facture[];
@@ -239,9 +252,9 @@ export function FacturesTable({
                 key={f.id}
                 facture={f}
                 canWrite={canWrite}
-                onView={() => onView(f)}
-                onMarkEnvoyee={() => onMarkEnvoyee(f)}
-                onDelete={() => onDelete(f)}
+                onView={onView}
+                onMarkEnvoyee={onMarkEnvoyee}
+                onDelete={onDelete}
               />
             ))}
           </div>
@@ -284,9 +297,9 @@ export function FacturesTable({
                     key={f.id}
                     facture={f}
                     canWrite={canWrite}
-                    onView={() => onView(f)}
-                    onMarkEnvoyee={() => onMarkEnvoyee(f)}
-                    onDelete={() => onDelete(f)}
+                    onView={onView}
+                    onMarkEnvoyee={onMarkEnvoyee}
+                    onDelete={onDelete}
                   />
                 ))}
               </TableBody>

@@ -10,7 +10,7 @@ export default function OfflinePage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border/80 p-8 text-center shadow-sm">
         <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-muted/60">
-          <Image src="/logoV.png" alt="Transit" width={56} height={56} className="object-contain" unoptimized />
+          <Image src="/logoV.png" alt="Transit" width={56} height={56} className="object-contain" />
         </div>
         <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
           <WifiOff className="size-6" />

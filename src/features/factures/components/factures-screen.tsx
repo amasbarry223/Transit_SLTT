@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { Plus, Receipt, Search, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { formatFCFA } from "@/lib/format";
+import type { Facture } from "@/lib/store";
 import { FactureFormModal } from "./factures/facture-form-modal";
 import { FacturesTable } from "./factures/factures-table";
 import { useFacturesScreen } from "./factures/use-factures-screen";
@@ -17,6 +19,12 @@ import { FACTURE_TABS } from "./factures/shared";
 
 export function FacturesScreen() {
   const screen = useFacturesScreen();
+  // Références stables pour que React.memo sur FactureTableRow/FactureMobileCard
+  // (voir factures-table.tsx) évite un re-render de chaque ligne à chaque render
+  // de l'écran (recherche, changement d'onglet, etc.).
+  const handleView = useCallback((f: Facture) => screen.go("facture-detail", { id: f.id }), [screen.go]);
+  const handleMarkEnvoyee = useCallback((f: Facture) => screen.setEnvoyeeTarget(f), [screen.setEnvoyeeTarget]);
+  const handleDelete = useCallback((f: Facture) => screen.setDeleteTarget(f), [screen.setDeleteTarget]);
 
   return (
     <div className="space-y-5">
@@ -115,9 +123,9 @@ export function FacturesScreen() {
         page={screen.page}
         totalPages={screen.totalPages}
         onPageChange={screen.setPage}
-        onView={(f) => screen.go("facture-detail", { id: f.id })}
-        onMarkEnvoyee={(f) => screen.setEnvoyeeTarget(f)}
-        onDelete={(f) => screen.setDeleteTarget(f)}
+        onView={handleView}
+        onMarkEnvoyee={handleMarkEnvoyee}
+        onDelete={handleDelete}
         onCreate={() => screen.setShowForm(true)}
       />
 

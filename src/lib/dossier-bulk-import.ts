@@ -7,7 +7,7 @@
  * (gabarit Excel avec colonnes de secours) — tous les blocs détectés sont lus.
  */
 
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import { parseAmount } from "@/lib/format";
 import { normalizeDate } from "@/lib/documents/ocr/mappers/dossier-mapper";
 
@@ -206,7 +206,8 @@ function parseBlockRow(
  * été trouvée, jamais à décider quoi importer.
  */
 export async function looksLikeJournalCaisseWorkbook(file: ArrayBuffer): Promise<boolean> {
-  const wb = new ExcelJS.Workbook();
+  const { default: ExcelJSLib } = await import("exceljs");
+  const wb = new ExcelJSLib.Workbook();
   await wb.xlsx.load(file);
   for (const sheet of wb.worksheets) {
     const maxScan = Math.min(20, sheet.rowCount || 20);
@@ -224,7 +225,8 @@ export async function looksLikeJournalCaisseWorkbook(file: ArrayBuffer): Promise
 
 /** Parse un classeur multi-clients (une feuille par client) en lignes dossier prêtes à revue. */
 export async function parseDossierBulkXlsx(file: ArrayBuffer): Promise<DossierBulkImportRow[]> {
-  const wb = new ExcelJS.Workbook();
+  const { default: ExcelJSLib } = await import("exceljs");
+  const wb = new ExcelJSLib.Workbook();
   await wb.xlsx.load(file);
 
   const rows: DossierBulkImportRow[] = [];

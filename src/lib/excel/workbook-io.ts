@@ -3,7 +3,6 @@
  * Le snapshot live reste le JSON Univer (save()).
  */
 
-import ExcelJS from "exceljs";
 import type { GrandLivreRow } from "@/lib/excel/sltt-bridge";
 import { GRAND_LIVRE_HEADERS, GRAND_LIVRE_SHEET_NAME, NOTES_SHEET_NAME } from "@/lib/excel/template";
 
@@ -27,6 +26,7 @@ export async function buildGrandLivreXlsxBlob(
   rows: GrandLivreRow[],
   notesHint = "Notes & calculs libres",
 ): Promise<Blob> {
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   const sheet = wb.addWorksheet(GRAND_LIVRE_SHEET_NAME);
   sheet.addRow([...GRAND_LIVRE_HEADERS]);

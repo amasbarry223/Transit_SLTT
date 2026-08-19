@@ -20,6 +20,7 @@ import { DevisDetailScreen, DevisScreen } from "@/features/devis";
 import {
   DossierDetailScreen,
   DossierFormScreen,
+  DossierOcrReviewScreen,
   DossiersListScreen,
 } from "@/features/dossiers";
 import { EntreposageScreen } from "@/features/entreposage";
@@ -122,6 +123,7 @@ export function AppShell() {
             {view === "dossiers" && <DossiersListScreen />}
             {view === "dossier-form" && <DossierFormScreen />}
             {view === "dossier-detail" && <DossierDetailScreen />}
+            {view === "dossier-ocr-review" && <DossierOcrReviewScreen />}
             {view === "comptabilite" && <ComptabiliteScreen />}
             {view === "recus-paiement" && <RecusPaiementScreen />}
             {view === "bilans" && <BilansScreen />}

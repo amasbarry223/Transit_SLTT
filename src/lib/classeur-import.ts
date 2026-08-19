@@ -3,7 +3,7 @@
  * Colonnes attendues : Date, Société, Type, Référence, Libellé, Débit, Crédit, Statut[, Solde]
  */
 
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import type { ClasseurType } from "@/lib/classeur";
 import { GRAND_LIVRE_HEADERS, GRAND_LIVRE_SHEET_NAME } from "@/lib/excel/template";
 import { normalizeClasseurRef } from "@/lib/excel/sltt-bridge";
@@ -162,7 +162,8 @@ function positionalColMap(): Map<number, keyof Omit<ClasseurImportRow, "rowNumbe
 }
 
 export async function parseClasseurXlsx(file: ArrayBuffer): Promise<ClasseurImportRow[]> {
-  const wb = new ExcelJS.Workbook();
+  const { default: ExcelJSLib } = await import("exceljs");
+  const wb = new ExcelJSLib.Workbook();
   await wb.xlsx.load(file);
   if (!wb.worksheets.length) return [];
 

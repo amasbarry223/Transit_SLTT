@@ -30,6 +30,11 @@ const DEBOUNCE_MS = 800;
 export function useSupabaseRealtime(isAuthenticated: boolean) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const instanceIdRef = useRef(0);
+  // Tables modifiées pendant la fenêtre de debounce en cours : au déclenchement,
+  // seul ce sous-ensemble est rechargé (voir refetchTables dans data-fetch-slice.ts)
+  // au lieu des 31 tables du store à chaque écriture, sur n'importe quelle table,
+  // par n'importe quel utilisateur.
+  const pendingTablesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isSupabaseConfigured || !isAuthenticated) return;
@@ -50,9 +55,12 @@ export function useSupabaseRealtime(isAuthenticated: boolean) {
         "postgres_changes",
         { event: "*", schema: "public", table },
         () => {
+          pendingTablesRef.current.add(table);
           if (debounceRef.current) clearTimeout(debounceRef.current);
           debounceRef.current = setTimeout(() => {
-            void useStore.getState().refetchData();
+            const tables = Array.from(pendingTablesRef.current);
+            pendingTablesRef.current.clear();
+            void useStore.getState().refetchTables(tables);
           }, DEBOUNCE_MS);
         },
       );
@@ -62,6 +70,7 @@ export function useSupabaseRealtime(isAuthenticated: boolean) {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      pendingTablesRef.current.clear();
       void supabase.removeChannel(channel);
     };
   }, [isAuthenticated]);

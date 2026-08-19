@@ -18,6 +18,7 @@ export {
   type StockInventoryGroup,
 } from "./stock-inventory";
 export { printClients, type ClientPrintRow } from "./clients";
+export { printTransporteurs, type TransporteurPrintRow } from "./transporteurs";
 export {
   printClasseur,
   type ClasseurPrintRow,

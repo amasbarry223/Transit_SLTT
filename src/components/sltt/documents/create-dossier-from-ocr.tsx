@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ScanText, Loader2 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useAppNavigation } from "@/lib/app-navigation";
 import { usePermission } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
 import { toastError } from "@/lib/toast-helpers";
@@ -15,7 +16,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DocumentUploadZone, type DocumentUploadFile } from "./document-upload-zone";
-import { OcrReviewDialogLazy } from "./ocr-review-dialog-lazy";
 
 /**
  * Entrée « créer un dossier depuis un document » (hors fiche dossier).
@@ -27,6 +27,7 @@ export function CreateDossierFromOcrButton({
   className?: string;
 }) {
   const { toast } = useToast();
+  const { goToDossierOcrReview } = useAppNavigation();
   const canDocs = usePermission("documents:write");
   const canDossiers = usePermission("dossiers:write");
   const canUse = canDocs && canDossiers;
@@ -34,7 +35,6 @@ export function CreateDossierFromOcrButton({
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [ocrDocId, setOcrDocId] = useState<string | null>(null);
 
   if (!canUse) return null;
 
@@ -51,7 +51,7 @@ export function CreateDossierFromOcrButton({
         dataUrl: file.dataUrl,
       });
       setUploadOpen(false);
-      setOcrDocId(doc.id);
+      goToDossierOcrReview(doc.id);
     } catch (e) {
       toastError(toast, e, { title: "Upload impossible", fallback: "Erreur" });
     } finally {
@@ -93,14 +93,6 @@ export function CreateDossierFromOcrButton({
           )}
         </DialogContent>
       </Dialog>
-
-      <OcrReviewDialogLazy
-        open={!!ocrDocId}
-        onOpenChange={(open) => {
-          if (!open) setOcrDocId(null);
-        }}
-        documentId={ocrDocId}
-      />
     </>
   );
 }

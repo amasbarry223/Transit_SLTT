@@ -1,16 +1,27 @@
 "use client";
 
 import * as React from "react";
+import { memo } from "react";
 import { Handshake, Banknote, Link2, Pencil, Trash2 } from "lucide-react";
 import type { Fournisseur, Dossier, DossierFournisseur } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { ActifStatutBadge, DossierFournisseurStatutBadge } from "@/components/sltt/status-badge";
 import { EmptyState } from "@/components/sltt/empty-state";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { FournisseurType } from "@/lib/store";
 import { TYPE_META } from "./fournisseur-type-meta";
+
+interface PaginationProps {
+  startIdx: number;
+  endIdx: number;
+  totalItems: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
 
 function TypeBadge({ type }: { type: FournisseurType }) {
   const m = TYPE_META[type];
@@ -30,18 +41,86 @@ function TypeBadge({ type }: { type: FournisseurType }) {
   );
 }
 
+const PrestataireRow = memo(function PrestataireRow({
+  f,
+  canWrite,
+  onEdit,
+  onDelete,
+}: {
+  f: Fournisseur;
+  canWrite: boolean;
+  onEdit: (f: Fournisseur) => void;
+  onDelete: (id: string) => void;
+}) {
+  const m = TYPE_META[f.type];
+  const Icon = m.icon;
+  return (
+    <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
+      <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", m.bg)}>
+        <Icon className={cn("size-[18px]", m.color)} />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground">
+          {f.nom}
+        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <TypeBadge type={f.type} />
+          <span className="truncate text-xs text-muted-foreground sm:hidden">
+            {f.contact || f.telephone || "—"}
+          </span>
+        </div>
+      </div>
+      <div className="hidden min-w-0 text-right sm:block">
+        <p className="truncate text-sm text-foreground/90">
+          {f.contact || "—"}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {f.telephone || f.email || "—"}
+        </p>
+      </div>
+      <ActifStatutBadge statut={f.statut} />
+      <div className="flex items-center justify-end gap-0.5">
+        {canWrite && (
+          <>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-8"
+              aria-label={`Modifier ${f.nom}`}
+              onClick={() => onEdit(f)}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-8 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+              aria-label={`Supprimer ${f.nom}`}
+              onClick={() => onDelete(f.id)}
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+});
+
 export function PrestatairesTable({
   items,
   canWrite,
   onEdit,
   onDelete,
   emptyAction,
+  pagination,
 }: {
   items: Fournisseur[];
   canWrite: boolean;
   onEdit: (f: Fournisseur) => void;
   onDelete: (id: string) => void;
   emptyAction?: React.ReactNode;
+  pagination: PaginationProps;
 }) {
   if (items.length === 0) {
     return (
@@ -63,78 +142,92 @@ export function PrestatairesTable({
         <span>Statut</span>
         <span className="w-16" />
       </div>
-      {items.map((f) => {
-        const m = TYPE_META[f.type];
-        const Icon = m.icon;
-        return (
-          <div
-            key={f.id}
-            className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5"
-          >
-            <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", m.bg)}>
-              <Icon className={cn("size-[18px]", m.color)} />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">
-                {f.nom}
-              </p>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                <TypeBadge type={f.type} />
-                <span className="truncate text-xs text-muted-foreground sm:hidden">
-                  {f.contact || f.telephone || "—"}
-                </span>
-              </div>
-            </div>
-            <div className="hidden min-w-0 text-right sm:block">
-              <p className="truncate text-sm text-foreground/90">
-                {f.contact || "—"}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {f.telephone || f.email || "—"}
-              </p>
-            </div>
-            <ActifStatutBadge statut={f.statut} />
-            <div className="flex items-center justify-end gap-0.5">
-              {canWrite && (
-                <>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-8"
-                    aria-label={`Modifier ${f.nom}`}
-                    onClick={() => onEdit(f)}
-                  >
-                    <Pencil className="size-3.5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-8 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
-                    aria-label={`Supprimer ${f.nom}`}
-                    onClick={() => onDelete(f.id)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {items.map((f) => (
+        <PrestataireRow key={f.id} f={f} canWrite={canWrite} onEdit={onEdit} onDelete={onDelete} />
+      ))}
+      <TablePagination
+        startIdx={pagination.startIdx}
+        endIdx={pagination.endIdx}
+        totalItems={pagination.totalItems}
+        itemLabel="prestataires"
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        onPageChange={pagination.onPageChange}
+      />
     </div>
   );
 }
+
+const TarifRow = memo(function TarifRow({
+  f,
+  canWrite,
+  onEdit,
+}: {
+  f: Fournisseur;
+  canWrite: boolean;
+  onEdit: (f: Fournisseur) => void;
+}) {
+  const m = TYPE_META[f.type];
+  const Icon = m.icon;
+  const hasTarif = f.tarifContractuel != null;
+  return (
+    <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
+      <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", m.bg)}>
+        <Icon className={cn("size-[18px]", m.color)} />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground">
+          {f.nom}
+        </p>
+        <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          <TypeBadge type={f.type} />
+          <span className="text-slate-400">
+            {f.nbDossiers} dossier{f.nbDossiers === 1 ? "" : "s"}
+          </span>
+        </p>
+      </div>
+      <p
+        className={cn(
+          "text-right text-sm tabular-nums",
+          hasTarif
+            ? "font-semibold text-violet-700 dark:text-violet-300"
+            : "text-muted-foreground",
+        )}
+      >
+        {hasTarif ? formatFCFA(f.tarifContractuel!) : "Non défini"}
+      </p>
+      <p className="hidden text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200 sm:block">
+        {formatFCFA(f.montantTotal)}
+      </p>
+      <div className="flex justify-end">
+        {canWrite && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8"
+            aria-label={`Modifier le tarif de ${f.nom}`}
+            onClick={() => onEdit(f)}
+          >
+            <Pencil className="size-3.5" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export function TarifsTable({
   items,
   canWrite,
   onEdit,
   emptyAction,
+  pagination,
 }: {
   items: Fournisseur[];
   canWrite: boolean;
   onEdit: (f: Fournisseur) => void;
   emptyAction?: React.ReactNode;
+  pagination: PaginationProps;
 }) {
   if (items.length === 0) {
     return (
@@ -156,70 +249,93 @@ export function TarifsTable({
         <span className="hidden text-right sm:block">Cumul dossiers</span>
         <span className="w-10" />
       </div>
-      {items.map((f) => {
-        const m = TYPE_META[f.type];
-        const Icon = m.icon;
-        const hasTarif = f.tarifContractuel != null;
-        return (
-          <div
-            key={f.id}
-            className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5"
-          >
-            <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", m.bg)}>
-              <Icon className={cn("size-[18px]", m.color)} />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">
-                {f.nom}
-              </p>
-              <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                <TypeBadge type={f.type} />
-                <span className="text-slate-400">
-                  {f.nbDossiers} dossier{f.nbDossiers === 1 ? "" : "s"}
-                </span>
-              </p>
-            </div>
-            <p
-              className={cn(
-                "text-right text-sm tabular-nums",
-                hasTarif
-                  ? "font-semibold text-violet-700 dark:text-violet-300"
-                  : "text-muted-foreground",
-              )}
-            >
-              {hasTarif ? formatFCFA(f.tarifContractuel!) : "Non défini"}
-            </p>
-            <p className="hidden text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200 sm:block">
-              {formatFCFA(f.montantTotal)}
-            </p>
-            <div className="flex justify-end">
-              {canWrite && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="size-8"
-                  aria-label={`Modifier le tarif de ${f.nom}`}
-                  onClick={() => onEdit(f)}
-                >
-                  <Pencil className="size-3.5" />
-                </Button>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {items.map((f) => (
+        <TarifRow key={f.id} f={f} canWrite={canWrite} onEdit={onEdit} />
+      ))}
+      <TablePagination
+        startIdx={pagination.startIdx}
+        endIdx={pagination.endIdx}
+        totalItems={pagination.totalItems}
+        itemLabel="tarifs"
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        onPageChange={pagination.onPageChange}
+      />
     </div>
   );
 }
 
 export type LiaisonEnrichie = DossierFournisseur & { dossier?: Dossier };
 
+const CoutRow = memo(function CoutRow({
+  df,
+  onOpenDossier,
+}: {
+  df: LiaisonEnrichie;
+  onOpenDossier: (dossierId: string) => void;
+}) {
+  const ecart = df.montantReel - df.montantBudgete;
+  const m = TYPE_META[df.type];
+  const Icon = m.icon;
+  return (
+    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5">
+      <div className="flex min-w-0 items-center gap-3">
+        <div
+          className={cn(
+            "hidden size-9 shrink-0 items-center justify-center rounded-lg sm:flex",
+            m.bg,
+          )}
+        >
+          <Icon className={cn("size-4", m.color)} />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+            {df.fournisseurNom}
+          </p>
+          <button
+            type="button"
+            onClick={() => onOpenDossier(df.dossierId)}
+            className="truncate text-xs text-blue-600 hover:underline dark:text-blue-400"
+          >
+            {df.dossierRef ?? df.dossierId} · {formatDateShort(df.date)}
+          </button>
+        </div>
+      </div>
+      <p className="hidden max-w-[160px] truncate text-xs text-muted-foreground sm:block">
+        {df.description}
+      </p>
+      <p className="text-right text-sm tabular-nums text-muted-foreground">
+        {formatFCFA(df.montantBudgete)}
+      </p>
+      <p className="text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+        {formatFCFA(df.montantReel)}
+      </p>
+      <p
+        className={cn(
+          "hidden text-sm font-semibold tabular-nums sm:block",
+          ecart > 0
+            ? "text-red-600 dark:text-red-400"
+            : ecart < 0
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-muted-foreground",
+        )}
+      >
+        {ecart > 0 ? "+" : ""}
+        {formatFCFA(ecart)}
+      </p>
+      <DossierFournisseurStatutBadge statut={df.statut} />
+    </div>
+  );
+});
+
 export function CoutsTable({
   items,
   onOpenDossier,
+  pagination,
 }: {
   items: LiaisonEnrichie[];
   onOpenDossier: (dossierId: string) => void;
+  pagination: PaginationProps;
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm bg-muted/40">
@@ -228,8 +344,8 @@ export function CoutsTable({
           Liaisons dossiers
         </h2>
         <Badge variant="secondary" className="text-[10px]">
-          {items.length} prestation
-          {items.length === 1 ? "" : "s"}
+          {pagination.totalItems} prestation
+          {pagination.totalItems === 1 ? "" : "s"}
         </Badge>
       </div>
 
@@ -250,63 +366,18 @@ export function CoutsTable({
             <span className="hidden sm:block">Écart</span>
             <span>Statut</span>
           </div>
-          {items.map((df) => {
-            const ecart = df.montantReel - df.montantBudgete;
-            const m = TYPE_META[df.type];
-            const Icon = m.icon;
-            return (
-              <div
-                key={df.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div
-                    className={cn(
-                      "hidden size-9 shrink-0 items-center justify-center rounded-lg sm:flex",
-                      m.bg,
-                    )}
-                  >
-                    <Icon className={cn("size-4", m.color)} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {df.fournisseurNom}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => onOpenDossier(df.dossierId)}
-                      className="truncate text-xs text-blue-600 hover:underline dark:text-blue-400"
-                    >
-                      {df.dossierRef ?? df.dossierId} · {formatDateShort(df.date)}
-                    </button>
-                  </div>
-                </div>
-                <p className="hidden max-w-[160px] truncate text-xs text-muted-foreground sm:block">
-                  {df.description}
-                </p>
-                <p className="text-right text-sm tabular-nums text-muted-foreground">
-                  {formatFCFA(df.montantBudgete)}
-                </p>
-                <p className="text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">
-                  {formatFCFA(df.montantReel)}
-                </p>
-                <p
-                  className={cn(
-                    "hidden text-sm font-semibold tabular-nums sm:block",
-                    ecart > 0
-                      ? "text-red-600 dark:text-red-400"
-                      : ecart < 0
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-muted-foreground",
-                  )}
-                >
-                  {ecart > 0 ? "+" : ""}
-                  {formatFCFA(ecart)}
-                </p>
-                <DossierFournisseurStatutBadge statut={df.statut} />
-              </div>
-            );
-          })}
+          {items.map((df) => (
+            <CoutRow key={df.id} df={df} onOpenDossier={onOpenDossier} />
+          ))}
+          <TablePagination
+            startIdx={pagination.startIdx}
+            endIdx={pagination.endIdx}
+            totalItems={pagination.totalItems}
+            itemLabel="prestations"
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.onPageChange}
+          />
         </>
       )}
     </div>

@@ -17,6 +17,7 @@ export {
   buildRecuPaiementHTML,
   printRecuPaiementModule,
   printStockInventory,
+  printTransporteurs,
   shouldShowTva,
   type BilanPrintRow,
   type BilanPrintTotals,
@@ -30,6 +31,7 @@ export {
   type RecuPaiementModuleData,
   type StockInventoryGroup,
   type StockInventoryRow,
+  type TransporteurPrintRow,
 } from "./print-modules";
 
 export type { PrintHTMLBrand, SocieteBrand, SocieteLegalInfo } from "@/lib/societe-brand";

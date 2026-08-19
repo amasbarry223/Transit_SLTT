@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { usePagination } from "@/shared/hooks/use-pagination";
 import {
   Handshake,
   Banknote,
@@ -23,6 +24,8 @@ import { TYPES, TYPE_META } from "./fournisseur-type-meta";
 import type { LiaisonEnrichie } from "./fournisseurs-table";
 
 export type FournisseurTab = "prestataires" | "tarifs" | "couts";
+
+const PAGE_SIZE = 8;
 
 export const TAB_META: (MetaTabItem<FournisseurTab> & { description: string })[] = [
   {
@@ -77,6 +80,9 @@ export function useFournisseursScreen() {
   const [activeTab, setActiveTab] = useState<FournisseurTab>("prestataires");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<FournisseurType | null>(null);
+  const [prestatairesPage, setPrestatairesPage] = useState(1);
+  const [tarifsPage, setTarifsPage] = useState(1);
+  const [coutsPage, setCoutsPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Fournisseur | undefined>();
   const { target: deleteTarget, setTarget: setDeleteTarget, confirm: handleDelete } = useDeleteConfirm<Fournisseur>(
@@ -120,6 +126,10 @@ export function useFournisseursScreen() {
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [dossierFournisseurs, dossiers, search, typeFilter]);
 
+  const prestatairesPagination = usePagination(filtered, prestatairesPage, PAGE_SIZE);
+  const tarifsPagination = usePagination(tarifsSorted, tarifsPage, PAGE_SIZE);
+  const coutsPagination = usePagination(liaisonsEnrichies, coutsPage, PAGE_SIZE);
+
   const totalMontant = useMemo(
     () => liaisonsEnrichies.reduce((s, df) => s + df.montantReel, 0),
     [liaisonsEnrichies],
@@ -157,10 +167,13 @@ export function useFournisseursScreen() {
     onToggle: () => setTypeFilter((cur) => (cur === t ? null : t)),
   }));
 
-  function handleEdit(f: Fournisseur) {
+  // Références stables : PrestataireRow/TarifRow/CoutRow (fournisseurs-table.tsx)
+  // sont mémoïsées avec React.memo — sans useCallback ici, ces handlers seraient
+  // recréés à chaque render de l'écran et casseraient le memo sur chaque ligne.
+  const handleEdit = useCallback((f: Fournisseur) => {
     setEditing(f);
     setShowForm(true);
-  }
+  }, []);
 
   function openCreateForm() {
     setEditing(undefined);
@@ -172,13 +185,19 @@ export function useFournisseursScreen() {
     setEditing(undefined);
   }
 
-  function handleDeleteRequest(id: string) {
-    setDeleteTarget(fournisseurs.find((f) => f.id === id) ?? null);
-  }
+  const handleDeleteRequest = useCallback(
+    (id: string) => {
+      setDeleteTarget(fournisseurs.find((f) => f.id === id) ?? null);
+    },
+    [fournisseurs, setDeleteTarget],
+  );
 
-  function openDossier(dossierId: string) {
-    go("dossier-detail", { id: dossierId });
-  }
+  const openDossier = useCallback(
+    (dossierId: string) => {
+      go("dossier-detail", { id: dossierId });
+    },
+    [go],
+  );
 
   function clearTypeFilter() {
     setTypeFilter(null);
@@ -199,6 +218,12 @@ export function useFournisseursScreen() {
     filtered,
     tarifsSorted,
     liaisonsEnrichies,
+    prestatairesPagination,
+    tarifsPagination,
+    coutsPagination,
+    setPrestatairesPage,
+    setTarifsPage,
+    setCoutsPage,
     totalMontant,
     totalBudgete,
     actifs,

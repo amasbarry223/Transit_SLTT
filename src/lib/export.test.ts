@@ -1,5 +1,3 @@
-import ExcelJS from "exceljs";
-
 import { describe, expect, it } from "vitest";
 
 import { shouldShowTva } from "./export";
@@ -12,15 +10,7 @@ import {
 
 } from "./export/normalize-export-cell";
 
-import { buildXlsxBuffer, sanitizeExcelCell } from "./export/xlsx-builder";
-
-
-
-function isValidXlsxBytes(bytes: Uint8Array): boolean {
-
-  return bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b;
-
-}
+import { sanitizeExcelCell } from "./export/xlsx-cell-utils";
 
 
 
@@ -93,80 +83,6 @@ describe("sanitizeExcelCell", () => {
     expect(sanitizeExcelCell(42)).toBe(42);
 
     expect(sanitizeExcelCell(0)).toBe(0);
-
-  });
-
-});
-
-
-
-describe("buildXlsxBuffer", () => {
-
-  const headers = ["Société", "Contact", "Montant"];
-
-  const rows: (string | number)[][] = [
-
-    ["Konaté Transport", "Mamadou Konaté", 150000],
-
-    ["Golaine Tech", "Ibrahim Diarra", 82000],
-
-  ];
-
-
-
-  it("produit un buffer non vide avec signature ZIP PK", async () => {
-
-    const buffer = await buildXlsxBuffer(headers, rows);
-
-    expect(buffer.length).toBeGreaterThan(0);
-
-    expect(isValidXlsxBytes(buffer)).toBe(true);
-
-  });
-
-
-
-  it("contient les en-têtes et les données", async () => {
-
-    const buffer = await buildXlsxBuffer(headers, rows);
-
-    const workbook = new ExcelJS.Workbook();
-
-    await workbook.xlsx.load(Buffer.from(buffer) as never);
-
-
-
-    const sheet = workbook.getWorksheet("Export");
-
-    expect(sheet).toBeDefined();
-
-    expect(sheet?.getCell("A1").value).toBe("Société");
-
-    expect(sheet?.getCell("B1").value).toBe("Contact");
-
-    expect(sheet?.getCell("A2").value).toBe("Konaté Transport");
-
-    expect(sheet?.getCell("B2").value).toBe("Mamadou Konaté");
-
-    expect(sheet?.getCell("C2").value).toBe(150000);
-
-  });
-
-
-
-  it("neutralise les formules dans les cellules exportées", async () => {
-
-    const buffer = await buildXlsxBuffer(["Nom"], [["=CMD(calc)"]]);
-
-    const workbook = new ExcelJS.Workbook();
-
-    await workbook.xlsx.load(Buffer.from(buffer) as never);
-
-
-
-    const sheet = workbook.getWorksheet("Export");
-
-    expect(sheet?.getCell("A2").value).toBe("'=CMD(calc)");
 
   });
 

@@ -65,6 +65,7 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   dossiers: { title: "Dossiers", sub: "Cycle devis → dossier → dédouanement → livraison → solde" },
   "dossier-form": { title: "Dossier de transit", sub: "Création et édition" },
   "dossier-detail": { title: "Dossier de transit", sub: "Statut, montants et documents du dossier" },
+  "dossier-ocr-review": { title: "Validation OCR", sub: "Vérifiez les champs extraits avant de créer le dossier" },
   comptabilite: { title: "Comptabilité", sub: "Écritures dossiers et journal de caisse par entité" },
   "recus-paiement": { title: "Gestion des reçus", sub: "Créer un reçu de paiement — format 19,5 × 8,2 cm paysage" },
   bilans: { title: "Bilans", sub: "Analyse financière périodique" },

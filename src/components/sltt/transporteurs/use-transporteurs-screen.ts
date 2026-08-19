@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { useStore, type Transporteur, type TransporteurStatut } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
-import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
+import { exportToExcel, printTransporteurs } from "@/lib/export";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
@@ -245,33 +245,21 @@ export function useTransporteursScreen() {
   };
 
   const handleExportPDF = () => {
-    const rowsHTML = filtered
-      .map(
-        (t) => `
-      <tr>
-        <td>${htmlEscape(t.nom)}</td>
-        <td>${htmlEscape(t.contact)}<br><small>${htmlEscape(t.telephone)}</small></td>
-        <td>${htmlEscape(t.vehicule)}<br><small style="font-family:monospace">${htmlEscape(t.immatriculation)}</small></td>
-        <td>${htmlEscape(t.trajet)}</td>
-        <td class="num">${t.capacite} t</td>
-        <td><span class="badge" style="${t.statut === "Actif" ? "background:#d3f8e1;color:#0f5629" : "background:#f3f5f7;color:#6b7280"}">${htmlEscape(t.statut)}</span></td>
-      </tr>`,
-      )
-      .join("");
-    printHTML(
-      "Liste des transporteurs",
-      `
-      <h1>Transporteurs partenaires</h1>
-      <div class="subtitle">${filtered.length} transporteur(s) · ${formatDateShort(new Date())}</div>
-      <table>
-        <thead><tr>
-          <th>Société</th><th>Contact</th><th>Véhicule</th>
-          <th>Trajet</th><th class="num">Capacité</th><th>Statut</th>
-        </tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>`,
-      resolvePrintHTMLBrand(societes),
-    );
+    const rows = filtered.map((t) => ({
+      nom: t.nom,
+      contact: t.contact,
+      telephone: t.telephone,
+      vehicule: t.vehicule,
+      immatriculation: t.immatriculation,
+      trajet: t.trajet,
+      capacite: t.capacite,
+      statut: t.statut,
+    }));
+    const parts: string[] = [];
+    if (vehiculeFilter !== "all") parts.push(vehiculeFilter);
+    if (statutFilter !== "Tous") parts.push(statutFilter);
+    if (search.trim()) parts.push(`"${search.trim()}"`);
+    printTransporteurs(rows, parts.length ? `Filtre : ${parts.join(" · ")}` : undefined, resolveSlttBrand(societes));
   };
 
   return {

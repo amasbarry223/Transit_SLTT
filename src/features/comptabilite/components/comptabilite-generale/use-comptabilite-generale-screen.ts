@@ -7,6 +7,7 @@ import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
 import {
   computeOperationsTotals,
   computeRunningEcart,
+  entiteKeyOf,
   filterOperationsByEntite,
   filterOperationsByPeriode,
   resolveEntitesComptables,
@@ -18,10 +19,6 @@ import { UI } from "@/lib/ui-messages";
 import { exportToExcel } from "@/lib/export";
 import { formatDateShort } from "@/lib/format";
 import { PAGE_SIZE } from "./shared";
-
-function entiteKeyOf(entite: { type: string; id: string }): string {
-  return `${entite.type}:${entite.id}`;
-}
 
 export function useComptabiliteGeneraleScreen() {
   const { toast } = useToast();
@@ -125,7 +122,20 @@ export function useComptabiliteGeneraleScreen() {
   const startIdx = sorted.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(safePage * PAGE_SIZE, sorted.length);
   const hasActiveFilters =
-    query.trim() !== "" || typeFilter !== "all" || effectiveClientFilter !== "" || dateFrom !== "" || dateTo !== "";
+    query.trim() !== "" ||
+    scopeFilter !== "tous" ||
+    typeFilter !== "all" ||
+    effectiveClientFilter !== "" ||
+    dateFrom !== "" ||
+    dateTo !== "";
+  // Nombre de filtres actifs hors recherche texte — pour le badge "Réinitialiser".
+  const activeFilterCount = [
+    scopeFilter !== "tous",
+    typeFilter !== "all",
+    effectiveClientFilter !== "",
+    dateFrom !== "",
+    dateTo !== "",
+  ].filter(Boolean).length;
 
   // Vue consolidée groupe : totaux par entité (mêmes bornes de date que
   // l'écran), tous clients confondus — jamais de journal mélangé entre
@@ -157,6 +167,7 @@ export function useComptabiliteGeneraleScreen() {
 
   function clearFilters() {
     setQuery("");
+    setScopeFilter("tous");
     setTypeFilter("all");
     setClientFilter("");
     setDateFrom("");
@@ -229,6 +240,7 @@ export function useComptabiliteGeneraleScreen() {
     startIdx,
     endIdx,
     hasActiveFilters,
+    activeFilterCount,
     clearFilters,
     totals,
     ecartCumuleById,

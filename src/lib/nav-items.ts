@@ -81,6 +81,7 @@ export const VIEW_PERMISSIONS: Record<ViewKey, string | undefined> = {
   dossiers: "dossiers:read",
   "dossier-form": "dossiers:read",
   "dossier-detail": "dossiers:read",
+  "dossier-ocr-review": "dossiers:read",
   comptabilite: "comptabilite:read",
   "recus-paiement": "recus-paiement:read",
   bilans: "rapports:read",

@@ -38,19 +38,13 @@ export const updateUserAnnexesBodySchema = z.object({
   annexeIds: z.array(z.string()).min(1, "Au moins une annexe doit être assignée à l'utilisateur."),
 });
 
-/** Plafond export Excel (aligné API). */
-export const EXPORT_MAX_ROWS = 2_000;
-
+/**
+ * Le fichier .xlsx est construit côté client (les données y sont déjà) —
+ * cette route ne fait plus qu'autoriser l'export d'un module, donc son
+ * corps de requête se limite au module concerné.
+ */
 export const exportExcelBodySchema = z.object({
   module: z.enum(EXPORT_MODULES, { message: "Module d'export requis." }),
-  filename: z.string().max(120).optional().default("export"),
-  headers: z
-    .array(z.string().trim().min(1).max(200))
-    .min(1, "En-têtes de colonnes requis."),
-  rows: z
-    .array(z.array(z.unknown()))
-    .min(1, "Aucune ligne à exporter.")
-    .max(EXPORT_MAX_ROWS, `Maximum ${EXPORT_MAX_ROWS} lignes par export.`),
 });
 
 export function zodErrorMessage(err: z.ZodError): string {

@@ -94,25 +94,52 @@ export function FournisseursScreen() {
 
         <TabsContent value="prestataires" className="mt-0 space-y-4">
           <PrestatairesTable
-            items={screen.filtered}
+            items={screen.prestatairesPagination.paged}
             canWrite={screen.canWrite}
             onEdit={screen.handleEdit}
             onDelete={screen.handleDeleteRequest}
             emptyAction={emptyCta}
+            pagination={{
+              startIdx: screen.prestatairesPagination.startIdx,
+              endIdx: screen.prestatairesPagination.endIdx,
+              totalItems: screen.filtered.length,
+              page: screen.prestatairesPagination.safePage,
+              totalPages: screen.prestatairesPagination.totalPages,
+              onPageChange: screen.setPrestatairesPage,
+            }}
           />
         </TabsContent>
 
         <TabsContent value="tarifs" className="mt-0 space-y-4">
           <TarifsTable
-            items={screen.tarifsSorted}
+            items={screen.tarifsPagination.paged}
             canWrite={screen.canWrite}
             onEdit={screen.handleEdit}
             emptyAction={emptyCta}
+            pagination={{
+              startIdx: screen.tarifsPagination.startIdx,
+              endIdx: screen.tarifsPagination.endIdx,
+              totalItems: screen.tarifsSorted.length,
+              page: screen.tarifsPagination.safePage,
+              totalPages: screen.tarifsPagination.totalPages,
+              onPageChange: screen.setTarifsPage,
+            }}
           />
         </TabsContent>
 
         <TabsContent value="couts" className="mt-0 space-y-4">
-          <CoutsTable items={screen.liaisonsEnrichies} onOpenDossier={screen.openDossier} />
+          <CoutsTable
+            items={screen.coutsPagination.paged}
+            onOpenDossier={screen.openDossier}
+            pagination={{
+              startIdx: screen.coutsPagination.startIdx,
+              endIdx: screen.coutsPagination.endIdx,
+              totalItems: screen.liaisonsEnrichies.length,
+              page: screen.coutsPagination.safePage,
+              totalPages: screen.coutsPagination.totalPages,
+              onPageChange: screen.setCoutsPage,
+            }}
+          />
         </TabsContent>
       </Tabs>
 

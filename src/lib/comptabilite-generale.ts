@@ -10,6 +10,11 @@ import type { Annexe, EntiteComptable, OperationComptable, Societe } from "@/lib
 
 export const TOP_DOUMANI_SOCIETE_NOM = "Top Doumani";
 
+/** Clé stable d'une entité comptable — sert de valeur d'onglet/sélecteur. */
+export function entiteKeyOf(entite: { type: string; id: string }): string {
+  return `${entite.type}:${entite.id}`;
+}
+
 /** Construit les 3 entités comptables à partir des annexes/sociétés déjà chargées — annexes d'abord (Mali/CI), puis Top Doumani si présente. */
 export function resolveEntitesComptables(annexes: Annexe[], societes: Societe[]): EntiteComptable[] {
   const entitesAnnexes: EntiteComptable[] = [...annexes]

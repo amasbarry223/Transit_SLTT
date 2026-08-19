@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/sltt/page-header";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ListFilters } from "@/components/sltt/list-filters";
 import { ResponsiveDataList } from "@/components/sltt/responsive-data-list";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { MetaTabsList } from "@/components/sltt/meta-tabs-list";
 import { Button } from "@/components/ui/button";
@@ -93,7 +94,7 @@ export function ArchivesScreen() {
       />
 
       <ResponsiveDataList
-        items={screen.filtered}
+        items={screen.paged}
         columns={ARCHIVE_COLUMNS}
         getRowKey={(d) => d.key}
         emptyState={
@@ -159,6 +160,16 @@ export function ArchivesScreen() {
             )}
           </>
         )}
+      />
+
+      <TablePagination
+        startIdx={screen.startIdx}
+        endIdx={screen.endIdx}
+        totalItems={screen.filtered.length}
+        itemLabel="documents"
+        page={screen.page}
+        totalPages={screen.totalPages}
+        onPageChange={screen.setPage}
       />
 
       <ArchiveUploadDialog

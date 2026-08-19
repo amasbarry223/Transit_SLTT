@@ -3,7 +3,7 @@
 import {
   Plus,
   Search,
-  FileText,
+  Printer,
   FileSpreadsheet,
   Pencil,
   Trash2,
@@ -178,11 +178,11 @@ export function TransporteursTable({
               className="h-9 shrink-0"
               onClick={onExportPDF}
               disabled={filtered.length === 0}
-              title="Exporter en PDF"
-              aria-label="Exporter en PDF"
+              title="Imprimer la liste"
+              aria-label="Imprimer la liste"
             >
-              <FileText className="size-4" />
-              <span className="hidden sm:inline">PDF</span>
+              <Printer className="size-4" />
+              <span className="hidden sm:inline">Imprimer la liste</span>
             </Button>
             <Button
               variant="outline"

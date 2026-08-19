@@ -8,7 +8,7 @@
  * retourne des lignes + avertissements, à valider ligne par ligne dans
  * ComptabiliteGeneraleImportDialog avant tout appel à `addOperationComptable`.
  */
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 
 export type OperationImportRow = {
   /** Index 1-based dans le fichier (pour messages d'erreur / tri). */
@@ -169,7 +169,8 @@ export async function parseComptabiliteGeneraleXlsx(
   file: ArrayBuffer,
   options: ParseComptabiliteGeneraleOptions,
 ): Promise<OperationImportRow[]> {
-  const wb = new ExcelJS.Workbook();
+  const { default: ExcelJSLib } = await import("exceljs");
+  const wb = new ExcelJSLib.Workbook();
   await wb.xlsx.load(file);
   if (!wb.worksheets.length) return [];
 

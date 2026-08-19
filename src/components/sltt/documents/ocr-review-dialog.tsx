@@ -37,6 +37,10 @@ import { cn } from "@/lib/utils";
 import { DOSSIER_STATUT_EN_COURS } from "@/lib/constants";
 import { resolveTransitSociete } from "@/lib/societe-brand";
 
+/** Passé ce délai, une extraction bloquée est traitée comme une erreur visible
+ * plutôt que de laisser le spinner tourner indéfiniment (voir OCR_TIMEOUT_MS). */
+const OCR_TIMEOUT_MS = 45_000;
+
 const FIELD_LABELS: Record<string, string> = {
   bl: "N° BL",
   date: "Date",
@@ -72,20 +76,31 @@ function emptyForm(defaults?: Partial<FormState>): FormState {
   };
 }
 
-export function OcrReviewDialog({
+export interface OcrReviewStateProps {
+  /** Vaut `true` tant que cette revue est la vue active (dialog ouvert, ou page montée). */
+  open: boolean;
+  /** Appelé avec `false` à l'annulation ou après enregistrement réussi — le dialog s'en sert
+   * pour se fermer ; la page pleine écran s'en sert pour naviguer ailleurs. */
+  onOpenChange: (open: boolean) => void;
+  documentId: string | null;
+  /** Si fourni, met à jour ce dossier au lieu d'en créer un. */
+  existingDossierId?: string;
+  defaultClientId?: string;
+}
+
+/**
+ * État + logique de la revue OCR (extraction, formulaire, validation) —
+ * partagé entre la coquille modale (`OcrReviewDialog`, relance OCR sur un
+ * document déjà rattaché à un dossier) et la coquille pleine page
+ * (`DossierOcrReviewScreen`, flux "Nouveau dossier via OCR").
+ */
+export function useOcrReviewState({
   open,
   onOpenChange,
   documentId,
-  /** Si fourni, met à jour ce dossier au lieu d'en créer un. */
   existingDossierId,
   defaultClientId,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  documentId: string | null;
-  existingDossierId?: string;
-  defaultClientId?: string;
-}) {
+}: OcrReviewStateProps) {
   const { toast } = useToast();
   const openDossierDetail = useNav((s) => s.openDossierDetail);
   const canWriteDocs = usePermission("documents:write");
@@ -116,6 +131,7 @@ export function OcrReviewDialog({
   const [confidence, setConfidence] = useState<Record<string, number>>({});
   const [form, setForm] = useState<FormState>(() => emptyForm({ clientId: defaultClientId || "" }));
   const [ocrError, setOcrError] = useState<string | null>(null);
+  const [noFieldsDetected, setNoFieldsDetected] = useState(false);
   const [rawText, setRawText] = useState<string | null>(null);
   const [showRawText, setShowRawText] = useState(false);
   const [pdfPagesHint, setPdfPagesHint] = useState<string | null>(null);
@@ -144,6 +160,18 @@ export function OcrReviewDialog({
   useEffect(() => {
     markJobFailedRef.current = markJobFailed;
   });
+
+  /** Abandonne la course en cours et marque son job failed — utilisé à la
+   * fermeture du dialog (reste monté) comme au démontage de la page (quitte
+   * réellement l'arbre React). */
+  const cancelPendingJob = useCallback((reason: string) => {
+    abortRef.current?.abort();
+    const jobId = activeJobIdRef.current;
+    if (jobId) {
+      activeJobIdRef.current = null;
+      void markJobFailedRef.current(jobId, reason);
+    }
+  }, []);
 
   const lowFields = useMemo(
     () =>
@@ -253,9 +281,15 @@ export function OcrReviewDialog({
 
     const ac = new AbortController();
     abortRef.current = ac;
+    let timedOut = false;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      ac.abort();
+    }, OCR_TIMEOUT_MS);
 
     setRunning(true);
     setOcrError(null);
+    setNoFieldsDetected(false);
     setConfidence({});
     setJobId(null);
     setRawText(null);
@@ -323,14 +357,19 @@ export function OcrReviewDialog({
         return;
       }
       applyFieldsToForm(result.fields);
+      // OCR réussi mais aucun champ reconnu par le mapper heuristique (mise en
+      // page inattendue, scan de mauvaise qualité…) : sans ce signal, le
+      // formulaire reste juste vide et rien ne distingue ce cas d'un OCR qui
+      // n'aurait rien fait du tout.
+      setNoFieldsDetected(result.fields.length === 0);
     } catch (e) {
       const isAbort =
         ac.signal.aborted ||
         (e instanceof DOMException && e.name === "AbortError") ||
         (e instanceof Error && e.name === "AbortError");
 
-      if (isAbort) {
-        // Ne pas écraser un job déjà repris par une nouvelle course.
+      if (isAbort && !timedOut) {
+        // Course supplantée par une relance, ou revue fermée/quittée — silencieux.
         if (currentJobId && activeJobIdRef.current === currentJobId) {
           activeJobIdRef.current = null;
           await markJobFailed(currentJobId, "OCR annulé");
@@ -338,7 +377,11 @@ export function OcrReviewDialog({
         return;
       }
 
-      const message = e instanceof Error ? e.message : "OCR échoué";
+      const message = timedOut
+        ? `Délai dépassé (${OCR_TIMEOUT_MS / 1000}s) — l'extraction n'a pas abouti. Réessayez ou complétez le formulaire manuellement.`
+        : e instanceof Error
+          ? e.message
+          : "OCR échoué";
       setOcrError(message);
       if (currentJobId && activeJobIdRef.current === currentJobId) {
         activeJobIdRef.current = null;
@@ -348,6 +391,7 @@ export function OcrReviewDialog({
       }
       toastWarning(toast, { title: "OCR échoué", description: message });
     } finally {
+      window.clearTimeout(timeoutId);
       if (abortRef.current === ac) {
         setRunning(false);
       }
@@ -370,6 +414,8 @@ export function OcrReviewDialog({
 
   // Ouverture : toujours lancer l'OCR dès que le document est en store.
   // (La réutilisation d'anciens jobs masquait des extractions cassées.)
+  // Le cleanup couvre aussi le démontage réel (page pleine écran quittée) —
+  // pas seulement le changement de deps.
   useEffect(() => {
     if (!open || !documentId || !doc) return;
     let cancelled = false;
@@ -379,21 +425,17 @@ export function OcrReviewDialog({
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
-      // N'aborte que si une course est vraiment en cours pour ce dialog.
-      abortRef.current?.abort();
+      cancelPendingJob("OCR annulé");
     };
-  }, [open, documentId, doc?.id]);
+  }, [open, documentId, doc?.id, cancelPendingJob]);
 
-  // Fermeture réelle du dialog → job en failed.
+  // Fermeture du dialog sans démontage (Radix garde le composant monté pour
+  // l'animation de fermeture) → job en failed. Sans effet pour la page pleine
+  // écran, dont le démontage est déjà couvert par le cleanup ci-dessus.
   useEffect(() => {
     if (open) return;
-    abortRef.current?.abort();
-    const jobId = activeJobIdRef.current;
-    if (jobId) {
-      activeJobIdRef.current = null;
-      void markJobFailedRef.current(jobId, "OCR annulé (fermeture dialog)");
-    }
-  }, [open]);
+    cancelPendingJob("OCR annulé (fermeture)");
+  }, [open, cancelPendingJob]);
 
   function fieldClass(key: string) {
     const c = confidence[key];
@@ -513,6 +555,235 @@ export function OcrReviewDialog({
     }
   }
 
+  return {
+    doc,
+    previewUrl,
+    running,
+    saving,
+    confidence,
+    form,
+    setForm,
+    ocrError,
+    noFieldsDetected,
+    rawText,
+    showRawText,
+    setShowRawText,
+    pdfPagesHint,
+    lowFields,
+    canValidate,
+    canWriteDocs,
+    canWriteDossiers,
+    clients,
+    fieldClass,
+    runOcr,
+    handleValidate,
+    onOpenChange,
+    /** Verrouille le sélecteur client quand on met à jour un dossier existant. */
+    clientLocked: !!existingDossierId,
+  };
+}
+
+type OcrReviewState = ReturnType<typeof useOcrReviewState>;
+
+/** Aperçu document + formulaire — contenu partagé entre modale et page pleine écran. */
+export function OcrReviewFields({ state }: { state: OcrReviewState }) {
+  const {
+    doc,
+    previewUrl,
+    running,
+    confidence,
+    form,
+    setForm,
+    ocrError,
+    noFieldsDetected,
+    rawText,
+    showRawText,
+    setShowRawText,
+    pdfPagesHint,
+    lowFields,
+    fieldClass,
+  } = state;
+
+  return (
+    <div className="grid min-h-0 flex-1 gap-0 overflow-y-auto lg:grid-cols-2">
+      <div className="border-b border-border p-4 lg:border-b-0 lg:border-r">
+        <DocumentViewer
+          url={previewUrl}
+          mimeType={doc?.mimeType || "application/pdf"}
+          fileName={doc?.nom}
+        />
+      </div>
+
+      <div className="space-y-4 p-4">
+        {running && (
+          <div className="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2 text-sm text-primary">
+            <Loader2 className="size-4 animate-spin" />
+            Extraction OCR en cours…
+          </div>
+        )}
+
+        {ocrError && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="font-medium">OCR incomplet</p>
+              <p className="text-xs opacity-90">{ocrError}</p>
+              <p className="mt-1 text-xs">Complétez les champs manuellement ci-dessous.</p>
+            </div>
+          </div>
+        )}
+
+        {noFieldsDetected && !ocrError && !running && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="font-medium">Aucun champ détecté automatiquement</p>
+              <p className="text-xs opacity-90">
+                L&apos;OCR a lu le document mais n&apos;a trouvé aucune correspondance connue.
+                Vérifiez le texte extrait (« Voir le texte brut OCR » ci-dessous) et complétez le
+                formulaire manuellement.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {pdfPagesHint && !running && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-border bg-muted/50/50 dark:text-slate-300">
+            {pdfPagesHint}
+          </div>
+        )}
+
+        {lowFields.length > 0 && !running && (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            {lowFields.length} champ(s) à faible confiance — vérifiez avant validation.
+          </p>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Client</Label>
+            <Select
+              value={form.clientId || undefined}
+              onValueChange={(v) => setForm((f) => ({ ...f, clientId: v }))}
+              disabled={state.clientLocked}
+            >
+              <SelectTrigger className={cn(fieldClass("client_nom"))}>
+                <SelectValue placeholder="Sélectionner un client" />
+              </SelectTrigger>
+              <SelectContent>
+                {state.clients.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(
+            [
+              ["bl", "bl", "N° BL"],
+              ["date", "date", "Date"],
+              ["nature", "nature", "Nature"],
+              ["camion", "camion", "Camion"],
+              ["montantInvesti", "montant", "Montant investi"],
+              ["refDouaniere", "ref_douaniere", "Réf. douanière"],
+            ] as const
+          ).map(([formKey, confKey, label]) => (
+            <div key={formKey} className="space-y-1.5">
+              <Label>
+                {label}
+                {confidence[confKey] != null && (
+                  <span className="ml-1 text-xs font-normal text-slate-400">
+                    ({Math.round(confidence[confKey] * 100)}%)
+                  </span>
+                )}
+              </Label>
+              <Input
+                type={formKey === "date" ? "date" : formKey === "montantInvesti" ? "number" : "text"}
+                value={form[formKey]}
+                className={cn(fieldClass(confKey))}
+                onChange={(e) => setForm((f) => ({ ...f, [formKey]: e.target.value }))}
+              />
+            </div>
+          ))}
+
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Notes</Label>
+            <Input
+              value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Optionnel"
+            />
+          </div>
+        </div>
+
+        <p className="text-[11px] text-slate-400">
+          Champs détectés : {Object.keys(FIELD_LABELS).filter((k) => confidence[k] != null).join(", ") || "aucun"}
+        </p>
+
+        {rawText && !running && (
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+              onClick={() => setShowRawText(!showRawText)}
+            >
+              {showRawText ? "Masquer le texte OCR" : "Voir le texte brut OCR"}
+            </button>
+            {showRawText && (
+              <pre className="max-h-40 overflow-auto rounded-md border border-border bg-slate-50 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 bg-card dark:text-slate-300">
+                {rawText}
+              </pre>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Boutons d'action — partagés entre modale et page pleine écran. */
+export function OcrReviewActions({
+  state,
+  onCancel,
+  cancelLabel = "Annuler",
+}: {
+  state: OcrReviewState;
+  onCancel: () => void;
+  cancelLabel?: string;
+}) {
+  const { running, saving, canValidate, canWriteDocs, canWriteDossiers, runOcr, handleValidate } = state;
+  return (
+    <>
+      {!canValidate && (
+        <p className="mr-auto max-w-sm text-xs text-amber-700 dark:text-amber-400">
+          {canWriteDocs && !canWriteDossiers
+            ? "Extraction possible, validation désactivée : droit dossiers:write manquant (rôle Comptable / lecture seule)."
+            : "Validation désactivée : droits documents:write et dossiers:write requis."}
+        </p>
+      )}
+      <Button variant="outline" onClick={onCancel} disabled={saving}>
+        {cancelLabel}
+      </Button>
+      <Button variant="outline" onClick={() => void runOcr()} disabled={running || saving}>
+        Relancer OCR
+      </Button>
+      <Button
+        onClick={() => void handleValidate()}
+        disabled={running || saving || !canValidate}
+      >
+        {saving && <Loader2 className="size-4 animate-spin" />}
+        Valider et enregistrer
+      </Button>
+    </>
+  );
+}
+
+export function OcrReviewDialog(props: OcrReviewStateProps) {
+  const { open, onOpenChange } = props;
+  const state = useOcrReviewState(props);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[92vh] max-w-5xl flex-col gap-0 overflow-hidden p-0">
@@ -527,149 +798,10 @@ export function OcrReviewDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid min-h-0 flex-1 gap-0 overflow-y-auto lg:grid-cols-2">
-          <div className="border-b border-border p-4 lg:border-b-0 lg:border-r">
-            <DocumentViewer
-              url={previewUrl}
-              mimeType={doc?.mimeType || "application/pdf"}
-              fileName={doc?.nom}
-            />
-          </div>
-
-          <div className="space-y-4 p-4">
-            {running && (
-              <div className="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2 text-sm text-primary">
-                <Loader2 className="size-4 animate-spin" />
-                Extraction OCR en cours…
-              </div>
-            )}
-
-            {ocrError && (
-              <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                <div>
-                  <p className="font-medium">OCR incomplet</p>
-                  <p className="text-xs opacity-90">{ocrError}</p>
-                  <p className="mt-1 text-xs">Complétez les champs manuellement ci-dessous.</p>
-                </div>
-              </div>
-            )}
-
-            {pdfPagesHint && !running && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-border bg-muted/50/50 dark:text-slate-300">
-                {pdfPagesHint}
-              </div>
-            )}
-
-            {lowFields.length > 0 && !running && (
-              <p className="text-xs text-amber-700 dark:text-amber-400">
-                {lowFields.length} champ(s) à faible confiance — vérifiez avant validation.
-              </p>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>Client</Label>
-                <Select
-                  value={form.clientId || undefined}
-                  onValueChange={(v) => setForm((f) => ({ ...f, clientId: v }))}
-                  disabled={!!existingDossierId}
-                >
-                  <SelectTrigger className={cn(fieldClass("client_nom"))}>
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {(
-                [
-                  ["bl", "bl", "N° BL"],
-                  ["date", "date", "Date"],
-                  ["nature", "nature", "Nature"],
-                  ["camion", "camion", "Camion"],
-                  ["montantInvesti", "montant", "Montant investi"],
-                  ["refDouaniere", "ref_douaniere", "Réf. douanière"],
-                ] as const
-              ).map(([formKey, confKey, label]) => (
-                <div key={formKey} className="space-y-1.5">
-                  <Label>
-                    {label}
-                    {confidence[confKey] != null && (
-                      <span className="ml-1 text-xs font-normal text-slate-400">
-                        ({Math.round(confidence[confKey] * 100)}%)
-                      </span>
-                    )}
-                  </Label>
-                  <Input
-                    type={formKey === "date" ? "date" : formKey === "montantInvesti" ? "number" : "text"}
-                    value={form[formKey]}
-                    className={cn(fieldClass(confKey))}
-                    onChange={(e) => setForm((f) => ({ ...f, [formKey]: e.target.value }))}
-                  />
-                </div>
-              ))}
-
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>Notes</Label>
-                <Input
-                  value={form.notes}
-                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                  placeholder="Optionnel"
-                />
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-400">
-              Champs détectés : {Object.keys(FIELD_LABELS).filter((k) => confidence[k] != null).join(", ") || "aucun"}
-            </p>
-
-            {rawText && !running && (
-              <div className="space-y-1.5">
-                <button
-                  type="button"
-                  className="text-xs font-medium text-primary underline-offset-2 hover:underline"
-                  onClick={() => setShowRawText((v) => !v)}
-                >
-                  {showRawText ? "Masquer le texte OCR" : "Voir le texte brut OCR"}
-                </button>
-                {showRawText && (
-                  <pre className="max-h-40 overflow-auto rounded-md border border-border bg-slate-50 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 bg-card dark:text-slate-300">
-                    {rawText}
-                  </pre>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <OcrReviewFields state={state} />
 
         <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
-          {!canValidate && (
-            <p className="mr-auto max-w-sm text-xs text-amber-700 dark:text-amber-400">
-              {canWriteDocs && !canWriteDossiers
-                ? "Extraction possible, validation désactivée : droit dossiers:write manquant (rôle Comptable / lecture seule)."
-                : "Validation désactivée : droits documents:write et dossiers:write requis."}
-            </p>
-          )}
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Annuler
-          </Button>
-          <Button variant="outline" onClick={() => void runOcr()} disabled={running || saving}>
-            Relancer OCR
-          </Button>
-          <Button
-            onClick={() => void handleValidate()}
-            disabled={running || saving || !canValidate}
-          >
-            {saving && <Loader2 className="size-4 animate-spin" />}
-            Valider et enregistrer
-          </Button>
+          <OcrReviewActions state={state} onCancel={() => onOpenChange(false)} />
         </DialogFooter>
       </DialogContent>
     </Dialog>

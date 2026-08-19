@@ -3,6 +3,7 @@
 import type { AuditModule } from "@/lib/audit";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { normalizeExportCell } from "@/lib/export/normalize-export-cell";
+import { buildXlsxBlob } from "@/lib/export/build-xlsx-client";
 import type { ExportModule } from "@/lib/export/export-modules";
 import { useStore } from "@/lib/store";
 import { toast } from "@/hooks/use-toast";
@@ -14,9 +15,6 @@ interface Column<T> {
   header: string;
   accessor: (row: T) => string | number;
 }
-
-const XLSX_MIME =
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 /**
  * Neutralise les caractères interdits dans un nom de fichier (Windows/macOS/Linux)
@@ -47,25 +45,11 @@ function downloadBlob(blob: Blob, filename: string): void {
   }, 4000);
 }
 
-/** Valide la signature ZIP (PK) et la présence du répertoire central — détecte un flux tronqué. */
-function isValidXlsxBytes(bytes: Uint8Array): boolean {
-  if (bytes.length < 22 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) return false;
-  const eocdSig = [0x50, 0x4b, 0x05, 0x06];
-  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65558); i--) {
-    if (
-      bytes[i] === eocdSig[0] &&
-      bytes[i + 1] === eocdSig[1] &&
-      bytes[i + 2] === eocdSig[2] &&
-      bytes[i + 3] === eocdSig[3]
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /**
- * Export tabulaire .xlsx via l'API serveur (ExcelJS Node.js).
+ * Export tabulaire .xlsx : le serveur ne fait qu'autoriser l'export (permission
+ * du module) — les données sont déjà en mémoire côté client, donc le fichier
+ * est construit et téléchargé directement dans le navigateur, sans faire
+ * transiter tout le jeu de lignes par le réseau dans un sens puis dans l'autre.
  * Ne se replie jamais sur un CSV : en cas d'échec, une erreur est levée et
  * l'appelant ne doit pas afficher de message de succès (voir chaque écran).
  *
@@ -81,24 +65,21 @@ export async function exportToExcel<T>(
 ): Promise<void> {
   if (rows.length === 0) return;
 
-  // Retour visuel immédiat : le mapping synchrone des lignes ci-dessous puis
-  // l'aller-retour réseau peuvent prendre 1-3s sur de gros exports sans que
-  // rien ne bouge à l'écran sinon — perçu comme un blocage.
+  // Retour visuel immédiat : la vérification de permission puis la
+  // construction du classeur peuvent prendre le temps de l'aller-retour
+  // réseau (léger) et du calcul ExcelJS sur de gros exports, sans que rien
+  // ne bouge à l'écran sinon — perçu comme un blocage.
   const progress = toastLoading(toast, {
     title: "Génération du fichier Excel…",
     description: UI.loading.exporting,
   });
 
   const baseName = sanitizeFilename(filename.replace(/\.(csv|xls|xlsx)$/i, ""));
-  const headers = columns.map((c) => c.header);
-  const data = rows.map((row) =>
-    columns.map((c) => normalizeExportCell(c.accessor(row))),
-  );
 
   try {
     const response = await fetchWithAuth("/api/export/excel", {
       method: "POST",
-      body: JSON.stringify({ module, filename: baseName, headers, rows: data }),
+      body: JSON.stringify({ module }),
     });
 
     if (!response.ok) {
@@ -108,14 +89,11 @@ export async function exportToExcel<T>(
       throw new Error(payload?.error ?? "Export Excel impossible.");
     }
 
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (!isValidXlsxBytes(bytes)) {
-      throw new Error(
-        "Réponse serveur invalide ou tronquée — le fichier n'est pas un Excel valide.",
-      );
-    }
-
-    const blob = new Blob([bytes], { type: XLSX_MIME });
+    const headers = columns.map((c) => c.header);
+    const data = rows.map((row) =>
+      columns.map((c) => normalizeExportCell(c.accessor(row))),
+    );
+    const blob = await buildXlsxBlob(headers, data);
     downloadBlob(blob, `${baseName}.xlsx`);
     progress.dismiss();
 

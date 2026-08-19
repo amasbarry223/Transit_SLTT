@@ -10,6 +10,7 @@ import { useCanView } from "@/hooks/use-permission";
 const DETAIL_PARENT: Partial<Record<ViewKey, ViewKey>> = {
   "dossier-detail": "dossiers",
   "dossier-form": "dossiers",
+  "dossier-ocr-review": "dossiers",
   "client-fiche": "clients",
   "devis-detail": "devis",
   "facture-detail": "factures",

@@ -8,9 +8,12 @@ import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import { usePermission, useHasRole } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { usePagination } from "@/shared/hooks/use-pagination";
 import type { FilterChip } from "@/components/sltt/list-filters";
 import { useUnifiedDocs } from "./use-unified-docs";
 import { TAB_META, TYPES_DOCUMENT, type ArchiveTab, type RattachementKind, type UnifiedDoc } from "./shared";
+
+const PAGE_SIZE = 8;
 
 export function useArchivesScreen() {
   const { toast } = useToast();
@@ -36,6 +39,7 @@ export function useArchivesScreen() {
   const [dateFin, setDateFin] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UnifiedDoc | null>(null);
+  const [page, setPage] = useState(1);
 
   const counts = useMemo(() => {
     const base = { all: docs.length, dossier: 0, facture: 0, depense: 0, libre: 0 };
@@ -59,6 +63,8 @@ export function useArchivesScreen() {
       return true;
     });
   }, [docs, activeTab, search, typeFilter, clientFilter, societeFilter, selectedAnnexeId, clients, dateDebut, dateFin]);
+
+  const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, PAGE_SIZE);
 
   const chips: FilterChip[] = TYPES_DOCUMENT.map((t) => ({
     id: t,
@@ -139,6 +145,12 @@ export function useArchivesScreen() {
     setDeleteTarget,
     counts,
     filtered,
+    paged,
+    page: safePage,
+    totalPages,
+    startIdx,
+    endIdx,
+    setPage,
     chips,
     activeCount,
     currentMeta,
