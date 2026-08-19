@@ -2,7 +2,6 @@
 
 import {
   Plus,
-  Eye,
   FileText,
   Check,
   Search,
@@ -55,7 +54,6 @@ type BonMarchandiseTabProps = {
   validatingIds: Set<string>;
   onOpenCreateDialog: () => void;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
-  onView: (reference: string) => void;
   onPrint: (reference: string) => void;
 };
 
@@ -65,7 +63,6 @@ export function BonMarchandiseTab({
   validatingIds,
   onOpenCreateDialog,
   onConfirmValidate,
-  onView,
   onPrint,
 }: BonMarchandiseTabProps) {
   const clients = useStore((state) => state.clients);
@@ -227,7 +224,6 @@ export function BonMarchandiseTab({
                   canWrite={canWrite}
                   validatingIds={validatingIds}
                   onConfirmValidate={onConfirmValidate}
-                  onView={onView}
                   onPrint={onPrint}
                 />
               ))}
@@ -276,7 +272,6 @@ export function BonMarchandiseTab({
                       canWrite={canWrite}
                       validatingIds={validatingIds}
                       onConfirmValidate={onConfirmValidate}
-                      onView={onView}
                       onPrint={onPrint}
                     />
                   ))}
@@ -305,14 +300,12 @@ function BonMobileCard({
   canWrite,
   validatingIds,
   onConfirmValidate,
-  onView,
   onPrint,
 }: {
   bon: BonSortie;
   canWrite: boolean;
   validatingIds: Set<string>;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
-  onView: (reference: string) => void;
   onPrint: (reference: string) => void;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
@@ -378,16 +371,6 @@ function BonMobileCard({
           variant="ghost"
           size="icon"
           className="size-11 text-muted-foreground hover:text-primary"
-          aria-label={`Visualiser ${bon.reference}`}
-          title="Visualiser"
-          onClick={() => onView(bon.reference)}
-        >
-          <Eye className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-11 text-muted-foreground hover:text-primary"
           aria-label={`Imprimer ${bon.reference}`}
           title="PDF / Imprimer"
           onClick={() => onPrint(bon.reference)}
@@ -404,14 +387,12 @@ function BonTableRow({
   canWrite,
   validatingIds,
   onConfirmValidate,
-  onView,
   onPrint,
 }: {
   bon: BonSortie;
   canWrite: boolean;
   validatingIds: Set<string>;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
-  onView: (reference: string) => void;
   onPrint: (reference: string) => void;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
@@ -471,16 +452,6 @@ function BonTableRow({
               <Check className="size-4" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-11 text-muted-foreground hover:text-primary"
-            aria-label={`Visualiser ${bon.reference}`}
-            title="Visualiser"
-            onClick={() => onView(bon.reference)}
-          >
-            <Eye className="size-4" />
-          </Button>
           <Button
             variant="ghost"
             size="icon"

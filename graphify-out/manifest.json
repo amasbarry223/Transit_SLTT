@@ -50,12 +50,12 @@
     "semantic_hash": ""
   },
   "src/app/api/admin/users/[id]/route.ts": {
-    "mtime": 1787102802.8148048,
+    "mtime": 1787175190.733601,
     "ast_hash": "41e6579da0e240919e4fe18584c796b1",
     "semantic_hash": ""
   },
   "src/app/api/admin/users/route.ts": {
-    "mtime": 1787102802.692381,
+    "mtime": 1787175190.6972716,
     "ast_hash": "62f8174f8c7bbfcb5d3ca0ec1fa2b1ee",
     "semantic_hash": ""
   },
@@ -155,7 +155,7 @@
     "semantic_hash": ""
   },
   "src/components/sltt/dossier-detail/file-drop-zone.tsx": {
-    "mtime": 1787102802.8051436,
+    "mtime": 1787175190.722549,
     "ast_hash": "34c2189f527d0c4550498d125bb54b25",
     "semantic_hash": ""
   },
@@ -200,12 +200,12 @@
     "semantic_hash": ""
   },
   "src/components/sltt/layout/breadcrumb-nav.tsx": {
-    "mtime": 1787110581.6039805,
+    "mtime": 1787175190.747272,
     "ast_hash": "e3b9a8ad42699c302a8b6002fec8c0a3",
     "semantic_hash": ""
   },
   "src/components/sltt/layout/command-palette.tsx": {
-    "mtime": 1787102802.6792371,
+    "mtime": 1787175190.6828308,
     "ast_hash": "26749939f04085c7a0e53dec4318eef9",
     "semantic_hash": ""
   },
@@ -215,7 +215,7 @@
     "semantic_hash": ""
   },
   "src/components/sltt/layout/sidebar.tsx": {
-    "mtime": 1787102802.8148048,
+    "mtime": 1787175190.747272,
     "ast_hash": "aa1f4b30499c02192ca9ae422853862e",
     "semantic_hash": ""
   },
@@ -255,12 +255,12 @@
     "semantic_hash": ""
   },
   "src/components/sltt/route-sync.tsx": {
-    "mtime": 1787102802.6903749,
+    "mtime": 1787175190.6828308,
     "ast_hash": "8508520eb5ea50219cdfd0fff00af927",
     "semantic_hash": ""
   },
   "src/components/sltt/societe-filter-select.tsx": {
-    "mtime": 1787102802.6732893,
+    "mtime": 1787175190.5505297,
     "ast_hash": "ec226c89f3d3f8bac9bad6b299e1f37c",
     "semantic_hash": ""
   },
@@ -290,7 +290,7 @@
     "semantic_hash": ""
   },
   "src/components/sltt/transporteur-form-fields.tsx": {
-    "mtime": 1787102802.692381,
+    "mtime": 1787175190.7194521,
     "ast_hash": "9490ea2e8b6f642133b257d6dd1dd421",
     "semantic_hash": ""
   },
@@ -470,12 +470,12 @@
     "semantic_hash": ""
   },
   "src/lib/client-stats.test.ts": {
-    "mtime": 1787102802.6695673,
+    "mtime": 1787175190.5505297,
     "ast_hash": "2977c16a2fe2d70854016b93538d9f31",
     "semantic_hash": ""
   },
   "src/lib/client-stats.ts": {
-    "mtime": 1787102802.8051436,
+    "mtime": 1787175190.7238123,
     "ast_hash": "a7dda542bd35845d3e62d3fb108d21ae",
     "semantic_hash": ""
   },
@@ -570,8 +570,8 @@
     "semantic_hash": ""
   },
   "src/lib/format.ts": {
-    "mtime": 1786283512.0354497,
-    "ast_hash": "770ccff8fc60ad5c4d8d3d80584057d6",
+    "mtime": 1787178714.032792,
+    "ast_hash": "495d388917e0ed22eb6e894cc553544e",
     "semantic_hash": ""
   },
   "src/lib/glossary.ts": {
@@ -590,7 +590,7 @@
     "semantic_hash": ""
   },
   "src/lib/nav-store.ts": {
-    "mtime": 1787110193.244318,
+    "mtime": 1787175190.689236,
     "ast_hash": "dfe95f22bbeb3339db28b541fc6772ab",
     "semantic_hash": ""
   },
@@ -635,7 +635,7 @@
     "semantic_hash": ""
   },
   "src/lib/store.ts": {
-    "mtime": 1787102802.6695673,
+    "mtime": 1787175190.5505297,
     "ast_hash": "00a8aff1c30558a778638111f1f9b23e",
     "semantic_hash": ""
   },
@@ -645,7 +645,7 @@
     "semantic_hash": ""
   },
   "src/lib/store/connected-user.ts": {
-    "mtime": 1787102802.8148048,
+    "mtime": 1787175190.747272,
     "ast_hash": "abc2d7051a9ee447c7cf1216994f3640",
     "semantic_hash": ""
   },
@@ -845,7 +845,7 @@
     "semantic_hash": ""
   },
   "supabase_seed.sql": {
-    "mtime": 1787102802.8148048,
+    "mtime": 1787175190.747272,
     "ast_hash": "f1b1182f496754f84699df2f985ebbe8",
     "semantic_hash": ""
   },
@@ -1155,7 +1155,7 @@
     "semantic_hash": ""
   },
   "src/app/api/admin/users/[id]/route.test.ts": {
-    "mtime": 1787102802.6852572,
+    "mtime": 1787175190.6828308,
     "ast_hash": "68adc3ee9adb7b12d6e9657e0bb5dbc2",
     "semantic_hash": ""
   },
@@ -1300,7 +1300,7 @@
     "semantic_hash": ""
   },
   "src/lib/store/fournisseurs-slice.ts": {
-    "mtime": 1787102802.692381,
+    "mtime": 1787175190.7540274,
     "ast_hash": "c0c0946730d7dfd8f71685a9d575a7f2",
     "semantic_hash": ""
   },
@@ -1310,12 +1310,12 @@
     "semantic_hash": ""
   },
   "src/lib/store/transporteurs-slice.ts": {
-    "mtime": 1787102802.8051436,
+    "mtime": 1787175190.722549,
     "ast_hash": "b24b3b985ee5873c0a8d293fa4dc6214",
     "semantic_hash": ""
   },
   "src/lib/store/users-slice.ts": {
-    "mtime": 1787102802.8148048,
+    "mtime": 1787175190.733601,
     "ast_hash": "9f8546f75f10e1b0322adcd7a75480fb",
     "semantic_hash": ""
   },
@@ -1400,7 +1400,7 @@
     "semantic_hash": ""
   },
   "src/lib/store/documents-slice.ts": {
-    "mtime": 1787102802.8148048,
+    "mtime": 1787175190.7378352,
     "ast_hash": "f6c227d66f13cebef6e9e7c8bc6e82f6",
     "semantic_hash": ""
   },
@@ -1455,7 +1455,7 @@
     "semantic_hash": ""
   },
   "src/lib/store/excel-workbooks-slice.ts": {
-    "mtime": 1787102802.6792371,
+    "mtime": 1787175190.6828308,
     "ast_hash": "0249d07ee50d0c56384529b01940bdee",
     "semantic_hash": ""
   },
@@ -1575,17 +1575,17 @@
     "semantic_hash": ""
   },
   "scripts/db-seed-demo.mjs": {
-    "mtime": 1787102802.6737945,
+    "mtime": 1787175190.5572128,
     "ast_hash": "a63a562d2305ab4a1dda8218d04be4a8",
     "semantic_hash": ""
   },
   "supabase/seed/README.md": {
-    "mtime": 1787102802.8051436,
+    "mtime": 1787175190.7194521,
     "ast_hash": "f936ba680b52966dcd788da21867a89e",
     "semantic_hash": ""
   },
   "src/lib/store/dossiers-slice.test.ts": {
-    "mtime": 1787102802.692381,
+    "mtime": 1787175190.6828308,
     "ast_hash": "402e0eff613e36446978bfd80a288f15",
     "semantic_hash": ""
   },
@@ -1610,7 +1610,7 @@
     "semantic_hash": ""
   },
   "src/app/api/admin/users/[id]/annexes/route.ts": {
-    "mtime": 1787102802.8148048,
+    "mtime": 1787175190.747272,
     "ast_hash": "f12cffa526d1a74562c1f8301514b5ee",
     "semantic_hash": ""
   },
@@ -1685,8 +1685,8 @@
     "semantic_hash": ""
   },
   "src/components/sltt/parametres/security-tab.tsx": {
-    "mtime": 1786904246.6563168,
-    "ast_hash": "56c652cccf2585418f6eecd30459dd09",
+    "mtime": 1787178511.4143074,
+    "ast_hash": "2f21f573d496cf160b1c205b8fd60e24",
     "semantic_hash": ""
   },
   "src/components/sltt/parametres/societe-tab.tsx": {
@@ -1950,8 +1950,8 @@
     "semantic_hash": ""
   },
   "src/lib/session/ui-prefs-store.ts": {
-    "mtime": 1785895218.7033105,
-    "ast_hash": "d51a1ac961feb0ac20dbe79dcf33ae88",
+    "mtime": 1787178707.2099588,
+    "ast_hash": "248a9e025fe61b6b11c8fdddde7dc1f6",
     "semantic_hash": ""
   },
   "src/lib/auth/user-guards.ts": {
@@ -2045,8 +2045,8 @@
     "semantic_hash": ""
   },
   "src/lib/format.test.ts": {
-    "mtime": 1785895567.9503057,
-    "ast_hash": "b2c4af1fe89dee86661ac858fb10e9e6",
+    "mtime": 1787178741.126886,
+    "ast_hash": "7e70e9614d58ad21ed7aae968674f1db",
     "semantic_hash": ""
   },
   "supabase/migrations/20260822_fix_backup_audit_logs_and_restore_report.sql": {
@@ -2590,8 +2590,8 @@
     "semantic_hash": ""
   },
   "src/features/bons/components/bons-screen.tsx": {
-    "mtime": 1787112914.2843335,
-    "ast_hash": "348ead25b41d25c38aa5c6ad977c092d",
+    "mtime": 1787178574.273625,
+    "ast_hash": "318bd2ee40828f87940fd443076df387",
     "semantic_hash": ""
   },
   "src/features/bons/components/bons/bon-caisse-form-dialog.tsx": {
@@ -2610,8 +2610,8 @@
     "semantic_hash": ""
   },
   "src/features/bons/components/bons/bon-marchandise-tab.tsx": {
-    "mtime": 1786907194.8130465,
-    "ast_hash": "7df88647e190fc80ca96098b7591df02",
+    "mtime": 1787178570.1311598,
+    "ast_hash": "9524b990abd78b3adb4454a104be8713",
     "semantic_hash": ""
   },
   "src/features/bons/components/bons/index.ts": {
@@ -2640,8 +2640,8 @@
     "semantic_hash": ""
   },
   "src/features/clients/components/client-fiche-screen.tsx": {
-    "mtime": 1786921458.812665,
-    "ast_hash": "eeff08e277b0dc84c4d38a03e3fd4f00",
+    "mtime": 1787178686.865216,
+    "ast_hash": "1ac9decb4193e09083a5814f27f9edab",
     "semantic_hash": ""
   },
   "src/features/clients/components/client-fiche/bons-tab.tsx": {
@@ -2670,8 +2670,8 @@
     "semantic_hash": ""
   },
   "src/features/clients/components/client-fiche/classeur-tab.tsx": {
-    "mtime": 1786904246.8174396,
-    "ast_hash": "cd7a3b15a1c61e581259498fc5bd4faa",
+    "mtime": 1787178680.2962296,
+    "ast_hash": "b2df5c8c1e812e7fe6121f31e714b2df",
     "semantic_hash": ""
   },
   "src/features/clients/components/client-fiche/client-profile-card.tsx": {
@@ -3220,8 +3220,8 @@
     "semantic_hash": ""
   },
   "src/features/parametres/components/parametres/preferences-tab.tsx": {
-    "mtime": 1786917451.1097753,
-    "ast_hash": "a2a361c7b64954ad84c9973ea9689d69",
+    "mtime": 1787178501.4782796,
+    "ast_hash": "2f27a3aa793f6be6820d04a8ae72f4b9",
     "semantic_hash": ""
   },
   "src/features/parametres/index.ts": {
@@ -3230,8 +3230,8 @@
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement-screen.tsx": {
-    "mtime": 1786917451.074513,
-    "ast_hash": "9a9404016bbda02f9ef873d38990f068",
+    "mtime": 1787178628.4255006,
+    "ast_hash": "3419332c6178b0ae5b81b88ca5a8ce5d",
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement/index.ts": {
@@ -3245,8 +3245,8 @@
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement/recu-generator-actions.tsx": {
-    "mtime": 1786917451.0228367,
-    "ast_hash": "380b4aeaa048c77cc78ca6d9b7027d37",
+    "mtime": 1787178606.4387147,
+    "ast_hash": "b976cbc89e5df200d0e927bb583f7349",
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement/recu-generator-form.tsx": {
@@ -3270,8 +3270,8 @@
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement/recu-workspace.tsx": {
-    "mtime": 1786917451.0418544,
-    "ast_hash": "d41f6751bf80c5cfc35100036e5b933b",
+    "mtime": 1787178619.9077287,
+    "ast_hash": "5a16a0086323f5ac32f8a1b1750a94ae",
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement/shared.ts": {
@@ -3285,8 +3285,8 @@
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement/use-recu-generator.ts": {
-    "mtime": 1786917451.1429513,
-    "ast_hash": "98d1499e3d7a516925797a0c36487a4f",
+    "mtime": 1787178584.8829167,
+    "ast_hash": "738a8f7e8682a676dfa00ef5898b4cad",
     "semantic_hash": ""
   },
   "src/features/recus-paiement/components/recus-paiement/use-recu-preview-scale.ts": {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Shield } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-permission";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
@@ -115,23 +115,6 @@ export function SecurityTab() {
             </Button>
           </div>
         </form>
-      </Card>
-
-      {/* Options avancées — bientôt disponibles */}
-      <Card className="p-6 shadow-sm border-border/80 border-dashed">
-        <div className="flex items-center gap-2">
-          <Shield className="size-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">
-            Options avancées
-          </h3>
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-            Bientôt
-          </span>
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          La déconnexion automatique personnalisée et l&apos;authentification à deux facteurs seront disponibles dans une prochaine version.
-          La session actuelle utilise déjà une déconnexion automatique après 30 min d&apos;inactivité, avec un plafond de 8 h (ou 3 jours avec « Rester connecté »).
-        </p>
       </Card>
     </div>
   );

@@ -3,14 +3,12 @@ import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 /**
  * Format a number as FCFA currency with thousands separators.
  * Example: 1250000 -> "1 250 000 FCFA"
- * Le libellé (FCFA/XOF — même monnaie, cf. Paramètres > Préférences) suit la
- * préférence utilisateur ; les montants eux-mêmes ne sont jamais convertis.
  */
 export function formatFCFA(amount: number, withSymbol = true): string {
   const formatted = new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 0,
   }).format(Math.round(amount));
-  return withSymbol ? `${formatted} ${useUiPrefs.getState().currencyLabel}` : formatted;
+  return withSymbol ? `${formatted} FCFA` : formatted;
 }
 
 /** Compact FCFA for KPI cards: 8 750 000 -> "8,75 M" */

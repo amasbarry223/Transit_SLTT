@@ -199,12 +199,9 @@ export function useRecuGenerator() {
     resetForm,
   ]);
 
-  const handlePrint = useCallback(
-    async (asPdf = false) => {
-      await printModuleData(moduleData, asPdf);
-    },
-    [moduleData, printModuleData],
-  );
+  const handlePrint = useCallback(async () => {
+    await printModuleData(moduleData, true);
+  }, [moduleData, printModuleData]);
 
   const handlePrintLastSaved = useCallback(async () => {
     if (!lastSaved) return;
@@ -231,7 +228,6 @@ export function useRecuGenerator() {
     handlePrint,
     handlePrintLastSaved,
     printModuleData,
-    handleDownloadPdf: () => void handlePrint(true),
     resetForm: () => resetForm(),
   };
 }

@@ -131,6 +131,7 @@
   "129": "comptabilite-generale-import.ts",
   "130": "zod",
   "131": "tailwind-merge",
+  "132": "index.ts",
   "133": "contrats.tsx",
   "134": "template.ts",
   "135": "command-palette.tsx",
@@ -155,6 +156,7 @@
   "154": "informations-card.tsx",
   "155": "ocr-review-dialog.tsx",
   "156": "clsx",
+  "157": "ag-grid-community",
   "158": "dashboard-screen.tsx",
   "159": "@radix-ui/react-separator",
   "160": "@radix-ui/react-toast",
@@ -174,6 +176,5 @@
   "185": "exceljs",
   "186": "fix-migration-stubs.ps1",
   "187": "migrate-features.ps1",
-  "188": "dossier-form-ui.tsx",
-  "196": "ag-grid-react"
+  "188": "dossier-form-ui.tsx"
 }

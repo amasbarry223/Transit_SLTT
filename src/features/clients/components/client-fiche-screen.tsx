@@ -546,8 +546,6 @@ export function ClientFicheScreen() {
 
         {canSeeCompta && (
         <ClasseurTab
-          clientId={client.id}
-          clientNom={client.nom}
           journalEntries={classeurJournal}
           classeurFilters={classeurFilters}
           onFiltersChange={setClasseurFilters}

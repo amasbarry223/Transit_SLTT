@@ -3,10 +3,6 @@ import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { formatFCFA, formatDateShort, formatDateTime } from "./format";
 
 describe("formatFCFA", () => {
-  afterEach(() => {
-    useUiPrefs.getState().setCurrencyLabel("FCFA");
-  });
-
   // Intl.NumberFormat("fr-FR") sépare les milliers par une espace fine
   // insécable (U+202F), pas une espace normale.
   const SEP = " ";
@@ -17,11 +13,6 @@ describe("formatFCFA", () => {
 
   it("omet le libellé quand withSymbol est false", () => {
     expect(formatFCFA(1_250_000, false)).toBe(`1${SEP}250${SEP}000`);
-  });
-
-  it("suit la préférence de libellé (XOF)", () => {
-    useUiPrefs.getState().setCurrencyLabel("XOF");
-    expect(formatFCFA(1_250_000)).toBe(`1${SEP}250${SEP}000 XOF`);
   });
 });
 

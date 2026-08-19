@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { FileSpreadsheet, Printer, History, TrendingUp, Wallet, Clock, Upload, Table2 } from "lucide-react";
+import { FileSpreadsheet, Printer, History, TrendingUp, Wallet, Clock, Upload } from "lucide-react";
 import type { AuditEntry } from "@/lib/audit";
 import type { ClasseurEntry, ClasseurFilters, ClasseurTotals } from "@/lib/classeur";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -21,13 +20,8 @@ import { TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { TabEmptyState, classeurStatutTone } from "./shared";
 import { ClasseurGridLazy } from "./classeur-grid-lazy";
-import { ExcelWorkbookLazy } from "@/components/sltt/excel/excel-workbook-lazy";
-
-type ClasseurViewMode = "grand-livre" | "excel";
 
 type ClasseurTabProps = {
-  clientId: string;
-  clientNom: string;
   journalEntries: ClasseurEntry[];
   classeurFilters: ClasseurFilters;
   onFiltersChange: (updater: (prev: ClasseurFilters) => ClasseurFilters) => void;
@@ -46,8 +40,6 @@ type ClasseurTabProps = {
 };
 
 export function ClasseurTab({
-  clientId,
-  clientNom,
   journalEntries,
   classeurFilters,
   onFiltersChange,
@@ -64,48 +56,8 @@ export function ClasseurTab({
   onGridDataChanged,
   canImport = false,
 }: ClasseurTabProps) {
-  const [viewMode, setViewMode] = useState<ClasseurViewMode>("grand-livre");
-
   return (
     <TabsContent value="classeur" className="mt-6 space-y-4 focus-visible:outline-none">
-      <div className="inline-flex overflow-hidden rounded-md border border-[#c8c8c8] bg-[#f3f3f3] p-0.5 shadow-sm">
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center gap-2 rounded px-3 py-1.5 text-[13px] font-medium transition-colors",
-            viewMode === "grand-livre"
-              ? "bg-white text-[#185c37] shadow-sm ring-1 ring-[#d0d0d0]"
-              : "text-[#605e5c] hover:bg-white/70 hover:text-[#323130]",
-          )}
-          onClick={() => setViewMode("grand-livre")}
-        >
-          <Table2 className="size-4" />
-          Grand livre
-        </button>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center gap-2 rounded px-3 py-1.5 text-[13px] font-semibold transition-colors",
-            viewMode === "excel"
-              ? "bg-[#217346] text-white shadow-sm"
-              : "text-[#605e5c] hover:bg-white/70 hover:text-[#217346]",
-          )}
-          onClick={() => setViewMode("excel")}
-        >
-          <FileSpreadsheet className="size-4" />
-          Excel
-        </button>
-      </div>
-
-      {viewMode === "excel" ? (
-        <ExcelWorkbookLazy
-          clientId={clientId}
-          clientNom={clientNom}
-          journalEntries={journalEntries}
-          onApplied={onGridDataChanged}
-        />
-      ) : (
-      <>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Select
           value={classeurFilters.societeId === "" ? "none" : classeurFilters.societeId}
@@ -356,8 +308,6 @@ export function ClasseurTab({
           </ul>
         )}
       </Card>
-      </>
-      )}
     </TabsContent>
   );
 }

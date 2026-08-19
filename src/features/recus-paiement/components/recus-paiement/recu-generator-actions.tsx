@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Printer, RotateCcw, Save } from "lucide-react";
+import { Printer, RotateCcw, Save } from "lucide-react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import {
   AlertDialog,
@@ -23,7 +23,6 @@ interface RecuGeneratorActionsProps {
   variant?: "default" | "toolbar";
   onSave: () => void | Promise<void>;
   onPrint: () => void | Promise<void>;
-  onDownloadPdf: () => void | Promise<void>;
   onReset: () => void;
 }
 
@@ -34,7 +33,6 @@ export function RecuGeneratorActions({
   variant = "default",
   onSave,
   onPrint,
-  onDownloadPdf,
   onReset,
 }: RecuGeneratorActionsProps) {
   const [resetOpen, setResetOpen] = useState(false);
@@ -60,10 +58,6 @@ export function RecuGeneratorActions({
           >
             <Printer className="size-3.5" />
             {printing ? "Préparation…" : "Imprimer"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => void onDownloadPdf()} disabled={busy} className="h-9 gap-1.5">
-            <Download className="size-3.5" />
-            PDF
           </Button>
           <div className="ml-auto">
             <Button
@@ -125,15 +119,11 @@ export function RecuGeneratorActions({
             variant="outline"
             onClick={() => void onPrint()}
             disabled={busy}
-            className="h-11 justify-center gap-2"
+            className="h-11 justify-center gap-2 sm:col-span-2"
             title={`Impression ${RECEIPT_FORMAT_LABEL} paysage (pas A4)`}
           >
             <Printer className="size-4" />
             {printing ? "Préparation…" : "Imprimer"}
-          </Button>
-          <Button variant="outline" onClick={() => void onDownloadPdf()} disabled={busy} className="h-11 justify-center gap-2">
-            <Download className="size-4" />
-            Télécharger PDF
           </Button>
         </div>
 

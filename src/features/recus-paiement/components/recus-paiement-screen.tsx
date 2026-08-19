@@ -55,7 +55,6 @@ export function RecusPaiementScreen() {
           onSignatureChange={gen.setSignature}
           onSave={handleSave}
           onPrint={gen.handlePrint}
-          onDownloadPdf={gen.handleDownloadPdf}
           onReset={gen.resetForm}
         />
       </div>
@@ -92,7 +91,6 @@ export function RecusPaiementScreen() {
             printing={gen.printing}
             onSave={handleSave}
             onPrint={gen.handlePrint}
-            onDownloadPdf={gen.handleDownloadPdf}
             onReset={gen.resetForm}
           />
         </div>

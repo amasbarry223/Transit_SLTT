@@ -45,7 +45,6 @@ interface RecuWorkspaceProps {
   onSignatureChange: (signature: string | null) => void;
   onSave: () => void | Promise<void>;
   onPrint: () => void | Promise<void>;
-  onDownloadPdf: () => void | Promise<void>;
   onReset: () => void;
 }
 
@@ -67,7 +66,6 @@ export function RecuWorkspace({
   onSignatureChange,
   onSave,
   onPrint,
-  onDownloadPdf,
   onReset,
 }: RecuWorkspaceProps) {
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -148,7 +146,6 @@ export function RecuWorkspace({
           printing={printing}
           onSave={onSave}
           onPrint={onPrint}
-          onDownloadPdf={onDownloadPdf}
           onReset={onReset}
         />
       </div>

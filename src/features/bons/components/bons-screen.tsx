@@ -270,7 +270,6 @@ export function BonsScreen() {
           validatingIds={validatingIds}
           onOpenCreateDialog={() => setMarchandiseDialogOpen(true)}
           onConfirmValidate={setConfirmValidate}
-          onView={handlePrint}
           onPrint={handlePrint}
         />
 

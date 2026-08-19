@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Bell, Calendar, Coins, Globe, Moon, RotateCcw, Sun } from "lucide-react";
+import { AlertTriangle, Calendar, Moon, RotateCcw, Sun } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useUiPrefs, type CurrencyLabel, type DateFormat } from "@/lib/session/ui-prefs-store";
+import { useUiPrefs, type DateFormat } from "@/lib/session/ui-prefs-store";
 import { useToast } from "@/hooks/use-toast";
 import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
@@ -26,10 +26,6 @@ export function PreferencesTab() {
   const refetchData = useStore((s) => s.refetchData);
   const dateFormat = useUiPrefs((s) => s.dateFormat);
   const setDateFormat = useUiPrefs((s) => s.setDateFormat);
-  const currencyLabel = useUiPrefs((s) => s.currencyLabel);
-  const setCurrencyLabel = useUiPrefs((s) => s.setCurrencyLabel);
-  const notificationsEmail = useUiPrefs((s) => s.notificationsEmail);
-  const setNotificationsEmail = useUiPrefs((s) => s.setNotificationsEmail);
   const theme = useUiPrefs((s) => s.theme);
   const toggleTheme = useUiPrefs((s) => s.toggleTheme);
   const [cacheConfirmOpen, setCacheConfirmOpen] = useState(false);
@@ -37,72 +33,27 @@ export function PreferencesTab() {
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        Personnalisez la langue, les formats et les notifications.
+        Personnalisez le format de date et le thème.
       </p>
       <Card className="p-6 shadow-sm border-border/80">
         <div className="space-y-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2 opacity-60">
-              <Label htmlFor="lang" className="text-sm font-medium text-foreground/90">
-                <span className="inline-flex items-center gap-1.5">
-                  <Globe className="size-3.5 text-muted-foreground" />
-                  Langue
-                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                    Bientôt
-                  </span>
-                </span>
-              </Label>
-              <Select defaultValue="fr" disabled>
-                <SelectTrigger id="lang" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="bmb">Bambara</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dfmt" className="text-sm font-medium text-foreground/90">
-                <span className="inline-flex items-center gap-1.5">
-                  <Calendar className="size-3.5 text-muted-foreground" />
-                  Format de date
-                </span>
-              </Label>
-              <Select value={dateFormat} onValueChange={(v) => setDateFormat(v as DateFormat)}>
-                <SelectTrigger id="dfmt" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dmy">JJ/MM/AAAA</SelectItem>
-                  <SelectItem value="mdy">MM/JJ/AAAA</SelectItem>
-                  <SelectItem value="ymd">AAAA-MM-JJ</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cur" className="text-sm font-medium text-foreground/90">
-                <span className="inline-flex items-center gap-1.5">
-                  <Coins className="size-3.5 text-muted-foreground" />
-                  Devise
-                </span>
-              </Label>
-              <Select value={currencyLabel} onValueChange={(v) => setCurrencyLabel(v as CurrencyLabel)}>
-                <SelectTrigger id="cur" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FCFA">FCFA</SelectItem>
-                  <SelectItem value="XOF">XOF</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                FCFA et XOF désignent la même monnaie — seul le libellé affiché change.
-              </p>
-            </div>
+          <div className="space-y-2 sm:max-w-xs">
+            <Label htmlFor="dfmt" className="text-sm font-medium text-foreground/90">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="size-3.5 text-muted-foreground" />
+                Format de date
+              </span>
+            </Label>
+            <Select value={dateFormat} onValueChange={(v) => setDateFormat(v as DateFormat)}>
+              <SelectTrigger id="dfmt" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="dmy">JJ/MM/AAAA</SelectItem>
+                <SelectItem value="mdy">MM/JJ/AAAA</SelectItem>
+                <SelectItem value="ymd">AAAA-MM-JJ</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
@@ -116,23 +67,6 @@ export function PreferencesTab() {
               </p>
             </div>
             <Switch checked={theme === "dark"} onCheckedChange={() => toggleTheme()} />
-          </div>
-
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
-            <div>
-              <p className="text-sm font-medium text-foreground inline-flex items-center gap-1.5">
-                <Bell className="size-4 text-muted-foreground" />
-                Notifications par e-mail
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Recevez un message à chaque dossier en attente ou alerte de stock.
-              </p>
-              <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
-                Préférence enregistrée dès maintenant ; l&apos;envoi effectif des e-mails sera activé
-                dans une prochaine mise à jour.
-              </p>
-            </div>
-            <Switch checked={notificationsEmail} onCheckedChange={setNotificationsEmail} />
           </div>
         </div>
       </Card>
