@@ -1,12 +1,13 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { MISSING_SIGNATORY_LABEL, type SocieteLegalInfo } from "@/lib/societe-brand";
+import { MISSING_SIGNATORY_LABEL, type SocieteBrand, type SocieteLegalInfo } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
   acquirePrintTarget,
   buildLegalLine,
-  resolveLogoUrl,
+  buildOfficialLetterheadHTML,
+  OFFICIAL_LETTERHEAD_CSS,
   triggerPrint,
   warnPopupBlocked,
 } from "../print-document";
@@ -23,6 +24,7 @@ export interface BonSortieCaisseModuleData {
   reference: string;
   date: string;
   societeNom: string;
+  raisonSociale?: string;
   logoUrl?: string;
   /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). Défaut true. */
   afficherNomAvecLogo?: boolean;
@@ -34,12 +36,20 @@ export interface BonSortieCaisseModuleData {
   signatairePdg?: string;
 }
 
+function bonDataToBrand(data: BonSortieCaisseModuleData): SocieteBrand {
+  return {
+    nom: data.societeNom,
+    raisonSociale: data.raisonSociale,
+    logoUrl: data.logoUrl,
+    afficherNomAvecLogo: data.afficherNomAvecLogo,
+    legal: data.legal,
+  };
+}
+
 /** Construit le HTML complet du bon de sortie de caisse (aperçu iframe ou fenêtre d'impression). */
 export function buildBonSortieCaisseHTML(data: BonSortieCaisseModuleData): string {
-  const logoUrl = resolveLogoUrl(data.logoUrl);
-  const logoImg = logoUrl
-    ? `<img src="${logoUrl}" alt="${htmlEscape(data.societeNom)}" class="brand-logo" onerror="this.style.display='none'">`
-    : "";
+  const brand = bonDataToBrand(data);
+  const letterheadHTML = buildOfficialLetterheadHTML(brand);
   const footerLegal = buildLegalLine(data.legal);
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
@@ -58,19 +68,15 @@ export function buildBonSortieCaisseHTML(data: BonSortieCaisseModuleData): strin
 <meta charset="utf-8">
 <title>Bon de sortie ${htmlEscape(data.reference)}</title>
 <style>
+${OFFICIAL_LETTERHEAD_CSS}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
 .wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
-.doc-header { display: flex; justify-content: space-between; align-items: center; padding: 26px 40px; border-bottom: 3px solid ${BRAND.navy}; gap: 20px; }
-.brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
-/* Hauteur fixe, largeur libre : le badge circulaire de Traoré Transit Logistique
-   (ratio ~1:1) et la bannière large de Top Doumani (ratio ~4:1) doivent tous deux
-   rester lisibles — une boîte carrée écraserait la bannière en un filet illisible. */
-.brand-logo { height: 60px; width: auto; max-width: 220px; object-fit: contain; flex-shrink: 0; }
-.brand-name { font-size: 17px; font-weight: 800; color: #1f2937; letter-spacing: -.3px; line-height: 1.25; text-transform: uppercase; }
+.doc-section { padding: 16px 40px 0; }
+.doc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; padding-bottom: 12px; }
+.doc-eyebrow { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
+.doc-head-title { font-size: 22px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1px; line-height: 1.1; }
 .doc-meta { text-align: right; flex-shrink: 0; }
-.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-ref { font-size: 22px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1px; line-height: 1.1; }
 .doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
 .body { padding: 28px 40px; }
 .doc-title { text-align: center; font-size: 16px; font-weight: 800; letter-spacing: .04em; margin-bottom: 22px; }
@@ -90,7 +96,6 @@ table { width: 100%; border-collapse: collapse; }
   .no-print { display: none !important; }
   body { background: white; }
   .wrap { box-shadow: none; }
-  .brand-logo { height: 52px; max-width: 190px; }
 }
 </style>
 </head>
@@ -99,17 +104,18 @@ table { width: 100%; border-collapse: collapse; }
   <div class="no-print">
     <button class="btn-print" onclick="window.print()">⬇ &nbsp;Imprimer / Enregistrer en PDF</button>
   </div>
-  <div class="doc-header">
-    <div class="brand">
-      ${logoImg}
-      ${data.afficherNomAvecLogo === false ? "" : `<div class="brand-name">${htmlEscape(data.societeNom)}</div>`}
+  ${letterheadHTML}
+  <section class="doc-section">
+    <div class="doc-head">
+      <div>
+        <div class="doc-eyebrow">Bon de sortie de caisse</div>
+        <div class="doc-head-title">${htmlEscape(data.reference)}</div>
+      </div>
+      <div class="doc-meta">
+        <div class="doc-date">Date : ${fmtD(data.date)}</div>
+      </div>
     </div>
-    <div class="doc-meta">
-      <div class="doc-type">Bon de sortie de caisse</div>
-      <div class="doc-ref">${htmlEscape(data.reference)}</div>
-      <div class="doc-date">Date : ${fmtD(data.date)}</div>
-    </div>
-  </div>
+  </section>
   <div class="body">
     <div class="doc-title">BON DE SORTIE DE CAISSE ${htmlEscape(data.reference)}</div>
     <div class="tbl-wrap">

@@ -3,9 +3,15 @@
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { importWithRetry } from "@/lib/import-with-retry";
 
 const RepartitionCardImpl = dynamic(
-  () => import("./repartition-card").then((m) => ({ default: m.RepartitionCard })),
+  () =>
+    importWithRetry(() =>
+      import("./repartition-card").then((m) => ({
+        default: m.RepartitionCard,
+      })),
+    ),
   {
     ssr: false,
     loading: () => (

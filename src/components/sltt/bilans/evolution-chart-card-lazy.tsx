@@ -3,9 +3,15 @@
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { importWithRetry } from "@/lib/import-with-retry";
 
 const EvolutionChartCardImpl = dynamic(
-  () => import("./evolution-chart-card").then((m) => ({ default: m.EvolutionChartCard })),
+  () =>
+    importWithRetry(() =>
+      import("./evolution-chart-card").then((m) => ({
+        default: m.EvolutionChartCard,
+      })),
+    ),
   {
     ssr: false,
     loading: () => (

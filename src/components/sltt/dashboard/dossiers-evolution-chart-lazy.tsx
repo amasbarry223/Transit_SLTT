@@ -3,9 +3,15 @@
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { importWithRetry } from "@/lib/import-with-retry";
 
 const DossiersEvolutionChartImpl = dynamic(
-  () => import("./dossiers-evolution-chart").then((m) => ({ default: m.DossiersEvolutionChart })),
+  () =>
+    importWithRetry(() =>
+      import("./dossiers-evolution-chart").then((m) => ({
+        default: m.DossiersEvolutionChart,
+      })),
+    ),
   {
     ssr: false,
     loading: () => (

@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { filterBySociete } from "@/lib/filter-by-societe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
+import { societeToBrand } from "@/lib/societe-brand";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { BonMarchandiseTab } from "./bons/bon-marchandise-tab";
 import { BonCaisseTab } from "./bons/bon-caisse-tab";
@@ -117,26 +118,12 @@ export function BonsScreen() {
     `;
   }
 
-  function bonBrand(societeId: string) {
-    const societe = societes.find((item) => item.id === societeId);
-    if (!societe) return undefined;
-    return {
-      logoUrl: societe.logoUrl,
-      name: societe.nom,
-      afficherNomAvecLogo: societe.afficherNomAvecLogo,
-      legal: {
-        adresse: societe.adresse,
-        telephone: societe.telephone,
-        rccm: societe.rccm,
-        nif: societe.nif,
-      },
-    };
-  }
-
   function handlePrint(reference: string) {
     const bon = bons.find((item) => item.reference === reference);
     if (!bon) return;
-    printHTML(`Bon ${reference}`, buildBonHTML(bon), bonBrand(bon.societeId));
+    const societe = societes.find((item) => item.id === bon.societeId);
+    if (!societe) return;
+    printHTML(`Bon ${reference}`, buildBonHTML(bon), societeToBrand(societe));
   }
 
   async function handleValidateBon(id: string, reference: string) {

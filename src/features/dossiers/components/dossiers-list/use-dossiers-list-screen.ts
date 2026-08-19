@@ -13,7 +13,7 @@ import { formatDateShort, formatFCFA, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand } from "@/lib/societe-brand";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
@@ -245,7 +245,7 @@ export function useDossiersListScreen() {
         <tbody>${rowsHTML}</tbody>
       </table>
     `,
-      resolvePrintHTMLBrand(societes),
+      resolveSlttBrand(societes),
     );
   }
 

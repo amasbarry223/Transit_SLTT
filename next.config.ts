@@ -67,7 +67,11 @@ const nextConfig: NextConfig = {
   ],
   webpack: (config, { dev }) => {
     // Évite les erreurs 500 ENOSPC quand le disque C: est quasi plein (cache webpack).
-    if (dev) config.cache = false;
+    if (dev) {
+      config.cache = false;
+      // Recharts + dynamic() : la première compilation du chunk peut dépasser le timeout par défaut.
+      config.output = { ...config.output, chunkLoadTimeout: 240_000 };
+    }
     return config;
   },
   async headers() {

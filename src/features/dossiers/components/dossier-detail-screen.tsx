@@ -15,7 +15,7 @@ import {
 } from "@/lib/echeance-utils";
 import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
+import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
@@ -326,7 +326,7 @@ export function DossierDetailScreen() {
       ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
       ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#45556b">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
     `,
-      resolvePrintHTMLBrand(societes),
+      resolveSlttBrand(societes),
     );
     toastSuccess(toast, { title: "PDF généré", description: "Le document s'est ouvert dans une nouvelle fenêtre.", });
   }

@@ -5,10 +5,11 @@ import { resteAPayer } from "@/lib/domain-types";
 import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
-  brandLogoImgHTML,
   buildBrandSubHTML,
+  buildOfficialLetterheadHTML,
   documentFooterHTML,
   platformFooterHTML,
+  OFFICIAL_LETTERHEAD_CSS,
   acquirePrintTarget,
   triggerPrint,
   warnPopupBlocked,
@@ -34,7 +35,7 @@ export interface InvoiceData {
 
 export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: SocieteBrand | null): void {
   if (!requireSocieteBrand(societe, "cette facture dossier")) return;
-  const logoImg = brandLogoImgHTML(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(societe);
   const brandSubHTML = buildBrandSubHTML(societe);
   const reste    = resteAPayer(data);
   const soldé    = reste === 0;
@@ -74,19 +75,16 @@ export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: So
 <meta charset="utf-8">
 <title>Facture ${invoiceNum}</title>
 <style>
+${OFFICIAL_LETTERHEAD_CSS}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
 .wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
 
-/* Header */
-.doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 36px 40px 28px; border-bottom: 3px solid ${BRAND.navy}; }
-.brand { display: flex; align-items: flex-start; gap: 14px; }
-.brand-logo { width: 64px; height: 64px; object-fit: contain; }
-.brand-name { font-size: 20px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -.5px; margin-bottom: 3px; }
-.brand-sub { font-size: 10.5px; color: #6b7280; line-height: 1.7; }
+.doc-section { padding: 16px 40px 0; }
+.doc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; padding-bottom: 12px; }
+.doc-eyebrow { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
+.doc-head-title { font-size: 28px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1.5px; line-height: 1; }
 .doc-meta { text-align: right; }
-.doc-type { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-ref { font-size: 28px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1.5px; line-height: 1; }
 .doc-dossier { font-size: 12px; color: #6b7280; margin-top: 6px; }
 .doc-date { font-size: 11px; color: #92a3ba; margin-top: 4px; }
 .statut-badge { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
@@ -157,23 +155,20 @@ table { width: 100%; border-collapse: collapse; }
     <button class="btn-print" onclick="window.print()">⬇ &nbsp;Imprimer / Enregistrer en PDF</button>
   </div>
 
-  <!-- Header -->
-  <div class="doc-header">
-    <div class="brand">
-      ${logoImg}
+  ${letterheadHTML}
+  <section class="doc-section">
+    <div class="doc-head">
       <div>
-        ${societe.afficherNomAvecLogo === false ? "" : `<div class="brand-name">${htmlEscape(societe.nom)}</div>`}
-        <div class="brand-sub">${brandSubHTML}</div>
+        <div class="doc-eyebrow">Facture de transit</div>
+        <div class="doc-head-title">FACTURE</div>
+      </div>
+      <div class="doc-meta">
+        <div class="doc-dossier">${htmlEscape(invoiceNum)}</div>
+        <div class="doc-date">Émise le ${today}</div>
+        <div><span class="statut-badge ${soldé ? "statut-solde" : "statut-partiel"}">${soldé ? "✓ SOLDÉ" : "PAIEMENT PARTIEL"}</span></div>
       </div>
     </div>
-    <div class="doc-meta">
-      <div class="doc-type">Facture de transit</div>
-      <div class="doc-ref">FACTURE</div>
-      <div class="doc-dossier">${htmlEscape(invoiceNum)}</div>
-      <div class="doc-date">Émise le ${today}</div>
-      <div><span class="statut-badge ${soldé ? "statut-solde" : "statut-partiel"}">${soldé ? "✓ SOLDÉ" : "PAIEMENT PARTIEL"}</span></div>
-    </div>
-  </div>
+  </section>
 
   <div class="body">
 

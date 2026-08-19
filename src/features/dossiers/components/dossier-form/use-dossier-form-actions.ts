@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { resolvePrintHTMLBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
+import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
@@ -129,7 +129,7 @@ export function useDossierFormActions({
       </table>
       ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
     `,
-      resolvePrintHTMLBrand(societes),
+      resolveSlttBrand(societes),
     );
     toastSuccess(toast, { title: "PDF généré", description: "Le document s'est ouvert dans une nouvelle fenêtre.", });
   }

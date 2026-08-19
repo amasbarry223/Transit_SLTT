@@ -119,6 +119,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
       reference: bon.reference,
       date: bon.date,
       societeNom: brand.name!,
+      raisonSociale: societe?.raisonSociale,
       logoUrl: societe?.logoUrl,
       afficherNomAvecLogo: societe?.afficherNomAvecLogo,
       legal: societe

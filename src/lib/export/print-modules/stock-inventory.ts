@@ -3,9 +3,9 @@
 import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
-  brandLogoImgHTML,
-  buildBrandSubHTML,
+  buildOfficialLetterheadHTML,
   documentFooterHTML,
+  OFFICIAL_LETTERHEAD_CSS,
   acquirePrintTarget,
   triggerPrint,
   warnPopupBlocked,
@@ -39,8 +39,7 @@ export interface StockInventoryGroup {
 
 function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
   const societe = group.societe;
-  const logoImg = brandLogoImgHTML(societe);
-  const brandSubHTML = buildBrandSubHTML(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(societe);
   const now = new Date();
   const today = now.toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -109,22 +108,20 @@ function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
 
   return `
 <div class="wrap">
-  <div class="doc-header">
-    <div class="brand">
-      ${logoImg}
+  ${letterheadHTML}
+  <section class="doc-section">
+    <div class="doc-head">
       <div>
-        ${societe.afficherNomAvecLogo === false ? "" : `<div class="brand-name">${htmlEscape(societe.nom)}</div>`}
-        <div class="brand-sub">${brandSubHTML}</div>
+        <div class="doc-eyebrow">Entreposage · Document interne</div>
+        <h1 class="doc-title">Inventaire stock</h1>
+      </div>
+      <div class="doc-meta">
+        <div class="doc-ref">${htmlEscape(docRef)}</div>
+        <div class="doc-date">Édité le ${today} à ${heure}</div>
+        <div class="scope-chip">Périmètre : ${htmlEscape(societe.nom)}</div>
       </div>
     </div>
-    <div class="doc-meta">
-      <div class="doc-type">Entreposage · Document interne</div>
-      <div class="doc-title">Inventaire stock</div>
-      <div class="doc-ref">${htmlEscape(docRef)}</div>
-      <div class="doc-date">Édité le ${today} à ${heure}</div>
-      <div class="scope-chip">Périmètre : ${htmlEscape(societe.nom)}</div>
-    </div>
-  </div>
+  </section>
 
   <div class="hero">
     <div>
@@ -266,6 +263,7 @@ export function printStockInventory(groups: StockInventoryGroup[]): void {
 <title>Inventaire ${htmlEscape(docRefBase)}${htmlEscape(titleSuffix)}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,500&family=JetBrains+Mono:wght@500;600&display=swap');
+${OFFICIAL_LETTERHEAD_CSS}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -290,22 +288,12 @@ body {
 }
 .btn-print:hover { background: #fff; }
 
-.doc-header {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 24px; padding: 28px 36px 22px;
-  border-bottom: 3px solid #0b3a82;
-  background:
-    linear-gradient(180deg, #f8fbff 0%, #ffffff 70%);
+.doc-section { padding: 16px 36px 0; }
+.doc-head {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 24px; padding-bottom: 12px;
 }
-.brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.brand-logo { width: 96px; height: 96px; object-fit: contain; flex-shrink: 0; }
-.brand-name {
-  font-size: 15px; font-weight: 800; color: #1f2937;
-  letter-spacing: -.2px; line-height: 1.25; text-transform: uppercase;
-}
-.brand-sub { font-size: 10px; color: #6b7280; line-height: 1.65; margin-top: 4px; }
-.doc-meta { text-align: right; flex-shrink: 0; }
-.doc-type {
+.doc-eyebrow {
   font-size: 9.5px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .14em; color: #6b7280; margin-bottom: 6px;
 }
@@ -313,8 +301,9 @@ body {
   font-size: 26px; font-weight: 800; color: #0b3a82;
   letter-spacing: -0.8px; line-height: 1;
 }
+.doc-meta { text-align: right; flex-shrink: 0; }
 .doc-ref {
-  margin-top: 8px; display: inline-block;
+  display: inline-block;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 11px; font-weight: 600; color: #155a93;
   background: #f1f8fd; border: 1px solid #c6e1f7;
@@ -446,7 +435,6 @@ table { width: 100%; border-collapse: collapse; }
   body { background: white; margin: 0; }
   .wrap { margin: 0; max-width: none; box-shadow: none; border: none; }
   .wrap + .wrap { page-break-before: always; }
-  .brand-logo { width: 78px; height: 78px; }
   .kpi-band { gap: 8px; }
   .signatures { padding-top: 28px; }
   tr { page-break-inside: avoid; }

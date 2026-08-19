@@ -20,6 +20,7 @@ export function OcrReviewDialogLazy(props: {
   // fermeture de Radix Dialog.
   const [mounted, setMounted] = useState(props.open);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- montage paresseux : charge tesseract/pdfjs à la première ouverture, puis garde le dialog monté pour l'animation Radix
     if (props.open) setMounted(true);
   }, [props.open]);
 

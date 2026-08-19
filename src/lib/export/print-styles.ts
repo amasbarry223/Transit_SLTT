@@ -3,30 +3,44 @@ import { BRAND } from "@/lib/brand-colors";
 
 /** Styles du gabarit générique printHTML / buildPrintDocument. */
 export const PRINT_HTML_DOCUMENT_CSS = `
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       color: #1f2937;
-      padding: 40px;
-      margin: 0;
+      background: #fff;
+      font-size: 12px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    h1 { font-family: 'Sora', sans-serif; font-size: 20px; margin: 0 0 4px; }
+    .wrap { max-width: 100%; margin: 0 auto; }
+    .doc-section { padding: 16px 28px 0; }
+    .doc-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+      padding-bottom: 12px;
+    }
+    .doc-eyebrow {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: ${BRAND.red};
+      margin-bottom: 3px;
+    }
+    .doc-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: ${BRAND.navy};
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .doc-meta { text-align: right; flex-shrink: 0; font-size: 12px; color: #6b7280; }
+    .doc-date { font-size: 10px; color: #6b7280; }
+    .doc-body { padding: 0 28px 28px; }
+    h1 { font-size: 20px; margin: 0 0 4px; color: ${BRAND.navy}; }
     .subtitle { color: #6b7280; font-size: 13px; margin-bottom: 24px; }
-    .doc-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      border-bottom: 2px solid ${BRAND.navy}; padding-bottom: 16px; margin-bottom: 24px;
-    }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    /* Hauteur fixe, largeur libre : les logos des sociétés n'ont pas tous le
-       même ratio (badge carré vs bannière large) — une boîte carrée écraserait
-       une bannière large en un filet illisible. */
-    .brand-logo {
-      height: 48px; width: auto; max-width: 160px;
-      object-fit: contain;
-    }
-    .brand-name { font-weight: 700; font-size: 15px; }
-    .brand-sub { font-size: 11px; color: #6b7280; }
-    .doc-meta { text-align: right; font-size: 12px; color: #6b7280; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th {
       background: #f3f5f7; color: #45556b; text-align: left;
@@ -43,70 +57,74 @@ export const PRINT_HTML_DOCUMENT_CSS = `
     .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px;
       font-size: 11px; font-weight: 500; }
     @media print {
+      @page { size: A4 portrait; margin: 12mm 10mm; }
       body { padding: 0; }
-      .no-print { display: none; }
+      .no-print { display: none !important; }
+      tr { page-break-inside: avoid; }
     }`;
 
 /** En-tête papier officiel — marque à gauche, coordonnées à droite, double filet. */
 export const OFFICIAL_LETTERHEAD_CSS = `
   .official-letterhead {
-    padding: 20px 28px 0;
+    padding: 16px 32px 0;
     background: #fff;
   }
   .official-letterhead-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 24px;
+    gap: 20px;
   }
   .official-letterhead-brand {
     display: flex;
     align-items: center;
-    gap: 18px;
-    flex: 1;
+    gap: 14px;
+    flex: 0 1 auto;
     min-width: 0;
   }
   .official-letterhead-logo-wrap {
     flex-shrink: 0;
-    width: 130px;
-    height: 130px;
+    width: 120px;
+    height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
   }
   .official-letterhead-logo {
-    width: 130px;
-    height: 130px;
+    width: 120px;
+    height: 120px;
     object-fit: contain;
     background: transparent;
   }
   .official-letterhead-name {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
   }
-  .official-letterhead-name-l1,
-  .official-letterhead-name-l2 {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 23px;
+  .official-letterhead-name-line {
+    font-family: Arial, 'Segoe UI', system-ui, sans-serif;
+    font-size: 22px;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     color: ${BRAND.navy};
-    line-height: 1.15;
+    line-height: 1.12;
   }
-  .official-letterhead-name-l2 {
-    margin-top: 2px;
+  .official-letterhead-name-line + .official-letterhead-name-line {
+    margin-top: 1px;
   }
   .official-letterhead-legal-block {
     flex-shrink: 0;
     text-align: right;
     align-self: center;
+    margin-left: auto;
   }
   .official-letterhead-line {
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: #374151;
+    font-family: Arial, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.45;
+    color: #1f2937;
   }
   .official-letterhead-line + .official-letterhead-line {
     margin-top: 2px;

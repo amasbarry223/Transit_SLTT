@@ -6,8 +6,7 @@ import {
   PRINT_WINDOW_READY_MS,
 } from "@/lib/constants";
 import {
-  requirePrintHTMLBrand,
-  type PrintHTMLBrand,
+  requireSocieteBrand,
   type SocieteBrand,
   type SocieteLegalInfo,
 } from "@/lib/societe-brand";
@@ -34,12 +33,6 @@ export function brandLogoImgHTML(
   if (!url) return "";
   if (cacheBust) url += `${url.includes("?") ? "&" : "?"}${cacheBust}`;
   return `<img src="${url}" alt="${htmlEscape(brand.nom)}" class="${className}" style="background:transparent" onerror="this.style.display='none'">`;
-}
-
-function printHTMLLogoImg(brand: PrintHTMLBrand, className = "brand-logo"): string {
-  const url = resolveLogoUrl(brand.logoUrl);
-  if (!url) return "";
-  return `<img class="${className}" src="${url}" alt="${htmlEscape(brand.name ?? "")}" onerror="this.style.display='none'" />`;
 }
 
 export function documentFooterHTML(brandName: string): string {
@@ -70,21 +63,25 @@ export function buildLegalLine(info?: SocieteLegalInfo): string {
  * via `.brand-name` — ce bloc ne contient que la ligne légale pour éviter
  * la duplication « nom + nom + NIF » sur devis, contrats, etc.
  */
-/** Découpe la raison sociale sur deux lignes (papier à en-tête officiel). */
-export function splitRaisonSocialeLines(raisonSociale: string): [string, string] {
+/** Découpe la raison sociale sur le papier à en-tête officiel (2 ou 3 lignes). */
+export function splitRaisonSocialeLines(raisonSociale: string): string[] {
   const trimmed = raisonSociale.trim();
-  if (!trimmed) return ["", ""];
+  if (!trimmed) return [];
 
   if (trimmed.includes("\n")) {
-    const parts = trimmed.split("\n").map((s) => s.trim()).filter(Boolean);
-    if (parts.length >= 2) return [parts[0], parts.slice(1).join(" ")];
+    return trimmed.split("\n").map((s) => s.trim()).filter(Boolean);
+  }
+
+  const threeLineMatch = trimmed.match(/^(.+?\s+de)\s+(logistique)\s+(transit[-\s]transport)$/i);
+  if (threeLineMatch) {
+    return [threeLineMatch[1].trim(), threeLineMatch[2].trim(), threeLineMatch[3].trim()];
   }
 
   const match = trimmed.match(/^(.+?)\s+(transit[-\s]transport)$/i);
   if (match) return [match[1].trim(), match[2].trim()];
 
   const [l1, l2] = splitTextIntoLines(trimmed, 2);
-  return [l1, l2];
+  return l2 ? [l1, l2] : [l1];
 }
 
 /** HTML + CSS de l'en-tête officiel (logo + raison sociale + coordonnées légales). */
@@ -95,7 +92,11 @@ export function buildOfficialLetterheadHTML(
   const logoClass = options?.logoClass ?? "official-letterhead-logo";
   const logoImg = brandLogoImgHTML(brand, logoClass, "v=transparent2");
   const displayName = brand.raisonSociale || brand.nom;
-  const [line1, line2] = splitRaisonSocialeLines(displayName);
+  const showName = brand.afficherNomAvecLogo !== false;
+  const nameLines = showName ? splitRaisonSocialeLines(displayName) : [];
+  const nameHTML = nameLines
+    .map((line) => `<div class="official-letterhead-name-line">${htmlEscape(line.toUpperCase())}</div>`)
+    .join("\n");
   const l = brand.legal;
 
   const legalHTML = [
@@ -119,10 +120,7 @@ export function buildOfficialLetterheadHTML(
     <div class="official-letterhead-row">
       <div class="official-letterhead-brand">
         <div class="official-letterhead-logo-wrap">${logoImg}</div>
-        <div class="official-letterhead-name">
-          <div class="official-letterhead-name-l1">${htmlEscape(line1.toUpperCase())}</div>
-          ${line2 ? `<div class="official-letterhead-name-l2">${htmlEscape(line2.toUpperCase())}</div>` : ""}
-        </div>
+        ${nameHTML ? `<div class="official-letterhead-name">${nameHTML}</div>` : ""}
       </div>
       ${legalHTML ? `<div class="official-letterhead-legal-block">${legalHTML}</div>` : ""}
     </div>
@@ -247,16 +245,13 @@ export function triggerPrint(win: Window, delayMs = PRINT_WINDOW_READY_MS): void
 export interface BuildPrintDocumentOptions {
   title: string;
   body: string;
-  brand: PrintHTMLBrand;
+  brand: SocieteBrand;
 }
 
 /** Construit le HTML complet d'un document générique (gabarit printHTML). */
 export function buildPrintDocument({ title, body, brand }: BuildPrintDocumentOptions): string {
-  const logoImg = printHTMLLogoImg(brand);
-  const brandName = brand.name!;
-  const legalLine = brand.legal ? buildLegalLine(brand.legal) : "";
-  const brandSubHTML = brand.legal ? "" : htmlEscape(brand.sub ?? brand.name!);
-  const footerHTML = legalLine || platformFooterHTML(brandName);
+  const letterheadHTML = buildOfficialLetterheadHTML(brand);
+  const footerHTML = documentFooterHTML(brand.nom);
   const editedOn = new Date().toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
@@ -268,26 +263,27 @@ export function buildPrintDocument({ title, body, brand }: BuildPrintDocumentOpt
 <head>
   <meta charset="utf-8">
   <title>${htmlEscape(title)}</title>
-  <style>${PRINT_HTML_DOCUMENT_CSS}
+  <style>${OFFICIAL_LETTERHEAD_CSS}
+${PRINT_HTML_DOCUMENT_CSS}
   </style>
 </head>
 <body>
-  <div class="doc-header">
-    <div class="brand">
-      ${logoImg}
-      ${brand?.afficherNomAvecLogo === false ? "" : `
+<div class="wrap">
+  ${letterheadHTML}
+  <section class="doc-section">
+    <div class="doc-head">
       <div>
-        <div class="brand-name">${htmlEscape(brandName)}</div>
-        ${brandSubHTML ? `<div class="brand-sub">${brandSubHTML}</div>` : ""}
-      </div>`}
+        <div class="doc-eyebrow">Document interne</div>
+        <h1 class="doc-title">${htmlEscape(title)}</h1>
+      </div>
+      <div class="doc-meta">
+        <div class="doc-date">Édité le ${editedOn}</div>
+      </div>
     </div>
-    <div class="doc-meta">
-      <div style="font-weight:600;color:#1f2937">${title}</div>
-      <div>Édité le ${editedOn}</div>
-    </div>
-  </div>
-  ${body}
+  </section>
+  <div class="doc-body">${body}</div>
   <div class="footer">${footerHTML}</div>
+</div>
 </body>
 </html>`;
 }
@@ -309,7 +305,7 @@ export function openPrintWindow(html: string, _windowFeatures?: string): void {
  * Print a specific HTML string in a new window.
  * Useful for generating a clean PDF/document without the app chrome.
  */
-export function printHTML(title: string, bodyHTML: string, brand?: PrintHTMLBrand | null): void {
-  if (!requirePrintHTMLBrand(brand, "ce document")) return;
+export function printHTML(title: string, bodyHTML: string, brand?: SocieteBrand | null): void {
+  if (!requireSocieteBrand(brand, "ce document")) return;
   openPrintWindow(buildPrintDocument({ title, body: bodyHTML, brand }));
 }
