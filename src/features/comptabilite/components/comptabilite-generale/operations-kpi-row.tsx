@@ -14,7 +14,7 @@ export function OperationsKpiRow({ totalEntree, totalSortie, soldeTheorique }: O
       <KpiCard label="Total entrées" value={formatFCFA(totalEntree)} icon={ArrowDownCircle} tone="emerald" sublabel="sur la période affichée" />
       <KpiCard label="Total sorties" value={formatFCFA(totalSortie)} icon={ArrowUpCircle} tone="amber" sublabel="sur la période affichée" />
       <KpiCard
-        label="Écart"
+        label="Solde net"
         value={formatFCFA(soldeTheorique)}
         icon={Scale}
         tone={soldeTheorique >= 0 ? "blue" : "red"}

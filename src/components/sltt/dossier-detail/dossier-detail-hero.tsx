@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Pencil,
   FileText,
-  Receipt,
   Trash2,
   MoreHorizontal,
   ChevronRight,
@@ -50,7 +49,6 @@ export function DossierDetailHero({
   onBack,
   onEdit,
   onTransition,
-  onInvoice,
   onPdf,
   onDelete,
 }: {
@@ -67,7 +65,6 @@ export function DossierDetailHero({
   onBack: () => void;
   onEdit: () => void;
   onTransition: () => void;
-  onInvoice: () => void;
   onPdf: () => void;
   onDelete: () => void;
 }) {
@@ -214,10 +211,8 @@ export function DossierDetailHero({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem onClick={onInvoice}>
-                    <Receipt className="mr-2 size-4" />
-                    Créer une facture
-                  </DropdownMenuItem>
+                  {/* "Créer une facture" vit uniquement dans l'onglet Suivi, là où les
+                      factures du dossier sont listées — pas ici en double. */}
                   <DropdownMenuItem onClick={onPdf}>
                     <FileText className="mr-2 size-4" />
                     Exporter en PDF

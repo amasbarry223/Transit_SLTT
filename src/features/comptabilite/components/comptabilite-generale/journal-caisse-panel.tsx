@@ -46,11 +46,7 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
 
   return (
     <div className="mt-0 space-y-6">
-      <EntitesConsolideesCard
-        entiteTotals={screen.entiteTotals}
-        activeEntiteKey={screen.resolvedTab}
-        onSelectEntite={screen.setActiveEntiteKey}
-      />
+      <EntitesConsolideesCard entiteTotals={screen.entiteTotals} activeEntiteKey={screen.resolvedTab} />
 
       <Tabs value={screen.resolvedTab} onValueChange={screen.setActiveEntiteKey}>
         <TabsList className="h-10 flex-wrap">

@@ -10,7 +10,6 @@ import {
   type TransitionType,
 } from "@/components/sltt/dossier-transition-dialog";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EcartValue } from "@/components/sltt/status-badge";
 import { DossierInfoGrid } from "./dossier-info-grid";
@@ -48,22 +47,18 @@ export function DossierDetailOverview({
   ecart,
   reste,
   nextTransition,
-  canTransition,
   echeanceDepassee,
   echeanceImminente,
   joursRestants,
-  onTransition,
   annexeCode,
 }: {
   dossier: Dossier;
   ecart: number;
   reste: number;
   nextTransition: TransitionType | null;
-  canTransition: boolean;
   echeanceDepassee: boolean;
   echeanceImminente: boolean;
   joursRestants: number | null;
-  onTransition: () => void;
   /** Code annexe (ML/CI) — détermine les intitulés des rubriques de coûts. */
   annexeCode?: string | null;
 }) {
@@ -76,26 +71,19 @@ export function DossierDetailOverview({
         (() => {
           const meta = TRANSITION_META[nextTransition];
           const Icon = meta.icon;
+          // Purement informatif — l'action de transition vit uniquement dans le
+          // Hero (en-tête), pour ne pas proposer le même bouton deux fois sur
+          // le même écran (l'Aperçu est l'onglet ouvert par défaut).
           return (
             <Card className="border-border/80 p-5 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", meta.bgClass, meta.colorClass)}>
-                    <Icon className="size-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">Prochaine étape</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">{meta.actionDescription}</p>
-                  </div>
+              <div className="flex items-start gap-3">
+                <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", meta.bgClass, meta.colorClass)}>
+                  <Icon className="size-5" />
                 </div>
-                <Button
-                  className="shrink-0 self-start"
-                  onClick={onTransition}
-                  disabled={!canTransition}
-                  title={!canTransition ? "Permission insuffisante pour changer le statut." : undefined}
-                >
-                  {meta.confirmLabel}
-                </Button>
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">Prochaine étape</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{meta.actionDescription}</p>
+                </div>
               </div>
             </Card>
           );

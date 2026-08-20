@@ -55,6 +55,8 @@ type BonMarchandiseTabProps = {
   onOpenCreateDialog: () => void;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
   onPrint: (reference: string) => void;
+  /** Préremplit la recherche — utilisé pour arriver directement sur un bon précis (ex. depuis le Calendrier). */
+  initialSearch?: string;
 };
 
 export function BonMarchandiseTab({
@@ -64,9 +66,10 @@ export function BonMarchandiseTab({
   onOpenCreateDialog,
   onConfirmValidate,
   onPrint,
+  initialSearch,
 }: BonMarchandiseTabProps) {
   const clients = useStore((state) => state.clients);
-  const filters = useBonFilters(bons);
+  const filters = useBonFilters(bons, initialSearch);
 
   return (
     <TabsContent value="marchandise" className="mt-0 space-y-6">

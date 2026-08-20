@@ -129,12 +129,7 @@ export function DossierDetailSuivi({
             <EmptyState
               icon={ReceiptIcon}
               title="Aucune facture"
-              description="Créez une facture client depuis ce dossier ou le module Factures."
-              action={
-                <Button variant="outline" onClick={onNewFacture}>
-                  Créer une facture
-                </Button>
-              }
+              description="Utilisez le bouton « Nouvelle facture » ci-dessus, ou créez-en une depuis le module Factures."
             />
           ) : (
             <div className="overflow-x-auto">
@@ -176,7 +171,7 @@ export function DossierDetailSuivi({
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">Prestataires & transporteurs</h2>
+            <h2 className="text-base font-semibold">Fournisseurs</h2>
             <p className="text-xs text-muted-foreground">Coûts de sous-traitance imputés au dossier</p>
           </div>
           {canWrite && (
@@ -190,23 +185,15 @@ export function DossierDetailSuivi({
           {fournisseurs.length === 0 ? (
             <EmptyState
               icon={Truck}
-              title="Aucun prestataire"
-              description="Ajoutez un transporteur ou commissionnaire et le coût associé à ce dossier."
-              action={
-                canWrite ? (
-                  <Button onClick={onAddFournisseur}>
-                    <Plus className="size-4" />
-                    Ajouter un prestataire
-                  </Button>
-                ) : undefined
-              }
+              title="Aucun fournisseur"
+              description="Utilisez le bouton « Ajouter » ci-dessus pour imputer un transporteur ou commissionnaire et son coût à ce dossier."
             />
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Prestataire</TableHead>
+                    <TableHead>Fournisseur</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Budgété</TableHead>
                     <TableHead className="text-right">Réel</TableHead>

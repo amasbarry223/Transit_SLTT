@@ -22,7 +22,6 @@ import { devisStatutNeedsConfirm } from "@/lib/confirm-transitions";
 import { InfoRow } from "@/components/sltt/devis/info-row";
 import { FinancialBreakdown } from "@/components/sltt/devis/financial-breakdown";
 import { DevisPipelineCard } from "@/components/sltt/devis/devis-pipeline-card";
-import { DevisActionsCard } from "@/components/sltt/devis/devis-actions-card";
 import { DevisEditForm } from "@/components/sltt/devis/devis-edit-form";
 import { DevisSummaryHeader } from "@/components/sltt/devis/devis-summary-header";
 
@@ -212,10 +211,6 @@ export function DevisDetailScreen() {
               </div>
               <FinancialBreakdown devis={devis} />
             </Card>
-            <DevisActionsCard
-              devis={devis} canWrite={canWrite} canEditContent={canEditContent} onPrint={handlePrint}
-              onEdit={startEdit} onOpenDossier={openDossierDetail} onConvert={requestConvert} onDelete={requestDelete}
-            />
           </div>
         </div>
       )}

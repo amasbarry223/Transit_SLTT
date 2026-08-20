@@ -1,12 +1,10 @@
 "use client";
 
-import { CalendarDays, CreditCard, UserRound } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SignaturePad } from "./signature-pad";
 import type { RecuGeneratorFormState } from "./use-recu-generator";
 import type { RecuPaiementStatut } from "@/lib/domain-types";
@@ -69,6 +67,13 @@ function ResteSummary({ reste, statut }: { reste: number; statut: RecuPaiementSt
   );
 }
 
+/**
+ * Un seul défilement, que ce soit dans la colonne étroite du poste de travail
+ * desktop (`compact`, champs plus denses) ou en pleine largeur sur mobile —
+ * 7 champs + signature ne justifient pas un assistant à onglets (l'ancienne
+ * version desktop en avait un, la version mobile prouvait déjà qu'un seul
+ * écran suffit ; cf. audit de simplicité).
+ */
 export function RecuGeneratorForm({
   form,
   previewReference,
@@ -84,209 +89,97 @@ export function RecuGeneratorForm({
   const inputClass = compact ? "h-9 text-sm" : "h-11";
   const labelClass = compact ? "text-xs" : undefined;
 
-  if (compact) {
-    return (
-      <Tabs defaultValue="identite" className="flex h-full min-h-0 flex-col gap-3">
-        <TabsList className="grid h-9 w-full shrink-0 grid-cols-3" role="tablist">
-          <TabsTrigger value="identite" className="gap-1.5 text-xs transition-[color,box-shadow] duration-150">
-            <UserRound className="size-3.5" aria-hidden />
-            Identité
-          </TabsTrigger>
-          <TabsTrigger value="paiement" className="gap-1.5 text-xs transition-[color,box-shadow] duration-150">
-            <CreditCard className="size-3.5" aria-hidden />
-            Paiement
-          </TabsTrigger>
-          <TabsTrigger value="validation" className="gap-1.5 text-xs transition-[color,box-shadow] duration-150">
-            <CalendarDays className="size-3.5" aria-hidden />
-            Validation
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="identite" className="mt-0 min-h-0 space-y-3 data-[state=inactive]:hidden">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="recu-nom" className={labelClass}>
-                Nom <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="recu-nom"
-                value={form.nom}
-                onChange={(e) => onFieldChange("nom", e.target.value)}
-                placeholder="TRAORE"
-                className={inputClass}
-                autoComplete="family-name"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="recu-prenom" className={labelClass}>
-                Prénom <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="recu-prenom"
-                value={form.prenom}
-                onChange={(e) => onFieldChange("prenom", e.target.value)}
-                placeholder="Amadou"
-                className={inputClass}
-                autoComplete="given-name"
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="paiement" className="mt-0 min-h-0 space-y-3 data-[state=inactive]:hidden">
-          <div className="space-y-1.5">
-            <Label htmlFor="recu-motif" className={labelClass}>
-              Motif <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="recu-motif"
-              value={form.motif}
-              onChange={(e) => onFieldChange("motif", e.target.value)}
-              placeholder="Frais de prestation de transit"
-              className={inputClass}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="recu-somme" className={labelClass}>
-                Somme (FCFA) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="recu-somme"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                value={form.somme}
-                onChange={(e) => onFieldChange("somme", e.target.value)}
-                placeholder="100 000"
-                className={cn(inputClass, "tabular-nums")}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="recu-montant-paye" className={labelClass}>
-                Payé (FCFA) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="recu-montant-paye"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                value={form.montantPaye}
-                onChange={(e) => onFieldChange("montantPaye", e.target.value)}
-                placeholder="70 000"
-                className={cn(inputClass, "tabular-nums", montantPayeDepasseSomme && "border-red-400 focus-visible:ring-red-400")}
-              />
-              {montantPayeDepasseSomme ? (
-                <p className="text-[11px] text-red-600 dark:text-red-400">Ne peut pas dépasser la somme.</p>
-              ) : null}
-            </div>
-          </div>
-
-          {somme > 0 ? <PaymentProgress somme={somme} montantPaye={montantPaye} /> : null}
-          <ResteSummary reste={reste} statut={statut} />
-        </TabsContent>
-
-        <TabsContent value="validation" className="mt-0 min-h-0 space-y-3 data-[state=inactive]:hidden">
-          <div className="space-y-1.5">
-            <Label htmlFor="recu-date" className={labelClass}>
-              Date du paiement
-            </Label>
-            <Input
-              id="recu-date"
-              type="date"
-              value={form.date}
-              onChange={(e) => onFieldChange("date", e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className={labelClass}>Signature</Label>
-            <SignaturePad compact value={form.signature} onChange={onSignatureChange} />
-          </div>
-        </TabsContent>
-      </Tabs>
-    );
-  }
-
-  /* Mobile / non-compact fallback */
   return (
-    <div className="space-y-6">
-      <div className="space-y-1.5">
-        <Label htmlFor="recu-numero-mobile" className="text-xs text-slate-500">
-          Référence
-        </Label>
-        <Input
-          id="recu-numero-mobile"
-          value={previewReference}
-          readOnly
-          className="h-9 border-dashed bg-muted/30 font-mono text-sm tracking-wide"
-        />
-      </div>
+    <div className="space-y-4">
+      {!compact && (
+        <div className="space-y-1.5">
+          <Label htmlFor="recu-numero" className="text-xs text-slate-500">
+            Référence
+          </Label>
+          <Input
+            id="recu-numero"
+            value={previewReference}
+            readOnly
+            className="h-9 border-dashed bg-muted/30 font-mono text-sm tracking-wide"
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="recu-nom-m">
+          <Label htmlFor="recu-nom" className={labelClass}>
             Nom <span className="text-red-500">*</span>
           </Label>
           <Input
-            id="recu-nom-m"
+            id="recu-nom"
             value={form.nom}
             onChange={(e) => onFieldChange("nom", e.target.value)}
             placeholder="TRAORE"
-            className="h-9"
+            className={inputClass}
             autoComplete="family-name"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="recu-prenom-m">
+          <Label htmlFor="recu-prenom" className={labelClass}>
             Prénom <span className="text-red-500">*</span>
           </Label>
           <Input
-            id="recu-prenom-m"
+            id="recu-prenom"
             value={form.prenom}
             onChange={(e) => onFieldChange("prenom", e.target.value)}
             placeholder="Amadou"
-            className="h-9"
+            className={inputClass}
             autoComplete="given-name"
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="recu-motif-m">
+        <Label htmlFor="recu-motif" className={labelClass}>
           Motif <span className="text-red-500">*</span>
         </Label>
         <Input
-          id="recu-motif-m"
+          id="recu-motif"
           value={form.motif}
           onChange={(e) => onFieldChange("motif", e.target.value)}
-          className="h-9"
+          placeholder="Frais de prestation de transit"
+          className={inputClass}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="recu-somme-m">Somme (FCFA) *</Label>
+          <Label htmlFor="recu-somme" className={labelClass}>
+            Somme (FCFA) <span className="text-red-500">*</span>
+          </Label>
           <Input
-            id="recu-somme-m"
+            id="recu-somme"
             type="number"
             min="0"
+            inputMode="numeric"
             value={form.somme}
             onChange={(e) => onFieldChange("somme", e.target.value)}
-            className="h-9 tabular-nums"
+            placeholder="100 000"
+            className={cn(inputClass, "tabular-nums")}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="recu-montant-paye-m">Payé (FCFA) *</Label>
+          <Label htmlFor="recu-montant-paye" className={labelClass}>
+            Payé (FCFA) <span className="text-red-500">*</span>
+          </Label>
           <Input
-            id="recu-montant-paye-m"
+            id="recu-montant-paye"
             type="number"
             min="0"
+            inputMode="numeric"
             value={form.montantPaye}
             onChange={(e) => onFieldChange("montantPaye", e.target.value)}
-            className={cn("h-9 tabular-nums", montantPayeDepasseSomme && "border-red-400")}
+            placeholder="70 000"
+            className={cn(inputClass, "tabular-nums", montantPayeDepasseSomme && "border-red-400 focus-visible:ring-red-400")}
           />
+          {montantPayeDepasseSomme ? (
+            <p className="text-[11px] text-red-600 dark:text-red-400">Ne peut pas dépasser la somme.</p>
+          ) : null}
         </div>
       </div>
 
@@ -294,19 +187,21 @@ export function RecuGeneratorForm({
       <ResteSummary reste={reste} statut={statut} />
 
       <div className="space-y-1.5">
-        <Label htmlFor="recu-date-m">Date</Label>
+        <Label htmlFor="recu-date" className={labelClass}>
+          Date du paiement
+        </Label>
         <Input
-          id="recu-date-m"
+          id="recu-date"
           type="date"
           value={form.date}
           onChange={(e) => onFieldChange("date", e.target.value)}
-          className="h-9"
+          className={inputClass}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Signature</Label>
-        <SignaturePad value={form.signature} onChange={onSignatureChange} />
+        <Label className={labelClass}>Signature</Label>
+        <SignaturePad compact={compact} value={form.signature} onChange={onSignatureChange} />
       </div>
     </div>
   );

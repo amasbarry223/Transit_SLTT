@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AuditEntry } from "@/lib/audit";
 import {
-  Clock,
   ArrowLeft,
   Pencil,
   BellRing,
@@ -456,27 +455,36 @@ export function ClientFicheScreen() {
       <div className="sticky top-16 z-20 -mx-4 border-y border-border/80 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
+            {/* Total non filtré, sur tout l'historique — le Classeur (onglet) affiche
+                les mêmes libellés (Investi / Total payé / Reste à payer) mais sur sa
+                sélection filtrée, d'où "(historique)" ici pour distinguer les deux. */}
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Reste à payer</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Reste à payer (historique)</p>
               <p className={cn("text-lg font-bold tabular-nums", totalDu > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
                 {formatFCFA(totalDu)}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total payé</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total payé (historique)</p>
               <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatFCFA(totalPaye)}</p>
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Investi</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Investi (historique)</p>
               <p className="text-lg font-bold tabular-nums text-foreground">{formatFCFA(totalInvesti)}</p>
             </div>
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Prochaine action</p>
-              <p className="text-sm font-medium text-foreground/90">
-                {totalDu > 0
-                  ? `${pendingCount} solde${pendingCount !== 1 ? "s" : ""} ouvert${pendingCount !== 1 ? "s" : ""}`
-                  : "Compte à jour"}
-              </p>
+              {totalDu > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("classeur")}
+                  className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+                >
+                  {pendingCount} solde{pendingCount !== 1 ? "s" : ""} ouvert{pendingCount !== 1 ? "s" : ""} — voir le Classeur
+                </button>
+              ) : (
+                <p className="text-sm font-medium text-foreground/90">Compte à jour</p>
+              )}
             </div>
           </div>
           {canWriteDossiers && (
@@ -487,21 +495,6 @@ export function ClientFicheScreen() {
           )}
         </div>
       </div>
-
-      {totalDu > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30">
-          <Clock className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div>
-            <p className="text-sm font-medium text-amber-900 dark:text-amber-400">
-              Solde impayé : {formatFCFA(totalDu)}
-            </p>
-            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300/80">
-              {pendingCount} mouvement{pendingCount !== 1 ? "s" : ""} en attente de règlement — voir le
-              détail dans le Classeur.
-            </p>
-          </div>
-        </div>
-      )}
 
       <Tabs
         value={activeTab}

@@ -79,7 +79,7 @@ const OperationMobileCard = memo(function OperationMobileCard({
       )}
       {ecartClientCumuleById?.has(o.id) && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Écart Client :{" "}
+          Solde client :{" "}
           <span className={cn("font-medium tabular-nums", (ecartClientCumuleById.get(o.id) ?? 0) >= 0 ? "text-foreground/90" : "text-red-600 dark:text-red-400")}>
             {formatFCFA(ecartClientCumuleById.get(o.id) ?? 0)}
           </span>
@@ -219,7 +219,7 @@ export function OperationsTable({
                   {showQuantitePrixUnitaire && <Heading className="text-right">Qté × PU</Heading>}
                   <Heading className="text-right">Entrée</Heading>
                   <Heading className="text-right">Sortie</Heading>
-                  <Heading className="text-right">Écart Client</Heading>
+                  <Heading className="text-right">Solde client</Heading>
                   <Heading>Source</Heading>
                   <Heading className="text-right">Actions</Heading>
                 </TableRow>

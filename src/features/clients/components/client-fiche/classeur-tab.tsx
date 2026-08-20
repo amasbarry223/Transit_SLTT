@@ -124,7 +124,7 @@ export function ClasseurTab({
               title="Importer un Excel"
             >
               <Upload className="size-4" />
-              <span className="hidden sm:inline">Importer</span>
+              <span className="hidden sm:inline">Importer Excel</span>
             </Button>
           )}
           <Button
@@ -157,22 +157,25 @@ export function ClasseurTab({
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* Mêmes libellés que la barre sticky en haut de la fiche (Investi / Total
+            payé / Reste à payer) — seule la portée diffère, précisée en sous-titre :
+            ici la sélection filtrée du Classeur, là le total non filtré. */}
         <KpiCard
-          label="Total débit"
+          label="Investi"
           value={formatFCFA(classeurTotals.totalDebit)}
           icon={TrendingUp}
           tone="indigo"
           sublabel="engagé (sélection filtrée)"
         />
         <KpiCard
-          label="Total crédit"
+          label="Total payé"
           value={formatFCFA(classeurTotals.totalCredit)}
           icon={Wallet}
           tone="emerald"
           sublabel="payé (sélection filtrée)"
         />
         <KpiCard
-          label="Solde net"
+          label="Reste à payer"
           value={formatFCFA(classeurTotals.soldeNet)}
           icon={Clock}
           tone={classeurTotals.soldeNet > 0 ? "amber" : "emerald"}

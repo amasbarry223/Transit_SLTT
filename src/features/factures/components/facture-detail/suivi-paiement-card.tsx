@@ -1,10 +1,8 @@
 "use client";
 
-import { CreditCard } from "lucide-react";
 import type { Facture } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { PaymentRing } from "./payment-ring";
 
 export function SuiviPaiementCard({
@@ -12,15 +10,11 @@ export function SuiviPaiementCard({
   pctPaye,
   reste,
   isEchue,
-  canRecordPaiement,
-  onShowPaiement,
 }: {
   facture: Facture;
   pctPaye: number;
   reste: number;
   isEchue: boolean;
-  canRecordPaiement: boolean;
-  onShowPaiement: () => void;
 }) {
   return (
     <Card className="overflow-hidden border-border/80 shadow-sm">
@@ -43,11 +37,6 @@ export function SuiviPaiementCard({
             </p>
           </div>
         </div>
-        {canRecordPaiement && (
-          <Button className="w-full gap-2 bg-emerald-700 hover:bg-emerald-800" onClick={onShowPaiement}>
-            <CreditCard className="size-4" /> Enregistrer un paiement
-          </Button>
-        )}
       </div>
     </Card>
   );

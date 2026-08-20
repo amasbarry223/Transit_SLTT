@@ -116,15 +116,6 @@ export function DossiersListScreen() {
               screen.setPage(1);
             },
           },
-          {
-            id: "ce-mois",
-            label: "Ce mois",
-            active: screen.periode === "month",
-            onToggle: () => {
-              screen.setPeriode((p) => (p === "month" ? "all" : "month"));
-              screen.setPage(1);
-            },
-          },
         ]}
         activeCount={screen.activeFiltersCount}
         onClear={screen.hasActiveFilters ? screen.clearFilters : undefined}

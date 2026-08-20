@@ -1,6 +1,7 @@
 "use client";
 
-import { Wallet, Clock, TrendingUp, Percent, FileText, FileSpreadsheet } from "lucide-react";
+import { useState } from "react";
+import { Wallet, Clock, TrendingUp, Percent, FileText, FileSpreadsheet, ChevronDown, ChevronUp } from "lucide-react";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
@@ -18,6 +19,11 @@ import { PERIODES, type Periode } from "@/components/sltt/bilans/shared";
 
 export function BilansScreen() {
   const screen = useBilansScreen();
+  // Replié par défaut : les 4 KPI principaux suffisent pour "voir les chiffres
+  // du mois" — la répartition par société/annexe est un second niveau de
+  // détail, pas quelque chose à charger visuellement à chaque ouverture
+  // (cf. audit de simplicité).
+  const [detailOpen, setDetailOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -111,59 +117,78 @@ export function BilansScreen() {
         />
       </div>
 
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-foreground">
-          Bénéfice entreposage — {screen.beneficeMoisLabel}
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <KpiCard
-            label="Toutes sociétés"
-            value={formatFCFA(screen.consolide.benefice)}
-            icon={TrendingUp}
-            tone={screen.consolide.benefice >= 0 ? "emerald" : "red"}
-            sublabel="Recettes − Dépenses, consolidé"
-            tooltip={`Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois. Consolidé = somme de toutes les sociétés (${screen.nbSocietes}) + activité non affectée (transit).`}
-          />
-          {screen.parSociete.map(({ societe, benefice: b }) => (
-            <KpiCard
-              key={societe.id}
-              label={societe.nom}
-              value={formatFCFA(b)}
-              icon={TrendingUp}
-              tone={b >= 0 ? "emerald" : "red"}
-              sublabel="bénéfice du mois"
-            />
-          ))}
-        </div>
-      </div>
-
-      {screen.isMultiAnnexe && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">
-            Vue consolidée par annexe — {screen.beneficeMoisLabel}
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <KpiCard
-              label="Toutes annexes"
-              value={formatFCFA(screen.beneficeAnnexe.consolide.benefice)}
-              icon={TrendingUp}
-              tone={screen.beneficeAnnexe.consolide.benefice >= 0 ? "emerald" : "red"}
-              sublabel="Recettes − sorties de caisse, consolidé"
-              tooltip="Recettes = écritures + paiements factures du mois de référence, toutes annexes confondues. Réservé aux comptes ayant accès à plusieurs annexes."
-            />
-            {screen.beneficeAnnexe.parAnnexe.map(({ annexe, benefice: b }) => (
-              <KpiCard
-                key={annexe.id}
-                label={annexe.nom}
-                value={formatFCFA(b)}
-                icon={TrendingUp}
-                tone={b >= 0 ? "emerald" : "red"}
-                sublabel="bénéfice du mois"
-              />
-            ))}
+      <Card className="border-border/80 shadow-sm">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between p-4 text-left"
+          onClick={() => setDetailOpen((v) => !v)}
+        >
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Répartition détaillée</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Bénéfice entreposage par société{screen.isMultiAnnexe ? " et par annexe" : ""} — {screen.beneficeMoisLabel}
+            </p>
           </div>
-        </div>
-      )}
+          {detailOpen ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+        </button>
+        {detailOpen && (
+          <div className="space-y-5 border-t border-border px-4 pb-4 pt-4">
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Bénéfice entreposage — {screen.beneficeMoisLabel}
+              </h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <KpiCard
+                  label="Toutes sociétés"
+                  value={formatFCFA(screen.consolide.benefice)}
+                  icon={TrendingUp}
+                  tone={screen.consolide.benefice >= 0 ? "emerald" : "red"}
+                  sublabel="Recettes − Dépenses, consolidé"
+                  tooltip={`Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois. Consolidé = somme de toutes les sociétés (${screen.nbSocietes}) + activité non affectée (transit).`}
+                />
+                {screen.parSociete.map(({ societe, benefice: b }) => (
+                  <KpiCard
+                    key={societe.id}
+                    label={societe.nom}
+                    value={formatFCFA(b)}
+                    icon={TrendingUp}
+                    tone={b >= 0 ? "emerald" : "red"}
+                    sublabel="bénéfice du mois"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {screen.isMultiAnnexe && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Vue consolidée par annexe — {screen.beneficeMoisLabel}
+                </h3>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <KpiCard
+                    label="Toutes annexes"
+                    value={formatFCFA(screen.beneficeAnnexe.consolide.benefice)}
+                    icon={TrendingUp}
+                    tone={screen.beneficeAnnexe.consolide.benefice >= 0 ? "emerald" : "red"}
+                    sublabel="Recettes − sorties de caisse, consolidé"
+                    tooltip="Recettes = écritures + paiements factures du mois de référence, toutes annexes confondues. Réservé aux comptes ayant accès à plusieurs annexes."
+                  />
+                  {screen.beneficeAnnexe.parAnnexe.map(({ annexe, benefice: b }) => (
+                    <KpiCard
+                      key={annexe.id}
+                      label={annexe.nom}
+                      value={formatFCFA(b)}
+                      icon={TrendingUp}
+                      tone={b >= 0 ? "emerald" : "red"}
+                      sublabel="bénéfice du mois"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
 
       <EvolutionChartCardLazy chartData={screen.chartData} mois={screen.mois} />
 

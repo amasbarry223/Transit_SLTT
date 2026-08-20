@@ -92,9 +92,17 @@ export function EntreposageScreen() {
 
   const [editItemOpen, setEditItemOpen] = useState(false);
   const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [editItemKey, setEditItemKey] = useState(0);
 
   function openEditDialog(id: string) {
     setEditingStockId(id);
+    // Incrémenté à chaque ouverture (comme newItemKey pour NewItemDialog) —
+    // pas juste `key={editingStockId}` : sans ça, annuler une édition (ou
+    // fermer via Échap/clic extérieur) laisse le brouillon non sauvegardé
+    // dans l'état local, et rouvrir le même article réaffiche ce brouillon
+    // abandonné au lieu des valeurs réelles, avec le risque de l'enregistrer
+    // par erreur en écrasant la vraie valeur.
+    setEditItemKey((k) => k + 1);
     setEditItemOpen(true);
   }
 
@@ -350,7 +358,7 @@ export function EntreposageScreen() {
       <EntryExitDialogs stock={stock} dialogs={dialogs} />
 
       <NewItemDialog
-        key={newItemKey}
+        key={`new-item-${newItemKey}`}
         open={newItemOpen}
         onOpenChange={setNewItemOpen}
         societes={societes}
@@ -374,7 +382,7 @@ export function EntreposageScreen() {
       />
 
       <EditItemDialog
-        key={editingStockId ?? "none"}
+        key={`edit-item-${editItemKey}`}
         open={editItemOpen}
         onOpenChange={setEditItemOpen}
         item={allStock.find((s) => s.id === editingStockId) ?? null}

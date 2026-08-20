@@ -282,7 +282,7 @@ export function DossierDetailScreen() {
     };
     addDossierFournisseur(input);
     setFournisseurDialogOpen(false);
-    toastSuccess(toast, { title: "Prestataire lié au dossier", description: fournisseur.nom });
+    toastSuccess(toast, { title: "Fournisseur lié au dossier", description: fournisseur.nom });
   }
 
   function handleInvoice() {
@@ -342,7 +342,7 @@ export function DossierDetailScreen() {
     allFichiers.length > 0 && `${allFichiers.length} fichier(s) archivé(s) définitivement supprimé(s)`,
     subDossiers.length > 0 && `${subDossiers.length} sous-dossier(s) définitivement supprimé(s)`,
     dossierFournisseurs.length > 0 &&
-      `${dossierFournisseurs.length} prestataire(s) lié(s) définitivement supprimé(s)`,
+      `${dossierFournisseurs.length} fournisseur(s) lié(s) définitivement supprimé(s)`,
     allEcritures.length > 0 &&
       `${allEcritures.length} écriture(s) comptable(s) seront déconnectée(s) du dossier (non supprimées)`,
     dossierFactures.length > 0 &&
@@ -381,7 +381,6 @@ export function DossierDetailScreen() {
         onBack={() => go("dossiers")}
         onEdit={() => openDossier(currentDossier.id, "edit")}
         onTransition={() => setTransitionOpen(true)}
-        onInvoice={handleInvoice}
         onPdf={handlePdfExport}
         onDelete={() => setDeleteOpen(true)}
       />
@@ -413,12 +412,10 @@ export function DossierDetailScreen() {
             ecart={ecart}
             reste={reste}
             nextTransition={nextTransition}
-            canTransition={canTransition}
             echeanceDepassee={echeanceDepassee}
             echeanceImminente={echeanceImminente}
             joursRestants={joursRestants}
             annexeCode={annexeCode}
-            onTransition={() => setTransitionOpen(true)}
           />
         </TabsContent>
 
@@ -567,7 +564,7 @@ export function DossierDetailScreen() {
       <Dialog open={fournisseurDialogOpen} onOpenChange={setFournisseurDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Ajouter un prestataire</DialogTitle>
+            <DialogTitle>Ajouter un fournisseur</DialogTitle>
             <DialogDescription>
               Rattachez un fournisseur ou transporteur et son coût à ce dossier.
             </DialogDescription>

@@ -107,7 +107,7 @@ export function RecuWorkspace({
         <div className="flex min-h-0 flex-col overflow-hidden border-r border-border/60 bg-card/30">
           <div className="shrink-0 border-b border-border/40 px-4 py-2 sm:px-5">
             <p className="text-xs font-medium text-foreground/90">Informations du reçu</p>
-            <p className="text-[11px] text-muted-foreground">Saisie en 3 étapes — aperçu mis à jour en direct</p>
+            <p className="text-[11px] text-muted-foreground">Aperçu mis à jour en direct</p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
             <RecuGeneratorForm

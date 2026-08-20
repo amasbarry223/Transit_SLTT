@@ -91,12 +91,14 @@ function DayPanel({
   onClose,
   onOpenDossier,
   onOpenBon,
+  onOpenClient,
 }: {
   date: string;
   events: CalEvent[];
   onClose: () => void;
   onOpenDossier: (id: string) => void;
-  onOpenBon: () => void;
+  onOpenBon: (id: string) => void;
+  onOpenClient: (id: string) => void;
 }) {
   const d = new Date(date + "T12:00:00");
   const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -127,13 +129,23 @@ function DayPanel({
                 className="flex cursor-pointer items-start gap-3 px-5 py-3.5 hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                 onClick={() => {
                   if (ev.type === "dossier") onOpenDossier(ev.payload.id as string);
-                  if (ev.type === "bon") onOpenBon();
+                  if (ev.type === "bon") onOpenBon(ev.payload.id as string);
+                  if (ev.type === "paiement") {
+                    const dossierId = ev.payload.dossierId as string | undefined;
+                    if (dossierId) onOpenDossier(dossierId);
+                    else onOpenClient(ev.payload.clientId as string);
+                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     if (ev.type === "dossier") onOpenDossier(ev.payload.id as string);
-                    if (ev.type === "bon") onOpenBon();
+                    if (ev.type === "bon") onOpenBon(ev.payload.id as string);
+                    if (ev.type === "paiement") {
+                      const dossierId = ev.payload.dossierId as string | undefined;
+                      if (dossierId) onOpenDossier(dossierId);
+                      else onOpenClient(ev.payload.clientId as string);
+                    }
                   }
                 }}
               >
@@ -161,7 +173,7 @@ function DayPanel({
 /* ------------------------------------------------------------------ */
 
 export function CalendrierScreen() {
-  const { openDossierDetail, go } = useNav();
+  const { openDossierDetail, openClient, go } = useNav();
   const canSeeDossiers = usePermission("dossiers:read");
   const canSeeBons = usePermission("bons:read");
   const canSeeComptabilite = usePermission("comptabilite:read");
@@ -242,7 +254,7 @@ export function CalendrierScreen() {
         label: `Paiement · ${e.clientNom}`,
         sub: formatFCFA(e.montantPaye),
         date: d,
-        payload: { id: e.id },
+        payload: { id: e.id, dossierId: e.dossierId, clientId: e.clientId },
       });
     }
 
@@ -416,7 +428,8 @@ export function CalendrierScreen() {
           events={selectedEvents}
           onClose={() => setSelectedDate(null)}
           onOpenDossier={(id) => openDossierDetail(id)}
-          onOpenBon={() => go("bons")}
+          onOpenBon={(id) => go("bons", { id })}
+          onOpenClient={(id) => openClient(id)}
         />
       )}
     </div>

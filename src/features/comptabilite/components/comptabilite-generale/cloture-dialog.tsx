@@ -93,7 +93,7 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
         soldeConstate: soldeConstateNum,
         note: note.trim() || undefined,
       });
-      toastSuccess(toast, { title: "Clôture enregistrée", description: ecart === 0 ? "Aucun écart constaté." : `Écart : ${formatFCFA(ecart)}.` });
+      toastSuccess(toast, { title: "Clôture enregistrée", description: ecart === 0 ? "Aucun écart constaté." : `Écart de clôture : ${formatFCFA(ecart)}.` });
       onOpenChange(false);
     } catch (error) {
       toastError(toast, error, { title: "Échec de la clôture", fallback: "Réessayez." });
@@ -108,8 +108,8 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
         <DialogHeader>
           <DialogTitle>Clôturer la caisse — {entite.label}</DialogTitle>
           <DialogDescription>
-            Optionnel : compare l&apos;Écart déjà calculé automatiquement (visible dans le KPI et la colonne du
-            journal) à un solde compté physiquement (caisse ou relevé bancaire) sur la période.
+            Renseignez le solde compté physiquement (caisse ou relevé bancaire) pour clôturer la période — il sera
+            comparé au solde net déjà calculé automatiquement (visible dans le KPI et la colonne du journal).
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -134,7 +134,7 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
             <Input id="cl-constate" type="number" value={soldeConstate} onChange={(e) => setSoldeConstate(e.target.value)} placeholder="Compté en caisse / relevé bancaire" className="h-10" />
           </div>
           <div className="rounded-lg border border-border p-3">
-            <p className="text-xs text-muted-foreground">Écart (théorique − constaté)</p>
+            <p className="text-xs text-muted-foreground">Écart de clôture (théorique − constaté)</p>
             <p className={cn("mt-0.5 text-lg font-semibold tabular-nums", ecart === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
               {formatFCFA(ecart)}
             </p>

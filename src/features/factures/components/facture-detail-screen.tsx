@@ -35,7 +35,6 @@ import { InformationsCard } from "./facture-detail/informations-card";
 import { LignesCard } from "./facture-detail/lignes-card";
 import { SuiviPaiementCard } from "./facture-detail/suivi-paiement-card";
 import { PipelineCard } from "./facture-detail/pipeline-card";
-import { ActionsCard } from "./facture-detail/actions-card";
 import { FactureEditForm } from "./facture-detail/facture-edit-form";
 import { PaiementDialog } from "./facture-detail/paiement-dialog";
 import { useFactureEditState } from "./facture-detail/use-facture-edit-state";
@@ -234,30 +233,10 @@ export function FactureDetailScreen() {
           {/* Colonne droite */}
           <div className="space-y-5 lg:col-span-2">
             {facture.statut !== "Annulée" && (
-              <SuiviPaiementCard
-                facture={facture}
-                pctPaye={pctPaye}
-                reste={reste}
-                isEchue={isEchue}
-                canRecordPaiement={canRecordPaiement}
-                onShowPaiement={() => setShowPaiement(true)}
-              />
+              <SuiviPaiementCard facture={facture} pctPaye={pctPaye} reste={reste} isEchue={isEchue} />
             )}
 
             <PipelineCard facture={facture} canWrite={canWrite} onSelect={handleStatutClick} />
-
-            <ActionsCard
-              facture={facture}
-              dossier={dossier}
-              canEdit={canEdit}
-              canRecordPaiement={canRecordPaiement}
-              canWrite={canWrite}
-              onPrint={handlePrint}
-              onStartEdit={() => setIsEditing(true)}
-              onShowPaiement={() => setShowPaiement(true)}
-              onOpenDossier={openDossierDetail}
-              onConfirmAnnuler={() => setConfirmAnnuler(true)}
-            />
           </div>
         </div>
       )}

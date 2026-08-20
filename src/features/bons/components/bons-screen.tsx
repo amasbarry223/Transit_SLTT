@@ -55,6 +55,7 @@ export function BonsScreen() {
   const [caisseDialogOpen, setCaisseDialogOpen] = useState(false);
   const [validatingIds, setValidatingIds] = useState<Set<string>>(new Set());
   const [confirmValidate, setConfirmValidate] = useState<{ id: string; ref: string } | null>(null);
+  const [deepLinkSearch, setDeepLinkSearch] = useState<string | undefined>(undefined);
 
   const bons = useMemo(
     () => filterByAnnexe(filterBySociete(allBons, selectedSocieteId), selectedAnnexeId),
@@ -74,8 +75,20 @@ export function BonsScreen() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le dialogue puis consomme le marqueur "new" de l'URL
       if (canWrite) setMarchandiseDialogOpen(true);
       go("bons");
+      return;
     }
-  }, [selectedId, go, canWrite]);
+    // Arrivée depuis un lien direct vers un bon précis (ex. Calendrier) : pas de
+    // vue de détail dédiée pour les bons, donc on atterrit sur la liste avec la
+    // recherche préremplie sur sa référence plutôt que la liste générique.
+    if (selectedId) {
+      const target = allBons.find((b) => b.id === selectedId);
+      if (target) {
+        setDeepLinkSearch(target.reference);
+        setActiveTab("marchandise");
+      }
+      go("bons");
+    }
+  }, [selectedId, go, canWrite, allBons]);
 
   function buildBonHTML(bon: {
     reference: string;
@@ -265,12 +278,14 @@ export function BonsScreen() {
         </TabsList>
 
         <BonMarchandiseTab
+          key={deepLinkSearch ?? "default"}
           bons={bons}
           canWrite={canWrite}
           validatingIds={validatingIds}
           onOpenCreateDialog={() => setMarchandiseDialogOpen(true)}
           onConfirmValidate={setConfirmValidate}
           onPrint={handlePrint}
+          initialSearch={deepLinkSearch}
         />
 
         <BonCaisseTab bons={bonsCaisse} canWriteCaisse={canWriteCaisse} onOpenCreateDialog={() => setCaisseDialogOpen(true)} />

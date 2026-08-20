@@ -15,7 +15,6 @@ import {
 import type { Dossier, Facture, FactureStatut } from "@/lib/store";
 import type { SocieteBrand } from "@/lib/export";
 import { formatDateShort, formatFCFA } from "@/lib/format";
-import { canTransitionFacture } from "@/lib/status-flow";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 import { FactureDocumentHeader } from "@/components/sltt/facture-document-header";
 import { Button } from "@/components/ui/button";
@@ -24,11 +23,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { STATUT_CONFIG, STATUTS_ALL } from "./facture-statut-config";
 
 export function FactureSummaryHeader({
   facture,
@@ -165,6 +162,9 @@ export function FactureSummaryHeader({
                     <FolderKanban className="size-4" /> Voir le dossier
                   </Button>
                 )}
+                {/* Le choix du statut se fait via le bouton "étape suivante" ci-dessus et le
+                    stepper du Pipeline (colonne de droite) — ce menu ne garde que
+                    l'action "Annuler", qui n'existe nulle part ailleurs sur l'écran. */}
                 {canWrite && facture.statut !== "Annulée" && facture.statut !== "Soldée" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -173,24 +173,6 @@ export function FactureSummaryHeader({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-52">
-                      {STATUTS_ALL.filter((s) => s !== "Annulée" && s !== "Partielle").map((s) => {
-                        const SIcon = STATUT_CONFIG[s].icon;
-                        const disabled = s === facture.statut || !canTransitionFacture(facture.statut, s);
-                        return (
-                          <DropdownMenuItem
-                            key={s}
-                            disabled={disabled}
-                            onClick={() => onStatutClick(s)}
-                          >
-                            <SIcon className="mr-2 size-3.5" />
-                            {s}
-                            {s === facture.statut && (
-                              <span className="ml-auto text-[10px] text-slate-400">actuel</span>
-                            )}
-                          </DropdownMenuItem>
-                        );
-                      })}
-                      <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-950/40"
                         onClick={onConfirmAnnuler}

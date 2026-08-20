@@ -5,7 +5,6 @@ import {
   Mail,
   MapPin,
   Pencil,
-  Plus,
   Building2,
   User,
   BellRing,
@@ -22,7 +21,6 @@ type ClientProfileCardProps = {
   client: Client;
   totalDu: number;
   onEdit?: () => void;
-  onNewDossier?: () => void;
   onRelance: () => void;
 };
 
@@ -30,7 +28,6 @@ export function ClientProfileCard({
   client,
   totalDu,
   onEdit,
-  onNewDossier,
   onRelance,
 }: ClientProfileCardProps) {
   const TypeIcon = client.type === "Entreprise" ? Building2 : User;
@@ -97,12 +94,6 @@ export function ClientProfileCard({
               <Button variant="outline" size="sm" className="h-9" onClick={onEdit}>
                 <Pencil className="size-4" />
                 Modifier
-              </Button>
-            )}
-            {onNewDossier && (
-              <Button size="sm" className="h-9" onClick={onNewDossier}>
-                <Plus className="size-4" />
-                Nouveau dossier
               </Button>
             )}
           </div>

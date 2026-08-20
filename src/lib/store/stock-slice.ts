@@ -4,6 +4,7 @@ import type { Mouvement, StockItem } from "@/lib/domain-types";
 import type { ImportStockHistoriqueInput, SLTTState, StockItemInput, UpdateStockItemInput } from "@/lib/store";
 import type { MouvementRow, StockItemRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+import { logError } from "@/shared/logger";
 
 export function mapStockItemFromDb(row: StockItemRow): StockItem {
   return {
@@ -259,7 +260,15 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       .select("*, societes(nom), annexes(nom)");
     if (mouvementsError) {
       // Compensation : pas d'article orphelin sans historique si l'insert en masse échoue.
-      await supabase.from("stock_items").delete().eq("id", stockId);
+      const { error: cleanupError } = await supabase.from("stock_items").delete().eq("id", stockId);
+      if (cleanupError) {
+        // Ne pas avaler silencieusement : si la compensation échoue aussi
+        // (policy RLS, etc.), un article fantôme quantite=0 reste en base et
+        // bloquera un nouvel essai via la garde anti-doublon ci-dessus.
+        logError("[stock] Échec de la compensation après échec d'insertion des mouvements", cleanupError, {
+          stockId,
+        });
+      }
       throw mouvementsError;
     }
 
@@ -269,7 +278,27 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       .eq("id", stockId)
       .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
-    if (updateError) throw updateError;
+    if (updateError) {
+      // Compensation symétrique : à ce stade l'article ET ses mouvements sont
+      // déjà en base (insert atomique réussi juste au-dessus) mais quantite
+      // est resté à 0 — sans ce nettoyage, l'article reste incohérent
+      // (historique présent, solde faux) et personne ne le corrige jamais
+      // puisque l'appelant ne voit qu'une erreur et que le state local n'est
+      // jamais mis à jour pour ce cas.
+      const { error: cleanupMvtError } = await supabase.from("mouvements").delete().eq("stock_id", stockId);
+      if (cleanupMvtError) {
+        logError("[stock] Échec de la compensation des mouvements après échec de mise à jour du solde", cleanupMvtError, {
+          stockId,
+        });
+      }
+      const { error: cleanupItemError } = await supabase.from("stock_items").delete().eq("id", stockId);
+      if (cleanupItemError) {
+        logError("[stock] Échec de la compensation de l'article après échec de mise à jour du solde", cleanupItemError, {
+          stockId,
+        });
+      }
+      throw updateError;
+    }
 
     const newItem = mapStockItemFromDb(updatedItem);
     const newMouvements = (mouvementsData ?? []).map(mapMouvementFromDb);

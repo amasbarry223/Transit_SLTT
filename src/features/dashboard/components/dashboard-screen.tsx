@@ -43,7 +43,6 @@ const SLTT_GRID = "#D2DBE9";
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
   const openDossier = useNav((s) => s.openDossier);
-  const openDossierDetail = useNav((s) => s.openDossierDetail);
   const currentRole = useSession((s) => s.currentRole);
   const currentUserName = useSession((s) => s.currentUserName);
   const theme = useUiPrefs((s) => s.theme);
@@ -213,7 +212,6 @@ export function DashboardScreen() {
           go={go}
           users={users}
           alertes={alertes}
-          openDossierDetail={openDossierDetail}
           dossiersCount={dossiers.length}
           clientsCount={clients.length}
         />

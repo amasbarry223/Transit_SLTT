@@ -16,15 +16,21 @@ export interface EntiteTotal {
 interface EntitesConsolideesCardProps {
   entiteTotals: EntiteTotal[];
   activeEntiteKey: string;
-  onSelectEntite: (key: string) => void;
 }
 
 function entiteKeyOf(entite: { type: string; id: string }): string {
   return `${entite.type}:${entite.id}`;
 }
 
-/** Vue groupe — totaux par entité côte à côte, jamais un journal mélangé (chaque entité garde son propre cumul, cf. computeRunningEcart). */
-export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelectEntite }: EntitesConsolideesCardProps) {
+/**
+ * Vue groupe — totaux par entité côte à côte, jamais un journal mélangé
+ * (chaque entité garde son propre cumul, cf. computeRunningEcart).
+ * Purement informative : le changement d'entité se fait via les onglets
+ * juste en dessous, pas ici — deux contrôles pour la même action prêtaient à
+ * confusion (cf. audit de simplicité). `activeEntiteKey` ne sert plus qu'à
+ * mettre en évidence la ligne actuellement affichée.
+ */
+export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey }: EntitesConsolideesCardProps) {
   if (entiteTotals.length < 2) return null;
 
   const groupTotals = entiteTotals.reduce(
@@ -49,7 +55,7 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
               <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Entité</TableHead>
               <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Entrées</TableHead>
               <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Sorties</TableHead>
-              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Écart</TableHead>
+              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Solde net</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -59,20 +65,10 @@ export function EntitesConsolideesCard({ entiteTotals, activeEntiteKey, onSelect
               return (
                 <TableRow
                   key={key}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Voir le détail de ${entite.label}`}
                   className={cn(
-                    "cursor-pointer border-b border-border hover:bg-muted/60",
-                    active && "bg-primary/5 hover:bg-primary/5",
+                    "border-b border-border",
+                    active && "bg-primary/5",
                   )}
-                  onClick={() => onSelectEntite(key)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onSelectEntite(key);
-                    }
-                  }}
                 >
                   <TableCell className={cn("px-4 py-3 font-medium", active ? "text-primary" : "text-foreground")}>
                     {entite.label}

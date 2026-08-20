@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { AlertTriangle, FolderKanban, Users } from "lucide-react";
+import { FolderKanban, Users } from "lucide-react";
 import type { ViewKey } from "@/lib/nav-store";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
 import { Card } from "@/components/ui/card";
@@ -13,19 +13,17 @@ export function AdminPanel({
   go,
   users,
   alertes,
-  openDossierDetail,
   dossiersCount,
   clientsCount,
 }: {
   go: (v: ViewKey) => void;
   users: { id: string; nom: string; role: string; derniereConnexion?: string }[];
   alertes: LiveAlert[];
-  openDossierDetail: (id: string) => void;
   dossiersCount: number;
   clientsCount: number;
 }) {
   const critical = useMemo(
-    () => alertes.filter((a) => a.niveau === "danger").slice(0, 4),
+    () => alertes.filter((a) => a.niveau === "danger"),
     [alertes],
   );
   const recentUsers = useMemo(
@@ -61,7 +59,7 @@ export function AdminPanel({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
-          { label: "Dossiers actifs", value: dossiersCount },
+          { label: "Total dossiers", value: dossiersCount },
           { label: "Clients", value: clientsCount },
           { label: "Alertes critiques", value: critical.length, danger: true },
         ].map((item) => (
@@ -84,72 +82,38 @@ export function AdminPanel({
         ))}
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Alertes prioritaires
-          </p>
-          {critical.length === 0 ? (
-            <div>
-              <p className="text-sm text-muted-foreground">Aucune alerte critique.</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Tout est sous contrôle pour le moment.</p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {critical.map((a) => (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    className="flex w-full items-start gap-2.5 rounded-lg border border-[var(--brand-secondary-light)] bg-[var(--brand-secondary-light)]/60 px-3 py-2.5 text-left text-sm hover:bg-[var(--brand-secondary-light)] dark:border-red-900/50 dark:bg-red-950/30"
-                    onClick={() => {
-                      if (a.target.view === "dossier-detail" && a.target.id) {
-                        openDossierDetail(a.target.id);
-                      } else {
-                        go(a.target.view);
-                      }
-                    }}
-                  >
-                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--brand-secondary)]" />
-                    <span>
-                      <span className="font-medium text-[var(--brand-secondary-hover)] dark:text-red-300">{a.message}</span>
-                      <span className="mt-0.5 block text-xs text-[var(--brand-secondary)]/80 dark:text-red-400/80">{a.detail}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Utilisateurs récents
-          </p>
-          {recentUsers.length === 0 ? (
-            <div>
-              <p className="text-sm text-muted-foreground">Aucun utilisateur enregistré.</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Invitez des collaborateurs depuis les paramètres.</p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {recentUsers.map((u) => (
-                <li
-                  key={u.id}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-sm"
-                >
-                  <Avatar className="size-8">
-                    <AvatarFallback className={cn("text-xs font-semibold text-white", USER_AVATAR_GRADIENT)}>
-                      {getInitials(u.nom)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-foreground">{u.nom}</span>
-                    <span className="text-xs text-muted-foreground">{u.role}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      {/* Le détail des alertes vit dans la carte Alertes plus bas sur ce même
+          tableau de bord (cf. audit de simplicité) — inutile de le dupliquer
+          ici, la tuile "Alertes critiques" ci-dessus suffit comme aperçu. */}
+      <div className="mt-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Utilisateurs récents
+        </p>
+        {recentUsers.length === 0 ? (
+          <div>
+            <p className="text-sm text-muted-foreground">Aucun utilisateur enregistré.</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Invitez des collaborateurs depuis les paramètres.</p>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {recentUsers.map((u) => (
+              <li
+                key={u.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-sm"
+              >
+                <Avatar className="size-8">
+                  <AvatarFallback className={cn("text-xs font-semibold text-white", USER_AVATAR_GRADIENT)}>
+                    {getInitials(u.nom)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-foreground">{u.nom}</span>
+                  <span className="text-xs text-muted-foreground">{u.role}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </Card>
   );

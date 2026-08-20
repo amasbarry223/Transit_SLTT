@@ -3,15 +3,14 @@
 import { ChevronRight, FileCheck2, MoreHorizontal, Pencil, Printer, Save, Trash2, X } from "lucide-react";
 import type { Devis, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { canTransitionDevis } from "@/lib/status-flow";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
 import { SocieteBadge } from "@/components/sltt/societe-filter-select";
-import { NEXT_STATUT, STATUT_CONFIG, STATUTS_ALL } from "@/components/sltt/devis/devis-statut-config";
+import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
 
 export function DevisSummaryHeader({
   devis, isEditing, canWrite, canEditContent, editValid, onStartEdit, onPrint,
@@ -114,6 +113,9 @@ export function DevisSummaryHeader({
                       <FileCheck2 className="size-4" /> Convertir en dossier
                     </Button>
                   ) : null}
+                  {/* Le choix du statut se fait via le bouton "étape suivante" ci-dessus et le
+                      stepper du Pipeline (colonne de droite) — ce menu ne garde que
+                      l'action "Supprimer", qui n'existe nulle part ailleurs sur l'écran. */}
                   {canWrite && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -122,23 +124,6 @@ export function DevisSummaryHeader({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                      {STATUTS_ALL.map((s) => {
-                        const SIcon = STATUT_CONFIG[s].icon;
-                        const disabled = s === devis.statut || !canTransitionDevis(devis.statut, s);
-                        return (
-                          <DropdownMenuItem
-                            key={s}
-                            disabled={disabled}
-                            onClick={() => handleStatutChange(s)}
-                            className={disabled ? "opacity-50 cursor-default" : ""}
-                          >
-                            <SIcon className="mr-2 size-3.5" />
-                            {s}
-                            {s === devis.statut && <span className="ml-auto text-[10px] text-muted-foreground">actuel</span>}
-                          </DropdownMenuItem>
-                        );
-                      })}
-                      <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
                         onClick={() => { setConfirmDelete(true); setConfirmConvert(false); }}

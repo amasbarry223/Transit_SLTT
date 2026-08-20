@@ -19,8 +19,8 @@ export const BON_STATUT_TONE: Record<"Validé" | "Brouillon", "emerald" | "slate
   Brouillon: "slate",
 };
 
-export function useBonFilters(bons: BonSortie[]) {
-  const [search, setSearch] = useState("");
+export function useBonFilters(bons: BonSortie[], initialSearch = "") {
+  const [search, setSearch] = useState(initialSearch);
   const [clientFilter, setClientFilter] = useState("all");
   const [motifFilter, setMotifFilter] = useState("all");
   const [statutFilter, setStatutFilter] = useState<"all" | "Validé" | "Brouillon">("all");
