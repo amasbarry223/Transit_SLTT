@@ -15,7 +15,7 @@ import { NEXT_STATUT, STATUT_CONFIG, STATUTS_ALL } from "@/components/sltt/devis
 
 export function DevisSummaryHeader({
   devis, isEditing, canWrite, canEditContent, editValid, onStartEdit, onPrint,
-  onStatutChange, onOpenDossier, onConvert, onDelete, onCancelEdit, onSave,
+  onStatutChange, onOpenDossier, onConvert, onDelete, onCancelEdit, onSave, saving = false,
 }: {
   devis: Devis;
   isEditing: boolean;
@@ -29,7 +29,8 @@ export function DevisSummaryHeader({
   onConvert: () => void;
   onDelete: () => void;
   onCancelEdit: () => void;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
+  saving?: boolean;
 }) {
   const canEdit = !isEditing;
   const nextStatut = NEXT_STATUT[devis.statut];
@@ -154,9 +155,9 @@ export function DevisSummaryHeader({
                     <X className="size-4" /> Annuler
                   </Button>
                   <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90"
-                    disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite}
-                    onClick={handleSave}>
-                    <Save className="size-4" /> Enregistrer
+                    disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite || saving}
+                    onClick={() => void handleSave()}>
+                    <Save className="size-4" /> {saving ? "Enregistrement…" : "Enregistrer"}
                   </Button>
                 </>
               )}

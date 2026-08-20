@@ -85,6 +85,7 @@ export function DossierDetailScreen() {
   const ecrituresSource = useStore((state) => state.ecritures);
   const auditLogs = useStore((state) => state.auditLogs);
   const facturesSource = useStore((state) => state.factures);
+  const bonsSource = useStore((state) => state.bons);
 
   // Dérivés à partir des tableaux du store : ne se recalculent que si la
   // source pertinente ou le dossier affiché change, pas à chaque écriture
@@ -331,6 +332,12 @@ export function DossierDetailScreen() {
     toastSuccess(toast, { title: "PDF généré", description: "Le document s'est ouvert dans une nouvelle fenêtre.", });
   }
 
+  // Même heuristique que removeDossier() côté store (dossiers-slice.ts) : un
+  // bon de sortie référence le dossier via son texte de marchandise, pas une
+  // clé étrangère — signaler ce lien avant suppression plutôt que seulement
+  // après coup dans le journal d'audit.
+  const orphanBons = bonsSource.filter((bon) => bon.marchandise.includes(currentDossier.reference));
+
   const deleteConsequences = [
     allFichiers.length > 0 && `${allFichiers.length} fichier(s) archivé(s) définitivement supprimé(s)`,
     subDossiers.length > 0 && `${subDossiers.length} sous-dossier(s) définitivement supprimé(s)`,
@@ -340,6 +347,8 @@ export function DossierDetailScreen() {
       `${allEcritures.length} écriture(s) comptable(s) seront déconnectée(s) du dossier (non supprimées)`,
     dossierFactures.length > 0 &&
       `${dossierFactures.length} facture(s) seront déconnectée(s) du dossier (non supprimées)`,
+    orphanBons.length > 0 &&
+      `${orphanBons.length} bon(s) de sortie potentiellement lié(s) resteront orphelin(s) (non supprimés)`,
   ].filter(Boolean) as string[];
 
   async function handleDelete() {

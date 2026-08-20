@@ -98,6 +98,7 @@ export function ClientFicheScreen() {
   const [relanceMsg, setRelanceMsg] = useState("");
   const [copied, setCopied] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [editValues, setEditValues] = useState<ClientInput>(emptyClientForm());
   const [suiviEntry, setSuiviEntry] = useState<ClasseurEntry | null>(null);
   const [suiviLogs, setSuiviLogs] = useState<AuditEntry[]>([]);
@@ -379,7 +380,8 @@ export function ClientFicheScreen() {
     setEditOpen(true);
   }
 
-  function handleSaveEdit() {
+  async function handleSaveEdit() {
+    if (savingEdit) return;
     if (!client || !editValues.nom.trim() || !editValues.societeId) return;
     const input: ClientInput = {
       nom: editValues.nom.trim(),
@@ -390,9 +392,16 @@ export function ClientFicheScreen() {
       annexeId: editValues.annexeId,
       societeId: editValues.societeId,
     };
-    updateClient(client.id, input);
-    setEditOpen(false);
-    toastSuccess(toast, { title: "Client mis à jour", description: input.nom });
+    setSavingEdit(true);
+    try {
+      await updateClient(client.id, input);
+      setEditOpen(false);
+      toastSuccess(toast, { title: "Client mis à jour", description: input.nom });
+    } catch (error) {
+      toastError(toast, error, { title: "Impossible d'enregistrer les modifications" });
+    } finally {
+      setSavingEdit(false);
+    }
   }
 
   const dossierPages = Math.max(1, Math.ceil(dossiers.length / PAGE_SIZE));
@@ -625,9 +634,9 @@ export function ClientFicheScreen() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSaveEdit} disabled={!editValues.nom.trim() || !editValues.societeId}>
+            <Button onClick={() => void handleSaveEdit()} disabled={!editValues.nom.trim() || !editValues.societeId || savingEdit}>
               <Pencil className="size-4" />
-              Enregistrer
+              {savingEdit ? "Enregistrement…" : "Enregistrer"}
             </Button>
           </DialogFooter>
         </DialogContent>

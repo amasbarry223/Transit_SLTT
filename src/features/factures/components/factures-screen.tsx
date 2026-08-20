@@ -134,6 +134,11 @@ export function FacturesScreen() {
         onOpenChange={(v) => !v && screen.setDeleteTarget(null)}
         title="Supprimer cette facture ?"
         description={<>La facture <strong>{screen.deleteTarget?.numero}</strong> sera définitivement supprimée. Cette action est irréversible.</>}
+        consequences={
+          screen.deleteTarget && screen.deleteTarget.montantPaye > 0
+            ? [`Le paiement déjà encaissé (${formatFCFA(screen.deleteTarget.montantPaye)}) disparaîtra avec la facture.`]
+            : undefined
+        }
         onConfirm={screen.handleDelete}
       />
 

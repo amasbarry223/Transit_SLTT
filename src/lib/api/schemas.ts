@@ -9,12 +9,19 @@ export const USER_ROLES = [
   "Magasinier",
 ] as const satisfies readonly UserRole[];
 
+export const strongPasswordSchema = z
+  .string()
+  .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
+  .regex(/[a-z]/, "Le mot de passe doit contenir au moins une minuscule.")
+  .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule.")
+  .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre.");
+
 export const createUserBodySchema = z.object({
   nom: z.string().trim().min(1, "Nom requis"),
   email: z.string().trim().email("E-mail invalide"),
   role: z.enum(USER_ROLES),
   permissions: z.array(z.string()).optional().default([]),
-  password: z.string().min(8, "Mot de passe (8 caractères min.) requis"),
+  password: strongPasswordSchema,
 });
 
 export const updateUserBodySchema = z.object({
@@ -26,12 +33,12 @@ export const updateUserBodySchema = z.object({
 });
 
 export const resetPasswordBodySchema = z.object({
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères."),
+  password: strongPasswordSchema,
 });
 
 export const changePasswordBodySchema = z.object({
   currentPassword: z.string().min(1, "Mot de passe actuel requis."),
-  newPassword: z.string().min(8, "Le nouveau mot de passe doit contenir au moins 8 caractères."),
+  newPassword: strongPasswordSchema,
 });
 
 export const updateUserAnnexesBodySchema = z.object({

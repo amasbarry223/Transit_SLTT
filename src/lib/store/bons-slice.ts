@@ -149,7 +149,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       if (/stock insuffisant/i.test(error.message)) return false;
       throw error;
     }
-    const result = data as { bon: BonSortieRow; mouvement_id: string };
+    const result = data as { bon: BonSortieRow; mouvement_id: string; stock_quantite: number };
 
     const stockItem = findStockForBon(get().stock, bon);
     set((s) => ({
@@ -157,7 +157,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       stock: stockItem
         ? s.stock.map((item) =>
             item.id === stockItem.id
-              ? { ...item, quantite: Math.max(0, item.quantite - bon.quantite) }
+              ? { ...item, quantite: Number(result.stock_quantite) }
               : item,
           )
         : s.stock,

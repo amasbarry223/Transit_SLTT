@@ -64,9 +64,10 @@ export function NewItemDialog({
   clients: Client[];
   defaultSocieteId: string;
   defaultAnnexeId: string;
-  onSubmit: (input: StockItemInput) => void;
+  onSubmit: (input: StockItemInput) => void | Promise<void>;
 }) {
   const [step, setStep] = useState<StepId>(1);
+  const [saving, setSaving] = useState(false);
   const [niMarchandise, setNiMarchandise] = useState("");
   const [niUnite, setNiUnite] = useState("");
   const [niQuantite, setNiQuantite] = useState("0");
@@ -98,7 +99,8 @@ export function NewItemDialog({
     setStep((s) => (s > 1 ? ((s - 1) as StepId) : s));
   }
 
-  function handleAddStockItem() {
+  async function handleAddStockItem() {
+    if (saving) return;
     const marchandise = niMarchandise.trim() || "—";
     const unite = niUnite.trim();
     if (!unite || !niSocieteId || !resolvedNiAnnexeId) return;
@@ -123,7 +125,12 @@ export function NewItemDialog({
       societeId: niSocieteId,
       annexeId: resolvedNiAnnexeId,
     };
-    onSubmit(input);
+    setSaving(true);
+    try {
+      await onSubmit(input);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const current = STEPS[step - 1];
@@ -345,9 +352,9 @@ export function NewItemDialog({
               <ArrowRight className="size-4" />
             </Button>
           ) : (
-            <Button onClick={handleAddStockItem} disabled={!step1Valid || !step2Valid}>
+            <Button onClick={() => void handleAddStockItem()} disabled={!step1Valid || !step2Valid || saving}>
               <Plus className="size-4" />
-              Ajouter au stock
+              {saving ? "Ajout en cours…" : "Ajouter au stock"}
             </Button>
           )}
         </DialogFooter>

@@ -82,7 +82,7 @@ export function useDossiersListScreen() {
       if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
-      if (nonSoldeOnly && resteAPayer(d) <= 0 && d.statut === "Soldé") return false;
+      if (nonSoldeOnly && resteAPayer(d) <= 0) return false;
       if (yearFilter !== "all" && d.date.slice(0, 4) !== yearFilter) return false;
       if (periode !== "all") {
         const dDate = parseLocalDate(d.date);

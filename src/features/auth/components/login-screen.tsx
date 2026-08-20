@@ -5,6 +5,8 @@ import { useSession } from "@/lib/session/session-store";
 import { BRAND } from "@/lib/brand-colors";
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { pathForView } from "@/lib/app-navigation";
 import { supabase } from "@/lib/supabase";
 import { insertAuditLog } from "@/lib/audit";
 import { getErrorMessage } from "@/lib/utils";
@@ -42,6 +44,7 @@ function LoginBackground() {
 
 export function LoginScreen() {
   const loginNav = useSession((s) => s.login);
+  const router = useRouter();
 
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -103,6 +106,11 @@ export function LoginScreen() {
       });
 
       loginNav(profile.role, profile.nom, profile.id, rememberMe);
+      // La vue interne repasse au dashboard (resetNavigation), mais l'URL du
+      // navigateur ne suit pas d'elle-même — resynchronise-la pour qu'un
+      // retour arrière/F5 ne ramène pas sur la page consultée avant la
+      // (re)connexion.
+      router.replace(pathForView("dashboard"));
     } catch (e) {
       setError(getErrorMessage(e, "Connexion impossible pour le moment. Vérifiez votre connexion et réessayez."));
     } finally {

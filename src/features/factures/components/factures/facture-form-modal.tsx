@@ -19,7 +19,7 @@ import { useStore, type FactureInput } from "@/lib/store";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/hooks/use-toast";
-import { toastError } from "@/lib/toast-helpers";
+import { toastError, toastWarning } from "@/lib/toast-helpers";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
@@ -136,7 +136,18 @@ export function FactureFormModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
-    if (!clientId || !resolvedAnnexeId || lignes.every((l) => !l.description)) return;
+    if (!clientId) {
+      toastWarning(toast, { title: "Choisissez un client avant de créer la facture" });
+      return;
+    }
+    if (!resolvedAnnexeId) {
+      toastWarning(toast, { title: "Choisissez une annexe avant de créer la facture" });
+      return;
+    }
+    if (lignes.every((l) => !l.description)) {
+      toastWarning(toast, { title: "Ajoutez au moins une ligne avec une description" });
+      return;
+    }
     setSaving(true);
     try {
       const f = await addFacture({

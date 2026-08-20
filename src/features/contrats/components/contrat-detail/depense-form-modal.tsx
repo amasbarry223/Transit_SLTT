@@ -39,7 +39,7 @@ export function DepenseFormModal({
     note?: string;
     justificatifDataUrl?: string;
     justificatifNom?: string;
-  }) => void;
+  }) => void | Promise<void>;
 }) {
   const [libelle, setLibelle] = useState("");
   const [montant, setMontant] = useState("");
@@ -47,6 +47,7 @@ export function DepenseFormModal({
   const [mode, setMode] = useState<PaiementMode>("Espèces");
   const [note, setNote] = useState("");
   const [justificatif, setJustificatif] = useState<{ dataUrl: string; nom: string } | null>(null);
+  const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function reset() {
@@ -68,18 +69,26 @@ export function DepenseFormModal({
 
   const canSubmit = Boolean(libelle.trim() && Number(montant) > 0);
 
-  function handleSubmit() {
-    if (!canSubmit) return;
-    onSubmit({
-      libelle: libelle.trim(),
-      montant: parseAmount(montant),
-      dateDepense: date,
-      modePaiement: mode,
-      note: note.trim() || undefined,
-      justificatifDataUrl: justificatif?.dataUrl,
-      justificatifNom: justificatif?.nom,
-    });
-    reset();
+  async function handleSubmit() {
+    if (!canSubmit || saving) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        libelle: libelle.trim(),
+        montant: parseAmount(montant),
+        dateDepense: date,
+        modePaiement: mode,
+        note: note.trim() || undefined,
+        justificatifDataUrl: justificatif?.dataUrl,
+        justificatifNom: justificatif?.nom,
+      });
+      reset();
+    } catch {
+      // Le parent affiche déjà le toast d'erreur — le formulaire reste rempli
+      // pour permettre de réessayer sans tout ressaisir.
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -138,11 +147,11 @@ export function DepenseFormModal({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
-            Ajouter
+          <Button onClick={() => void handleSubmit()} disabled={!canSubmit || saving}>
+            {saving ? "Ajout en cours…" : "Ajouter"}
           </Button>
         </DialogFooter>
       </DialogContent>

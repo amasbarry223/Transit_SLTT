@@ -51,14 +51,14 @@ function buildFieldLine(label: string, value: string, className = ""): string {
 
 function buildSignatureHTML(signature?: string): string {
   if (signature) {
-    return `<img src="${signature}" alt="Signature" class="sig-image" />`;
+    return `<img src="${htmlEscape(signature)}" alt="Signature" class="sig-image" />`;
   }
   return `<div class="sig-label">Signature</div>`;
 }
 
 function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
   const logoUrl = resolveLogoUrl(brand.logoUrl) ?? RECEIPT_LOGO_FALLBACK;
-  const logoImg = `<img src="${logoUrl}" alt="${htmlEscape(brand.nom)}" class="brand-logo" onerror="this.onerror=null;this.src='${RECEIPT_LOGO_FALLBACK}'">`;
+  const logoImg = `<img src="${htmlEscape(logoUrl)}" alt="${htmlEscape(brand.nom)}" class="brand-logo" onerror="this.onerror=null;this.src='${htmlEscape(RECEIPT_LOGO_FALLBACK)}'">`;
   const showName = brand.afficherNomAvecLogo !== false;
   const sommeLettres = htmlEscape(montantEnLettresFCFA(data.somme));
 

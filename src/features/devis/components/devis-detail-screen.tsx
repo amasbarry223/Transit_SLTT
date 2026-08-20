@@ -44,6 +44,7 @@ export function DevisDetailScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmConvert, setConfirmConvert] = useState(false);
   const [pendingStatut, setPendingStatut] = useState<DevisStatut | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   useUnsavedChangesWarning(isEditing);
 
   const [fSocieteId, setFSocieteId] = useState("");
@@ -91,7 +92,8 @@ export function DevisDetailScreen() {
     const client = clients.find((item) => item.id === id);
     if (client) setFClientNom(client.nom);
   };
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (savingEdit) return;
     if (!canEditContent) {
       toastWarning(toast, {
         title: "Modification impossible",
@@ -100,14 +102,24 @@ export function DevisDetailScreen() {
       setIsEditing(false);
       return;
     }
-    if (!editValid) return;
-    updateDevis(devis.id, {
-      societeId: fSocieteId, clientId: fClientId, clientNom: fClientNom, nature: fNature,
-      droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp, dateValidite: fDateValidite,
-      notes: fNotes.trim() || undefined,
-    } satisfies DevisInput);
-    toastSuccess(toast, { title: "Devis mis à jour", description: devis.reference });
-    setIsEditing(false);
+    if (!editValid) {
+      toastWarning(toast, { title: "Complétez les champs requis avant d'enregistrer" });
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await updateDevis(devis.id, {
+        societeId: fSocieteId, clientId: fClientId, clientNom: fClientNom, nature: fNature,
+        droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp, dateValidite: fDateValidite,
+        notes: fNotes.trim() || undefined,
+      } satisfies DevisInput);
+      toastSuccess(toast, { title: "Devis mis à jour", description: devis.reference });
+      setIsEditing(false);
+    } catch (err) {
+      toastError(toast, err, { title: "Impossible d'enregistrer les modifications", fallback: UI.errors.saveFailed });
+    } finally {
+      setSavingEdit(false);
+    }
   };
   const handleCancelEdit = () => { setIsEditing(false); setConfirmDelete(false); setConfirmConvert(false); };
   const handleStatutChange = async (statut: DevisStatut) => {
@@ -165,6 +177,7 @@ export function DevisDetailScreen() {
         editValid={editValid} onStartEdit={startEdit} onPrint={handlePrint}
         onStatutChange={handleStatutChange} onOpenDossier={openDossierDetail}
         onConvert={requestConvert} onDelete={requestDelete} onCancelEdit={handleCancelEdit} onSave={handleSave}
+        saving={savingEdit}
       />
       {!isEditing && (
         <div className="grid gap-5 lg:grid-cols-5">
@@ -216,6 +229,7 @@ export function DevisDetailScreen() {
           setFFraisPrestation={setFFraisPrestation} fDateValidite={fDateValidite}
           setFDateValidite={setFDateValidite} fNotes={fNotes} setFNotes={setFNotes}
           editTotal={editTotal} handleCancelEdit={handleCancelEdit} handleSave={handleSave}
+          saving={savingEdit}
         />
       )}
       <ConvertDevisDialog

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useStore, type Devis } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,11 @@ export function ConvertDevisDialog({ devis, onClose, onConverted }: ConvertDevis
           description: `${dossier.reference} ouvert depuis ${devis.reference}${useDraft ? " — complétez BL et camion depuis la fiche dossier." : ""}`,
         });
         onConverted(dossier.id);
+      } else {
+        toastWarning(toast, {
+          title: "Devis déjà converti",
+          description: `${devis.reference} a déjà été converti en dossier — rien à faire.`,
+        });
       }
     } catch (e) {
       toastError(toast, e, {

@@ -45,6 +45,12 @@ export function BackupTab() {
   const devis = useStore((s) => s.devis);
   const ecritures = useStore((s) => s.ecritures);
   const documents = useStore((s) => s.documents);
+  const stock = useStore((s) => s.stock);
+  const contrats = useStore((s) => s.contrats);
+  const archives = useStore((s) => s.archives);
+  const bons = useStore((s) => s.bons);
+  const fournisseurs = useStore((s) => s.fournisseurs);
+  const transporteurs = useStore((s) => s.transporteurs);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -56,12 +62,22 @@ export function BackupTab() {
   } | null>(null);
   const [wipeDialogOpen, setWipeDialogOpen] = useState(false);
 
+  // Reflète tout ce que décrit le texte de l'écran (« dossiers, clients,
+  // factures, comptabilité, stock, contrats, archives, documents… ») — une
+  // liste tronquée ferait croire à l'utilisateur que moins de données sont
+  // en jeu que ce que la purge/restauration efface réellement.
   const currentSnapshot = [
     `${clients.length} client${clients.length !== 1 ? "s" : ""}`,
     `${dossiers.length} dossier${dossiers.length !== 1 ? "s" : ""}`,
     `${factures.length} facture${factures.length !== 1 ? "s" : ""}`,
     `${devis.length} devis`,
     `${ecritures.length} écriture${ecritures.length !== 1 ? "s" : ""} comptable${ecritures.length !== 1 ? "s" : ""}`,
+    `${stock.length} article${stock.length !== 1 ? "s" : ""} de stock`,
+    `${bons.length} bon${bons.length !== 1 ? "s" : ""} de sortie`,
+    `${contrats.length} contrat${contrats.length !== 1 ? "s" : ""}`,
+    `${fournisseurs.length} fournisseur${fournisseurs.length !== 1 ? "s" : ""}`,
+    `${transporteurs.length} transporteur${transporteurs.length !== 1 ? "s" : ""}`,
+    `${archives.length} archive${archives.length !== 1 ? "s" : ""}`,
     `${documents.length} document${documents.length !== 1 ? "s" : ""}`,
   ];
 

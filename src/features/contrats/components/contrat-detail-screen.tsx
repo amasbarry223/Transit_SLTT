@@ -667,8 +667,17 @@ export function ContratDetailScreen() {
         open={depenseOpen}
         onOpenChange={setDepenseOpen}
         onSubmit={async (input) => {
-          await addDepense({ contratId: contrat.id, ...input });
-          setDepenseOpen(false);
+          try {
+            await addDepense({ contratId: contrat.id, ...input });
+            setDepenseOpen(false);
+            toastSuccess(toast, { title: "Dépense ajoutée" });
+          } catch (error) {
+            toastError(toast, error, {
+              title: "Impossible d'ajouter la dépense",
+              fallback: UI.errors.saveFailed,
+            });
+            throw error;
+          }
         }}
       />
 
@@ -676,8 +685,17 @@ export function ContratDetailScreen() {
         open={prestationOpen}
         onOpenChange={setPrestationOpen}
         onSubmit={async (input) => {
-          await addContratPrestation({ contratId: contrat.id, ...input });
-          setPrestationOpen(false);
+          try {
+            await addContratPrestation({ contratId: contrat.id, ...input });
+            setPrestationOpen(false);
+            toastSuccess(toast, { title: "Prestation ajoutée" });
+          } catch (error) {
+            toastError(toast, error, {
+              title: "Impossible d'ajouter la prestation",
+              fallback: UI.errors.saveFailed,
+            });
+            throw error;
+          }
         }}
       />
 

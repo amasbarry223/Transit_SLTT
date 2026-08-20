@@ -84,6 +84,9 @@ export const createComptabiliteGeneraleSlice: StateCreator<
   operationComptableSeq: 1,
 
   addOperationComptable: async (input) => {
+    if (!(input.montant > 0)) {
+      throw new Error("Le montant de l'opération doit être supérieur à 0.");
+    }
     const seq = get().operationComptableSeq;
     const initialReference = `OPC-${seq}`;
     const creePar = getConnectedUserName();
@@ -108,7 +111,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
             client_nom: input.clientNom,
             nature: input.nature,
             type: input.type,
-            montant: Math.max(0, input.montant),
+            montant: input.montant,
             mode_paiement: input.modePaiement ?? "Espèces",
             quantite: input.quantite ?? null,
             prix_unitaire: input.prixUnitaire ?? null,

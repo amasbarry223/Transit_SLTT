@@ -105,7 +105,7 @@ export function FactureDetailScreen() {
   async function handleStatutClick(s: FactureStatut) {
     if (!facture || !canWrite) return;
     if (s === facture.statut) return;
-    if (s === "Soldée" && facture.montantPaye < facture.montantTTC) {
+    if (s === "Soldée") {
       setConfirmSolde(true);
       return;
     }

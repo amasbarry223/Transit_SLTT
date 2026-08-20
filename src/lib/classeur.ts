@@ -93,7 +93,7 @@ export function buildClasseurJournal(
   }
 
   for (const f of factures) {
-    if (f.clientId !== clientId) continue;
+    if (f.clientId !== clientId || f.dossierId) continue;
     const annulee = f.statut === "Annulée";
     unsorted.push({
       id: `facture-${f.id}`,

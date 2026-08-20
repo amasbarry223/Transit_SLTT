@@ -200,7 +200,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
     setProgress({ done: 0, total: toImport.length });
 
     let created = 0;
-    let failed = 0;
+    const failures: { row: OperationImportRow; message: string }[] = [];
 
     for (const row of toImport) {
       try {
@@ -219,18 +219,29 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
           importRef: fileName,
         });
         created++;
-      } catch {
-        failed++;
+      } catch (error) {
+        failures.push({ row, message: getErrorMessage(error) });
       } finally {
         setProgress((p) => ({ ...p, done: p.done + 1 }));
       }
     }
 
+    const failed = failures.length;
     const importDescription = `${created} opération${created !== 1 ? "s" : ""} créée${created !== 1 ? "s" : ""}${failed > 0 ? ` — ${failed} échec${failed !== 1 ? "s" : ""}` : ""}.`;
     if (failed === 0) {
       toastSuccess(toast, { title: "Import terminé", description: importDescription });
     } else {
-      toastWarning(toast, { title: "Import terminé avec erreurs", description: importDescription });
+      // Détaille les lignes en échec (les 3 premières) pour permettre de les
+      // corriger sans deviner — un simple compteur ne dit pas quoi réimporter.
+      const detail = failures
+        .slice(0, 3)
+        .map((f) => `${f.row.date ?? "date ?"} · ${f.row.clientNom || f.row.nature || "ligne"} : ${f.message}`)
+        .join(" ; ");
+      const more = failed > 3 ? ` (+${failed - 3} autre${failed - 3 !== 1 ? "s" : ""})` : "";
+      toastWarning(toast, {
+        title: "Import terminé avec erreurs",
+        description: `${importDescription} ${detail}${more}`,
+      });
     }
 
     onOpenChange(false);

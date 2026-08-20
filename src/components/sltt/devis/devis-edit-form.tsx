@@ -17,7 +17,7 @@ export function DevisEditForm({
   devis, societes, clients, fSocieteId, setFSocieteId, fClientId, handleClientChange,
   fNature, setFNature, fDroitDouane, setFDroitDouane, fFraisCircuit, setFFraisCircuit,
   fFraisPrestation, setFFraisPrestation, fDateValidite, setFDateValidite, fNotes,
-  setFNotes, editTotal, handleCancelEdit, handleSave,
+  setFNotes, editTotal, handleCancelEdit, handleSave, saving = false,
 }: {
   devis: Devis;
   societes: Societe[];
@@ -40,7 +40,8 @@ export function DevisEditForm({
   setFNotes: Dispatch<SetStateAction<string>>;
   editTotal: number;
   handleCancelEdit: () => void;
-  handleSave: () => void;
+  handleSave: () => void | Promise<void>;
+  saving?: boolean;
 }) {
   return (
         <Card className="border-primary/20 shadow-md overflow-hidden">
@@ -145,9 +146,9 @@ export function DevisEditForm({
                 <X className="mr-2 size-4" /> Annuler
               </Button>
               <Button className="gap-2 bg-primary hover:bg-primary/90"
-                disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite}
-                onClick={handleSave}>
-                <Save className="size-4" /> Enregistrer les modifications
+                disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite || saving}
+                onClick={() => void handleSave()}>
+                <Save className="size-4" /> {saving ? "Enregistrement…" : "Enregistrer les modifications"}
               </Button>
             </div>
           </div>

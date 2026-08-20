@@ -16,7 +16,6 @@ import { formatFCFA } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { usePermission } from "@/hooks/use-permission";
-import { CreateDossierFromOcrButton } from "@/components/sltt/documents/create-dossier-from-ocr";
 import { DossierBulkImportButton } from "@/components/sltt/documents/dossier-bulk-import-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,7 +50,6 @@ export function DossiersListScreen() {
         {canWrite && (
           <div className="flex flex-wrap items-center gap-2">
             <DossierBulkImportButton />
-            <CreateDossierFromOcrButton />
             <Button onClick={() => openDossier(null, "create")}>
               <Plus className="size-4" />
               Nouveau dossier

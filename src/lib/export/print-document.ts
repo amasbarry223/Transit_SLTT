@@ -32,7 +32,7 @@ export function brandLogoImgHTML(
   let url = resolveLogoUrl(brand.logoUrl);
   if (!url) return "";
   if (cacheBust) url += `${url.includes("?") ? "&" : "?"}${cacheBust}`;
-  return `<img src="${url}" alt="${htmlEscape(brand.nom)}" class="${className}" style="background:transparent" onerror="this.style.display='none'">`;
+  return `<img src="${htmlEscape(url)}" alt="${htmlEscape(brand.nom)}" class="${className}" style="background:transparent" onerror="this.style.display='none'">`;
 }
 
 export function documentFooterHTML(brandName: string): string {

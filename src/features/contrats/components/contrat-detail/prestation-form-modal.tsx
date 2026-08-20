@@ -37,13 +37,14 @@ export function PrestationFormModal({
     statut: ContratPrestationStatut;
     datePrevue?: string;
     dateRealisation?: string;
-  }) => void;
+  }) => void | Promise<void>;
 }) {
   const [libelle, setLibelle] = useState("");
   const [description, setDescription] = useState("");
   const [montant, setMontant] = useState("");
   const [statut, setStatut] = useState<ContratPrestationStatut>("Prévue");
   const [datePrevue, setDatePrevue] = useState("");
+  const [saving, setSaving] = useState(false);
 
   function reset() {
     setLibelle("");
@@ -55,16 +56,24 @@ export function PrestationFormModal({
 
   const canSubmit = Boolean(libelle.trim());
 
-  function handleSubmit() {
-    if (!canSubmit) return;
-    onSubmit({
-      libelle: libelle.trim(),
-      description: description.trim() || undefined,
-      montant: montant ? parseAmount(montant) : undefined,
-      statut,
-      datePrevue: datePrevue || undefined,
-    });
-    reset();
+  async function handleSubmit() {
+    if (!canSubmit || saving) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        libelle: libelle.trim(),
+        description: description.trim() || undefined,
+        montant: montant ? parseAmount(montant) : undefined,
+        statut,
+        datePrevue: datePrevue || undefined,
+      });
+      reset();
+    } catch {
+      // Le parent affiche déjà le toast d'erreur — le formulaire reste rempli
+      // pour permettre de réessayer sans tout ressaisir.
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -115,11 +124,11 @@ export function PrestationFormModal({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
-            Ajouter
+          <Button onClick={() => void handleSubmit()} disabled={!canSubmit || saving}>
+            {saving ? "Ajout en cours…" : "Ajouter"}
           </Button>
         </DialogFooter>
       </DialogContent>

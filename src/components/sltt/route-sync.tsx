@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useNav, type ViewKey } from "@/lib/nav-store";
+import { useNav, type ComptaTab, type ViewKey } from "@/lib/nav-store";
 import { syncNavFromRoute } from "@/lib/app-navigation";
 
 type RouteSyncProps = {
@@ -9,13 +9,14 @@ type RouteSyncProps = {
   id?: string;
   dossierMode?: "create" | "edit";
   devisEdit?: boolean;
+  comptaTab?: ComptaTab;
 };
 
-export function RouteSync({ view, id, dossierMode, devisEdit }: RouteSyncProps) {
+export function RouteSync({ view, id, dossierMode, devisEdit, comptaTab }: RouteSyncProps) {
   useEffect(() => {
     const nav = useNav.getState();
-    syncNavFromRoute(view, id, nav, { dossierMode, devisEdit });
-  }, [view, id, dossierMode, devisEdit]);
+    syncNavFromRoute(view, id, nav, { dossierMode, devisEdit, comptaTab });
+  }, [view, id, dossierMode, devisEdit, comptaTab]);
 
   return null;
 }

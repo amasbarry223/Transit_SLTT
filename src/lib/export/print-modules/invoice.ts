@@ -73,7 +73,7 @@ export function printInvoice(data: InvoiceData, invoiceNum: string, societe?: So
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Facture ${invoiceNum}</title>
+<title>Facture ${htmlEscape(invoiceNum)}</title>
 <style>
 ${OFFICIAL_LETTERHEAD_CSS}
 * { box-sizing: border-box; margin: 0; padding: 0; }
