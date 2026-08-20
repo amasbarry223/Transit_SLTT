@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, History, PackageMinus, PackagePlus } from "lucide-react";
+import { AlertTriangle, History, PackageMinus, PackagePlus, Pencil } from "lucide-react";
 import type { StockItem } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { StockStatutBadge } from "@/components/sltt/status-badge";
@@ -15,6 +15,7 @@ export function StockRow({
   onEntry,
   onExit,
   onHistory,
+  onEdit,
   onOpenClient,
   canWrite = true,
 }: {
@@ -22,6 +23,7 @@ export function StockRow({
   onEntry: (id: string) => void;
   onExit: (id: string) => void;
   onHistory: (stockId: string, marchandise: string) => void;
+  onEdit: (id: string) => void;
   onOpenClient?: (clientId: string) => void;
   canWrite?: boolean;
 }) {
@@ -118,6 +120,18 @@ export function StockRow({
           >
             <History className="size-4" />
           </Button>
+          {canWrite && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 text-muted-foreground hover:bg-muted hover:text-slate-700 dark:hover:text-slate-300"
+              aria-label="Modifier l'article"
+              title="Modifier"
+              onClick={() => onEdit(item.id)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>
@@ -129,6 +143,7 @@ export function StockCard({
   onEntry,
   onExit,
   onHistory,
+  onEdit,
   onOpenClient,
   canWrite = true,
 }: {
@@ -136,6 +151,7 @@ export function StockCard({
   onEntry: (id: string) => void;
   onExit: (id: string) => void;
   onHistory: (stockId: string, marchandise: string) => void;
+  onEdit: (id: string) => void;
   onOpenClient?: (clientId: string) => void;
   canWrite?: boolean;
 }) {
@@ -228,6 +244,18 @@ export function StockCard({
         >
           <History className="size-4" />
         </Button>
+        {canWrite && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 text-muted-foreground hover:bg-muted hover:text-slate-700 dark:hover:text-slate-300"
+            aria-label="Modifier l'article"
+            title="Modifier"
+            onClick={() => onEdit(item.id)}
+          >
+            <Pencil className="size-4" />
+          </Button>
+        )}
       </div>
     </Card>
   );

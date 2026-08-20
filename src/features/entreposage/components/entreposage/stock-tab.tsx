@@ -20,6 +20,7 @@ export function StockTab({
   onEntry,
   onExit,
   onHistory,
+  onEdit,
   onPrint,
   onExport,
   canWrite = true,
@@ -30,6 +31,7 @@ export function StockTab({
   onEntry: (id: string | null) => void;
   onExit: (id: string | null) => void;
   onHistory: (stockId: string, marchandise: string) => void;
+  onEdit: (id: string) => void;
   onPrint: (rows: StockItem[]) => void;
   onExport: (rows: StockItem[]) => void;
   canWrite?: boolean;
@@ -148,6 +150,7 @@ export function StockTab({
                   onEntry={(id) => onEntry(id)}
                   onExit={(id) => onExit(id)}
                   onHistory={(id, m) => onHistory(id, m)}
+                  onEdit={onEdit}
                   onOpenClient={onOpenClient}
                   canWrite={canWrite}
                 />
@@ -194,6 +197,7 @@ export function StockTab({
                       onEntry={(id) => onEntry(id)}
                       onExit={(id) => onExit(id)}
                       onHistory={(id, m) => onHistory(id, m)}
+                      onEdit={onEdit}
                       onOpenClient={onOpenClient}
                       canWrite={canWrite}
                     />

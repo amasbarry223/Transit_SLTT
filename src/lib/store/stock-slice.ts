@@ -1,7 +1,7 @@
 import type { StateCreator } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
-import type { SLTTState, StockItemInput } from "@/lib/store";
+import type { ImportStockHistoriqueInput, SLTTState, StockItemInput, UpdateStockItemInput } from "@/lib/store";
 import type { MouvementRow, StockItemRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
@@ -58,6 +58,8 @@ export interface StockSlice {
     bonRef?: string,
     motif?: string,
   ) => Promise<void>;
+  importStockHistorique: (input: ImportStockHistoriqueInput) => Promise<StockItem>;
+  updateStockItem: (id: string, input: UpdateStockItemInput) => Promise<StockItem>;
 }
 
 export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (set, get) => ({
@@ -189,5 +191,125 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       AUDIT_ACTION.Modification,
       `Sortie de stock : -${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`,
     );
+  },
+
+  importStockHistorique: async (input) => {
+    // Filet de sécurité : le nom/l'unité peuvent arriver vides depuis la
+    // revue d'import (l'utilisateur préfère importer puis renommer plutôt
+    // que de tout saisir avant) — ne jamais écrire de chaîne vide en base,
+    // quel que soit l'appelant. Miroir du fallback de new-item-dialog.tsx.
+    const marchandise = input.marchandise.trim() || "Article à renommer";
+    const unite = input.unite.trim() || "—";
+    const key = marchandise.toLowerCase();
+    const existing = get().stock.find(
+      (s) =>
+        s.societeId === input.societeId &&
+        s.annexeId === input.annexeId &&
+        s.marchandise.trim().toLowerCase() === key,
+    );
+    if (existing) {
+      throw new Error(
+        `L'article « ${marchandise} » existe déjà pour cette société/annexe — utilisez les entrées/sorties normales pour compléter son historique.`,
+      );
+    }
+
+    const { data: itemData, error: itemError } = await supabase
+      .from("stock_items")
+      .insert({
+        marchandise,
+        quantite: 0,
+        unite,
+        seuil: input.seuil,
+        depositaire: input.depositaire?.trim() || "—",
+        commercial: input.commercial?.trim() || "—",
+        somme_payee: 0,
+        reste_a_payer: 0,
+        client_id: input.clientId || null,
+        societe_id: input.societeId,
+        annexe_id: input.annexeId,
+      })
+      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .single();
+    if (itemError) throw itemError;
+    const stockId = itemData.id as string;
+
+    // Insert direct (pas la RPC apply_stock_movement, qui horodate toujours
+    // now() et ne convient qu'à la saisie live) — les policies RLS
+    // mouvements_mutate/stock_items_mutate autorisent déjà cet accès pour un
+    // utilisateur stock:write avec accès à l'annexe, cf. plan.
+    let netQuantite = 0;
+    const movementRows = input.mouvements.map((m) => {
+      netQuantite += m.type === "Entrée" ? m.quantite : -m.quantite;
+      return {
+        stock_id: stockId,
+        societe_id: input.societeId,
+        annexe_id: input.annexeId,
+        date: m.date,
+        type: m.type,
+        marchandise,
+        quantite: m.quantite,
+        unite,
+        responsable: m.responsable || "Import historique",
+      };
+    });
+
+    const { data: mouvementsData, error: mouvementsError } = await supabase
+      .from("mouvements")
+      .insert(movementRows)
+      .select("*, societes(nom), annexes(nom)");
+    if (mouvementsError) {
+      // Compensation : pas d'article orphelin sans historique si l'insert en masse échoue.
+      await supabase.from("stock_items").delete().eq("id", stockId);
+      throw mouvementsError;
+    }
+
+    const { data: updatedItem, error: updateError } = await supabase
+      .from("stock_items")
+      .update({ quantite: netQuantite })
+      .eq("id", stockId)
+      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .single();
+    if (updateError) throw updateError;
+
+    const newItem = mapStockItemFromDb(updatedItem);
+    const newMouvements = (mouvementsData ?? []).map(mapMouvementFromDb);
+    set((s) => ({
+      stock: [newItem, ...s.stock],
+      mouvements: [...newMouvements, ...s.mouvements],
+      stockSeq: s.stockSeq + 1,
+    }));
+    await get().addAuditLog(
+      AUDIT_MODULE.Stock,
+      AUDIT_ACTION.Creation,
+      `Import historique : article « ${marchandise} » créé avec ${input.mouvements.length} mouvement(s), stock final ${netQuantite} ${unite}.`,
+    );
+    return newItem;
+  },
+
+  updateStockItem: async (id, input) => {
+    const marchandise = input.marchandise.trim() || "Article à renommer";
+    const unite = input.unite.trim() || "—";
+
+    const { data, error } = await supabase
+      .from("stock_items")
+      .update({
+        marchandise,
+        unite,
+        seuil: input.seuil,
+        depositaire: input.depositaire?.trim() || "—",
+        commercial: input.commercial?.trim() || "—",
+        client_id: input.clientId || null,
+      })
+      .eq("id", id)
+      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .single();
+    if (error) throw error;
+
+    const updated = mapStockItemFromDb(data);
+    set((s) => ({
+      stock: s.stock.map((item) => (item.id === id ? updated : item)),
+    }));
+    await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Modification, `Article de stock modifié : ${marchandise}`);
+    return updated;
   },
 });

@@ -281,6 +281,44 @@ export interface StockItemInput {
   annexeId: string;
 }
 
+/**
+ * Champs éditables d'un article de stock existant. Exclut volontairement
+ * quantite (solde dérivé des mouvements, jamais écrasable par un
+ * formulaire), societeId/annexeId (déplacer un article est une opération
+ * structurelle, pas une correction de fiche) et sommePayee/resteAPayer
+ * (suivi financier, pas des champs descriptifs).
+ */
+export type UpdateStockItemInput = Pick<
+  StockItemInput,
+  "marchandise" | "unite" | "seuil" | "depositaire" | "commercial" | "clientId"
+>;
+
+/**
+ * Backfill d'un article de stock + son historique de mouvements (import Excel
+ * multi-articles) — crée l'article avec quantite=0 puis rejoue chaque
+ * mouvement daté, contrairement à addStockItem qui fixe une quantité de
+ * départ sans historique. Réservé aux articles qui n'existent pas encore
+ * (cf. importStockHistorique) : pas de risque de course sur la quantité
+ * puisque personne d'autre ne peut encore écrire sur un article qui vient
+ * d'être créé dans le même appel.
+ */
+export interface ImportStockHistoriqueInput {
+  societeId: string;
+  annexeId: string;
+  marchandise: string;
+  unite: string;
+  seuil: number;
+  clientId?: string;
+  depositaire?: string;
+  commercial?: string;
+  mouvements: {
+    date: string;
+    type: "Entrée" | "Sortie";
+    quantite: number;
+    responsable: string;
+  }[];
+}
+
 /* ------------------------------------------------------------------ */
 /* CONTRATS / DÉPENSES / PRESTATIONS OPTIONNELLES — INPUT TYPES        */
 /* ------------------------------------------------------------------ */

@@ -37,6 +37,8 @@ import { StockTab } from "./entreposage/stock-tab";
 import { MouvementsTab } from "./entreposage/mouvements-tab";
 import { EntryExitDialogs } from "./entreposage/entry-exit-dialogs";
 import { NewItemDialog } from "./entreposage/new-item-dialog";
+import { EditItemDialog } from "./entreposage/edit-item-dialog";
+import { StockBulkImportButton } from "./entreposage/stock-bulk-import-dialog";
 import { useStockMovementDialogs } from "./entreposage/use-stock-movement-dialogs";
 
 type EntrepotTab = "stock" | "mouvements";
@@ -65,6 +67,7 @@ export function EntreposageScreen() {
   const allMouvements = useStore((s) => s.mouvements);
   const societes = useStore((s) => s.societes);
   const addStockItem = useStore((s) => s.addStockItem);
+  const updateStockItem = useStore((s) => s.updateStockItem);
   const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
   const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
 
@@ -85,6 +88,14 @@ export function EntreposageScreen() {
   function openNewItemDialog() {
     setNewItemKey((k) => k + 1);
     setNewItemOpen(true);
+  }
+
+  const [editItemOpen, setEditItemOpen] = useState(false);
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+
+  function openEditDialog(id: string) {
+    setEditingStockId(id);
+    setEditItemOpen(true);
   }
 
   const [activeTab, setActiveTab] = useState<EntrepotTab>("stock");
@@ -213,6 +224,7 @@ export function EntreposageScreen() {
         title="Entreposage"
         description="Gestion du stock et des mouvements"
       >
+        <StockBulkImportButton />
         {canWrite && (
           <Button onClick={openNewItemDialog}>
             <Plus className="size-4" />
@@ -315,6 +327,7 @@ export function EntreposageScreen() {
             onEntry={dialogs.openEntry}
             onExit={dialogs.openExit}
             onHistory={goToHistory}
+            onEdit={openEditDialog}
             onPrint={handlePrintStock}
             onExport={handleExportStockExcel}
             canWrite={canWrite}
@@ -357,6 +370,27 @@ export function EntreposageScreen() {
           }
           toastSuccess(toast, { title: "Article ajouté", description: `${input.marchandise} ajouté au stock.` });
           setNewItemOpen(false);
+        }}
+      />
+
+      <EditItemDialog
+        key={editingStockId ?? "none"}
+        open={editItemOpen}
+        onOpenChange={setEditItemOpen}
+        item={allStock.find((s) => s.id === editingStockId) ?? null}
+        clients={clients}
+        onSubmit={async (id, input) => {
+          try {
+            await updateStockItem(id, input);
+          } catch (error) {
+            toastError(toast, error, {
+              title: "Impossible de modifier l'article",
+              fallback: UI.errors.saveFailed,
+            });
+            return;
+          }
+          toastSuccess(toast, { title: "Article modifié", description: input.marchandise });
+          setEditItemOpen(false);
         }}
       />
     </div>
