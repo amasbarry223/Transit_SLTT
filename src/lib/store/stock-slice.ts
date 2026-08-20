@@ -61,7 +61,6 @@ export interface StockSlice {
   ) => Promise<void>;
   importStockHistorique: (input: ImportStockHistoriqueInput) => Promise<StockItem>;
   updateStockItem: (id: string, input: UpdateStockItemInput) => Promise<StockItem>;
-  deleteStockItem: (id: string) => Promise<void>;
 }
 
 export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (set, get) => ({
@@ -341,37 +340,5 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     }));
     await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Modification, `Article de stock modifié : ${marchandise}`);
     return updated;
-  },
-
-  deleteStockItem: async (id) => {
-    const item = get().stock.find((s) => s.id === id);
-    if (!item) return;
-    // Un article avec du stock encore présent documente une activité réelle
-    // (marchandise physiquement en dépôt) — refusé pour ne pas faire
-    // disparaître un stock qui existe encore ailleurs. Un article déjà vidé
-    // (quantite=0) peut être supprimé même s'il a un historique de
-    // mouvements : cet historique est alors supprimé avec lui (choix
-    // explicite de l'utilisateur, pas un effet de bord silencieux).
-    if (item.quantite !== 0) {
-      throw new Error(
-        "Impossible de supprimer un article qui a encore du stock — videz-le d'abord via une sortie.",
-      );
-    }
-
-    const { error: mouvementsError } = await supabase.from("mouvements").delete().eq("stock_id", id);
-    if (mouvementsError) throw mouvementsError;
-
-    const { error } = await supabase.from("stock_items").delete().eq("id", id);
-    if (error) throw error;
-
-    set((s) => ({
-      stock: s.stock.filter((i) => i.id !== id),
-      mouvements: s.mouvements.filter((m) => m.stockId !== id),
-    }));
-    await get().addAuditLog(
-      AUDIT_MODULE.Stock,
-      AUDIT_ACTION.Suppression,
-      `Article de stock supprimé : ${item.marchandise} (avec son historique de mouvements)`,
-    );
   },
 });

@@ -29,7 +29,6 @@ import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { filterBySociete } from "@/lib/filter-by-societe";
@@ -69,7 +68,6 @@ export function EntreposageScreen() {
   const societes = useStore((s) => s.societes);
   const addStockItem = useStore((s) => s.addStockItem);
   const updateStockItem = useStore((s) => s.updateStockItem);
-  const deleteStockItem = useStore((s) => s.deleteStockItem);
   const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
   const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
 
@@ -106,22 +104,6 @@ export function EntreposageScreen() {
     // par erreur en écrasant la vraie valeur.
     setEditItemKey((k) => k + 1);
     setEditItemOpen(true);
-  }
-
-  const [deletingStockId, setDeletingStockId] = useState<string | null>(null);
-  const deletingStockItem = allStock.find((s) => s.id === deletingStockId) ?? null;
-
-  async function handleDeleteStockItem() {
-    if (!deletingStockId) return;
-    try {
-      await deleteStockItem(deletingStockId);
-      toastSuccess(toast, { title: "Article supprimé" });
-    } catch (error) {
-      toastError(toast, error, {
-        title: "Impossible de supprimer l'article",
-        fallback: UI.errors.generic,
-      });
-    }
   }
 
   const [activeTab, setActiveTab] = useState<EntrepotTab>("stock");
@@ -354,7 +336,6 @@ export function EntreposageScreen() {
             onExit={dialogs.openExit}
             onHistory={goToHistory}
             onEdit={openEditDialog}
-            onDelete={setDeletingStockId}
             onPrint={handlePrintStock}
             onExport={handleExportStockExcel}
             canWrite={canWrite}
@@ -419,39 +400,6 @@ export function EntreposageScreen() {
           toastSuccess(toast, { title: "Article modifié", description: input.marchandise });
           setEditItemOpen(false);
         }}
-      />
-
-      <ConfirmDeleteDialog
-        open={deletingStockId !== null}
-        onOpenChange={(open) => !open && setDeletingStockId(null)}
-        title="Supprimer cet article ?"
-        description={
-          deletingStockItem ? (
-            <>
-              L&apos;article <strong>{deletingStockItem.marchandise}</strong> sera supprimé de façon
-              permanente et irréversible.
-            </>
-          ) : (
-            ""
-          )
-        }
-        consequences={
-          (() => {
-            if (!deletingStockItem) return undefined;
-            if (deletingStockItem.quantite !== 0) {
-              return [
-                "Cet article a encore du stock — la suppression sera refusée. Videz-le d'abord via une sortie.",
-              ];
-            }
-            const mouvementsCount = allMouvements.filter((m) => m.stockId === deletingStockItem.id).length;
-            return mouvementsCount > 0
-              ? [
-                  `${mouvementsCount} mouvement${mouvementsCount !== 1 ? "s" : ""} enregistré${mouvementsCount !== 1 ? "s" : ""} pour cet article seront supprimés définitivement avec lui.`,
-                ]
-              : undefined;
-          })()
-        }
-        onConfirm={handleDeleteStockItem}
       />
     </div>
   );
