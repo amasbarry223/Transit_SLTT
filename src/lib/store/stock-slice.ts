@@ -61,6 +61,7 @@ export interface StockSlice {
   ) => Promise<void>;
   importStockHistorique: (input: ImportStockHistoriqueInput) => Promise<StockItem>;
   updateStockItem: (id: string, input: UpdateStockItemInput) => Promise<StockItem>;
+  deleteStockItem: (id: string) => Promise<void>;
 }
 
 export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (set, get) => ({
@@ -340,5 +341,27 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     }));
     await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Modification, `Article de stock modifié : ${marchandise}`);
     return updated;
+  },
+
+  deleteStockItem: async (id) => {
+    const item = get().stock.find((s) => s.id === id);
+    if (!item) return;
+    // Un article avec du stock ou un historique de mouvements documente une
+    // activité réelle — le supprimer effacerait cette trace sans qu'on sache
+    // garantir ici le comportement de la base sur les mouvements liés (cascade
+    // ou orphelins). Seul un article vide et jamais mouvementé (ex. créé par
+    // erreur) peut être supprimé ; sinon, renommer ou vider via une sortie.
+    const hasMouvements = get().mouvements.some((m) => m.stockId === id);
+    if (item.quantite !== 0 || hasMouvements) {
+      throw new Error(
+        "Impossible de supprimer un article avec du stock ou des mouvements enregistrés — videz-le d'abord via une sortie, ou modifiez-le plutôt que de le supprimer.",
+      );
+    }
+
+    const { error } = await supabase.from("stock_items").delete().eq("id", id);
+    if (error) throw error;
+
+    set((s) => ({ stock: s.stock.filter((i) => i.id !== id) }));
+    await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Suppression, `Article de stock supprimé : ${item.marchandise}`);
   },
 });
