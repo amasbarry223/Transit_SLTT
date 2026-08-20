@@ -436,11 +436,20 @@ export function EntreposageScreen() {
           )
         }
         consequences={
-          deletingStockItem && (deletingStockItem.quantite !== 0 || allMouvements.some((m) => m.stockId === deletingStockItem.id))
-            ? [
-                "Cet article a du stock ou un historique de mouvements — la suppression sera refusée. Videz-le d'abord via une sortie, ou modifiez-le plutôt que de le supprimer.",
-              ]
-            : undefined
+          (() => {
+            if (!deletingStockItem) return undefined;
+            if (deletingStockItem.quantite !== 0) {
+              return [
+                "Cet article a encore du stock — la suppression sera refusée. Videz-le d'abord via une sortie.",
+              ];
+            }
+            const mouvementsCount = allMouvements.filter((m) => m.stockId === deletingStockItem.id).length;
+            return mouvementsCount > 0
+              ? [
+                  `${mouvementsCount} mouvement${mouvementsCount !== 1 ? "s" : ""} enregistré${mouvementsCount !== 1 ? "s" : ""} pour cet article seront supprimés définitivement avec lui.`,
+                ]
+              : undefined;
+          })()
         }
         onConfirm={handleDeleteStockItem}
       />
