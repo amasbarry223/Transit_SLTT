@@ -1,6 +1,39 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useUiPrefs } from "@/lib/session/ui-prefs-store";
-import { formatFCFA, formatDateShort, formatDateTime } from "./format";
+import { formatFCFA, formatDateShort, formatDateTime, parseAmount } from "./format";
+
+describe("parseAmount", () => {
+  it("parse un entier simple", () => {
+    expect(parseAmount("18200000")).toBe(18_200_000);
+  });
+
+  it("parse un montant FR avec espaces milliers et virgule décimale", () => {
+    expect(parseAmount("1 234 567,89")).toBe(1_234_568);
+  });
+
+  it("parse un montant EN avec virgules milliers et point décimal (bug réel : l'ancien code ne remplaçait que la première virgule)", () => {
+    expect(parseAmount("1,234.56")).toBe(1_235);
+    expect(parseAmount("1,234,567.89")).toBe(1_234_568);
+  });
+
+  it("parse un montant FR avec points milliers et virgule décimale", () => {
+    expect(parseAmount("1.234.567,89")).toBe(1_234_568);
+  });
+
+  it("distingue point décimal isolé (1234.56) de points milliers seuls (1.234.567)", () => {
+    expect(parseAmount("1234.56")).toBe(1235);
+    expect(parseAmount("1.234.567")).toBe(1_234_567);
+  });
+
+  it("rejette les montants négatifs (retourne 0)", () => {
+    expect(parseAmount("-500")).toBe(0);
+  });
+
+  it("retourne 0 pour une chaîne vide ou non numérique", () => {
+    expect(parseAmount("")).toBe(0);
+    expect(parseAmount("abc")).toBe(0);
+  });
+});
 
 describe("formatFCFA", () => {
   // Intl.NumberFormat("fr-FR") sépare les milliers par une espace fine

@@ -202,13 +202,17 @@ export function ClientFicheScreen() {
   const { totalInvesti, totalPaye, totalDu } = useMemo(() => {
     let investi = 0;
     let paye = 0;
-    let du = 0;
     for (const e of classeurJournal) {
       investi += e.debit;
       paye += e.credit;
-      du += Math.max(0, e.debit - e.credit);
     }
-    return { totalInvesti: investi, totalPaye: paye, totalDu: du };
+    // Solde net global (investi − payé), pas une somme de max(0, …) par ligne :
+    // ce clamp par ligne ignorait un crédit qui dépasse le débit sur une même
+    // ligne (avance/versement) au lieu de le déduire du reste dû d'ailleurs —
+    // même formule que computeClasseurTotals (src/lib/classeur.ts), pour que
+    // ce total reste identique à celui de l'onglet Classeur sur les mêmes
+    // écritures non filtrées.
+    return { totalInvesti: investi, totalPaye: paye, totalDu: investi - paye };
   }, [classeurJournal]);
 
   const pendingCount = useMemo(

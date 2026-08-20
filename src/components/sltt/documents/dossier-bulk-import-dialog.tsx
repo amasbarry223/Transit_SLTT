@@ -21,12 +21,15 @@ import { resolveTransitSociete, shouldShowAnnexeForSociete } from "@/lib/societe
 import {
   parseDossierBulkXlsx,
   looksLikeJournalCaisseWorkbook,
+  diagnoseDossierBulkWorkbook,
+  isPlaceholderClientNom,
   type DossierBulkImportRow,
 } from "@/lib/dossier-bulk-import";
 import { formatFCFA } from "@/lib/format";
 import { getErrorMessage, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -153,12 +156,18 @@ export function DossierBulkImportButton() {
       const parsed = await parseDossierBulkXlsx(buf);
       if (parsed.length === 0) {
         const isJournalCaisse = await looksLikeJournalCaisseWorkbook(buf);
-        toastWarning(toast, {
-          title: "Aucune ligne exploitable",
-          description: isJournalCaisse
-            ? "Ce fichier ressemble à un journal de caisse (colonnes Entrée/Sortie) — importez-le plutôt depuis Comptabilité → Journal de caisse → « Importer un document »."
-            : "Vérifiez que le fichier contient des feuilles « Situation du Client X » avec un tableau Date/Nature/Total investi.",
-        });
+        let description: string;
+        if (isJournalCaisse) {
+          description =
+            "Ce fichier ressemble à un journal de caisse (colonnes Entrée/Sortie) — importez-le plutôt depuis Comptabilité → Journal de caisse → « Importer un document ».";
+        } else {
+          const diag = await diagnoseDossierBulkWorkbook(buf);
+          description =
+            diag.sheetsWithHeaderRow === 0
+              ? `Aucune des ${diag.sheetsScanned} feuille${diag.sheetsScanned !== 1 ? "s" : ""} du classeur ne contient d'en-tête « Date » reconnu — vérifiez qu'un tableau Date/Nature/Total investi est présent.`
+              : "Des en-têtes ont été trouvés mais aucune ligne de données en dessous — vérifiez que le tableau n'est pas vide.";
+        }
+        toastWarning(toast, { title: "Aucune ligne exploitable", description });
         return;
       }
       setRows(
@@ -226,6 +235,12 @@ export function DossierBulkImportButton() {
   const selectedRows = useMemo(() => rows.filter((r) => r.selected), [rows]);
   const selectedCount = selectedRows.length;
   const alertCount = selectedRows.filter((r) => r.warnings.length > 0).length;
+  // Un nom de client encore au placeholder ("Client à renommer (…)") ne doit
+  // jamais être créé tel quel — bloque l'import tant qu'il reste un groupe
+  // sélectionné non renommé (contrairement au nom d'article de stock, un nom
+  // de client est référencé partout — dossiers, factures, devis — donc plus
+  // coûteux à corriger après coup qu'avant l'import).
+  const hasUnresolvedClientNom = selectedRows.some((r) => isPlaceholderClientNom(r.clientNom));
   const totalInvesti = useMemo(
     () => selectedRows.reduce((sum, r) => sum + r.montantInvesti, 0),
     [selectedRows],
@@ -252,6 +267,31 @@ export function DossierBulkImportButton() {
 
   function toggleAll(value: boolean) {
     setRows((prev) => prev.map((r) => ({ ...r, selected: value })));
+  }
+
+  /**
+   * Corrige le nom placeholder ("Client à renommer (Feuil1)") posé par le
+   * parseur quand ni titre ni nom d'onglet n'étaient exploitables. Le champ
+   * est non-contrôlé (defaultValue + onBlur, cf. rendu) pour ne committer
+   * qu'à la perte de focus — un onChange direct sur `rows` ferait recalculer
+   * `groups` à chaque frappe et changerait la clé du groupe en cours
+   * d'édition, ce qui ferait perdre le focus du champ après chaque lettre.
+   */
+  function renameGroup(groupKey: string, newName: string) {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed.toLowerCase() === groupKey) return;
+    setRows((prev) =>
+      prev.map((r) => (r.clientNom.trim().toLowerCase() === groupKey ? { ...r, clientNom: trimmed } : r)),
+    );
+    // Le groupe change de clé (dérivée du nom) au prochain rendu — reporter
+    // l'annexe déjà choisie pour ce groupe sous la nouvelle clé, sinon le
+    // Select retomberait silencieusement sur l'annexe par défaut.
+    setGroupAnnexeId((prev) => {
+      const existing = prev[groupKey];
+      if (existing == null) return prev;
+      const { [groupKey]: _removed, ...rest } = prev;
+      return { ...rest, [trimmed.toLowerCase()]: existing };
+    });
   }
 
   async function handleConfirm() {
@@ -511,9 +551,21 @@ export function DossierBulkImportButton() {
                             </TableCell>
                             <TableCell colSpan={7} className="py-1.5">
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className="text-xs font-semibold text-foreground/90">
-                                  {g.nom}
-                                </span>
+                                {isPlaceholderClientNom(g.nom) ? (
+                                  <Input
+                                    key={g.key}
+                                    defaultValue={g.nom}
+                                    onBlur={(e) => renameGroup(g.key, e.target.value)}
+                                    placeholder="Nom du client"
+                                    disabled={phase === "importing"}
+                                    className="h-6 w-56 border-amber-400 text-xs font-semibold"
+                                    aria-label={`Nom du client pour ${g.nom}`}
+                                  />
+                                ) : (
+                                  <span className="text-xs font-semibold text-foreground/90">
+                                    {g.nom}
+                                  </span>
+                                )}
                                 <ToneBadge tone={g.existing ? "slate" : "blue"} size="sm">
                                   {g.existing ? "Client existant" : "Nouveau client"}
                                 </ToneBadge>
@@ -625,6 +677,16 @@ export function DossierBulkImportButton() {
                 </div>
               </TooltipProvider>
 
+              {hasUnresolvedClientNom && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <p>
+                    Au moins un groupe n&apos;a pas de nom de client reconnu — corrigez le champ
+                    surligné en ambre (ou décochez ses lignes) avant d&apos;importer.
+                  </p>
+                </div>
+              )}
+
               {alertCount > 0 && (
                 <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -669,7 +731,7 @@ export function DossierBulkImportButton() {
               Annuler
             </Button>
             {phase === "review" && (
-              <Button onClick={() => void handleConfirm()} disabled={selectedCount === 0}>
+              <Button onClick={() => void handleConfirm()} disabled={selectedCount === 0 || hasUnresolvedClientNom}>
                 <CheckCircle2 className="size-4" />
                 Importer {selectedCount} dossier{selectedCount !== 1 ? "s" : ""}
               </Button>

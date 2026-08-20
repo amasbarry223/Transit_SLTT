@@ -174,82 +174,93 @@ export async function parseComptabiliteGeneraleXlsx(
   await wb.xlsx.load(file);
   if (!wb.worksheets.length) return [];
 
-  const sheet = wb.worksheets[0];
-  const { headerRowNumber, colMap } = findHeaderRow(sheet);
-  if (colMap.size < 3) {
+  // Un classeur "journal de caisse" a souvent un onglet par mois — ne lire
+  // que wb.worksheets[0] jetait silencieusement tous les mois suivants sans
+  // aucun avertissement (même classe de bug déjà corrigée dans
+  // dossier-bulk-import.ts). On lit toutes les feuilles qui ont un en-tête
+  // reconnu ; l'erreur n'est levée que si AUCUNE feuille n'en a.
+  const rows: OperationImportRow[] = [];
+  let anyHeaderFound = false;
+
+  for (const sheet of wb.worksheets) {
+    const { headerRowNumber, colMap } = findHeaderRow(sheet);
+    if (colMap.size < 3) continue;
+    anyHeaderFound = true;
+
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber <= headerRowNumber) return;
+
+      const raw: Partial<Record<Field, string>> = {};
+      colMap.forEach((field, col) => {
+        raw[field] = cellToString(row.getCell(col).value);
+      });
+
+      const dateRaw = raw.date ?? "";
+      const clientNom = (raw.clientNom ?? "").trim();
+      const nature = (raw.nature ?? "").trim();
+      const entree = raw.entree ? parseAmount(raw.entree) : null;
+      const sortie = raw.sortie ? parseAmount(raw.sortie) : null;
+      const quantite = raw.quantite ? parseAmount(raw.quantite) : null;
+      const prixUnitaire = raw.prixUnitaire ? parseAmount(raw.prixUnitaire) : null;
+
+      // Ligne totalement vide (espaceur entre mois dans le classeur source) — ignorée sans avertissement.
+      if (!clientNom && !nature && !entree && !sortie && !quantite && !prixUnitaire) return;
+
+      const warnings: string[] = [];
+      const date = dateRaw ? parseSourceDate(dateRaw) : null;
+      if (!dateRaw) warnings.push("Date manquante");
+      else if (!date) warnings.push(`Date illisible ("${dateRaw}") — vérifiez le jour/mois/année`);
+
+      if (!clientNom) warnings.push("Client / tiers manquant");
+      if (!nature) warnings.push("Nature manquante");
+
+      let type: "Entrée" | "Sortie" | null = null;
+      let montant = 0;
+
+      const montantTopDoumani =
+        options.entiteType === "societe" && quantite != null && prixUnitaire != null
+          ? quantite * prixUnitaire
+          : null;
+
+      if (montantTopDoumani != null) {
+        type = "Sortie";
+        montant = montantTopDoumani;
+      } else if (entree != null && sortie != null) {
+        warnings.push("Entrée ET Sortie renseignées sur la même ligne — vérifiez laquelle est correcte");
+        type = entree >= sortie ? "Entrée" : "Sortie";
+        montant = entree >= sortie ? entree : sortie;
+      } else if (entree != null) {
+        type = "Entrée";
+        montant = entree;
+      } else if (sortie != null) {
+        type = "Sortie";
+        montant = sortie;
+      } else if (options.entiteType === "societe" && (quantite != null) !== (prixUnitaire != null)) {
+        warnings.push("Quantité et Prix unitaire doivent être renseignés ensemble");
+      } else {
+        warnings.push("Montant manquant (Entrée / Sortie / Quantité × PU)");
+      }
+
+      rows.push({
+        rowNumber,
+        date,
+        dateRaw,
+        clientNom,
+        nature,
+        type,
+        montant,
+        quantite: options.entiteType === "societe" ? quantite : null,
+        prixUnitaire: options.entiteType === "societe" ? prixUnitaire : null,
+        warnings,
+      });
+    });
+  }
+
+  if (!anyHeaderFound) {
     throw new Error(
       "En-têtes Excel non reconnus (attendu : Dates, Clients, Nature de la dépense, Entrée, Sortie…)",
     );
   }
-
-  const rows: OperationImportRow[] = [];
-  sheet.eachRow((row, rowNumber) => {
-    if (rowNumber <= headerRowNumber) return;
-
-    const raw: Partial<Record<Field, string>> = {};
-    colMap.forEach((field, col) => {
-      raw[field] = cellToString(row.getCell(col).value);
-    });
-
-    const dateRaw = raw.date ?? "";
-    const clientNom = (raw.clientNom ?? "").trim();
-    const nature = (raw.nature ?? "").trim();
-    const entree = raw.entree ? parseAmount(raw.entree) : null;
-    const sortie = raw.sortie ? parseAmount(raw.sortie) : null;
-    const quantite = raw.quantite ? parseAmount(raw.quantite) : null;
-    const prixUnitaire = raw.prixUnitaire ? parseAmount(raw.prixUnitaire) : null;
-
-    // Ligne totalement vide (espaceur entre mois dans le classeur source) — ignorée sans avertissement.
-    if (!clientNom && !nature && !entree && !sortie && !quantite && !prixUnitaire) return;
-
-    const warnings: string[] = [];
-    const date = dateRaw ? parseSourceDate(dateRaw) : null;
-    if (!dateRaw) warnings.push("Date manquante");
-    else if (!date) warnings.push(`Date illisible ("${dateRaw}") — vérifiez le jour/mois/année`);
-
-    if (!clientNom) warnings.push("Client / tiers manquant");
-    if (!nature) warnings.push("Nature manquante");
-
-    let type: "Entrée" | "Sortie" | null = null;
-    let montant = 0;
-
-    const montantTopDoumani =
-      options.entiteType === "societe" && quantite != null && prixUnitaire != null
-        ? quantite * prixUnitaire
-        : null;
-
-    if (montantTopDoumani != null) {
-      type = "Sortie";
-      montant = montantTopDoumani;
-    } else if (entree != null && sortie != null) {
-      warnings.push("Entrée ET Sortie renseignées sur la même ligne — vérifiez laquelle est correcte");
-      type = entree >= sortie ? "Entrée" : "Sortie";
-      montant = entree >= sortie ? entree : sortie;
-    } else if (entree != null) {
-      type = "Entrée";
-      montant = entree;
-    } else if (sortie != null) {
-      type = "Sortie";
-      montant = sortie;
-    } else if (options.entiteType === "societe" && (quantite != null) !== (prixUnitaire != null)) {
-      warnings.push("Quantité et Prix unitaire doivent être renseignés ensemble");
-    } else {
-      warnings.push("Montant manquant (Entrée / Sortie / Quantité × PU)");
-    }
-
-    rows.push({
-      rowNumber,
-      date,
-      dateRaw,
-      clientNom,
-      nature,
-      type,
-      montant,
-      quantite: options.entiteType === "societe" ? quantite : null,
-      prixUnitaire: options.entiteType === "societe" ? prixUnitaire : null,
-      warnings,
-    });
-  });
 
   return rows;
 }

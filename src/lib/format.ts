@@ -75,9 +75,38 @@ export function formatDateTime(date: Date | string | null | undefined): string {
  * Le FCFA n'a pas de sous-unité : arrondi à l'entier pour qu'un montant
  * fractionnaire saisi (ex. "1500.75") ne soit jamais persisté tel quel en
  * base alors que formatFCFA() l'arrondit déjà à l'affichage (Math.round ci-dessus).
+ *
+ * Désambiguïse virgule/point comme parseMontant()
+ * (src/lib/documents/ocr/mappers/dossier-mapper.ts) : le séparateur décimal
+ * retenu est celui qui apparaît en dernier. Un ancien `.replace(",", ".")`
+ * ne remplaçait que la première virgule — un montant "1,234.56" (format EN,
+ * plausible en copier-coller depuis un tableur client ou via les imports
+ * Excel qui réutilisent cette même fonction) devenait "1.234.56", que
+ * parseFloat tronque à 1.234 → arrondi à 1 au lieu de 1234.56.
  */
 export function parseAmount(value: string): number {
-  const cleaned = value.replace(/[^\d.,-]/g, "").replace(/\s/g, "");
-  const result = Number.parseFloat(cleaned.replace(",", ".")) || 0;
+  let s = value.replace(/[^\d.,-]/g, "").replace(/\s/g, "");
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+
+  if (hasComma && hasDot) {
+    s = s.lastIndexOf(",") > s.lastIndexOf(".")
+      ? s.replace(/\./g, "").replace(",", ".") // "1.234.567,89" (FR)
+      : s.replace(/,/g, ""); // "1,234,567.89" (EN)
+  } else if (hasComma) {
+    const parts = s.split(",");
+    s = parts.length === 2 && parts[1].length <= 2
+      ? `${parts[0].replace(/\./g, "")}.${parts[1]}` // "1234,56" décimale FR
+      : s.replace(/,/g, ""); // "1,234" milliers seuls
+  } else if (hasDot) {
+    const parts = s.split(".");
+    // "1.234.567" (milliers seuls) vs "1234.56" (décimale) : plusieurs points,
+    // ou un seul point suivi d'exactement 3 chiffres avec un groupe court avant.
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3 && parts[0].length <= 3)) {
+      s = s.replace(/\./g, "");
+    }
+  }
+
+  const result = Number.parseFloat(s) || 0;
   return Math.max(0, Math.round(result));
 }

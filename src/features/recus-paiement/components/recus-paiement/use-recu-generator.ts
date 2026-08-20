@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import type { RecuPaiementModuleData } from "@/lib/export";
 import { printRecuPaiementModule } from "@/lib/export";
+import { parseAmount } from "@/lib/format";
 import { computeReste, computeStatut } from "@/lib/recus-paiement";
 import type { SocieteBrand } from "@/lib/societe-brand";
 import { useStore } from "@/lib/store";
@@ -41,10 +42,6 @@ export const DEFAULT_FORM_STATE: RecuGeneratorFormState = {
   date: new Date().toISOString().slice(0, 10),
   signature: null,
 };
-
-function parseAmount(value: string): number {
-  return Number(value.replace(/\s/g, "")) || 0;
-}
 
 function toIsoDate(dateInput: string): string {
   if (!dateInput) return new Date().toISOString();

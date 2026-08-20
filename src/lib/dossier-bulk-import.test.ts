@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import { parseDossierBulkXlsx, looksLikeJournalCaisseWorkbook } from "./dossier-bulk-import";
+import {
+  parseDossierBulkXlsx,
+  looksLikeJournalCaisseWorkbook,
+  diagnoseDossierBulkWorkbook,
+  isPlaceholderClientNom,
+} from "./dossier-bulk-import";
 
 /** Reproduit le format maison : « Situation du Client X », en-tête dupliqué, montants « 18 200 000 ». */
 async function buildSampleWorkbook(): Promise<ArrayBuffer> {
@@ -61,7 +66,10 @@ describe("parseDossierBulkXlsx", () => {
     expect(rows[0].warnings.some((w) => w.includes("≠ calculé"))).toBe(true);
   });
 
-  it("ignore une feuille sans titre client reconnaissable ni nom de feuille exploitable", async () => {
+  it("ne jette jamais un tableau lisible : nom de client placeholder si ni titre ni nom d'onglet exploitables", async () => {
+    // Bug réel : un onglet resté au nom par défaut Excel ("Sheet1"/"Feuil1"…)
+    // faisait auparavant sauter toute la feuille sans lire une seule ligne,
+    // même avec un tableau Date/Nature/Total investi parfaitement valide.
     const wb = new ExcelJS.Workbook();
     const sheet = wb.addWorksheet("Sheet1");
     sheet.addRow(["Date", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Reste a payer", "Benefice net"]);
@@ -69,7 +77,10 @@ describe("parseDossierBulkXlsx", () => {
     const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
 
     const rows = await parseDossierBulkXlsx(buf);
-    expect(rows).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].montantInvesti).toBe(1_000_000);
+    expect(isPlaceholderClientNom(rows[0].clientNom)).toBe(true);
+    expect(rows[0].clientNom).toContain("Sheet1");
   });
 
   it("ne signale pas une ligne « versement » (investi nul, payé renseigné) comme incomplète", async () => {
@@ -153,6 +164,42 @@ describe("parseDossierBulkXlsx", () => {
     const rows = await parseDossierBulkXlsx(buf);
     expect(rows).toHaveLength(1);
     expect(rows[0].clientNom).toBe("Mahamadou Drame");
+  });
+
+  it("reconnaît un en-tête composé « Date opération »", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("X");
+    sheet.addRow(["Situation du Client X"]);
+    sheet.addRow(["Date opération", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Reste a payer", "Benefice net"]);
+    sheet.addRow(["01/01/2026", "CONTENEUR", "1", "F1", "1 000 000", "400 000", "600 000", ""]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const rows = await parseDossierBulkXlsx(buf);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].montantInvesti).toBe(1_000_000);
+  });
+});
+
+describe("diagnoseDossierBulkWorkbook", () => {
+  it("compte les feuilles scannées et celles avec un en-tête Date reconnu", async () => {
+    const wb = new ExcelJS.Workbook();
+    const withHeader = wb.addWorksheet("X");
+    withHeader.addRow(["Situation du Client X"]);
+    withHeader.addRow(["Date", "Nature de la M/se", "Quantité", "facture N°", "Total investi", "Montant payé", "Reste a payer", "Benefice net"]);
+    wb.addWorksheet("Sans en-tête").addRow(["Rien d'exploitable ici"]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const diag = await diagnoseDossierBulkWorkbook(buf);
+    expect(diag).toEqual({ sheetsScanned: 2, sheetsWithHeaderRow: 1 });
+  });
+
+  it("renvoie 0/0 pour un classeur sans en-tête Date du tout", async () => {
+    const wb = new ExcelJS.Workbook();
+    wb.addWorksheet("X").addRow(["Rien d'exploitable ici"]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const diag = await diagnoseDossierBulkWorkbook(buf);
+    expect(diag).toEqual({ sheetsScanned: 1, sheetsWithHeaderRow: 0 });
   });
 });
 

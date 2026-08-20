@@ -35,8 +35,16 @@ export interface DossierBulkImportRow {
 const CLIENT_TITLE_RE = /situation\s+d[eu](?:\s+la)?\s+client(?:e)?\s*[:\-]?\s*(.+)/i;
 const GENERIC_SHEET_NAMES = new Set(["sheet1", "feuil1", "feuille1", "sheet", "feuille"]);
 
-/** Cherche « Situation du Client X » dans les premières lignes ; sinon replie sur le nom de la feuille. */
-function resolveClientNom(sheet: ExcelJS.Worksheet): string | null {
+/**
+ * Cherche « Situation du Client X » dans les premières lignes ; sinon replie
+ * sur le nom de la feuille. Ne renvoie jamais null : un nom d'onglet encore
+ * au défaut Excel ("Feuil1"…) ne doit jamais faire jeter une feuille dont le
+ * tableau est par ailleurs lisible — seul le nom du client est incertain,
+ * pas les données. Le placeholder reste unique par feuille (nécessaire pour
+ * ne pas regrouper deux feuilles différentes sous la même "fausse" clé) et
+ * reconnaissable pour être corrigé en revue avant import.
+ */
+function resolveClientNom(sheet: ExcelJS.Worksheet): string {
   // Certains classeurs ont un bandeau (logo, année, lignes vides) avant le titre.
   const maxScan = Math.min(20, sheet.rowCount || 20);
   for (let r = 1; r <= maxScan; r++) {
@@ -48,8 +56,18 @@ function resolveClientNom(sheet: ExcelJS.Worksheet): string | null {
     }
   }
   const sheetName = sheet.name.trim();
-  if (!sheetName || GENERIC_SHEET_NAMES.has(normalizeHeader(sheetName))) return null;
-  return sheetName;
+  if (sheetName && !GENERIC_SHEET_NAMES.has(normalizeHeader(sheetName))) return sheetName;
+  return `Client à renommer (${sheetName || "feuille sans nom"})`;
+}
+
+/** Nom placeholder posé par resolveClientNom quand ni titre ni nom d'onglet ne sont exploitables. */
+export function isPlaceholderClientNom(clientNom: string): boolean {
+  return clientNom.startsWith("Client à renommer (");
+}
+
+/** Reconnaît « Date », mais aussi les en-têtes composés comme « Date opération »/« Date paiement » — jamais un simple `.includes` pour éviter qu'un mot contenant "date" par hasard ne matche. */
+function isDateHeader(h: string): boolean {
+  return h === "date" || h.startsWith("date ");
 }
 
 /** Colonnes de départ de chaque bloc « Date | Nature | Quantité | Facture N° | Total investi | Montant payé | Reste à payer | Bénéfice net ». */
@@ -57,7 +75,7 @@ function findHeaderBlocks(row: ExcelJS.Row): number[] {
   const starts: number[] = [];
   const maxCol = Math.min(60, row.cellCount || 60);
   for (let c = 1; c <= maxCol; c++) {
-    if (normalizeHeader(cellToString(row.getCell(c).value)) === "date") starts.push(c);
+    if (isDateHeader(normalizeHeader(cellToString(row.getCell(c).value)))) starts.push(c);
   }
   return starts;
 }
@@ -196,6 +214,29 @@ export async function looksLikeJournalCaisseWorkbook(file: ArrayBuffer): Promise
   return false;
 }
 
+export interface DossierBulkDiagnostic {
+  sheetsScanned: number;
+  sheetsWithHeaderRow: number;
+}
+
+/**
+ * Utilisé uniquement quand parseDossierBulkXlsx ne trouve aucune ligne, pour
+ * expliquer précisément pourquoi plutôt qu'un message générique : est-ce
+ * qu'aucune feuille n'a d'en-tête Date reconnu (mauvais format de fichier),
+ * ou est-ce que l'en-tête est là mais qu'il n'y a aucune ligne de données
+ * dessous (tableau vide) ?
+ */
+export async function diagnoseDossierBulkWorkbook(file: ArrayBuffer): Promise<DossierBulkDiagnostic> {
+  const { default: ExcelJSLib } = await import("exceljs");
+  const wb = new ExcelJSLib.Workbook();
+  await wb.xlsx.load(file);
+  let sheetsWithHeaderRow = 0;
+  for (const sheet of wb.worksheets) {
+    if (findHeaderRow(sheet) != null) sheetsWithHeaderRow++;
+  }
+  return { sheetsScanned: wb.worksheets.length, sheetsWithHeaderRow };
+}
+
 /** Parse un classeur multi-clients (une feuille par client) en lignes dossier prêtes à revue. */
 export async function parseDossierBulkXlsx(file: ArrayBuffer): Promise<DossierBulkImportRow[]> {
   const { default: ExcelJSLib } = await import("exceljs");
@@ -205,7 +246,6 @@ export async function parseDossierBulkXlsx(file: ArrayBuffer): Promise<DossierBu
   const rows: DossierBulkImportRow[] = [];
   for (const sheet of wb.worksheets) {
     const clientNom = resolveClientNom(sheet);
-    if (!clientNom) continue;
 
     const headerRowNumber = findHeaderRow(sheet);
     if (headerRowNumber == null) continue;

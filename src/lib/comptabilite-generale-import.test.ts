@@ -96,4 +96,30 @@ describe("parseComptabiliteGeneraleXlsx", () => {
     const rows = await parseComptabiliteGeneraleXlsx(buf, { entiteType: "annexe" });
     expect(rows).toHaveLength(2);
   });
+
+  it("lit toutes les feuilles du classeur, pas seulement la première (bug réel : un onglet par mois au-delà du premier disparaissait silencieusement)", async () => {
+    const buf = await workbookToBuffer((wb) => {
+      const janvier = wb.addWorksheet("Janvier");
+      janvier.addRow(["Dates", "Clients", "Nature de la depenses", "Entrée", "Sortie"]);
+      janvier.addRow(["10/01/2026", "HAMADOU DIALLO", "REMBOURSEMENT", 1000, ""]);
+
+      const fevrier = wb.addWorksheet("Février");
+      fevrier.addRow(["Dates", "Clients", "Nature de la depenses", "Entrée", "Sortie"]);
+      fevrier.addRow(["10/02/2026", "Kalilou Coulibaly", "VERSEMENT BCI", "", 2000]);
+    });
+
+    const rows = await parseComptabiliteGeneraleXlsx(buf, { entiteType: "annexe" });
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.date)).toEqual(["2026-01-10", "2026-02-10"]);
+  });
+
+  it("lève une erreur seulement si AUCUNE feuille n'a d'en-tête reconnu", async () => {
+    const buf = await workbookToBuffer((wb) => {
+      wb.addWorksheet("Notes").addRow(["Rien d'exploitable ici"]);
+    });
+
+    await expect(parseComptabiliteGeneraleXlsx(buf, { entiteType: "annexe" })).rejects.toThrow(
+      /En-têtes Excel non reconnus/,
+    );
+  });
 });
