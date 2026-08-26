@@ -68,14 +68,17 @@ function StatPill({
   value,
   label,
   tone = "default",
+  title,
 }: {
   icon: typeof Boxes;
   value: string;
   label: string;
   tone?: "default" | "primary" | "warning";
+  /** Infobulle native (survol) — pour lever une ambiguïté sans alourdir le libellé affiché. */
+  title?: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 bg-muted/40">
+    <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 bg-muted/40" title={title}>
       <Icon
         className={cn(
           "size-4 shrink-0",
@@ -537,7 +540,12 @@ export function StockBulkImportButton() {
           {(phase === "review" || phase === "importing") && (
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
               <div className="flex flex-wrap gap-2">
-                <StatPill icon={Boxes} value={String(groups.length)} label="article(s) détecté(s)" />
+                <StatPill
+                  icon={Boxes}
+                  value={String(groups.length)}
+                  label="article(s) détecté(s)"
+                  title="Le produit suivi (ex. Cube Top Doumani) — pas chaque ligne/destinataire du registre."
+                />
                 <StatPill icon={ListChecks} value={String(totalRows)} label="lignes détectées" />
                 <StatPill icon={CheckCircle2} value={String(totalSelected)} label="sélectionnées" tone="primary" />
                 {totalInvalid > 0 && (
