@@ -153,13 +153,16 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         throw new Error("Session Supabase absente. Reconnectez-vous pour charger les données.");
       }
 
-      // Core et secondaire ne dépendent pas l'un de l'autre : lancés en
-      // parallèle plutôt qu'en 2 vagues séquentielles pour diviser le temps
-      // de chargement par ~2.
-      const [coreTruncated, secondaryOutcome] = await Promise.all([
-        runFetchCore(),
-        runFetchSecondary(),
-      ]);
+      // Core d'abord, secondaire ensuite (pas en Promise.all) : le groupe
+      // core (dossiers/clients/factures/écritures/...) alimente presque tous
+      // les écrans et la palette de recherche globale (toujours montée) —
+      // sans les 23 requêtes secondaires en concurrence sur le serveur pour
+      // les mêmes ressources, ces données core arrivent (et s'affichent, via
+      // le set() de runFetchCore) plus vite. Le secondaire continue ensuite
+      // en tâche de fond, sans bloquer l'affichage (déjà backfillé au fil de
+      // l'eau, cf. AppShell qui ne gate pas le rendu sur dataLoading).
+      const coreTruncated = await runFetchCore();
+      const secondaryOutcome = await runFetchSecondary();
 
       applyLoadOutcome(secondaryOutcome.failed, coreTruncated || secondaryOutcome.truncated, true);
       set({ dataLoading: false, lastSyncedAt: Date.now() });

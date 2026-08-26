@@ -18,7 +18,7 @@ import { KpiCard } from "@/components/sltt/kpi-card";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
+import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { getDashboardSections, kpiGridClass, type DashboardSection } from "@/lib/dashboard-config";
 import { UI } from "@/lib/ui-messages";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
@@ -65,7 +65,11 @@ export function DashboardScreen() {
   );
   const hasSection = (section: DashboardSection) => sections.has(section);
 
-  const anchorDate = getDashboardAnchorDate();
+  // Mémoïsé sur la clé jour : getDashboardAnchorDate() renvoie un nouveau
+  // Date à chaque appel, ce qui casserait les useMemo en aval
+  // (useDashboardMetrics, useBeneficeParSociete) à chaque rendu du dashboard.
+  const anchorDayKey = getDashboardAnchorDayKey();
+  const anchorDate = React.useMemo(() => getDashboardAnchorDate(), [anchorDayKey]);
   const { ecrituresAvecDate, calculerBeneficeMensuel } = useBeneficeParSociete(anchorDate);
   const beneficeMoisCourant = calculerBeneficeMensuel(selectedSocieteId).benefice;
 

@@ -11,7 +11,7 @@ import {
 } from "@/lib/domain-types";
 import { formatDateShort, formatFCFA, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
-import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
+import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
@@ -68,7 +68,11 @@ export function useDossiersListScreen() {
   const [page, setPage] = useState(1);
   const [transitionDossier, setTransitionDossier] = useState<Dossier | null>(null);
 
-  const refDate = getDashboardAnchorDate();
+  // Mémoïsé sur la clé jour (pas sur getDashboardAnchorDate() en dep directe,
+  // qui renvoie un nouveau Date à chaque appel et casserait le useMemo de
+  // `filtered` ci-dessous — recalcul du filtre/tri complet à chaque rendu).
+  const anchorDayKey = getDashboardAnchorDayKey();
+  const refDate = useMemo(() => getDashboardAnchorDate(), [anchorDayKey]);
 
   const availableYears = useMemo(() => {
     const years = new Set(dossiers.map((d) => d.date.slice(0, 4)).filter(Boolean));

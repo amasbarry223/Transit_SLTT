@@ -3,8 +3,10 @@
  * côté client). Format maison : une feuille par article (« Cube Top Doumani »,
  * etc.), avec un tableau positionnel Dates | Désignation | Quantité | Entrée |
  * Sortie | Stocks — un grand livre papier tenu à la main, retranscrit dans
- * Excel. Miroir de dossier-bulk-import.ts, adapté à la forme stock (une
- * feuille = un article, pas un client).
+ * Excel. Sortie et Stocks sont optionnelles : certains registres n'ont que
+ * Quantité + Entrée, Sortie étant alors déduite (Quantité renseignée mais
+ * Entrée vide). Miroir de dossier-bulk-import.ts, adapté à la forme stock
+ * (une feuille = un article, pas un client).
  */
 
 import type ExcelJS from "exceljs";
@@ -44,6 +46,7 @@ const GENERIC_SHEET_NAMES = new Set(["sheet1", "feuil1", "feuille1", "sheet", "f
 interface HeaderColumns {
   dateCol: number;
   designationCol: number;
+  quantiteCol: number | null;
   entreeCol: number;
   sortieCol: number;
   stocksCol: number | null;
@@ -57,6 +60,7 @@ function findHeaderColumns(sheet: ExcelJS.Worksheet): { rowNumber: number; cols:
     const maxCol = Math.min(30, row.cellCount || 30);
     let dateCol: number | null = null;
     let designationCol: number | null = null;
+    let quantiteCol: number | null = null;
     let entreeCol: number | null = null;
     let sortieCol: number | null = null;
     let stocksCol: number | null = null;
@@ -64,6 +68,7 @@ function findHeaderColumns(sheet: ExcelJS.Worksheet): { rowNumber: number; cols:
       const h = normalizeHeader(cellToString(row.getCell(c).value));
       if (dateCol == null && h === "dates") dateCol = c;
       if (designationCol == null && h.includes("designation")) designationCol = c;
+      if (quantiteCol == null && h === "quantite") quantiteCol = c;
       if (entreeCol == null && h === "entree") entreeCol = c;
       if (sortieCol == null && h === "sortie") sortieCol = c;
       if (stocksCol == null && h === "stocks") stocksCol = c;
@@ -74,6 +79,7 @@ function findHeaderColumns(sheet: ExcelJS.Worksheet): { rowNumber: number; cols:
         cols: {
           dateCol,
           designationCol: designationCol ?? dateCol + 1,
+          quantiteCol,
           entreeCol: entreeCol ?? dateCol + 3,
           sortieCol: sortieCol ?? dateCol + 4,
           stocksCol,
@@ -227,16 +233,22 @@ function parseDataRow(
 ): StockBulkImportRow | null {
   const dateRaw = cellToString(row.getCell(cols.dateCol).value).trim();
   const designation = cellToString(row.getCell(cols.designationCol).value).trim();
+  const quantiteRaw =
+    cols.quantiteCol != null ? cellToString(row.getCell(cols.quantiteCol).value).trim() : "";
   const entreeRaw = cellToString(row.getCell(cols.entreeCol).value).trim();
   const sortieRaw = cellToString(row.getCell(cols.sortieCol).value).trim();
   const stocksRaw = cols.stocksCol != null ? cellToString(row.getCell(cols.stocksCol).value).trim() : "";
 
-  if (!dateRaw && !designation && !entreeRaw && !sortieRaw) return null;
+  if (!dateRaw && !designation && !quantiteRaw && !entreeRaw && !sortieRaw) return null;
 
+  const quantiteCellule = quantiteRaw ? parseAmount(quantiteRaw) : 0;
   const entree = entreeRaw ? parseAmount(entreeRaw) : 0;
   const sortie = sortieRaw ? parseAmount(sortieRaw) : 0;
   const warnings: string[] = [];
 
+  // Registre sans colonne Sortie (« Quantité » + « Entrée » seulement) :
+  // Quantité porte toujours le montant du mouvement, Entrée n'est rempli
+  // que pour une entrée — vide, la ligne est une sortie de ce montant.
   let type: "Entrée" | "Sortie" | null = null;
   let quantite = 0;
   if (entree > 0 && sortie > 0) {
@@ -244,9 +256,22 @@ function parseDataRow(
   } else if (entree > 0) {
     type = "Entrée";
     quantite = entree;
+    if (quantiteCellule > 0 && quantiteCellule !== entree) {
+      warnings.push(
+        `Quantité (${quantiteCellule.toLocaleString("fr-FR")}) ≠ Entrée (${entree.toLocaleString("fr-FR")})`,
+      );
+    }
   } else if (sortie > 0) {
     type = "Sortie";
     quantite = sortie;
+    if (quantiteCellule > 0 && quantiteCellule !== sortie) {
+      warnings.push(
+        `Quantité (${quantiteCellule.toLocaleString("fr-FR")}) ≠ Sortie (${sortie.toLocaleString("fr-FR")})`,
+      );
+    }
+  } else if (quantiteCellule > 0) {
+    type = "Sortie";
+    quantite = quantiteCellule;
   } else {
     warnings.push("Ni Entrée ni Sortie renseignée");
   }

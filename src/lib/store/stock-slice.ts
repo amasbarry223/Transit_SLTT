@@ -208,31 +208,43 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
         s.annexeId === input.annexeId &&
         s.marchandise.trim().toLowerCase() === key,
     );
-    if (existing) {
-      throw new Error(
-        `L'article « ${marchandise} » existe déjà pour cette société/annexe — utilisez les entrées/sorties normales pour compléter son historique.`,
-      );
-    }
 
-    const { data: itemData, error: itemError } = await supabase
-      .from("stock_items")
-      .insert({
-        marchandise,
-        quantite: 0,
-        unite,
-        seuil: input.seuil,
-        depositaire: input.depositaire?.trim() || "—",
-        commercial: input.commercial?.trim() || "—",
-        somme_payee: 0,
-        reste_a_payer: 0,
-        client_id: input.clientId || null,
-        societe_id: input.societeId,
-        annexe_id: input.annexeId,
-      })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
-      .single();
-    if (itemError) throw itemError;
-    const stockId = itemData.id as string;
+    // Un article déjà en base est complété (nouveaux mouvements + solde
+    // cumulé) plutôt que refusé — le grand livre papier se remplit page
+    // après page, l'utilisateur doit pouvoir réimporter sans tout ressaisir
+    // à la main. Le nom/l'unité réels priment alors sur ceux de la revue,
+    // pour ne jamais faire diverger l'affichage de ce qui existe déjà.
+    let stockId: string;
+    let effectiveMarchandise = marchandise;
+    let effectiveUnite = unite;
+    let baseQuantite = 0;
+
+    if (existing) {
+      stockId = existing.id;
+      effectiveMarchandise = existing.marchandise;
+      effectiveUnite = existing.unite;
+      baseQuantite = existing.quantite;
+    } else {
+      const { data: itemData, error: itemError } = await supabase
+        .from("stock_items")
+        .insert({
+          marchandise,
+          quantite: 0,
+          unite,
+          seuil: input.seuil,
+          depositaire: input.depositaire?.trim() || "—",
+          commercial: input.commercial?.trim() || "—",
+          somme_payee: 0,
+          reste_a_payer: 0,
+          client_id: input.clientId || null,
+          societe_id: input.societeId,
+          annexe_id: input.annexeId,
+        })
+        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .single();
+      if (itemError) throw itemError;
+      stockId = itemData.id as string;
+    }
 
     // Insert direct (pas la RPC apply_stock_movement, qui horodate toujours
     // now() et ne convient qu'à la saisie live) — les policies RLS
@@ -247,9 +259,9 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
         annexe_id: input.annexeId,
         date: m.date,
         type: m.type,
-        marchandise,
+        marchandise: effectiveMarchandise,
         quantite: m.quantite,
-        unite,
+        unite: effectiveUnite,
         responsable: m.responsable || "Import historique",
       };
     });
@@ -259,43 +271,55 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       .insert(movementRows)
       .select("*, societes(nom), annexes(nom)");
     if (mouvementsError) {
-      // Compensation : pas d'article orphelin sans historique si l'insert en masse échoue.
-      const { error: cleanupError } = await supabase.from("stock_items").delete().eq("id", stockId);
-      if (cleanupError) {
-        // Ne pas avaler silencieusement : si la compensation échoue aussi
-        // (policy RLS, etc.), un article fantôme quantite=0 reste en base et
-        // bloquera un nouvel essai via la garde anti-doublon ci-dessus.
-        logError("[stock] Échec de la compensation après échec d'insertion des mouvements", cleanupError, {
-          stockId,
-        });
+      // Compensation : pas d'article orphelin sans historique si l'insert en
+      // masse échoue — seulement pour un article qu'on vient de créer, jamais
+      // pour un article préexistant qu'on complétait.
+      if (!existing) {
+        const { error: cleanupError } = await supabase.from("stock_items").delete().eq("id", stockId);
+        if (cleanupError) {
+          // Ne pas avaler silencieusement : si la compensation échoue aussi
+          // (policy RLS, etc.), un article fantôme quantite=0 reste en base et
+          // bloquera un nouvel essai via la garde anti-doublon ci-dessus.
+          logError("[stock] Échec de la compensation après échec d'insertion des mouvements", cleanupError, {
+            stockId,
+          });
+        }
       }
       throw mouvementsError;
     }
 
+    // IDs du lot qu'on vient d'insérer — la compensation ci-dessous ne doit
+    // jamais toucher un mouvement préexistant d'un article complété.
+    const insertedMouvementIds = (mouvementsData ?? []).map((m) => m.id as string);
+
+    const finalQuantite = baseQuantite + netQuantite;
     const { data: updatedItem, error: updateError } = await supabase
       .from("stock_items")
-      .update({ quantite: netQuantite })
+      .update({ quantite: finalQuantite })
       .eq("id", stockId)
       .select("*, clients(nom), societes(nom), annexes(nom)")
       .single();
     if (updateError) {
-      // Compensation symétrique : à ce stade l'article ET ses mouvements sont
-      // déjà en base (insert atomique réussi juste au-dessus) mais quantite
-      // est resté à 0 — sans ce nettoyage, l'article reste incohérent
-      // (historique présent, solde faux) et personne ne le corrige jamais
-      // puisque l'appelant ne voit qu'une erreur et que le state local n'est
-      // jamais mis à jour pour ce cas.
-      const { error: cleanupMvtError } = await supabase.from("mouvements").delete().eq("stock_id", stockId);
+      // Compensation symétrique : à ce stade les mouvements sont déjà en base
+      // (insert atomique réussi juste au-dessus) mais quantite n'a pas suivi
+      // — sans ce nettoyage, l'article reste incohérent (historique présent,
+      // solde faux) et personne ne le corrige jamais puisque l'appelant ne
+      // voit qu'une erreur et que le state local n'est jamais mis à jour. Ne
+      // supprimer que les mouvements de ce lot (par id), jamais tout
+      // l'historique du stock_id — un article complété peut déjà en avoir.
+      const { error: cleanupMvtError } = await supabase.from("mouvements").delete().in("id", insertedMouvementIds);
       if (cleanupMvtError) {
         logError("[stock] Échec de la compensation des mouvements après échec de mise à jour du solde", cleanupMvtError, {
           stockId,
         });
       }
-      const { error: cleanupItemError } = await supabase.from("stock_items").delete().eq("id", stockId);
-      if (cleanupItemError) {
-        logError("[stock] Échec de la compensation de l'article après échec de mise à jour du solde", cleanupItemError, {
-          stockId,
-        });
+      if (!existing) {
+        const { error: cleanupItemError } = await supabase.from("stock_items").delete().eq("id", stockId);
+        if (cleanupItemError) {
+          logError("[stock] Échec de la compensation de l'article après échec de mise à jour du solde", cleanupItemError, {
+            stockId,
+          });
+        }
       }
       throw updateError;
     }
@@ -303,14 +327,16 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const newItem = mapStockItemFromDb(updatedItem);
     const newMouvements = (mouvementsData ?? []).map(mapMouvementFromDb);
     set((s) => ({
-      stock: [newItem, ...s.stock],
+      stock: existing ? s.stock.map((it) => (it.id === newItem.id ? newItem : it)) : [newItem, ...s.stock],
       mouvements: [...newMouvements, ...s.mouvements],
-      stockSeq: s.stockSeq + 1,
+      stockSeq: existing ? s.stockSeq : s.stockSeq + 1,
     }));
     await get().addAuditLog(
       AUDIT_MODULE.Stock,
-      AUDIT_ACTION.Creation,
-      `Import historique : article « ${marchandise} » créé avec ${input.mouvements.length} mouvement(s), stock final ${netQuantite} ${unite}.`,
+      existing ? AUDIT_ACTION.Modification : AUDIT_ACTION.Creation,
+      existing
+        ? `Import historique : ${input.mouvements.length} mouvement(s) ajoutés à l'article existant « ${effectiveMarchandise} », stock final ${finalQuantite} ${effectiveUnite}.`
+        : `Import historique : article « ${effectiveMarchandise} » créé avec ${input.mouvements.length} mouvement(s), stock final ${finalQuantite} ${effectiveUnite}.`,
     );
     return newItem;
   },

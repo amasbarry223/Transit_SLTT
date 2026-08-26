@@ -155,4 +155,32 @@ describe("parseStockBulkXlsx", () => {
     expect(outlier?.warnings.some((w) => w.includes("Date hors séquence"))).toBe(true);
     expect(groups[0].rows.filter((r) => r.dateSuggested)).toHaveLength(1);
   });
+
+  it("déduit Entrée/Sortie d'un registre sans colonne Sortie (Quantité + Entrée seulement)", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Cube Top Doumani");
+    sheet.addRow(["DATES", "DESIGNATION", "QUANTITE", "ENTREE"]);
+    sheet.addRow(["26/11/2025", "STOCK INITIAL", "100", "100"]);
+    sheet.addRow(["26/11/2025", "AMI KOUMA", "20", ""]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const groups = await parseStockBulkXlsx(buf);
+    const [entree, sortie] = groups[0].rows;
+    expect(entree).toMatchObject({ type: "Entrée", quantite: 100, stockCalcule: 100 });
+    expect(sortie).toMatchObject({ type: "Sortie", quantite: 20, stockCalcule: 80 });
+    expect(entree.warnings).toHaveLength(0);
+    expect(sortie.warnings).toHaveLength(0);
+  });
+
+  it("signale une incohérence Quantité/Entrée sur une ligne d'entrée", async () => {
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Riz");
+    sheet.addRow(["DATES", "DESIGNATION", "QUANTITE", "ENTREE"]);
+    sheet.addRow(["01/01/2026", "STOCK INITIAL", "90", "100"]);
+    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
+
+    const groups = await parseStockBulkXlsx(buf);
+    expect(groups[0].rows[0]).toMatchObject({ type: "Entrée", quantite: 100 });
+    expect(groups[0].rows[0].warnings.some((w) => w.includes("≠ Entrée"))).toBe(true);
+  });
 });

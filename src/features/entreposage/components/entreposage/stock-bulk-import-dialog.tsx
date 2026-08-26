@@ -104,10 +104,12 @@ function StatPill({
 /**
  * Import en masse d'un historique de mouvements de stock depuis un classeur Excel
  * « grand livre » (une feuille par article : Dates | Désignation | Quantité |
- * Entrée | Sortie | Stocks). Crée l'article (quantite=0) puis rejoue chaque
- * mouvement daté via importStockHistorique — réservé aux articles qui
- * n'existent pas encore (le store refuse sinon, pour ne jamais dupliquer ou
- * écraser un historique existant).
+ * Entrée | Sortie | Stocks), via importStockHistorique. Un article inexistant
+ * est créé (quantite=0 puis solde rejoué) ; un article déjà présent (même
+ * société/annexe/nom) est complété — ses mouvements s'ajoutent à son solde
+ * actuel. Seuil/Dépositaire/Commercial/Client ne sont appliqués qu'à la
+ * création : pour un article existant ils restent ignorés (modifiables via
+ * Entreposage → Modifier), les champs de revue correspondants sont désactivés.
  */
 export function StockBulkImportButton() {
   const { toast } = useToast();
@@ -163,7 +165,7 @@ export function StockBulkImportButton() {
         toastWarning(toast, {
           title: "Aucune ligne exploitable",
           description:
-            "Vérifiez que le fichier contient un tableau avec les colonnes Dates, Désignation, Entrée, Sortie (et idéalement Stocks pour le contrôle croisé).",
+            "Vérifiez que le fichier contient un tableau avec les colonnes Dates, Désignation, Entrée et/ou Sortie (Quantité et Stocks sont acceptées mais optionnelles).",
         });
         return;
       }
@@ -227,17 +229,48 @@ export function StockBulkImportButton() {
     setGroups((prev) => prev.map((g) => (g.key === groupKey ? { ...g, ...patch } : g)));
   }
 
-  const groupStats = useMemo(
-    () =>
-      groups.map((g) => {
+  const stock = useStore((s) => s.stock);
+
+  const groupStats = useMemo(() => {
+    // handleConfirm importe les groupes séquentiellement, dans l'ordre de ce
+    // tableau : deux feuilles visant le même article (même clé) doivent donc
+    // enchaîner leurs soldes ici aussi, pas repartir chacune du solde en base
+    // — sinon la revue affiche un solde/négatif qui ne correspond pas à ce
+    // que l'import produira réellement.
+    const pendingBaseline = new Map<string, number>();
+    const pendingConfig = new Map<string, { unite: string; seuil: string }>();
+    return groups.map((g) => {
         const selected = g.rows.filter((r) => r.selected);
         const invalidSelected = selected.filter((r) => !r.dateValue || r.type == null);
-        let running = 0;
+        const key = g.marchandise.trim().toLowerCase();
+        const matchKey = key ? `${societeId}|${effectiveAnnexeId}|${key}` : null;
+        // Même règle de correspondance que la garde anti-doublon du store
+        // (societeId/annexeId/marchandise) — juste pour afficher un repère
+        // visuel en revue, pas pour bloquer quoi que ce soit ici.
+        const existingItem = key
+          ? stock.find(
+              (s) =>
+                s.societeId === societeId &&
+                s.annexeId === effectiveAnnexeId &&
+                s.marchandise.trim().toLowerCase() === key,
+            )
+          : undefined;
+        const pending = matchKey ? pendingBaseline.get(matchKey) : undefined;
+        // Une feuille précédente du même classeur visant le même article
+        // prime sur la base en store : c'est le solde qu'elle laissera une
+        // fois importée en premier — et c'est aussi elle qui fixera
+        // unité/seuil (le store les ignore pour un article complété).
+        const priorConfig = matchKey ? pendingConfig.get(matchKey) : undefined;
+        let running = pending ?? existingItem?.quantite ?? 0;
         let negativeAt: number | null = null;
         for (const r of selected) {
           if (r.type == null) continue;
           running += r.type === "Entrée" ? r.quantite : -r.quantite;
           if (running < 0 && negativeAt == null) negativeAt = r.rowNumber;
+        }
+        if (matchKey) {
+          pendingBaseline.set(matchKey, running);
+          if (!pendingConfig.has(matchKey)) pendingConfig.set(matchKey, { unite: g.unite, seuil: g.seuil });
         }
         const entrees = selected.filter((r) => r.type === "Entrée").reduce((sum, r) => sum + r.quantite, 0);
         const sorties = selected.filter((r) => r.type === "Sortie").reduce((sum, r) => sum + r.quantite, 0);
@@ -257,14 +290,16 @@ export function StockBulkImportButton() {
           entrees,
           sorties,
           checkedState,
+          existingItem,
+          mergesIntoPriorSheet: pending != null,
+          priorConfig,
           // Marchandise/unité ne sont pas requises pour importer : un nom
           // provisoire (unique par feuille) est utilisé par handleConfirm si
           // elles sont vides, modifiable ensuite depuis Entreposage → Modifier.
           valid: selected.length > 0 && invalidSelected.length === 0 && negativeAt == null,
         };
-      }),
-    [groups],
-  );
+      });
+  }, [groups, stock, societeId, effectiveAnnexeId]);
 
   const totalRows = useMemo(() => groups.reduce((sum, g) => sum + g.rows.length, 0), [groups]);
   const totalSelected = useMemo(() => groupStats.reduce((sum, g) => sum + g.selectedCount, 0), [groupStats]);
@@ -369,7 +404,7 @@ export function StockBulkImportButton() {
             </DialogTitle>
             <DialogDescription>
               {phase === "config"
-                ? "Importez un classeur Excel « grand livre » (une feuille par article) pour créer les articles manquants avec tout leur historique d'entrées/sorties déjà daté."
+                ? "Importez un classeur Excel « grand livre » (une feuille par article). Un article inexistant est créé avec tout son historique déjà daté ; un article existant (même nom, société, annexe) est complété — ses nouveaux mouvements s'ajoutent à son solde actuel."
                 : "Vérifiez les lignes détectées avant de les importer. Les dates illisibles ou hors séquence (année/mois incohérent avec les voisins) sont préremplies en ambre — confirmez ou corrigez avant d'importer."}
             </DialogDescription>
           </DialogHeader>
@@ -552,25 +587,62 @@ export function StockBulkImportButton() {
                                     className={cn("h-7 w-56 text-xs font-semibold", !g.marchandise.trim() && "border-amber-400")}
                                   />
                                   <Input
-                                    value={g.unite}
+                                    value={
+                                      stats.existingItem
+                                        ? stats.existingItem.unite
+                                        : (stats.priorConfig?.unite ?? g.unite)
+                                    }
                                     onChange={(e) => updateGroupField(g.key, { unite: e.target.value })}
                                     placeholder="Unité (cartons…)"
-                                    disabled={phase === "importing"}
-                                    className={cn("h-7 w-32 text-xs", !g.unite.trim() && "border-amber-400")}
+                                    disabled={phase === "importing" || !!stats.existingItem || !!stats.priorConfig}
+                                    title={
+                                      stats.existingItem || stats.priorConfig
+                                        ? "Article existant : unité déjà fixée, ignorée ici"
+                                        : undefined
+                                    }
+                                    className={cn(
+                                      "h-7 w-32 text-xs",
+                                      !g.unite.trim() && !stats.existingItem && !stats.priorConfig && "border-amber-400",
+                                    )}
                                   />
                                   <Input
                                     type="number"
                                     min={0}
-                                    value={g.seuil}
+                                    value={
+                                      stats.existingItem
+                                        ? String(stats.existingItem.seuil)
+                                        : (stats.priorConfig?.seuil ?? g.seuil)
+                                    }
                                     onChange={(e) => updateGroupField(g.key, { seuil: e.target.value })}
                                     placeholder="Seuil"
-                                    disabled={phase === "importing"}
+                                    disabled={phase === "importing" || !!stats.existingItem || !!stats.priorConfig}
+                                    title={
+                                      stats.existingItem || stats.priorConfig
+                                        ? "Article existant : seuil déjà fixé, ignoré ici"
+                                        : undefined
+                                    }
                                     className="h-7 w-20 text-xs"
                                   />
-                                  <ToneBadge tone="blue" size="sm">
-                                    Nouvel article
-                                  </ToneBadge>
+                                  {stats.existingItem ? (
+                                    <ToneBadge tone="amber" size="sm">
+                                      Article existant
+                                    </ToneBadge>
+                                  ) : stats.mergesIntoPriorSheet ? (
+                                    <ToneBadge tone="amber" size="sm">
+                                      Complète une feuille précédente
+                                    </ToneBadge>
+                                  ) : (
+                                    <ToneBadge tone="blue" size="sm">
+                                      Nouvel article
+                                    </ToneBadge>
+                                  )}
                                   <span className="text-[11px] text-muted-foreground">
+                                    {stats.existingItem && (
+                                      <>Stock actuel avant import {stats.existingItem.quantite} {stats.existingItem.unite} · </>
+                                    )}
+                                    {!stats.existingItem && stats.mergesIntoPriorSheet && (
+                                      <>Solde repris de la feuille précédente (même article) · </>
+                                    )}
                                     {g.rows.length} ligne{g.rows.length !== 1 ? "s" : ""} · Entrées {stats.entrees} ·
                                     Sorties {stats.sorties} · Stock final {stats.stockFinal}
                                   </span>
@@ -579,10 +651,23 @@ export function StockBulkImportButton() {
                                       Stock négatif à la ligne {stats.negativeAt} avec cette sélection
                                     </span>
                                   )}
-                                  {(!g.marchandise.trim() || !g.unite.trim()) && (
+                                  {!stats.existingItem &&
+                                    !stats.priorConfig &&
+                                    (!g.marchandise.trim() || !g.unite.trim()) && (
                                     <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
                                       Nom/unité non renseignés — un nom provisoire sera utilisé, modifiable
                                       depuis Entreposage après import.
+                                    </span>
+                                  )}
+                                  {stats.existingItem && (
+                                    <span className="text-[11px] text-muted-foreground italic">
+                                      Unité/seuil de l&apos;article existant conservés — dépositaire/commercial/client
+                                      ne sont pas modifiés par cet import (utilisez Entreposage → Modifier).
+                                    </span>
+                                  )}
+                                  {!stats.existingItem && stats.priorConfig && (
+                                    <span className="text-[11px] text-muted-foreground italic">
+                                      Unité/seuil repris de la feuille précédente pour ce même article.
                                     </span>
                                   )}
                                 </div>

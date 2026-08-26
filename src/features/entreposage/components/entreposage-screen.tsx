@@ -16,7 +16,7 @@ import { useStore } from "@/lib/store";
 import type { StockItem } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
-import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
+import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { exportToExcel, printStockInventory } from "@/lib/export";
 import { resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -115,13 +115,14 @@ export function EntreposageScreen() {
     (acc, s) => acc + s.sommePayee + s.resteAPayer,
     0,
   );
+  const anchorDayKey = getDashboardAnchorDayKey();
   const mouvementsCeMois = useMemo(() => {
     const anchor = getDashboardAnchorDate();
     return mouvements.filter((m) => {
       const d = parseLocalDate(m.date);
       return d.getFullYear() === anchor.getFullYear() && d.getMonth() === anchor.getMonth();
     }).length;
-  }, [mouvements]);
+  }, [mouvements, anchorDayKey]);
   const alertesStockFaible = stock.filter((s) => s.quantite < s.seuil).length;
 
   function goToHistory(stockId: string, marchandise: string) {
