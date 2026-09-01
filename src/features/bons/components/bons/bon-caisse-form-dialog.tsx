@@ -6,9 +6,7 @@ import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { shouldShowAnnexeForSociete } from "@/lib/societe-brand";
 import { UI } from "@/lib/ui-messages";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,14 +44,11 @@ type BonCaisseFormDialogProps = {
 export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCaisseFormDialogProps) {
   const { toast } = useToast();
   const addBonSortieCaisse = useStore((state) => state.addBonSortieCaisse);
-  const societes = useStore((state) => state.societes);
-  const selectedSocieteId = useUiPrefs((state) => state.selectedSocieteId);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const [caisseDate, setCaisseDate] = useState(todayIso);
-  const [caisseSocieteId, setCaisseSocieteId] = useState("");
   const [caisseAnnexeId, setCaisseAnnexeId] = useState("");
   const [caisseLignes, setCaisseLignes] = useState<CaisseLigneForm[]>([
     { date: todayIso, beneficiaire: "", motif: "", montant: "" },
@@ -65,22 +60,15 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
     setPrevDialogOpen(open);
     if (open) {
       setCaisseDate(todayIso);
-      setCaisseSocieteId(selectedSocieteId ?? societes[0]?.id ?? "");
       setCaisseAnnexeId(activeAnnexeId ?? "");
       setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
     }
   }
 
-  // L'annexe (implantation Mali/CI) n'a de sens que pour la société transit
-  // (SLTT), qui seule opère sur les deux implantations — cf. client-form-fields.tsx.
-  // Top Doumani n'a pas ce découpage : masquer le champ plutôt que de faire
-  // choisir une annexe qui ne s'applique pas à cette société.
-  const showAnnexe = shouldShowAnnexeForSociete(caisseSocieteId, societes, annexes);
-  const resolvedCaisseAnnexeId = showAnnexe ? caisseAnnexeId : (activeAnnexeId ?? "");
+  const resolvedCaisseAnnexeId = caisseAnnexeId || activeAnnexeId || "";
 
   const caisseTotalSaisi = caisseLignes.reduce((sum, ligne) => sum + (Number(ligne.montant) || 0), 0);
   const caisseValid =
-    !!caisseSocieteId &&
     !!resolvedCaisseAnnexeId &&
     caisseLignes.length > 0 &&
     caisseLignes.every((ligne) => ligne.beneficiaire.trim() && ligne.motif.trim() && Number(ligne.montant) > 0);
@@ -112,7 +100,6 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
     try {
       const bon = await addBonSortieCaisse({
         date: caisseDate,
-        societeId: caisseSocieteId,
         annexeId: resolvedCaisseAnnexeId,
         lignes: caisseLignes.map((ligne) => ({
           date: ligne.date,
@@ -166,25 +153,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="caisse-societe" className="text-sm font-medium text-foreground/90">
-              Société <span className="text-red-500">*</span>
-            </Label>
-            <Select value={caisseSocieteId} onValueChange={setCaisseSocieteId}>
-              <SelectTrigger id="caisse-societe" className="h-10 w-full sm:w-52">
-                <SelectValue placeholder="Sélectionner une société" />
-              </SelectTrigger>
-              <SelectContent>
-                {societes.map((societe) => (
-                  <SelectItem key={societe.id} value={societe.id}>
-                    {societe.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {showAnnexe && (
+          {annexes.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="caisse-annexe" className="text-sm font-medium text-foreground/90">
                 Annexe <span className="text-red-500">*</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Building2, Eye, Plus, Trash2 } from "lucide-react";
+import { Eye, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/sltt/page-header";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ListFilters } from "@/components/sltt/list-filters";
@@ -57,21 +57,6 @@ export function ArchivesScreen() {
         onClear={screen.clearFilters}
         advanced={
           <>
-            <Select
-              value={screen.societeFilter || "all"}
-              onValueChange={(v) => screen.setSocieteFilter(v === "all" ? "" : v)}
-            >
-              <SelectTrigger className="h-10 w-48">
-                <Building2 className="mr-1.5 size-3.5 text-slate-400" />
-                <SelectValue placeholder="Société" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les sociétés</SelectItem>
-                {screen.societes.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select
               value={screen.clientFilter || "all"}
               onValueChange={(v) => screen.setClientFilter(v === "all" ? "" : v)}

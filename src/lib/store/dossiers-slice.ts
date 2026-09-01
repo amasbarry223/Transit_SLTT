@@ -28,8 +28,6 @@ export function mapDossierFromDb(row: DossierRow): Dossier {
   return {
     id: row.id,
     reference: row.reference,
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     clientId: row.client_id,
@@ -71,18 +69,17 @@ export interface DossiersSlice {
   ) => Promise<void>;
 }
 
-/** Génère la prochaine référence dossier (numérotation par annexe si société transit, sinon globale). */
+/** Génère la prochaine référence dossier (numérotation par code d'annexe). */
 function resolveDossierReference(
   get: () => SLTTState,
-  societeId: string,
   annexeId: string,
   year: number,
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
-  const societe = get().societes.find((item) => item.id === societeId);
+  const societe = get().societes[0];
   const annexe = get().annexes.find((item) => item.id === annexeId);
   const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
   return computeDossierReference(
-    societe,
+    undefined,
     annexe,
     prefix,
     get().dossiers.map((dossier) => dossier.reference),
@@ -98,7 +95,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const year = new Date().getFullYear();
     const { reference: initialReference, useAnnexeNumbering } = resolveDossierReference(
       get,
-      input.societeId,
       input.annexeId,
       year,
     );
@@ -112,7 +108,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         .from("dossiers")
         .insert({
           reference: ref,
-          societe_id: input.societeId,
           annexe_id: input.annexeId,
           client_id: input.clientId,
           bl: input.bl,
@@ -133,7 +128,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
           poids_total: input.poidsTotal,
           notes: input.notes,
         })
-        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .select("*, clients(nom), annexes(nom)")
         .single(),
     );
 
@@ -165,11 +160,11 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
    */
   importDossierHistorique: async (input) => {
     const year = Number(input.date.slice(0, 4)) || new Date().getFullYear();
-    const societe = get().societes.find((item) => item.id === input.societeId);
+    const societe = get().societes[0];
     const annexe = get().annexes.find((item) => item.id === input.annexeId);
     const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
     const { reference } = computeHistoricalDossierReference(
-      societe,
+      undefined,
       annexe,
       prefix,
       get().dossiers.map((dossier) => dossier.reference),
@@ -180,7 +175,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       .from("dossiers")
       .insert({
         reference,
-        societe_id: input.societeId,
         annexe_id: input.annexeId,
         client_id: input.clientId,
         bl: "",
@@ -195,7 +189,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         date: input.date,
         notes: input.notes,
       })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .select("*, clients(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
@@ -224,10 +218,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const existing = get().dossiers.find((dossier) => dossier.id === id);
     // Le statut ne se change que via transitionDossier (flux guidé).
     const statut = existing?.statut ?? input.statut;
-    const societeNom =
-      get().societes.find((item) => item.id === input.societeId)?.nom ||
-      existing?.societeNom ||
-      "—";
     const annexeNom =
       get().annexes.find((item) => item.id === input.annexeId)?.nom ||
       existing?.annexeNom;
@@ -235,7 +225,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const { error } = await supabase
       .from("dossiers")
       .update({
-        societe_id: input.societeId,
         annexe_id: input.annexeId,
         client_id: input.clientId,
         bl: input.bl,
@@ -261,7 +250,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     set((s) => {
       const updatedDossiers = s.dossiers.map((dossier) =>
         dossier.id === id
-          ? { ...dossier, ...input, statut, societeId: input.societeId, societeNom, annexeId: input.annexeId, annexeNom }
+          ? { ...dossier, ...input, statut, annexeId: input.annexeId, annexeNom }
           : dossier,
       );
       return {

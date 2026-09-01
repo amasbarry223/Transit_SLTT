@@ -1,60 +1,121 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { readLegacyNavPersist } from "@/lib/session/legacy-persist";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useSession } from "@/lib/session/session-store";
+import { logWarn } from "@/shared/logger";
 
 export type Theme = "light" | "dark";
 /** dmy = JJ/MM/AAAA, mdy = MM/JJ/AAAA, ymd = AAAA-MM-JJ. */
 export type DateFormat = "dmy" | "mdy" | "ymd";
 
-interface UiPrefsState {
+export interface ProfileUiPrefs {
   theme: Theme;
-  /** Filtre société partagé et mémorisé entre écrans (F1). null = "Toutes les sociétés". */
-  selectedSocieteId: string | null;
-  /** Annexe active — sous quelle annexe créer les nouveaux enregistrements. */
-  selectedAnnexeId: string | null;
   dateFormat: DateFormat;
+  selectedAnnexeId: string | null;
+}
+
+interface UiPrefsState extends ProfileUiPrefs {
+  hydratePrefs: (prefs: ProfileUiPrefs) => void;
+  resetPrefs: () => void;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
-  setSelectedSocieteId: (id: string | null) => void;
   setSelectedAnnexeId: (id: string | null) => void;
   setDateFormat: (format: DateFormat) => void;
 }
 
-function seedFromLegacy(): Partial<UiPrefsState> {
-  const legacy = readLegacyNavPersist();
-  if (!legacy) return {};
+const DEFAULTS: ProfileUiPrefs = {
+  theme: "light",
+  selectedAnnexeId: null,
+  dateFormat: "dmy",
+};
+
+type PrefsPatch = {
+  theme?: Theme;
+  date_format?: DateFormat;
+  selected_annexe_id?: string | null;
+};
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingPatch: PrefsPatch = {};
+
+function cancelPersist() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  pendingPatch = {};
+}
+
+function schedulePersist(patch: PrefsPatch) {
+  pendingPatch = { ...pendingPatch, ...patch };
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    const payload = pendingPatch;
+    pendingPatch = {};
+    persistTimer = null;
+
+    const userId = useSession.getState().currentUserId;
+    if (!userId || !isSupabaseConfigured) return;
+
+    void supabase
+      .from("profiles")
+      .update(payload)
+      .eq("id", userId)
+      .then(({ error }) => {
+        if (error) logWarn("[SLTT] Sauvegarde des préférences", error);
+      });
+  }, 300);
+}
+
+export function isTheme(value: unknown): value is Theme {
+  return value === "light" || value === "dark";
+}
+
+export function isDateFormat(value: unknown): value is DateFormat {
+  return value === "dmy" || value === "mdy" || value === "ymd";
+}
+
+export function prefsFromProfile(profile: {
+  theme?: string | null;
+  date_format?: string | null;
+  selected_annexe_id?: string | null;
+}): ProfileUiPrefs {
   return {
-    theme: legacy.theme === "dark" ? "dark" : "light",
-    selectedSocieteId: legacy.selectedSocieteId ?? null,
-    selectedAnnexeId: legacy.selectedAnnexeId ?? null,
+    theme: isTheme(profile.theme) ? profile.theme : DEFAULTS.theme,
+    dateFormat: isDateFormat(profile.date_format) ? profile.date_format : DEFAULTS.dateFormat,
+    selectedAnnexeId: profile.selected_annexe_id ?? null,
   };
 }
 
-export const useUiPrefs = create<UiPrefsState>()(
-  persist(
-    (set) => ({
-      theme: "light",
-      selectedSocieteId: null,
-      selectedAnnexeId: null,
-      dateFormat: "dmy",
-      ...seedFromLegacy(),
+export const useUiPrefs = create<UiPrefsState>()((set) => ({
+  ...DEFAULTS,
 
-      setTheme: (theme) => set({ theme }),
-      toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
-      setSelectedSocieteId: (id) => set({ selectedSocieteId: id }),
-      setSelectedAnnexeId: (id) => set({ selectedAnnexeId: id }),
-      setDateFormat: (dateFormat) => set({ dateFormat }),
+  hydratePrefs: (prefs) => {
+    cancelPersist();
+    set(prefs);
+  },
+  resetPrefs: () => {
+    cancelPersist();
+    set(DEFAULTS);
+  },
+
+  setTheme: (theme) => {
+    set({ theme });
+    schedulePersist({ theme });
+  },
+  toggleTheme: () =>
+    set((s) => {
+      const theme: Theme = s.theme === "dark" ? "light" : "dark";
+      schedulePersist({ theme });
+      return { theme };
     }),
-    {
-      name: "sltt-ui-prefs-v1",
-      partialize: (s) => ({
-        theme: s.theme,
-        selectedSocieteId: s.selectedSocieteId,
-        selectedAnnexeId: s.selectedAnnexeId,
-        dateFormat: s.dateFormat,
-      }),
-    },
-  ),
-);
+  setSelectedAnnexeId: (id) => {
+    set({ selectedAnnexeId: id });
+    schedulePersist({ selected_annexe_id: id });
+  },
+  setDateFormat: (dateFormat) => {
+    set({ dateFormat });
+    schedulePersist({ date_format: dateFormat });
+  },
+}));

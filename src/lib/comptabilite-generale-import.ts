@@ -1,8 +1,7 @@
 /**
  * Import .xlsx → lignes de comptabilité générale (ExcelJS côté client), sur
  * le modèle de src/lib/classeur-import.ts. Colonnes attendues (classeur
- * SLTT/STLL) : Dates, Clients, Nature de la dépense, Entrée, Sortie[, Écart]
- * — et pour Top Doumani en plus : Quantité, Prix unitaire.
+ * SLTT/STLL) : Dates, Clients, Nature de la dépense, Entrée, Sortie[, Écart].
  *
  * Ne calcule ni n'insère jamais rien seul : `parseComptabiliteGeneraleXlsx`
  * retourne des lignes + avertissements, à valider ligne par ligne dans
@@ -19,8 +18,6 @@ export type OperationImportRow = {
   nature: string;
   type: "Entrée" | "Sortie" | null;
   montant: number;
-  quantite: number | null;
-  prixUnitaire: number | null;
   warnings: string[];
 };
 
@@ -30,9 +27,7 @@ type Field =
   | "nature"
   | "entree"
   | "sortie"
-  | "ecart"
-  | "quantite"
-  | "prixUnitaire";
+  | "ecart";
 
 const HEADER_ALIASES: Record<string, Field> = {
   date: "date",
@@ -51,11 +46,6 @@ const HEADER_ALIASES: Record<string, Field> = {
   sortie: "sortie",
   sorties: "sortie",
   ecart: "ecart",
-  quantite: "quantite",
-  qte: "quantite",
-  "prix unitaire": "prixUnitaire",
-  "prix unit": "prixUnitaire",
-  pu: "prixUnitaire",
 };
 
 function normalizeHeader(h: string): string {
@@ -160,15 +150,7 @@ function findHeaderRow(sheet: ExcelJS.Worksheet): { headerRowNumber: number; col
   return { headerRowNumber: 1, colMap: new Map() };
 }
 
-export interface ParseComptabiliteGeneraleOptions {
-  /** Top Doumani : les colonnes Quantité/Prix unitaire sont attendues et priment sur une Sortie déjà chiffrée. */
-  entiteType: "annexe" | "societe";
-}
-
-export async function parseComptabiliteGeneraleXlsx(
-  file: ArrayBuffer,
-  options: ParseComptabiliteGeneraleOptions,
-): Promise<OperationImportRow[]> {
+export async function parseComptabiliteGeneraleXlsx(file: ArrayBuffer): Promise<OperationImportRow[]> {
   const { default: ExcelJSLib } = await import("exceljs");
   const wb = new ExcelJSLib.Workbook();
   await wb.xlsx.load(file);
@@ -200,11 +182,9 @@ export async function parseComptabiliteGeneraleXlsx(
       const nature = (raw.nature ?? "").trim();
       const entree = raw.entree ? parseAmount(raw.entree) : null;
       const sortie = raw.sortie ? parseAmount(raw.sortie) : null;
-      const quantite = raw.quantite ? parseAmount(raw.quantite) : null;
-      const prixUnitaire = raw.prixUnitaire ? parseAmount(raw.prixUnitaire) : null;
 
       // Ligne totalement vide (espaceur entre mois dans le classeur source) — ignorée sans avertissement.
-      if (!clientNom && !nature && !entree && !sortie && !quantite && !prixUnitaire) return;
+      if (!clientNom && !nature && !entree && !sortie) return;
 
       const warnings: string[] = [];
       const date = dateRaw ? parseSourceDate(dateRaw) : null;
@@ -217,15 +197,7 @@ export async function parseComptabiliteGeneraleXlsx(
       let type: "Entrée" | "Sortie" | null = null;
       let montant = 0;
 
-      const montantTopDoumani =
-        options.entiteType === "societe" && quantite != null && prixUnitaire != null
-          ? quantite * prixUnitaire
-          : null;
-
-      if (montantTopDoumani != null) {
-        type = "Sortie";
-        montant = montantTopDoumani;
-      } else if (entree != null && sortie != null) {
+      if (entree != null && sortie != null) {
         warnings.push("Entrée ET Sortie renseignées sur la même ligne — vérifiez laquelle est correcte");
         type = entree >= sortie ? "Entrée" : "Sortie";
         montant = entree >= sortie ? entree : sortie;
@@ -235,10 +207,8 @@ export async function parseComptabiliteGeneraleXlsx(
       } else if (sortie != null) {
         type = "Sortie";
         montant = sortie;
-      } else if (options.entiteType === "societe" && (quantite != null) !== (prixUnitaire != null)) {
-        warnings.push("Quantité et Prix unitaire doivent être renseignés ensemble");
       } else {
-        warnings.push("Montant manquant (Entrée / Sortie / Quantité × PU)");
+        warnings.push("Montant manquant (Entrée / Sortie)");
       }
 
       rows.push({
@@ -249,8 +219,6 @@ export async function parseComptabiliteGeneraleXlsx(
         nature,
         type,
         montant,
-        quantite: options.entiteType === "societe" ? quantite : null,
-        prixUnitaire: options.entiteType === "societe" ? prixUnitaire : null,
         warnings,
       });
     });

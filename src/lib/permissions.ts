@@ -95,11 +95,6 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
   {
-    id: "calendrier",
-    label: "Calendrier",
-    permissions: [{ key: "calendrier:read", label: "Lecture", action: "read" }],
-  },
-  {
     id: "comptabilite",
     label: "Comptabilité",
     permissions: [
@@ -178,7 +173,6 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "bons:read",
     "bons:write-caisse",
     "rapports:read",
-    "calendrier:read",
     "contrats:read",
     "contrats:write",
     "archives:read",
@@ -200,7 +194,6 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "fournisseurs:write",
     "transporteurs:read",
     "transporteurs:write",
-    "calendrier:read",
     "contrats:read",
     "archives:read",
     "archives:write",
@@ -213,7 +206,6 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "stock:write",
     "bons:read",
     "bons:write",
-    "calendrier:read",
     "contrats:read",
     "contrats:write",
     "archives:read",
@@ -240,9 +232,8 @@ export function hasPermission(user: PermissionUser | null | undefined, perm: str
 
 /**
  * Résout l'utilisateur effectif pour les checks de permission.
- * Si le profil n'est pas encore dans le store (fetchData en cours),
- * on retombe sur les permissions par défaut du rôle de session —
- * sinon la sidebar reste vide jusqu'au chargement.
+ * Sans profil hydraté, retourne null — ne jamais retomber sur le rôle de
+ * session (mémoire, pas une source d'autorisation).
  */
 export function resolvePermissionUser(
   user: PermissionUser | null | undefined,

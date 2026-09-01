@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
+import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { assertAnnexeCeiling, assertCanTouchTarget } from "@/lib/auth/user-guards";
 import { updateUserAnnexesBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
@@ -8,7 +9,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 /** Remplace intégralement les annexes assignées à un utilisateur (delete + insert). */
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { user, admin, isAdmin } = await requireUserManager(request);
+    const { user, admin, isAdmin, profile: actorProfile } = await requireUserManager(request);
     const { id } = await context.params;
     await assertCanTouchTarget(admin, id, isAdmin);
 
@@ -31,6 +32,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (insertError) {
       throw new AuthError(insertError.message, 400);
     }
+
+    await insertAdminAuditLog(admin, actorProfile, {
+      action: "Modification",
+      detail: `Annexes de l'utilisateur ${id} mises à jour`,
+    });
 
     return Response.json({ annexeIds });
   } catch (error) {

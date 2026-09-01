@@ -11,8 +11,6 @@ export function mapStockItemFromDb(row: StockItemRow): StockItem {
     id: row.id,
     clientId: row.client_id || undefined,
     clientNom: row.clients?.nom || undefined,
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     marchandise: row.marchandise,
@@ -23,6 +21,7 @@ export function mapStockItemFromDb(row: StockItemRow): StockItem {
     commercial: row.commercial,
     sommePayee: Number(row.somme_payee),
     resteAPayer: Number(row.reste_a_payer),
+    date: row.date,
   };
 }
 
@@ -30,8 +29,6 @@ export function mapMouvementFromDb(row: MouvementRow): Mouvement {
   return {
     id: row.id,
     stockId: row.stock_id || undefined,
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     date: row.date,
@@ -83,11 +80,11 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
         commercial: input.commercial,
         somme_payee: input.sommePayee,
         reste_a_payer: input.resteAPayer,
+        date: input.date,
         client_id: input.clientId || null,
-        societe_id: input.societeId,
         annexe_id: input.annexeId,
       })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .select("*, clients(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
@@ -121,8 +118,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
 
     const newMouvement: Mouvement = {
       id: result.mouvement_id,
-      societeId: stockItem.societeId,
-      societeNom: stockItem.societeNom,
       annexeId: stockItem.annexeId,
       annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
@@ -169,8 +164,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
 
     const newMouvement: Mouvement = {
       id: result.mouvement_id,
-      societeId: stockItem.societeId,
-      societeNom: stockItem.societeNom,
       annexeId: stockItem.annexeId,
       annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
@@ -204,7 +197,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const key = marchandise.toLowerCase();
     const existing = get().stock.find(
       (s) =>
-        s.societeId === input.societeId &&
         s.annexeId === input.annexeId &&
         s.marchandise.trim().toLowerCase() === key,
     );
@@ -237,10 +229,9 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
           somme_payee: 0,
           reste_a_payer: 0,
           client_id: input.clientId || null,
-          societe_id: input.societeId,
           annexe_id: input.annexeId,
         })
-        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .select("*, clients(nom), annexes(nom)")
         .single();
       if (itemError) throw itemError;
       stockId = itemData.id as string;
@@ -255,7 +246,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       netQuantite += m.type === "Entrée" ? m.quantite : -m.quantite;
       return {
         stock_id: stockId,
-        societe_id: input.societeId,
         annexe_id: input.annexeId,
         date: m.date,
         type: m.type,
@@ -269,7 +259,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const { data: mouvementsData, error: mouvementsError } = await supabase
       .from("mouvements")
       .insert(movementRows)
-      .select("*, societes(nom), annexes(nom)");
+      .select("*, annexes(nom)");
     if (mouvementsError) {
       // Compensation : pas d'article orphelin sans historique si l'insert en
       // masse échoue — seulement pour un article qu'on vient de créer, jamais
@@ -297,7 +287,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       .from("stock_items")
       .update({ quantite: finalQuantite })
       .eq("id", stockId)
-      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .select("*, clients(nom), annexes(nom)")
       .single();
     if (updateError) {
       // Compensation symétrique : à ce stade les mouvements sont déjà en base
@@ -353,10 +343,13 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
         seuil: input.seuil,
         depositaire: input.depositaire?.trim() || "—",
         commercial: input.commercial?.trim() || "—",
+        somme_payee: input.sommePayee,
+        reste_a_payer: input.resteAPayer,
+        date: input.date,
         client_id: input.clientId || null,
       })
       .eq("id", id)
-      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .select("*, clients(nom), annexes(nom)")
       .single();
     if (error) throw error;
 

@@ -5,8 +5,6 @@ export interface Devis {
   reference: string;
   clientId: string;
   clientNom: string;
-  societeId: string;
-  societeNom: string;
   annexeId: string;
   annexeNom?: string;
   nature: string;
@@ -24,7 +22,6 @@ export interface Devis {
 export interface DevisInput {
   clientId: string;
   clientNom: string;
-  societeId: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;

@@ -15,8 +15,8 @@ import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { prefsFromProfile, useUiPrefs } from "@/lib/session/ui-prefs-store";
 import {
   Eye,
   EyeOff,
@@ -51,7 +51,6 @@ export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
 
   async function signInWithCredentials(userEmail: string, userPassword: string) {
     if (loading) return;
@@ -105,7 +104,8 @@ export function LoginScreen() {
         userName: profile.nom,
       });
 
-      loginNav(profile.role, profile.nom, profile.id, rememberMe);
+      useUiPrefs.getState().hydratePrefs(prefsFromProfile(profile));
+      loginNav(profile.role, profile.nom, profile.id);
       // La vue interne repasse au dashboard (resetNavigation), mais l'URL du
       // navigateur ne suit pas d'elle-même — resynchronise-la pour qu'un
       // retour arrière/F5 ne ramène pas sur la page consultée avant la
@@ -220,20 +220,6 @@ export function LoginScreen() {
                     )}
                   </button>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(v) => setRememberMe(v === true)}
-                />
-                <Label
-                  htmlFor="remember"
-                  className="cursor-pointer text-sm text-muted-foreground"
-                >
-                  Rester connecté (3 jours)
-                </Label>
               </div>
 
               {error && (

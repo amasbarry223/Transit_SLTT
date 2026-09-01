@@ -5,7 +5,6 @@ import { Eye, Plus, Receipt, Send, Trash2 } from "lucide-react";
 import type { Facture } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { UI } from "@/lib/ui-messages";
 import { TablePagination } from "@/components/sltt/table-pagination";
@@ -60,10 +59,6 @@ const FactureMobileCard = memo(function FactureMobileCard({
         <FactureStatutBadge statut={f.statut} />
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
-        <div className="flex justify-between gap-3">
-          <dt className="text-xs text-muted-foreground">Société</dt>
-          <dd><SocieteBadge societeNom={f.societeNom} size="sm" /></dd>
-        </div>
         <div className="flex justify-between gap-3">
           <dt className="text-xs text-muted-foreground">Date</dt>
           <dd className="tabular-nums text-foreground/90">{formatDateShort(f.date)}</dd>
@@ -138,9 +133,6 @@ const FactureTableRow = memo(function FactureTableRow({
       </TableCell>
       <TableCell className="max-w-[180px] px-4 py-3.5">
         <p className="truncate text-xs text-foreground/90">{f.clientNom}</p>
-      </TableCell>
-      <TableCell className="px-4 py-3.5">
-        <SocieteBadge societeNom={f.societeNom} size="sm" />
       </TableCell>
       <TableCell className="px-4 py-3.5 text-xs tabular-nums text-muted-foreground">
         {formatDateShort(f.date)}
@@ -267,9 +259,6 @@ export function FacturesTable({
                   </TableHead>
                   <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Client
-                  </TableHead>
-                  <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Société
                   </TableHead>
                   <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Date

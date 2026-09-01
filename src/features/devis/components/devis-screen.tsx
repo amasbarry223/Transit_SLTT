@@ -1,7 +1,5 @@
 "use client";
 
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
-
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
@@ -40,7 +38,6 @@ export function DevisScreen() {
   const openDevisDetail = useNav((s) => s.openDevisDetail);
   const go = useNav((s) => s.go);
   const selectedId = useNav((s) => s.selectedId);
-  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
   const { selectedAnnexeId } = useActiveAnnexe();
   const devisList = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
@@ -76,10 +73,10 @@ export function DevisScreen() {
     }
   }, [selectedId, go]);
 
-  const scopedDevis = useMemo(() => {
-    const bySociete = selectedSocieteId ? devisList.filter((d) => d.societeId === selectedSocieteId) : devisList;
-    return filterByAnnexe(bySociete, selectedAnnexeId);
-  }, [devisList, selectedSocieteId, selectedAnnexeId]);
+  const scopedDevis = useMemo(
+    () => filterByAnnexe(devisList, selectedAnnexeId),
+    [devisList, selectedAnnexeId],
+  );
   const { enAttente, acceptes, totalEstime } = useMemo(() => {
     let enAttente = 0, acceptes = 0, totalEstime = 0;
     for (const d of scopedDevis) {
@@ -91,7 +88,7 @@ export function DevisScreen() {
   }, [scopedDevis]);
   const filtered = useMemo(() => {
     const result = scopedDevis.filter((d) =>
-      matchesQuery(d, ["reference", "clientNom", "nature", "societeNom"], search) &&
+      matchesQuery(d, ["reference", "clientNom", "nature"], search) &&
       (clientFilter === "all" || d.clientId === clientFilter) &&
       (statutFilter === "Tous" || d.statut === statutFilter));
     return [...result].sort((a, b) => {
@@ -188,7 +185,6 @@ export function DevisScreen() {
       await exportToExcel(`devis`, `devis-sltt-${new Date().toISOString().slice(0, 10)}`, [
         { header: "Référence", accessor: (d: Devis) => d.reference },
         { header: "Client", accessor: (d: Devis) => d.clientNom },
-        { header: "Société", accessor: (d: Devis) => d.societeNom },
         { header: "Nature", accessor: (d: Devis) => d.nature },
         { header: "Droits douane", accessor: (d: Devis) => d.droitDouane },
         { header: "Frais circuit", accessor: (d: Devis) => d.fraisCircuit },
@@ -255,8 +251,7 @@ export function DevisScreen() {
         safePage={safePage} totalPages={totalPages} setPage={setPage}
       />
       <DevisFormDialog
-        open={formOpen} devis={editDevis} clients={clients} societes={societes}
-        defaultSocieteId={selectedSocieteId}
+        open={formOpen} devis={editDevis} clients={clients}
         saving={savingDevis}
         onClose={() => { setFormOpen(false); setEditDevis(null); }} onSave={handleSaveForm}
       />

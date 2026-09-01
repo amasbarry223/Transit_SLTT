@@ -19,8 +19,6 @@ export function mapBonFromDb(row: BonSortieRow): BonSortie {
     date: row.date,
     clientId: row.client_id,
     clientNom: row.clients?.nom || row.client_nom || "",
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     stockId: row.stock_id || undefined,
@@ -38,8 +36,6 @@ export function mapBonSortieCaisseFromDb(row: BonSortieCaisseRow): BonSortieCais
     id: row.id,
     reference: row.reference,
     date: row.date,
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     montantTotal: Number(row.montant_total),
@@ -81,10 +77,9 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   bonSortieCaisseSeq: 1,
 
   addBon: async (input) => {
-    const societe = get().societes.find((s) => s.id === input.societeId);
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
     const { reference: initialNumero, useAnnexeNumbering } = computeAnnexeScopedReference(
-      societe,
+      undefined,
       annexe,
       "BS",
       get().bons.map((b) => b.reference),
@@ -102,7 +97,6 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
           reference: ref,
           date: input.date,
           client_id: input.clientId,
-          societe_id: input.societeId,
           annexe_id: input.annexeId,
           stock_id: input.stockId,
           marchandise: input.marchandise,
@@ -112,7 +106,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
           montant: input.montant,
           statut: "Brouillon",
         })
-        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .select("*, clients(nom), annexes(nom)")
         .single(),
     );
 
@@ -164,8 +158,6 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       mouvements: [
         {
           id: result.mouvement_id,
-          societeId: stockItem?.societeId || bon.societeId,
-          societeNom: stockItem?.societeNom || bon.societeNom,
           annexeId: stockItem?.annexeId || bon.annexeId,
           annexeNom: stockItem?.annexeNom || bon.annexeNom,
           date: new Date().toISOString(),
@@ -201,7 +193,6 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
           .insert({
             reference: ref,
             date: input.date,
-            societe_id: input.societeId,
             annexe_id: input.annexeId,
             montant_total: montantTotal,
             cree_par: creePar,
@@ -227,7 +218,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
     const { data: fullBon, error: errFetch } = await supabase
       .from("bons_sortie_caisse")
-      .select("*, bons_sortie_caisse_lignes(*), societes(nom), annexes(nom)")
+      .select("*, bons_sortie_caisse_lignes(*), annexes(nom)")
       .eq("id", dbBon.id)
       .single();
     if (errFetch) throw errFetch;

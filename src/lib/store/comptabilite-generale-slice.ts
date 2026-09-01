@@ -16,9 +16,8 @@ export function mapOperationComptableFromDb(row: OperationComptableRow): Operati
   return {
     id: row.id,
     reference: row.reference,
-    entiteType: row.entite_type,
+    entiteType: "annexe",
     annexeId: row.annexe_id || undefined,
-    societeId: row.societe_id || undefined,
     date: row.date,
     clientId: row.client_id || undefined,
     dossierId: row.dossier_id || undefined,
@@ -28,8 +27,6 @@ export function mapOperationComptableFromDb(row: OperationComptableRow): Operati
     type: row.type,
     montant: Number(row.montant || 0),
     modePaiement: (row.mode_paiement as OperationComptable["modePaiement"]) || "Espèces",
-    quantite: row.quantite != null ? Number(row.quantite) : undefined,
-    prixUnitaire: row.prix_unitaire != null ? Number(row.prix_unitaire) : undefined,
     source: row.source,
     importRef: row.import_ref || undefined,
     creePar: row.cree_par || undefined,
@@ -39,9 +36,8 @@ export function mapOperationComptableFromDb(row: OperationComptableRow): Operati
 export function mapClotureCaisseFromDb(row: ClotureCaisseRow): ClotureCaisse {
   return {
     id: row.id,
-    entiteType: row.entite_type,
+    entiteType: "annexe",
     annexeId: row.annexe_id || undefined,
-    societeId: row.societe_id || undefined,
     periodeDebut: row.periode_debut,
     periodeFin: row.periode_fin,
     soldeTheorique: Number(row.solde_theorique || 0),
@@ -56,7 +52,6 @@ export function mapClotureCaisseFromDb(row: ClotureCaisseRow): ClotureCaisse {
 export interface RecordClotureCaisseInput {
   entiteType: EntiteComptableType;
   annexeId?: string;
-  societeId?: string;
   periodeDebut: string;
   periodeFin: string;
   soldeTheorique: number;
@@ -102,9 +97,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
           .from("operations_comptables")
           .insert({
             reference: ref,
-            entite_type: input.entiteType,
             annexe_id: input.annexeId || null,
-            societe_id: input.societeId || null,
             date: input.date,
             client_id: input.clientId || null,
             dossier_id: input.dossierId || null,
@@ -113,13 +106,11 @@ export const createComptabiliteGeneraleSlice: StateCreator<
             type: input.type,
             montant: input.montant,
             mode_paiement: input.modePaiement ?? "Espèces",
-            quantite: input.quantite ?? null,
-            prix_unitaire: input.prixUnitaire ?? null,
             source: input.source ?? "saisie",
             import_ref: input.importRef || null,
             cree_par: creePar,
           })
-          .select("*, clients(nom), societes(nom), annexes(nom)")
+          .select("*, clients(nom), annexes(nom)")
           .single(),
     );
 
@@ -158,13 +149,11 @@ export const createComptabiliteGeneraleSlice: StateCreator<
 
   recordClotureCaisse: async (input) => {
     const { data, error } = await supabase.rpc("record_cloture_caisse", {
-      p_entite_type: input.entiteType,
+      p_annexe_id: input.annexeId || null,
       p_periode_debut: input.periodeDebut,
       p_periode_fin: input.periodeFin,
       p_solde_theorique: input.soldeTheorique,
       p_solde_constate: input.soldeConstate,
-      p_annexe_id: input.annexeId || null,
-      p_societe_id: input.societeId || null,
       p_note: input.note || null,
     });
     if (error) throw error;
@@ -178,7 +167,6 @@ export const createComptabiliteGeneraleSlice: StateCreator<
             !(
               c.entiteType === cloture.entiteType &&
               c.annexeId === cloture.annexeId &&
-              c.societeId === cloture.societeId &&
               c.periodeFin === cloture.periodeFin
             ),
         ),

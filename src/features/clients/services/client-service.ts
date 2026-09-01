@@ -4,7 +4,7 @@ import { err, ok, type Result } from "@/shared/result";
 import type { Client, ClientInput } from "@/features/clients/types";
 import { mapClientFromDb, mapClientInputToDb } from "./client-mapper";
 
-const CLIENT_SELECT = "*, annexes(nom), societes(nom)";
+const CLIENT_SELECT = "*, annexes(nom)";
 
 function toAppError(error: unknown, fallback: string): AppError {
   if (error instanceof AppError) return error;

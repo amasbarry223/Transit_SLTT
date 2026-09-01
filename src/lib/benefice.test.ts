@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterBySocieteAndPeriode, computeBenefice } from "./benefice";
+import { filterByPeriode, computeBenefice } from "./benefice";
 
 describe("computeBenefice", () => {
   it("calcule recettes moins dépenses", () => {
@@ -9,28 +9,23 @@ describe("computeBenefice", () => {
   });
 });
 
-describe("filterBySocieteAndPeriode", () => {
+describe("filterByPeriode", () => {
   const rows = [
-    { id: "1", societeId: "s1", date: "2026-01-15" },
-    { id: "2", societeId: "s2", date: "2026-01-20" },
-    { id: "3", societeId: undefined, date: "2026-01-10" },
-    { id: "4", societeId: "s1", date: "2026-02-01" },
+    { id: "1", date: "2026-01-15" },
+    { id: "2", date: "2026-01-20" },
+    { id: "3", date: "2026-01-10" },
+    { id: "4", date: "2026-02-01" },
   ];
 
-  it("société null inclut toutes les lignes, y compris non affectées, pour la période", () => {
-    const result = filterBySocieteAndPeriode(rows, null, 2026, 0);
+  it("inclut toutes les lignes du mois", () => {
+    const result = filterByPeriode(rows, 2026, 0);
     expect(result.map((r) => r.id)).toEqual(["1", "2", "3"]);
   });
 
-  it("une société précise exclut l'autre société ET les lignes non affectées", () => {
-    const result = filterBySocieteAndPeriode(rows, "s1", 2026, 0);
-    expect(result.map((r) => r.id)).toEqual(["1"]);
-  });
-
-  it("respecte les bornes de mois/année (pas de dépassement de période)", () => {
-    const resultJan = filterBySocieteAndPeriode(rows, "s1", 2026, 0);
-    const resultFeb = filterBySocieteAndPeriode(rows, "s1", 2026, 1);
-    expect(resultJan.map((r) => r.id)).toEqual(["1"]);
+  it("respecte les bornes de mois/année", () => {
+    const resultJan = filterByPeriode(rows, 2026, 0);
+    const resultFeb = filterByPeriode(rows, 2026, 1);
+    expect(resultJan.map((r) => r.id)).toEqual(["1", "2", "3"]);
     expect(resultFeb.map((r) => r.id)).toEqual(["4"]);
   });
 });

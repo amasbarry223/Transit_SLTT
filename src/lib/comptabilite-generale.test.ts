@@ -1,22 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  computeMontantFromQuantitePrixUnitaire,
   computeOperationsTotals,
   computeRunningEcart,
   filterOperationsByEntite,
   filterOperationsByPeriode,
   resolveEntitesComptables,
 } from "@/lib/comptabilite-generale";
-import type { Annexe, OperationComptable, Societe } from "@/lib/domain-types";
+import type { Annexe, OperationComptable } from "@/lib/domain-types";
 
 const annexes: Annexe[] = [
   { id: "a-ci", nom: "Côte d'Ivoire", code: "CI", villeSiege: "Abidjan", devise: "FCFA", actif: true },
   { id: "a-ml", nom: "Mali", code: "ML", villeSiege: "Bamako", devise: "FCFA", actif: true },
-];
-
-const societes: Societe[] = [
-  { id: "s-td", nom: "Top Doumani", actif: true, afficherNomAvecLogo: true },
-  { id: "s-sltt", nom: "SLTT", actif: true, isTransit: true, afficherNomAvecLogo: true },
 ];
 
 function op(partial: Partial<OperationComptable>): OperationComptable {
@@ -25,31 +19,19 @@ function op(partial: Partial<OperationComptable>): OperationComptable {
     reference: partial.reference ?? "OPC-1",
     entiteType: partial.entiteType ?? "annexe",
     annexeId: partial.annexeId,
-    societeId: partial.societeId,
     date: partial.date ?? "2026-01-01",
     clientNom: partial.clientNom ?? "Client",
     nature: partial.nature ?? "Frais",
     type: partial.type ?? "Entrée",
     montant: partial.montant ?? 0,
-    quantite: partial.quantite,
-    prixUnitaire: partial.prixUnitaire,
     source: partial.source ?? "saisie",
   };
 }
 
 describe("resolveEntitesComptables", () => {
-  it("trie les annexes par nom et ajoute Top Doumani si présente", () => {
-    const entites = resolveEntitesComptables(annexes, societes);
-    expect(entites.map((e) => e.label)).toEqual([
-      "Annexe Côte d'Ivoire",
-      "Annexe Mali",
-      "Société Top Doumani",
-    ]);
-  });
-
-  it("n'ajoute pas d'entité société si Top Doumani est absente", () => {
-    const entites = resolveEntitesComptables(annexes, [societes[1]]);
-    expect(entites).toHaveLength(2);
+  it("trie les annexes par nom", () => {
+    const entites = resolveEntitesComptables(annexes);
+    expect(entites.map((e) => e.label)).toEqual(["Annexe Côte d'Ivoire", "Annexe Mali"]);
   });
 });
 
@@ -58,9 +40,9 @@ describe("filterOperationsByEntite", () => {
     const ops = [
       op({ id: "1", entiteType: "annexe", annexeId: "a-ml" }),
       op({ id: "2", entiteType: "annexe", annexeId: "a-ci" }),
-      op({ id: "3", entiteType: "societe", societeId: "s-td" }),
+      op({ id: "3", entiteType: "annexe", annexeId: "a-autre" }),
     ];
-    const entiteMali = resolveEntitesComptables(annexes, societes)[1];
+    const entiteMali = resolveEntitesComptables(annexes)[1];
     expect(filterOperationsByEntite(ops, entiteMali).map((o) => o.id)).toEqual(["1"]);
   });
 });
@@ -86,24 +68,11 @@ describe("computeOperationsTotals", () => {
   });
 });
 
-describe("computeMontantFromQuantitePrixUnitaire", () => {
-  it("multiplie quantité et prix unitaire quand les deux sont valides", () => {
-    expect(computeMontantFromQuantitePrixUnitaire(50, 5000)).toBe(250000);
-  });
-
-  it("retourne null si un des deux facteurs manque", () => {
-    expect(computeMontantFromQuantitePrixUnitaire(undefined, 5000)).toBeNull();
-    expect(computeMontantFromQuantitePrixUnitaire(50, undefined)).toBeNull();
-  });
-});
-
 describe("computeRunningEcart", () => {
-  it("cumule dans l'ordre de saisie (référence), pas la date — régression sur les vraies données Top Doumani", () => {
-    // Feuille "TOP DOUMANI" (Généralités STLL) : Djiby Diarra saisi avant Ami
-    // Kouma alors que leurs dates s'entrelacent (26/11, 27/12, 08/01 vs
-    // 26/11, 31/12, 03/01) — le classeur suit l'ordre d'écriture, pas la
-    // date. Écart affiché dans le fichier : 5 400 000 à la ligne "Djiby
-    // Diarra — Paiement dette", 6 520 000 à "Ami Kouma — Paiement dette".
+  it("cumule dans l'ordre de saisie (référence), pas la date — régression sur un cas réel où deux tiers ont des dates entrelacées", () => {
+    // Deux tiers saisis dans un ordre (Djiby Diarra avant Ami Kouma) alors
+    // que leurs dates s'entrelacent (26/11, 27/12, 08/01 vs 26/11, 31/12,
+    // 03/01) — le classeur suit l'ordre d'écriture, pas la date.
     const ops = [
       op({ id: "1", reference: "OPC-1", date: "2025-11-26", type: "Sortie", montant: 1_080_000 }), // Djiby Diarra — Cartons
       op({ id: "2", reference: "OPC-2", date: "2025-12-27", type: "Sortie", montant: 5_400_000 }), // Djiby Diarra — Cartons

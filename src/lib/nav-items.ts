@@ -8,7 +8,6 @@ import {
   BarChart3,
   Settings,
   ClipboardList,
-  CalendarDays,
   Truck,
   Receipt,
   Building2,
@@ -64,7 +63,6 @@ export const navItems: NavItem[] = [
   { navId: "recus-paiement", key: "recus-paiement", label: "Nouveau reçu", shortLabel: "Reçu", icon: FilePlus2, requiredPermission: "recus-paiement:read", section: "Finance" },
   { navId: "bilans", key: "bilans", label: "Bilans", shortLabel: "Bilans", icon: BarChart3, requiredPermission: "rapports:read", section: "Finance" },
 
-  { navId: "calendrier", key: "calendrier", label: "Calendrier", icon: CalendarDays, requiredPermission: "calendrier:read", section: "Outils" },
   { navId: "parametres", key: "parametres", label: "Paramètres", shortLabel: "Réglages", icon: Settings, requiredPermission: "parametres:read", section: "Outils" },
 ];
 
@@ -91,7 +89,6 @@ export const VIEW_PERMISSIONS: Record<ViewKey, string | undefined> = {
   "client-fiche": "clients:read",
   devis: "devis:read",
   "devis-detail": "devis:read",
-  calendrier: "calendrier:read",
   transporteurs: "transporteurs:read",
   factures: "factures:read",
   "facture-detail": "factures:read",

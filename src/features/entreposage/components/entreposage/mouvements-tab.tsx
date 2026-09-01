@@ -5,7 +5,6 @@ import { ArrowDownToLine, ArrowUpFromLine, History, Search } from "lucide-react"
 import type { Mouvement } from "@/lib/domain-types";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,7 +140,6 @@ export function MouvementsTab({
               <SelectItem value="Sortie">Sorties</SelectItem>
             </SelectContent>
           </Select>
-          <SocieteFilterSelect className="w-full sm:w-40" />
           <p className="ml-auto text-xs tabular-nums text-muted-foreground">
             {filtered.length} mouvement{filtered.length !== 1 ? "s" : ""}
           </p>
@@ -174,10 +172,6 @@ export function MouvementsTab({
                       </ToneBadge>
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-xs text-muted-foreground">Société</dt>
-                        <dd><SocieteBadge societeNom={m.societeNom} size="sm" /></dd>
-                      </div>
                       <div className="flex justify-between gap-3">
                         <dt className="text-xs text-muted-foreground">Quantité</dt>
                         <dd className="tabular-nums text-foreground/90">{m.quantite} {m.unite}</dd>
@@ -215,9 +209,6 @@ export function MouvementsTab({
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Marchandise
-                    </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
-                      Société
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Quantité
@@ -261,9 +252,6 @@ export function MouvementsTab({
                         </TableCell>
                         <TableCell className="px-4 py-3.5 font-medium text-foreground">
                           {m.marchandise}
-                        </TableCell>
-                        <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-                          <SocieteBadge societeNom={m.societeNom} size="sm" />
                         </TableCell>
                         <TableCell className="px-4 py-3.5 text-right tabular-nums text-foreground/90">
                           {m.quantite} {m.unite}

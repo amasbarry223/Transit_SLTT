@@ -3,7 +3,6 @@
 import { Pencil, Save, X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Devis } from "@/lib/store";
-import type { Societe } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
 import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
@@ -14,16 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function DevisEditForm({
-  devis, societes, clients, fSocieteId, setFSocieteId, fClientId, handleClientChange,
+  devis, clients, fClientId, handleClientChange,
   fNature, setFNature, fDroitDouane, setFDroitDouane, fFraisCircuit, setFFraisCircuit,
   fFraisPrestation, setFFraisPrestation, fDateValidite, setFDateValidite, fNotes,
   setFNotes, editTotal, handleCancelEdit, handleSave, saving = false,
 }: {
   devis: Devis;
-  societes: Societe[];
   clients: { id: string; nom: string }[];
-  fSocieteId: string;
-  setFSocieteId: Dispatch<SetStateAction<string>>;
   fClientId: string;
   handleClientChange: (id: string) => void;
   fNature: string;
@@ -55,25 +51,6 @@ export function DevisEditForm({
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Société */}
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Société <span className="text-red-500 normal-case">*</span>
-              </Label>
-              <Select value={fSocieteId || undefined} onValueChange={setFSocieteId}>
-                <SelectTrigger className="h-10" aria-label="Sélectionner une société">
-                  <SelectValue placeholder="Sélectionner une société" />
-                </SelectTrigger>
-                <SelectContent>
-                  {societes
-                    .filter((s) => s.actif || s.id === devis.societeId)
-                    .map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Client + Nature */}
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
@@ -146,7 +123,7 @@ export function DevisEditForm({
                 <X className="mr-2 size-4" /> Annuler
               </Button>
               <Button className="gap-2 bg-primary hover:bg-primary/90"
-                disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite || saving}
+                disabled={!fClientId || !fNature.trim() || !fDateValidite || saving}
                 onClick={() => void handleSave()}>
                 <Save className="size-4" /> {saving ? "Enregistrement…" : "Enregistrer les modifications"}
               </Button>

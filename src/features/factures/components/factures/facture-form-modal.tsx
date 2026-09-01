@@ -23,7 +23,7 @@ import { toastError, toastWarning } from "@/lib/toast-helpers";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
-import { resolveDossierCoutLabels, shouldShowAnnexeForSociete } from "@/lib/societe-brand";
+import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { FACTURE_ECHEANCE_JOURS, MS_PER_DAY } from "@/lib/constants";
 
 interface LigneForm { description: string; quantite: string; prixUnitaire: string; }
@@ -41,7 +41,6 @@ export function FactureFormModal({
 }) {
   const clients    = useStore((s) => s.clients);
   const dossiers   = useStore((s) => s.dossiers);
-  const societes   = useStore((s) => s.societes);
   const addFacture = useStore((s) => s.addFacture);
   const go         = useNav((s) => s.go);
   const { toast }  = useToast();
@@ -56,7 +55,6 @@ export function FactureFormModal({
 
   const [clientId,     setClientId]     = React.useState(prefill?.clientId ?? "");
   const [clientNom,    setClientNom]    = React.useState(prefill?.clientNom ?? "");
-  const [societeId,    setSocieteId]    = React.useState(prefill?.societeId ?? "");
   const [annexeId,     setAnnexeId]     = React.useState(prefill?.annexeId ?? activeAnnexeId ?? "");
   const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
   const [date,         setDate]         = React.useState(prefill?.date ?? today);
@@ -73,11 +71,10 @@ export function FactureFormModal({
     })) ?? [{ ...EMPTY_LIGNE }]
   );
 
-  // Top Doumani (et toute société hors transit) n'a pas de découpage par
-  // annexe — masquer le champ plutôt que de faire choisir une annexe qui ne
-  // s'applique pas à cette société (même règle que contrats/bons de caisse).
-  const showAnnexe = shouldShowAnnexeForSociete(societeId, societes, annexes);
-  const resolvedAnnexeId = showAnnexe ? annexeId : (activeAnnexeId ?? "");
+  // Une société hors transit n'a pas de découpage par annexe — masquer le
+  // champ plutôt que de faire choisir une annexe qui ne s'applique pas à
+  // cette société (même règle que contrats/bons de caisse).
+  const resolvedAnnexeId = annexeId || activeAnnexeId || "";
 
   // Seules les lignes avec une description non vide sont envoyées à
   // addFacture (voir handleSubmit) — le total affiché doit porter sur le même
@@ -154,7 +151,6 @@ export function FactureFormModal({
         dossierId: dossierId || null,
         clientId,
         clientNom,
-        societeId: societeId || null,
         annexeId: resolvedAnnexeId,
         date,
         dateEcheance,
@@ -227,35 +223,18 @@ export function FactureFormModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Société (optionnel)</Label>
-              <Select value={societeId || "none"} onValueChange={(v) => setSocieteId(v === "none" ? "" : v)}>
+              <Label className="text-xs font-medium text-muted-foreground">Annexe *</Label>
+              <Select value={annexeId} onValueChange={setAnnexeId}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="— Aucune (transit) —" />
+                  <SelectValue placeholder="Sélectionner une annexe" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— Aucune (transit) —</SelectItem>
-                  {societes.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
+                  {annexes.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.nom}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {showAnnexe && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Annexe *</Label>
-                <Select value={annexeId} onValueChange={setAnnexeId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Sélectionner une annexe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {annexes.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>{a.nom}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Date de facture *</Label>

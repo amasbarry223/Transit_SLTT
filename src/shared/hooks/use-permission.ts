@@ -10,7 +10,6 @@ import type { UserRole } from "@/lib/domain-types";
 
 function useEffectivePermissionUser() {
   const currentUserId = useSession((s) => s.currentUserId);
-  const currentRole = useSession((s) => s.currentRole);
   const user = useStore((s) => s.users.find((u) => u.id === currentUserId));
   const dataLoading = useStore((s) => s.dataLoading);
 
@@ -21,7 +20,7 @@ function useEffectivePermissionUser() {
     return null;
   }
 
-  return resolvePermissionUser(user, user ? undefined : currentRole);
+  return resolvePermissionUser(user);
 }
 
 /** True lorsque le profil connecté est chargé et utilisable pour les checks UI. */
@@ -60,14 +59,10 @@ export function useCanManageUsers(): boolean {
 
 export function useHasRole(...roles: UserRole[]): boolean {
   const currentUserId = useSession((s) => s.currentUserId);
-  const currentRole = useSession((s) => s.currentRole);
   const user = useStore((s) => s.users.find((u) => u.id === currentUserId));
-  if (!currentUserId && !currentRole) return false;
-  if (user) {
-    if (!user.actif) return false;
-    return (roles as string[]).includes(user.role);
-  }
-  return currentRole ? (roles as string[]).includes(currentRole) : false;
+  if (!currentUserId || !user) return false;
+  if (!user.actif) return false;
+  return (roles as string[]).includes(user.role);
 }
 
 /** Retourne l'objet User de l'utilisateur connecté, ou null. */

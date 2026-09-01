@@ -20,7 +20,6 @@ export function useArchivesScreen() {
   const canWrite = usePermission("archives:write");
   const isAdmin = useHasRole("Administrateur");
   const clients = useStore((s) => s.clients);
-  const societes = useStore((s) => s.societes);
   const deleteArchive = useStore((s) => s.deleteArchive);
   const deleteFichier = useStore((s) => s.deleteFichier);
   const deleteContratFichier = useStore((s) => s.deleteContratFichier);
@@ -34,7 +33,6 @@ export function useArchivesScreen() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeDocument | null>(null);
   const [clientFilter, setClientFilter] = useState("");
-  const [societeFilter, setSocieteFilter] = useState("");
   const [dateDebut, setDateDebut] = useState("");
   const [dateFin, setDateFin] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -56,13 +54,12 @@ export function useArchivesScreen() {
       if (!matchesQuery(d, ["nom", "rattachement"], search.trim())) return false;
       if (typeFilter && d.typeDocument !== typeFilter) return false;
       if (clientNom && d.clientNom !== clientNom) return false;
-      if (societeFilter && d.societeId !== societeFilter) return false;
       if (selectedAnnexeId && d.annexeId !== selectedAnnexeId) return false;
       if (dateDebut && d.date < dateDebut) return false;
       if (dateFin && d.date > `${dateFin}T23:59:59`) return false;
       return true;
     });
-  }, [docs, activeTab, search, typeFilter, clientFilter, societeFilter, selectedAnnexeId, clients, dateDebut, dateFin]);
+  }, [docs, activeTab, search, typeFilter, clientFilter, selectedAnnexeId, clients, dateDebut, dateFin]);
 
   const { totalPages, safePage, paged, startIdx, endIdx } = usePagination(filtered, page, PAGE_SIZE);
 
@@ -73,7 +70,7 @@ export function useArchivesScreen() {
     onToggle: () => setTypeFilter((cur) => (cur === t ? null : t)),
   }));
 
-  const activeCount = [typeFilter, clientFilter, societeFilter, dateDebut, dateFin].filter(Boolean).length;
+  const activeCount = [typeFilter, clientFilter, dateDebut, dateFin].filter(Boolean).length;
   const currentMeta = TAB_META.find((t) => t.key === activeTab) ?? TAB_META[0];
   const uploadKind: RattachementKind = activeTab === "all" ? "libre" : activeTab;
   const showFolderEmpty = activeTab === "dossier" || activeTab === "all";
@@ -81,7 +78,6 @@ export function useArchivesScreen() {
   function clearFilters() {
     setTypeFilter(null);
     setClientFilter("");
-    setSocieteFilter("");
     setDateDebut("");
     setDateFin("");
   }
@@ -126,13 +122,10 @@ export function useArchivesScreen() {
     canWrite,
     isAdmin,
     clients,
-    societes,
     activeTab,
     setActiveTab,
     search,
     setSearch,
-    societeFilter,
-    setSocieteFilter,
     clientFilter,
     setClientFilter,
     dateDebut,

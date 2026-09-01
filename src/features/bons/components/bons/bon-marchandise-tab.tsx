@@ -19,7 +19,6 @@ import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { UI } from "@/lib/ui-messages";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { SocieteFilterSelect, SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,8 +177,6 @@ export function BonMarchandiseTab({
             aria-label="Filtrer par date"
           />
 
-          <SocieteFilterSelect className="w-full sm:w-44" />
-
           {filters.hasActiveFilters && (
             <Button
               variant="ghost"
@@ -243,9 +240,6 @@ export function BonMarchandiseTab({
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Client
-                    </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
-                      Société
                     </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Marchandise
@@ -330,12 +324,6 @@ function BonMobileCard({
           <dd className="tabular-nums text-foreground/90">{formatDateShort(bon.date)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-xs text-muted-foreground">Société</dt>
-          <dd>
-            <SocieteBadge societeNom={bon.societeNom} size="sm" />
-          </dd>
-        </div>
-        <div className="flex justify-between gap-3">
           <dt className="text-xs text-muted-foreground">Marchandise</dt>
           <dd className="truncate text-right text-foreground/90">{bon.marchandise}</dd>
         </div>
@@ -418,9 +406,6 @@ function BonTableRow({
       </TableCell>
       <TableCell className="max-w-[160px] px-4 py-3.5">
         <p className="truncate font-medium text-foreground/90">{bon.clientNom}</p>
-      </TableCell>
-      <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-        <SocieteBadge societeNom={bon.societeNom} size="sm" />
       </TableCell>
       <TableCell className="hidden max-w-[140px] px-4 py-3.5 md:table-cell">
         <span className="flex items-center gap-1.5 text-sm text-muted-foreground">

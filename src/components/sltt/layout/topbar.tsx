@@ -57,7 +57,7 @@ import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
 import { AnnexeSelector } from "@/components/sltt/annexe-selector";
 import { GLOSSARY } from "@/lib/glossary";
-import { usePermission } from "@/hooks/use-permission";
+import { useCurrentUser, usePermission } from "@/hooks/use-permission";
 import { InstallPWA } from "@/components/pwa/InstallPWA";
 
 const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
@@ -75,7 +75,6 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   "client-fiche": { title: "Fiche client", sub: "Historique dossiers, devis et paiements" },
   devis: { title: "Devis", sub: "Estimations avant ouverture de dossier" },
   "devis-detail": { title: "Fiche devis", sub: "Détail, modification et conversion en dossier" },
-  calendrier: { title: "Calendrier", sub: "Échéances et activités du mois" },
   transporteurs:    { title: "Transporteurs",   sub: "Annuaire des transporteurs et chauffeurs partenaires" },
   factures:         { title: "Factures",         sub: "Gestion et suivi de la facturation client" },
   "facture-detail": { title: "Détail facture",   sub: "Visualiser, modifier et imprimer la facture" },
@@ -92,8 +91,9 @@ export function Topbar() {
   const comptaTab = useNav((s) => s.comptaTab);
   const { goToView, goToDossier } = useAppNavigation();
   const logout = useSession((s) => s.logout);
-  const currentRole = useSession((s) => s.currentRole);
   const currentUserName = useSession((s) => s.currentUserName);
+  const currentUser = useCurrentUser();
+  const currentRole = currentUser?.role;
   const theme = useUiPrefs((s) => s.theme);
   const toggleTheme = useUiPrefs((s) => s.toggleTheme);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -150,7 +150,7 @@ export function Topbar() {
   }
 
   const visibleMobileNavItems = useVisibleNavItems();
-  const roleShortcuts = ROLE_SHORTCUTS[currentRole] ?? [];
+  const roleShortcuts = currentRole ? (ROLE_SHORTCUTS[currentRole] ?? []) : [];
 
   return (
     <>
@@ -291,7 +291,7 @@ export function Topbar() {
                   {shortName}
                 </p>
                 <p className="mt-0.5 text-[10px] leading-none text-muted-foreground">
-                  {currentRole}
+                  {currentRole ?? ""}
                 </p>
               </div>
               <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
@@ -409,7 +409,7 @@ export function Topbar() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">{shortName}</p>
-                <p className="text-xs text-muted-foreground">{currentRole}</p>
+                <p className="text-xs text-muted-foreground">{currentRole ?? ""}</p>
               </div>
             </div>
           </div>

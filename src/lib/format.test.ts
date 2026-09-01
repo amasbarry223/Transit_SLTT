@@ -51,7 +51,11 @@ describe("formatFCFA", () => {
 
 describe("formatDateShort", () => {
   afterEach(() => {
-    useUiPrefs.getState().setDateFormat("dmy");
+    useUiPrefs.getState().hydratePrefs({
+      theme: "light",
+      dateFormat: "dmy",
+      selectedAnnexeId: null,
+    });
   });
 
   it("formate en JJ/MM/AAAA par défaut", () => {
@@ -76,7 +80,11 @@ describe("formatDateShort", () => {
 
 describe("formatDateTime", () => {
   afterEach(() => {
-    useUiPrefs.getState().setDateFormat("dmy");
+    useUiPrefs.getState().hydratePrefs({
+      theme: "light",
+      dateFormat: "dmy",
+      selectedAnnexeId: null,
+    });
   });
 
   it("inclut l'heure après la date formatée selon la préférence", () => {

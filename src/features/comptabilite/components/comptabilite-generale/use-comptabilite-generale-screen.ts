@@ -24,7 +24,6 @@ export function useComptabiliteGeneraleScreen() {
   const { toast } = useToast();
   const canWrite = usePermission("comptabilite:write");
   const annexes = useStore((s) => s.annexes);
-  const societes = useStore((s) => s.societes);
   const allOperations = useStore((s) => s.operationsComptables);
   const cloturesCaisse = useStore((s) => s.cloturesCaisse);
   const removeOperationComptable = useStore((s) => s.removeOperationComptable);
@@ -40,7 +39,7 @@ export function useComptabiliteGeneraleScreen() {
     "Impossible de supprimer l'opération",
   );
 
-  const entites = useMemo(() => resolveEntitesComptables(annexes, societes), [annexes, societes]);
+  const entites = useMemo(() => resolveEntitesComptables(annexes), [annexes]);
   const [activeEntiteKey, setActiveEntiteKey] = useState<string | null>(null);
   const resolvedEntite = useMemo(() => {
     if (entites.length === 0) return null;
@@ -157,8 +156,7 @@ export function useComptabiliteGeneraleScreen() {
         ? cloturesCaisse
             .filter(
               (c) =>
-                c.entiteType === resolvedEntite.type &&
-                (resolvedEntite.type === "annexe" ? c.annexeId === resolvedEntite.id : c.societeId === resolvedEntite.id),
+                c.entiteType === resolvedEntite.type && c.annexeId === resolvedEntite.id,
             )
             .sort((a, b) => b.periodeFin.localeCompare(a.periodeFin))
         : [],
@@ -196,8 +194,6 @@ export function useComptabiliteGeneraleScreen() {
           { header: "Nature", accessor: (o) => o.nature },
           { header: "Entrée (FCFA)", accessor: (o) => (o.type === "Entrée" ? o.montant : 0) },
           { header: "Sortie (FCFA)", accessor: (o) => (o.type === "Sortie" ? o.montant : 0) },
-          { header: "Quantité", accessor: (o) => o.quantite ?? "" },
-          { header: "Prix unitaire (FCFA)", accessor: (o) => o.prixUnitaire ?? "" },
           { header: "Référence", accessor: (o) => o.reference },
         ],
         sorted,

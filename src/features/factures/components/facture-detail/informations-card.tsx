@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, CalendarDays, Clock, FolderKanban, Percent, Receipt, User } from "lucide-react";
+import { CalendarDays, Clock, FolderKanban, Percent, Receipt, User } from "lucide-react";
 import type { Dossier, Facture } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
@@ -34,7 +34,6 @@ export function InformationsCard({
         {shouldShowTva(facture.tauxTVA) && (
           <InfoRow icon={Percent} label="Taux de TVA" value={`${facture.tauxTVA} %`} />
         )}
-        <InfoRow icon={Building2} label="Société" value={facture.societeNom ?? "—"} />
         <InfoRow
           icon={FolderKanban}
           label="Dossier lié"

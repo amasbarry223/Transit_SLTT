@@ -74,7 +74,7 @@ beforeEach(() => {
 
 describe("PATCH /api/auth/password", () => {
   it("rejette sans authentification", async () => {
-    const res = await PATCH(req({ currentPassword: "old12345", newPassword: "new12345" }, false));
+    const res = await PATCH(req({ currentPassword: "old12345", newPassword: "Newpass123" }, false));
     expect(res.status).toBe(401);
   });
 
@@ -90,7 +90,7 @@ describe("PATCH /api/auth/password", () => {
 
   it("rejette si le mot de passe actuel est incorrect", async () => {
     fakeState.signInError = { message: "invalid" };
-    const res = await PATCH(req({ currentPassword: "wrong", newPassword: "new12345" }));
+    const res = await PATCH(req({ currentPassword: "wrong", newPassword: "Newpass123" }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("Mot de passe actuel incorrect.");
@@ -98,16 +98,16 @@ describe("PATCH /api/auth/password", () => {
   });
 
   it("change le mot de passe quand la vérification réussit", async () => {
-    const res = await PATCH(req({ currentPassword: "old12345", newPassword: "new12345" }));
+    const res = await PATCH(req({ currentPassword: "old12345", newPassword: "Newpass123" }));
     expect(res.status).toBe(200);
     expect(fakeState.updateUserByIdCalls).toEqual([
-      { id: "u1", payload: { password: "new12345" } },
+      { id: "u1", payload: { password: "Newpass123" } },
     ]);
   });
 
   it("renvoie l'erreur si la mise à jour Supabase échoue", async () => {
     fakeState.updateUserError = { message: "update failed" };
-    const res = await PATCH(req({ currentPassword: "old12345", newPassword: "new12345" }));
+    const res = await PATCH(req({ currentPassword: "old12345", newPassword: "Newpass123" }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("update failed");

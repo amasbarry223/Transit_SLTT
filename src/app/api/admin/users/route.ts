@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
+import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { assertPermissionCeiling } from "@/lib/auth/user-guards";
 import { normalizePermissions } from "@/lib/permissions";
 import { createUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
@@ -28,8 +29,6 @@ export async function POST(request: NextRequest) {
       email_confirm: true,
       user_metadata: {
         nom: nom.trim(),
-        role,
-        permissions: normalizedPerms,
       },
     });
 
@@ -62,6 +61,11 @@ export async function POST(request: NextRequest) {
       await admin.auth.admin.deleteUser(authUser.user.id);
       throw new AuthError(profileError.message, 400);
     }
+
+    await insertAdminAuditLog(admin, actorProfile, {
+      action: "Création",
+      detail: `Utilisateur ${nom.trim()} créé`,
+    });
 
     return Response.json({ user: profile }, { status: 201 });
   } catch (error) {

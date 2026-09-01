@@ -41,7 +41,7 @@ export async function buildGrandLivreXlsxBlob(
   for (const r of rows) {
     sheet.addRow([
       r.date,
-      r.societeNom,
+      r.societeNom || "SLTT",
       r.type,
       r.reference,
       r.libelle,

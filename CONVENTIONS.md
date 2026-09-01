@@ -108,7 +108,7 @@ Pendant la migration, des re-exports de compatibilité existent dans les anciens
 | Migré | `contrats`, `fournisseurs`, `factures`, `bons` | `@/features/*` |
 | Migré | `dossiers`, `entreposage`, `comptabilite` | `@/features/*` |
 | Migré | `archives`, `recus-paiement`, `parametres` | `@/features/*` |
-| Migré | `dashboard`, `auth`, `calendrier`, `bilans`, `transporteurs` | `@/features/*` |
+| Migré | `dashboard`, `auth`, `bilans`, `transporteurs` | `@/features/*` |
 | Legacy | Composants transverses (layout, dialogs, badges…) | `@/components/sltt/` → à migrer vers `@/shared/components/` |
 | Legacy | Store Zustand | `@/lib/store.ts` + slices |
 | Legacy | Types restants | `@/lib/domain-types.ts` → scinder progressivement |

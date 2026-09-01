@@ -63,7 +63,6 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
 
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
   const [formClientId, setFormClientId] = useState("");
-  const [formSocieteId, setFormSocieteId] = useState("");
   const [formStockId, setFormStockId] = useState("");
   const [formQuantite, setFormQuantite] = useState("");
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
@@ -89,7 +88,6 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
     if (open) {
       setFormDate(new Date().toISOString().slice(0, 10));
       setFormClientId("");
-      setFormSocieteId("");
       setFormStockId("");
       setFormQuantite("");
       setFormMotif("");
@@ -98,14 +96,13 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
   }
 
   async function handleValider() {
-    if (!canWrite || !selectedStock || !selectedClient || !formMotif || !formSocieteId) return;
+    if (!canWrite || !selectedStock || !selectedClient || !formMotif) return;
     setSaving(true);
     try {
       await addBon({
         date: formDate,
         clientId: formClientId,
         clientNom: selectedClient.nom,
-        societeId: formSocieteId,
         annexeId: selectedStock.annexeId,
         stockId: selectedStock.id,
         marchandise: selectedStock.marchandise,
@@ -141,14 +138,13 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
   }
 
   async function handleSaveDraft() {
-    if (!canWrite || !selectedStock || !selectedClient || !formMotif || !formSocieteId) return;
+    if (!canWrite || !selectedStock || !selectedClient || !formMotif) return;
     setSaving(true);
     try {
       await addBon({
         date: formDate,
         clientId: formClientId,
         clientNom: selectedClient.nom,
-        societeId: formSocieteId,
         annexeId: selectedStock.annexeId,
         stockId: selectedStock.id,
         marchandise: selectedStock.marchandise,
@@ -177,12 +173,11 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
     setFormStockId(stockId);
     const picked = stock.find((item) => item.id === stockId);
     if (picked) {
-      setFormSocieteId(picked.societeId);
       if (!formClientId && picked.clientId) setFormClientId(picked.clientId);
     }
   }
 
-  const selectedSociete = societes.find((societe) => societe.id === formSocieteId);
+  const selectedSociete = societes[0];
   // L'annexe d'un bon est héritée du stock visé (non resélectionnable, cf.
   // handleValider) — l'aperçu ne peut donc refléter la vraie numérotation
   // par annexe qu'une fois un stock choisi ; avant ça, `nextReference`
@@ -262,17 +257,11 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
                 <SelectContent>
                   {stock.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.marchandise} — {item.societeNom} (stock : {item.quantite} {item.unite})
+                      {item.marchandise} (stock : {item.quantite} {item.unite})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {selectedStock && (
-                <p className="text-xs text-muted-foreground">
-                  Société :{" "}
-                  <span className="font-medium text-foreground/90">{selectedStock.societeNom}</span>
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -345,7 +334,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
               unite={selectedStock?.unite}
               motif={formMotif}
               montant={montantNum}
-              societeNom={selectedStock?.societeNom}
+              societeNom={selectedSociete?.nom}
               logoUrl={selectedSociete?.logoUrl}
               afficherNomAvecLogo={selectedSociete?.afficherNomAvecLogo}
             />

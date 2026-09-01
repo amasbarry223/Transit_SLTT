@@ -30,7 +30,6 @@ interface OperationsTableProps {
   totalItems: number;
   hasActiveFilters: boolean;
   canWrite: boolean;
-  showQuantitePrixUnitaire: boolean;
   startIdx: number;
   endIdx: number;
   page: number;
@@ -45,7 +44,6 @@ interface OperationRowProps {
   ecartCumuleById: Map<string, number>;
   ecartClientCumuleById?: Map<string, number>;
   canWrite: boolean;
-  showQuantitePrixUnitaire: boolean;
   onDelete: (operation: OperationComptable) => void;
 }
 
@@ -53,7 +51,6 @@ const OperationMobileCard = memo(function OperationMobileCard({
   operation: o,
   ecartClientCumuleById,
   canWrite,
-  showQuantitePrixUnitaire,
   onDelete,
 }: OperationRowProps) {
   return (
@@ -74,9 +71,6 @@ const OperationMobileCard = memo(function OperationMobileCard({
           {o.type === "Entrée" ? "+" : "-"}{formatFCFA(o.montant)}
         </span>
       </div>
-      {showQuantitePrixUnitaire && o.quantite != null && o.prixUnitaire != null && (
-        <p className="mt-2 text-xs text-muted-foreground">{o.quantite} × {formatFCFA(o.prixUnitaire)}</p>
-      )}
       {ecartClientCumuleById?.has(o.id) && (
         <p className="mt-2 text-xs text-muted-foreground">
           Solde client :{" "}
@@ -105,7 +99,6 @@ const OperationTableRow = memo(function OperationTableRow({
   ecartCumuleById,
   ecartClientCumuleById,
   canWrite,
-  showQuantitePrixUnitaire,
   onDelete,
 }: OperationRowProps) {
   return (
@@ -126,11 +119,6 @@ const OperationTableRow = memo(function OperationTableRow({
       </TableCell>
       <TableCell className="px-4 py-3.5 text-muted-foreground">{o.nature}</TableCell>
       <TableCell className="px-4 py-3.5 text-xs text-slate-500">{o.modePaiement || "Espèces"}</TableCell>
-      {showQuantitePrixUnitaire && (
-        <TableCell className="px-4 py-3.5 text-right tabular-nums text-muted-foreground">
-          {o.quantite != null && o.prixUnitaire != null ? `${o.quantite} × ${formatFCFA(o.prixUnitaire)}` : "—"}
-        </TableCell>
-      )}
       <TableCell className="px-4 py-3.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
         {o.type === "Entrée" ? formatFCFA(o.montant) : "—"}
       </TableCell>
@@ -166,7 +154,6 @@ export function OperationsTable({
   totalItems,
   hasActiveFilters,
   canWrite,
-  showQuantitePrixUnitaire,
   startIdx,
   endIdx,
   page,
@@ -202,7 +189,6 @@ export function OperationsTable({
                 ecartCumuleById={ecartCumuleById}
                 ecartClientCumuleById={ecartClientCumuleById}
                 canWrite={canWrite}
-                showQuantitePrixUnitaire={showQuantitePrixUnitaire}
                 onDelete={onDelete}
               />
             ))}
@@ -216,7 +202,6 @@ export function OperationsTable({
                   <Heading>Dossier</Heading>
                   <Heading>Nature</Heading>
                   <Heading>Mode</Heading>
-                  {showQuantitePrixUnitaire && <Heading className="text-right">Qté × PU</Heading>}
                   <Heading className="text-right">Entrée</Heading>
                   <Heading className="text-right">Sortie</Heading>
                   <Heading className="text-right">Solde client</Heading>
@@ -232,7 +217,6 @@ export function OperationsTable({
                     ecartCumuleById={ecartCumuleById}
                     ecartClientCumuleById={ecartClientCumuleById}
                     canWrite={canWrite}
-                    showQuantitePrixUnitaire={showQuantitePrixUnitaire}
                     onDelete={onDelete}
                   />
                 ))}

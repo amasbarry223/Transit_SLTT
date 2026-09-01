@@ -8,10 +8,7 @@ import { mapAuditLogFromDb, type AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
 import { supabase } from "@/lib/supabase";
 import { logWarn } from "@/shared/logger";
-import {
-  resolveSlttBrand,
-  resolveSocieteDisplayNameById,
-} from "@/lib/societe-brand";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 
 export { resolveSlttBrand };
 
@@ -23,8 +20,6 @@ export interface ClasseurEntry {
   id: string;
   sourceId: string;
   date: string;
-  societeId: string;
-  societeNom: string;
   type: ClasseurType;
   reference: string;
   libelle: string;
@@ -39,13 +34,9 @@ function buildDossierLibelle(d: Dossier): string {
   return `Dossier transit — ${d.nature}${bl ? ` · BL ${bl}` : ""}`;
 }
 
-function resolveEntrySocieteNom(
-  societes: Societe[],
-  societeId: string | undefined,
-  fallback: string,
-): string {
-  if (!societeId) return fallback;
-  return resolveSocieteDisplayNameById(societes, societeId, fallback);
+/** Identité imprimée du classeur — société unique SLTT (branding). */
+export function resolveClasseurBrandNom(societes: Societe[]): string {
+  return resolveSlttBrand(societes)?.nom || societes[0]?.nom || "SLTT";
 }
 
 /** Construit le journal complet (non filtré), trié chronologiquement, avec solde cumulé réel. */
@@ -56,6 +47,7 @@ export function buildClasseurJournal(
   factures: Facture[],
   societes: Societe[],
 ): ClasseurEntry[] {
+  void resolveClasseurBrandNom(societes);
   const unsorted: Omit<ClasseurEntry, "soldeCumule">[] = [];
 
   for (const d of dossiers) {
@@ -64,8 +56,6 @@ export function buildClasseurJournal(
       id: `dossier-${d.id}`,
       sourceId: d.id,
       date: d.date,
-      societeId: d.societeId,
-      societeNom: resolveEntrySocieteNom(societes, d.societeId, d.societeNom),
       type: "Dossier",
       reference: d.reference,
       libelle: buildDossierLibelle(d),
@@ -81,8 +71,6 @@ export function buildClasseurJournal(
       id: `ecriture-${e.id}`,
       sourceId: e.id,
       date: e.date,
-      societeId: e.societeId ?? "",
-      societeNom: resolveEntrySocieteNom(societes, e.societeId, e.societeNom ?? "Non affecté"),
       type: "Paiement",
       reference: `ÉCR-${e.id.slice(0, 8).toUpperCase()}`,
       libelle: e.note?.trim() || "Bon de paiement",
@@ -99,8 +87,6 @@ export function buildClasseurJournal(
       id: `facture-${f.id}`,
       sourceId: f.id,
       date: f.date,
-      societeId: f.societeId ?? "",
-      societeNom: resolveEntrySocieteNom(societes, f.societeId, f.societeNom ?? "Non affecté"),
       type: "Facture",
       reference: f.numero,
       libelle: f.lignes[0]?.description || "Facture",
@@ -123,8 +109,6 @@ interface ClasseurMouvementRow {
   id: string;
   source_id: string;
   date: string;
-  societe_id: string | null;
-  societe_nom: string;
   type: ClasseurType;
   reference: string;
   libelle: string;
@@ -139,8 +123,6 @@ function mapClasseurRowFromDb(row: ClasseurMouvementRow): ClasseurEntry {
     id: row.id,
     sourceId: row.source_id,
     date: row.date,
-    societeId: row.societe_id ?? "",
-    societeNom: row.societe_nom,
     type: row.type,
     reference: row.reference,
     libelle: row.libelle,
@@ -171,7 +153,6 @@ export async function fetchClasseurMouvements(clientId: string): Promise<Classeu
 }
 
 export interface ClasseurFilters {
-  societeId: "all" | string;
   type: "all" | ClasseurType;
   dateFrom?: string;
   dateTo?: string;
@@ -186,7 +167,6 @@ export function filterClasseurJournal(
   filters: ClasseurFilters,
 ): ClasseurEntry[] {
   return entries.filter((e) => {
-    if (filters.societeId !== "all" && e.societeId !== filters.societeId) return false;
     if (filters.type !== "all" && e.type !== filters.type) return false;
     if (filters.dateFrom && e.date < filters.dateFrom) return false;
     if (filters.dateTo && e.date > filters.dateTo) return false;
@@ -201,20 +181,19 @@ export interface ClasseurTotals {
   parSociete: Array<{ societeNom: string; soldeNet: number }>;
 }
 
-export function computeClasseurTotals(filteredEntries: ClasseurEntry[]): ClasseurTotals {
+export function computeClasseurTotals(
+  filteredEntries: ClasseurEntry[],
+  brandNom = "SLTT",
+): ClasseurTotals {
   const totalDebit = filteredEntries.reduce((s, e) => s + e.debit, 0);
   const totalCredit = filteredEntries.reduce((s, e) => s + e.credit, 0);
-
-  const bySociete = new Map<string, number>();
-  for (const e of filteredEntries) {
-    bySociete.set(e.societeNom, (bySociete.get(e.societeNom) ?? 0) + (e.debit - e.credit));
-  }
+  const soldeNet = totalDebit - totalCredit;
 
   return {
     totalDebit,
     totalCredit,
-    soldeNet: totalDebit - totalCredit,
-    parSociete: Array.from(bySociete.entries()).map(([societeNom, soldeNet]) => ({ societeNom, soldeNet })),
+    soldeNet,
+    parSociete: [{ societeNom: brandNom, soldeNet }],
   };
 }
 

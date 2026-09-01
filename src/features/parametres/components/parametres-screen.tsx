@@ -32,7 +32,7 @@ const tabs: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { key: "users", label: "Utilisateurs & rôles", shortLabel: "Utilisateurs", icon: Users },
-  { key: "societes", label: "Sociétés", shortLabel: "Sociétés", icon: Building2 },
+  { key: "societes", label: "Entreprise", shortLabel: "Entreprise", icon: Building2 },
   { key: "profile", label: "Mon profil", shortLabel: "Profil", icon: User },
   { key: "security", label: "Sécurité", shortLabel: "Sécurité", icon: Shield },
   { key: "audit", label: "Audit & traçabilité", shortLabel: "Audit", icon: ScrollText },

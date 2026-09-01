@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import type { Client } from "@/lib/domain-types";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn, getInitials } from "@/lib/utils";
@@ -54,7 +53,6 @@ export function ClientProfileCard({
                   <TypeIcon className="size-3" />
                   {client.type}
                 </ToneBadge>
-                <SocieteBadge societeNom={client.societeNom} societeId={client.societeId} />
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 {client.telephone && (

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { usePagination } from "@/shared/hooks/use-pagination";
 import {
   UserPlus,
@@ -18,7 +17,6 @@ import type { ClientInput } from "@/features/clients/types";
 import { formatFCFA } from "@/lib/format";
 import { printClients } from "@/features/clients/services/client-print";
 import { resolveSlttBrand } from "@/lib/classeur";
-import { resolveTransitSociete } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastWarning, toastSuccess } from "@/shared/utils/toast-helpers";
 import { usePermission } from "@/shared/hooks/use-permission";
@@ -33,7 +31,6 @@ import {
   type ClientSortKey,
   type ClientTypeFilter,
 } from "@/features/clients/components";
-import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { ClientFormFields, emptyClientForm } from "@/features/clients/components/client-form-fields";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -63,13 +60,10 @@ export function ClientsScreen() {
   const addClient = useStore((s) => s.addClient);
   const updateClient = useStore((s) => s.updateClient);
   const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
-  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
-  const scopedClients = useMemo(() => {
-    const bySociete = selectedSocieteId
-      ? clients.filter((c) => c.societeId === selectedSocieteId)
-      : clients;
-    return filterByAnnexe(bySociete, selectedAnnexeId);
-  }, [clients, selectedSocieteId, selectedAnnexeId]);
+  const scopedClients = useMemo(
+    () => filterByAnnexe(clients, selectedAnnexeId),
+    [clients, selectedAnnexeId],
+  );
 
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>("all");
@@ -80,9 +74,8 @@ export function ClientsScreen() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [savingClient, setSavingClient] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const defaultSocieteId = selectedSocieteId ?? resolveTransitSociete(societes)?.id ?? "";
   const [formValues, setFormValues] = useState<ClientInput>(
-    emptyClientForm(activeAnnexeId ?? "", defaultSocieteId),
+    emptyClientForm(activeAnnexeId ?? ""),
   );
 
   const isEdit = editingId !== null;
@@ -128,7 +121,7 @@ export function ClientsScreen() {
   const hasActiveFilters = query.trim() !== "" || typeFilter !== "all";
 
   function resetForm() {
-    setFormValues(emptyClientForm(activeAnnexeId ?? "", defaultSocieteId));
+    setFormValues(emptyClientForm(activeAnnexeId ?? ""));
     setEditingId(null);
   }
 
@@ -150,7 +143,6 @@ export function ClientsScreen() {
         email: c.email,
         adresse: c.adresse,
         annexeId: c.annexeId,
-        societeId: c.societeId,
       });
       setDialogOpen(true);
     },
@@ -170,10 +162,6 @@ export function ClientsScreen() {
       toastWarning(toast, { title: "Champ requis", description: "Veuillez saisir le nom ou la raison sociale du client." });
       return;
     }
-    if (!formValues.societeId) {
-      toastWarning(toast, { title: "Champ requis", description: "Veuillez sélectionner la société rattachée au client." });
-      return;
-    }
     const input: ClientInput = {
       nom: trimmedNom,
       type: formValues.type,
@@ -181,7 +169,6 @@ export function ClientsScreen() {
       email: formValues.email.trim(),
       adresse: formValues.adresse.trim(),
       annexeId: formValues.annexeId,
-      societeId: formValues.societeId,
     };
     setSavingClient(true);
     try {
@@ -290,8 +277,6 @@ export function ClientsScreen() {
             />
           </div>
 
-          <SocieteFilterSelect className="h-10 w-full sm:w-52" />
-
           <Select
             value={typeFilter}
             onValueChange={(v) => {
@@ -386,7 +371,6 @@ export function ClientsScreen() {
               values={formValues}
               onChange={(patch) => setFormValues((v) => ({ ...v, ...patch }))}
               annexes={annexes}
-              societes={societes}
               autoFocusNom
             />
 
@@ -398,7 +382,7 @@ export function ClientsScreen() {
               >
                 Annuler
               </Button>
-              <Button type="submit" disabled={!formValues.nom.trim() || !formValues.societeId || savingClient}>
+              <Button type="submit" disabled={!formValues.nom.trim() || savingClient}>
                 {isEdit ? "Enregistrer" : "Créer le client"}
               </Button>
             </DialogFooter>

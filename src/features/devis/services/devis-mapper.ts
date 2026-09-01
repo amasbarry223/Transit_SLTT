@@ -7,8 +7,6 @@ export function mapDevisFromDb(row: DevisRow): Devis {
     reference: row.reference,
     clientId: row.client_id,
     clientNom: row.clients?.nom || "—",
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     nature: row.nature,

@@ -9,7 +9,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
 
 export function DevisSummaryHeader({
@@ -41,10 +40,6 @@ export function DevisSummaryHeader({
   const setIsEditing = (value: boolean) => value && onStartEdit();
   const setConfirmDelete = (value: boolean) => value && onDelete();
   const setConfirmConvert = (value: boolean) => value && onConvert();
-  const fSocieteId = editValid ? "valid" : "";
-  const fClientId = fSocieteId;
-  const fNature = fSocieteId;
-  const fDateValidite = fSocieteId;
   return (
       <Card className="border-border/80 shadow-sm overflow-hidden">
         <div className="flex">
@@ -55,7 +50,6 @@ export function DevisSummaryHeader({
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl font-extrabold tracking-tight text-foreground">{devis.reference}</h1>
                   <DevisStatutBadge statut={devis.statut} size="md" />
-                  <SocieteBadge societeNom={devis.societeNom} size="sm" />
                   {devis.dossierId && (
                     <button
                       onClick={() => openDossierDetail(devis.dossierId!)}
@@ -140,7 +134,7 @@ export function DevisSummaryHeader({
                     <X className="size-4" /> Annuler
                   </Button>
                   <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90"
-                    disabled={!fSocieteId || !fClientId || !fNature.trim() || !fDateValidite || saving}
+                    disabled={!editValid || saving}
                     onClick={() => void handleSave()}>
                     <Save className="size-4" /> {saving ? "Enregistrement…" : "Enregistrer"}
                   </Button>

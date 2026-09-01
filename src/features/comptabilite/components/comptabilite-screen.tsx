@@ -15,7 +15,7 @@ export function ComptabiliteScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Comptabilité générale & caisse"
-        description="Journal unique des opérations financières et règlements dossiers par entité (Annexe Mali, Annexe CI, Top Doumani)."
+        description="Journal unique des opérations financières et règlements dossiers par entité (Annexe Mali, Annexe CI)."
       >
         <Button
           variant="outline"

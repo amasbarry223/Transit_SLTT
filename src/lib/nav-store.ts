@@ -19,7 +19,6 @@ export type ViewKey =
   | "client-fiche"
   | "devis"
   | "devis-detail"
-  | "calendrier"
   | "transporteurs"
   | "factures"
   | "facture-detail"
@@ -32,7 +31,6 @@ export type ViewKey =
 export type PendingFacturePrefill = {
   clientId: string;
   clientNom: string;
-  societeId?: string;
   description: string;
   montant: number;
 } | null;

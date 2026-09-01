@@ -13,7 +13,6 @@ export function mapExcelWorkbookFromDb(row: ExcelWorkbookRow): ExcelWorkbook {
   return {
     id: row.id,
     clientId: row.client_id,
-    societeId: row.societe_id || undefined,
     nom: row.nom,
     storagePath: row.storage_path || undefined,
     snapshotJson: row.snapshot_json,
@@ -34,7 +33,6 @@ export interface ExcelWorkbooksSlice {
   saveExcelWorkbook: (input: {
     clientId: string;
     clientNom: string;
-    societeId?: string | null;
     snapshotJson: Record<string, unknown>;
     xlsxBlob?: Blob | null;
     /** Si true, pas d'entrée d'audit (autosave). */
@@ -121,7 +119,6 @@ export const createExcelWorkbooksSlice: StateCreator<
         .from("excel_workbooks")
         .update({
           nom,
-          societe_id: input.societeId ?? existing.societeId ?? null,
           snapshot_json: snapshot,
           storage_path: storagePath,
           version: nextVersion,
@@ -159,7 +156,6 @@ export const createExcelWorkbooksSlice: StateCreator<
       .from("excel_workbooks")
       .insert({
         client_id: input.clientId,
-        societe_id: input.societeId ?? null,
         nom,
         snapshot_json: snapshot,
         storage_path: storagePath,

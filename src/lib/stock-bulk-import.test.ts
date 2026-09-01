@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import fs from "node:fs";
-import path from "node:path";
 import { parseStockBulkXlsx } from "./stock-bulk-import";
 
 /** Reproduit le format maison : une feuille par article, en-tête Dates | Désignation | … | Entrée | Sortie | Stocks. */
 async function buildSampleWorkbook(): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook();
-  const sheet = wb.addWorksheet("Cube Top Doumani");
-  sheet.addRow(["GESTION DE STOCKS TOP DOUMANI"]);
+  const sheet = wb.addWorksheet("Riz parfumé 25 kg");
+  sheet.addRow(["GESTION DE STOCKS"]);
   sheet.addRow([]);
   sheet.addRow(["DATES", "DESIGNATION", "QUANTITE", "ENTREE", "SORTIE", "STOCKS"]);
   sheet.addRow(["26/11/2025", "STOCK INITIAL", "100", "100", "", "100"]);
@@ -20,7 +18,7 @@ describe("parseStockBulkXlsx", () => {
   it("détecte l'article depuis le nom de feuille, pas depuis le titre en ligne 1", async () => {
     const groups = await parseStockBulkXlsx(await buildSampleWorkbook());
     expect(groups).toHaveLength(1);
-    expect(groups[0].articleNomSuggere).toBe("Cube Top Doumani");
+    expect(groups[0].articleNomSuggere).toBe("Riz parfumé 25 kg");
   });
 
   it("distingue Entrée/Sortie par colonne et calcule le solde courant", async () => {
@@ -77,66 +75,6 @@ describe("parseStockBulkXlsx", () => {
     expect(groups).toHaveLength(0);
   });
 
-  it("reproduit le fichier réel « Gestion de stock top doumani.md » : 226 lignes, stock final 1408, 10 dates corrigées par le voisinage", async () => {
-    const mdPath = path.resolve(__dirname, "../../Gestion de stock top doumani.md");
-    const md = fs.readFileSync(mdPath, "utf8");
-    const dataLines = md
-      .split(/\r?\n/)
-      .filter((l) => l.trim().startsWith("|"))
-      .slice(2);
-
-    const wb = new ExcelJS.Workbook();
-    const sheet = wb.addWorksheet("Cube Top Doumani");
-    sheet.addRow(["GESTION DE STOCKS TOP DOUMANI"]);
-    sheet.addRow([]);
-    sheet.addRow(["DATES", "DESIGNATION", "QUANTITE", "ENTREE", "SORTIE", "STOCKS"]);
-    for (const line of dataLines) {
-      const [dates, designation, quantite, entree, sortie, stocks] = line
-        .split("|")
-        .slice(1, -1)
-        .map((c) => c.trim());
-      sheet.addRow([
-        dates,
-        designation,
-        quantite ? Number(quantite) : "",
-        entree ? Number(entree) : "",
-        sortie ? Number(sortie) : "",
-        stocks ? Number(stocks) : "",
-      ]);
-    }
-    const buf = (await wb.xlsx.writeBuffer()) as unknown as ArrayBuffer;
-
-    const groups = await parseStockBulkXlsx(buf);
-    expect(groups).toHaveLength(1);
-    expect(groups[0].rows).toHaveLength(226);
-    expect(groups[0].rows.at(-1)!.stockCalcule).toBe(1408);
-
-    const invalidDates = groups[0].rows.filter((r) => r.warnings.some((w) => w.includes("Date illisible")));
-    expect(invalidDates).toHaveLength(4);
-
-    const horsSequence = groups[0].rows.filter((r) => r.warnings.some((w) => w.includes("Date hors séquence")));
-    expect(horsSequence).toHaveLength(6);
-
-    const suggested = Object.fromEntries(
-      groups[0].rows
-        .filter((r) => r.dateSuggested)
-        .map((r) => [`${r.dateRaw}|${r.designation}`, r.dateSuggested]),
-    );
-    expect(suggested).toMatchObject({
-      "30/01/2025|KOITA MANQUANT": "2025-12-30",
-      "03/12/2026|MAHAMADOU SANGARE": "2026-01-03",
-      "09/01/2025|KOITA BOULKASS": "2026-01-09",
-      "22/101/2026|KOITA DJALAKORODJI": "2026-01-22",
-      "03/05/2026|Mahamadou Sangare": "2026-06-03",
-      "10/01/2026|KOITA MISSIRA": "2026-06-10",
-      "19/05/2026|Mahamadou sangare": "2026-06-19",
-      "23/062026|Modibo Coulibaly": "2026-06-23",
-      "30/062026|KOITA MISSIRA": "2026-06-30",
-      "30/07/02026|Sangare regions": "2026-07-30",
-    });
-    expect(Object.keys(suggested)).toHaveLength(10);
-  });
-
   it("signale une date lisible mais hors séquence et propose la correction des voisins", async () => {
     const wb = new ExcelJS.Workbook();
     const sheet = wb.addWorksheet("Riz");
@@ -158,7 +96,7 @@ describe("parseStockBulkXlsx", () => {
 
   it("déduit Entrée/Sortie d'un registre sans colonne Sortie (Quantité + Entrée seulement)", async () => {
     const wb = new ExcelJS.Workbook();
-    const sheet = wb.addWorksheet("Cube Top Doumani");
+    const sheet = wb.addWorksheet("Riz parfumé 25 kg");
     sheet.addRow(["DATES", "DESIGNATION", "QUANTITE", "ENTREE"]);
     sheet.addRow(["26/11/2025", "STOCK INITIAL", "100", "100"]);
     sheet.addRow(["26/11/2025", "AMI KOUMA", "20", ""]);

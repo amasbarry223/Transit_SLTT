@@ -482,7 +482,6 @@ export function useOcrReviewState({
           }
         }
         const input: DossierInput = {
-          societeId: existing.societeId,
           annexeId: existing.annexeId,
           clientId: existing.clientId,
           clientNom: existing.clientNom,
@@ -514,7 +513,6 @@ export function useOcrReviewState({
           throw new Error("Aucune annexe assignée à l'utilisateur connecté.");
         }
         const input: DossierInput = {
-          societeId: transit.id,
           annexeId: activeAnnexeId,
           clientId: form.clientId,
           clientNom: client.nom,

@@ -6,7 +6,6 @@ import { normalizePermissions } from "@/lib/permissions";
 import type { User, UserRole } from "@/lib/domain-types";
 import type { UserInput, SLTTState } from "@/lib/store";
 import type { ProfileRow } from "@/lib/db-rows";
-import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 export function mapProfileFromDb(row: ProfileRow): User {
   const role = row.role as UserRole;
@@ -68,7 +67,6 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
       userSeq: seq + 1,
     }));
     await get().updateUserAnnexes(newUser.id, input.annexeIds);
-    await get().addAuditLog(AUDIT_MODULE.Utilisateurs, AUDIT_ACTION.Creation, `Utilisateur ${input.nom} créé`);
     return { ...newUser, annexeIds: input.annexeIds };
   },
 
@@ -93,7 +91,6 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
       ),
     }));
     await get().updateUserAnnexes(id, input.annexeIds);
-    await get().addAuditLog(AUDIT_MODULE.Utilisateurs, AUDIT_ACTION.Modification, `Utilisateur ${input.nom} mis à jour`);
   },
 
   updateUserAnnexes: async (id, annexeIds) => {
@@ -131,12 +128,9 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
     set((s) => ({
       users: s.users.map((u) => (u.id === id ? { ...u, actif: newStatus } : u)),
     }));
-    await get().addAuditLog(AUDIT_MODULE.Utilisateurs, AUDIT_ACTION.Modification, `Statut actif de l'utilisateur ${user.nom} basculé à ${newStatus}`);
   },
 
   removeUser: async (id) => {
-    const user = get().users.find((u) => u.id === id);
-
     const res = await fetchWithAuth(`/api/admin/users/${id}`, { method: "DELETE" });
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.error || "Impossible de supprimer l'utilisateur.");
@@ -144,10 +138,6 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
     set((s) => ({
       users: s.users.filter((u) => u.id !== id),
     }));
-
-    if (user) {
-      await get().addAuditLog(AUDIT_MODULE.Utilisateurs, AUDIT_ACTION.Suppression, `Utilisateur ${user.nom} supprimé`);
-    }
   },
 
   resetUserPassword: async (id, password) => {
@@ -181,19 +171,25 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
     const existing = get().users.find((u) => u.id === id);
     if (!existing) throw new Error("Utilisateur introuvable.");
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ nom: trimmedNom, email: trimmedEmail })
-      .eq("id", id);
-    if (error) throw error;
+    const res = await fetchWithAuth("/api/auth/profile", {
+      method: "PATCH",
+      body: JSON.stringify({ nom: trimmedNom, email: trimmedEmail }),
+    });
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.error || "Impossible de mettre à jour le profil.");
+
+    const updated = payload.user ? mapProfileFromDb(payload.user) : {
+      ...existing,
+      nom: trimmedNom,
+      email: trimmedEmail,
+    };
 
     set((s) => ({
       users: s.users.map((u) =>
-        u.id === id ? { ...u, nom: trimmedNom, email: trimmedEmail } : u,
+        u.id === id ? { ...u, nom: updated.nom, email: updated.email } : u,
       ),
     }));
 
-    useSession.getState().setCurrentUserName(trimmedNom);
-    await get().addAuditLog(AUDIT_MODULE.Utilisateurs, AUDIT_ACTION.Modification, `Profil de ${trimmedNom} mis à jour`);
+    useSession.getState().setCurrentUserName(updated.nom);
   },
 });

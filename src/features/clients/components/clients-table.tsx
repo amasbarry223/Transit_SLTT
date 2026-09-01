@@ -18,7 +18,6 @@ import { formatFCFA } from "@/lib/format";
 import { cn, getInitials } from "@/shared/utils/cn";
 import { UI } from "@/shared/utils/ui-messages";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -138,7 +137,6 @@ const ClientMobileCard = memo(function ClientMobileCard({
             <p className="truncate font-medium text-foreground">{client.nom}</p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <ClientTypeBadge type={client.type} size="sm" />
-              <SocieteBadge societeNom={client.societeNom} societeId={client.societeId} size="sm" />
             </div>
           </div>
         </div>
@@ -238,9 +236,6 @@ const ClientTableRow = memo(function ClientTableRow({
       </TableCell>
       <TableCell className="w-[130px] px-4 py-3.5">
         <ClientTypeBadge type={client.type} size="sm" />
-      </TableCell>
-      <TableCell className="hidden px-4 py-3.5 lg:table-cell">
-        <SocieteBadge societeNom={client.societeNom} societeId={client.societeId} size="sm" />
       </TableCell>
       <TableCell className="hidden min-w-[160px] px-4 py-3.5 md:table-cell">
         <div className="space-y-1 text-sm">
@@ -390,9 +385,6 @@ export function ClientsTable({
               />
               <TableHead className="h-10 w-[130px] px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Type
-              </TableHead>
-              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
-                Société
               </TableHead>
               <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                 Contact

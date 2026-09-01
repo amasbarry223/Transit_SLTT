@@ -6,8 +6,6 @@ import { useStore } from "@/lib/store";
 import { useUiPrefs, type DateFormat } from "@/lib/session/ui-prefs-store";
 import { useToast } from "@/hooks/use-toast";
 import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { GUIDE_DISMISS_KEY, emitGuideReset } from "@/lib/guide-progress";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -71,29 +69,6 @@ export function PreferencesTab() {
         </div>
       </Card>
 
-      <Card className="p-6 shadow-sm border-border/80">
-        <h3 className="text-sm font-semibold text-foreground">Guide de démarrage</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Réaffichez le guide « Par où commencer ? » sur le tableau de bord.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-3"
-          onClick={() => {
-            try {
-              localStorage.removeItem(GUIDE_DISMISS_KEY);
-              emitGuideReset();
-              toastSuccess(toast, { title: "Guide réactivé", description: "Le guide est de nouveau visible sur le tableau de bord." });
-            } catch {
-              toastWarning(toast, { title: "Impossible de réactiver le guide" });
-            }
-          }}
-        >
-          Réafficher le guide
-        </Button>
-      </Card>
-
       <Card className="p-6 shadow-sm border-destructive/20">
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
@@ -101,10 +76,10 @@ export function PreferencesTab() {
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-semibold text-foreground">
-              Synchroniser les données
+              Recharger les données
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Vide le cache local puis recharge toutes les données depuis Supabase.
+              Relance la lecture de toutes les données depuis Supabase.
             </p>
             <Button
               variant="outline"
@@ -112,7 +87,7 @@ export function PreferencesTab() {
               onClick={() => setCacheConfirmOpen(true)}
             >
               <RotateCcw className="size-4" />
-              Vider le cache et recharger
+              Recharger depuis Supabase
             </Button>
           </div>
         </div>
@@ -121,15 +96,13 @@ export function PreferencesTab() {
       <ConfirmActionDialog
         open={cacheConfirmOpen}
         onOpenChange={setCacheConfirmOpen}
-        title="Vider le cache local et recharger ?"
-        description="Les données en cache sur cet appareil seront effacées puis rechargées depuis Supabase. Les modifications non synchronisées pourraient être perdues."
-        confirmLabel="Vider et recharger"
+        title="Recharger les données depuis Supabase ?"
+        description="Toutes les données affichées seront relues depuis la base. Les modifications non enregistrées pourraient être perdues."
+        confirmLabel="Recharger"
         onConfirm={async () => {
           try {
-            localStorage.removeItem("sltt-data-v9");
-            localStorage.removeItem("sltt-data-v10");
             await refetchData();
-            toastSuccess(toast, { title: "Cache vidé", description: "Les données ont été rechargées depuis Supabase.", });
+            toastSuccess(toast, { title: "Données rechargées", description: "Les données ont été relues depuis Supabase.", });
           } catch {
             toastWarning(toast, { title: "Échec du rechargement", description: "Impossible de recharger les données." });
           }

@@ -50,12 +50,6 @@ export function ClasseurGrid({ rows, onRowClick, onDataChanged, className }: Cla
         valueFormatter: (p) => (p.value ? formatDateShort(String(p.value)) : ""),
       },
       {
-        field: "societeNom",
-        headerName: "Société",
-        width: 140,
-        editable: false,
-      },
-      {
         field: "type",
         headerName: "Type",
         width: 100,

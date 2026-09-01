@@ -44,7 +44,7 @@ export function ClasseurSuiviDialog({
               <div className="space-y-1 pt-1 text-left">
                 <p className="font-mono text-sm text-foreground">{entry.reference}</p>
                 <p className="text-xs text-muted-foreground">
-                  {entry.type} · {entry.societeNom} · {formatDateShort(entry.date)}
+                  {entry.type} · {formatDateShort(entry.date)}
                 </p>
                 <ToneBadge tone={classeurStatutTone(entry.statut)}>{entry.statut}</ToneBadge>
               </div>

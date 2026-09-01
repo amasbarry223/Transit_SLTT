@@ -25,8 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import { toastError, toastInfo, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import { EmptyState } from "@/components/sltt/empty-state";
-
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { ToneBadge, TONE_CLASSES } from "@/components/sltt/status-badge";
 
 import { Card } from "@/components/ui/card";
@@ -56,7 +54,6 @@ import {
   CONTRAT_STATUT_TONE,
   PRESTATION_STATUTS,
   PRESTATION_STATUT_TONE,
-  contratToInput,
   InfoRow,
   ContratFormModal,
   DepenseFormModal,
@@ -71,7 +68,6 @@ export function ContratDetailScreen() {
   const setPendingFacturePrefill = useNav((s) => s.setPendingFacturePrefill);
 
   const contrats = useStore((s) => s.contrats);
-  const societes = useStore((s) => s.societes);
   const depenses = useStore((s) => s.depenses);
   const prestations = useStore((s) => s.contratPrestations);
   const contratFichiers = useStore((s) => s.contratFichiers);
@@ -185,7 +181,6 @@ export function ContratDetailScreen() {
     setPendingFacturePrefill({
       clientId: contrat!.clientId,
       clientNom: contrat!.clientNom,
-      societeId: contrat!.societeId,
       description: `${contrat!.reference} — ${prestation.libelle}`,
       montant: prestation.montant,
     });
@@ -249,31 +244,6 @@ export function ContratDetailScreen() {
                     </Select>
                   ) : (
                     <ToneBadge tone={CONTRAT_STATUT_TONE[contrat.statut]}>{contrat.statut}</ToneBadge>
-                  )}
-                  {canWrite && contratDepenses.length === 0 ? (
-                    <Select
-                      value={contrat.societeId}
-                      onValueChange={async (v) => {
-                        await updateContrat(contrat.id, { ...contratToInput(contrat), societeId: v });
-                        const nom = societes.find((s) => s.id === v)?.nom ?? v;
-                        toastSuccess(toast, { title: "Société mise à jour", description: `${contrat.reference} → ${nom}` });
-                      }}
-                    >
-                      <SelectTrigger className="h-7 w-auto gap-1 border-none bg-transparent px-1 shadow-none">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {societes.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span title={canWrite && contratDepenses.length > 0 ? "Société verrouillée : des dépenses sont déjà rattachées à ce contrat." : undefined}>
-                      <SocieteBadge societeNom={contrat.societeNom} />
-                    </span>
                   )}
                 </div>
                 <p className="mt-1.5 text-base font-semibold text-foreground/90">{contrat.clientNom}</p>

@@ -94,7 +94,6 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
         dossier_id: input.dossierId || null,
         facture_id: input.factureId || null,
         client_id: input.clientId || null,
-        societe_id: input.societeId || null,
         entity_type: input.entityType || null,
         entity_id: input.entityId || null,
         annexe_id: annexeId,
@@ -242,7 +241,6 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     if (input.dossierId !== undefined) payload.dossier_id = input.dossierId;
     if (input.factureId !== undefined) payload.facture_id = input.factureId;
     if (input.clientId !== undefined) payload.client_id = input.clientId;
-    if (input.societeId !== undefined) payload.societe_id = input.societeId;
     if (input.entityType !== undefined) payload.entity_type = input.entityType;
     if (input.entityId !== undefined) payload.entity_id = input.entityId;
 
@@ -259,7 +257,6 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
               dossierId: input.dossierId === null ? undefined : (input.dossierId ?? doc.dossierId),
               factureId: input.factureId === null ? undefined : (input.factureId ?? doc.factureId),
               clientId: input.clientId === null ? undefined : (input.clientId ?? doc.clientId),
-              societeId: input.societeId === null ? undefined : (input.societeId ?? doc.societeId),
               entityType:
                 input.entityType === null ? undefined : (input.entityType ?? doc.entityType),
               entityId: input.entityId === null ? undefined : (input.entityId ?? doc.entityId),

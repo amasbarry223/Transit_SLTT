@@ -41,7 +41,6 @@ export function ArchiveUploadDialog({
   const { toast } = useToast();
   const addArchive = useStore((s) => s.addArchive);
   const clients = useStore((s) => s.clients);
-  const societes = useStore((s) => s.societes);
   const dossiers = useStore((s) => s.dossiers);
   const factures = useStore((s) => s.factures);
   const depenses = useStore((s) => s.depenses);
@@ -54,7 +53,6 @@ export function ArchiveUploadDialog({
   const [rattachementKind, setRattachementKind] = useState<RattachementKind>(initialKind);
   const [rattachementId, setRattachementId] = useState("");
   const [clientId, setClientId] = useState("");
-  const [societeId, setSocieteId] = useState("");
   const [saving, setSaving] = useState(false);
 
   function reset(kind: RattachementKind = initialKind) {
@@ -63,7 +61,6 @@ export function ArchiveUploadDialog({
     setRattachementKind(kind);
     setRattachementId("");
     setClientId("");
-    setSocieteId("");
   }
 
   const [prevOpen, setPrevOpen] = useState(open);
@@ -71,9 +68,6 @@ export function ArchiveUploadDialog({
     setPrevOpen(open);
     if (open) {
       reset(initialKind);
-      // Une seule société active : pas d'ambiguïté, on la présélectionne
-      // plutôt que de forcer une sélection manuelle systématique.
-      if (societes.length === 1) setSocieteId(societes[0].id);
     }
   }
 
@@ -104,10 +98,6 @@ export function ArchiveUploadDialog({
       toastWarning(toast, { title: "Sélectionnez un fichier" });
       return;
     }
-    if (!societeId) {
-      toastWarning(toast, { title: "Sélectionnez une société" });
-      return;
-    }
     setSaving(true);
     try {
       const derivedClientId = deriveClientIdFromRattachement(
@@ -127,7 +117,6 @@ export function ArchiveUploadDialog({
         factureId: rattachementKind === "facture" ? rattachementId || undefined : undefined,
         depenseId: rattachementKind === "depense" ? rattachementId || undefined : undefined,
         clientId: derivedClientId ?? (rattachementKind === "libre" ? clientId || undefined : undefined),
-        societeId,
       });
 
       toastSuccess(toast, { title: "Document archivé", description: file.name });
@@ -231,16 +220,7 @@ export function ArchiveUploadDialog({
               <Label>{rattachementKind === "dossier" ? "Dossier" : rattachementKind === "facture" ? "Facture" : "Dépense"}</Label>
               <Select
                 value={rattachementId}
-                onValueChange={(id) => {
-                  setRattachementId(id);
-                  if (rattachementKind === "facture") {
-                    const f = factures.find((x) => x.id === id);
-                    if (f?.societeId) setSocieteId(f.societeId);
-                  } else if (rattachementKind === "depense") {
-                    const dep = depenses.find((x) => x.id === id);
-                    if (dep?.societeId) setSocieteId(dep.societeId);
-                  }
-                }}
+                onValueChange={setRattachementId}
               >
                 <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                 <SelectContent>
@@ -251,18 +231,6 @@ export function ArchiveUploadDialog({
               </Select>
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label>Société <span className="text-red-500">*</span></Label>
-            <Select value={societeId} onValueChange={setSocieteId}>
-              <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-              <SelectContent>
-                {societes.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           {rattachementKind === "libre" && (
             <div className="space-y-2">
@@ -280,7 +248,7 @@ export function ArchiveUploadDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-          <Button onClick={handleSubmit} disabled={saving || !file || !societeId}>
+          <Button onClick={handleSubmit} disabled={saving || !file}>
             {saving ? "Archivage…" : "Archiver"}
           </Button>
         </DialogFooter>

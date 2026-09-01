@@ -9,8 +9,6 @@ export interface Client {
   adresse: string;
   annexeId: string;
   annexeNom?: string;
-  societeId: string;
-  societeNom?: string;
   nbDossiers: number;
   totalDu: number;
   totalPaye: number;
@@ -23,7 +21,6 @@ export interface ClientInput {
   email: string;
   adresse: string;
   annexeId: string;
-  societeId: string;
 }
 
 export interface ClientPrintRow {

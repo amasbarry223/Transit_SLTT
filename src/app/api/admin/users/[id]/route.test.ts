@@ -115,6 +115,10 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 
+vi.mock("@/lib/auth/admin-audit", () => ({
+  insertAdminAuditLog: async () => {},
+}));
+
 const { PATCH, DELETE } = await import("@/app/api/admin/users/[id]/route");
 
 function ctx(id: string) {

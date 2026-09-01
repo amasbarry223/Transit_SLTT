@@ -39,8 +39,6 @@ export function pathForView(
       return "/devis";
     case "devis-detail":
       return id ? `/devis/${id}` : "/devis";
-    case "calendrier":
-      return "/calendrier";
     case "transporteurs":
       return "/transporteurs";
     case "factures":

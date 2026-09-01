@@ -74,7 +74,7 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
     const matching = cloturesCaisse.filter(
       (c) =>
         c.entiteType === entite.type &&
-        (entite.type === "annexe" ? c.annexeId === entite.id : c.societeId === entite.id),
+        (entite.type === "annexe" ? c.annexeId === entite.id : false),
     );
     if (matching.length === 0) return null;
     return matching.reduce((max, c) => (c.periodeFin > max ? c.periodeFin : max), matching[0].periodeFin);
@@ -197,7 +197,6 @@ export function OcrCaptureDialog({ open, onOpenChange, entite, initialFile }: Oc
       await addOperationComptable({
         entiteType: entite.type,
         annexeId: entite.type === "annexe" ? entite.id : undefined,
-        societeId: entite.type === "societe" ? entite.id : undefined,
         date: form.date,
         clientNom: form.clientNom.trim(),
         nature: form.nature.trim(),

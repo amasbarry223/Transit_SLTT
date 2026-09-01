@@ -21,7 +21,7 @@ export async function fetchCoreEntities(
         pagedSelect(
           supabase,
           "clients",
-          "id, nom, type, telephone, email, adresse, annexe_id, societe_id, annexes(nom)",
+          "id, nom, type, telephone, email, adresse, annexe_id, annexes(nom)",
         ),
       { softCap: caps.default },
     ),
@@ -30,7 +30,7 @@ export async function fetchCoreEntities(
         pagedSelect(
           supabase,
           "dossiers",
-          "id, reference, societe_id, annexe_id, client_id, bl, camion, nature, droit_douane, frais_circuit, frais_prestation, montant_investi, montant_paye, statut, date, date_echeance, date_dedouanement, mode_transport, no_conteneur, port_entree, poids_total, notes, clients(nom), societes(nom), annexes(nom)",
+          "id, reference, annexe_id, client_id, bl, camion, nature, droit_douane, frais_circuit, frais_prestation, montant_investi, montant_paye, statut, date, date_echeance, date_dedouanement, mode_transport, no_conteneur, port_entree, poids_total, notes, clients(nom), annexes(nom)",
         ),
       { softCap: caps.default },
     ),
@@ -39,7 +39,7 @@ export async function fetchCoreEntities(
         pagedSelect(
           supabase,
           "ecritures",
-          "id, date, date_paiement, client_id, dossier_id, societe_id, annexe_id, montant_investi, montant_paye, mode_paiement, note, clients(nom), societes(nom), annexes(nom)",
+          "id, date, date_paiement, client_id, dossier_id, annexe_id, montant_investi, montant_paye, mode_paiement, note, clients(nom), annexes(nom)",
         ),
       { softCap: caps.default },
     ),
@@ -48,7 +48,7 @@ export async function fetchCoreEntities(
         pagedSelect(
           supabase,
           "factures",
-          "id, numero, dossier_id, client_id, societe_id, annexe_id, date, date_echeance, statut, taux_tva, montant_ht, montant_tva, montant_ttc, montant_paye, notes, cree_par, cree_le, created_at, facture_lignes(id, description, quantite, prix_unitaire, montant_ht, compagnie, bordereau_livraison), clients(nom), societes(nom), annexes(nom)",
+          "id, numero, dossier_id, client_id, annexe_id, date, date_echeance, statut, taux_tva, montant_ht, montant_tva, montant_ttc, montant_paye, notes, cree_par, cree_le, created_at, facture_lignes(id, description, quantite, prix_unitaire, montant_ht, compagnie, bordereau_livraison), clients(nom), annexes(nom)",
         ),
       { softCap: caps.default },
     ),
@@ -66,7 +66,7 @@ export async function fetchCoreEntities(
         pagedSelect(
           supabase,
           "societes",
-          "id, nom, raison_sociale, actif, logo_url, adresse, telephone, rccm, nif, afficher_nom_avec_logo, signataire_dg, signataire_pdg, is_transit",
+          "id, nom, raison_sociale, actif, logo_url, adresse, telephone, rccm, nif, afficher_nom_avec_logo, signataire_dg, signataire_pdg",
         ),
       { softCap: caps.societes },
     ),

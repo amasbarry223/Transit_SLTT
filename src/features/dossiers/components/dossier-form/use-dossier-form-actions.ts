@@ -42,7 +42,6 @@ export function useDossierFormActions({
   function handleFieldBlur(field: keyof typeof form.errors) {
     form.setTouched((p) => ({ ...p, [field]: true }));
     const values: Record<keyof typeof form.errors, string> = {
-      societeId: form.societeId,
       annexeId: form.annexeId,
       clientId: form.clientId,
       nature: form.nature,

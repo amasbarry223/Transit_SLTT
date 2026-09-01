@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { EntiteComptable, OperationComptableType } from "@/lib/domain-types";
-import { computeMontantFromQuantitePrixUnitaire } from "@/lib/comptabilite-generale";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
@@ -42,7 +41,6 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
   const dossiers = useStore((s) => s.dossiers);
   const addOperationComptable = useStore((s) => s.addOperationComptable);
   const cloturesCaisse = useStore((s) => s.cloturesCaisse);
-  const isTopDoumani = entite.type === "societe";
 
   // Dernière date de clôture de caisse pour cette entité — une opération ne
   // doit pas pouvoir être saisie rétroactivement dans une période déjà
@@ -52,7 +50,7 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
     const matching = cloturesCaisse.filter(
       (c) =>
         c.entiteType === entite.type &&
-        (entite.type === "annexe" ? c.annexeId === entite.id : c.societeId === entite.id),
+        (entite.type === "annexe" ? c.annexeId === entite.id : false),
     );
     if (matching.length === 0) return null;
     return matching.reduce((max, c) => (c.periodeFin > max ? c.periodeFin : max), matching[0].periodeFin);
@@ -66,8 +64,6 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
   const [type, setType] = useState<OperationComptableType>("Sortie");
   const [modePaiement, setModePaiement] = useState<"Espèces" | "Virement" | "Mobile Money" | "Chèque">("Espèces");
   const [montant, setMontant] = useState("");
-  const [quantite, setQuantite] = useState("");
-  const [prixUnitaire, setPrixUnitaire] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -81,15 +77,9 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
     setType("Sortie");
     setModePaiement("Espèces");
     setMontant("");
-    setQuantite("");
-    setPrixUnitaire("");
   }, [open]);
 
-  const montantCalcule = useMemo(
-    () => computeMontantFromQuantitePrixUnitaire(Number(quantite) || undefined, Number(prixUnitaire) || undefined),
-    [quantite, prixUnitaire],
-  );
-  const montantEffectif = isTopDoumani && montantCalcule != null ? montantCalcule : Number(montant.replace(/\s/g, "")) || 0;
+  const montantEffectif = Number(montant.replace(/\s/g, "")) || 0;
 
   function handleClientSelect(id: string) {
     setClientId(id);
@@ -139,17 +129,14 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
       await addOperationComptable({
         entiteType: entite.type,
         annexeId: entite.type === "annexe" ? entite.id : undefined,
-        societeId: entite.type === "societe" ? entite.id : undefined,
         date,
         clientId: clientId || undefined,
         dossierId: dossierId || undefined,
         clientNom: clientNom.trim(),
         nature: nature.trim(),
-        type: isTopDoumani ? "Sortie" : type,
+        type,
         montant: montantEffectif,
         modePaiement,
-        quantite: isTopDoumani && quantite ? Number(quantite) : undefined,
-        prixUnitaire: isTopDoumani && prixUnitaire ? Number(prixUnitaire) : undefined,
         source: "saisie",
       });
       toastSuccess(toast, { title: "Opération enregistrée", description: `${clientNom} — ${formatFCFA(montantEffectif)}.` });
@@ -179,18 +166,16 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
                 </p>
               )}
             </div>
-            {!isTopDoumani && (
-              <div className="space-y-2">
-                <Label htmlFor="opc-type">Type</Label>
-                <Select value={type} onValueChange={(value) => setType(value as OperationComptableType)}>
-                  <SelectTrigger id="opc-type" className="h-10 w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Entrée">Entrée (Encaissement)</SelectItem>
-                    <SelectItem value="Sortie">Sortie (Décaissement)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="opc-type">Type</Label>
+              <Select value={type} onValueChange={(value) => setType(value as OperationComptableType)}>
+                <SelectTrigger id="opc-type" className="h-10 w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Entrée">Entrée (Encaissement)</SelectItem>
+                  <SelectItem value="Sortie">Sortie (Décaissement)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -245,28 +230,12 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
               {NATURE_SUGGESTIONS.map((n) => <option key={n} value={n} />)}
             </datalist>
           </div>
-          {isTopDoumani ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="opc-quantite">Quantité</Label>
-                <Input id="opc-quantite" type="number" min="0" value={quantite} onChange={(e) => setQuantite(e.target.value)} placeholder="Ex. 10" className="h-10" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="opc-pu">Prix unitaire (FCFA)</Label>
-                <Input id="opc-pu" type="number" min="0" value={prixUnitaire} onChange={(e) => setPrixUnitaire(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
-              </div>
-              <p className="col-span-full text-sm text-muted-foreground">
-                Montant (Sortie) : <span className="font-semibold text-foreground/90">{formatFCFA(montantEffectif)}</span>
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="opc-montant">
-                Montant (FCFA) <span className="text-red-500">*</span>
-              </Label>
-              <Input id="opc-montant" type="number" min="0" value={montant} onChange={(e) => setMontant(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="opc-montant">
+              Montant (FCFA) <span className="text-red-500">*</span>
+            </Label>
+            <Input id="opc-montant" type="number" min="0" value={montant} onChange={(e) => setMontant(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
+          </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>

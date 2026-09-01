@@ -45,7 +45,6 @@ interface AddArchiveInput {
   factureId?: string;
   depenseId?: string;
   clientId?: string;
-  societeId?: string;
 }
 
 export function mapArchiveFromDb(row: ArchiveRow): Archive {
@@ -60,7 +59,6 @@ export function mapArchiveFromDb(row: ArchiveRow): Archive {
     factureId: row.facture_id || undefined,
     depenseId: row.depense_id || undefined,
     clientId: row.client_id || undefined,
-    societeId: row.societe_id || undefined,
     annexeId: row.annexe_id,
     creePar: row.cree_par || "",
     createdAt: row.created_at,
@@ -134,7 +132,6 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
         facture_id: input.factureId || null,
         depense_id: input.depenseId || null,
         client_id: input.clientId || null,
-        societe_id: input.societeId || null,
         annexe_id: annexeId,
         cree_par: creePar,
       })

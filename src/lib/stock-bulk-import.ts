@@ -1,6 +1,6 @@
 /**
  * Import .xlsx multi-articles → mouvements de stock historiques (ExcelJS
- * côté client). Format maison : une feuille par article (« Cube Top Doumani »,
+ * côté client). Format maison : une feuille par article (« Riz parfumé 25 kg »,
  * etc.), avec un tableau positionnel Dates | Désignation | Quantité | Entrée |
  * Sortie | Stocks — un grand livre papier tenu à la main, retranscrit dans
  * Excel. Sortie et Stocks sont optionnelles : certains registres n'ont que

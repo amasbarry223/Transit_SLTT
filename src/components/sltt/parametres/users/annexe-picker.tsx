@@ -6,17 +6,22 @@ export function AnnexePicker({
   annexes,
   value,
   onChange,
+  allowedIds,
 }: {
   annexes: { id: string; nom: string }[];
   value: string[];
   onChange: (annexeIds: string[]) => void;
+  /** Si défini, seules ces annexes sont sélectionnables (plafond délégué). */
+  allowedIds?: string[];
 }) {
   function toggle(id: string) {
+    if (allowedIds && !allowedIds.includes(id)) return;
     onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   }
+  const visible = allowedIds ? annexes.filter((a) => allowedIds.includes(a.id)) : annexes;
   return (
     <div className="grid gap-2 sm:grid-cols-2">
-      {annexes.map((a) => {
+      {visible.map((a) => {
         const selected = value.includes(a.id);
         return (
           <button

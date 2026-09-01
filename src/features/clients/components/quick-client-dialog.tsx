@@ -9,7 +9,6 @@ import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
-import { resolveTransitSociete } from "@/lib/societe-brand";
 import { ClientFormFields, emptyClientForm } from "@/features/clients/components/client-form-fields";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -23,31 +22,26 @@ import {
 
 interface Props {
   onCreated: (clientId: string) => void;
-  /** Société du formulaire parent (ex. modal contrat) — masque l'annexe si Top Doumani. */
-  defaultSocieteId?: string;
 }
 
-export function QuickClientButton({ onCreated, defaultSocieteId }: Props) {
+export function QuickClientButton({ onCreated }: Props) {
   const { toast } = useToast();
   const addClient = useStore((s) => s.addClient);
-  const societes = useStore((s) => s.societes);
   const canCreateClient = usePermission("clients:write");
   const { annexes, activeAnnexeId } = useActiveAnnexe();
-  const resolvedSocieteId =
-    defaultSocieteId ?? resolveTransitSociete(societes)?.id ?? "";
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ClientInput>(
-    emptyClientForm(activeAnnexeId ?? "", resolvedSocieteId),
+    emptyClientForm(activeAnnexeId ?? ""),
   );
   const [saving, setSaving] = useState(false);
 
   function reset() {
-    setForm(emptyClientForm(activeAnnexeId ?? "", resolvedSocieteId));
+    setForm(emptyClientForm(activeAnnexeId ?? ""));
   }
 
   async function handleCreate() {
     const trimmed = form.nom.trim();
-    if (!trimmed || !form.societeId || saving) return;
+    if (!trimmed || saving) return;
     setSaving(true);
     try {
       const newClient = await addClient({ ...form, nom: trimmed });
@@ -93,7 +87,6 @@ export function QuickClientButton({ onCreated, defaultSocieteId }: Props) {
             values={form}
             onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
             annexes={annexes}
-            societes={societes}
             idPrefix="qc"
             autoFocusNom
           />
@@ -102,7 +95,7 @@ export function QuickClientButton({ onCreated, defaultSocieteId }: Props) {
             <Button variant="outline" onClick={() => { setOpen(false); reset(); }} disabled={saving}>
               Annuler
             </Button>
-            <Button onClick={handleCreate} disabled={!form.nom.trim() || !form.societeId || saving}>
+            <Button onClick={handleCreate} disabled={!form.nom.trim() || saving}>
               <UserPlus className="size-4" />
               {saving ? "Création…" : "Créer le client"}
             </Button>

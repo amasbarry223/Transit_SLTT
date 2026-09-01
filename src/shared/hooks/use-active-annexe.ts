@@ -12,7 +12,7 @@ export interface ActiveAnnexe {
   /** Annexe sous laquelle créer un nouvel enregistrement — jamais null (repli sur la 1ère annexe assignée). */
   activeAnnexeId: string | null;
   /**
-   * Choix brut persisté (topbar) : null = "Toutes les annexes". C'est ce
+   * Choix brut (profil / topbar) : null = "Toutes les annexes". C'est ce
    * qu'il faut passer à `filterByAnnexe` pour filtrer la vue d'un écran —
    * contrairement à `activeAnnexeId`, qui ne sert qu'au contexte de création
    * et ne doit jamais filtrer une liste (la RLS s'en charge déjà).
@@ -25,7 +25,7 @@ export interface ActiveAnnexe {
 
 /**
  * Résout l'annexe active de l'utilisateur connecté — auto-sélectionnée s'il
- * est mono-annexe, sinon reprise du choix persisté (nav-store) s'il reste
+ * est mono-annexe, sinon reprise du choix profil s'il reste
  * valide pour lui, avec repli sur sa première annexe assignée.
  */
 export function useActiveAnnexe(): ActiveAnnexe {

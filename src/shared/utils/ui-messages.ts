@@ -243,12 +243,5 @@ export const UI = {
   onboarding: {
     welcome: (name: string) =>
       name ? `Bienvenue ${name} !` : "Bienvenue !",
-    guideTitle: "Voici par où démarrer",
-    stepDone: "C'est fait !",
-    continueStep: (label: string) => `Passer à l'étape suivante : ${label}`,
-    stepComplete: (remaining: number) =>
-      remaining > 0
-        ? `Super ! Étape terminée. Plus que ${remaining} étape${remaining > 1 ? "s" : ""}.`
-        : "Super ! Toutes les étapes sont terminées.",
   },
 } as const;

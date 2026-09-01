@@ -16,27 +16,21 @@ function societe(overrides: Partial<Societe> & { id: string }): Societe {
 }
 
 describe("resolveTransitSociete", () => {
-  it("priorise la société flaguée is_transit", () => {
-    const a = societe({ id: "a" });
-    const b = societe({ id: "b", isTransit: true });
-    expect(resolveTransitSociete([a, b])).toBe(b);
-  });
-
-  it("retombe sur l'UUID legacy si aucun flag is_transit", () => {
+  it("priorise l'UUID SLTT canonique", () => {
     const a = societe({ id: "a" });
     const legacy = societe({ id: LEGACY_TRANSIT_SOCIETE_ID });
     expect(resolveTransitSociete([a, legacy])).toBe(legacy);
   });
 
-  it("retombe sur l'unique société active si aucune ambiguïté", () => {
+  it("retombe sur l'unique société active", () => {
     const seule = societe({ id: "a" });
     expect(resolveTransitSociete([seule])).toBe(seule);
   });
 
-  it("ne devine pas parmi plusieurs sociétés actives non flaguées", () => {
+  it("retombe sur la première ligne si plusieurs sociétés actives", () => {
     const a = societe({ id: "a" });
     const b = societe({ id: "b" });
-    expect(resolveTransitSociete([a, b])).toBeUndefined();
+    expect(resolveTransitSociete([a, b])).toBe(a);
   });
 });
 
@@ -51,7 +45,6 @@ describe("resolveDossierCoutLabels", () => {
     const labels = resolveDossierCoutLabels("CI");
     expect(labels.droitDouane).toBe("Frais transit port");
     expect(labels.fraisCircuit).toBe("Dépenses");
-    // La prestation SLTT reste la même quelle que soit l'annexe.
     expect(labels.fraisPrestation).toBe("Frais de prestation");
   });
 });

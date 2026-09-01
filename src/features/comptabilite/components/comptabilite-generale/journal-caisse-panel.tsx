@@ -38,7 +38,7 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
         <EmptyState
           icon={PiggyBank}
           title="Aucune entité comptable disponible"
-          description="Aucune annexe ni société « Top Doumani » n'est configurée pour cet utilisateur."
+          description="Aucune annexe n'est configurée pour cet utilisateur."
         />
       </div>
     );
@@ -188,7 +188,6 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
         totalItems={screen.totalItems}
         hasActiveFilters={screen.hasActiveFilters}
         canWrite={screen.canWrite}
-        showQuantitePrixUnitaire={screen.resolvedEntite.type === "societe"}
         startIdx={screen.startIdx}
         endIdx={screen.endIdx}
         page={screen.page}

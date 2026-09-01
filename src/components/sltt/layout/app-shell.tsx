@@ -11,7 +11,6 @@ import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { ArchivesScreen } from "@/features/archives";
 import { BilansScreen } from "@/features/bilans";
 import { BonsScreen } from "@/features/bons";
-import { CalendrierScreen } from "@/features/calendrier";
 import { ClientFicheScreen, ClientsScreen } from "@/features/clients";
 import { ComptabiliteScreen } from "@/features/comptabilite";
 import { ContratDetailScreen, ContratsScreen } from "@/features/contrats";
@@ -135,7 +134,6 @@ export function AppShell() {
             {view === "client-fiche" && <ClientFicheScreen />}
             {view === "devis" && <DevisScreen />}
             {view === "devis-detail" && <DevisDetailScreen />}
-            {view === "calendrier" && <CalendrierScreen />}
             {view === "transporteurs" && <TransporteursScreen />}
             {view === "factures" && <FacturesScreen />}
             {view === "facture-detail" && <FactureDetailScreen />}

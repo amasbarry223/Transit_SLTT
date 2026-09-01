@@ -28,7 +28,6 @@ import {
 import { cn } from "@/lib/utils";
 import type { Dossier } from "@/lib/domain-types";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 
 type DossiersListTableProps = {
   filtered: Dossier[];
@@ -69,7 +68,6 @@ const DossierMobileCard = memo(function DossierMobileCard({
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <SocieteBadge societeNom={dossier.societeNom} size="sm" />
           <DossierStatutBadge statut={dossier.statut} />
         </div>
       </div>
@@ -128,9 +126,6 @@ const DossierTableRow = memo(function DossierTableRow({
             {dossier.reference}
           </p>
         </div>
-      </TableCell>
-      <TableCell className="hidden px-4 py-3.5 md:table-cell">
-        <SocieteBadge societeNom={dossier.societeNom} size="sm" />
       </TableCell>
       <TableCell className="max-w-[180px] px-4 py-3.5">
         <p className="truncate font-medium text-foreground/90">
@@ -263,9 +258,6 @@ export function DossiersListTable({
                   <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Référence
-                    </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
-                      Société
                     </TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Client

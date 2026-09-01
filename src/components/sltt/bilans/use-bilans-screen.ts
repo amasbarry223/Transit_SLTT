@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useStore } from "@/lib/store";
 import { parseLocalDate } from "@/lib/format";
 import { exportToExcel, printBilan } from "@/lib/export";
@@ -13,7 +12,6 @@ import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
-import { filterBySociete } from "@/lib/filter-by-societe";
 import { CHART_COLORS } from "@/lib/constants";
 import { currentYearMonth, getPeriodeLabel, type Periode, type SortDir, type SortKey } from "./shared";
 
@@ -30,21 +28,13 @@ export function useBilansScreen() {
   const factures = useStore((s) => s.factures);
   const depenses = useStore((s) => s.depenses);
   const contrats = useStore((s) => s.contrats);
-  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
   const { annexes, isMultiAnnexe } = useActiveAnnexe();
-
-  // F1 : quand une société précise est sélectionnée, les écritures non
-  // affectées (transit global) sont exclues des récaps/graphiques de cet écran.
-  const ecritures = useMemo(
-    () => filterBySociete(allEcritures, selectedSocieteId),
-    [allEcritures, selectedSocieteId],
-  );
 
   const periodeLabel = getPeriodeLabel(periode, mois);
 
   const filteredEcritures = useMemo(() => {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
-    return ecritures.filter((e) => {
+    return allEcritures.filter((e) => {
       const d = parseLocalDate(e.date);
       const eYear = d.getFullYear();
       const eMonth = d.getMonth() + 1;
@@ -61,7 +51,7 @@ export function useBilansScreen() {
           return true;
       }
     });
-  }, [ecritures, mois, periode]);
+  }, [allEcritures, mois, periode]);
 
   // F5 — Bénéfice sur le mois de référence sélectionné (indépendant de la
   // granularité "période" choisie, qui ne s'applique qu'au récap client).
@@ -71,14 +61,13 @@ export function useBilansScreen() {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
     return new Date(year, month - 1);
   }, [mois]);
-  const { consolide, parSociete, ecrituresAvecDate, caisseAvecDate } = useBeneficeParSociete(anchorDate);
+  const { consolide, ecrituresAvecDate, caisseAvecDate } = useBeneficeParSociete(anchorDate);
 
   // F-ANNEXE — reporting consolidé par annexe, réservé aux utilisateurs
   // multi-annexes (RLS les laisse déjà voir les données des deux annexes ;
   // ce bloc n'est qu'un regroupement client-side, aucun contournement RLS).
   // Les dépenses de contrats n'ont pas de annexe_id propre (héritée du
-  // contrat parent, cf. RLS 20260817) — on la dénormalise ici comme le fait
-  // déjà useBeneficeParSociete pour societeId.
+  // contrat parent, cf. RLS 20260817) — on la dénormalise ici.
   const depensesAvecDateEtAnnexe = useMemo(
     () =>
       depenses.map((d) => ({
@@ -125,7 +114,7 @@ export function useBilansScreen() {
     const [year] = (mois || currentYearMonth()).split("-").map(Number);
     return Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
-      const monthEcritures = ecritures.filter((e) => {
+      const monthEcritures = allEcritures.filter((e) => {
         const d = parseLocalDate(e.date);
         return d.getFullYear() === year && d.getMonth() + 1 === m;
       });
@@ -135,7 +124,7 @@ export function useBilansScreen() {
         encaisse: monthEcritures.reduce((s, e) => s + e.montantPaye, 0),
       };
     });
-  }, [ecritures, mois]);
+  }, [allEcritures, mois]);
 
   const recapParClient = useMemo(() => {
     return clients
@@ -241,7 +230,7 @@ export function useBilansScreen() {
       })),
       recapTotaux,
       tauxRecouvrement,
-      resolveClasseurPrintBrand(societes, selectedSocieteId ?? undefined),
+      resolveClasseurPrintBrand(societes),
     );
   }
 
@@ -254,9 +243,7 @@ export function useBilansScreen() {
     sortKey,
     sortDir,
     toggleSort,
-    nbSocietes: societes.length,
     consolide,
-    parSociete,
     isMultiAnnexe,
     beneficeAnnexe,
     beneficeMoisLabel,

@@ -98,7 +98,7 @@ export function RecuReceiptPreview({
         <AlertTriangle className="size-8 text-amber-500" />
         <p className="text-sm font-medium text-foreground">Aperçu indisponible</p>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Configurez la société transit dans Paramètres &gt; Sociétés pour afficher le logo et l&apos;identité sur le reçu.
+          Configurez l&apos;entreprise dans Paramètres &gt; Entreprise pour afficher le logo et l&apos;identité sur le reçu.
         </p>
       </div>
     );

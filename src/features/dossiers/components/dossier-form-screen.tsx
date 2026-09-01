@@ -1,7 +1,5 @@
 "use client";
 
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
-
 import {
   ArrowLeft,
   Save,
@@ -55,7 +53,6 @@ export function DossierFormScreen() {
 
 function DossierFormInner() {
   const { selectedId, dossierFormMode, go } = useNav();
-  const { selectedSocieteId } = useUiPrefs();
   const canTransition = usePermission("dossiers:transition");
 
   const clients = useStore((s) => s.clients);
@@ -75,7 +72,6 @@ function DossierFormInner() {
     dossiers,
     societes,
     annexes,
-    defaultSocieteId: selectedSocieteId ?? undefined,
     defaultAnnexeId: activeAnnexeId ?? undefined,
   });
   const annexeCode = annexes.find((a) => a.id === form.annexeId)?.code;
@@ -175,9 +171,7 @@ function DossierFormInner() {
           {form.showStep(1) && (
             <DossierIdentityStep
               clients={clients}
-              societes={societes}
               annexes={annexes}
-              societeId={form.societeId}
               annexeId={form.annexeId}
               clientId={form.clientId}
               nature={form.nature}
@@ -186,7 +180,6 @@ function DossierFormInner() {
               date={form.date}
               errors={form.errors}
               touched={form.touched}
-              onSocieteIdChange={form.setSocieteId}
               onAnnexeIdChange={form.setAnnexeId}
               onClientIdChange={form.setClientId}
               onNatureChange={form.setNature}

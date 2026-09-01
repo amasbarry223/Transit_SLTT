@@ -25,7 +25,6 @@ type ClasseurTabProps = {
   journalEntries: ClasseurEntry[];
   classeurFilters: ClasseurFilters;
   onFiltersChange: (updater: (prev: ClasseurFilters) => ClasseurFilters) => void;
-  classeurSocieteOptions: { id: string; nom: string }[];
   classeurFiltered: ClasseurEntry[];
   classeurTotals: ClasseurTotals;
   classeurPeriodFiltered?: boolean;
@@ -43,7 +42,6 @@ export function ClasseurTab({
   journalEntries,
   classeurFilters,
   onFiltersChange,
-  classeurSocieteOptions,
   classeurFiltered,
   classeurTotals,
   classeurPeriodFiltered = false,
@@ -59,24 +57,6 @@ export function ClasseurTab({
   return (
     <TabsContent value="classeur" className="mt-6 space-y-4 focus-visible:outline-none">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <Select
-          value={classeurFilters.societeId === "" ? "none" : classeurFilters.societeId}
-          onValueChange={(v) =>
-            onFiltersChange((f) => ({ ...f, societeId: v === "none" ? "" : v }))
-          }
-        >
-          <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Filtrer par société">
-            <SelectValue placeholder="Société" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les sociétés</SelectItem>
-            {classeurSocieteOptions.map((s) => (
-              <SelectItem key={s.id || "none"} value={s.id || "none"}>
-                {s.nom}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select
           value={classeurFilters.type}
           onValueChange={(v) =>
@@ -183,19 +163,6 @@ export function ClasseurTab({
         />
       </div>
 
-      {classeurTotals.parSociete.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Solde par société (sélection filtrée) :
-          </span>
-          {classeurTotals.parSociete.map((p) => (
-            <ToneBadge key={p.societeNom} tone={p.soldeNet > 0 ? "amber" : "emerald"}>
-              {p.societeNom} · {formatFCFA(p.soldeNet)}
-            </ToneBadge>
-          ))}
-        </div>
-      )}
-
       {classeurPeriodFiltered && (
         <p className="text-xs text-muted-foreground">
           Le solde cumulé affiché est calculé sur l&apos;historique complet du client (hors filtre
@@ -221,7 +188,7 @@ export function ClasseurTab({
                         {entry.reference}
                       </p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {entry.type} · {entry.societeNom}
+                        {entry.type}
                       </p>
                     </div>
                     <ToneBadge tone={classeurStatutTone(entry.statut)}>{entry.statut}</ToneBadge>

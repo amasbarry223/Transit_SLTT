@@ -16,7 +16,6 @@ export const PRESTATION_STATUT_TONE: Record<ContratPrestationStatut, "blue" | "e
 export const MODES_PAIEMENT: PaiementMode[] = ["Espèces", "Virement", "Mobile Money", "Chèque"];
 
 export function contratToInput(contrat: {
-  societeId: string;
   clientId: string;
   clientNom: string;
   annexeId: string;
@@ -28,7 +27,6 @@ export function contratToInput(contrat: {
   notes?: string;
 }): ContratInput {
   return {
-    societeId: contrat.societeId,
     clientId: contrat.clientId,
     clientNom: contrat.clientNom,
     annexeId: contrat.annexeId,

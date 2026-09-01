@@ -27,6 +27,8 @@ interface PermissionMatrixProps {
   /** Affiche d'abord les profils métier ; la matrice détaillée est en mode avancé. */
   presetFirst?: boolean;
   currentRole?: UserRole;
+  /** Si défini, le délégué ne peut cocher / prérégler que ces clés (plafond serveur). */
+  allowedKeys?: string[];
 }
 
 export function PermissionMatrix({
@@ -35,15 +37,31 @@ export function PermissionMatrix({
   disabled,
   presetFirst = false,
   currentRole,
+  allowedKeys,
 }: PermissionMatrixProps) {
   const [advancedOpen, setAdvancedOpen] = useState(!presetFirst);
+  const allowedSet = allowedKeys ? new Set(allowedKeys) : null;
+  const visiblePresets = allowedSet
+    ? PRESET_ROLES.filter((role) => role !== "Administrateur")
+    : PRESET_ROLES;
+  const visibleModules = PERMISSION_MODULES.map((permModule) => ({
+    ...permModule,
+    permissions: allowedSet
+      ? permModule.permissions.filter((p) => allowedSet.has(p.key))
+      : permModule.permissions,
+  })).filter((permModule) => permModule.permissions.length > 0);
+
+  function isAllowed(key: string): boolean {
+    return !allowedSet || allowedSet.has(key);
+  }
 
   function toggle(key: string, checked: boolean) {
+    if (!isAllowed(key)) return;
     onChange({ ...selection, [key]: checked });
   }
 
   function toggleModule(moduleId: string, checked: boolean) {
-    const permModule = PERMISSION_MODULES.find((m) => m.id === moduleId);
+    const permModule = visibleModules.find((m) => m.id === moduleId);
     if (!permModule) return;
     const next = { ...selection };
     for (const perm of permModule.permissions) {
@@ -53,7 +71,9 @@ export function PermissionMatrix({
   }
 
   function applyPreset(role: UserRole) {
-    onChange(permissionsToSelection(ROLE_DEFAULT_PERMISSIONS[role]));
+    const preset = ROLE_DEFAULT_PERMISSIONS[role] ?? [];
+    const filtered = allowedSet ? preset.filter((k) => allowedSet.has(k)) : preset;
+    onChange(permissionsToSelection(filtered));
   }
 
   const activeCount = selectionToPermissions(selection).length;
@@ -69,7 +89,7 @@ export function PermissionMatrix({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {PRESET_ROLES.map((role) => (
+            {visiblePresets.map((role) => (
               <Button
                 key={role}
                 type="button"
@@ -99,7 +119,7 @@ export function PermissionMatrix({
 
       {(!presetFirst || advancedOpen) && (
         <div className="max-h-[360px] space-y-2 overflow-y-auto rounded-lg border border-border p-3 bg-muted/50">
-          {PERMISSION_MODULES.map((permModule) => {
+          {visibleModules.map((permModule) => {
             const moduleKeys = permModule.permissions.map((p) => p.key);
             const allChecked = moduleKeys.every((k) => selection[k]);
             const someChecked = moduleKeys.some((k) => selection[k]);

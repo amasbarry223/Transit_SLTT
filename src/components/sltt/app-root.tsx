@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SESSION_TTL_SHORT, SESSION_TTL_LONG, IDLE_TIMEOUT, IDLE_WARNING_BEFORE, useSession } from "@/lib/session/session-store";
-import { clearLegacyNavPersist } from "@/lib/session/legacy-persist";
+import { IDLE_TIMEOUT, IDLE_WARNING_BEFORE, useSession } from "@/lib/session/session-store";
+import { wipeStaleAppStorage } from "@/lib/session/legacy-persist";
+import { prefsFromProfile, useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useStore } from "@/lib/store";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { LoginScreen, SupabaseRequiredScreen } from "@/features/auth";
@@ -71,7 +72,6 @@ export function AppRoot() {
 function AppRootInner() {
   const isAuthenticated = useSession((s) => s.isAuthenticated);
   const loginAt = useSession((s) => s.loginAt);
-  const rememberMe = useSession((s) => s.rememberMe);
   const lastActivityAt = useSession((s) => s.lastActivityAt);
   const restoreSession = useSession((s) => s.restoreSession);
   const logout = useSession((s) => s.logout);
@@ -81,8 +81,7 @@ function AppRootInner() {
   const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   useEffect(() => {
-    // Seed déjà lu en mémoire : on peut retirer l’ancien blob unifié.
-    clearLegacyNavPersist();
+    wipeStaleAppStorage();
   }, []);
 
   const logoutRef = useRef(logout);
@@ -118,7 +117,7 @@ function AppRootInner() {
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("id, nom, role, actif")
+          .select("id, nom, role, actif, theme, date_format, selected_annexe_id")
           .eq("id", userId)
           .abortSignal(AbortSignal.timeout(PROFILE_QUERY_TIMEOUT_MS))
           .maybeSingle();
@@ -140,11 +139,13 @@ function AppRootInner() {
         }
 
         if (!profile || profile.actif === false) {
+          useUiPrefs.getState().resetPrefs();
           await logoutRef.current();
           return false;
         }
 
         restoreRef.current(profile.role, profile.nom, profile.id);
+        useUiPrefs.getState().hydratePrefs(prefsFromProfile(profile));
         return true;
       }
 
@@ -156,6 +157,7 @@ function AppRootInner() {
 
     async function handleSession(session: { user: { id: string } } | null) {
       if (!session?.user) {
+        useUiPrefs.getState().resetPrefs();
         if (useSession.getState().isAuthenticated) {
           await logoutRef.current();
         }
@@ -183,6 +185,7 @@ function AppRootInner() {
               }
 
               if (event === "SIGNED_OUT" || !session?.user) {
+                useUiPrefs.getState().resetPrefs();
                 if (useSession.getState().isAuthenticated) {
                   await logoutRef.current();
                 }
@@ -247,29 +250,7 @@ function AppRootInner() {
     void fetchData();
   }, [authReady, isAuthenticated, fetchData]);
 
-  // Plafond absolu de la session (8h, ou 3 jours avec "Rester connecté").
-  useEffect(() => {
-    if (!authReady || !isAuthenticated) return;
-
-    if (loginAt === null) {
-      logoutRef.current();
-      return;
-    }
-
-    const ttl = rememberMe ? SESSION_TTL_LONG : SESSION_TTL_SHORT;
-    const elapsed = Date.now() - loginAt;
-
-    if (elapsed >= ttl) {
-      logoutRef.current();
-      return;
-    }
-
-    const remaining = ttl - elapsed;
-    const timer = setTimeout(() => logoutRef.current(), remaining);
-    return () => clearTimeout(timer);
-  }, [authReady, isAuthenticated, loginAt, rememberMe]);
-
-  // Déconnexion pour inactivité (30 min), quel que soit "Rester connecté".
+  // Déconnexion pour inactivité (30 min). Un refresh remet le timer (mémoire).
   useEffect(() => {
     if (!isAuthenticated) return;
 

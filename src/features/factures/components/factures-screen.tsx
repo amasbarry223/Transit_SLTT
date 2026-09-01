@@ -9,7 +9,6 @@ import { KpiCard } from "@/components/sltt/kpi-card";
 import { InfoCallout } from "@/components/sltt/info-callout";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
-import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { formatFCFA } from "@/lib/format";
 import type { Facture } from "@/lib/store";
 import { FactureFormModal } from "./factures/facture-form-modal";
@@ -100,7 +99,6 @@ export function FacturesScreen() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <SocieteFilterSelect className="h-8 w-full sm:w-44" />
           <div className="relative w-full sm:w-56">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input

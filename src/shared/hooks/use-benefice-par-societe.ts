@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 
-import { filterBySocieteAndPeriode, computeBenefice } from "@/lib/benefice";
+import { computeBenefice } from "@/lib/benefice";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
-import type { Societe } from "@/lib/domain-types";
+import { parseLocalDate } from "@/lib/format";
 import { useStore } from "@/lib/store";
 
 export type BeneficeMensuel = {
@@ -11,17 +11,24 @@ export type BeneficeMensuel = {
   benefice: number;
 };
 
-export type BeneficeParSocieteEntry = BeneficeMensuel & {
-  societe: Societe;
-};
+function filterByPeriode<T extends { date: string }>(
+  rows: T[],
+  year: number,
+  month: number,
+): T[] {
+  return rows.filter((row) => {
+    const d = parseLocalDate(row.date);
+    if (Number.isNaN(d.getTime())) return false;
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+}
 
-/** Bénéfice mensuel par société — écritures sur datePaiement (F5), dépenses + caisse (F1). */
+/** Bénéfice mensuel consolidé — écritures sur datePaiement (F5), dépenses + caisse (F1). */
 export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate()) {
   const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
   const depenses = useStore((s) => s.depenses);
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
-  const societes = useStore((s) => s.societes);
 
   const ecrituresAvecDate = useMemo(
     () => ecritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
@@ -35,7 +42,6 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
     () =>
       bonsSortieCaisse.flatMap((b) =>
         b.lignes.map((l) => ({
-          societeId: b.societeId as string | undefined,
           annexeId: b.annexeId,
           date: l.date,
           montant: l.montant,
@@ -48,38 +54,35 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
   const mois = anchorDate.getMonth();
 
   return useMemo(() => {
-    const calculerBeneficeMensuel = (societeId: string | null): BeneficeMensuel => {
-      const recettes =
-        filterBySocieteAndPeriode(ecrituresAvecDate, societeId, annee, mois).reduce(
-          (sum, e) => sum + e.montantPaye,
-          0,
-        ) +
-        filterBySocieteAndPeriode(factures, societeId, annee, mois).reduce(
-          (sum, f) => sum + f.montantPaye,
-          0,
-        );
-      const depensesMois =
-        filterBySocieteAndPeriode(depensesAvecDate, societeId, annee, mois).reduce(
-          (sum, d) => sum + d.montant,
-          0,
-        ) +
-        filterBySocieteAndPeriode(caisseAvecDate, societeId, annee, mois).reduce(
-          (sum, d) => sum + d.montant,
-          0,
-        );
-      return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
+    const recettes =
+      filterByPeriode(ecrituresAvecDate, annee, mois).reduce(
+        (sum, e) => sum + e.montantPaye,
+        0,
+      ) +
+      filterByPeriode(factures, annee, mois).reduce(
+        (sum, f) => sum + f.montantPaye,
+        0,
+      );
+    const depensesMois =
+      filterByPeriode(depensesAvecDate, annee, mois).reduce(
+        (sum, d) => sum + d.montant,
+        0,
+      ) +
+      filterByPeriode(caisseAvecDate, annee, mois).reduce(
+        (sum, d) => sum + d.montant,
+        0,
+      );
+    const consolide: BeneficeMensuel = {
+      recettes,
+      depenses: depensesMois,
+      benefice: computeBenefice(recettes, depensesMois),
     };
 
     return {
       ecrituresAvecDate,
       depensesAvecDate,
       caisseAvecDate,
-      consolide: calculerBeneficeMensuel(null),
-      parSociete: societes.map((societe) => ({
-        societe,
-        ...calculerBeneficeMensuel(societe.id),
-      })),
-      calculerBeneficeMensuel,
+      consolide,
     };
-  }, [ecrituresAvecDate, depensesAvecDate, caisseAvecDate, factures, societes, annee, mois]);
+  }, [ecrituresAvecDate, depensesAvecDate, caisseAvecDate, factures, annee, mois]);
 }

@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { resolveTransitSociete, shouldShowAnnexeForSociete } from "@/lib/societe-brand";
 import {
   parseDossierBulkXlsx,
   looksLikeJournalCaisseWorkbook,
@@ -111,7 +110,6 @@ export function DossierBulkImportButton() {
   const canWriteDossiers = usePermission("dossiers:write");
   const canWriteClients = usePermission("clients:write");
   const canUse = canWriteDossiers && canWriteClients;
-  const societes = useStore((s) => s.societes);
   const clients = useStore((s) => s.clients);
   const addClient = useStore((s) => s.addClient);
   const importDossierHistorique = useStore((s) => s.importDossierHistorique);
@@ -119,7 +117,6 @@ export function DossierBulkImportButton() {
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("config");
-  const [societeId, setSocieteId] = useState("");
   const [defaultAnnexeId, setDefaultAnnexeId] = useState("");
   const [fileName, setFileName] = useState("");
   const [parsing, setParsing] = useState(false);
@@ -127,10 +124,7 @@ export function DossierBulkImportButton() {
   const [groupAnnexeId, setGroupAnnexeId] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
-  // Top Doumani (et toute société hors transit) n'a pas de découpage par
-  // annexe — masquer le champ plutôt que de faire choisir une annexe qui ne
-  // s'applique pas à cette société (même règle que contrats/factures/bons de caisse).
-  const showAnnexe = shouldShowAnnexeForSociete(societeId, societes, annexes);
+  const showAnnexe = annexes.length > 1;
   const effectiveDefaultAnnexeId = showAnnexe ? defaultAnnexeId : (activeAnnexeId ?? "");
 
   function reset() {
@@ -142,7 +136,6 @@ export function DossierBulkImportButton() {
   }
 
   function openDialog() {
-    setSocieteId((prev) => prev || resolveTransitSociete(societes)?.id || societes[0]?.id || "");
     setDefaultAnnexeId((prev) => prev || activeAnnexeId || "");
     reset();
     setOpen(true);
@@ -295,7 +288,6 @@ export function DossierBulkImportButton() {
   }
 
   async function handleConfirm() {
-    if (!societeId) return;
     const toImport = rows.filter((r) => r.selected);
     if (toImport.length === 0) return;
 
@@ -325,7 +317,6 @@ export function DossierBulkImportButton() {
             email: "",
             adresse: "",
             annexeId: rowAnnexeId,
-            societeId,
           });
           clientId = newClient.id;
           clientIdByKey.set(key, clientId);
@@ -339,7 +330,6 @@ export function DossierBulkImportButton() {
         ].filter((p): p is string => Boolean(p));
 
         await importDossierHistorique({
-          societeId,
           annexeId: rowAnnexeId,
           clientId,
           clientNom: row.clientNom.trim(),
@@ -410,51 +400,29 @@ export function DossierBulkImportButton() {
 
           {phase === "config" && (
             <div className="space-y-4 overflow-y-auto p-6">
-              <div className={cn("grid grid-cols-1 gap-4", showAnnexe && "sm:grid-cols-2")}>
+              {showAnnexe ? (
                 <div className="space-y-2">
                   <Label>
-                    Société <span className="text-red-500">*</span>
+                    Annexe par défaut <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={societeId || undefined} onValueChange={setSocieteId}>
-                    <SelectTrigger aria-label="Sélectionner une société">
-                      <SelectValue placeholder="Sélectionner une société" />
+                  <Select value={defaultAnnexeId || undefined} onValueChange={setDefaultAnnexeId}>
+                    <SelectTrigger aria-label="Sélectionner une annexe par défaut">
+                      <SelectValue placeholder="Sélectionner une annexe" />
                     </SelectTrigger>
                     <SelectContent>
-                      {societes
-                        .filter((s) => s.actif || s.id === societeId)
-                        .map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.nom}
-                          </SelectItem>
-                        ))}
+                      {annexes.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.nom}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                {showAnnexe && (
-                  <div className="space-y-2">
-                    <Label>
-                      Annexe par défaut <span className="text-red-500">*</span>
-                    </Label>
-                    <Select value={defaultAnnexeId || undefined} onValueChange={setDefaultAnnexeId}>
-                      <SelectTrigger aria-label="Sélectionner une annexe par défaut">
-                        <SelectValue placeholder="Sélectionner une annexe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {annexes.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+              ) : null}
               {showAnnexe && (
                 <p className="text-xs text-muted-foreground">
-                  Société appliquée à tous les dossiers de ce fichier. L&apos;annexe, elle, se choisit
-                  ensuite client par client à l&apos;étape suivante — utile si le classeur mélange des
-                  clients de plusieurs annexes.
+                  L&apos;annexe se choisit ensuite client par client à l&apos;étape suivante — utile si le
+                  classeur mélange des clients de plusieurs annexes.
                 </p>
               )}
 
@@ -464,7 +432,7 @@ export function DossierBulkImportButton() {
                   id="dossier-bulk-import-file"
                   className="hidden"
                   accept=".xlsx"
-                  disabled={!societeId || (showAnnexe && !defaultAnnexeId) || parsing}
+                  disabled={(showAnnexe && !defaultAnnexeId) || parsing}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) void handleFile(file);
@@ -480,7 +448,7 @@ export function DossierBulkImportButton() {
                   htmlFor="dossier-bulk-import-file"
                   className={cn(
                     "inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary hover:underline",
-                    (!societeId || (showAnnexe && !defaultAnnexeId) || parsing) && "pointer-events-none opacity-60",
+                    ((showAnnexe && !defaultAnnexeId) || parsing) && "pointer-events-none opacity-60",
                   )}
                 >
                   {parsing ? "Analyse du fichier…" : "Sélectionner le fichier .xlsx"}

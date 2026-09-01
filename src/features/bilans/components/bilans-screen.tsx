@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Wallet, Clock, TrendingUp, Percent, FileText, FileSpreadsheet, ChevronDown, ChevronUp } from "lucide-react";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
-import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +19,7 @@ import { PERIODES, type Periode } from "@/components/sltt/bilans/shared";
 export function BilansScreen() {
   const screen = useBilansScreen();
   // Replié par défaut : les 4 KPI principaux suffisent pour "voir les chiffres
-  // du mois" — la répartition par société/annexe est un second niveau de
-  // détail, pas quelque chose à charger visuellement à chaque ouverture
-  // (cf. audit de simplicité).
+  // du mois" — la répartition détaillée est un second niveau.
   const [detailOpen, setDetailOpen] = useState(false);
 
   return (
@@ -76,7 +73,6 @@ export function BilansScreen() {
             <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
               {screen.periodeLabel}
             </span>
-            <SocieteFilterSelect className="w-full sm:w-44" />
           </div>
         </div>
       </Card>
@@ -126,7 +122,7 @@ export function BilansScreen() {
           <div>
             <h2 className="text-sm font-semibold text-foreground">Répartition détaillée</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Bénéfice entreposage par société{screen.isMultiAnnexe ? " et par annexe" : ""} — {screen.beneficeMoisLabel}
+              Bénéfice entreposage{screen.isMultiAnnexe ? " par annexe" : ""} — {screen.beneficeMoisLabel}
             </p>
           </div>
           {detailOpen ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
@@ -139,23 +135,13 @@ export function BilansScreen() {
               </h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <KpiCard
-                  label="Toutes sociétés"
+                  label="Bénéfice consolidé"
                   value={formatFCFA(screen.consolide.benefice)}
                   icon={TrendingUp}
                   tone={screen.consolide.benefice >= 0 ? "emerald" : "red"}
                   sublabel="Recettes − Dépenses, consolidé"
-                  tooltip={`Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois. Consolidé = somme de toutes les sociétés (${screen.nbSocietes}) + activité non affectée (transit).`}
+                  tooltip="Recettes = écritures + paiements factures du mois de référence. Dépenses = dépenses de contrats du mois."
                 />
-                {screen.parSociete.map(({ societe, benefice: b }) => (
-                  <KpiCard
-                    key={societe.id}
-                    label={societe.nom}
-                    value={formatFCFA(b)}
-                    icon={TrendingUp}
-                    tone={b >= 0 ? "emerald" : "red"}
-                    sublabel="bénéfice du mois"
-                  />
-                ))}
               </div>
             </div>
 

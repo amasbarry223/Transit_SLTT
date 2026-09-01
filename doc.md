@@ -26,7 +26,7 @@
 ## 1. Présentation générale
 
 ### 1.1 Objet
-Logiciel métier B2B de gestion pour un groupe de **transit / logistique / douane** opérant au **Mali** et en **Côte d'Ivoire**. Périmètre couvert : prospection (devis) → exécution (dossiers de transit) → facturation → comptabilité → entreposage → contrats de prestation → gestion des tiers → archivage documentaire → pilotage (bilans, calendrier, tableau de bord).
+Logiciel métier B2B de gestion pour un groupe de **transit / logistique / douane** opérant au **Mali** et en **Côte d'Ivoire**. Périmètre couvert : prospection (devis) → exécution (dossiers de transit) → facturation → comptabilité → entreposage → contrats de prestation → gestion des tiers → archivage documentaire → pilotage (bilans, tableau de bord).
 
 ### 1.2 Contexte organisationnel
 
@@ -488,7 +488,6 @@ Chaque mutation métier significative (création, modification, validation, paie
 | Fournisseurs | `fournisseurs:write` | écriture | ✓ | — | ✓ | — |
 | Transporteurs | `transporteurs:read` | lecture | ✓ | — | ✓ | — |
 | Transporteurs | `transporteurs:write` | écriture | ✓ | — | ✓ | — |
-| Calendrier | `calendrier:read` | lecture | ✓ | ✓ | ✓ | ✓ |
 | Comptabilité | `comptabilite:read` | lecture | ✓ | ✓ | — | — |
 | Comptabilité | `comptabilite:write` | écriture | ✓ | ✓ | — | — |
 | Bilans & rapports | `rapports:read` | lecture | ✓ | ✓ | — | — |
@@ -575,22 +574,18 @@ KPIs consolidés (dossiers en cours, factures impayées, bénéfice du mois, ale
 - **Statut** : Actif/Inactif.
 - **Permissions** : `transporteurs:read` / `transporteurs:write`.
 
-### 7.12 Calendrier
-- **Vue mensuelle** : échéances dossiers (date_echeance), bons, écritures — chaque type d'événement filtré par la permission du module d'origine (pas de fuite d'info si l'utilisateur n'a pas accès au module).
-- **Permissions** : `calendrier:read` (accessible à tous les rôles).
-
-### 7.13 Comptabilité
+### 7.12 Comptabilité
 - **Écritures libres** : hors facture, paiement incrémental (RPC).
 - **Onglets par société** : y compris "transit global" (société non affectée).
 - **Export Excel** serveur (`POST /api/export/excel`).
 - **Permissions** : `comptabilite:read` / `comptabilite:write`.
 
-### 7.14 Bilans
+### 7.13 Bilans
 - **Bénéfice** : consolidé + par société (`useBeneficeParSociete`), + **par annexe** pour les utilisateurs multi-annexes (recettes = écritures + factures du mois ; dépenses = sorties de caisse + dépenses de contrats).
 - **Graphiques** : mensuel sur l'année sélectionnée.
 - **Permissions** : `rapports:read`.
 
-### 7.15 Paramètres
+### 7.14 Paramètres
 - **Sociétés** : identité légale, logo, signataires.
 - **Annexes** : identité légale par annexe (ville, adresse, RCCM, NIF).
 - **Utilisateurs** : création/modification/désactivation, rôle, permissions individuelles, **rattachement annexes**.

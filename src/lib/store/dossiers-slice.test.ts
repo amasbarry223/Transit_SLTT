@@ -52,8 +52,6 @@ import type { Dossier } from "@/lib/store";
 const baseDossier: Dossier = {
   id: "d1",
   reference: "TR-TR-2026-0001",
-  societeId: "22222222-2222-2222-2222-222222222222",
-  societeNom: "SLTT",
   annexeId: "33333333-3333-3333-3333-333333333333",
   clientId: "c1",
   clientNom: "Golaine Tech",

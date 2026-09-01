@@ -36,8 +36,6 @@ export interface UnifiedDoc {
   storagePath?: string;
   dataUrl?: string;
   clientNom: string;
-  societeId?: string;
-  societeNom: string;
   annexeId?: string;
   rattachement: string;
   date: string;

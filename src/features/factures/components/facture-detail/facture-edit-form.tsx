@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil, Plus, X } from "lucide-react";
-import type { Facture, Societe } from "@/lib/store";
+import type { Facture } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { Card } from "@/components/ui/card";
@@ -14,11 +14,9 @@ import type { useFactureEditState } from "./use-facture-edit-state";
 
 export function FactureEditForm({
   facture,
-  societes,
   editState,
 }: {
   facture: Facture;
-  societes: Societe[];
   editState: ReturnType<typeof useFactureEditState>;
 }) {
   const {
@@ -28,8 +26,6 @@ export function FactureEditForm({
     setEditDateEcheance,
     editTvaOn,
     setEditTvaOn,
-    editSocieteId,
-    setEditSocieteId,
     editNotes,
     setEditNotes,
     editLignes,
@@ -72,20 +68,6 @@ export function FactureEditForm({
               onChange={(e) => setEditDateEcheance(e.target.value)}
               className="h-10"
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-facture-societe" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Société</Label>
-            <select
-              id="edit-facture-societe"
-              value={editSocieteId}
-              onChange={(e) => setEditSocieteId(e.target.value)}
-              className="h-10 w-full appearance-none rounded-lg border border-border bg-white bg-muted/40 px-3 text-sm text-foreground/90 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-            >
-              <option value="">— Aucune (transit) —</option>
-              {societes.map((s) => (
-                <option key={s.id} value={s.id}>{s.nom}</option>
-              ))}
-            </select>
           </div>
         </div>
 

@@ -107,7 +107,7 @@ export function useRecuGenerator() {
   const printModuleData = useCallback(
     async (data: RecuPaiementModuleData, asPdf = false) => {
       if (!brand) {
-        toastWarning(toast, { title: "Aperçu indisponible", description: "Configurez la société transit dans Paramètres > Sociétés." });
+        toastWarning(toast, { title: "Aperçu indisponible", description: "Configurez l'entreprise dans Paramètres > Entreprise." });
         return false;
       }
       setPrinting(true);

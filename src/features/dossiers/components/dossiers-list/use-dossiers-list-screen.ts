@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useStore } from "@/lib/store";
 import {
   calculerEcart,
@@ -51,7 +50,6 @@ export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ];
 
 export function useDossiersListScreen() {
-  const { selectedSocieteId } = useUiPrefs();
   const { selectedAnnexeId } = useActiveAnnexe();
   const { toast } = useToast();
   const dossiers = useStore((s) => s.dossiers);
@@ -81,7 +79,6 @@ export function useDossiersListScreen() {
 
   const filtered = useMemo(() => {
     const list = dossiers.filter((d) => {
-      if (selectedSocieteId && d.societeId !== selectedSocieteId) return false;
       if (selectedAnnexeId && d.annexeId !== selectedAnnexeId) return false;
       if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
@@ -121,7 +118,6 @@ export function useDossiersListScreen() {
     });
   }, [
     dossiers,
-    selectedSocieteId,
     selectedAnnexeId,
     search,
     clientFilter,
@@ -187,7 +183,6 @@ export function useDossiersListScreen() {
         `dossiers-transit-${new Date().toISOString().slice(0, 10)}`,
         [
           { header: "Référence", accessor: (d) => d.reference },
-          { header: "Société", accessor: (d) => d.societeNom },
           { header: "Client", accessor: (d) => d.clientNom },
           { header: "N° BL", accessor: (d) => d.bl },
           { header: "N° camion", accessor: (d) => d.camion },

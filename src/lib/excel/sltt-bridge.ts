@@ -112,7 +112,7 @@ export function injectGrandLivre(
   for (const e of clipped) {
     rows.push([
       e.date,
-      e.societeNom,
+      "SLTT",
       e.type,
       e.reference,
       e.libelle,

@@ -1,7 +1,5 @@
 "use client";
 
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
-
 import { useMemo, useState } from "react";
 import { usePagination } from "@/hooks/use-pagination";
 import {
@@ -24,16 +22,13 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { SocieteBadge, SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { ListFilters, type FilterChip } from "@/components/sltt/list-filters";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { CONTRAT_STATUTS, CONTRAT_STATUT_TONE } from "./contrat-detail";
-import { filterBySociete } from "@/lib/filter-by-societe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { shouldShowAnnexeForSociete } from "@/lib/societe-brand";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,9 +67,7 @@ export function ContratsScreen() {
 
   const contrats = useStore((s) => s.contrats);
   const clients = useStore((s) => s.clients);
-  const societes = useStore((s) => s.societes);
   const addContrat = useStore((s) => s.addContrat);
-  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
   const { selectedAnnexeId } = useActiveAnnexe();
   const canWrite = usePermission("contrats:write");
 
@@ -86,8 +79,8 @@ export function ContratsScreen() {
   const [creatingContrat, setCreatingContrat] = useState(false);
 
   const scoped = useMemo(
-    () => filterByAnnexe(filterBySociete(contrats, selectedSocieteId), selectedAnnexeId),
-    [contrats, selectedSocieteId, selectedAnnexeId],
+    () => filterByAnnexe(contrats, selectedAnnexeId),
+    [contrats, selectedAnnexeId],
   );
 
   const stats = useMemo(() => {
@@ -198,7 +191,6 @@ export function ContratsScreen() {
                 ))}
               </SelectContent>
             </Select>
-            <SocieteFilterSelect className="w-full sm:w-44" />
           </>
         }
       />
@@ -233,10 +225,6 @@ export function ContratsScreen() {
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-muted-foreground">Société</dt>
-                      <dd><SocieteBadge societeNom={c.societeNom} size="sm" /></dd>
-                    </div>
-                    <div className="flex justify-between gap-3">
                       <dt className="text-xs text-muted-foreground">Montant</dt>
                       <dd className="tabular-nums font-medium text-foreground">{formatFCFA(c.montant)}</dd>
                     </div>
@@ -259,7 +247,6 @@ export function ContratsScreen() {
                 <TableHeader>
                   <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Référence</TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Société</TableHead>
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Client</TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">Objet</TableHead>
                     <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">Montant</TableHead>
@@ -279,9 +266,6 @@ export function ContratsScreen() {
                         <p className="mt-0.5 text-xs text-muted-foreground">
                           Début {formatDateShort(c.dateDebut)}
                         </p>
-                      </TableCell>
-                      <TableCell className="px-4 py-3.5">
-                        <SocieteBadge societeNom={c.societeNom} size="sm" />
                       </TableCell>
                       <TableCell className="max-w-[160px] px-4 py-3.5">
                         <p className="truncate font-medium text-foreground/90">{c.clientNom}</p>
@@ -320,7 +304,6 @@ export function ContratsScreen() {
       <ContratFormModal
         open={open}
         onOpenChange={setOpen}
-        defaultSocieteId={selectedSocieteId ?? societes[0]?.id}
         saving={creatingContrat}
         onSubmit={handleCreate}
       />
@@ -331,21 +314,17 @@ export function ContratsScreen() {
 function ContratFormModal({
   open,
   onOpenChange,
-  defaultSocieteId,
   saving,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultSocieteId?: string;
   saving?: boolean;
   onSubmit: (input: ContratInput) => void;
 }) {
-  const societes = useStore((s) => s.societes);
   const clients = useStore((s) => s.clients);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
-  const [societeId, setSocieteId] = useState(defaultSocieteId ?? "");
   const [annexeId, setAnnexeId] = useState(activeAnnexeId ?? "");
   const [clientId, setClientId] = useState("");
   const [objet, setObjet] = useState("");
@@ -355,11 +334,10 @@ function ContratFormModal({
   const [statut, setStatut] = useState<ContratStatut>("Actif");
   const [notes, setNotes] = useState("");
 
-  const showAnnexe = shouldShowAnnexeForSociete(societeId, societes, annexes);
+  const showAnnexe = annexes.length > 1;
   const resolvedAnnexeId = showAnnexe ? annexeId : (activeAnnexeId ?? "");
 
   function resetForm() {
-    setSocieteId(defaultSocieteId ?? "");
     setAnnexeId(activeAnnexeId ?? "");
     setClientId("");
     setObjet("");
@@ -373,8 +351,7 @@ function ContratFormModal({
   const selectedClient = clients.find((c) => c.id === clientId);
   const dateFinValide = !dateFin || dateFin >= dateDebut;
   const canSubmit = Boolean(
-    societeId &&
-      clientId &&
+    clientId &&
       objet.trim() &&
       dateFinValide &&
       (!showAnnexe || annexeId),
@@ -383,7 +360,6 @@ function ContratFormModal({
   function handleSubmit() {
     if (!selectedClient || !canSubmit) return;
     onSubmit({
-      societeId,
       clientId,
       clientNom: selectedClient.nom,
       annexeId: resolvedAnnexeId || undefined,
@@ -408,26 +384,10 @@ function ContratFormModal({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Nouveau contrat</DialogTitle>
-          <DialogDescription>Renseignez la société, le client et l'objet du contrat d'entreposage.</DialogDescription>
+          <DialogDescription>Renseignez le client et l&apos;objet du contrat d&apos;entreposage.</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Société <span className="text-red-500">*</span></Label>
-            <Select value={societeId} onValueChange={setSocieteId}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder="Sélectionner une société" />
-              </SelectTrigger>
-              <SelectContent>
-                {societes.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {showAnnexe && (
             <div className="space-y-2">
               <Label>Annexe <span className="text-red-500">*</span></Label>
@@ -461,7 +421,7 @@ function ContratFormModal({
                   ))}
                 </SelectContent>
               </Select>
-              <QuickClientButton onCreated={setClientId} defaultSocieteId={societeId} />
+              <QuickClientButton onCreated={setClientId} />
             </div>
           </div>
 

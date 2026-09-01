@@ -8,7 +8,6 @@ export function useFactureEditState(facture: Facture | undefined, isEditing: boo
   const [editDate, setEditDate] = React.useState("");
   const [editDateEcheance, setEditDateEcheance] = React.useState("");
   const [editTvaOn, setEditTvaOn] = React.useState(true);
-  const [editSocieteId, setEditSocieteId] = React.useState("");
   const [editNotes, setEditNotes] = React.useState("");
   const [editLignes, setEditLignes] = React.useState<
     Array<{ description: string; quantite: string; prixUnitaire: string }>
@@ -25,7 +24,6 @@ export function useFactureEditState(facture: Facture | undefined, isEditing: boo
       setEditDate(facture.date);
       setEditDateEcheance(facture.dateEcheance);
       setEditTvaOn(facture.tauxTVA > 0);
-      setEditSocieteId(facture.societeId ?? "");
       setEditNotes(facture.notes);
       setEditLignes(
         facture.lignes.map((l) => ({
@@ -66,7 +64,6 @@ export function useFactureEditState(facture: Facture | undefined, isEditing: boo
       dossierId: facture.dossierId,
       clientId: facture.clientId,
       clientNom: facture.clientNom,
-      societeId: editSocieteId || null,
       annexeId: facture.annexeId,
       date: editDate,
       dateEcheance: editDateEcheance,
@@ -83,8 +80,6 @@ export function useFactureEditState(facture: Facture | undefined, isEditing: boo
     setEditDateEcheance,
     editTvaOn,
     setEditTvaOn,
-    editSocieteId,
-    setEditSocieteId,
     editNotes,
     setEditNotes,
     editLignes,

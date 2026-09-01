@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import type { Client, Societe, StockItemInput } from "@/lib/store";
+import type { Client, StockItemInput } from "@/lib/store";
 import type { Annexe } from "@/lib/domain-types";
-import { TOP_DOUMANI_SOCIETE_NOM } from "@/lib/comptabilite-generale";
 import { formatFCFA } from "@/lib/format";
 import { FormField } from "@/components/sltt/form-field";
 import { Button } from "@/components/ui/button";
@@ -35,19 +34,15 @@ import {
 export function NewItemDialog({
   open,
   onOpenChange,
-  societes,
   annexes,
   clients,
-  defaultSocieteId,
   defaultAnnexeId,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  societes: Societe[];
   annexes: Annexe[];
   clients: Client[];
-  defaultSocieteId: string;
   defaultAnnexeId: string;
   onSubmit: (input: StockItemInput) => void | Promise<void>;
 }) {
@@ -56,21 +51,14 @@ export function NewItemDialog({
   const [niUnite, setNiUnite] = useState("");
   const [niQuantite, setNiQuantite] = useState("0");
   const [niSeuil, setNiSeuil] = useState("10");
-  const [niDepositaire, setNiDepositaire] = useState("");
+  const [niHotesse, setNiHotesse] = useState("");
   const [niCommercial, setNiCommercial] = useState("");
   const [niValeurTotale, setNiValeurTotale] = useState("0");
   const [niSommePayee, setNiSommePayee] = useState("0");
   const [niClientId, setNiClientId] = useState<string>("");
-  const [niSocieteId, setNiSocieteId] = useState<string>(defaultSocieteId);
   const [niAnnexeId, setNiAnnexeId] = useState<string>(defaultAnnexeId);
 
-  // Top Doumani n'opère que sur l'annexe Mali — pas de choix à proposer.
-  // On masque le sélecteur et on se cale silencieusement sur l'annexe par
-  // défaut (celle du contexte courant, déjà résolue par l'écran parent).
-  const isTopDoumani = societes.find((s) => s.id === niSocieteId)?.nom === TOP_DOUMANI_SOCIETE_NOM;
-  const resolvedNiAnnexeId = isTopDoumani ? defaultAnnexeId : niAnnexeId;
-
-  const valid = Boolean(niSocieteId && resolvedNiAnnexeId && niUnite.trim());
+  const valid = Boolean(niAnnexeId && niUnite.trim());
 
   async function handleAddStockItem() {
     if (saving || !valid) return;
@@ -89,13 +77,15 @@ export function NewItemDialog({
       quantite: Math.max(0, Number(niQuantite) || 0),
       unite,
       seuil: Math.max(0, Number(niSeuil) || 10),
-      depositaire: niDepositaire.trim() || "—",
+      depositaire: niHotesse.trim() || "—",
       commercial: niCommercial.trim() || "—",
       sommePayee,
       resteAPayer: Math.max(0, valeurTotale - sommePayee),
+      // Date de l'article fixée automatiquement à aujourd'hui — corrigeable
+      // ensuite via le modal d'édition si l'article est saisi rétroactivement.
+      date: new Date().toISOString().slice(0, 10),
       clientId: niClientId || undefined,
-      societeId: niSocieteId,
-      annexeId: resolvedNiAnnexeId,
+      annexeId: niAnnexeId,
     };
     setSaving(true);
     try {
@@ -128,23 +118,7 @@ export function NewItemDialog({
             </FormField>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground/90">
-              Société <span className="text-red-500">*</span>
-            </Label>
-            <Select value={niSocieteId} onValueChange={setNiSocieteId}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder="Sélectionner une société" />
-              </SelectTrigger>
-              <SelectContent>
-                {societes.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {annexes.length > 1 && !isTopDoumani && (
+          {annexes.length > 1 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground/90">
                 Annexe <span className="text-red-500">*</span>
@@ -206,11 +180,11 @@ export function NewItemDialog({
             />
           </FormField>
 
-          <FormField label="Dépositaire">
+          <FormField label="Hôtesse">
             <Input
-              value={niDepositaire}
-              onChange={(e) => setNiDepositaire(e.target.value)}
-              placeholder="Nom du dépositaire"
+              value={niHotesse}
+              onChange={(e) => setNiHotesse(e.target.value)}
+              placeholder="Nom de l'hôtesse"
               className="h-10"
             />
           </FormField>

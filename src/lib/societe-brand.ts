@@ -33,53 +33,25 @@ export interface PrintHTMLBrand {
   afficherNomAvecLogo?: boolean;
 }
 
-const SOCIETE_TONES = ["blue", "slate"] as const;
-
 /**
- * Ton badge société — indigo si transit, sinon bleu/gris déterministe
- * (plus de mapping UUID seed hardcodé).
- */
-export function societeToneById(
-  societeId: string,
-  options?: { isTransit?: boolean },
-): "blue" | "indigo" | "slate" {
-  if (options?.isTransit) return "indigo";
-  // Repli legacy si le flag is_transit n'est pas encore hydraté côté client.
-  if (societeId === LEGACY_TRANSIT_SOCIETE_ID) return "indigo";
-  let hash = 0;
-  for (let i = 0; i < societeId.length; i++) {
-    hash = (hash + societeId.charCodeAt(i) * (i + 1)) % 997;
-  }
-  return SOCIETE_TONES[hash % SOCIETE_TONES.length];
-}
-
-/**
- * Société porteuse du transit (flag is_transit, sinon UUID legacy, sinon —
- * seulement si aucune ambiguïté possible — l'unique société active).
- * Ne devine jamais parmi plusieurs sociétés actives non flaguées : le
- * branding sert aussi à l'identité légale imprimée (RCCM/NIF/logo) sur les
- * factures/devis, donc un mauvais choix silencieux serait pire qu'un champ
- * vide. `requireSocieteBrand`/`requirePrintHTMLBrand` gèrent déjà le cas
- * "non configuré" avec un avertissement explicite.
+ * Identité légale unique (SLTT) — table `societes` singleton.
+ * Repli UUID historique si plusieurs lignes orphelines restaient en cache.
  */
 export function resolveTransitSociete(societes: Societe[]): Societe | undefined {
-  const flagged = societes.find((s) => s.isTransit);
-  if (flagged) return flagged;
   const legacy = societes.find((s) => s.id === LEGACY_TRANSIT_SOCIETE_ID);
   if (legacy) return legacy;
   const actives = societes.filter((s) => s.actif);
-  return actives.length === 1 ? actives[0] : undefined;
+  if (actives.length === 1) return actives[0];
+  return societes[0];
 }
 
-/** Annexe visible uniquement pour la société transit (SLTT) — cf. bon de sortie caisse. */
+/** Afficher le sélecteur d'annexe dès qu'il y a plus d'une implantation. */
 export function shouldShowAnnexeForSociete(
-  societeId: string,
-  societes: Societe[],
+  _societeId: string,
+  _societes: Societe[],
   annexes: Annexe[],
 ): boolean {
-  if (!societeId || annexes.length <= 1) return false;
-  const transitId = resolveTransitSociete(societes)?.id;
-  return societeId === transitId;
+  return annexes.length > 1;
 }
 
 /**
@@ -135,20 +107,9 @@ export function societeToPrintHTMLBrand(s: Societe): PrintHTMLBrand {
   };
 }
 
-/** Branding dynamique pour l'impression du classeur (filtre société ou transit par défaut). */
-export function resolveClasseurPrintBrand(
-  societes: Societe[],
-  filterSocieteId?: string,
-): SocieteBrand | null {
-  if (filterSocieteId && filterSocieteId !== "all") {
-    const societe = societes.find((item) => item.id === filterSocieteId);
-    if (societe) {
-      return { ...societeToBrand(societe), nom: resolveSocieteDisplayName(societe) };
-    }
-  }
-  const transit = resolveTransitSociete(societes);
-  if (!transit) return null;
-  return { ...societeToBrand(transit), nom: resolveSocieteDisplayName(transit) };
+/** Branding dynamique pour l'impression du classeur (identité SLTT unique). */
+export function resolveClasseurPrintBrand(societes: Societe[]): SocieteBrand | null {
+  return resolveSlttBrand(societes);
 }
 /** Identité transit pour impressions (devis, classeur, listes…). */
 export function resolveSlttBrand(societes: Societe[]): SocieteBrand | null {
@@ -241,7 +202,7 @@ export const MISSING_SIGNATORY_LABEL = "Non renseigné";
 
 export function warnMissingBrand(context: string): boolean {
   window.alert(
-    `Impossible d'imprimer ${context} : identité de la société non configurée. Renseignez-la dans Paramètres > Sociétés.`,
+    `Impossible d'imprimer ${context} : identité de l'entreprise non configurée. Renseignez-la dans Paramètres > Entreprise.`,
   );
   return false;
 }

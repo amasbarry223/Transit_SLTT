@@ -22,6 +22,7 @@ import {
 import type { UserRole } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { toastWarning } from "@/lib/toast-helpers";
+import { passwordStrengthError } from "@/lib/api/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +82,8 @@ export function UserFormModal({
   const annexes = useStore((s) => s.annexes);
   const isEditingSelf = mode === "edit" && editingUserId === currentUser?.id;
   const isDemotingSelf = isEditingSelf && initialState.role === "Administrateur" && form.role !== "Administrateur";
+  const allowedKeys = isCurrentActorAdmin ? undefined : currentUser?.permissions;
+  const allowedAnnexeIds = isCurrentActorAdmin ? undefined : currentUser?.annexeIds;
 
   const permCount = permissionsFromSelection(form.perms).length;
   const selectableRoles = isCurrentActorAdmin ? allRoles : allRoles.filter((r) => r !== "Administrateur");
@@ -90,10 +93,20 @@ export function UserFormModal({
   const readOnly = mode === "edit" && initialState.role === "Administrateur" && !isCurrentActorAdmin;
 
   function applyRole(role: UserRole) {
+    const preset = defaultSelectionForRole(role);
+    if (allowedKeys) {
+      const allowed = new Set(allowedKeys);
+      const filtered: Record<string, boolean> = {};
+      for (const [key, checked] of Object.entries(preset)) {
+        filtered[key] = Boolean(checked && allowed.has(key));
+      }
+      setForm((prev) => ({ ...prev, role, perms: filtered }));
+      return;
+    }
     setForm((prev) => ({
       ...prev,
       role,
-      perms: defaultSelectionForRole(role),
+      perms: preset,
     }));
   }
 
@@ -108,8 +121,9 @@ export function UserFormModal({
 
   async function handleResetPassword() {
     if (!editingUserId) return;
-    if (form.resetPassword.length < 8) {
-      toastWarning(toast, { title: "Mot de passe trop court", description: "Minimum 8 caractères." });
+    const pwdError = passwordStrengthError(form.resetPassword);
+    if (pwdError) {
+      toastWarning(toast, { title: "Mot de passe trop faible", description: pwdError });
       return;
     }
     if (form.resetPassword !== form.resetConfirmPassword) {
@@ -231,6 +245,7 @@ export function UserFormModal({
                         annexes={annexes}
                         value={form.annexeIds}
                         onChange={(annexeIds) => setForm((p) => ({ ...p, annexeIds }))}
+                        allowedIds={allowedAnnexeIds}
                       />
                     </div>
                     <button
@@ -254,6 +269,7 @@ export function UserFormModal({
                           disabled={form.role === "Administrateur"}
                           presetFirst
                           currentRole={form.role}
+                          allowedKeys={allowedKeys}
                         />
                       </>
                     )}
@@ -278,12 +294,13 @@ export function UserFormModal({
                           toastWarning(toast, { title: "Champs requis", description: "Nom et e-mail sont obligatoires." });
                           return;
                         }
-                        if (form.password.length < 8) {
-                          toastWarning(toast, { title: "Mot de passe trop court", description: "Minimum 8 caractères." });
-                          return;
-                        }
                         if (form.password !== form.confirmPassword) {
                           toastWarning(toast, { title: "Mots de passe différents" });
+                          return;
+                        }
+                        const pwdError = passwordStrengthError(form.password);
+                        if (pwdError) {
+                          toastWarning(toast, { title: "Mot de passe trop faible", description: pwdError });
                           return;
                         }
                         setCreateStep(2);
@@ -381,6 +398,7 @@ export function UserFormModal({
                     annexes={annexes}
                     value={form.annexeIds}
                     onChange={(annexeIds) => setForm((p) => ({ ...p, annexeIds }))}
+                    allowedIds={allowedAnnexeIds}
                   />
                 </div>
               </TabsContent>
@@ -448,7 +466,7 @@ export function UserFormModal({
                     variant="ghost"
                     size="sm"
                     className="h-8 text-xs"
-                    onClick={() => setForm((p) => ({ ...p, perms: defaultSelectionForRole(p.role) }))}
+                    onClick={() => applyRole(form.role)}
                   >
                     Réinitialiser selon le rôle
                   </Button>
@@ -464,6 +482,7 @@ export function UserFormModal({
                   disabled={form.role === "Administrateur"}
                   presetFirst
                   currentRole={form.role}
+                  allowedKeys={allowedKeys}
                 />
               </TabsContent>
             </div>

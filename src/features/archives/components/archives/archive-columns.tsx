@@ -47,12 +47,6 @@ export const ARCHIVE_COLUMNS: ResponsiveColumn<UnifiedDoc>[] = [
     ),
   },
   {
-    key: "societe",
-    header: "Société",
-    cell: (d) => d.societeNom || "—",
-    hideOnMobile: true,
-  },
-  {
     key: "date",
     header: "Date",
     cell: (d) => formatDateShort(d.date),

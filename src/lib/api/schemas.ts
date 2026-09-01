@@ -41,6 +41,16 @@ export const changePasswordBodySchema = z.object({
   newPassword: strongPasswordSchema,
 });
 
+export const updateOwnProfileBodySchema = z.object({
+  nom: z.string().trim().min(1, "Nom requis"),
+  email: z.string().trim().email("E-mail invalide"),
+});
+
+export function passwordStrengthError(password: string): string | null {
+  const parsed = strongPasswordSchema.safeParse(password);
+  return parsed.success ? null : (parsed.error.issues[0]?.message ?? "Mot de passe invalide.");
+}
+
 export const updateUserAnnexesBodySchema = z.object({
   annexeIds: z.array(z.string()).min(1, "Au moins une annexe doit être assignée à l'utilisateur."),
 });

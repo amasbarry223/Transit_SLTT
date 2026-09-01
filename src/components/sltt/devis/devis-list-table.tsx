@@ -14,7 +14,6 @@ import {
 import { EmptyState } from "@/components/sltt/empty-state";
 import { UI } from "@/lib/ui-messages";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { StatusQuickAction } from "@/components/sltt/status-quick-action";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
@@ -87,11 +86,6 @@ export function DevisListTable({
                       <div className="min-w-0">
                         <p className="font-mono text-xs font-semibold text-foreground">{d.reference}</p>
                         <p className="mt-0.5 truncate text-sm font-medium text-foreground/90">{d.clientNom}</p>
-                        {d.societeNom && (
-                          <div className="mt-1">
-                            <SocieteBadge societeNom={d.societeNom} size="sm" />
-                          </div>
-                        )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <DevisStatutBadge statut={d.statut} />
@@ -189,9 +183,6 @@ export function DevisListTable({
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Client
                     </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
-                      Société
-                    </TableHead>
                     <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                       Nature marchandise
                     </TableHead>
@@ -229,10 +220,6 @@ export function DevisListTable({
 
                         <TableCell className="max-w-[180px] px-4 py-3.5">
                           <p className="truncate font-medium text-foreground/90">{d.clientNom}</p>
-                        </TableCell>
-
-                        <TableCell className="hidden px-4 py-3.5 lg:table-cell">
-                          <SocieteBadge societeNom={d.societeNom} size="sm" />
                         </TableCell>
 
                         <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">

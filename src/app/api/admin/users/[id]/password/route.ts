@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
+import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { resetPasswordBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    const { admin, isAdmin } = await requireUserManager(request);
+    const { admin, isAdmin, profile: actorProfile } = await requireUserManager(request);
     const { id } = await context.params;
     const raw = await request.json();
     const parsed = resetPasswordBodySchema.safeParse(raw);
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (error) {
       throw new AuthError(error.message, 400);
     }
+
+    await insertAdminAuditLog(admin, actorProfile, {
+      action: "Modification",
+      detail: `Mot de passe réinitialisé pour l'utilisateur ${id}`,
+    });
 
     return Response.json({ success: true });
   } catch (error) {

@@ -24,7 +24,7 @@ import { usePermission } from "@/hooks/use-permission";
 import { formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
 import { printFactureModule, type SocieteBrand } from "@/lib/export";
-import { mergeAnnexeIntoBrand, resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
+import { mergeAnnexeIntoBrand, resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
@@ -58,10 +58,7 @@ export function FactureDetailScreen() {
 
   const factureBrand = React.useMemo((): SocieteBrand | null => {
     if (!facture) return null;
-    const societe = facture.societeId
-      ? societes.find((s) => s.id === facture.societeId)
-      : undefined;
-    const base = societe ? societeToBrand(societe) : resolveSlttBrand(societes);
+    const base = resolveSlttBrand(societes);
     if (!base) return null;
     const annexe = annexes.find((a) => a.id === facture.annexeId);
     return annexe ? mergeAnnexeIntoBrand(base, annexe) : base;
@@ -243,7 +240,7 @@ export function FactureDetailScreen() {
 
       {/* Mode édition */}
       {isEditing && (
-        <FactureEditForm facture={facture} societes={societes} editState={editState} />
+        <FactureEditForm facture={facture} editState={editState} />
       )}
 
       <AlertDialog open={confirmSolde} onOpenChange={setConfirmSolde}>

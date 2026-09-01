@@ -6,10 +6,9 @@ import type { BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { buildBonSortieCaisseHTML, type BonSortieCaisseModuleData } from "@/lib/export";
-import { requirePrintHTMLBrand } from "@/lib/societe-brand";
+import { requirePrintHTMLBrand, resolveSlttBrand } from "@/lib/societe-brand";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
@@ -94,7 +93,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
   }, [bonsSortieCaisse, caisseSearch]);
 
   function buildCaissePrintData(bon: BonSortieCaisse): BonSortieCaisseModuleData | null {
-    const societe = societes.find((item) => item.id === bon.societeId);
+    const societe = resolveSlttBrand(societes) ? societes[0] : undefined;
     const brand = societe
       ? {
           name: societe.nom,
@@ -107,9 +106,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
             nif: societe.nif,
           },
         }
-      : bon.societeNom.trim()
-        ? { name: bon.societeNom }
-        : null;
+      : null;
 
     if (!requirePrintHTMLBrand(brand, "ce bon de sortie de caisse")) {
       return null;
@@ -157,7 +154,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
         status: "error",
         reference: bon.reference,
         message:
-          "Société introuvable — configurez-la dans Paramètres > Sociétés, puis réessayez.",
+          "Identité de l'entreprise introuvable — configurez-la dans Paramètres > Entreprise, puis réessayez.",
       });
       return;
     }
@@ -283,9 +280,6 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
                         Bénéficiaire(s)
                       </TableHead>
                       <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
-                        Société
-                      </TableHead>
-                      <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
                         Motif
                       </TableHead>
                       <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -402,7 +396,6 @@ function CaisseMobileCard({
             {beneficiairesSummary(bon)}
           </p>
         </div>
-        <SocieteBadge societeNom={bon.societeNom} size="sm" />
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between gap-3">
@@ -469,9 +462,6 @@ function CaisseTableRow({
       </TableCell>
       <TableCell className="max-w-[180px] px-4 py-3.5">
         <p className="truncate font-medium text-foreground/90">{beneficiairesSummary(bon)}</p>
-      </TableCell>
-      <TableCell className="hidden px-4 py-3.5 md:table-cell">
-        <SocieteBadge societeNom={bon.societeNom} size="sm" />
       </TableCell>
       <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
         <p className="truncate text-sm text-muted-foreground">

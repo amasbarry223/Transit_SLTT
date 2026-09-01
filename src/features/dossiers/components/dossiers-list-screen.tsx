@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListFilters } from "@/components/sltt/list-filters";
-import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import {
   DossiersListTable,
   useDossiersListScreen,
@@ -121,7 +120,6 @@ export function DossiersListScreen() {
         onClear={screen.hasActiveFilters ? screen.clearFilters : undefined}
         advanced={
           <>
-            <SocieteFilterSelect className="w-full sm:w-44" />
             <Select
               value={screen.clientFilter}
               onValueChange={(v) => {

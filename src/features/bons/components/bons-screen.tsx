@@ -5,7 +5,6 @@ import { Plus, Package, Banknote } from "lucide-react";
 import type { BonMotif } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
@@ -25,9 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { filterBySociete } from "@/lib/filter-by-societe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
-import { societeToBrand } from "@/lib/societe-brand";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
 import { BonMarchandiseTab } from "./bons/bon-marchandise-tab";
 import { BonCaisseTab } from "./bons/bon-caisse-tab";
@@ -40,7 +38,6 @@ export function BonsScreen() {
   const canWriteCaisse = usePermission("bons:write-caisse");
   const go = useNav((state) => state.go);
   const selectedId = useNav((state) => state.selectedId);
-  const selectedSocieteId = useUiPrefs((state) => state.selectedSocieteId);
   const { selectedAnnexeId } = useActiveAnnexe();
 
   const allBons = useStore((state) => state.bons);
@@ -58,13 +55,13 @@ export function BonsScreen() {
   const [deepLinkSearch, setDeepLinkSearch] = useState<string | undefined>(undefined);
 
   const bons = useMemo(
-    () => filterByAnnexe(filterBySociete(allBons, selectedSocieteId), selectedAnnexeId),
-    [allBons, selectedSocieteId, selectedAnnexeId],
+    () => filterByAnnexe(allBons, selectedAnnexeId),
+    [allBons, selectedAnnexeId],
   );
 
   const bonsCaisse = useMemo(
-    () => filterByAnnexe(filterBySociete(bonsSortieCaisse, selectedSocieteId), selectedAnnexeId),
-    [bonsSortieCaisse, selectedSocieteId, selectedAnnexeId],
+    () => filterByAnnexe(bonsSortieCaisse, selectedAnnexeId),
+    [bonsSortieCaisse, selectedAnnexeId],
   );
 
   const nextReference = `BS-${new Date().getFullYear()}-${String(bonSeq).padStart(4, "0")}`;
@@ -94,7 +91,6 @@ export function BonsScreen() {
     reference: string;
     date: string;
     clientNom: string;
-    societeNom: string;
     marchandise: string;
     quantite: number;
     unite: string;
@@ -112,7 +108,6 @@ export function BonsScreen() {
       <table>
         <tbody>
           <tr><th style="width:40%">Date</th><td>${formatDateShort(bon.date)}</td></tr>
-          <tr><th>Société</th><td>${htmlEscape(bon.societeNom)}</td></tr>
           <tr><th>Client</th><td>${htmlEscape(bon.clientNom)}</td></tr>
           <tr><th>Marchandise</th><td>${htmlEscape(bon.marchandise)}</td></tr>
           <tr><th>Quantité sortie</th><td>${bon.quantite} ${htmlEscape(bon.unite)}</td></tr>
@@ -125,7 +120,7 @@ export function BonsScreen() {
           <div style="border-top:1px solid #92a3ba;width:200px;padding-top:6px;font-size:11px;color:#6b7280">Signature du responsable</div>
         </div>
         <div>
-          <div style="border-top:1px solid #92a3ba;width:200px;padding-top:6px;font-size:11px;color:#6b7280;text-align:right">Cachet ${htmlEscape(bon.societeNom)}</div>
+          <div style="border-top:1px solid #92a3ba;width:200px;padding-top:6px;font-size:11px;color:#6b7280;text-align:right">Cachet</div>
         </div>
       </div>
     `;
@@ -134,9 +129,7 @@ export function BonsScreen() {
   function handlePrint(reference: string) {
     const bon = bons.find((item) => item.reference === reference);
     if (!bon) return;
-    const societe = societes.find((item) => item.id === bon.societeId);
-    if (!societe) return;
-    printHTML(`Bon ${reference}`, buildBonHTML(bon), societeToBrand(societe));
+    printHTML(`Bon ${reference}`, buildBonHTML(bon), resolveSlttBrand(societes));
   }
 
   async function handleValidateBon(id: string, reference: string) {

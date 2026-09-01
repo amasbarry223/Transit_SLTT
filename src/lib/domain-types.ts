@@ -22,8 +22,6 @@ export type UserRole =
 export interface Dossier {
   id: string;
   reference: string;
-  societeId: string;
-  societeNom: string;
   annexeId: string;
   annexeNom?: string;
   clientId: string;
@@ -75,8 +73,6 @@ export interface Facture {
   dossierId: string | null;
   clientId: string;
   clientNom: string;
-  societeId?: string;
-  societeNom?: string;
   annexeId: string;
   annexeNom?: string;
   date: string;
@@ -166,9 +162,6 @@ export interface Ecriture {
   clientId: string;
   clientNom: string;
   dossierId?: string;
-  /** Nullable : une écriture peut rester au niveau transit global (non affectée à une société). */
-  societeId?: string;
-  societeNom?: string;
   annexeId: string;
   annexeNom?: string;
   montantInvesti: number;
@@ -181,8 +174,6 @@ export interface StockItem {
   id: string;
   clientId?: string;
   clientNom?: string;
-  societeId: string;
-  societeNom: string;
   annexeId: string;
   annexeNom?: string;
   marchandise: string;
@@ -193,13 +184,12 @@ export interface StockItem {
   commercial: string;
   sommePayee: number;
   resteAPayer: number;
+  date: string;
 }
 
 export interface Mouvement {
   id: string;
   stockId?: string;
-  societeId: string;
-  societeNom: string;
   annexeId: string;
   annexeNom?: string;
   date: string;
@@ -218,8 +208,6 @@ export interface BonSortie {
   date: string;
   clientId: string;
   clientNom: string;
-  societeId: string;
-  societeNom: string;
   annexeId: string;
   annexeNom?: string;
   /** Référence vers l'article de stock concerné, pour un décrément fiable (les bons plus anciens peuvent ne pas l'avoir). */
@@ -250,8 +238,6 @@ export interface BonSortieCaisse {
   /** Format "N°{n}", séquence indépendante des bons de sortie stock. */
   reference: string;
   date: string;
-  societeId: string;
-  societeNom: string;
   annexeId: string;
   annexeNom?: string;
   lignes: SortieCaisseLigne[];
@@ -262,16 +248,13 @@ export interface BonSortieCaisse {
 
 export interface BonSortieCaisseInput {
   date: string;
-  societeId: string;
   annexeId: string;
   lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;
 }
 
 /* ------------------------------------------------------------------ */
 /* ANNEXES — implantations physiques (Mali / Côte d'Ivoire).           */
-/* Axe orthogonal à Societe (entité légale/comptable) : cloisonnement  */
-/* de sécurité (RLS) par utilisateur assigné, alors que societeId n'a  */
-/* jamais été qu'un filtre UI.                                        */
+/* Axe de cloisonnement RLS par utilisateur assigné (Mali / CI).      */
 /* ------------------------------------------------------------------ */
 
 export interface Annexe {
@@ -307,8 +290,6 @@ export interface Societe {
   /** Nom légal complet pour les documents qui reproduisent le papier à en-tête officiel (ex. annuaire clients) — repli sur `nom` si absent. */
   raisonSociale?: string;
   actif: boolean;
-  /** true = société porteuse du transit. */
-  isTransit?: boolean;
   /** Chemin public du logo affiché sur les documents imprimés de la société (ex. bons de sortie). */
   logoUrl?: string;
   /** Coordonnées légales affichées sur l'en-tête des documents imprimés (bons de sortie). */
@@ -338,8 +319,10 @@ export interface SocieteInput {
 }
 
 /* ------------------------------------------------------------------ */
-/* COMPTABILITÉ GÉNÉRALE — 3 entités (Annexe Mali / Annexe CI /        */
-/* Société Top Doumani, cf. session F-ANNEXE vs F1 société)            */
+/* COMPTABILITÉ GÉNÉRALE — entités par annexe (Mali / CI). Le type      */
+/* garde l'axe "societe" pour une éventuelle 2e société plus tard (cf. */
+/* domaine Société), mais aucune société n'en construit une            */
+/* aujourd'hui — cf. resolveEntitesComptables, mono-société SLTT.      */
 /* ------------------------------------------------------------------ */
 
 /** Discrimine sur quel axe existant (annexe ou société) porte une opération/clôture. */
@@ -361,7 +344,6 @@ export interface OperationComptable {
   reference: string;
   entiteType: EntiteComptableType;
   annexeId?: string;
-  societeId?: string;
   date: string;
   clientId?: string;
   dossierId?: string;
@@ -372,9 +354,6 @@ export interface OperationComptable {
   type: OperationComptableType;
   montant: number;
   modePaiement?: ModePaiement;
-  /** Top Doumani uniquement : montant (Sortie) = quantite * prixUnitaire. */
-  quantite?: number;
-  prixUnitaire?: number;
   source: OperationComptableSource;
   importRef?: string;
   creePar?: string;
@@ -383,7 +362,6 @@ export interface OperationComptable {
 export interface OperationComptableInput {
   entiteType: EntiteComptableType;
   annexeId?: string;
-  societeId?: string;
   date: string;
   clientId?: string;
   dossierId?: string;
@@ -392,8 +370,6 @@ export interface OperationComptableInput {
   type: OperationComptableType;
   montant: number;
   modePaiement?: ModePaiement;
-  quantite?: number;
-  prixUnitaire?: number;
   source?: OperationComptableSource;
   importRef?: string;
 }
@@ -403,7 +379,6 @@ export interface ClotureCaisse {
   id: string;
   entiteType: EntiteComptableType;
   annexeId?: string;
-  societeId?: string;
   periodeDebut: string;
   periodeFin: string;
   soldeTheorique: number;
@@ -460,8 +435,6 @@ export type ContratStatut = "Actif" | "Clôturé" | "Suspendu";
 export interface Contrat {
   id: string;
   reference: string;
-  societeId: string;
-  societeNom: string;
   annexeId: string;
   annexeNom?: string;
   clientId: string;
@@ -481,7 +454,6 @@ export interface Contrat {
 }
 
 export interface ContratInput {
-  societeId: string;
   clientId: string;
   clientNom: string;
   /** Implantation Mali/CI — requis pour les contrats SLTT (transit). */
@@ -548,7 +520,6 @@ export interface SlttDocument {
   dossierId?: string;
   factureId?: string;
   clientId?: string;
-  societeId?: string;
   entityType?: DocumentEntityType;
   entityId?: string;
   annexeId: string;
@@ -602,7 +573,6 @@ export interface Archive {
   factureId?: string;
   depenseId?: string;
   clientId?: string;
-  societeId?: string;
   annexeId: string;
   creePar: string;
   createdAt: string;
@@ -611,7 +581,6 @@ export interface Archive {
 export interface Depense {
   id: string;
   contratId: string;
-  societeId: string;
   libelle: string;
   montant: number;
   dateDepense: string;

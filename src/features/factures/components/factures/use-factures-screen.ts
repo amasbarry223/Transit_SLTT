@@ -9,9 +9,7 @@ import { toastError, toastSuccess } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { matchesQuery } from "@/lib/search-filter";
-import { filterBySociete } from "@/lib/filter-by-societe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { PAGE_SIZE } from "./shared";
@@ -51,7 +49,6 @@ export function useFacturesScreen() {
   const selectedId          = useNav((s) => s.selectedId);
   const pendingFacturePrefill    = useNav((s) => s.pendingFacturePrefill);
   const setPendingFacturePrefill = useNav((s) => s.setPendingFacturePrefill);
-  const selectedSocieteId   = useUiPrefs((s) => s.selectedSocieteId);
   const { annexes, selectedAnnexeId } = useActiveAnnexe();
 
   const [search,     setSearch]     = React.useState("");
@@ -85,12 +82,9 @@ export function useFacturesScreen() {
     setShowForm(true);
   }, [pendingFacturePrefill]);
 
-  // F1 — Une facture peut être rattachée à une société (entreposage) ou rester
-  // au niveau transit global (societeId null) ; le filtre société partagé
-  // scope KPIs et table, comme sur Bons de sortie.
   const societeFactures = React.useMemo(
-    () => filterByAnnexe(filterBySociete(factures, selectedSocieteId), selectedAnnexeId),
-    [factures, selectedSocieteId, selectedAnnexeId],
+    () => filterByAnnexe(factures, selectedAnnexeId),
+    [factures, selectedAnnexeId],
   );
 
   const filtered = React.useMemo(() => {
@@ -130,7 +124,6 @@ export function useFacturesScreen() {
       return {
         clientId: pendingFacturePrefill.clientId,
         clientNom: pendingFacturePrefill.clientNom,
-        societeId: pendingFacturePrefill.societeId,
         lignes: [
           {
             description: pendingFacturePrefill.description,

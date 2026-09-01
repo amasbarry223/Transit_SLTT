@@ -1,9 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { logError, logWarn } from "@/shared/logger";
-import { supabase } from "@/lib/supabase";
 import {
   createContratFichiersSlice,
   type ContratFichiersSlice,
@@ -192,7 +189,6 @@ export interface FactureInput {
   dossierId?: string | null;
   clientId: string;
   clientNom: string;
-  societeId?: string | null;
   annexeId: string;
   date: string;
   dateEcheance: string;
@@ -208,7 +204,6 @@ export interface FactureInput {
 }
 
 export interface DossierInput {
-  societeId: string;
   annexeId: string;
   clientId: string;
   clientNom: string;
@@ -237,7 +232,6 @@ export interface DossierInput {
  * métier en cours qui doit passer par transitionDossier() étape par étape.
  */
 export interface ImportDossierHistoriqueInput {
-  societeId: string;
   annexeId: string;
   clientId: string;
   clientNom: string;
@@ -256,7 +250,6 @@ export interface BonInput {
   date: string;
   clientId: string;
   clientNom: string;
-  societeId: string;
   annexeId: string;
   stockId?: string;
   marchandise: string;
@@ -276,21 +269,20 @@ export interface StockItemInput {
   commercial: string;
   sommePayee: number;
   resteAPayer: number;
+  date: string;
   clientId?: string;
-  societeId: string;
   annexeId: string;
 }
 
 /**
  * Champs éditables d'un article de stock existant. Exclut volontairement
  * quantite (solde dérivé des mouvements, jamais écrasable par un
- * formulaire), societeId/annexeId (déplacer un article est une opération
- * structurelle, pas une correction de fiche) et sommePayee/resteAPayer
- * (suivi financier, pas des champs descriptifs).
+ * formulaire) et annexeId (déplacer un article est une opération
+ * structurelle, pas une correction de fiche).
  */
 export type UpdateStockItemInput = Pick<
   StockItemInput,
-  "marchandise" | "unite" | "seuil" | "depositaire" | "commercial" | "clientId"
+  "marchandise" | "unite" | "seuil" | "depositaire" | "commercial" | "clientId" | "sommePayee" | "resteAPayer" | "date"
 >;
 
 /**
@@ -303,7 +295,6 @@ export type UpdateStockItemInput = Pick<
  * d'être créé dans le même appel.
  */
 export interface ImportStockHistoriqueInput {
-  societeId: string;
   annexeId: string;
   marchandise: string;
   unite: string;
@@ -388,82 +379,30 @@ const INITIAL_SEQUENCES = {
   contratPrestationSeq: 1,
 } as const;
 
-export const useStore = create<SLTTState>()(
-  persist(
-    (set, get, api) => ({
-      ...createContratFichiersSlice(set, get, api),
-      ...createArchivesSlice(set, get, api),
-      ...createDocumentsSlice(set, get, api),
-      ...createExcelWorkbooksSlice(set, get, api),
-      ...createDossiersSlice(set, get, api),
-      ...createTransporteursSlice(set, get, api),
-      ...createSocietesSlice(set, get, api),
-      ...createAnnexesSlice(set, get, api),
-      ...createUsersSlice(set, get, api),
-      ...createClientsSlice(set, get, api),
-      ...createFournisseursSlice(set, get, api),
-      ...createContratsSlice(set, get, api),
-      ...createDevisSlice(set, get, api),
-      ...createFacturesSlice(set, get, api),
-      ...createStockSlice(set, get, api),
-      ...createBonsSlice(set, get, api),
-      ...createAuditSlice(set, get, api),
-      ...createEcrituresSlice(set, get, api),
-      ...createComptabiliteGeneraleSlice(set, get, api),
-      ...createRecusPaiementSlice(set, get, api),
-      ...createFichiersSlice(set, get, api),
-      ...createDataFetchSlice(set, get, api),
-      ...createBackupSlice(set, get, api),
-      ...INITIAL_SEQUENCES,
-    }),
-    {
-            name: "sltt-data-v10",
-      // SEC-05: custom storage wrapper to catch QuotaExceededError
-      storage: createJSONStorage(() => ({
-        getItem: (name) => {
-          try { return localStorage.getItem(name); } catch { return null; }
-        },
-        setItem: (name, value) => {
-          try {
-            localStorage.setItem(name, value);
-          } catch (e) {
-            if (e instanceof DOMException && e.name === "QuotaExceededError") {
-              logWarn("[SLTT] localStorage quota dépassé — certaines données ne seront pas persistées.");
-            }
-          }
-        },
-        removeItem: (name) => {
-          try { localStorage.removeItem(name); } catch {}
-        },
-      })),
-      // DX-01: log rehydration errors
-      onRehydrateStorage: () => (_state, error) => {
-        if (error) logError("[SLTT] Erreur réhydratation store", error);
-      },
-      partialize: (s) => ({
-        dossierSeq: s.dossierSeq,
-        bonSeq: s.bonSeq,
-        auditSeq: s.auditSeq,
-        ecritureSeq: s.ecritureSeq,
-        clientSeq: s.clientSeq,
-        stockSeq: s.stockSeq,
-        userSeq: s.userSeq,
-        mouvementSeq: s.mouvementSeq,
-        subDossierSeq: s.subDossierSeq,
-        fichierSeq: s.fichierSeq,
-        devisSeq: s.devisSeq,
-        transporteurSeq: s.transporteurSeq,
-        factureSeq: s.factureSeq,
-        fournisseurSeq: s.fournisseurSeq,
-        dossierFournisseurSeq: s.dossierFournisseurSeq,
-        contratSeq: s.contratSeq,
-        contratFichierSeq: s.contratFichierSeq,
-        depenseSeq: s.depenseSeq,
-        contratPrestationSeq: s.contratPrestationSeq,
-        bonSortieCaisseSeq: s.bonSortieCaisseSeq,
-        operationComptableSeq: s.operationComptableSeq,
-      }),
-    },
-  ),
-);
+export const useStore = create<SLTTState>()((set, get, api) => ({
+  ...createContratFichiersSlice(set, get, api),
+  ...createArchivesSlice(set, get, api),
+  ...createDocumentsSlice(set, get, api),
+  ...createExcelWorkbooksSlice(set, get, api),
+  ...createDossiersSlice(set, get, api),
+  ...createTransporteursSlice(set, get, api),
+  ...createSocietesSlice(set, get, api),
+  ...createAnnexesSlice(set, get, api),
+  ...createUsersSlice(set, get, api),
+  ...createClientsSlice(set, get, api),
+  ...createFournisseursSlice(set, get, api),
+  ...createContratsSlice(set, get, api),
+  ...createDevisSlice(set, get, api),
+  ...createFacturesSlice(set, get, api),
+  ...createStockSlice(set, get, api),
+  ...createBonsSlice(set, get, api),
+  ...createAuditSlice(set, get, api),
+  ...createEcrituresSlice(set, get, api),
+  ...createComptabiliteGeneraleSlice(set, get, api),
+  ...createRecusPaiementSlice(set, get, api),
+  ...createFichiersSlice(set, get, api),
+  ...createDataFetchSlice(set, get, api),
+  ...createBackupSlice(set, get, api),
+  ...INITIAL_SEQUENCES,
+}));
 

@@ -35,7 +35,6 @@ export function mapDocumentFromDb(row: DocumentRow): SlttDocument {
     dossierId: row.dossier_id || undefined,
     factureId: row.facture_id || undefined,
     clientId: row.client_id || undefined,
-    societeId: row.societe_id || undefined,
     entityType: row.entity_type || undefined,
     entityId: row.entity_id || undefined,
     annexeId: row.annexe_id,

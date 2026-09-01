@@ -31,7 +31,7 @@ import {
   type ClasseurEntry,
   type ClasseurFilters,
 } from "@/lib/classeur";
-import { resolveClasseurPrintBrand, resolveTransitSociete } from "@/lib/societe-brand";
+import { resolveSlttBrand, resolveTransitSociete } from "@/lib/societe-brand";
 import { TOAST_COPY_RESET_MS } from "@/lib/constants";
 import { exportToExcel, printClasseur } from "@/lib/export";
 import { PageHeader } from "@/components/sltt/page-header";
@@ -90,7 +90,6 @@ export function ClientFicheScreen() {
   const [dossierPage, setDossierPage] = useState(1);
   const [bonPage, setBonPage] = useState(1);
   const [classeurFilters, setClasseurFilters] = useState<ClasseurFilters>({
-    societeId: "all",
     type: "all",
   });
   const [relanceOpen, setRelanceOpen] = useState(false);
@@ -181,12 +180,6 @@ export function ClientFicheScreen() {
     [classeurFiltered],
   );
   const classeurPeriodFiltered = hasClasseurPeriodFilter(classeurFilters);
-  const classeurSocieteOptions = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const e of classeurJournal) seen.set(e.societeId, e.societeNom);
-    return Array.from(seen.entries()).map(([id, nom]) => ({ id, nom }));
-  }, [classeurJournal]);
-
   const clientAuditHistory = useMemo(() => {
     if (!client) return [];
     const needle = client.nom.toLowerCase();
@@ -280,7 +273,6 @@ export function ClientFicheScreen() {
         `classeur-${client.nom.replace(/\s+/g, "-").toLowerCase()}`,
         [
           { header: "Date", accessor: (r: (typeof classeurFiltered)[number]) => formatDateShort(r.date) },
-          { header: "Société", accessor: (r: (typeof classeurFiltered)[number]) => r.societeNom },
           { header: "Type", accessor: (r: (typeof classeurFiltered)[number]) => r.type },
           { header: "Référence", accessor: (r: (typeof classeurFiltered)[number]) => r.reference },
           { header: "Libellé", accessor: (r: (typeof classeurFiltered)[number]) => r.libelle },
@@ -307,15 +299,10 @@ export function ClientFicheScreen() {
 
   function handlePrintClasseur() {
     if (!client) return;
-    const societeLabel =
-      classeurFilters.societeId === "all"
-        ? undefined
-        : classeurSocieteOptions.find((s) => s.id === classeurFilters.societeId)?.nom;
     printClasseur(
       client.nom,
       classeurFiltered.map((r) => ({
         date: r.date,
-        societeNom: r.societeNom,
         type: r.type,
         reference: r.reference,
         libelle: r.libelle,
@@ -325,8 +312,8 @@ export function ClientFicheScreen() {
         statut: r.statut,
       })),
       classeurTotals,
-      societeLabel,
-      resolveClasseurPrintBrand(societes, classeurFilters.societeId),
+      undefined,
+      resolveSlttBrand(societes),
     );
   }
 
@@ -378,14 +365,13 @@ export function ClientFicheScreen() {
       email: client.email ?? "",
       adresse: client.adresse ?? "",
       annexeId: client.annexeId,
-      societeId: client.societeId,
     });
     setEditOpen(true);
   }
 
   async function handleSaveEdit() {
     if (savingEdit) return;
-    if (!client || !editValues.nom.trim() || !editValues.societeId) return;
+    if (!client || !editValues.nom.trim()) return;
     const input: ClientInput = {
       nom: editValues.nom.trim(),
       type: editValues.type,
@@ -393,7 +379,6 @@ export function ClientFicheScreen() {
       email: editValues.email.trim(),
       adresse: editValues.adresse.trim(),
       annexeId: editValues.annexeId,
-      societeId: editValues.societeId,
     };
     setSavingEdit(true);
     try {
@@ -555,7 +540,6 @@ export function ClientFicheScreen() {
           journalEntries={classeurJournal}
           classeurFilters={classeurFilters}
           onFiltersChange={setClasseurFilters}
-          classeurSocieteOptions={classeurSocieteOptions}
           classeurFiltered={classeurFiltered}
           classeurTotals={classeurTotals}
           isSyncing={sqlJournal?.clientId !== selectedId}
@@ -624,14 +608,13 @@ export function ClientFicheScreen() {
             values={editValues}
             onChange={(patch) => setEditValues((v) => ({ ...v, ...patch }))}
             annexes={annexes}
-            societes={societes}
             idPrefix="cl-edit"
           />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={() => void handleSaveEdit()} disabled={!editValues.nom.trim() || !editValues.societeId || savingEdit}>
+            <Button onClick={() => void handleSaveEdit()} disabled={!editValues.nom.trim() || savingEdit}>
               <Pencil className="size-4" />
               {savingEdit ? "Enregistrement…" : "Enregistrer"}
             </Button>

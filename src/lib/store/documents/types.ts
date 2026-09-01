@@ -10,7 +10,6 @@ export interface AddDocumentInput {
   dossierId?: string;
   factureId?: string;
   clientId?: string;
-  societeId?: string;
   entityType?: DocumentEntityType;
   entityId?: string;
 }
@@ -21,7 +20,6 @@ export interface UpdateDocumentMetaInput {
   dossierId?: string | null;
   factureId?: string | null;
   clientId?: string | null;
-  societeId?: string | null;
   entityType?: DocumentEntityType | null;
   entityId?: string | null;
 }

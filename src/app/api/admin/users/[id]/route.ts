@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
+import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { assertCanTouchTarget, assertPermissionCeiling } from "@/lib/auth/user-guards";
 import { normalizePermissions } from "@/lib/permissions";
 import { updateUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
@@ -52,8 +53,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       email: email.trim().toLowerCase(),
       user_metadata: {
         nom: nom.trim(),
-        role,
-        permissions: normalizedPerms,
       },
     });
 
@@ -83,6 +82,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       throw new AuthError(profileError.message, 400);
     }
 
+    await insertAdminAuditLog(admin, actorProfile, {
+      action: "Modification",
+      detail: `Utilisateur ${nom.trim()} mis à jour`,
+    });
+
     return Response.json({ user: profile });
   } catch (error) {
     return authErrorResponse(error);
@@ -91,7 +95,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const { admin, user: adminUser, isAdmin } = await requireUserManager(request);
+    const { admin, user: adminUser, isAdmin, profile: actorProfile } = await requireUserManager(request);
     const { id } = await context.params;
 
     if (id === adminUser.id) {
@@ -101,10 +105,17 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     await assertCanTouchTarget(admin, id, isAdmin);
     await assertNotLastActiveAdmin(admin, id);
 
+    const { data: target } = await admin.from("profiles").select("nom").eq("id", id).single();
+
     const { error } = await admin.auth.admin.deleteUser(id);
     if (error) {
       throw new AuthError(error.message, 400);
     }
+
+    await insertAdminAuditLog(admin, actorProfile, {
+      action: "Suppression",
+      detail: `Utilisateur ${target?.nom ?? id} supprimé`,
+    });
 
     return Response.json({ success: true });
   } catch (error) {

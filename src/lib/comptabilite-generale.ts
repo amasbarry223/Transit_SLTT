@@ -1,37 +1,29 @@
 /**
  * Journal de caisse — helpers purs partagés entre l'onglet journal, l'import
- * Excel/OCR et les tests. 3 entités comptables (F-ANNEXE Mali/CI + société
- * Top Doumani, cf. domain-types.ts) sur les deux axes déjà présents dans le
- * schéma (Annexe = périmètre RLS réel, Société = filtre sans RLS) — pas de
- * nouvelle abstraction "entité" persistée, seulement une vue dérivée pour
- * l'affichage.
+ * Excel/OCR et les tests. Entités comptables par annexe (F-ANNEXE Mali/CI,
+ * cf. domain-types.ts) — app mono-société (SLTT) : plus de 2e axe "société"
+ * depuis le retrait de Top Doumani, cf. migration
+ * 20260913_remove_societe_top_doumani.sql. Le type EntiteComptableType garde
+ * la variante "societe" pour une éventuelle 2e société future, mais
+ * resolveEntitesComptables n'en construit plus aucune aujourd'hui.
  */
-import type { Annexe, EntiteComptable, OperationComptable, Societe } from "@/lib/domain-types";
-
-export const TOP_DOUMANI_SOCIETE_NOM = "Top Doumani";
+import type { Annexe, EntiteComptable, OperationComptable } from "@/lib/domain-types";
 
 /** Clé stable d'une entité comptable — sert de valeur d'onglet/sélecteur. */
 export function entiteKeyOf(entite: { type: string; id: string }): string {
   return `${entite.type}:${entite.id}`;
 }
 
-/** Construit les 3 entités comptables à partir des annexes/sociétés déjà chargées — annexes d'abord (Mali/CI), puis Top Doumani si présente. */
-export function resolveEntitesComptables(annexes: Annexe[], societes: Societe[]): EntiteComptable[] {
-  const entitesAnnexes: EntiteComptable[] = [...annexes]
+/** Construit les entités comptables à partir des annexes déjà chargées (Mali/CI). */
+export function resolveEntitesComptables(annexes: Annexe[]): EntiteComptable[] {
+  return [...annexes]
     .sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
     .map((a) => ({ type: "annexe", id: a.id, label: `Annexe ${a.nom}` }));
-
-  const topDoumani = societes.find((s) => s.nom === TOP_DOUMANI_SOCIETE_NOM);
-  const entitesSocietes: EntiteComptable[] = topDoumani
-    ? [{ type: "societe", id: topDoumani.id, label: `Société ${topDoumani.nom}` }]
-    : [];
-
-  return [...entitesAnnexes, ...entitesSocietes];
 }
 
 export function operationMatchesEntite(operation: OperationComptable, entite: EntiteComptable): boolean {
   if (operation.entiteType !== entite.type) return false;
-  return entite.type === "annexe" ? operation.annexeId === entite.id : operation.societeId === entite.id;
+  return operation.annexeId === entite.id;
 }
 
 export function filterOperationsByEntite(
@@ -64,15 +56,6 @@ export function computeOperationsTotals(operations: OperationComptable[]): Opera
   const totalEntree = operations.filter((o) => o.type === "Entrée").reduce((s, o) => s + o.montant, 0);
   const totalSortie = operations.filter((o) => o.type === "Sortie").reduce((s, o) => s + o.montant, 0);
   return { totalEntree, totalSortie, soldeTheorique: totalEntree - totalSortie };
-}
-
-/** Top Doumani : le montant (toujours en Sortie) dérive de quantité × prix unitaire quand les deux sont renseignés. */
-export function computeMontantFromQuantitePrixUnitaire(
-  quantite: number | undefined,
-  prixUnitaire: number | undefined,
-): number | null {
-  if (quantite == null || prixUnitaire == null || quantite <= 0 || prixUnitaire < 0) return null;
-  return quantite * prixUnitaire;
 }
 
 export interface OperationWithEcartCumule {

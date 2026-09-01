@@ -4,7 +4,6 @@ import { AlertTriangle, History, PackageMinus, PackagePlus, Pencil } from "lucid
 import type { StockItem } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { StockStatutBadge } from "@/components/sltt/status-badge";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -61,9 +60,6 @@ export function StockRow({
         <p className="mt-0.5 text-xs text-muted-foreground md:hidden">
           {item.depositaire}
         </p>
-      </TableCell>
-      <TableCell className="hidden px-4 py-3.5 sm:table-cell">
-        <SocieteBadge societeNom={item.societeNom} size="sm" />
       </TableCell>
       <TableCell className="px-4 py-3.5 text-right tabular-nums">
         <span className="font-semibold text-foreground">{item.quantite}</span>
@@ -186,10 +182,6 @@ export function StockCard({
         <StockStatutBadge statut={statut} />
       </div>
       <dl className="mt-3 space-y-1.5 text-sm">
-        <div className="flex justify-between gap-3">
-          <dt className="text-xs text-muted-foreground">Société</dt>
-          <dd><SocieteBadge societeNom={item.societeNom} size="sm" /></dd>
-        </div>
         <div className="flex justify-between gap-3">
           <dt className="text-xs text-muted-foreground">Quantité</dt>
           <dd className="tabular-nums font-semibold text-foreground">

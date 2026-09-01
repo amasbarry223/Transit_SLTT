@@ -47,8 +47,6 @@ export interface ClientRow {
   adresse: string;
   annexe_id: string;
   annexes?: NamedRelation;
-  societe_id: string;
-  societes?: NamedRelation;
 }
 
 export interface FournisseurRow {
@@ -80,11 +78,8 @@ export interface DossierFournisseurRow {
 export interface OperationComptableRow {
   id: string;
   reference: string;
-  entite_type: "annexe" | "societe";
   annexe_id: string | null;
   annexes?: NamedRelation;
-  societe_id: string | null;
-  societes?: NamedRelation;
   date: string;
   client_id: string | null;
   clients?: NamedRelation;
@@ -120,9 +115,7 @@ export interface RecuPaiementRow {
 
 export interface ClotureCaisseRow {
   id: string;
-  entite_type: "annexe" | "societe";
   annexe_id: string | null;
-  societe_id: string | null;
   periode_debut: string;
   periode_fin: string;
   solde_theorique: number | string;
@@ -140,8 +133,6 @@ export interface EcritureRow {
   client_id: string;
   clients?: NamedRelation;
   dossier_id: string | null;
-  societe_id: string | null;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   montant_investi: number | string | null;
@@ -154,8 +145,6 @@ export interface StockItemRow {
   id: string;
   client_id: string | null;
   clients?: NamedRelation;
-  societe_id: string;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   marchandise: string;
@@ -166,13 +155,12 @@ export interface StockItemRow {
   commercial: string;
   somme_payee: number | string;
   reste_a_payer: number | string;
+  date: string;
 }
 
 export interface MouvementRow {
   id: string;
   stock_id: string | null;
-  societe_id: string;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   date: string;
@@ -192,8 +180,6 @@ export interface BonSortieRow {
   client_id: string;
   clients?: NamedRelation;
   client_nom?: string | null;
-  societe_id: string;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   stock_id: string | null;
@@ -217,8 +203,6 @@ export interface BonSortieCaisseRow {
   id: string;
   reference: string;
   date: string;
-  societe_id: string;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   montant_total: number | string;
@@ -240,7 +224,6 @@ export interface SocieteRow {
   afficher_nom_avec_logo: boolean | null;
   signataire_dg: string | null;
   signataire_pdg: string | null;
-  is_transit: boolean | null;
 }
 
 export interface AnnexeRow {
@@ -259,8 +242,6 @@ export interface AnnexeRow {
 export interface ContratRow {
   id: string;
   reference: string;
-  societe_id: string;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   client_id: string;
@@ -278,7 +259,6 @@ export interface ContratRow {
 export interface DepenseRow {
   id: string;
   contrat_id: string;
-  societe_id: string;
   libelle: string;
   montant: number | string;
   date_depense: string;
@@ -324,8 +304,6 @@ export interface DevisRow {
   reference: string;
   client_id: string;
   clients?: NamedRelation;
-  societe_id: string;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   nature: string;
@@ -372,8 +350,6 @@ export interface FactureRow {
   dossier_id: string;
   client_id: string;
   clients?: NamedRelation;
-  societe_id: string | null;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   date: string;
@@ -399,6 +375,9 @@ export interface ProfileRow {
   permissions: string[] | null;
   actif: boolean;
   derniere_connexion: string | null;
+  theme?: string | null;
+  date_format?: string | null;
+  selected_annexe_id?: string | null;
 }
 
 export interface ProfilePublicRow {
@@ -412,8 +391,6 @@ export interface ProfilePublicRow {
 export interface DossierRow {
   id: string;
   reference: string;
-  societe_id: string;
-  societes?: NamedRelation;
   annexe_id: string;
   annexes?: NamedRelation;
   client_id: string;
@@ -448,7 +425,6 @@ export interface ArchiveRow {
   facture_id: string | null;
   depense_id: string | null;
   client_id: string | null;
-  societe_id: string | null;
   annexe_id: string;
   cree_par: string | null;
   created_at: string;
@@ -463,7 +439,6 @@ export interface DocumentRow {
   dossier_id: string | null;
   facture_id: string | null;
   client_id: string | null;
-  societe_id: string | null;
   entity_type: DocumentEntityType | null;
   entity_id: string | null;
   current_version: number | string;

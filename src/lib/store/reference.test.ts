@@ -40,10 +40,10 @@ describe("computeAnnexeScopedReference", () => {
     expect(result.useAnnexeNumbering).toBe(true);
   });
 
-  it("construit PREFIX-YYYY-NNNN via le compteur global sinon", () => {
+  it("construit PREFIX-YYYY-NNNN via le compteur global sans code d'annexe", () => {
     const result = computeAnnexeScopedReference(
-      { isTransit: false },
-      { code: "ML" },
+      undefined,
+      undefined,
       "FACT",
       ["ML-BS-2026-0099"],
       5,
@@ -80,16 +80,16 @@ describe("computeDossierReference", () => {
     expect(result.useAnnexeNumbering).toBe(true);
   });
 
-  it("retombe sur la séquence globale sans code annexe ou hors transit", () => {
+  it("retombe sur la séquence globale sans code d'annexe", () => {
     const result = computeDossierReference(
-      { isTransit: false },
-      { code: "CI" },
-      "Top Doumani",
+      undefined,
+      undefined,
+      "SLTT",
       ["SLTT-CI-TR-2026-0099"],
       7,
       2026,
     );
-    expect(result.reference).toBe("Top Doumani-TR-2026-0007");
+    expect(result.reference).toBe("SLTT-TR-2026-0007");
     expect(result.useAnnexeNumbering).toBe(false);
   });
 

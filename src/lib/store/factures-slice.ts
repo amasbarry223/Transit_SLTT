@@ -22,8 +22,6 @@ export function mapFactureFromDb(row: FactureRow): Facture {
     dossierId: row.dossier_id,
     clientId: row.client_id,
     clientNom: row.clients?.nom || "—",
-    societeId: row.societe_id || undefined,
-    societeNom: row.societes?.nom || undefined,
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     date: row.date,
@@ -75,10 +73,9 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   factureSeq: 1,
 
   addFacture: async (input) => {
-    const societe = input.societeId ? get().societes.find((s) => s.id === input.societeId) : undefined;
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
     const { reference: initialNumero, useAnnexeNumbering } = computeAnnexeScopedReference(
-      societe,
+      undefined,
       annexe,
       "FACT",
       get().factures.map((f) => f.numero),
@@ -100,7 +97,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
           numero: ref,
           dossier_id: input.dossierId,
           client_id: input.clientId,
-          societe_id: input.societeId || null,
           annexe_id: input.annexeId,
           date: input.date,
           date_echeance: input.dateEcheance,
@@ -136,7 +132,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
 
     const { data: fullFact, error: errFetch } = await supabase
       .from("factures")
-      .select("*, facture_lignes(*), clients(nom), societes(nom), annexes(nom)")
+      .select("*, facture_lignes(*), clients(nom), annexes(nom)")
       .eq("id", dbFact.id)
       .single();
 
@@ -174,7 +170,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       .update({
         dossier_id: input.dossierId,
         client_id: input.clientId,
-        societe_id: input.societeId ?? null,
         annexe_id: input.annexeId,
         date: input.date,
         date_echeance: input.dateEcheance,
@@ -217,7 +212,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
         return {
           ...fact,
           ...input,
-          societeId: input.societeId ?? undefined,
           annexeId: input.annexeId,
           montantHT: amountExclTax,
           montantTVA: vatAmount,

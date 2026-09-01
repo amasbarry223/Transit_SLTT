@@ -21,8 +21,7 @@ export function nextYearlyReference(
 /**
  * Référence annuelle préfixée par le code d'annexe : `CODE-PREFIX-YYYY-NNNN`
  * (ex. ML-FACT-2026-0001, CI-DEVIS-2026-0003). Numérotation SLTT séparée par
- * annexe (§3 cahier des charges F-ANNEXE) — usage réservé aux sociétés qui
- * possèdent des annexes (`societes.is_transit`, cf. resolveDossierReferencePrefix).
+ * annexe dès qu'un code d'annexe est disponible.
  */
 export function nextAnnexeYearlyReference(
   annexeCode: string,
@@ -105,23 +104,22 @@ export function nextScopedSeq(
 }
 
 /**
- * Référence "CODE-PREFIX-YYYY-NNNN" (société transit avec annexe) ou
- * "PREFIX-YYYY-NNNN" (globale) — logique commune aux bons de sortie,
- * factures et devis (numérotation par annexe si société transit, sinon
- * compteur global partagé). Même principe que `computeDossierReference` :
+ * Référence "CODE-PREFIX-YYYY-NNNN" (annexe) ou "PREFIX-YYYY-NNNN"
+ * (sans code d'annexe) — logique commune aux bons de sortie, factures
+ * et devis. Même principe que `computeDossierReference` :
  * une seule implémentation, réutilisée aussi bien pour la génération réelle
  * que pour tout aperçu affiché avant sauvegarde, pour qu'ils ne divergent
  * jamais.
  */
 export function computeAnnexeScopedReference(
-  societe: { isTransit?: boolean } | undefined,
+  _societe: unknown,
   annexe: { code: string } | undefined,
   prefix: string,
   existingRefs: Array<string | null | undefined>,
   globalSeq: number,
   year = new Date().getFullYear(),
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
-  const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+  const useAnnexeNumbering = Boolean(annexe?.code);
   const seq = useAnnexeNumbering
     ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${annexe!.code}-${prefix}-${year}-`))
     : globalSeq;
@@ -140,13 +138,13 @@ export function computeAnnexeScopedReference(
  * numéro d'un dossier créé en 2026.
  */
 export function computeHistoricalDossierReference(
-  societe: { isTransit?: boolean } | undefined,
+  _societe: unknown,
   annexe: { code: string } | undefined,
   prefix: string,
   existingRefs: Array<string | null | undefined>,
   year: number,
 ): { reference: string } {
-  const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+  const useAnnexeNumbering = Boolean(annexe?.code);
   const scopePrefix = useAnnexeNumbering
     ? `${prefix}-${annexe!.code}-TR-${year}-`
     : `${prefix}-TR-${year}-`;
@@ -159,21 +157,21 @@ export function computeHistoricalDossierReference(
 
 /**
  * Référence dossier (`{société}-TR-YYYY-NNNN`, ou `{société}-{ML|CI}-TR-YYYY-NNNN`
- * pour une société transit avec annexe — §5.2 cahier des charges). Logique
+ * dès qu'une annexe a un code — §5.2 cahier des charges). Logique
  * unique partagée entre la génération réelle (`addDossier`) et l'aperçu
  * affiché dans le formulaire de création : les deux doivent utiliser
  * exactement le même calcul pour ne jamais diverger (l'aperçu doit montrer
  * la référence qui sera vraiment attribuée à l'enregistrement).
  */
 export function computeDossierReference(
-  societe: { isTransit?: boolean } | undefined,
+  _societe: unknown,
   annexe: { code: string } | undefined,
   prefix: string,
   existingRefs: Array<string | null | undefined>,
   dossierSeq: number,
   year = new Date().getFullYear(),
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
-  const useAnnexeNumbering = Boolean(societe?.isTransit && annexe?.code);
+  const useAnnexeNumbering = Boolean(annexe?.code);
   const seq = useAnnexeNumbering
     ? nextScopedSeq(existingRefs, (r) => r.startsWith(`${prefix}-${annexe!.code}-TR-${year}-`))
     : dossierSeq;

@@ -1,7 +1,5 @@
 "use client";
 
-import { useUiPrefs } from "@/lib/session/ui-prefs-store";
-
 import { useMemo, useState } from "react";
 import {
   Package,
@@ -18,7 +16,7 @@ import { useNav } from "@/lib/nav-store";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { exportToExcel, printStockInventory } from "@/lib/export";
-import { resolveSlttBrand, societeToBrand } from "@/lib/societe-brand";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +29,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { filterBySociete } from "@/lib/filter-by-societe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { StockTab } from "./entreposage/stock-tab";
 import { MouvementsTab } from "./entreposage/mouvements-tab";
@@ -68,16 +65,15 @@ export function EntreposageScreen() {
   const societes = useStore((s) => s.societes);
   const addStockItem = useStore((s) => s.addStockItem);
   const updateStockItem = useStore((s) => s.updateStockItem);
-  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
   const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
 
   const stock = useMemo(
-    () => filterByAnnexe(filterBySociete(allStock, selectedSocieteId), selectedAnnexeId),
-    [allStock, selectedSocieteId, selectedAnnexeId],
+    () => filterByAnnexe(allStock, selectedAnnexeId),
+    [allStock, selectedAnnexeId],
   );
   const mouvements = useMemo(
-    () => filterByAnnexe(filterBySociete(allMouvements, selectedSocieteId), selectedAnnexeId),
-    [allMouvements, selectedSocieteId, selectedAnnexeId],
+    () => filterByAnnexe(allMouvements, selectedAnnexeId),
+    [allMouvements, selectedAnnexeId],
   );
 
   const dialogs = useStockMovementDialogs(stock);
@@ -149,7 +145,6 @@ export function EntreposageScreen() {
         `inventaire-stock-${new Date().toISOString().slice(0, 10)}`,
         [
           { header: "Marchandise", accessor: (s) => s.marchandise },
-          { header: "Société", accessor: (s) => s.societeNom },
           { header: "Quantité disponible", accessor: (s) => s.quantite },
           { header: "Unité", accessor: (s) => s.unite },
           { header: "Seuil", accessor: (s) => s.seuil },
@@ -179,52 +174,31 @@ export function EntreposageScreen() {
   }
 
   // Reçoit les lignes réellement visibles dans StockTab (après sa recherche
-  // locale) plutôt que tout le stock de la société — sans ça, imprimer/
-  // exporter pendant qu'une recherche est active produit un document qui ne
-  // correspond pas à ce que l'utilisateur a sous les yeux.
-  //
-  // Regroupées par société plutôt qu'un unique en-tête pour tout le document :
-  // sans filtre société actif, `rows` peut mélanger Top Doumani et SLTT — un
-  // en-tête unique ferait imprimer les articles d'une société sous le logo/
-  // l'identité légale d'une autre. Chaque groupe devient sa propre section
-  // (son propre logo, ses propres totaux) dans printStockInventory.
+  // locale) plutôt que tout le stock — sans ça, imprimer/exporter pendant
+  // qu'une recherche est active produit un document qui ne correspond pas à
+  // ce que l'utilisateur a sous les yeux.
   function handlePrintStock(rows: StockItem[]) {
-    const bySociete = new Map<string, StockItem[]>();
-    for (const item of rows) {
-      const list = bySociete.get(item.societeId) ?? [];
-      list.push(item);
-      bySociete.set(item.societeId, list);
-    }
-
-    const groups = Array.from(bySociete.entries())
-      .map(([societeId, items]) => {
-        const societeRow = societes.find((s) => s.id === societeId);
-        if (!societeRow) return null;
-        return {
-          societe: societeToBrand(societeRow),
-          rows: items.map((s) => ({
-            marchandise: s.marchandise,
-            quantite: s.quantite,
-            seuil: s.seuil,
-            unite: s.unite,
-            depositaire: s.depositaire,
-            commercial: s.commercial,
-            sommePayee: s.sommePayee,
-            resteAPayer: s.resteAPayer,
-            clientNom: s.clientNom,
-          })),
-        };
-      })
-      .filter((g): g is NonNullable<typeof g> => g !== null)
-      .sort((a, b) => a.societe.nom.localeCompare(b.societe.nom, "fr"));
-
-    if (groups.length === 0) {
-      const fallback = resolveSlttBrand(societes);
-      printStockInventory(fallback ? [{ societe: fallback, rows: [] }] : []);
-      return;
-    }
-
-    printStockInventory(groups);
+    const brand = resolveSlttBrand(societes);
+    printStockInventory(
+      brand
+        ? [
+            {
+              societe: brand,
+              rows: rows.map((s) => ({
+                marchandise: s.marchandise,
+                quantite: s.quantite,
+                seuil: s.seuil,
+                unite: s.unite,
+                depositaire: s.depositaire,
+                commercial: s.commercial,
+                sommePayee: s.sommePayee,
+                resteAPayer: s.resteAPayer,
+                clientNom: s.clientNom,
+              })),
+            },
+          ]
+        : [],
+    );
   }
 
   return (
@@ -362,10 +336,8 @@ export function EntreposageScreen() {
         key={`new-item-${newItemKey}`}
         open={newItemOpen}
         onOpenChange={setNewItemOpen}
-        societes={societes}
         annexes={annexes}
         clients={clients}
-        defaultSocieteId={selectedSocieteId ?? societes[0]?.id ?? ""}
         defaultAnnexeId={activeAnnexeId ?? ""}
         onSubmit={async (input) => {
           try {

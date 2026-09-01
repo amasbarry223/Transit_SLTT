@@ -84,6 +84,10 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 
+vi.mock("@/lib/auth/admin-audit", () => ({
+  insertAdminAuditLog: async () => {},
+}));
+
 const { POST } = await import("@/app/api/admin/users/[id]/password/route");
 
 function ctx(id: string) {
@@ -107,7 +111,7 @@ beforeEach(() => {
 
 describe("POST /api/admin/users/[id]/password", () => {
   it("rejette sans authentification", async () => {
-    const res = await POST(req({ password: "newpassword123" }, false), ctx("target1"));
+    const res = await POST(req({ password: "Newpassword123" }, false), ctx("target1"));
     expect(res.status).toBe(401);
   });
 
@@ -118,16 +122,16 @@ describe("POST /api/admin/users/[id]/password", () => {
 
   it("empêche un manager non-admin de réinitialiser le mot de passe d'un Administrateur", async () => {
     fakeState.profilesById.target1.role = "Administrateur";
-    const res = await POST(req({ password: "newpassword123" }), ctx("target1"));
+    const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(403);
     expect(fakeState.updateUserByIdCalls).toHaveLength(0);
   });
 
   it("autorise un manager non-admin à réinitialiser le mot de passe d'un utilisateur normal", async () => {
-    const res = await POST(req({ password: "newpassword123" }), ctx("target1"));
+    const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(200);
     expect(fakeState.updateUserByIdCalls).toEqual([
-      { id: "target1", payload: { password: "newpassword123" } },
+      { id: "target1", payload: { password: "Newpassword123" } },
     ]);
   });
 
@@ -135,13 +139,13 @@ describe("POST /api/admin/users/[id]/password", () => {
     fakeState.callerProfile.role = "Administrateur";
     fakeState.callerProfile.permissions = [];
     fakeState.profilesById.target1.role = "Administrateur";
-    const res = await POST(req({ password: "newpassword123" }), ctx("target1"));
+    const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(200);
   });
 
   it("renvoie l'erreur si la mise à jour échoue", async () => {
     fakeState.updateUserByIdError = { message: "update failed" };
-    const res = await POST(req({ password: "newpassword123" }), ctx("target1"));
+    const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(400);
   });
 });

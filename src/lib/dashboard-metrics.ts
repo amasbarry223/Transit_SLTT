@@ -1,7 +1,7 @@
 import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
 import { resteAPayer, calculerEcart } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
-import { filterBySocieteAndPeriode } from "@/lib/benefice";
+import { filterByPeriode } from "@/lib/benefice";
 import { sommeFacturesEncaissees } from "@/lib/client-stats";
 import {
   CHART_MONTHS_COUNT,
@@ -30,9 +30,8 @@ export interface LiveAlert {
  * indépendants — payer une facture ne touche jamais une écriture, et
  * inversement. Ils sont donc additionnés (pas dédoublonnés) pour donner
  * un seul chiffre "encaissé" fiable au lieu de deux chiffres partiels.
- * Filtrage via filterBySocieteAndPeriode (societeId=null → pas de scope
- * société) pour un parsing de date sûr (ancré à midi, pas minuit UTC —
- * évite un décalage d'un jour selon le fuseau du navigateur).
+ * Filtrage via filterByPeriode (parsing de date sûr, ancré à midi, pas
+ * minuit UTC — évite un décalage d'un jour selon le fuseau du navigateur).
  */
 export function computeEncaisseVariation(
   ecrituresAvecDate: Ecriture[],
@@ -45,13 +44,13 @@ export function computeEncaisseVariation(
   const prevY = curM === 0 ? curY - 1 : curY;
 
   const encaisseSur = (year: number, month: number) => {
-    const fromEcritures = filterBySocieteAndPeriode(ecrituresAvecDate, null, year, month)
+    const fromEcritures = filterByPeriode(ecrituresAvecDate, year, month)
       .reduce((sum, e) => sum + e.montantPaye, 0);
     // Les factures n'ont pas de date de paiement dédiée : la date de la
     // facture est le meilleur proxy disponible. On exclut les factures
     // Annulée (cf. sommeFacturesEncaissees) pour rester cohérent avec le
     // totalPaye affiché sur la fiche client (client-stats.ts).
-    const fromFactures = sommeFacturesEncaissees(filterBySocieteAndPeriode(factures, null, year, month));
+    const fromFactures = sommeFacturesEncaissees(filterByPeriode(factures, year, month));
     return fromEcritures + fromFactures;
   };
 
@@ -91,7 +90,7 @@ export function buildEncaissementsParMois(
     );
     const monthIndex = chartDate.getMonth();
     const year = chartDate.getFullYear();
-    const valeur = filterBySocieteAndPeriode(ecrituresAvecDate, null, year, monthIndex)
+    const valeur = filterByPeriode(ecrituresAvecDate, year, monthIndex)
       .reduce((sum, ecriture) => sum + ecriture.montantPaye, 0);
     return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur };
   });
@@ -162,7 +161,7 @@ export function buildEcartsParPeriode(
     );
     const monthIndex = chartDate.getMonth();
     const year = chartDate.getFullYear();
-    const ecart = filterBySocieteAndPeriode(dossiers, null, year, monthIndex)
+    const ecart = filterByPeriode(dossiers, year, monthIndex)
       .reduce((sum, dossier) => sum + calculerEcart(dossier), 0);
     return { periode: DASHBOARD_CHART_MONTHS[monthIndex], ecart };
   });

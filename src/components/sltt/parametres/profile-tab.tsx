@@ -6,7 +6,6 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,17 +17,17 @@ export function ProfileTab() {
   const updateOwnProfile = useStore((s) => s.updateOwnProfile);
   const currentUserId = useSession((s) => s.currentUserId);
   const currentUserName = useSession((s) => s.currentUserName);
-  const currentRole = useSession((s) => s.currentRole);
   const { toast } = useToast();
 
   const currentUser = users.find((u) => u.id === currentUserId);
+  const displayRole = currentUser?.role ?? "";
 
   return (
     <ProfileTabForm
       key={currentUserId ?? "anonymous"}
       currentUser={currentUser}
       currentUserName={currentUserName}
-      currentRole={currentRole}
+      currentRole={displayRole}
       currentUserId={currentUserId}
       updateOwnProfile={updateOwnProfile}
       toast={toast}

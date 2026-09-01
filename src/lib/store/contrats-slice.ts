@@ -24,8 +24,6 @@ export function mapContratFromDb(
   return {
     id: row.id,
     reference: row.reference,
-    societeId: row.societe_id,
-    societeNom: row.societes?.nom || "—",
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     clientId: row.client_id,
@@ -45,7 +43,6 @@ export function mapDepenseFromDb(row: DepenseRow): Depense {
   return {
     id: row.id,
     contratId: row.contrat_id,
-    societeId: row.societe_id,
     libelle: row.libelle,
     montant: Number(row.montant),
     dateDepense: row.date_depense,
@@ -106,7 +103,6 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       .from("contrats")
       .insert({
         reference,
-        societe_id: input.societeId,
         client_id: input.clientId,
         annexe_id: annexeId,
         objet: input.objet,
@@ -117,7 +113,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
         notes: input.notes || null,
         cree_par: creePar,
       })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .select("*, clients(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
@@ -141,7 +137,6 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const { error } = await supabase
       .from("contrats")
       .update({
-        societe_id: input.societeId,
         client_id: input.clientId,
         ...(input.annexeId ? { annexe_id: input.annexeId } : {}),
         objet: input.objet,
@@ -155,19 +150,6 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     if (error) throw error;
 
     const existing = get().contrats.find((c) => c.id === id);
-    const societeChanged = !!existing && existing.societeId !== input.societeId;
-
-    // La société d'une dépense est dénormalisée depuis son contrat à la
-    // création (perf/simplicité de lecture) — si le contrat change de
-    // société, il faut recaler les dépenses déjà créées pour ne pas
-    // fausser silencieusement le Bénéfice par société.
-    if (societeChanged) {
-      const { error: depensesError } = await supabase
-        .from("depenses")
-        .update({ societe_id: input.societeId })
-        .eq("contrat_id", id);
-      if (depensesError) throw depensesError;
-    }
 
     set((s) => ({
       contrats: s.contrats.map((contrat) =>
@@ -183,19 +165,12 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
             }
           : contrat,
       ),
-      depenses: societeChanged
-        ? s.depenses.map((depense) =>
-            depense.contratId === id ? { ...depense, societeId: input.societeId } : depense,
-          )
-        : s.depenses,
     }));
     if (existing) {
       await get().addAuditLog(
         AUDIT_MODULE.Contrats,
         AUDIT_ACTION.Modification,
-        societeChanged
-          ? `Contrat ${existing.reference} modifié — société changée, dépenses liées recalées`
-          : `Contrat ${existing.reference} modifié`,
+        `Contrat ${existing.reference} modifié`,
       );
     }
   },
@@ -275,7 +250,6 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       .from("depenses")
       .insert({
         contrat_id: input.contratId,
-        societe_id: contrat.societeId,
         libelle: input.libelle,
         montant: input.montant,
         date_depense: input.dateDepense,

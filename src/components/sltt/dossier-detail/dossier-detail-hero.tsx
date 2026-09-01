@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
-import { SocieteBadge } from "@/components/sltt/societe-filter-select";
 import {
   TRANSITION_META,
   type TransitionType,
@@ -133,7 +132,6 @@ export function DossierDetailHero({
                   <h1 className="font-mono text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
                     {dossier.reference}
                   </h1>
-                  <SocieteBadge societeNom={dossier.societeNom} size="sm" />
                   <DossierStatutBadge statut={dossier.statut} />
                 </div>
                 <p className="mt-1.5 text-sm text-muted-foreground">

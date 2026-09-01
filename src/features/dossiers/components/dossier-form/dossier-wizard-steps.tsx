@@ -7,7 +7,7 @@ import {
   Save,
   Truck,
 } from "lucide-react";
-import type { Annexe, Client, DossierStatut, Societe } from "@/lib/domain-types";
+import type { Annexe, Client, DossierStatut } from "@/lib/domain-types";
 import { UI } from "@/lib/ui-messages";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
@@ -76,9 +76,7 @@ export function DossierWizardProgress({ wizardStep, mode = "wizard" }: DossierWi
 
 type DossierIdentityStepProps = {
   clients: Client[];
-  societes: Societe[];
   annexes: Annexe[];
-  societeId: string;
   annexeId: string;
   clientId: string;
   nature: string;
@@ -87,7 +85,6 @@ type DossierIdentityStepProps = {
   date: string;
   errors: DossierFormErrors;
   touched: Record<string, boolean>;
-  onSocieteIdChange: (value: string) => void;
   onAnnexeIdChange: (value: string) => void;
   onClientIdChange: (value: string) => void;
   onNatureChange: (value: string) => void;
@@ -101,9 +98,7 @@ type DossierIdentityStepProps = {
 
 export function DossierIdentityStep({
   clients,
-  societes,
   annexes,
-  societeId,
   annexeId,
   clientId,
   nature,
@@ -112,7 +107,6 @@ export function DossierIdentityStep({
   date,
   errors,
   touched,
-  onSocieteIdChange,
   onAnnexeIdChange,
   onClientIdChange,
   onNatureChange,
@@ -129,37 +123,9 @@ export function DossierIdentityStep({
         icon={<FolderKanban className="size-4" />}
         tone="blue"
         title="Informations générales"
-        description="Société, client et caractéristiques de la marchandise"
+        description="Annexe, client et caractéristiques de la marchandise"
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField id="dossier-societe-select" label="Société" required error={errors.societeId}>
-          <Select
-            value={societeId}
-            onValueChange={(v) => {
-              onSocieteIdChange(v);
-              onTouch("societeId");
-              onValidateField("societeId", v);
-            }}
-          >
-            <SelectTrigger
-              id="dossier-societe-select"
-              className={cn("h-10 w-full", errors.societeId && "border-red-400")}
-              aria-label="Sélectionner une société"
-            >
-              <SelectValue placeholder="Sélectionner une société" />
-            </SelectTrigger>
-            <SelectContent>
-              {societes
-                .filter((s) => s.actif)
-                .map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nom}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </FormField>
-
         <FormField id="dossier-annexe-select" label="Annexe" required error={errors.annexeId}>
           <Select
             value={annexeId}

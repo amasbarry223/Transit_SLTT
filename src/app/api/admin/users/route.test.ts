@@ -74,6 +74,10 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 
+vi.mock("@/lib/auth/admin-audit", () => ({
+  insertAdminAuditLog: async () => {},
+}));
+
 const { POST } = await import("@/app/api/admin/users/route");
 
 function req(body: unknown) {
@@ -89,7 +93,7 @@ const validBody = {
   email: "nouveau@sltt.ml",
   role: "Agent de transit",
   permissions: ["dossiers:read"],
-  password: "password123",
+  password: "Password123",
 };
 
 beforeEach(() => {

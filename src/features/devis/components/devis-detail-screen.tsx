@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Banknote, Building2, CalendarDays, FolderKanban, Package, User } from "lucide-react";
+import { ArrowLeft, Banknote, CalendarDays, FolderKanban, Package, User } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { usePermission } from "@/hooks/use-permission";
@@ -46,7 +46,6 @@ export function DevisDetailScreen() {
   const [savingEdit, setSavingEdit] = useState(false);
   useUnsavedChangesWarning(isEditing);
 
-  const [fSocieteId, setFSocieteId] = useState("");
   const [fClientId, setFClientId] = useState("");
   const [fClientNom, setFClientNom] = useState("");
   const [fNature, setFNature] = useState("");
@@ -60,7 +59,7 @@ export function DevisDetailScreen() {
   if (editKey !== prevEditKey) {
     setPrevEditKey(editKey);
     if (editKey !== null && devis) {
-      setFSocieteId(devis.societeId); setFClientId(devis.clientId); setFClientNom(devis.clientNom);
+      setFClientId(devis.clientId); setFClientNom(devis.clientNom);
       setFNature(devis.nature); setFDroitDouane(String(devis.droitDouane));
       setFFraisCircuit(String(devis.fraisCircuit)); setFFraisPrestation(String(devis.fraisPrestation));
       setFDateValidite(devis.dateValidite); setFNotes(devis.notes ?? "");
@@ -82,7 +81,7 @@ export function DevisDetailScreen() {
   const dd = parseAmount(fDroitDouane), fc = parseAmount(fFraisCircuit), fp = parseAmount(fFraisPrestation);
   const editTotal = dd + fc + fp;
   const canEditContent = canWrite && !devis.dossierId && devis.statut !== "Accepté";
-  const editValid = !!fSocieteId && !!fClientId && !!fNature.trim() && !!fDateValidite;
+  const editValid = !!fClientId && !!fNature.trim() && !!fDateValidite;
   const startEdit = () => { setIsEditing(true); setConfirmDelete(false); setConfirmConvert(false); };
   const requestConvert = () => { setConfirmConvert(true); setConfirmDelete(false); };
   const requestDelete = () => { setConfirmDelete(true); setConfirmConvert(false); };
@@ -108,7 +107,7 @@ export function DevisDetailScreen() {
     setSavingEdit(true);
     try {
       await updateDevis(devis.id, {
-        societeId: fSocieteId, clientId: fClientId, clientNom: fClientNom, nature: fNature,
+        clientId: fClientId, clientNom: fClientNom, nature: fNature,
         droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp, dateValidite: fDateValidite,
         notes: fNotes.trim() || undefined,
       } satisfies DevisInput);
@@ -186,7 +185,6 @@ export function DevisDetailScreen() {
                 <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Informations</h2>
               </div>
               <div className="px-5">
-                <InfoRow icon={Building2} label="Société" value={devis.societeNom} />
                 <InfoRow icon={User} label="Client" value={devis.clientNom} />
                 <InfoRow icon={Package} label="Nature de la marchandise" value={devis.nature} />
                 <InfoRow icon={CalendarDays} label="Date de création" value={formatDateShort(devis.dateCreation)} />
@@ -216,8 +214,7 @@ export function DevisDetailScreen() {
       )}
       {isEditing && (
         <DevisEditForm
-          devis={devis} societes={societes} clients={clients} fSocieteId={fSocieteId}
-          setFSocieteId={setFSocieteId} fClientId={fClientId} handleClientChange={handleClientChange}
+          devis={devis} clients={clients} fClientId={fClientId} handleClientChange={handleClientChange}
           fNature={fNature} setFNature={setFNature} fDroitDouane={fDroitDouane}
           setFDroitDouane={setFDroitDouane} fFraisCircuit={fFraisCircuit}
           setFFraisCircuit={setFFraisCircuit} fFraisPrestation={fFraisPrestation}

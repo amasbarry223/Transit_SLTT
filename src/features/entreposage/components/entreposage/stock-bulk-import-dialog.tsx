@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { usePermission } from "@/hooks/use-permission";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { shouldShowAnnexeForSociete } from "@/lib/societe-brand";
 import { parseStockBulkXlsx, type StockBulkImportRow } from "@/lib/stock-bulk-import";
 import { getErrorMessage, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -109,7 +108,7 @@ function StatPill({
  * « grand livre » (une feuille par article : Dates | Désignation | Quantité |
  * Entrée | Sortie | Stocks), via importStockHistorique. Un article inexistant
  * est créé (quantite=0 puis solde rejoué) ; un article déjà présent (même
- * société/annexe/nom) est complété — ses mouvements s'ajoutent à son solde
+ * annexe/nom) est complété — ses mouvements s'ajoutent à son solde
  * actuel. Seuil/Dépositaire/Commercial/Client ne sont appliqués qu'à la
  * création : pour un article existant ils restent ignorés (modifiables via
  * Entreposage → Modifier), les champs de revue correspondants sont désactivés.
@@ -117,14 +116,12 @@ function StatPill({
 export function StockBulkImportButton() {
   const { toast } = useToast();
   const canWrite = usePermission("stock:write");
-  const societes = useStore((s) => s.societes);
   const clients = useStore((s) => s.clients);
   const importStockHistorique = useStore((s) => s.importStockHistorique);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("config");
-  const [societeId, setSocieteId] = useState("");
   const [annexeId, setAnnexeId] = useState("");
   const [clientId, setClientId] = useState("");
   const [depositaire, setDepositaire] = useState("");
@@ -136,8 +133,7 @@ export function StockBulkImportButton() {
   const [groups, setGroups] = useState<ReviewGroup[]>([]);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
-  const showAnnexe = shouldShowAnnexeForSociete(societeId, societes, annexes);
-  const effectiveAnnexeId = showAnnexe ? annexeId : (activeAnnexeId ?? "");
+  const effectiveAnnexeId = annexeId || activeAnnexeId || "";
 
   function reset() {
     setPhase("config");
@@ -147,7 +143,6 @@ export function StockBulkImportButton() {
   }
 
   function openDialog() {
-    setSocieteId((prev) => prev || societes[0]?.id || "");
     setAnnexeId((prev) => prev || activeAnnexeId || "");
     setClientId("");
     setDepositaire("");
@@ -246,14 +241,13 @@ export function StockBulkImportButton() {
         const selected = g.rows.filter((r) => r.selected);
         const invalidSelected = selected.filter((r) => !r.dateValue || r.type == null);
         const key = g.marchandise.trim().toLowerCase();
-        const matchKey = key ? `${societeId}|${effectiveAnnexeId}|${key}` : null;
+        const matchKey = key ? `${effectiveAnnexeId}|${key}` : null;
         // Même règle de correspondance que la garde anti-doublon du store
-        // (societeId/annexeId/marchandise) — juste pour afficher un repère
-        // visuel en revue, pas pour bloquer quoi que ce soit ici.
+        // (annexeId/marchandise) — juste pour afficher un repère visuel en
+        // revue, pas pour bloquer quoi que ce soit ici.
         const existingItem = key
           ? stock.find(
               (s) =>
-                s.societeId === societeId &&
                 s.annexeId === effectiveAnnexeId &&
                 s.marchandise.trim().toLowerCase() === key,
             )
@@ -302,7 +296,7 @@ export function StockBulkImportButton() {
           valid: selected.length > 0 && invalidSelected.length === 0 && negativeAt == null,
         };
       });
-  }, [groups, stock, societeId, effectiveAnnexeId]);
+  }, [groups, stock, effectiveAnnexeId]);
 
   const totalRows = useMemo(() => groups.reduce((sum, g) => sum + g.rows.length, 0), [groups]);
   const totalSelected = useMemo(() => groupStats.reduce((sum, g) => sum + g.selectedCount, 0), [groupStats]);
@@ -319,7 +313,7 @@ export function StockBulkImportButton() {
     groupsReady.length > 0 && groupsReady.every((g) => g.valid) && totalInvalid === 0;
 
   async function handleConfirm() {
-    if (!societeId || !effectiveAnnexeId || !canConfirm) return;
+    if (!effectiveAnnexeId || !canConfirm) return;
 
     const toImport = groups.filter((g) => g.rows.some((r) => r.selected));
     setPhase("importing");
@@ -333,10 +327,9 @@ export function StockBulkImportButton() {
       try {
         // Nom provisoire unique par feuille si laissé vide — "—" tout court
         // bloquerait la 2e feuille vide d'un classeur multi-articles sur la
-        // garde anti-doublon de importStockHistorique (même société/annexe).
+        // garde anti-doublon de importStockHistorique (même annexe).
         const marchandise = g.marchandise.trim() || `Article à renommer (${g.sheetName})`;
         await importStockHistorique({
-          societeId,
           annexeId: effectiveAnnexeId,
           marchandise,
           unite: g.unite.trim(),
@@ -407,7 +400,7 @@ export function StockBulkImportButton() {
             </DialogTitle>
             <DialogDescription>
               {phase === "config"
-                ? "Importez un classeur Excel « grand livre » (une feuille par article). Un article inexistant est créé avec tout son historique déjà daté ; un article existant (même nom, société, annexe) est complété — ses nouveaux mouvements s'ajoutent à son solde actuel."
+                ? "Importez un classeur Excel « grand livre » (une feuille par article). Un article inexistant est créé avec tout son historique déjà daté ; un article existant (même nom, annexe) est complété — ses nouveaux mouvements s'ajoutent à son solde actuel."
                 : "Vérifiez les lignes détectées avant de les importer. Les dates illisibles ou hors séquence (année/mois incohérent avec les voisins) sont préremplies en ambre — confirmez ou corrigez avant d'importer."}
             </DialogDescription>
           </DialogHeader>
@@ -417,48 +410,27 @@ export function StockBulkImportButton() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>
-                    Société <span className="text-red-500">*</span>
+                    Annexe <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={societeId || undefined} onValueChange={setSocieteId}>
-                    <SelectTrigger aria-label="Sélectionner une société">
-                      <SelectValue placeholder="Sélectionner une société" />
+                  <Select value={annexeId || undefined} onValueChange={setAnnexeId}>
+                    <SelectTrigger aria-label="Sélectionner une annexe">
+                      <SelectValue placeholder="Sélectionner une annexe" />
                     </SelectTrigger>
                     <SelectContent>
-                      {societes
-                        .filter((s) => s.actif || s.id === societeId)
-                        .map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.nom}
-                          </SelectItem>
-                        ))}
+                      {annexes.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.nom}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                {showAnnexe && (
-                  <div className="space-y-2">
-                    <Label>
-                      Annexe <span className="text-red-500">*</span>
-                    </Label>
-                    <Select value={annexeId || undefined} onValueChange={setAnnexeId}>
-                      <SelectTrigger aria-label="Sélectionner une annexe">
-                        <SelectValue placeholder="Sélectionner une annexe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {annexes.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
                 <div className="space-y-2">
                   <Label>Nom de l&apos;article</Label>
                   <Input
                     value={defaultMarchandise}
                     onChange={(e) => setDefaultMarchandise(e.target.value)}
-                    placeholder="ex. Cube Top Doumani"
+                    placeholder="ex. Riz parfumé 25 kg"
                     className="h-10"
                   />
                 </div>
@@ -509,7 +481,7 @@ export function StockBulkImportButton() {
                   id="stock-bulk-import-file"
                   className="hidden"
                   accept=".xlsx"
-                  disabled={!societeId || (showAnnexe && !annexeId) || parsing}
+                  disabled={!effectiveAnnexeId || parsing}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) void handleFile(file);
@@ -525,7 +497,7 @@ export function StockBulkImportButton() {
                   htmlFor="stock-bulk-import-file"
                   className={cn(
                     "inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary hover:underline",
-                    (!societeId || (showAnnexe && !annexeId) || parsing) && "pointer-events-none opacity-60",
+                    (!effectiveAnnexeId || parsing) && "pointer-events-none opacity-60",
                   )}
                 >
                   {parsing ? "Analyse du fichier…" : "Sélectionner le fichier .xlsx"}
@@ -544,7 +516,7 @@ export function StockBulkImportButton() {
                   icon={Boxes}
                   value={String(groups.length)}
                   label="article(s) détecté(s)"
-                  title="Le produit suivi (ex. Cube Top Doumani) — pas chaque ligne/destinataire du registre."
+                  title="Le produit suivi (ex. Riz parfumé 25 kg) — pas chaque ligne/destinataire du registre."
                 />
                 <StatPill icon={ListChecks} value={String(totalRows)} label="lignes détectées" />
                 <StatPill icon={CheckCircle2} value={String(totalSelected)} label="sélectionnées" tone="primary" />
@@ -590,7 +562,7 @@ export function StockBulkImportButton() {
                                   <Input
                                     value={g.marchandise}
                                     onChange={(e) => updateGroupField(g.key, { marchandise: e.target.value })}
-                                    placeholder="Nom de l'article (ex. Cube Top Doumani)"
+                                    placeholder="Nom de l'article (ex. Riz parfumé 25 kg)"
                                     disabled={phase === "importing"}
                                     className={cn("h-7 w-56 text-xs font-semibold", !g.marchandise.trim() && "border-amber-400")}
                                   />

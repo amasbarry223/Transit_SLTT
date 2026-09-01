@@ -50,7 +50,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "stock_items",
-              "id, client_id, societe_id, annexe_id, marchandise, quantite, unite, seuil, depositaire, commercial, somme_payee, reste_a_payer, clients(nom), societes(nom), annexes(nom)",
+              "id, client_id, annexe_id, marchandise, quantite, unite, seuil, depositaire, commercial, somme_payee, reste_a_payer, date, clients(nom), annexes(nom)",
             ),
           { softCap: caps.default },
         ),
@@ -63,7 +63,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "mouvements",
-              "id, stock_id, societe_id, annexe_id, date, type, marchandise, quantite, unite, responsable, bon_ref, motif, societes(nom), annexes(nom)",
+              "id, stock_id, annexe_id, date, type, marchandise, quantite, unite, responsable, bon_ref, motif, annexes(nom)",
               { column: "date", ascending: false },
             ),
           { softCap: FETCH_SOFT_CAPS.mouvements },
@@ -79,7 +79,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
               "bons_sortie",
               // client_nom : pas une colonne réelle (fallback mort dans mapBonFromDb,
               // seul clients(nom) alimente clientNom en pratique) — non sélectionné.
-              "id, reference, date, client_id, societe_id, annexe_id, stock_id, marchandise, quantite, unite, motif, montant, statut, clients(nom), societes(nom), annexes(nom)",
+              "id, reference, date, client_id, annexe_id, stock_id, marchandise, quantite, unite, motif, montant, statut, clients(nom), annexes(nom)",
             ),
           { softCap: caps.default },
         ),
@@ -116,7 +116,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
               // dossier_id n'est pas une colonne de la table devis (déjà le cas avec
               // select("*")) : Devis.dossierId est toujours undefined au chargement,
               // seule la mise à jour locale post-conversion le renseigne en session.
-              "id, reference, client_id, societe_id, annexe_id, nature, droit_douane, frais_circuit, frais_prestation, total, statut, date_creation, date_validite, notes, clients(nom), societes(nom), annexes(nom)",
+              "id, reference, client_id, annexe_id, nature, droit_douane, frais_circuit, frais_prestation, total, statut, date_creation, date_validite, notes, clients(nom), annexes(nom)",
             ),
           { softCap: caps.default },
         ),
@@ -168,7 +168,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "contrats",
-              "id, reference, societe_id, annexe_id, client_id, objet, date_debut, date_fin, montant, statut, notes, cree_par, created_at, clients(nom), societes(nom), annexes(nom)",
+              "id, reference, annexe_id, client_id, objet, date_debut, date_fin, montant, statut, notes, cree_par, created_at, clients(nom), annexes(nom)",
             ),
           { softCap: caps.default },
         ),
@@ -194,7 +194,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "depenses",
-              "id, contrat_id, societe_id, libelle, montant, date_depense, mode_paiement, justificatif_path, note, cree_par",
+              "id, contrat_id, libelle, montant, date_depense, mode_paiement, justificatif_path, note, cree_par",
             ),
           { softCap: caps.default },
         ),
@@ -220,7 +220,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "bons_sortie_caisse",
-              "id, reference, date, societe_id, annexe_id, montant_total, cree_par, created_at, bons_sortie_caisse_lignes(id, date, beneficiaire, motif, montant), societes(nom), annexes(nom)",
+              "id, reference, date, annexe_id, montant_total, cree_par, created_at, bons_sortie_caisse_lignes(id, date, beneficiaire, motif, montant), annexes(nom)",
             ),
           { softCap: caps.default },
         ),
@@ -235,7 +235,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
               "operations_comptables",
               // clients/societes/annexes ne sont pas embarqués : le mapper lit le
               // libellé dénormalisé row.client_nom, pas une relation.
-              "id, reference, entite_type, annexe_id, societe_id, date, client_id, client_nom, nature, type, montant, quantite, prix_unitaire, source, import_ref, cree_par",
+              "id, reference, annexe_id, date, client_id, client_nom, nature, type, montant, source, import_ref, cree_par",
             ),
           { softCap: caps.operationsComptables },
         ),
@@ -248,7 +248,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "clotures_caisse",
-              "id, entite_type, annexe_id, societe_id, periode_debut, periode_fin, solde_theorique, solde_constate, ecart, note, cloture_par, cloture_le",
+              "id, annexe_id, periode_debut, periode_fin, solde_theorique, solde_constate, ecart, note, cloture_par, cloture_le",
             ),
           { softCap: caps.cloturesCaisse },
         ),
@@ -290,7 +290,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "archives",
-              "id, nom, type_document, taille, mime_type, storage_path, dossier_id, facture_id, depense_id, client_id, societe_id, annexe_id, cree_par, created_at",
+              "id, nom, type_document, taille, mime_type, storage_path, dossier_id, facture_id, depense_id, client_id, annexe_id, cree_par, created_at",
             ),
           { softCap: caps.archives },
         ),
@@ -303,7 +303,7 @@ export function buildSecondaryFetchSpecs(supabase: SupabaseClient): SecondaryFet
             pagedSelect(
               supabase,
               "documents",
-              "id, nom, categorie, mime_type, taille, dossier_id, facture_id, client_id, societe_id, entity_type, entity_id, annexe_id, current_version, cree_par, created_at, updated_at",
+              "id, nom, categorie, mime_type, taille, dossier_id, facture_id, client_id, entity_type, entity_id, annexe_id, current_version, cree_par, created_at, updated_at",
               { column: "created_at", ascending: false },
             ),
           { softCap: FETCH_SOFT_CAPS.documents },

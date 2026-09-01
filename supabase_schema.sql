@@ -132,6 +132,7 @@ create table if not exists public.stock_items (
     commercial text not null,
     somme_payee numeric not null default 0,
     reste_a_payer numeric not null default 0,
+    date date not null default current_date,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );

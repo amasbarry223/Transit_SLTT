@@ -3,14 +3,12 @@ import { mapDevisFromDb } from "@/lib/store/devis-slice";
 import type { DevisRow } from "@/lib/db-rows";
 
 describe("mapDevisFromDb", () => {
-  it("mappe societe_id et societes.nom", () => {
+  it("mappe client et annexe", () => {
     const row: DevisRow = {
       id: "d1",
       reference: "DEVIS-2026-0001",
       client_id: "c1",
       clients: { nom: "ACME" },
-      societe_id: "s1",
-      societes: { nom: "SLTT Transit" },
       annexe_id: "a1",
       nature: "Ciment",
       droit_douane: 100,
@@ -23,8 +21,7 @@ describe("mapDevisFromDb", () => {
       notes: null,
     };
     const mapped = mapDevisFromDb(row);
-    expect(mapped.societeId).toBe("s1");
-    expect(mapped.societeNom).toBe("SLTT Transit");
     expect(mapped.clientNom).toBe("ACME");
+    expect(mapped.annexeId).toBe("a1");
   });
 });

@@ -23,7 +23,6 @@ import { fmtDate, fmtDateShort, fmtFCFA, fmtFCFAPlain } from "./shared";
 
 export interface ClasseurPrintRow {
   date: string;
-  societeNom: string;
   type: string;
   reference: string;
   libelle: string;
@@ -37,7 +36,6 @@ export interface ClasseurPrintTotals {
   totalDebit: number;
   totalCredit: number;
   soldeNet: number;
-  parSociete?: Array<{ societeNom: string; soldeNet: number }>;
 }
 
 /** Classe de badge par type de mouvement — code couleur cohérent sur tout le document. */
@@ -74,7 +72,6 @@ export function printClasseur(
       (r, i) => `
     <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
       <td class="col-date">${fmtDateShort(r.date)}</td>
-      <td class="col-societe">${htmlEscape(r.societeNom)}</td>
       <td class="col-type"><span class="type-badge ${typeBadgeClass(r.type)}">${htmlEscape(r.type)}</span></td>
       <td class="col-ref">${htmlEscape(r.reference)}</td>
       <td class="col-libelle">${htmlEscape(r.libelle)}</td>
@@ -85,18 +82,6 @@ export function printClasseur(
     </tr>`,
     )
     .join("");
-
-  const parSocieteHTML =
-    totals.parSociete && totals.parSociete.length > 0
-      ? `<div class="societe-totals">
-          ${totals.parSociete
-            .map(
-              (p) =>
-                `<div class="societe-total"><span class="societe-total-lbl">${htmlEscape(p.societeNom)}</span><span class="societe-total-val" style="color:${p.soldeNet > 0 ? "#b45309" : "#126a32"}">${fmtFCFA(p.soldeNet)}</span></div>`,
-            )
-            .join("")}
-        </div>`
-      : "";
 
   const win = acquirePrintTarget();
   if (!win) { warnPopupBlocked(); return; }
@@ -200,12 +185,6 @@ ${OFFICIAL_LETTERHEAD_CSS}
 .summary-value--ok { color: #126a32; }
 .summary-hint { font-size: 8.5px; color: #92a3ba; margin-top: 3px; }
 
-/* Répartition par société */
-.societe-totals { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 12px 28px 0; }
-.societe-total { display: flex; align-items: baseline; gap: 7px; font-size: 10px; }
-.societe-total-lbl { font-weight: 700; color: #45556b; }
-.societe-total-val { font-weight: 800; font-variant-numeric: tabular-nums; }
-
 /* Tableau compact A4 portrait */
 .table-section { padding: 14px 28px 20px; }
 .table-wrap {
@@ -224,11 +203,10 @@ ${OFFICIAL_LETTERHEAD_CSS}
    au lieu de chaque cellule) jusqu'à 999 999 999 FCFA. Priorité aux colonnes
    chiffrées — seul Libellé, texte libre, peut tronquer avec ellipse. */
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-colgroup .c-date { width: 10%; }
-colgroup .c-societe { width: 9%; }
-colgroup .c-type { width: 8%; }
-colgroup .c-ref { width: 9%; }
-colgroup .c-libelle { width: 16%; }
+colgroup .c-date { width: 11%; }
+colgroup .c-type { width: 9%; }
+colgroup .c-ref { width: 10%; }
+colgroup .c-libelle { width: 22%; }
 colgroup .c-debit,
 colgroup .c-credit { width: 12%; }
 colgroup .c-solde { width: 13%; }
@@ -257,7 +235,7 @@ tbody td:last-child { border-right: none; }
 .row-even { background: #fff; }
 .row-odd { background: #f9fafb; }
 .col-date { white-space: nowrap; color: #45556b; font-size: 9.5px; }
-.col-societe, .col-ref { color: #45556b; font-size: 9.5px; overflow-wrap: break-word; }
+.col-ref { color: #45556b; font-size: 9.5px; overflow-wrap: break-word; }
 .col-ref { font-weight: 700; color: #1f2937; }
 /* Seule colonne texte libre autorisée à tronquer — une description longue
    coupée reste lisible, contrairement à un chiffre. */
@@ -399,20 +377,17 @@ tfoot .total-amount {
     </div>
   </div>
 
-  ${parSocieteHTML}
-
   <section class="table-section">
     <div class="table-caption">Montants en francs CFA (FCFA)</div>
     <div class="table-wrap">
       <table>
         <colgroup>
-          <col class="c-date"><col class="c-societe"><col class="c-type"><col class="c-ref">
+          <col class="c-date"><col class="c-type"><col class="c-ref">
           <col class="c-libelle"><col class="c-debit"><col class="c-credit"><col class="c-solde"><col class="c-statut">
         </colgroup>
         <thead>
           <tr>
             <th>Date</th>
-            <th>Société</th>
             <th>Type</th>
             <th>Référence</th>
             <th>Libellé</th>
@@ -422,10 +397,10 @@ tfoot .total-amount {
             <th>Statut</th>
           </tr>
         </thead>
-        <tbody>${rowsHTML || `<tr><td colspan="9" style="padding:16px;text-align:center;color:#92a3ba">Aucun mouvement</td></tr>`}</tbody>
+        <tbody>${rowsHTML || `<tr><td colspan="8" style="padding:16px;text-align:center;color:#92a3ba">Aucun mouvement</td></tr>`}</tbody>
         <tfoot>
           <tr>
-            <td colspan="5">Total — ${rows.length} mouvement${rows.length !== 1 ? "s" : ""}</td>
+            <td colspan="4">Total — ${rows.length} mouvement${rows.length !== 1 ? "s" : ""}</td>
             <td class="total-amount">${fmtFCFAPlain(totals.totalDebit)}</td>
             <td class="total-amount">${fmtFCFAPlain(totals.totalCredit)}</td>
             <td class="total-amount">${fmtFCFAPlain(totals.soldeNet)}</td>

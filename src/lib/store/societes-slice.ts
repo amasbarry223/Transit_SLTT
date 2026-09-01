@@ -19,7 +19,6 @@ export function mapSocieteFromDb(row: SocieteRow): Societe {
     afficherNomAvecLogo: row.afficher_nom_avec_logo ?? true,
     signataireDg: row.signataire_dg || undefined,
     signatairePdg: row.signataire_pdg || undefined,
-    isTransit: row.is_transit ?? undefined,
   };
 }
 

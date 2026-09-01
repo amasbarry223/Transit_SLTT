@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 
 export type DevisSortKey = "date-desc" | "date-asc" | "reference" | "client" | "montant-desc" | "montant-asc" | "validite-asc" | "statut";
 
@@ -70,8 +69,6 @@ export function DevisListFilters({
               ))}
             </SelectContent>
           </Select>
-
-          <SocieteFilterSelect className="h-10 w-full sm:w-52" />
 
           <Select value={statutFilter} onValueChange={(v) => { setStatutFilter(v as DevisStatut | "Tous"); setPage(1); }}>
             <SelectTrigger className="h-10 w-full sm:w-44">

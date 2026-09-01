@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { FileSpreadsheet, FileText, Package, PackageMinus, PackagePlus, Plus, Search } from "lucide-react";
 import type { StockItem } from "@/lib/store";
-import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,7 +123,6 @@ export function StockTab({
               aria-label="Rechercher dans le stock"
             />
           </div>
-          <SocieteFilterSelect />
         </div>
       </Card>
 
@@ -162,9 +160,6 @@ export function StockTab({
                   <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
                     <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Marchandise
-                    </TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
-                      Société
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Quantité

@@ -52,8 +52,8 @@ interface ImportAnyDialogProps {
  * ce composant ne fait que choisir la bonne destination.
  *
  * `entite` ne fixe que la présélection (l'onglet actif au moment de
- * l'ouverture) — l'utilisateur peut choisir une autre entité (une autre
- * annexe, ou Top Doumani) avant d'importer, sans avoir à fermer le dialogue.
+ * l'ouverture) — l'utilisateur peut choisir une autre annexe avant
+ * d'importer, sans avoir à fermer le dialogue.
  */
 export function ImportAnyDialog({ open, onOpenChange, entite, entites }: ImportAnyDialogProps) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);

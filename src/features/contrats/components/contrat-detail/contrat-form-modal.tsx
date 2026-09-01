@@ -6,7 +6,6 @@ import { CONTRAT_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 import { parseAmount } from "@/lib/format";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
 import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { shouldShowAnnexeForSociete } from "@/lib/societe-brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +35,6 @@ export function ContratFormModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initial: {
-    societeId: string;
     clientId: string;
     clientNom: string;
     annexeId: string;
@@ -49,11 +47,9 @@ export function ContratFormModal({
   };
   onSubmit: (input: ContratInput) => void;
 }) {
-  const societes = useStore((s) => s.societes);
   const clients = useStore((s) => s.clients);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
-  const [societeId, setSocieteId] = useState(initial.societeId);
   const [annexeId, setAnnexeId] = useState(initial.annexeId);
   const [clientId, setClientId] = useState(initial.clientId);
   const [objet, setObjet] = useState(initial.objet);
@@ -63,14 +59,13 @@ export function ContratFormModal({
   const [statut, setStatut] = useState<ContratStatut>(initial.statut);
   const [notes, setNotes] = useState(initial.notes ?? "");
 
-  const showAnnexe = shouldShowAnnexeForSociete(societeId, societes, annexes);
+  const showAnnexe = annexes.length > 1;
   const resolvedAnnexeId = showAnnexe ? annexeId : (activeAnnexeId ?? initial.annexeId);
 
   const selectedClient = clients.find((c) => c.id === clientId);
   const dateFinValide = !dateFin || dateFin >= dateDebut;
   const canSubmit = Boolean(
-    societeId &&
-      clientId &&
+    clientId &&
       objet.trim() &&
       dateFinValide &&
       (!showAnnexe || annexeId),
@@ -83,7 +78,6 @@ export function ContratFormModal({
   function handleSubmit() {
     if (!selectedClient || !canSubmit) return;
     onSubmit({
-      societeId,
       clientId,
       clientNom: selectedClient.nom,
       annexeId: resolvedAnnexeId || undefined,
@@ -105,22 +99,6 @@ export function ContratFormModal({
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Société <span className="text-red-500">*</span></Label>
-            <Select value={societeId} onValueChange={setSocieteId}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {societes.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {showAnnexe && (
             <div className="space-y-2">
               <Label>Annexe <span className="text-red-500">*</span></Label>
@@ -154,7 +132,7 @@ export function ContratFormModal({
                   ))}
                 </SelectContent>
               </Select>
-              <QuickClientButton onCreated={setClientId} defaultSocieteId={societeId} />
+              <QuickClientButton onCreated={setClientId} />
             </div>
           </div>
 

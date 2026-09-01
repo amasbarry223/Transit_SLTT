@@ -86,7 +86,6 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
       await recordClotureCaisse({
         entiteType: entite.type,
         annexeId: entite.type === "annexe" ? entite.id : undefined,
-        societeId: entite.type === "societe" ? entite.id : undefined,
         periodeDebut,
         periodeFin,
         soldeTheorique,

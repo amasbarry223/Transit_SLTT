@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import type { Devis, DevisInput } from "@/lib/store";
-import type { Societe } from "@/lib/domain-types";
 import { formatFCFA, parseAmount } from "@/lib/format";
-import { resolveTransitSociete } from "@/lib/societe-brand";
 import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +17,6 @@ export interface DevisFormProps {
   open: boolean;
   devis: Devis | null;
   clients: { id: string; nom: string }[];
-  societes: Societe[];
-  defaultSocieteId?: string | null;
   saving?: boolean;
   onClose: () => void;
   onSave: (input: DevisInput) => void;
@@ -30,17 +26,10 @@ export function DevisFormDialog({
   open,
   devis,
   clients,
-  societes,
-  defaultSocieteId,
   saving,
   onClose,
   onSave,
 }: DevisFormProps) {
-  const transitId = resolveTransitSociete(societes)?.id ?? "";
-  const initialSociete =
-    devis?.societeId || defaultSocieteId || transitId || "";
-
-  const [societeId, setSocieteId] = useState(initialSociete);
   const [clientId, setClientId] = useState(devis?.clientId ?? "");
   const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
   const [nature, setNature] = useState(devis?.nature ?? "");
@@ -57,7 +46,6 @@ export function DevisFormDialog({
   if (openKey !== prevOpenKey) {
     setPrevOpenKey(openKey);
     if (openKey !== null) {
-      setSocieteId(devis?.societeId || defaultSocieteId || transitId || "");
       setClientId(devis?.clientId ?? "");
       setClientNom(devis?.clientNom ?? "");
       setNature(devis?.nature ?? "");
@@ -73,7 +61,7 @@ export function DevisFormDialog({
   const fc = parseAmount(fraisCircuit);
   const fp = parseAmount(fraisPrestation);
   const total = dd + fc + fp;
-  const valid = !!societeId && !!clientId && !!nature.trim() && !!dateValidite;
+  const valid = !!clientId && !!nature.trim() && !!dateValidite;
 
   function handleClientChange(id: string) {
     setClientId(id);
@@ -84,7 +72,6 @@ export function DevisFormDialog({
   function handleSave() {
     if (!valid) return;
     onSave({
-      societeId,
       clientId,
       clientNom,
       nature,
@@ -109,26 +96,6 @@ export function DevisFormDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-1">
-          <div className="space-y-2">
-            <Label>
-              Société <span className="text-red-500">*</span>
-            </Label>
-            <Select value={societeId || undefined} onValueChange={setSocieteId}>
-              <SelectTrigger aria-label="Sélectionner une société">
-                <SelectValue placeholder="Sélectionner une société" />
-              </SelectTrigger>
-              <SelectContent>
-                {societes
-                  .filter((s) => s.actif || s.id === societeId)
-                  .map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.nom}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="space-y-2">
             <Label>
               Client <span className="text-red-500">*</span>

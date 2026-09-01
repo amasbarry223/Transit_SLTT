@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import type { Annexe, AnnexeInput, Societe, SocieteInput } from "@/lib/domain-types";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,12 +94,12 @@ function SocieteCard({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (hasConflict) {
-      toastWarning(toast, { title: "Conflit de modification", description: "Cette société a été modifiée entre-temps. Rechargez les dernières valeurs avant d'enregistrer." });
+      toastWarning(toast, { title: "Conflit de modification", description: "Cette entreprise a été modifiée entre-temps. Rechargez les dernières valeurs avant d'enregistrer." });
       return;
     }
     const trimmedNom = values.nom.trim();
     if (!trimmedNom) {
-      toastWarning(toast, { title: "Le nom de la société est requis" });
+      toastWarning(toast, { title: "Le nom de l'entreprise est requis" });
       return;
     }
     setSaving(true);
@@ -119,9 +120,9 @@ function SocieteCard({
       // on aligne la référence tout de suite pour ne pas déclencher un faux
       // conflit avec notre propre sauvegarde qui vient de réussir.
       setBaseline((b) => ({ ...b, ...input }));
-      toastSuccess(toast, { title: "Société mise à jour", description: trimmedNom });
+      toastSuccess(toast, { title: "Entreprise mise à jour", description: trimmedNom });
     } catch (err: unknown) {
-      toastError(toast, err, { title: "Impossible d'enregistrer la société", fallback: "Impossible d'enregistrer la société." });
+      toastError(toast, err, { title: "Impossible d'enregistrer l'entreprise", fallback: "Impossible d'enregistrer l'entreprise." });
     } finally {
       setSaving(false);
     }
@@ -134,7 +135,7 @@ function SocieteCard({
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
             <span className="flex items-center gap-2">
               <AlertTriangle className="size-4 shrink-0" />
-              Cette société a été modifiée par quelqu&apos;un d&apos;autre depuis l&apos;ouverture de ce formulaire.
+              Cette entreprise a été modifiée par quelqu&apos;un d&apos;autre depuis l&apos;ouverture de ce formulaire.
             </span>
             <Button type="button" size="sm" variant="outline" onClick={reloadFromLatest}>
               Charger les dernières valeurs
@@ -413,23 +414,23 @@ export function SocietesTab() {
   const uploadSocieteLogo = useStore((s) => s.uploadSocieteLogo);
   const annexes = useStore((s) => s.annexes);
   const updateAnnexe = useStore((s) => s.updateAnnexe);
+  const societe = resolveTransitSociete(societes) ?? societes[0];
 
   return (
     <div className="space-y-10">
       <div className="space-y-5">
         <p className="text-sm text-muted-foreground">
-          Identité légale de chaque société — utilisée automatiquement sur les devis, factures,
+          Identité légale de l&apos;entreprise — utilisée automatiquement sur les devis, factures,
           bons de sortie et autres documents imprimés. Modifier ces champs ne nécessite plus
           d&apos;intervention technique.
         </p>
-        {societes.map((societe) => (
+        {societe && (
           <SocieteCard
-            key={societe.id}
             societe={societe}
             onSave={updateSociete}
             onUploadLogo={uploadSocieteLogo}
           />
-        ))}
+        )}
       </div>
 
       <div className="space-y-5 border-t border-border/60 pt-8">
@@ -437,9 +438,8 @@ export function SocietesTab() {
           <h3 className="text-sm font-semibold text-foreground">Annexes</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Coordonnées et identité légale (RCCM/NIF) de chaque implantation physique (Mali,
-            Côte d&apos;Ivoire) — indépendante de la société. C&apos;est l&apos;annexe qui
-            détermine l&apos;en-tête légal imprimé sur une facture, quelle que soit la société
-            du dossier facturé. Le RCCM/NIF peut rester vide en attendant l&apos;immatriculation
+            Côte d&apos;Ivoire). C&apos;est l&apos;annexe qui détermine l&apos;en-tête légal imprimé
+            sur une facture. Le RCCM/NIF peut rester vide en attendant l&apos;immatriculation
             officielle de l&apos;annexe.
           </p>
         </div>

@@ -5,7 +5,6 @@ import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
 import { mapDevisFromDb } from "@/features/devis/services/devis-mapper";
-import { resolveTransitSociete } from "@/lib/societe-brand";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import type { DevisRow } from "@/lib/db-rows";
 import {
@@ -37,15 +36,11 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
   devis: [],
 
   addDevis: async (input) => {
-    if (!input.societeId?.trim()) {
-      throw new Error("La société est obligatoire pour créer un devis.");
-    }
     const client = get().clients.find((c) => c.id === input.clientId);
     const annexeId = client?.annexeId ?? requireActiveAnnexeId(currentUserAnnexeIds(get));
-    const societe = get().societes.find((s) => s.id === input.societeId);
     const annexe = get().annexes.find((a) => a.id === annexeId);
     const { reference: initialReference, useAnnexeNumbering } = computeAnnexeScopedReference(
-      societe,
+      undefined,
       annexe,
       "DEVIS",
       get().devis.map((d) => d.reference),
@@ -62,7 +57,6 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
         .insert({
           reference: ref,
           client_id: input.clientId,
-          societe_id: input.societeId,
           annexe_id: annexeId,
           nature: input.nature,
           droit_douane: input.droitDouane,
@@ -73,7 +67,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
           date_validite: input.dateValidite,
           notes: input.notes,
         })
-        .select("*, clients(nom), societes(nom), annexes(nom)")
+        .select("*, clients(nom), annexes(nom)")
         .single(),
     );
 
@@ -88,20 +82,12 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
   },
 
   updateDevis: async (id, input) => {
-    if (!input.societeId?.trim()) {
-      throw new Error("La société est obligatoire.");
-    }
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
-    const societeNom =
-      get().societes.find((s) => s.id === input.societeId)?.nom ||
-      get().devis.find((d) => d.id === id)?.societeNom ||
-      "—";
 
     const { error } = await supabase
       .from("devis")
       .update({
         client_id: input.clientId,
-        societe_id: input.societeId,
         nature: input.nature,
         droit_douane: input.droitDouane,
         frais_circuit: input.fraisCircuit,
@@ -120,7 +106,6 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
           ? {
               ...devisItem,
               ...input,
-              societeNom,
               total,
             }
           : devisItem
@@ -188,9 +173,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       throw new Error("Seul un devis Accepté peut être converti en dossier.");
     }
 
-    const transit = resolveTransitSociete(get().societes);
-    const societeId = dev.societeId || transit?.id;
-    if (!societeId) {
+    if (!get().societes[0]) {
       throw new Error("Aucune société configurée. Renseignez-la dans Paramètres > Sociétés.");
     }
 
@@ -201,7 +184,6 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       );
 
     const inputDossier: DossierInput = {
-      societeId,
       annexeId,
       clientId: dev.clientId,
       clientNom: dev.clientNom,

@@ -23,7 +23,6 @@ import { getDashboardSections, kpiGridClass, type DashboardSection } from "@/lib
 import { UI } from "@/lib/ui-messages";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
 import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
-import { SocieteFilterSelect } from "@/components/sltt/societe-filter-select";
 import { useCurrentUser } from "@/hooks/use-permission";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +30,6 @@ import { AgentPanel } from "@/components/sltt/dashboard/agent-panel";
 import { MagasinierPanel } from "@/components/sltt/dashboard/magasinier-panel";
 import { ComptablePanel } from "@/components/sltt/dashboard/comptable-panel";
 import { AdminPanel } from "@/components/sltt/dashboard/admin-panel";
-import { GuideDemarrage } from "@/components/sltt/dashboard/guide-demarrage";
 import { DossiersEvolutionChartLazy } from "@/components/sltt/dashboard/dossiers-evolution-chart-lazy";
 import { StockRepartitionChartLazy } from "@/components/sltt/dashboard/stock-repartition-chart-lazy";
 import { DerniersDossiersCard } from "@/components/sltt/dashboard/derniers-dossiers-card";
@@ -43,7 +41,6 @@ const SLTT_GRID = "#D2DBE9";
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
   const openDossier = useNav((s) => s.openDossier);
-  const currentRole = useSession((s) => s.currentRole);
   const currentUserName = useSession((s) => s.currentUserName);
   const theme = useUiPrefs((s) => s.theme);
   const isDark = theme === "dark";
@@ -57,8 +54,7 @@ export function DashboardScreen() {
   const clients = useStore((s) => s.clients);
   const lastSyncedAt = useStore((s) => s.lastSyncedAt);
   const currentUser = useCurrentUser();
-  const selectedSocieteId = useUiPrefs((s) => s.selectedSocieteId);
-
+  const currentRole = currentUser?.role;
   const sections = React.useMemo(
     () => getDashboardSections(currentUser),
     [currentUser],
@@ -70,8 +66,8 @@ export function DashboardScreen() {
   // (useDashboardMetrics, useBeneficeParSociete) à chaque rendu du dashboard.
   const anchorDayKey = getDashboardAnchorDayKey();
   const anchorDate = React.useMemo(() => getDashboardAnchorDate(), [anchorDayKey]);
-  const { ecrituresAvecDate, calculerBeneficeMensuel } = useBeneficeParSociete(anchorDate);
-  const beneficeMoisCourant = calculerBeneficeMensuel(selectedSocieteId).benefice;
+  const { ecrituresAvecDate, consolide } = useBeneficeParSociete(anchorDate);
+  const beneficeMoisCourant = consolide.benefice;
 
   const periodeLabel = anchorDate
     .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
@@ -151,11 +147,8 @@ export function DashboardScreen() {
               {syncLabel}
             </div>
           )}
-          {hasSection("kpi_benefice") && <SocieteFilterSelect className="w-full sm:w-44" />}
         </div>
       </div>
-
-      <GuideDemarrage role={currentRole} go={(v) => go(v)} />
 
       {visibleKpiCount > 0 && (
       <div className={cn("grid w-full gap-3 sm:gap-4", kpiGridClass(visibleKpiCount))}>
@@ -205,7 +198,7 @@ export function DashboardScreen() {
           tone={beneficeMoisCourant >= 0 ? "emerald" : "red"}
           valueNegative={beneficeMoisCourant < 0}
           sublabel="Recettes − Dépenses"
-          tooltip="Recettes = écritures + paiements factures filtrés par société. Dépenses = dépenses de contrats filtrées par société. Voir Comptabilité pour le détail par société."
+          tooltip="Recettes = écritures + paiements factures. Dépenses = dépenses de contrats. Voir Comptabilité pour le détail."
         />
         )}
       </div>

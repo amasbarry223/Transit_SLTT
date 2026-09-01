@@ -99,7 +99,6 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
   const { toast } = useToast();
   const addOperationComptable = useStore((s) => s.addOperationComptable);
   const cloturesCaisse = useStore((s) => s.cloturesCaisse);
-  const isTopDoumani = entite.type === "societe";
   const consumedInitialFileRef = useRef<File | null>(null);
 
   // Une ligne importée dans une période déjà clôturée fausserait le solde déjà
@@ -108,7 +107,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
     const matching = cloturesCaisse.filter(
       (c) =>
         c.entiteType === entite.type &&
-        (entite.type === "annexe" ? c.annexeId === entite.id : c.societeId === entite.id),
+        (entite.type === "annexe" ? c.annexeId === entite.id : false),
     );
     if (matching.length === 0) return null;
     return matching.reduce((max, c) => (c.periodeFin > max ? c.periodeFin : max), matching[0].periodeFin);
@@ -132,7 +131,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
     setParsing(true);
     try {
       const buf = await file.arrayBuffer();
-      const parsed = await parseComptabiliteGeneraleXlsx(buf, { entiteType: entite.type });
+      const parsed = await parseComptabiliteGeneraleXlsx(buf);
       if (parsed.length === 0) {
         toastWarning(toast, { title: "Aucune ligne exploitable", description: "Vérifiez les en-têtes (Dates, Clients, Nature de la dépense, Entrée, Sortie…)." });
         return;
@@ -207,14 +206,11 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
         await addOperationComptable({
           entiteType: entite.type,
           annexeId: entite.type === "annexe" ? entite.id : undefined,
-          societeId: entite.type === "societe" ? entite.id : undefined,
           date: row.date!,
           clientNom: row.clientNom,
           nature: row.nature,
           type: row.type!,
           montant: row.montant,
-          quantite: row.quantite ?? undefined,
-          prixUnitaire: row.prixUnitaire ?? undefined,
           source: "import_excel",
           importRef: fileName,
         });
@@ -267,7 +263,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
           </DialogTitle>
           <DialogDescription>
             {phase === "config"
-              ? "Importez le classeur Excel (Dates, Clients, Nature de la dépense, Entrée, Sortie" + (isTopDoumani ? ", Quantité, Prix unitaire" : "") + ")."
+              ? "Importez le classeur Excel (Dates, Clients, Nature de la dépense, Entrée, Sortie)."
               : "Vérifiez chaque ligne avant import. Les lignes en rouge sont bloquantes (données manquantes) et doivent être corrigées dans le fichier source."}
           </DialogDescription>
         </DialogHeader>

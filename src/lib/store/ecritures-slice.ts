@@ -16,8 +16,6 @@ export function mapEcritureFromDb(row: EcritureRow): Ecriture {
     clientId: row.client_id,
     clientNom: row.clients?.nom || "",
     dossierId: row.dossier_id || undefined,
-    societeId: row.societe_id || undefined,
-    societeNom: row.societes?.nom || undefined,
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
     montantInvesti: Number(row.montant_investi || 0),
@@ -119,14 +117,13 @@ export const createEcrituresSlice: StateCreator<SLTTState, [], [], EcrituresSlic
         date_paiement: input.datePaiement || null,
         client_id: input.clientId,
         dossier_id: input.dossierId || null,
-        societe_id: input.societeId || null,
         annexe_id: input.annexeId,
         montant_investi: input.montantInvesti,
         montant_paye: validatedPaye,
         mode_paiement: input.modePaiement,
         note: input.note || null,
       })
-      .select("*, clients(nom), societes(nom), annexes(nom)")
+      .select("*, clients(nom), annexes(nom)")
       .single();
 
     if (error) throw error;
