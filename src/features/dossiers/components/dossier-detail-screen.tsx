@@ -17,7 +17,7 @@ import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import { usePermission } from "@/hooks/use-permission";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
@@ -130,6 +130,9 @@ export function DossierDetailScreen() {
   const [fournisseurDate, setFournisseurDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
+  const [savingSubDossier, setSavingSubDossier] = useState(false);
+  const [deletingSubDossier, setDeletingSubDossier] = useState(false);
+  const [savingFournisseur, setSavingFournisseur] = useState(false);
 
   const subDossiers = allSubDossiers;
 
@@ -228,30 +231,47 @@ export function DossierDetailScreen() {
     setSubDossierDialogOpen(true);
   }
 
-  function handleSaveSubDossier() {
-    if (!canWrite) return;
+  async function handleSaveSubDossier() {
+    // Sans await/catch/garde saving, un réseau lent ou un refus RLS
+    // laissait un toast de succès s'afficher quand même (fire-and-forget)
+    // et un double-clic pouvait créer deux sous-dossiers dupliqués.
+    if (!canWrite || savingSubDossier) return;
     const trimmedName = subDossierName.trim();
     if (!trimmedName) return;
-    if (subDossierEditId) {
-      updateSubDossier(subDossierEditId, trimmedName, subDossierDescription.trim() || undefined);
-      toastSuccess(toast, { title: "Sous-dossier modifié", description: trimmedName });
-    } else {
-      addSubDossier({
-        dossierId,
-        nom: trimmedName,
-        description: subDossierDescription.trim() || undefined,
-      });
-      toastSuccess(toast, { title: "Sous-dossier créé", description: trimmedName });
+    setSavingSubDossier(true);
+    try {
+      if (subDossierEditId) {
+        await updateSubDossier(subDossierEditId, trimmedName, subDossierDescription.trim() || undefined);
+        toastSuccess(toast, { title: "Sous-dossier modifié", description: trimmedName });
+      } else {
+        await addSubDossier({
+          dossierId,
+          nom: trimmedName,
+          description: subDossierDescription.trim() || undefined,
+        });
+        toastSuccess(toast, { title: "Sous-dossier créé", description: trimmedName });
+      }
+      setSubDossierDialogOpen(false);
+    } catch (error) {
+      toastError(toast, error, { title: "Impossible d'enregistrer le sous-dossier", fallback: "Impossible d'enregistrer le sous-dossier." });
+    } finally {
+      setSavingSubDossier(false);
     }
-    setSubDossierDialogOpen(false);
   }
 
-  function handleDeleteSubDossier() {
-    if (!canWrite || !subDossierDeleteId) return;
+  async function handleDeleteSubDossier() {
+    if (!canWrite || !subDossierDeleteId || deletingSubDossier) return;
     const subDossier = subDossiers.find((item) => item.id === subDossierDeleteId);
-    deleteSubDossier(subDossierDeleteId);
-    setSubDossierDeleteId(null);
-    toastSuccess(toast, { title: "Sous-dossier supprimé", description: subDossier?.nom });
+    setDeletingSubDossier(true);
+    try {
+      await deleteSubDossier(subDossierDeleteId);
+      setSubDossierDeleteId(null);
+      toastSuccess(toast, { title: "Sous-dossier supprimé", description: subDossier?.nom });
+    } catch (error) {
+      toastError(toast, error, { title: "Impossible de supprimer le sous-dossier", fallback: "Impossible de supprimer le sous-dossier." });
+    } finally {
+      setDeletingSubDossier(false);
+    }
   }
 
   function openAddFournisseur() {
@@ -264,8 +284,8 @@ export function DossierDetailScreen() {
     setFournisseurDialogOpen(true);
   }
 
-  function handleSaveDossierFournisseur() {
-    if (!canWrite || !selectedFournisseurId) return;
+  async function handleSaveDossierFournisseur() {
+    if (!canWrite || !selectedFournisseurId || savingFournisseur) return;
     const fournisseur = fournisseurs.find((item) => item.id === selectedFournisseurId);
     if (!fournisseur) return;
     const input: DossierFournisseurInput = {
@@ -275,14 +295,23 @@ export function DossierDetailScreen() {
       fournisseurNom: fournisseur.nom,
       type: fournisseur.type as FournisseurType,
       description: fournisseurDescription.trim(),
-      montantBudgete: fournisseurBudgetAmount ? parseFloat(fournisseurBudgetAmount) : 0,
-      montantReel: fournisseurActualAmount ? parseFloat(fournisseurActualAmount) : 0,
+      // Jamais négatif : une saisie erronée fausserait l'écart et les totaux
+      // agrégés sur l'écran Fournisseurs.
+      montantBudgete: fournisseurBudgetAmount ? Math.max(0, parseFloat(fournisseurBudgetAmount) || 0) : 0,
+      montantReel: fournisseurActualAmount ? Math.max(0, parseFloat(fournisseurActualAmount) || 0) : 0,
       statut: fournisseurStatut,
       date: fournisseurDate,
     };
-    addDossierFournisseur(input);
-    setFournisseurDialogOpen(false);
-    toastSuccess(toast, { title: "Fournisseur lié au dossier", description: fournisseur.nom });
+    setSavingFournisseur(true);
+    try {
+      await addDossierFournisseur(input);
+      setFournisseurDialogOpen(false);
+      toastSuccess(toast, { title: "Fournisseur lié au dossier", description: fournisseur.nom });
+    } catch (error) {
+      toastError(toast, error, { title: "Impossible de lier le fournisseur", fallback: "Impossible de lier le fournisseur." });
+    } finally {
+      setSavingFournisseur(false);
+    }
   }
 
   function handleInvoice() {
@@ -290,6 +319,19 @@ export function DossierDetailScreen() {
   }
 
   function handlePdfExport() {
+    // Sans ce garde-fou explicite, un clic pendant que sociétés/annexes
+    // finissent encore de charger (juste après l'arrivée sur l'écran)
+    // ouvrait quand même l'alerte interne de printHTML (marque manquante)
+    // MAIS déclenchait ensuite un toast "PDF généré" inconditionnel juste
+    // après — message contradictoire qui laisse croire que ça a marché.
+    const brand = resolveSlttBrand(societes);
+    if (!brand) {
+      toastWarning(toast, {
+        title: "Chargement en cours",
+        description: "Les informations de la société ne sont pas encore prêtes — réessayez dans un instant.",
+      });
+      return;
+    }
     const positiveMarginColor = CHART_COLORS.emerald;
     const negativeMarginColor = CHART_COLORS.red;
     const coutLabels = resolveDossierCoutLabels(annexeCode);
@@ -327,7 +369,7 @@ export function DossierDetailScreen() {
       ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
       ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#45556b">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
     `,
-      resolveSlttBrand(societes),
+      brand,
     );
     toastSuccess(toast, { title: "PDF généré", description: "Le document s'est ouvert dans une nouvelle fenêtre.", });
   }
@@ -494,7 +536,7 @@ export function DossierDetailScreen() {
                 className="h-10"
                 autoFocus
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") handleSaveSubDossier();
+                  if (event.key === "Enter") void handleSaveSubDossier();
                 }}
               />
             </div>
@@ -515,7 +557,7 @@ export function DossierDetailScreen() {
             <Button variant="outline" onClick={() => setSubDossierDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSaveSubDossier} disabled={!subDossierName.trim()}>
+            <Button onClick={() => void handleSaveSubDossier()} disabled={!subDossierName.trim() || savingSubDossier}>
               {subDossierEditId ? (
                 <>
                   <Check className="size-4" />
@@ -553,7 +595,8 @@ export function DossierDetailScreen() {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDeleteSubDossier}
+              onClick={() => void handleDeleteSubDossier()}
+              disabled={deletingSubDossier}
             >
               Supprimer
             </AlertDialogAction>
@@ -611,6 +654,7 @@ export function DossierDetailScreen() {
                 </Label>
                 <Input
                   type="number"
+                  min={0}
                   value={fournisseurBudgetAmount}
                   onChange={(event) => setFournisseurBudgetAmount(event.target.value)}
                   placeholder={UI.placeholders.amountFCFA}
@@ -623,6 +667,7 @@ export function DossierDetailScreen() {
                 </Label>
                 <Input
                   type="number"
+                  min={0}
                   value={fournisseurActualAmount}
                   onChange={(event) => setFournisseurActualAmount(event.target.value)}
                   placeholder={UI.placeholders.amountFCFA}
@@ -664,7 +709,7 @@ export function DossierDetailScreen() {
             <Button variant="outline" onClick={() => setFournisseurDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSaveDossierFournisseur} disabled={!selectedFournisseurId}>
+            <Button onClick={() => void handleSaveDossierFournisseur()} disabled={!selectedFournisseurId || savingFournisseur}>
               <Check className="size-4" />
               Ajouter
             </Button>

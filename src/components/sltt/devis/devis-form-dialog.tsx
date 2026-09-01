@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useStore } from "@/lib/store";
 import type { Devis, DevisInput } from "@/lib/store";
 import { formatFCFA, parseAmount } from "@/lib/format";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,8 @@ export function DevisFormDialog({
   onClose,
   onSave,
 }: DevisFormProps) {
+  const societes = useStore((s) => s.societes);
+  const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const [clientId, setClientId] = useState(devis?.clientId ?? "");
   const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
   const [nature, setNature] = useState(devis?.nature ?? "");
@@ -145,7 +149,7 @@ export function DevisFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">Prestation SLTT (FCFA)</Label>
+              <Label className="text-xs">Prestation {societeNom} (FCFA)</Label>
               <Input
                 value={fraisPrestation}
                 onChange={(e) => setFraisPrestation(e.target.value)}

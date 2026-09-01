@@ -90,8 +90,6 @@ export interface OperationComptableRow {
   type: "Entrée" | "Sortie";
   montant: number | string;
   mode_paiement?: "Espèces" | "Virement" | "Mobile Money" | "Chèque" | null;
-  quantite: number | string | null;
-  prix_unitaire: number | string | null;
   source: "saisie" | "import_excel" | "import_ocr";
   import_ref: string | null;
   cree_par: string | null;

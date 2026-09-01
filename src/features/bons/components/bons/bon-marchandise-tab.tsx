@@ -54,7 +54,7 @@ type BonMarchandiseTabProps = {
   onOpenCreateDialog: () => void;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
   onPrint: (reference: string) => void;
-  /** Préremplit la recherche — utilisé pour arriver directement sur un bon précis (ex. depuis le Calendrier). */
+  /** Préremplit la recherche — utilisé pour arriver directement sur un bon précis via un lien. */
   initialSearch?: string;
 };
 

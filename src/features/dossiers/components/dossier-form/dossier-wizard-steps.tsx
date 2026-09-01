@@ -316,6 +316,7 @@ export function DossierTransportSection({
         <FormField label="Poids total (kg)">
           <Input
             type="number"
+            min={0}
             className="h-10"
             value={poidsTotal}
             onChange={(e) => onPoidsTotalChange(e.target.value)}

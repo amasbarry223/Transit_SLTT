@@ -11,7 +11,6 @@ export {
   printBonSortieCaisseModule,
   type BonSortieCaisseModuleData,
 } from "./bon-caisse";
-export { printInvoice, type InvoiceData } from "./invoice";
 export {
   printStockInventory,
   type StockInventoryRow,

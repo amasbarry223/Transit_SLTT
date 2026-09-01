@@ -144,10 +144,20 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       throw error;
     }
     const result = data as { bon: BonSortieRow; mouvement_id: string; stock_quantite: number };
+    // La RPC renvoie le bon complet à jour (result.bon) — on le re-dérive via
+    // mapBonFromDb plutôt que de ne patcher que `statut` sur l'objet client,
+    // pour refléter tout champ que le serveur aurait modifié. Mais ce
+    // composite brut n'a pas les jointures (clients(nom)/annexes(nom)) :
+    // clientNom/annexeNom sont donc repris de l'objet déjà en mémoire (déjà
+    // corrects, chargés avec jointure) plutôt que de mapBonFromDb, qui les
+    // renverrait vides/undefined.
+    const validatedBon = mapBonFromDb(result.bon);
 
     const stockItem = findStockForBon(get().stock, bon);
     set((s) => ({
-      bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" } : b)),
+      bons: s.bons.map((b) =>
+        b.id === id ? { ...validatedBon, clientNom: b.clientNom, annexeNom: b.annexeNom } : b,
+      ),
       stock: stockItem
         ? s.stock.map((item) =>
             item.id === stockItem.id

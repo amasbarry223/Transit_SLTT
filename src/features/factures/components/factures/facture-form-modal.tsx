@@ -141,7 +141,7 @@ export function FactureFormModal({
       toastWarning(toast, { title: "Choisissez une annexe avant de créer la facture" });
       return;
     }
-    if (lignes.every((l) => !l.description)) {
+    if (lignes.every((l) => !l.description.trim())) {
       toastWarning(toast, { title: "Ajoutez au moins une ligne avec une description" });
       return;
     }

@@ -1,11 +1,13 @@
 import type { MetadataRoute } from "next";
 import { BRAND } from "@/lib/brand-colors";
+import { resolveSocieteNomServer } from "@/lib/societe-brand-server";
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const societeNom = await resolveSocieteNomServer();
   return {
     id: "/",
-    name: "Transit · Gestion logistique",
-    short_name: "Transit",
+    name: `${societeNom} · Gestion logistique`,
+    short_name: societeNom,
     description:
       "Plateforme de gestion logistique, transit douanier, comptabilité et entreposage.",
     start_url: "/",

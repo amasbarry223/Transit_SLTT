@@ -200,11 +200,6 @@ export function useRecuGenerator() {
     await printModuleData(moduleData, true);
   }, [moduleData, printModuleData]);
 
-  const handlePrintLastSaved = useCallback(async () => {
-    if (!lastSaved) return;
-    await printModuleData(lastSaved.moduleData);
-  }, [lastSaved, printModuleData]);
-
   return {
     form,
     updateField,
@@ -223,7 +218,6 @@ export function useRecuGenerator() {
     lastSaved,
     handleSave,
     handlePrint,
-    handlePrintLastSaved,
     printModuleData,
     resetForm: () => resetForm(),
   };

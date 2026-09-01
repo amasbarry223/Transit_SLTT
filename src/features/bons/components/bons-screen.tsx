@@ -74,9 +74,9 @@ export function BonsScreen() {
       go("bons");
       return;
     }
-    // Arrivée depuis un lien direct vers un bon précis (ex. Calendrier) : pas de
-    // vue de détail dédiée pour les bons, donc on atterrit sur la liste avec la
-    // recherche préremplie sur sa référence plutôt que la liste générique.
+    // Arrivée depuis un lien direct vers un bon précis : pas de vue de détail
+    // dédiée pour les bons, donc on atterrit sur la liste avec la recherche
+    // préremplie sur sa référence plutôt que la liste générique.
     if (selectedId) {
       const target = allBons.find((b) => b.id === selectedId);
       if (target) {
@@ -128,7 +128,16 @@ export function BonsScreen() {
 
   function handlePrint(reference: string) {
     const bon = bons.find((item) => item.reference === reference);
-    if (!bon) return;
+    if (!bon) {
+      // Bon supprimé (autre onglet/utilisateur) entre le rendu de la ligne
+      // et le clic — sans ce message, imprimer ne faisait rien, ce qui se
+      // lisait comme un bouton cassé.
+      toastWarning(toast, {
+        title: "Bon introuvable",
+        description: "Ce bon n'existe plus — rafraîchissez la liste.",
+      });
+      return;
+    }
     printHTML(`Bon ${reference}`, buildBonHTML(bon), resolveSlttBrand(societes));
   }
 

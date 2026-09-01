@@ -12,6 +12,8 @@ import {
   Loader2,
   FileSpreadsheet,
 } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import { cn } from "@/lib/utils";
 
 export type ExcelSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
@@ -74,6 +76,8 @@ export function ExcelToolbar({
   onApplyToSltt: () => void;
   busy?: boolean;
 }) {
+  const societes = useStore((s) => s.societes);
+  const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const statusLabel =
     saveStatus === "saving"
       ? "Enregistrement…"
@@ -93,7 +97,7 @@ export function ExcelToolbar({
           <span>Excel</span>
         </div>
         <div className="sltt-excel-titlebar__doc" title={`Classeur ${clientNom}`}>
-          Classeur {clientNom} — SLTT
+          Classeur {clientNom} — {societeNom}
         </div>
         <div className="sltt-excel-titlebar__actions">
           <span
@@ -155,10 +159,10 @@ export function ExcelToolbar({
           <QuickBtn
             disabled={busy}
             onClick={onRefreshFromSltt}
-            title="Injecter le journal SLTT dans GrandLivre"
+            title={`Injecter le journal ${societeNom} dans GrandLivre`}
           >
             <RefreshCw className="size-3.5" />
-            <span className="hidden md:inline">Actualiser depuis SLTT</span>
+            <span className="hidden md:inline">Actualiser depuis {societeNom}</span>
             <span className="md:hidden">Actualiser</span>
           </QuickBtn>
           {canWrite && (
@@ -169,7 +173,7 @@ export function ExcelToolbar({
               title="Écrire GrandLivre vers dossiers / écritures / factures"
             >
               <UploadCloud className="size-3.5" />
-              <span className="hidden md:inline">Appliquer vers SLTT</span>
+              <span className="hidden md:inline">Appliquer vers {societeNom}</span>
               <span className="md:hidden">Appliquer</span>
             </QuickBtn>
           )}

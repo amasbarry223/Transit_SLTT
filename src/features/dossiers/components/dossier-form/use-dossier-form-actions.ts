@@ -93,6 +93,18 @@ export function useDossierFormActions({
   }
 
   function handlePdf() {
+    // Même garde-fou que dossier-detail-screen.tsx : sans ça, un clic
+    // pendant le chargement initial des sociétés déclenchait quand même
+    // un toast "PDF généré" juste après l'alerte interne d'échec de
+    // printHTML — message contradictoire qui laisse croire que ça a marché.
+    const brand = resolveSlttBrand(societes);
+    if (!brand) {
+      toastWarning(toast, {
+        title: "Chargement en cours",
+        description: "Les informations de la société ne sont pas encore prêtes — réessayez dans un instant.",
+      });
+      return;
+    }
     const clientNom = clients.find((c) => c.id === form.clientId)?.nom ?? "—";
     const coutLabels = resolveDossierCoutLabels(annexeCode);
     printHTML(
@@ -128,7 +140,7 @@ export function useDossierFormActions({
       </table>
       ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
     `,
-      resolveSlttBrand(societes),
+      brand,
     );
     toastSuccess(toast, { title: "PDF généré", description: "Le document s'est ouvert dans une nouvelle fenêtre.", });
   }

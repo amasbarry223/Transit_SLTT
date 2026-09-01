@@ -8,9 +8,8 @@ import { ThemeEffect } from "@/components/sltt/theme-effect";
 import { AppRoot } from "@/components/sltt/app-root";
 import { AppSerwistProvider } from "@/components/pwa/serwist-provider";
 import { PwaGlobalEffects } from "@/components/pwa/pwa-global-effects";
+import { resolveSocieteNomServer } from "@/lib/societe-brand-server";
 
-const APP_NAME = "Transit";
-const APP_DEFAULT_TITLE = "Transit · Gestion logistique";
 const APP_DESCRIPTION =
   "Plateforme de gestion logistique, transit douanier, comptabilité et entreposage.";
 
@@ -26,47 +25,51 @@ const sora = Sora({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  applicationName: APP_NAME,
-  manifest: "/manifest.webmanifest",
-  title: {
-    default: APP_DEFAULT_TITLE,
-    template: `%s · ${APP_NAME}`,
-  },
-  description: APP_DESCRIPTION,
-  keywords: [
-    "transit",
-    "logistique",
-    "douane",
-    "comptabilité",
-    "entreposage",
-    "UEMOA",
-    "Mali",
-  ],
-  authors: [{ name: APP_NAME }],
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: APP_NAME,
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    icon: [
-      { url: "/logoV.png" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-  openGraph: {
-    type: "website",
-    siteName: APP_NAME,
-    title: APP_DEFAULT_TITLE,
+export async function generateMetadata(): Promise<Metadata> {
+  const appName = await resolveSocieteNomServer();
+  const appDefaultTitle = `${appName} · Gestion logistique`;
+  return {
+    applicationName: appName,
+    manifest: "/manifest.webmanifest",
+    title: {
+      default: appDefaultTitle,
+      template: `%s · ${appName}`,
+    },
     description: APP_DESCRIPTION,
-  },
-};
+    keywords: [
+      "transit",
+      "logistique",
+      "douane",
+      "comptabilité",
+      "entreposage",
+      "UEMOA",
+      "Mali",
+    ],
+    authors: [{ name: appName }],
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: appName,
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    icons: {
+      icon: [
+        { url: "/logoV.png" },
+        { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+    openGraph: {
+      type: "website",
+      siteName: appName,
+      title: appDefaultTitle,
+      description: APP_DESCRIPTION,
+    },
+  };
+}
 
 // Teinte la barre d'adresse/chrome des navigateurs mobiles (Android Chrome,
 // iOS Safari) sur les couleurs de fond de l'app — ajustée dynamiquement au

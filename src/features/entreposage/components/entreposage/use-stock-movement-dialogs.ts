@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useStore, type StockItem } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
 import { UI } from "@/lib/ui-messages";
 import { useCurrentUser } from "@/hooks/use-permission";
 
@@ -76,7 +76,17 @@ export function useStockMovementDialogs(stock: StockItem[]) {
     const qty = parseInt(exitQty, 10);
     if (!qty || qty <= 0) return;
     const item = stock.find((s) => s.id === exitStockId);
-    if (!item || qty > item.quantite) return;
+    if (!item) {
+      // Article supprimé (autre onglet/utilisateur) pendant que ce dialog
+      // était ouvert — sans ce message, le bouton Valider ne faisait
+      // silencieusement rien, ce qui se lisait comme un bouton cassé.
+      toastWarning(toast, {
+        title: "Article introuvable",
+        description: "Cet article de stock n'existe plus — fermez ce dialogue et réessayez.",
+      });
+      return;
+    }
+    if (qty > item.quantite) return;
     setExitSaving(true);
     try {
       await addStockExit(exitStockId, qty, exitResp.trim() || currentUser?.nom || "Système", undefined, exitMotif);

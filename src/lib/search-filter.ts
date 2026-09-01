@@ -1,6 +1,7 @@
-/** Vrai si `query` est vide, ou si l'un des champs de `item` la contient (insensible à la casse). */
+/** Vrai si `query` est vide (ou ne contient que des espaces), ou si l'un des champs de `item` la contient (insensible à la casse). */
 export function matchesQuery<T>(item: T, fields: (keyof T)[], query: string): boolean {
-  if (!query) return true;
-  const q = query.toLowerCase();
+  const trimmed = query.trim();
+  if (!trimmed) return true;
+  const q = trimmed.toLowerCase();
   return fields.some((f) => String(item[f] ?? "").toLowerCase().includes(q));
 }

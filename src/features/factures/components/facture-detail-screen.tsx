@@ -142,7 +142,19 @@ export function FactureDetailScreen() {
   }
 
   function handlePrint() {
-    if (!facture || !factureBrand) return;
+    if (!facture) return;
+    // Sans ce garde-fou explicite, un clic pendant que sociétés/annexes
+    // finissent encore de charger (juste après l'arrivée sur l'écran) ne
+    // faisait absolument rien — ni PDF, ni message — l'utilisateur croyait
+    // le bouton cassé. cf. resolveSlttBrand : renvoie null tant que le
+    // store société n'a pas fini de charger.
+    if (!factureBrand) {
+      toastWarning(toast, {
+        title: "Chargement en cours",
+        description: "Les informations de la société ne sont pas encore prêtes — réessayez dans un instant.",
+      });
+      return;
+    }
     const memesAnnexe = factures
       .filter((f) => f.annexeId === facture.annexeId)
       .sort((a, b) => a.creeLe.localeCompare(b.creeLe));

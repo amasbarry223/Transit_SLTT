@@ -216,8 +216,16 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
   updateDossier: async (id, input) => {
     const existing = get().dossiers.find((dossier) => dossier.id === id);
-    // Le statut ne se change que via transitionDossier (flux guidé).
-    const statut = existing?.statut ?? input.statut;
+    // Le statut ne se change que via transitionDossier (flux guidé) — jamais
+    // via input.statut, qui n'est pas passé par assertDossierTransition
+    // (pas de vérif reste-à-payer avant "Soldé", etc.). Sans dossier existant
+    // en cache local, on ne peut pas savoir quel statut est réellement
+    // persisté : on refuse plutôt que de faire confiance à une valeur
+    // non validée.
+    if (!existing) {
+      throw new Error("Dossier introuvable localement — rafraîchissez la page avant de modifier ce dossier.");
+    }
+    const statut = existing.statut;
     const annexeNom =
       get().annexes.find((item) => item.id === input.annexeId)?.nom ||
       existing?.annexeNom;
@@ -259,15 +267,13 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       };
     });
 
-    if (existing) {
-      await get().addAuditLog(
-        AUDIT_MODULE.Dossiers,
-        AUDIT_ACTION.Modification,
-        `Dossier ${existing.reference} modifié`,
-        existing.clientId,
-        { sourceType: "dossier", sourceId: id },
-      );
-    }
+    await get().addAuditLog(
+      AUDIT_MODULE.Dossiers,
+      AUDIT_ACTION.Modification,
+      `Dossier ${existing.reference} modifié`,
+      existing.clientId,
+      { sourceType: "dossier", sourceId: id },
+    );
   },
 
   removeDossier: async (id) => {

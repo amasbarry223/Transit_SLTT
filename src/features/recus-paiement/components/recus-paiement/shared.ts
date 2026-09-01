@@ -1,12 +1,6 @@
 import type { Annexe, Societe } from "@/lib/domain-types";
 import type { RecuPaiementModuleData } from "@/lib/export";
-import {
-  buildRecuPaiementHTML,
-  printRecuPaiementModule,
-  type RecuPaiementModuleData as ModuleData,
-} from "@/lib/export";
 import { mergeAnnexeIntoBrand, resolveSlttBrand, type SocieteBrand } from "@/lib/societe-brand";
-import type { RecuPaiement } from "@/lib/domain-types";
 
 export interface RecuFormModuleInput {
   nom: string;
@@ -43,48 +37,3 @@ export function formToModuleData(input: RecuFormModuleInput): RecuPaiementModule
   };
 }
 
-function toRecuModuleData(recu: RecuPaiement): ModuleData {
-  return {
-    date: recu.createdAt,
-    nom: recu.nom,
-    prenom: recu.prenom,
-    somme: recu.somme,
-    motif: recu.motif,
-    montantPaye: recu.montantPaye,
-    reste: recu.reste,
-  };
-}
-
-function resolveRecuBrand(recu: RecuPaiement, societes: Societe[], annexes: Annexe[]): SocieteBrand | null {
-  const base = resolveSlttBrand(societes);
-  if (!base) return null;
-  const annexe = annexes.find((a) => a.id === recu.annexeId);
-  return annexe ? mergeAnnexeIntoBrand(base, annexe) : base;
-}
-
-/** Données d'impression / aperçu — résout l'identité société transit + coordonnées annexe. */
-export function buildRecuPrintData(
-  recu: RecuPaiement,
-  societes: Societe[],
-  annexes: Annexe[],
-): { html: string; brand: SocieteBrand } | null {
-  const brand = resolveRecuBrand(recu, societes, annexes);
-  if (!brand) return null;
-  return {
-    brand,
-    html: buildRecuPaiementHTML(toRecuModuleData(recu), brand),
-  };
-}
-
-/** Imprime un reçu enregistré — ouvre la fenêtre d'impression directement. */
-export function printRecu(recu: RecuPaiement, societes: Societe[], annexes: Annexe[]): boolean {
-  const brand = resolveRecuBrand(recu, societes, annexes);
-  if (!brand) return false;
-  return printRecuPaiementModule(toRecuModuleData(recu), brand);
-}
-
-/** Imprime les données du générateur (formulaire en cours). */
-export function printRecuFromForm(data: RecuPaiementModuleData, brand: SocieteBrand | null): boolean {
-  if (!brand) return false;
-  return printRecuPaiementModule(data, brand);
-}

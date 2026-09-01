@@ -241,7 +241,7 @@ export function useDossierFormState({
       modeTransport: (modeTransport as "Maritime" | "Aérien" | "Routier" | "Ferroviaire") || undefined,
       noConteneur: noConteneur || undefined,
       portEntree: portEntree || undefined,
-      poidsTotal: poidsTotal ? parseFloat(poidsTotal) : undefined,
+      poidsTotal: poidsTotal ? Math.max(0, parseFloat(poidsTotal) || 0) : undefined,
       droitDouane: customsDutyAmount,
       fraisCircuit: circuitFeesAmount,
       fraisPrestation: serviceFeesAmount,

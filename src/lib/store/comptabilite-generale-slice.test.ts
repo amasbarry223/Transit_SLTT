@@ -19,8 +19,6 @@ describe("mapOperationComptableFromDb", () => {
       nature: "ACHAT DE MATERIEL INFORMATIQUE",
       type: "Sortie",
       montant: "555000",
-      quantite: null,
-      prix_unitaire: null,
       source: "saisie",
       import_ref: null,
       cree_par: "Admin",

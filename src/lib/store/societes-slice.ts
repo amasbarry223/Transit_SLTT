@@ -33,7 +33,7 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
   societes: [],
 
   updateSociete: async (id, input) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("societes")
       .update({
         nom: input.nom,
@@ -49,11 +49,18 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
         // doit devenir null.
         afficher_nom_avec_logo: input.afficherNomAvecLogo ?? true,
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select()
+      .single();
     if (error) throw error;
 
+    // Re-dérive depuis la réponse serveur (au lieu de fusionner l'input
+    // client tel quel) — même pattern que les autres slices : reflète tout
+    // défaut/normalisation appliqué côté base plutôt que de supposer que ce
+    // qu'on a envoyé est exactement ce qui a été persisté.
+    const updated = mapSocieteFromDb(data as SocieteRow);
     set((s) => ({
-      societes: s.societes.map((soc) => (soc.id === id ? { ...soc, ...input } : soc)),
+      societes: s.societes.map((soc) => (soc.id === id ? updated : soc)),
     }));
     await get().addAuditLog(AUDIT_MODULE.Societes, AUDIT_ACTION.Modification, `Société ${input.nom} mise à jour`);
   },

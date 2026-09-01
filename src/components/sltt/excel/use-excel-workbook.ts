@@ -27,6 +27,7 @@ import {
 } from "@/lib/excel/workbook-io";
 import type { ExcelSaveStatus } from "./excel-toolbar";
 import { excelTheme } from "@/lib/excel/excel-theme";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 
 const SNAPSHOT_MAX_BYTES = 800_000;
 const AUTOSAVE_MS = 4000;
@@ -56,6 +57,8 @@ export function useExcelWorkbook({
   const canFactures = usePermission("factures:write");
   const canWrite = canCompta;
 
+  const societes = useStore((s) => s.societes);
+  const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const getExcelWorkbookForClient = useStore((s) => s.getExcelWorkbookForClient);
   const saveExcelWorkbook = useStore((s) => s.saveExcelWorkbook);
   const getSignedExcelWorkbookUrl = useStore((s) => s.getSignedExcelWorkbookUrl);
@@ -227,7 +230,7 @@ export function useExcelWorkbook({
         if (isTruncated) {
           if (!existing?.storagePath) {
             throw new Error(
-              "Classeur tronqué sans fichier de secours Storage. Réimportez un .xlsx ou Actualisez depuis SLTT.",
+              `Classeur tronqué sans fichier de secours Storage. Réimportez un .xlsx ou Actualisez depuis ${societeNom}.`,
             );
           }
           const url = await getSignedExcelWorkbookUrl(existing.storagePath);
@@ -387,7 +390,7 @@ export function useExcelWorkbook({
       scheduleAutosave();
       toastSuccess(toast, {
         title: "GrandLivre actualisé",
-        description: `${Math.min(journalEntries.length, Math.max(0, capacity))} ligne(s) injectée(s) depuis SLTT.`,
+        description: `${Math.min(journalEntries.length, Math.max(0, capacity))} ligne(s) injectée(s) depuis ${societeNom}.`,
       });
     } catch (e) {
       toastError(toast, e, { title: "Actualisation impossible", fallback: "Erreur" });
@@ -401,9 +404,9 @@ export function useExcelWorkbook({
     if (!api) return;
     if (dirtyRef.current || saveStatus === "dirty") {
       setPendingConfirm({
-        title: "Actualiser depuis SLTT ?",
+        title: `Actualiser depuis ${societeNom} ?`,
         description:
-          "Des modifications non enregistrées seront remplacées par le journal SLTT. Cette action est irréversible pour les changements locaux non sauvegardés.",
+          `Des modifications non enregistrées seront remplacées par le journal ${societeNom}. Cette action est irréversible pour les changements locaux non sauvegardés.`,
         onConfirm: executeRefreshFromSltt,
       });
       return;
@@ -529,7 +532,7 @@ export function useExcelWorkbook({
         });
       } else {
         toastSuccess(toast, {
-          title: "Appliqué vers SLTT",
+          title: `Appliqué vers ${societeNom}`,
           description: parts.join(" · ") + failDetail,
         });
       }
@@ -643,7 +646,7 @@ export function useExcelWorkbook({
           }
           planned.push({ kind: "create-paiement", row });
         } else if (type === "Dossier" || type === "Facture") {
-          preFailed.push(`${row.reference || row.libelle} (aucune correspondance SLTT)`);
+          preFailed.push(`${row.reference || row.libelle} (aucune correspondance ${societeNom})`);
         }
       }
 
@@ -660,7 +663,7 @@ export function useExcelWorkbook({
         const preview = preFailed.slice(0, 8).join(" · ");
         setPendingConfirm({
           title: "Appliquer avec des lignes ignorées ?",
-          description: `${preFailed.length} ligne(s) seront ignorées (${preview}${preFailed.length > 8 ? " · …" : ""}). Appliquer les ${mutations.length} autre(s) modification(s) vers SLTT ?`,
+          description: `${preFailed.length} ligne(s) seront ignorées (${preview}${preFailed.length > 8 ? " · …" : ""}). Appliquer les ${mutations.length} autre(s) modification(s) vers ${societeNom} ?`,
           onConfirm: () => executeApplyPhase(planned, preFailed, skipped),
         });
         setBusy(false);
@@ -668,8 +671,8 @@ export function useExcelWorkbook({
       }
       if (mutations.length > 0) {
         setPendingConfirm({
-          title: "Appliquer vers SLTT ?",
-          description: `Appliquer ${mutations.length} modification(s) vers SLTT ? (${skipped} ligne(s) inchangée(s))`,
+          title: `Appliquer vers ${societeNom} ?`,
+          description: `Appliquer ${mutations.length} modification(s) vers ${societeNom} ? (${skipped} ligne(s) inchangée(s))`,
           onConfirm: () => executeApplyPhase(planned, preFailed, skipped),
         });
         setBusy(false);
@@ -724,8 +727,8 @@ export function useExcelWorkbook({
       );
       scheduleAutosave();
       toastSuccess(toast, { title: "Import terminé", description: parsed.length > rows.length
-            ? `${rows.length}/${parsed.length} ligne(s) importée(s) (capacité feuille). Appliquer pour pousser vers SLTT.`
-            : `${rows.length} ligne(s) chargée(s) dans GrandLivre. Utilisez Appliquer pour pousser vers SLTT.` });
+            ? `${rows.length}/${parsed.length} ligne(s) importée(s) (capacité feuille). Appliquer pour pousser vers ${societeNom}.`
+            : `${rows.length} ligne(s) chargée(s) dans GrandLivre. Utilisez Appliquer pour pousser vers ${societeNom}.` });
     } catch (e) {
       toastError(toast, e, { title: "Import impossible", fallback: "Erreur" });
     } finally {

@@ -2,8 +2,10 @@
 
 import { Pencil, Save, X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { useStore } from "@/lib/store";
 import type { Devis } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,6 +41,8 @@ export function DevisEditForm({
   handleSave: () => void | Promise<void>;
   saving?: boolean;
 }) {
+  const societes = useStore((s) => s.societes);
+  const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   return (
         <Card className="border-primary/20 shadow-md overflow-hidden">
           <div className="border-b border-primary/20 bg-primary/5 px-5 py-4">
@@ -84,7 +88,7 @@ export function DevisEditForm({
                 {[
                   { label: "Droits de douane (FCFA)", val: fDroitDouane, set: setFDroitDouane },
                   { label: "Frais de circuit (FCFA)",  val: fFraisCircuit, set: setFFraisCircuit },
-                  { label: "Prestation SLTT (FCFA)",   val: fFraisPrestation, set: setFFraisPrestation },
+                  { label: `Prestation ${societeNom} (FCFA)`, val: fFraisPrestation, set: setFFraisPrestation },
                 ].map((f) => (
                   <div key={f.label} className="space-y-2">
                     <Label className="text-xs text-muted-foreground">{f.label}</Label>
