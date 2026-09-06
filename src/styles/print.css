@@ -1,0 +1,256 @@
+/* =================================================================== */
+/* STYLES D'IMPRESSION UNIVERSELS — TRANSIT SLTT                      */
+/* Optimisation du rendu et de la vitesse d'aperçu du navigateur      */
+/* =================================================================== */
+
+@media print {
+  /* ═══ RESET GÉNÉRAL & COULEURS ═════════════════════════════════════ */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* ═══ CONFIGURATION DE LA PAGE A4 ═════════════════════════════════ */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 20mm 12mm;
+  }
+  @page :first {
+    margin-top: 10mm;
+  }
+
+  /* ═══ MISE EN PAGE PRINT DU DOCUMENT ══════════════════════════════ */
+  html,
+  body {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 10.5pt !important;
+    line-height: 1.4 !important;
+    font-family: Arial, Helvetica, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ═══ MASQUER L'INTERFACE DE L'APPLICATION ═════════════════════════ */
+  aside,
+  nav,
+  .navbar,
+  .sidebar,
+  .sidebar-nav,
+  header:not(.print-header),
+  footer:not(.print-footer),
+  .breadcrumb,
+  .tabs-nav,
+  .action-bar,
+  .toolbar,
+  .no-print,
+  [data-no-print],
+  button:not([data-print-keep]),
+  .btn:not([data-print-keep]),
+  .toast-container,
+  [data-radix-toast-announce-exclude],
+  ol[tabindex="-1"],
+  .modal-backdrop,
+  [role="dialog"]:not([data-print-keep]),
+  [data-state="open"]:not([data-print-keep]),
+  .dropdown-menu,
+  [data-radix-popper-content-wrapper],
+  .tooltip,
+  .popover,
+  .notification-bell,
+  .user-avatar-menu,
+  .search-bar,
+  .filters-panel,
+  .pagination,
+  .offline-indicator,
+  [class*="OfflineIndicator"],
+  [class*="BottomNav"],
+  [class*="bottom-nav"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* ═══ EXPANSION DU CONTENEUR PRINCIPAL ═════════════════════════════ */
+  main,
+  .main-content,
+  .page-content,
+  .content-wrapper,
+  [class*="main"],
+  [class*="content"],
+  [class*="wrapper"],
+  .flex-1 {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  /* ═══ SUPPRESSION CRITIQUE DES HAUTEURS FIXES & OVERFLOW HIDDEN ═══ */
+  /* ⚠️ Cause #1 de "Chargement de l'aperçu..." infini ou page blanche */
+  [class*="h-screen"],
+  [class*="min-h-screen"],
+  [class*="h-dvh"],
+  [class*="max-h-"],
+  [class*="overflow-hidden"],
+  [class*="overflow-auto"],
+  [class*="overflow-scroll"],
+  [class*="sltt-scroll"] {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Suppression des éléments sticky et fixed cassant la pagination */
+  .sticky,
+  .fixed:not(.print-footer) {
+    position: static !important;
+  }
+
+  /* ═══ EN-TÊTE D'IMPRESSION ═════════════════════════════════════════ */
+  .print-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 18px !important;
+    border-bottom: 2px solid #1e293b !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ═══ TABLEAUX STYLISÉS POUR L'IMPRESSION ══════════════════════════ */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+    page-break-inside: auto !important;
+    margin-bottom: 16px !important;
+  }
+  thead {
+    display: table-header-group !important;
+  }
+  tfoot {
+    display: table-footer-group !important;
+  }
+  tr {
+    page-break-inside: avoid !important;
+  }
+  th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    font-size: 8.5pt !important;
+    padding: 6px 8px !important;
+    border: 1px solid #cbd5e1 !important;
+    text-align: left !important;
+    white-space: normal !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+  }
+  td {
+    font-size: 8.5pt !important;
+    padding: 5px 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    word-break: break-word !important;
+  }
+  tr:nth-child(even) td {
+    background-color: #f8fafc !important;
+  }
+
+  /* ═══ IMAGES OPTIMISÉES POUR LE PRINT ══════════════════════════════ */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+  }
+  img[aria-hidden="true"],
+  .decorative-image,
+  .bg-image,
+  .avatar-placeholder {
+    display: none !important;
+  }
+
+  /* ═══ TYPOGRAPHIE & HIÉRARCHIE VISUELLE ════════════════════════════ */
+  h1 {
+    font-size: 16pt !important;
+    font-weight: 800 !important;
+    color: #0b2a78 !important;
+    page-break-after: avoid !important;
+    margin-bottom: 8px !important;
+  }
+  h2 {
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    color: #0b2a78 !important;
+    page-break-after: avoid !important;
+    margin-top: 14px !important;
+    margin-bottom: 6px !important;
+  }
+  h3 {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    page-break-after: avoid !important;
+  }
+  p,
+  li {
+    font-size: 9.5pt !important;
+    line-height: 1.45 !important;
+  }
+
+  /* ═══ SAUTS DE PAGE CONTRÔLÉS ══════════════════════════════════════ */
+  .page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+  .no-page-break,
+  .card,
+  .panel,
+  .kpi,
+  .summary,
+  figure {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* ═══ PIED DE PAGE AVEC NUMÉROTATION ══════════════════════════════ */
+  .print-footer {
+    display: block !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    font-size: 8pt !important;
+    color: #64748b !important;
+    border-top: 1px solid #cbd5e1 !important;
+    padding-top: 4px !important;
+    background: transparent !important;
+  }
+}

@@ -267,11 +267,10 @@ export function printStockInventory(groups: StockInventoryGroup[]): void {
 <meta charset="utf-8">
 <title>Inventaire ${htmlEscape(docRefBase)}${htmlEscape(titleSuffix)}</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,500&family=JetBrains+Mono:wght@500;600&display=swap');
 ${OFFICIAL_LETTERHEAD_CSS}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: #e8edf5;
   color: #1f2937;
   -webkit-print-color-adjust: exact;
