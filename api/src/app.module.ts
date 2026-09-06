@@ -19,6 +19,7 @@ import { StatsModule } from './modules/stats/stats.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { UsersModule } from './modules/users/users.module';
 import { BackupModule } from './modules/backup/backup.module';
+import { ContratsModule } from './modules/contrats/contrats.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { BackupModule } from './modules/backup/backup.module';
     AuditLogsModule,
     UsersModule,
     BackupModule,
+    ContratsModule,
   ],
 })
 export class AppModule {}

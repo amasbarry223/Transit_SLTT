@@ -169,6 +169,7 @@ model Annexe {
   factures    Facture[]
   caisses     Caisse[]
   depenses    Depense[]
+  contrats    Contrat[]
 
   @@map("annexes")
 }
@@ -210,6 +211,7 @@ model Client {
   factures  Facture[]
   devis     Devis[]
   cotations Cotation[]
+  contrats  Contrat[]
 
   @@map("clients")
 }
@@ -592,3 +594,30 @@ model AuditLog {
   @@index([entite, entiteId])
   @@map("audit_logs")
 }
+
+// -----------------------------------------------------------------------------
+// Contrats
+// -----------------------------------------------------------------------------
+model Contrat {
+  id        String    @id @default(uuid())
+  reference String    @unique
+  annexeId  String    @map("annexe_id")
+  clientId  String    @map("client_id")
+  objet     String
+  dateDebut DateTime  @map("date_debut")
+  dateFin   DateTime? @map("date_fin")
+  montant   Float     @default(0)
+  statut    String    @default("Actif")
+  notes     String?
+  creePar   String?   @map("cree_par")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  annexe Annexe @relation(fields: [annexeId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@index([annexeId])
+  @@index([clientId])
+  @@map("contrats")
+}
+

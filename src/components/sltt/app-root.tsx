@@ -27,31 +27,21 @@ const ACTIVITY_THROTTLE = 15 * 1000;
 /** Garde-fou : ne jamais bloquer l'UI sur "Vérification de la session…". */
 const AUTH_READY_TIMEOUT_MS = 4_000;
 const PROFILE_QUERY_TIMEOUT_MS = 3_000;
-const SW_FOREIGN_CLEARED_KEY = "sltt-sw-foreign-cleared";
-const SLTT_SW_PATH = "/sw.js";
 
-/** Désenregistre uniquement les SW étrangers (autres projets localhost), pas la PWA Transit. */
+/** Purge les Service Workers et caches pour forcer le chargement de la version propre. */
 async function cleanupForeignServiceWorkers(): Promise<"reload" | "ok"> {
-  if (!("serviceWorker" in navigator)) return "ok";
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return "ok";
   try {
     const regs = await navigator.serviceWorker.getRegistrations();
-    const foreign = regs.filter((reg) => {
-      const scriptUrl =
-        reg.active?.scriptURL ?? reg.installing?.scriptURL ?? reg.waiting?.scriptURL;
-      if (!scriptUrl) return false;
-      return new URL(scriptUrl).pathname !== SLTT_SW_PATH;
-    });
-    if (foreign.length === 0) return "ok";
-
-    await Promise.all(foreign.map((reg) => reg.unregister()));
-
-    const controller = navigator.serviceWorker.controller;
-    if (
-      controller &&
-      new URL(controller.scriptURL).pathname !== SLTT_SW_PATH &&
-      !sessionStorage.getItem(SW_FOREIGN_CLEARED_KEY)
-    ) {
-      sessionStorage.setItem(SW_FOREIGN_CLEARED_KEY, "1");
+    if (regs.length > 0) {
+      await Promise.all(regs.map((reg) => reg.unregister()));
+    }
+    if ("caches" in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+    }
+    if (navigator.serviceWorker.controller && !sessionStorage.getItem("sltt-cache-cleaned-v1")) {
+      sessionStorage.setItem("sltt-cache-cleaned-v1", "1");
       window.location.reload();
       return "reload";
     }

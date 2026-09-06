@@ -2,6 +2,8 @@ import type { StateCreator } from "zustand";
 import { logWarn } from "@/shared/logger";
 import type { SLTTState } from "@/lib/store";
 import { api } from "@/lib/api-client";
+import { syncContratStats } from "@/lib/contrat-stats";
+import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 
 export interface DataFetchSlice {
   dataLoading: boolean;
@@ -22,13 +24,14 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
     set({ dataLoading: true, loadError: null, partialLoadWarning: null });
 
     try {
-      const [dossiersRes, clients, annexes, facturesRes, devisRes, fournisseurs] = await Promise.all([
+      const [dossiersRes, clients, annexes, facturesRes, devisRes, fournisseurs, contratsRes] = await Promise.all([
         api.dossiers.getAll().catch(() => ({ data: [], meta: {} })),
         api.clients.getAll().catch(() => []),
         api.annexes.getAll().catch(() => []),
         api.factures.getAll().catch(() => ({ data: [], meta: {} })),
         api.devis.getAll().catch(() => []),
         api.fournisseurs.getAll().catch(() => []),
+        api.contrats.getAll().catch(() => []),
       ]);
 
       const currentUser = api.getCurrentUser();
@@ -104,17 +107,52 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         creeLe: f.createdAt ? new Date(f.createdAt).toISOString() : new Date().toISOString(),
       }));
 
-      set((state) => ({
-        ...state,
-        dossiers: mappedDossiers as any,
-        clients: (clients || []) as any,
-        annexes: (annexes || []) as any,
-        factures: mappedFactures as any,
-        fournisseurs: (fournisseurs || []) as any,
-        users: (users.length > 0 ? users : state.users) as any,
-        dataLoading: false,
-        lastSyncedAt: Date.now(),
+      const rawContrats = Array.isArray((contratsRes as any)?.data)
+        ? (contratsRes as any).data
+        : Array.isArray(contratsRes)
+        ? contratsRes
+        : [];
+      const mappedContrats = rawContrats.map((c: any) => ({
+        id: c.id,
+        reference: c.reference,
+        annexeId: c.annexeId || "",
+        annexeNom: c.annexe?.nom || (c.annexeId ? (annexes as any[])?.find((a) => a.id === c.annexeId)?.nom : undefined),
+        clientId: c.clientId || "",
+        clientNom: c.client?.nom || (c.clientId ? (clients as any[])?.find((cl) => cl.id === c.clientId)?.nom : "—"),
+        objet: c.objet || "",
+        dateDebut: c.dateDebut ? new Date(c.dateDebut).toISOString().split("T")[0] : "",
+        dateFin: c.dateFin ? new Date(c.dateFin).toISOString().split("T")[0] : undefined,
+        montant: Number(c.montant || 0),
+        statut: c.statut || "Actif",
+        notes: c.notes || undefined,
+        nbPrestations: 0,
+        nbPrestationsRealisees: 0,
+        totalDepenses: 0,
+        creePar: c.creePar || undefined,
+        creeLe: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
       }));
+
+      set((state) => {
+        const nextContrats = syncContratStats(state.depenses, state.contratPrestations, mappedContrats);
+        const intermediateState = {
+          ...state,
+          dossiers: mappedDossiers as any,
+          clients: (clients || []) as any,
+          annexes: (annexes || []) as any,
+          factures: mappedFactures as any,
+          fournisseurs: (fournisseurs || []) as any,
+          contrats: nextContrats as any,
+          users: (users.length > 0 ? users : state.users) as any,
+        };
+        const updatedSequences = syncSequencesFromData(intermediateState as any);
+
+        return {
+          ...intermediateState,
+          ...updatedSequences,
+          dataLoading: false,
+          lastSyncedAt: Date.now(),
+        };
+      });
     } catch (error) {
       logWarn("[SLTT] Chargement données NestJS", error);
       set({ dataLoading: false, lastSyncedAt: Date.now() });

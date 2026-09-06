@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { syncContratStats } from "@/lib/contrat-stats";
+import { api } from "@/lib/api-client";
 import type {
   Contrat,
   ContratInput,
@@ -95,9 +96,27 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       input.annexeId ??
       client?.annexeId ??
       requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.contrats.create({
+        reference,
+        annexeId,
+        clientId: input.clientId,
+        objet: input.objet,
+        dateDebut: input.dateDebut,
+        dateFin: input.dateFin,
+        montant: input.montant,
+        statut: input.statut,
+        notes: input.notes,
+        creePar,
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.contrats.create (mode local) :", e);
+    }
 
     const newContrat: Contrat = {
-      id: crypto.randomUUID(),
+      id: dbId,
       reference,
       annexeId,
       annexeNom: annexeId ? get().annexes.find((a) => a.id === annexeId)?.nom : undefined,
@@ -133,6 +152,12 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       }
     }
 
+    try {
+      await api.contrats.update(id, input);
+    } catch (e) {
+      console.warn("api.contrats.update (mode local) :", e);
+    }
+
     const existing = get().contrats.find((c) => c.id === id);
     set((s) => ({
       contrats: s.contrats.map((contrat) =>
@@ -166,6 +191,12 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       throw new Error(`Transition contrat invalide : ${existing.statut} → ${statut}`);
     }
 
+    try {
+      await api.contrats.update(id, { statut });
+    } catch (e) {
+      console.warn("api.contrats.updateStatut (mode local) :", e);
+    }
+
     set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
     await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Contrat ${existing.reference} → ${statut}`);
   },
@@ -178,8 +209,14 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const prestationsLiees = get().contratPrestations.filter((p) => p.contratId === id).length;
     if (depensesLiees > 0 || prestationsLiees > 0) {
       throw new Error(
-        `Impossible de supprimer le contrat ${contrat.reference} : il porte ${depensesLiees} dépense(s) et ${prestationsLiees} prestation(s). Retirez-les d'abord.`,
+        `Impossible de supprimer ce contrat : il comporte ${depensesLiees} dépense(s) et ${prestationsLiees} prestation(s) liée(s).`,
       );
+    }
+
+    try {
+      await api.contrats.delete(id);
+    } catch (e) {
+      console.warn("api.contrats.delete (mode local) :", e);
     }
 
     set((s) => ({

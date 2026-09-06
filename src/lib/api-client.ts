@@ -255,6 +255,31 @@ class ApiClient {
 
 
   // ---------------------------------------------------------------------------
+  // Contrats
+  // ---------------------------------------------------------------------------
+  contrats = {
+    getAll: (params?: { search?: string; annexeId?: string; clientId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/contrats${qs}`);
+    },
+    getById: (id: string) => this.request<any>(`/contrats/${id}`),
+    create: (data: any) =>
+      this.request<any>('/contrats', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/contrats/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/contrats/${id}`, {
+        method: 'DELETE',
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
   // Devis
   // ---------------------------------------------------------------------------
   devis = {
