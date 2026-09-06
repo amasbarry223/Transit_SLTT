@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -38,5 +39,11 @@ export class FournisseursController {
   @RequirePermission('fournisseurs.modifier')
   async update(@Param('id') id: string, @Body() body: any) {
     return this.fournisseursService.update(id, body);
+  }
+
+  @Delete(':id')
+  @RequirePermission('fournisseurs.supprimer')
+  async remove(@Param('id') id: string) {
+    return this.fournisseursService.remove(id);
   }
 }

@@ -35,13 +35,45 @@ export class FournisseursService {
   }
 
   async create(data: any) {
-    const existing = await this.prisma.fournisseur.findUnique({ where: { code: data.code } });
-    if (existing) throw new ConflictException(`Le fournisseur avec le code ${data.code} existe déjà`);
-    return this.prisma.fournisseur.create({ data });
+    const code = data.code || `FRN-${Date.now().toString(36).toUpperCase()}`;
+    const existing = await this.prisma.fournisseur.findUnique({ where: { code } });
+    if (existing) throw new ConflictException(`Le fournisseur avec le code ${code} existe déjà`);
+    return this.prisma.fournisseur.create({
+      data: {
+        code,
+        nom: data.nom,
+        type: data.type || "Autre",
+        contact: data.contact || null,
+        telephone: data.telephone || null,
+        email: data.email || null,
+        adresse: data.adresse || null,
+        rccm: data.rccm || null,
+        nif: data.nif || null,
+        actif: data.actif ?? true,
+      },
+    });
   }
 
   async update(id: string, data: any) {
     await this.findOne(id);
-    return this.prisma.fournisseur.update({ where: { id }, data });
+    return this.prisma.fournisseur.update({
+      where: { id },
+      data: {
+        nom: data.nom,
+        type: data.type,
+        contact: data.contact,
+        telephone: data.telephone,
+        email: data.email,
+        adresse: data.adresse,
+        rccm: data.rccm,
+        nif: data.nif,
+        actif: data.actif,
+      },
+    });
+  }
+
+  async remove(id: string) {
+    await this.findOne(id);
+    return this.prisma.fournisseur.delete({ where: { id } });
   }
 }

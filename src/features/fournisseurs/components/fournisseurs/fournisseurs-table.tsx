@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { FournisseurType } from "@/lib/store";
-import { TYPE_META } from "./fournisseur-type-meta";
+import { TYPE_META, getFournisseurTypeMeta } from "./fournisseur-type-meta";
 
 interface PaginationProps {
   startIdx: number;
@@ -23,8 +23,8 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-function TypeBadge({ type }: { type: FournisseurType }) {
-  const m = TYPE_META[type];
+function TypeBadge({ type }: { type?: FournisseurType | string }) {
+  const m = getFournisseurTypeMeta(type);
   const Icon = m.icon;
   return (
     <span
@@ -35,7 +35,7 @@ function TypeBadge({ type }: { type: FournisseurType }) {
       )}
     >
       <Icon className="size-3" />
-      <span className="hidden lg:inline">{type}</span>
+      <span className="hidden lg:inline">{type || "Autre"}</span>
       <span className="lg:hidden">{m.short}</span>
     </span>
   );
@@ -52,7 +52,7 @@ const PrestataireRow = memo(function PrestataireRow({
   onEdit: (f: Fournisseur) => void;
   onDelete: (id: string) => void;
 }) {
-  const m = TYPE_META[f.type];
+  const m = getFournisseurTypeMeta(f?.type);
   const Icon = m.icon;
   return (
     <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
@@ -167,7 +167,7 @@ const TarifRow = memo(function TarifRow({
   canWrite: boolean;
   onEdit: (f: Fournisseur) => void;
 }) {
-  const m = TYPE_META[f.type];
+  const m = getFournisseurTypeMeta(f?.type);
   const Icon = m.icon;
   const hasTarif = f.tarifContractuel != null;
   return (
@@ -275,7 +275,7 @@ const CoutRow = memo(function CoutRow({
   onOpenDossier: (dossierId: string) => void;
 }) {
   const ecart = df.montantReel - df.montantBudgete;
-  const m = TYPE_META[df.type];
+  const m = getFournisseurTypeMeta(df?.type);
   const Icon = m.icon;
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-t border-border/60 px-4 py-3 hover:bg-muted/60 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5">

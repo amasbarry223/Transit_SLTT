@@ -453,6 +453,7 @@ model Fournisseur {
   id        String   @id @default(uuid())
   code      String   @unique
   nom       String
+  type      String?  @default("Autre")
   contact   String?
   telephone String?
   email     String?

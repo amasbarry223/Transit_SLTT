@@ -30,7 +30,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         annexes,
         facturesRes,
         devisRes,
-        fournisseurs,
+        fournisseursRes,
         contratsRes,
         transporteursRes,
         stockItemsRes,
@@ -205,6 +205,22 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         };
       });
 
+      const rawFournisseurs = Array.isArray(fournisseursRes) ? fournisseursRes : [];
+      const mappedFournisseurs = rawFournisseurs.map((f: any) => ({
+        id: f.id,
+        nom: f.nom,
+        type: (f.type || "Autre") as any,
+        contact: f.contact || "",
+        telephone: f.telephone || "",
+        email: f.email || "",
+        adresse: f.adresse || "",
+        tarifContractuel: f.tarifContractuel ? Number(f.tarifContractuel) : undefined,
+        nbDossiers: f._count?.depenses || 0,
+        montantTotal: 0,
+        statut: (f.actif === false || f.statut === "Inactif" ? "Inactif" : "Actif") as any,
+        annexeId: f.annexeId || "",
+      }));
+
       const rawTransporteurs = Array.isArray(transporteursRes) ? transporteursRes : [];
       const mappedTransporteurs = rawTransporteurs.map((t: any) => ({
         id: t.id,
@@ -375,7 +391,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           clients: (clients || []) as any,
           annexes: (annexes || []) as any,
           factures: mappedFactures as any,
-          fournisseurs: (fournisseurs || []) as any,
+          fournisseurs: mappedFournisseurs as any,
           contrats: nextContrats as any,
           devis: mappedDevis as any,
           transporteurs: mappedTransporteurs as any,

@@ -16,7 +16,7 @@ export const TYPES: FournisseurType[] = [
   "Autre",
 ];
 
-export const TYPE_META: Record<
+const BASE_TYPE_META: Record<
   FournisseurType,
   { icon: LucideIcon; color: string; bg: string; short: string }
 > = {
@@ -51,3 +51,22 @@ export const TYPE_META: Record<
     short: "Autre",
   },
 };
+
+export const TYPE_META: Record<
+  FournisseurType,
+  { icon: LucideIcon; color: string; bg: string; short: string }
+> = new Proxy(BASE_TYPE_META, {
+  get(target, prop: string) {
+    if (typeof prop === "string" && prop in target) {
+      return target[prop as FournisseurType];
+    }
+    return target["Autre"];
+  },
+});
+
+export function getFournisseurTypeMeta(type?: string | null) {
+  if (type && type in BASE_TYPE_META) {
+    return BASE_TYPE_META[type as FournisseurType];
+  }
+  return BASE_TYPE_META["Autre"];
+}
