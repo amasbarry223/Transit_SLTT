@@ -56,10 +56,9 @@ export function FactureDetailScreen() {
 
   const facture = factures.find((f) => f.id === selectedId);
 
-  const factureBrand = React.useMemo((): SocieteBrand | null => {
-    if (!facture) return null;
+  const factureBrand = React.useMemo((): SocieteBrand => {
     const base = resolveSlttBrand(societes);
-    if (!base) return null;
+    if (!facture) return base;
     const annexe = annexes.find((a) => a.id === facture.annexeId);
     return annexe ? mergeAnnexeIntoBrand(base, annexe) : base;
   }, [facture, societes, annexes]);
@@ -143,18 +142,6 @@ export function FactureDetailScreen() {
 
   function handlePrint() {
     if (!facture) return;
-    // Sans ce garde-fou explicite, un clic pendant que sociétés/annexes
-    // finissent encore de charger (juste après l'arrivée sur l'écran) ne
-    // faisait absolument rien — ni PDF, ni message — l'utilisateur croyait
-    // le bouton cassé. cf. resolveSlttBrand : renvoie null tant que le
-    // store société n'a pas fini de charger.
-    if (!factureBrand) {
-      toastWarning(toast, {
-        title: "Chargement en cours",
-        description: "Les informations de la société ne sont pas encore prêtes — réessayez dans un instant.",
-      });
-      return;
-    }
     const memesAnnexe = factures
       .filter((f) => f.annexeId === facture.annexeId)
       .sort((a, b) => a.creeLe.localeCompare(b.creeLe));

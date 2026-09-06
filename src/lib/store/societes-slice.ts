@@ -22,6 +22,19 @@ export function mapSocieteFromDb(row: SocieteRow): Societe {
   };
 }
 
+export const DEFAULT_SOCIETE: Societe = {
+  id: "22222222-2222-2222-2222-222222222222",
+  nom: "Transit SLTT",
+  raisonSociale: "Transit SLTT SARL",
+  actif: true,
+  logoUrl: "/assets/logo_sltt.png",
+  adresse: "Conakry, République de Guinée",
+  telephone: "+224 620 00 00 01",
+  rccm: "GN.TCC.2020.B.1234",
+  nif: "123456789",
+  afficherNomAvecLogo: true,
+};
+
 export interface SocietesSlice {
   societes: Societe[];
   updateSociete: (id: string, input: SocieteInput) => Promise<void>;
@@ -30,7 +43,7 @@ export interface SocietesSlice {
 }
 
 export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice> = (set, get) => ({
-  societes: [],
+  societes: [DEFAULT_SOCIETE],
 
   updateSociete: async (id, input) => {
     try {

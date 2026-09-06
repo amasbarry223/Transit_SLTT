@@ -107,19 +107,44 @@ export function societeToPrintHTMLBrand(s: Societe): PrintHTMLBrand {
   };
 }
 
+export const DEFAULT_TRANSIT_BRAND: SocieteBrand = {
+  nom: "Transit SLTT",
+  raisonSociale: "Transit SLTT SARL",
+  logoUrl: "/assets/logo_sltt.png",
+  afficherNomAvecLogo: true,
+  legal: {
+    adresse: "Conakry, République de Guinée",
+    telephone: "+224 620 00 00 01",
+    rccm: "GN.TCC.2020.B.1234",
+    nif: "123456789",
+  },
+};
+
+export const DEFAULT_PRINT_HTML_BRAND: PrintHTMLBrand = {
+  name: "Transit SLTT",
+  logoUrl: "/assets/logo_sltt.png",
+  afficherNomAvecLogo: true,
+  legal: {
+    adresse: "Conakry, République de Guinée",
+    telephone: "+224 620 00 00 01",
+    rccm: "GN.TCC.2020.B.1234",
+    nif: "123456789",
+  },
+};
+
 /** Branding dynamique pour l'impression du classeur (identité SLTT unique). */
-export function resolveClasseurPrintBrand(societes: Societe[]): SocieteBrand | null {
+export function resolveClasseurPrintBrand(societes: Societe[]): SocieteBrand {
   return resolveSlttBrand(societes);
 }
 /** Identité transit pour impressions (devis, classeur, listes…). */
-export function resolveSlttBrand(societes: Societe[]): SocieteBrand | null {
+export function resolveSlttBrand(societes: Societe[]): SocieteBrand {
   const s = resolveTransitSociete(societes);
-  return s ? { ...societeToBrand(s), nom: resolveSocieteDisplayName(s) } : null;
+  return s ? { ...societeToBrand(s), nom: resolveSocieteDisplayName(s) } : DEFAULT_TRANSIT_BRAND;
 }
 
-export function resolvePrintHTMLBrand(societes: Societe[]): PrintHTMLBrand | null {
+export function resolvePrintHTMLBrand(societes: Societe[]): PrintHTMLBrand {
   const s = resolveTransitSociete(societes);
-  return s ? societeToPrintHTMLBrand(s) : null;
+  return s ? societeToPrintHTMLBrand(s) : DEFAULT_PRINT_HTML_BRAND;
 }
 
 /** Branding shell (topbar, login) — nom + logo depuis la société transit. */

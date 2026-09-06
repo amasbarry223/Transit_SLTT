@@ -350,25 +350,24 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
       set((state) => {
         const nextContrats = syncContratStats(state.depenses, state.contratPrestations, mappedContrats);
 
-        let mappedSocietes = state.societes;
-        if (settingsMap.societe_nom || settingsMap.societe_adresse) {
-          mappedSocietes = [
-            {
-              id: "soc-default",
-              nom: settingsMap.societe_nom || "Transit SLTT",
-              raisonSociale: settingsMap.societe_nom || "Transit SLTT",
-              actif: true,
-              logoUrl: settingsMap.societe_logo_url || undefined,
-              adresse: settingsMap.societe_adresse || undefined,
-              telephone: settingsMap.societe_telephone || undefined,
-              rccm: settingsMap.societe_rccm || undefined,
-              nif: settingsMap.societe_nif || undefined,
-              afficherNomAvecLogo: settingsMap.societe_afficher_nom_avec_logo !== "false",
-              signataireDg: settingsMap.societe_signataire_dg || undefined,
-              signatairePdg: settingsMap.societe_signataire_pdg || undefined,
-            },
-          ];
-        }
+        const nomSoc = settingsMap.societe_nom || settingsMap.nom_societe || "Transit SLTT";
+        const raisonSoc = settingsMap.societe_raison_sociale || nomSoc;
+        const mappedSocietes = [
+          {
+            id: (state.societes && state.societes[0]?.id) || "22222222-2222-2222-2222-222222222222",
+            nom: nomSoc,
+            raisonSociale: raisonSoc,
+            actif: true,
+            logoUrl: settingsMap.societe_logo_url || "/assets/logo_sltt.png",
+            adresse: settingsMap.societe_adresse || "Conakry, République de Guinée",
+            telephone: settingsMap.societe_telephone || "+224 620 00 00 01",
+            rccm: settingsMap.societe_rccm || "GN.TCC.2020.B.1234",
+            nif: settingsMap.societe_nif || "123456789",
+            afficherNomAvecLogo: settingsMap.societe_afficher_nom_avec_logo !== "false",
+            signataireDg: settingsMap.societe_signataire_dg || undefined,
+            signatairePdg: settingsMap.societe_signataire_pdg || undefined,
+          },
+        ];
 
         const intermediateState = {
           ...state,
