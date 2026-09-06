@@ -20,6 +20,11 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { UsersModule } from './modules/users/users.module';
 import { BackupModule } from './modules/backup/backup.module';
 import { ContratsModule } from './modules/contrats/contrats.module';
+import { TransporteursModule } from './modules/transporteurs/transporteurs.module';
+import { StockModule } from './modules/stock/stock.module';
+import { BonsModule } from './modules/bons/bons.module';
+import { RecusPaiementModule } from './modules/recus-paiement/recus-paiement.module';
+import { ComptabiliteModule } from './modules/comptabilite/comptabilite.module';
 
 @Module({
   imports: [
@@ -44,6 +49,11 @@ import { ContratsModule } from './modules/contrats/contrats.module';
     UsersModule,
     BackupModule,
     ContratsModule,
+    TransporteursModule,
+    StockModule,
+    BonsModule,
+    RecusPaiementModule,
+    ComptabiliteModule,
   ],
 })
 export class AppModule {}

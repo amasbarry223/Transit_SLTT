@@ -68,6 +68,8 @@ export interface BonsSlice {
   removeBonSortieCaisse: (id: string) => Promise<void>;
 }
 
+import { api } from "@/lib/api-client";
+
 export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set, get) => ({
   bons: [],
   bonSeq: 1,
@@ -86,8 +88,30 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
     const numero = initialNumero;
     const client = get().clients.find((c) => c.id === input.clientId);
+
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.bons.createBonSortie({
+        reference: numero,
+        date: input.date,
+        clientId: input.clientId,
+        clientNom: client?.nom || "",
+        annexeId: input.annexeId,
+        stockId: input.stockId,
+        marchandise: input.marchandise,
+        quantite: input.quantite,
+        unite: input.unite,
+        motif: input.motif,
+        montant: input.montant,
+        statut: input.statut || "Brouillon",
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.bons.createBonSortie (mode local) :", e);
+    }
+
     const newBon: BonSortie = {
-      id: crypto.randomUUID(),
+      id: dbId,
       reference: numero,
       date: input.date,
       clientId: input.clientId,
@@ -128,6 +152,13 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     if (stockItem && stockItem.quantite < bon.quantite) {
       return false;
     }
+
+    try {
+      await api.bons.validateBonSortie(id);
+    } catch (e) {
+      console.warn("api.bons.validateBonSortie (mode local) :", e);
+    }
+
     const newStockQty = stockItem ? stockItem.quantite - bon.quantite : 0;
     set((s) => ({
       bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" as const } : b)),
@@ -161,8 +192,23 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
 
     const reference = initialReference;
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.bons.createBonCaisse({
+        reference,
+        date: input.date,
+        annexeId: input.annexeId,
+        montantTotal,
+        creePar,
+        lignes: input.lignes,
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.bons.createBonCaisse (mode local) :", e);
+    }
+
     const newBon: BonSortieCaisse = {
-      id: crypto.randomUUID(),
+      id: dbId,
       reference,
       date: input.date,
       annexeId: input.annexeId,
@@ -191,6 +237,12 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   },
 
   removeBonSortieCaisse: async (id) => {
+    try {
+      await api.bons.deleteBonCaisse(id);
+    } catch (e) {
+      console.warn("api.bons.deleteBonCaisse (mode local) :", e);
+    }
+
     const bon = get().bonsSortieCaisse.find((b) => b.id === id);
     set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));
     if (bon) {

@@ -31,6 +31,8 @@ export interface RecusPaiementSlice {
   removeRecuPaiement: (id: string) => Promise<void>;
 }
 
+import { api } from "@/lib/api-client";
+
 export const createRecusPaiementSlice: StateCreator<
   SLTTState,
   [],
@@ -48,8 +50,26 @@ export const createRecusPaiementSlice: StateCreator<
     const reference = fallbackRef;
     const reste = Math.max(0, input.somme - input.montantPaye);
     const statut = reste === 0 ? "SOLDE" : input.montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
+
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.recusPaiement.create({
+        reference,
+        annexeId: input.annexeId,
+        nom: input.nom,
+        prenom: input.prenom,
+        somme: input.somme,
+        motif: input.motif,
+        montantPaye: input.montantPaye,
+        creePar,
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.recusPaiement.create (mode local) :", e);
+    }
+
     const newRecu: RecuPaiement = {
-      id: crypto.randomUUID(),
+      id: dbId,
       reference,
       annexeId: input.annexeId,
       annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
@@ -80,6 +100,13 @@ export const createRecusPaiementSlice: StateCreator<
   updateRecuPaiement: async (id, input) => {
     const reste = Math.max(0, input.somme - input.montantPaye);
     const statut = reste === 0 ? "SOLDE" : input.montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
+
+    try {
+      await api.recusPaiement.update(id, input);
+    } catch (e) {
+      console.warn("api.recusPaiement.update (mode local) :", e);
+    }
+
     const existing = get().recusPaiement.find((r) => r.id === id);
     set((s) => ({
       recusPaiement: s.recusPaiement.map((r) =>
@@ -111,6 +138,12 @@ export const createRecusPaiementSlice: StateCreator<
   },
 
   removeRecuPaiement: async (id) => {
+    try {
+      await api.recusPaiement.delete(id);
+    } catch (e) {
+      console.warn("api.recusPaiement.delete (mode local) :", e);
+    }
+
     const recu = get().recusPaiement.find((r) => r.id === id);
     set((s) => ({ recusPaiement: s.recusPaiement.filter((r) => r.id !== id) }));
     if (recu) {

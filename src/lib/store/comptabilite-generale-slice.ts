@@ -66,6 +66,8 @@ export interface ComptabiliteGeneraleSlice {
   recordClotureCaisse: (input: RecordClotureCaisseInput) => Promise<ClotureCaisse>;
 }
 
+import { api } from "@/lib/api-client";
+
 export const createComptabiliteGeneraleSlice: StateCreator<
   SLTTState,
   [],
@@ -84,8 +86,30 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     const initialReference = `OPC-${seq}`;
     const creePar = getConnectedUserName();
 
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.comptabilite.createOperation({
+        reference: initialReference,
+        annexeId: input.annexeId,
+        date: input.date,
+        clientId: input.clientId,
+        dossierId: input.dossierId,
+        clientNom: input.clientNom,
+        nature: input.nature,
+        type: input.type,
+        montant: input.montant,
+        modePaiement: input.modePaiement ?? "Espèces",
+        source: input.source ?? "saisie",
+        importRef: input.importRef,
+        creePar,
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.comptabilite.createOperation (mode local) :", e);
+    }
+
     const newOperation: OperationComptable = {
-      id: crypto.randomUUID(),
+      id: dbId,
       reference: initialReference,
       entiteType: "annexe",
       annexeId: input.annexeId,
@@ -118,6 +142,12 @@ export const createComptabiliteGeneraleSlice: StateCreator<
   },
 
   removeOperationComptable: async (id) => {
+    try {
+      await api.comptabilite.deleteOperation(id);
+    } catch (e) {
+      console.warn("api.comptabilite.deleteOperation (mode local) :", e);
+    }
+
     const operation = get().operationsComptables.find((o) => o.id === id);
     set((s) => ({ operationsComptables: s.operationsComptables.filter((o) => o.id !== id) }));
     if (operation) {
@@ -133,8 +163,28 @@ export const createComptabiliteGeneraleSlice: StateCreator<
 
   recordClotureCaisse: async (input) => {
     const ecart = input.soldeConstate - input.soldeTheorique;
+    const creeLe = new Date().toISOString();
+    const cloturePar = getConnectedUserName();
+
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.comptabilite.createCloture({
+        annexeId: input.annexeId,
+        periodeDebut: input.periodeDebut,
+        periodeFin: input.periodeFin,
+        soldeTheorique: input.soldeTheorique,
+        soldeConstate: input.soldeConstate,
+        note: input.note,
+        cloturePar,
+        clotureLe: creeLe,
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.comptabilite.createCloture (mode local) :", e);
+    }
+
     const cloture: ClotureCaisse = {
-      id: crypto.randomUUID(),
+      id: dbId,
       entiteType: "annexe",
       annexeId: input.annexeId,
       periodeDebut: input.periodeDebut,
@@ -143,8 +193,8 @@ export const createComptabiliteGeneraleSlice: StateCreator<
       soldeConstate: input.soldeConstate,
       ecart,
       note: input.note,
-      cloturePar: getConnectedUserName(),
-      clotureLe: new Date().toISOString(),
+      cloturePar,
+      clotureLe: creeLe,
     };
 
     set((s) => ({

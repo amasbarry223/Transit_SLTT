@@ -293,6 +293,15 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/devis/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/devis/${id}`, {
+        method: 'DELETE',
+      }),
   };
 
   // ---------------------------------------------------------------------------
@@ -398,6 +407,154 @@ class ApiClient {
   };
 
   // ---------------------------------------------------------------------------
+  // Transporteurs
+  // ---------------------------------------------------------------------------
+  transporteurs = {
+    getAll: (params?: { search?: string; annexeId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/transporteurs${qs}`);
+    },
+    getById: (id: string) => this.request<any>(`/transporteurs/${id}`),
+    create: (data: any) =>
+      this.request<any>('/transporteurs', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/transporteurs/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/transporteurs/${id}`, {
+        method: 'DELETE',
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Stock & Mouvements (Entreposage / Magasin)
+  // ---------------------------------------------------------------------------
+  stock = {
+    getItems: (params?: { search?: string; annexeId?: string; clientId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/stock/items${qs}`);
+    },
+    getItemById: (id: string) => this.request<any>(`/stock/items/${id}`),
+    createItem: (data: any) =>
+      this.request<any>('/stock/items', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateItem: (id: string, data: any) =>
+      this.request<any>(`/stock/items/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    deleteItem: (id: string) =>
+      this.request<any>(`/stock/items/${id}`, {
+        method: 'DELETE',
+      }),
+    getMouvements: (params?: { annexeId?: string; stockId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/stock/mouvements${qs}`);
+    },
+    createMouvement: (data: any) =>
+      this.request<any>('/stock/mouvements', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Bons de sortie (Stock & Caisse)
+  // ---------------------------------------------------------------------------
+  bons = {
+    getBonsSortie: (params?: { annexeId?: string; clientId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/bons/sortie${qs}`);
+    },
+    createBonSortie: (data: any) =>
+      this.request<any>('/bons/sortie', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    validateBonSortie: (id: string) =>
+      this.request<any>(`/bons/sortie/${id}/valider`, {
+        method: 'PUT',
+      }),
+    deleteBonSortie: (id: string) =>
+      this.request<any>(`/bons/sortie/${id}`, {
+        method: 'DELETE',
+      }),
+    getBonsCaisse: (params?: { annexeId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/bons/caisse${qs}`);
+    },
+    createBonCaisse: (data: any) =>
+      this.request<any>('/bons/caisse', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    deleteBonCaisse: (id: string) =>
+      this.request<any>(`/bons/caisse/${id}`, {
+        method: 'DELETE',
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Reçus de Paiement
+  // ---------------------------------------------------------------------------
+  recusPaiement = {
+    getAll: (params?: { search?: string; annexeId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/recus-paiement${qs}`);
+    },
+    getById: (id: string) => this.request<any>(`/recus-paiement/${id}`),
+    create: (data: any) =>
+      this.request<any>('/recus-paiement', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/recus-paiement/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/recus-paiement/${id}`, {
+        method: 'DELETE',
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Comptabilité Générale
+  // ---------------------------------------------------------------------------
+  comptabilite = {
+    getOperations: (params?: { annexeId?: string; clientId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/comptabilite/operations${qs}`);
+    },
+    createOperation: (data: any) =>
+      this.request<any>('/comptabilite/operations', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    deleteOperation: (id: string) =>
+      this.request<any>(`/comptabilite/operations/${id}`, {
+        method: 'DELETE',
+      }),
+    getClotures: (params?: { annexeId?: string }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/comptabilite/clotures${qs}`);
+    },
+    createCloture: (data: any) =>
+      this.request<any>('/comptabilite/clotures', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
   // Tracking Public & Privé
   // ---------------------------------------------------------------------------
   tracking = {
@@ -490,6 +647,28 @@ class ApiClient {
           body: JSON.stringify({ payload }),
         },
       ),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Utilisateurs
+  // ---------------------------------------------------------------------------
+  users = {
+    getAll: () => this.request<any[]>('/users'),
+    getById: (id: string) => this.request<any>(`/users/${id}`),
+    create: (data: any) =>
+      this.request<any>('/users', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/users/${id}`, {
+        method: 'DELETE',
+      }),
   };
 }
 

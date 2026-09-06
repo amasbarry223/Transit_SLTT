@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -39,5 +40,11 @@ export class UsersController {
   @Roles('ADMIN')
   async update(@Param('id') id: string, @Body() body: any) {
     return this.usersService.update(id, body);
+  }
+
+  @Delete(':id')
+  @Roles('ADMIN')
+  async remove(@Param('id') id: string) {
+    return this.usersService.delete(id);
   }
 }

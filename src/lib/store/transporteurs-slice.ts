@@ -33,6 +33,8 @@ export interface TransporteursSlice {
   removeTransporteur: (id: string) => Promise<void>;
 }
 
+import { api } from "@/lib/api-client";
+
 export const createTransporteursSlice: StateCreator<SLTTState, [], [], TransporteursSlice> = (set, get) => ({
   transporteurs: [],
 
@@ -41,8 +43,28 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     const userId = useSession.getState().currentUserId;
     const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.transporteurs.create({
+        nom: input.nom,
+        contact: input.contact,
+        telephone: input.telephone,
+        email: input.email,
+        vehicule: input.vehicule,
+        immatriculation: input.immatriculation,
+        trajet: input.trajet,
+        capacite: input.capacite,
+        statut: input.statut,
+        notes: input.notes,
+        annexeId,
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.transporteurs.create (mode local) :", e);
+    }
+
     const newTr: Transporteur = {
-      id: crypto.randomUUID(),
+      id: dbId,
       nom: input.nom,
       contact: input.contact || "",
       telephone: input.telephone,
@@ -66,6 +88,12 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   updateTransporteur: async (id, input) => {
+    try {
+      await api.transporteurs.update(id, input);
+    } catch (e) {
+      console.warn("api.transporteurs.update (mode local) :", e);
+    }
+
     set((s) => ({
       transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, ...input } : t)),
     }));
@@ -73,6 +101,12 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   updateTransporteurStatut: async (id, statut) => {
+    try {
+      await api.transporteurs.update(id, { statut });
+    } catch (e) {
+      console.warn("api.transporteurs.update statut (mode local) :", e);
+    }
+
     const transporteur = get().transporteurs.find((t) => t.id === id);
     set((s) => ({
       transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, statut } : t)),
@@ -83,6 +117,12 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   removeTransporteur: async (id) => {
+    try {
+      await api.transporteurs.delete(id);
+    } catch (e) {
+      console.warn("api.transporteurs.delete (mode local) :", e);
+    }
+
     const trans = get().transporteurs.find((t) => t.id === id);
     set((s) => ({
       transporteurs: s.transporteurs.filter((t) => t.id !== id),

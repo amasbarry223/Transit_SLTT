@@ -58,6 +58,8 @@ export interface StockSlice {
   updateStockItem: (id: string, input: UpdateStockItemInput) => Promise<StockItem>;
 }
 
+import { api } from "@/lib/api-client";
+
 export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (set, get) => ({
   stock: [],
   mouvements: [],
@@ -68,8 +70,29 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const seq = get().stockSeq;
     const client = get().clients.find((c) => c.id === input.clientId);
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
+
+    let dbId = crypto.randomUUID();
+    try {
+      const created = await api.stock.createItem({
+        clientId: input.clientId,
+        annexeId: input.annexeId,
+        marchandise: input.marchandise,
+        quantite: input.quantite,
+        unite: input.unite,
+        seuil: input.seuil,
+        depositaire: input.depositaire,
+        commercial: input.commercial,
+        sommePayee: input.sommePayee,
+        resteAPayer: input.resteAPayer,
+        date: input.date,
+      });
+      if (created?.id) dbId = created.id;
+    } catch (e) {
+      console.warn("api.stock.createItem (mode local) :", e);
+    }
+
     const newItem: StockItem = {
-      id: crypto.randomUUID(),
+      id: dbId,
       marchandise: input.marchandise,
       quantite: input.quantite,
       unite: input.unite,
@@ -97,8 +120,25 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     if (!stockItem) return;
 
     const newQty = stockItem.quantite + quantite;
+    let dbMvtId = crypto.randomUUID();
+    try {
+      const created = await api.stock.createMouvement({
+        stockId,
+        annexeId: stockItem.annexeId,
+        date: new Date().toISOString().slice(0, 10),
+        type: "Entrée",
+        marchandise: stockItem.marchandise,
+        quantite,
+        unite: stockItem.unite,
+        responsable,
+      });
+      if (created?.id) dbMvtId = created.id;
+    } catch (e) {
+      console.warn("api.stock.createMouvement (mode local) :", e);
+    }
+
     const newMouvement: Mouvement = {
-      id: crypto.randomUUID(),
+      id: dbMvtId,
       annexeId: stockItem.annexeId,
       annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
@@ -128,8 +168,27 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       throw new Error("Quantité supérieure au stock disponible.");
     }
     const newQty = stockItem.quantite - quantite;
+    let dbMvtId = crypto.randomUUID();
+    try {
+      const created = await api.stock.createMouvement({
+        stockId,
+        annexeId: stockItem.annexeId,
+        date: new Date().toISOString().slice(0, 10),
+        type: "Sortie",
+        marchandise: stockItem.marchandise,
+        quantite,
+        unite: stockItem.unite,
+        responsable,
+        bonRef,
+        motif,
+      });
+      if (created?.id) dbMvtId = created.id;
+    } catch (e) {
+      console.warn("api.stock.createMouvement exit (mode local) :", e);
+    }
+
     const newMouvement: Mouvement = {
-      id: crypto.randomUUID(),
+      id: dbMvtId,
       annexeId: stockItem.annexeId,
       annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
@@ -235,6 +294,22 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const unite = input.unite.trim() || "—";
     const existing = get().stock.find((s) => s.id === id);
     const client = input.clientId ? get().clients.find((c) => c.id === input.clientId) : undefined;
+
+    try {
+      await api.stock.updateItem(id, {
+        marchandise,
+        unite,
+        seuil: input.seuil,
+        depositaire: input.depositaire?.trim() || "—",
+        commercial: input.commercial?.trim() || "—",
+        sommePayee: input.sommePayee,
+        resteAPayer: input.resteAPayer,
+        date: input.date,
+        clientId: input.clientId,
+      });
+    } catch (e) {
+      console.warn("api.stock.updateItem (mode local) :", e);
+    }
 
     const updated: StockItem = {
       id,

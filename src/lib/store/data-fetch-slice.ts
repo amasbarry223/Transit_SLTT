@@ -24,7 +24,25 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
     set({ dataLoading: true, loadError: null, partialLoadWarning: null });
 
     try {
-      const [dossiersRes, clients, annexes, facturesRes, devisRes, fournisseurs, contratsRes] = await Promise.all([
+      const [
+        dossiersRes,
+        clients,
+        annexes,
+        facturesRes,
+        devisRes,
+        fournisseurs,
+        contratsRes,
+        transporteursRes,
+        stockItemsRes,
+        mouvementsRes,
+        bonsSortieRes,
+        bonsCaisseRes,
+        recusPaiementRes,
+        operationsRes,
+        cloturesRes,
+        settingsRes,
+        usersRes,
+      ] = await Promise.all([
         api.dossiers.getAll().catch(() => ({ data: [], meta: {} })),
         api.clients.getAll().catch(() => []),
         api.annexes.getAll().catch(() => []),
@@ -32,10 +50,32 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         api.devis.getAll().catch(() => []),
         api.fournisseurs.getAll().catch(() => []),
         api.contrats.getAll().catch(() => []),
+        api.transporteurs.getAll().catch(() => []),
+        api.stock.getItems().catch(() => []),
+        api.stock.getMouvements().catch(() => []),
+        api.bons.getBonsSortie().catch(() => []),
+        api.bons.getBonsCaisse().catch(() => []),
+        api.recusPaiement.getAll().catch(() => []),
+        api.comptabilite.getOperations().catch(() => []),
+        api.comptabilite.getClotures().catch(() => []),
+        api.settings.getAll().catch(() => ({ list: [], map: {} })),
+        api.users.getAll().catch(() => []),
       ]);
 
       const currentUser = api.getCurrentUser();
-      const users = currentUser
+      const fetchedUsers = Array.isArray(usersRes) ? usersRes : [];
+      const users = fetchedUsers.length > 0
+        ? fetchedUsers.map((u: any) => ({
+            id: u.id,
+            nom: u.nom,
+            email: u.email,
+            role: (u.role === "ADMIN" ? "Administrateur" : u.role) as any,
+            permissions: u.permissions || [],
+            actif: u.actif ?? true,
+            derniereConnexion: u.derniereConnexion ? new Date(u.derniereConnexion).toISOString() : "",
+            annexeIds: (u.userAnnexes || []).map((ua: any) => ua.annexe?.id || ua.annexeId),
+          }))
+        : currentUser
         ? [
             {
               id: currentUser.id,
@@ -132,8 +172,204 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         creeLe: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
       }));
 
+      const rawDevis = Array.isArray((devisRes as any)?.data)
+        ? (devisRes as any).data
+        : Array.isArray(devisRes)
+        ? devisRes
+        : [];
+      const mappedDevis = rawDevis.map((d: any) => {
+        let droitDouane = 0;
+        let fraisCircuit = 0;
+        let fraisPrestation = 0;
+        (d.lignes || []).forEach((l: any) => {
+          if (l.designation?.includes("douane")) droitDouane = Number(l.prixUnitaire || 0);
+          else if (l.designation?.includes("circuit")) fraisCircuit = Number(l.prixUnitaire || 0);
+          else if (l.designation?.includes("prestation")) fraisPrestation = Number(l.prixUnitaire || 0);
+        });
+        return {
+          id: d.id,
+          reference: d.numero,
+          clientId: d.clientId || "",
+          clientNom: d.client?.nom || "—",
+          annexeId: d.annexeId || "",
+          annexeNom: d.annexe?.nom || "",
+          nature: d.nature || "",
+          droitDouane: droitDouane || Number(d.montantHt || 0),
+          fraisCircuit,
+          fraisPrestation,
+          total: Number(d.montantTtc || d.montantHt || 0),
+          statut: (d.statut === "ACCEPTE" ? "Accepté" : d.statut === "REFUSE" ? "Refusé" : d.statut === "EXPIRE" ? "Expiré" : "Brouillon") as any,
+          dateCreation: d.createdAt ? new Date(d.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+          dateValidite: d.dateValidite ? new Date(d.dateValidite).toISOString().slice(0, 10) : "",
+          notes: d.notes || "",
+        };
+      });
+
+      const rawTransporteurs = Array.isArray(transporteursRes) ? transporteursRes : [];
+      const mappedTransporteurs = rawTransporteurs.map((t: any) => ({
+        id: t.id,
+        nom: t.nom,
+        contact: t.contact || "",
+        telephone: t.telephone,
+        email: t.email || undefined,
+        vehicule: t.vehicule,
+        immatriculation: t.immatriculation,
+        trajet: t.trajet || "",
+        capacite: Number(t.capacite || 0),
+        statut: t.statut,
+        nbDossiers: 0,
+        dateCreation: t.dateCreation || (t.createdAt ? new Date(t.createdAt).toISOString().slice(0, 10) : ""),
+        notes: t.notes || undefined,
+        annexeId: t.annexeId || "",
+      }));
+
+      const rawStock = Array.isArray(stockItemsRes) ? stockItemsRes : [];
+      const mappedStock = rawStock.map((s: any) => ({
+        id: s.id,
+        clientId: s.clientId || undefined,
+        clientNom: s.client?.nom || undefined,
+        annexeId: s.annexeId,
+        annexeNom: s.annexe?.nom || undefined,
+        marchandise: s.marchandise,
+        quantite: Number(s.quantite || 0),
+        unite: s.unite || "kg",
+        seuil: Number(s.seuil || 0),
+        depositaire: s.depositaire || undefined,
+        commercial: s.commercial || undefined,
+        sommePayee: Number(s.sommePayee || 0),
+        resteAPayer: Number(s.resteAPayer || 0),
+        date: s.date || "",
+      }));
+
+      const rawMouvements = Array.isArray(mouvementsRes) ? mouvementsRes : [];
+      const mappedMouvements = rawMouvements.map((m: any) => ({
+        id: m.id,
+        stockId: m.stockId || undefined,
+        annexeId: m.annexeId,
+        annexeNom: m.annexe?.nom || undefined,
+        date: m.date || (m.createdAt ? new Date(m.createdAt).toISOString() : ""),
+        type: m.type,
+        marchandise: m.marchandise || m.stock?.marchandise || "",
+        quantite: Number(m.quantite || 0),
+        unite: m.unite || "",
+        responsable: m.responsable || "",
+        bonRef: m.bonRef || undefined,
+        motif: m.motif || undefined,
+      }));
+
+      const rawBons = Array.isArray(bonsSortieRes) ? bonsSortieRes : [];
+      const mappedBons = rawBons.map((b: any) => ({
+        id: b.id,
+        reference: b.reference,
+        date: b.date,
+        clientId: b.clientId,
+        clientNom: b.client?.nom || b.clientNom || "",
+        annexeId: b.annexeId,
+        annexeNom: b.annexe?.nom || undefined,
+        stockId: b.stockId || undefined,
+        marchandise: b.marchandise,
+        quantite: Number(b.quantite || 0),
+        unite: b.unite,
+        motif: b.motif,
+        montant: Number(b.montant || 0),
+        statut: b.statut,
+      }));
+
+      const rawBonsCaisse = Array.isArray(bonsCaisseRes) ? bonsCaisseRes : [];
+      const mappedBonsCaisse = rawBonsCaisse.map((bc: any) => ({
+        id: bc.id,
+        reference: bc.reference,
+        date: bc.date,
+        annexeId: bc.annexeId,
+        annexeNom: bc.annexe?.nom || undefined,
+        montantTotal: Number(bc.montantTotal || 0),
+        creePar: bc.creePar || undefined,
+        creeLe: bc.createdAt ? new Date(bc.createdAt).toISOString() : new Date().toISOString(),
+        lignes: (bc.lignes || []).map((l: any) => ({
+          id: l.id,
+          date: l.date,
+          beneficiaire: l.beneficiaire,
+          motif: l.motif,
+          montant: Number(l.montant || 0),
+        })),
+      }));
+
+      const rawRecus = Array.isArray(recusPaiementRes) ? recusPaiementRes : [];
+      const mappedRecus = rawRecus.map((r: any) => ({
+        id: r.id,
+        reference: r.reference,
+        annexeId: r.annexeId,
+        annexeNom: r.annexe?.nom || undefined,
+        nom: r.nom,
+        prenom: r.prenom,
+        somme: Number(r.somme || 0),
+        motif: r.motif,
+        montantPaye: Number(r.montantPaye || 0),
+        reste: Number(r.reste || 0),
+        statut: r.statut,
+        creePar: r.creePar || undefined,
+        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+      }));
+
+      const rawOps = Array.isArray(operationsRes) ? operationsRes : [];
+      const mappedOps = rawOps.map((o: any) => ({
+        id: o.id,
+        reference: o.reference,
+        entiteType: "annexe" as const,
+        annexeId: o.annexeId || undefined,
+        date: o.date,
+        clientId: o.clientId || undefined,
+        dossierId: o.dossierId || undefined,
+        clientNom: o.clientNom || undefined,
+        nature: o.nature,
+        type: o.type,
+        montant: Number(o.montant || 0),
+        modePaiement: o.modePaiement || "Espèces",
+        source: o.source || "saisie",
+        importRef: o.importRef || undefined,
+        creePar: o.creePar || undefined,
+      }));
+
+      const rawClotures = Array.isArray(cloturesRes) ? cloturesRes : [];
+      const mappedClotures = rawClotures.map((c: any) => ({
+        id: c.id,
+        entiteType: "annexe" as const,
+        annexeId: c.annexeId || undefined,
+        periodeDebut: c.periodeDebut,
+        periodeFin: c.periodeFin,
+        soldeTheorique: Number(c.soldeTheorique || 0),
+        soldeConstate: Number(c.soldeConstate || 0),
+        ecart: Number(c.ecart || 0),
+        note: c.note || undefined,
+        cloturePar: c.cloturePar || undefined,
+        clotureLe: c.clotureLe || "",
+      }));
+
+      const settingsMap = (settingsRes as any)?.map || {};
+
       set((state) => {
         const nextContrats = syncContratStats(state.depenses, state.contratPrestations, mappedContrats);
+
+        let mappedSocietes = state.societes;
+        if (settingsMap.societe_nom || settingsMap.societe_adresse) {
+          mappedSocietes = [
+            {
+              id: "soc-default",
+              nom: settingsMap.societe_nom || "Transit SLTT",
+              raisonSociale: settingsMap.societe_nom || "Transit SLTT",
+              actif: true,
+              logoUrl: settingsMap.societe_logo_url || undefined,
+              adresse: settingsMap.societe_adresse || undefined,
+              telephone: settingsMap.societe_telephone || undefined,
+              rccm: settingsMap.societe_rccm || undefined,
+              nif: settingsMap.societe_nif || undefined,
+              afficherNomAvecLogo: settingsMap.societe_afficher_nom_avec_logo !== "false",
+              signataireDg: settingsMap.societe_signataire_dg || undefined,
+              signatairePdg: settingsMap.societe_signataire_pdg || undefined,
+            },
+          ];
+        }
+
         const intermediateState = {
           ...state,
           dossiers: mappedDossiers as any,
@@ -142,6 +378,16 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           factures: mappedFactures as any,
           fournisseurs: (fournisseurs || []) as any,
           contrats: nextContrats as any,
+          devis: mappedDevis as any,
+          transporteurs: mappedTransporteurs as any,
+          stock: mappedStock as any,
+          mouvements: mappedMouvements as any,
+          bons: mappedBons as any,
+          bonsSortieCaisse: mappedBonsCaisse as any,
+          recusPaiement: mappedRecus as any,
+          operationsComptables: mappedOps as any,
+          cloturesCaisse: mappedClotures as any,
+          societes: mappedSocietes,
           users: (users.length > 0 ? users : state.users) as any,
         };
         const updatedSequences = syncSequencesFromData(intermediateState as any);

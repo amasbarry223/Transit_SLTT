@@ -61,4 +61,43 @@ export class DevisService {
       include: { lignes: true, client: true },
     });
   }
+
+  async update(id: string, data: any) {
+    await this.findOne(id);
+    const { lignes, ...devisData } = data;
+    const updateData: any = { ...devisData };
+
+    if (devisData.dateEmission) updateData.dateEmission = new Date(devisData.dateEmission);
+    if (devisData.dateValidite) updateData.dateValidite = new Date(devisData.dateValidite);
+
+    if (lignes) {
+      await this.prisma.ligneDevis.deleteMany({ where: { devisId: id } });
+      let montantHt = 0;
+      const lignesFormatted = lignes.map((l: any) => {
+        const total = (Number(l.quantite) || 1) * (Number(l.prixUnitaire) || 0);
+        montantHt += total;
+        return {
+          designation: l.designation,
+          quantite: Number(l.quantite) || 1,
+          prixUnitaire: Number(l.prixUnitaire) || 0,
+          montantTotal: total,
+        };
+      });
+      updateData.montantHt = montantHt;
+      updateData.montantTva = (montantHt * 18) / 100;
+      updateData.montantTtc = montantHt + updateData.montantTva;
+      updateData.lignes = { create: lignesFormatted };
+    }
+
+    return this.prisma.devis.update({
+      where: { id },
+      data: updateData,
+      include: { lignes: true, client: true },
+    });
+  }
+
+  async delete(id: string) {
+    await this.findOne(id);
+    return this.prisma.devis.delete({ where: { id } });
+  }
 }

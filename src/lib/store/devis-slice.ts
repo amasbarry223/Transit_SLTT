@@ -98,6 +98,21 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
     const existing = get().devis.find((d) => d.id === id);
 
+    try {
+      await api.devis.update(id, {
+        clientId: input.clientId,
+        dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
+        notes: input.notes,
+        lignes: [
+          { designation: "Droit de douane", quantite: 1, prixUnitaire: input.droitDouane },
+          { designation: "Frais de circuit", quantite: 1, prixUnitaire: input.fraisCircuit },
+          { designation: "Frais de prestation", quantite: 1, prixUnitaire: input.fraisPrestation },
+        ],
+      });
+    } catch (e) {
+      console.warn("api.devis.update (mode local) :", e);
+    }
+
     set((s) => ({
       devis: s.devis.map((devisItem) =>
         devisItem.id === id ? { ...devisItem, ...input, total } : devisItem
@@ -112,6 +127,14 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     const existingBefore = get().devis.find((d) => d.id === id);
     if (existingBefore && !canTransitionDevis(existingBefore.statut, statut)) {
       throw new Error(`Transition non autorisée : ${existingBefore.statut} → ${statut}.`);
+    }
+
+    try {
+      const dbStatut =
+        statut === "Accepté" ? "ACCEPTE" : statut === "Refusé" ? "REFUSE" : statut === "Expiré" ? "EXPIRE" : "BROUILLON";
+      await api.devis.update(id, { statut: dbStatut });
+    } catch (e) {
+      console.warn("api.devis.update statut (mode local) :", e);
     }
 
     const existing = get().devis.find((d) => d.id === id);
@@ -130,6 +153,12 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     );
 
     if (obsoletes.length === 0) return;
+
+    for (const d of obsoletes) {
+      try {
+        await api.devis.update(d.id, { statut: "EXPIRE" });
+      } catch {}
+    }
 
     set((s) => ({
       devis: s.devis.map((devisItem) =>
@@ -182,6 +211,10 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     const newDossier = await get().addDossier(inputDossier);
 
+    try {
+      await api.devis.update(id, { statut: "ACCEPTE" });
+    } catch {}
+
     set((s) => ({
       devis: s.devis.map((devisItem) =>
         devisItem.id === id ? { ...devisItem, statut: "Accepté", dossierId: newDossier.id } : devisItem
@@ -197,6 +230,12 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
   removeDevis: async (id) => {
     const existing = get().devis.find((d) => d.id === id);
+
+    try {
+      await api.devis.delete(id);
+    } catch (e) {
+      console.warn("api.devis.delete (mode local) :", e);
+    }
 
     set((s) => ({
       devis: s.devis.filter((d) => d.id !== id),

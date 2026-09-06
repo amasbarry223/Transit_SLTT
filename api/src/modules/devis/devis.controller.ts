@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Param,
   Body,
   Query,
@@ -31,5 +33,17 @@ export class DevisController {
   @RequirePermission('devis.creer')
   async create(@Body() body: any) {
     return this.devisService.create(body);
+  }
+
+  @Put(':id')
+  @RequirePermission('devis.creer')
+  async update(@Param('id') id: string, @Body() body: any) {
+    return this.devisService.update(id, body);
+  }
+
+  @Delete(':id')
+  @RequirePermission('devis.creer')
+  async remove(@Param('id') id: string) {
+    return this.devisService.delete(id);
   }
 }

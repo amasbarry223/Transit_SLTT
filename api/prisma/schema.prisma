@@ -170,6 +170,14 @@ model Annexe {
   caisses     Caisse[]
   depenses    Depense[]
   contrats    Contrat[]
+  transporteurs Transporteur[]
+  stockItems  StockItem[]
+  mouvements  MouvementStock[]
+  bonsSortie  BonSortie[]
+  bonsSortieCaisse BonSortieCaisse[]
+  recusPaiement RecuPaiement[]
+  operationsComptables OperationComptable[]
+  cloturesCaisse ClotureCaisse[]
 
   @@map("annexes")
 }
@@ -207,11 +215,13 @@ model Client {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
-  dossiers  Dossier[]
-  factures  Facture[]
-  devis     Devis[]
-  cotations Cotation[]
-  contrats  Contrat[]
+  dossiers   Dossier[]
+  factures   Facture[]
+  devis      Devis[]
+  cotations  Cotation[]
+  contrats   Contrat[]
+  stockItems StockItem[]
+  bonsSortie BonSortie[]
 
   @@map("clients")
 }
@@ -620,4 +630,214 @@ model Contrat {
   @@index([clientId])
   @@map("contrats")
 }
+
+// -----------------------------------------------------------------------------
+// Transporteurs
+// -----------------------------------------------------------------------------
+model Transporteur {
+  id              String   @id @default(uuid())
+  nom             String
+  contact         String?
+  telephone       String
+  email           String?
+  vehicule        String
+  immatriculation String
+  trajet          String?
+  capacite        Float    @default(0)
+  statut          String   @default("DISPONIBLE")
+  dateCreation    String?  @map("date_creation")
+  notes           String?
+  annexeId        String?  @map("annexe_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  annexe          Annexe?  @relation(fields: [annexeId], references: [id])
+
+  @@index([annexeId])
+  @@map("transporteurs")
+}
+
+// -----------------------------------------------------------------------------
+// Stock & Mouvements (Entreposage / Magasin)
+// -----------------------------------------------------------------------------
+model StockItem {
+  id          String   @id @default(uuid())
+  clientId    String?  @map("client_id")
+  annexeId    String   @map("annexe_id")
+  marchandise String
+  quantite    Float    @default(0)
+  unite       String   @default("kg")
+  seuil       Float    @default(0)
+  depositaire String?
+  commercial  String?
+  sommePayee  Float    @default(0) @map("somme_payee")
+  resteAPayer Float    @default(0) @map("reste_a_payer")
+  date        String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  client      Client?  @relation(fields: [clientId], references: [id])
+  annexe      Annexe   @relation(fields: [annexeId], references: [id])
+  mouvements  MouvementStock[]
+  bons        BonSortie[]
+
+  @@index([clientId])
+  @@index([annexeId])
+  @@map("stock_items")
+}
+
+model MouvementStock {
+  id          String   @id @default(uuid())
+  stockId     String?  @map("stock_id")
+  annexeId    String   @map("annexe_id")
+  date        String
+  type        String
+  marchandise String?
+  quantite    Float    @default(0)
+  unite       String?
+  responsable String?
+  bonRef      String?  @map("bon_ref")
+  motif       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  stock       StockItem? @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  annexe      Annexe     @relation(fields: [annexeId], references: [id])
+
+  @@index([stockId])
+  @@index([annexeId])
+  @@map("mouvements_stock")
+}
+
+// -----------------------------------------------------------------------------
+// Bons de Sortie & Bons de Sortie Caisse
+// -----------------------------------------------------------------------------
+model BonSortie {
+  id          String   @id @default(uuid())
+  reference   String   @unique
+  date        String
+  clientId    String   @map("client_id")
+  clientNom   String?  @map("client_nom")
+  annexeId    String   @map("annexe_id")
+  stockId     String?  @map("stock_id")
+  marchandise String
+  quantite    Float    @default(0)
+  unite       String
+  motif       String
+  montant     Float    @default(0)
+  statut      String   @default("En attente")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  client      Client     @relation(fields: [clientId], references: [id])
+  annexe      Annexe     @relation(fields: [annexeId], references: [id])
+  stock       StockItem? @relation(fields: [stockId], references: [id])
+
+  @@index([clientId])
+  @@index([annexeId])
+  @@index([stockId])
+  @@map("bons_sortie")
+}
+
+model BonSortieCaisse {
+  id           String   @id @default(uuid())
+  reference    String   @unique
+  date         String
+  annexeId     String   @map("annexe_id")
+  montantTotal Float    @default(0) @map("montant_total")
+  creePar      String?  @map("cree_par")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  annexe       Annexe   @relation(fields: [annexeId], references: [id])
+  lignes       LigneBonSortieCaisse[]
+
+  @@index([annexeId])
+  @@map("bons_sortie_caisse")
+}
+
+model LigneBonSortieCaisse {
+  id                String          @id @default(uuid())
+  bonSortieCaisseId String          @map("bon_sortie_caisse_id")
+  date              String
+  beneficiaire      String
+  motif             String
+  montant           Float           @default(0)
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  bonSortieCaisse   BonSortieCaisse @relation(fields: [bonSortieCaisseId], references: [id], onDelete: Cascade)
+
+  @@index([bonSortieCaisseId])
+  @@map("lignes_bon_sortie_caisse")
+}
+
+// -----------------------------------------------------------------------------
+// Reçus de Paiement
+// -----------------------------------------------------------------------------
+model RecuPaiement {
+  id          String   @id @default(uuid())
+  reference   String   @unique
+  annexeId    String   @map("annexe_id")
+  nom         String
+  prenom      String
+  somme       Float    @default(0)
+  motif       String
+  montantPaye Float    @default(0) @map("montant_paye")
+  reste       Float    @default(0)
+  statut      String   @default("EN_ATTENTE")
+  creePar     String?  @map("cree_par")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  annexe      Annexe   @relation(fields: [annexeId], references: [id])
+
+  @@index([annexeId])
+  @@map("recus_paiement")
+}
+
+// -----------------------------------------------------------------------------
+// Comptabilité Générale (Opérations & Clôtures)
+// -----------------------------------------------------------------------------
+model OperationComptable {
+  id           String   @id @default(uuid())
+  reference    String   @unique
+  annexeId     String?  @map("annexe_id")
+  date         String
+  clientId     String?  @map("client_id")
+  dossierId    String?  @map("dossier_id")
+  clientNom    String?  @map("client_nom")
+  nature       String
+  type         String
+  montant      Float    @default(0)
+  modePaiement String   @default("Espèces") @map("mode_paiement")
+  source       String   @default("saisie")
+  importRef    String?  @map("import_ref")
+  creePar      String?  @map("cree_par")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  annexe       Annexe?  @relation(fields: [annexeId], references: [id])
+
+  @@index([annexeId])
+  @@map("operations_comptables")
+}
+
+model ClotureCaisse {
+  id             String   @id @default(uuid())
+  annexeId       String?  @map("annexe_id")
+  periodeDebut   String   @map("periode_debut")
+  periodeFin     String   @map("periode_fin")
+  soldeTheorique Float    @default(0) @map("solde_theorique")
+  soldeConstate  Float    @default(0) @map("solde_constate")
+  ecart          Float    @default(0)
+  note           String?
+  cloturePar     String?  @map("cloture_par")
+  clotureLe      String   @map("cloture_le")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  annexe         Annexe?  @relation(fields: [annexeId], references: [id])
+
+  @@index([annexeId])
+  @@map("clotures_caisse")
+}
+
 

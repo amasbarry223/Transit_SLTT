@@ -39,6 +39,8 @@ export interface UsersSlice {
   updateUserAnnexes: (id: string, annexeIds: string[]) => Promise<void>;
 }
 
+import { api } from "@/lib/api-client";
+
 export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (set, get) => ({
   users: [],
   usersPublic: [],
@@ -47,58 +49,53 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
     const seq = get().userSeq;
     const permissions = normalizePermissions(input.permissions);
 
-    const res = await fetchWithAuth("/api/admin/users", {
-      method: "POST",
-      body: JSON.stringify({
-        nom: input.nom,
-        email: input.email,
-        role: input.role,
-        permissions,
-        password: input.motDePasse,
-      }),
+    const created = await api.users.create({
+      nom: input.nom,
+      email: input.email,
+      role: input.role,
+      permissions,
+      password: input.motDePasse,
+      annexeIds: input.annexeIds,
     });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || "Impossible de créer l'utilisateur.");
 
-    const newUser = mapProfileFromDb(payload.user);
+    const newUser: User = {
+      id: created.id,
+      nom: created.nom,
+      email: created.email,
+      role: created.role as UserRole,
+      permissions,
+      actif: true,
+      derniereConnexion: "",
+      annexeIds: input.annexeIds,
+    };
+
     set((s) => ({
       users: [newUser, ...s.users],
       userSeq: seq + 1,
     }));
-    await get().updateUserAnnexes(newUser.id, input.annexeIds);
-    return { ...newUser, annexeIds: input.annexeIds };
+    return newUser;
   },
 
   updateUser: async (id, input) => {
     const permissions = normalizePermissions(input.permissions);
 
-    const res = await fetchWithAuth(`/api/admin/users/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        nom: input.nom,
-        email: input.email,
-        role: input.role,
-        permissions,
-      }),
+    await api.users.update(id, {
+      nom: input.nom,
+      email: input.email,
+      role: input.role,
+      permissions,
+      annexeIds: input.annexeIds,
     });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || "Impossible de mettre à jour l'utilisateur.");
 
     set((s) => ({
       users: s.users.map((u) =>
         u.id === id ? { ...u, ...input, permissions } : u,
       ),
     }));
-    await get().updateUserAnnexes(id, input.annexeIds);
   },
 
   updateUserAnnexes: async (id, annexeIds) => {
-    const res = await fetchWithAuth(`/api/admin/users/${id}/annexes`, {
-      method: "PATCH",
-      body: JSON.stringify({ annexeIds }),
-    });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || "Impossible de mettre à jour les annexes de l'utilisateur.");
+    await api.users.update(id, { annexeIds });
 
     set((s) => ({
       users: s.users.map((u) => (u.id === id ? { ...u, annexeIds } : u)),
@@ -110,19 +107,7 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
     if (!user) return;
 
     const newStatus = !user.actif;
-
-    const res = await fetchWithAuth(`/api/admin/users/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        nom: user.nom,
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions,
-        actif: newStatus,
-      }),
-    });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || "Impossible de modifier le statut.");
+    await api.users.update(id, { actif: newStatus });
 
     set((s) => ({
       users: s.users.map((u) => (u.id === id ? { ...u, actif: newStatus } : u)),
@@ -130,9 +115,7 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
   },
 
   removeUser: async (id) => {
-    const res = await fetchWithAuth(`/api/admin/users/${id}`, { method: "DELETE" });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || "Impossible de supprimer l'utilisateur.");
+    await api.users.delete(id);
 
     set((s) => ({
       users: s.users.filter((u) => u.id !== id),

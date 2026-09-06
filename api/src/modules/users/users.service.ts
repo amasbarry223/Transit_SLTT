@@ -129,4 +129,9 @@ export class UsersService {
       },
     });
   }
+
+  async delete(id: string) {
+    await this.findOne(id);
+    return this.prisma.profile.delete({ where: { id } });
+  }
 }
