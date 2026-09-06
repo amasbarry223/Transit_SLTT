@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
@@ -64,6 +64,29 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     const userId = useSession.getState().currentUserId;
     const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
+    if (!isSupabaseConfigured) {
+      const newFourn: Fournisseur = {
+        id: crypto.randomUUID(),
+        nom: input.nom,
+        type: input.type,
+        contact: input.contact,
+        telephone: input.telephone,
+        email: input.email || "",
+        adresse: input.adresse || "",
+        tarifContractuel: input.tarifContractuel,
+        nbDossiers: 0,
+        montantTotal: 0,
+        statut: input.statut || "Actif",
+        annexeId,
+      };
+      set((s) => ({
+        fournisseurs: [newFourn, ...s.fournisseurs],
+        fournisseurSeq: seq + 1,
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Creation, `Fournisseur ${input.nom} créé`);
+      return newFourn;
+    }
+
     const { data, error } = await supabase
       .from("fournisseurs")
       .insert({
@@ -90,6 +113,14 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     return newFourn;
   },
   updateFournisseur: async (id, input) => {
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Modification, `Fournisseur ${input.nom} mis à jour`);
+      return;
+    }
+
     const { error } = await supabase
       .from("fournisseurs")
       .update({
@@ -113,15 +144,24 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
 
   removeFournisseur: async (id) => {
     const fourn = get().fournisseurs.find((f) => f.id === id);
-    // Garde client-side — message clair AVANT l'appel réseau. dossier_fournisseurs.fournisseur_id
-    // est ON DELETE CASCADE en base : sans cette garde, supprimer un fournisseur efface
-    // silencieusement le suivi budget/réel de tous les dossiers qui lui sont liés.
     const dossiersLies = get().dossierFournisseurs.filter((df) => df.fournisseurId === id).length;
     if (dossiersLies > 0) {
       throw new Error(
         `Impossible de supprimer ${fourn?.nom ?? "ce fournisseur"} : il est lié à ${dossiersLies} dossier(s). Retirez-le d'abord de ces dossiers.`,
       );
     }
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        fournisseurs: s.fournisseurs.filter((f) => f.id !== id),
+        dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.fournisseurId !== id),
+      }));
+      if (fourn) {
+        await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Suppression, `Fournisseur ${fourn.nom} supprimé`);
+      }
+      return;
+    }
+
     const { error } = await supabase.from("fournisseurs").delete().eq("id", id);
     if (error) throw error;
 
@@ -137,6 +177,38 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
 
   addDossierFournisseur: async (input) => {
     const seq = get().dossierFournisseurSeq;
+    const fourn = get().fournisseurs.find((f) => f.id === input.fournisseurId);
+    const dos = get().dossiers.find((d) => d.id === input.dossierId);
+
+    if (!isSupabaseConfigured) {
+      const newDf: DossierFournisseur = {
+        id: crypto.randomUUID(),
+        dossierId: input.dossierId,
+        dossierRef: dos?.reference,
+        fournisseurId: input.fournisseurId,
+        fournisseurNom: fourn?.nom || "",
+        type: fourn?.type || ("Transport" as DossierFournisseur["type"]),
+        description: input.description,
+        montantBudgete: input.montantBudgete,
+        montantReel: input.montantReel,
+        statut: input.statut || "En attente",
+        date: input.date || new Date().toISOString().slice(0, 10),
+      };
+      set((s) => {
+        const updatedDf = [newDf, ...s.dossierFournisseurs];
+        return {
+          dossierFournisseurs: updatedDf,
+          dossierFournisseurSeq: seq + 1,
+          fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
+        };
+      });
+      await get().addAuditLog(
+        AUDIT_MODULE.Fournisseurs,
+        AUDIT_ACTION.Creation,
+        `Lien fournisseur ${newDf.fournisseurNom} ↔ dossier ${newDf.dossierRef ?? newDf.dossierId} créé`,
+      );
+      return newDf;
+    }
 
     const { data, error } = await supabase
       .from("dossier_fournisseurs")
@@ -171,6 +243,18 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
   },
 
   updateDossierFournisseur: async (id, input) => {
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updatedDf = s.dossierFournisseurs.map((df) => (df.id === id ? { ...df, ...input } : df));
+        return {
+          dossierFournisseurs: updatedDf,
+          fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
+        };
+      });
+      await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Modification, `Lien fournisseur ↔ dossier modifié`);
+      return;
+    }
+
     const { error } = await supabase
       .from("dossier_fournisseurs")
       .update({
@@ -197,6 +281,25 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
 
   removeDossierFournisseur: async (id) => {
     const target = get().dossierFournisseurs.find((df) => df.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updatedDf = s.dossierFournisseurs.filter((df) => df.id !== id);
+        return {
+          dossierFournisseurs: updatedDf,
+          fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
+        };
+      });
+      if (target) {
+        await get().addAuditLog(
+          AUDIT_MODULE.Fournisseurs,
+          AUDIT_ACTION.Suppression,
+          `Lien fournisseur ${target.fournisseurNom} ↔ dossier ${target.dossierRef ?? target.dossierId} supprimé`,
+        );
+      }
+      return;
+    }
+
     const { error } = await supabase.from("dossier_fournisseurs").delete().eq("id", id);
     if (error) throw error;
 

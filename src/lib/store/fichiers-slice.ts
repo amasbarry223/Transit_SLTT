@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { DossierFichier, SubDossier } from "@/lib/domain-types";
 import type { FichierInput, SLTTState, SubDossierInput } from "@/lib/store";
 import type { DossierFichierRow, SubDossierRow } from "@/lib/db-rows";
@@ -47,6 +47,22 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
   addSubDossier: async (input) => {
     const seq = get().subDossierSeq;
 
+    if (!isSupabaseConfigured) {
+      const newSd: SubDossier = {
+        id: crypto.randomUUID(),
+        dossierId: input.dossierId,
+        nom: input.nom,
+        description: input.description,
+        dateCreation: new Date().toISOString(),
+      };
+      set((s) => ({
+        subDossiers: [newSd, ...s.subDossiers],
+        subDossierSeq: seq + 1,
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Creation, `Sous-dossier "${newSd.nom}" créé`);
+      return newSd;
+    }
+
     const { data, error } = await supabase
       .from("sub_dossiers")
       .insert({
@@ -68,6 +84,16 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
   },
 
   updateSubDossier: async (id, nom, description) => {
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        subDossiers: s.subDossiers.map((sd) =>
+          sd.id === id ? { ...sd, nom, description } : sd,
+        ),
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Modification, `Sous-dossier "${nom}" modifié`);
+      return;
+    }
+
     const { error } = await supabase
       .from("sub_dossiers")
       .update({ nom, description })
@@ -85,6 +111,17 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
   deleteSubDossier: async (id) => {
     const subDossier = get().subDossiers.find((sd) => sd.id === id);
 
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        subDossiers: s.subDossiers.filter((sd) => sd.id !== id),
+        fichiers: s.fichiers.filter((f) => f.sousDossierId !== id),
+      }));
+      if (subDossier) {
+        await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Suppression, `Sous-dossier "${subDossier.nom}" supprimé`);
+      }
+      return;
+    }
+
     const { error } = await supabase.from("sub_dossiers").delete().eq("id", id);
     if (error) throw error;
 
@@ -99,6 +136,25 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
 
   addFichier: async (input) => {
     const seq = get().fichierSeq;
+
+    if (!isSupabaseConfigured) {
+      const newFile: DossierFichier = {
+        id: crypto.randomUUID(),
+        dossierId: input.dossierId,
+        sousDossierId: input.sousDossierId,
+        nom: input.nom,
+        taille: input.taille,
+        type: input.type,
+        dateUpload: new Date().toISOString(),
+        dataUrl: input.dataUrl,
+      };
+      set((s) => ({
+        fichiers: [newFile, ...s.fichiers],
+        fichierSeq: seq + 1,
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Creation, `Fichier "${newFile.nom}" ajouté`);
+      return newFile;
+    }
 
     let storedUrl = input.dataUrl;
     if (input.dataUrl.startsWith("data:")) {
@@ -149,6 +205,16 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
   deleteFichier: async (id) => {
     const fichier = get().fichiers.find((f) => f.id === id);
 
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        fichiers: s.fichiers.filter((f) => f.id !== id),
+      }));
+      if (fichier) {
+        await get().addAuditLog(AUDIT_MODULE.Dossiers, AUDIT_ACTION.Suppression, `Fichier "${fichier.nom}" supprimé`);
+      }
+      return;
+    }
+
     const { error } = await supabase.from("dossier_fichiers").delete().eq("id", id);
     if (error) throw error;
 
@@ -161,6 +227,13 @@ export const createFichiersSlice: StateCreator<SLTTState, [], [], FichiersSlice>
   },
 
   deleteFichiersByDossier: async (dossierId) => {
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        fichiers: s.fichiers.filter((f) => f.dossierId !== dossierId),
+      }));
+      return;
+    }
+
     const { error } = await supabase.from("dossier_fichiers").delete().eq("dossier_id", dossierId);
     if (error) throw error;
 

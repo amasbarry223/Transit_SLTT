@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Societe, SocieteInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { SocieteRow } from "@/lib/db-rows";
@@ -33,6 +33,29 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
   societes: [],
 
   updateSociete: async (id, input) => {
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        societes: s.societes.map((soc) =>
+          soc.id === id
+            ? {
+                ...soc,
+                nom: input.nom,
+                logoUrl: input.logoUrl,
+                adresse: input.adresse,
+                telephone: input.telephone,
+                rccm: input.rccm,
+                nif: input.nif,
+                signataireDg: input.signataireDg,
+                signatairePdg: input.signatairePdg,
+                afficherNomAvecLogo: input.afficherNomAvecLogo ?? soc.afficherNomAvecLogo,
+              }
+            : soc,
+        ),
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Societes, AUDIT_ACTION.Modification, `Société ${input.nom} mise à jour`);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("societes")
       .update({
@@ -54,10 +77,6 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
       .single();
     if (error) throw error;
 
-    // Re-dérive depuis la réponse serveur (au lieu de fusionner l'input
-    // client tel quel) — même pattern que les autres slices : reflète tout
-    // défaut/normalisation appliqué côté base plutôt que de supposer que ce
-    // qu'on a envoyé est exactement ce qui a été persisté.
     const updated = mapSocieteFromDb(data as SocieteRow);
     set((s) => ({
       societes: s.societes.map((soc) => (soc.id === id ? updated : soc)),
@@ -66,6 +85,10 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
   },
 
   uploadSocieteLogo: async (id, file) => {
+    if (!isSupabaseConfigured) {
+      return URL.createObjectURL(file);
+    }
+
     const safeName = file.name.replace(/[^\w.\-]+/g, "_");
     const path = `${id}/${Date.now()}-${safeName}`;
 
@@ -74,9 +97,6 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
       .upload(path, file, { contentType: file.type || "image/png", upsert: false });
     if (uploadError) throw uploadError;
 
-    // Bucket public (societe-logos) : URL stable, pas de signature à
-    // renouveler — nécessaire puisque le logo est référencé depuis des
-    // documents imprimés (fenêtres ouvertes hors session applicative).
     const { data } = supabase.storage.from("societe-logos").getPublicUrl(path);
     return data.publicUrl;
   },

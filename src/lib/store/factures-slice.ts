@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { syncClientStats } from "@/lib/client-stats";
 import { validatePaymentAmount } from "@/lib/payments";
 import { canTransitionFacture } from "@/lib/status-flow";
@@ -88,6 +88,59 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     );
     const creePar = getConnectedUserName();
 
+    if (!isSupabaseConfigured) {
+      const numero = initialNumero;
+      const factId = crypto.randomUUID();
+      const client = get().clients.find((c) => c.id === input.clientId);
+      const newFacture: Facture = {
+        id: factId,
+        numero,
+        dossierId: input.dossierId ?? null,
+        clientId: input.clientId,
+        clientNom: client?.nom || "—",
+        annexeId: input.annexeId,
+        annexeNom: annexe?.nom,
+        date: input.date,
+        dateEcheance: input.dateEcheance,
+        statut: "Brouillon",
+        tauxTVA: input.tauxTVA,
+        montantHT: amountExclTax,
+        montantTVA: vatAmount,
+        montantTTC: amountInclTax,
+        montantPaye: 0,
+        notes: input.notes,
+        creePar,
+        creeLe: new Date().toISOString(),
+        lignes: input.lignes.map((ligne, idx) => ({
+          id: `FL-${idx + 1}`,
+          description: ligne.description,
+          quantite: ligne.quantite,
+          prixUnitaire: ligne.prixUnitaire,
+          montantHT: ligne.quantite * ligne.prixUnitaire,
+          compagnie: ligne.compagnie,
+          bordereauLivraison: ligne.bordereauLivraison,
+        })),
+      };
+
+      const finalSeq = extractTrailingSeq(numero) ?? get().factureSeq;
+      set((s) => {
+        const updatedFactures = [newFacture, ...s.factures];
+        return {
+          factures: updatedFactures,
+          factureSeq: useAnnexeNumbering ? s.factureSeq : finalSeq + 1,
+          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        };
+      });
+      await get().addAuditLog(
+        AUDIT_MODULE.Factures,
+        AUDIT_ACTION.Creation,
+        `Facture ${numero} créée`,
+        newFacture.clientId,
+        { sourceType: "facture", sourceId: newFacture.id },
+      );
+      return newFacture;
+    }
+
     // Retry avec numéro incrémenté si deux créations concurrentes ont calculé
     // le même numéro à partir d'un même snapshot client (contrainte unique en base).
     const { data: dbFact, reference: numero } = await insertWithReferenceRetry<{ id: string }>(initialNumero, (ref) =>
@@ -165,6 +218,46 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       input.tauxTVA,
     );
 
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updatedFactures = s.factures.map((fact) => {
+          if (fact.id !== id) return fact;
+          const updatedLignes: FactureLigne[] = input.lignes.map((ligne, idx) => ({
+            id: `FL-${idx + 1}`,
+            description: ligne.description,
+            quantite: ligne.quantite,
+            prixUnitaire: ligne.prixUnitaire,
+            montantHT: ligne.quantite * ligne.prixUnitaire,
+            compagnie: ligne.compagnie,
+            bordereauLivraison: ligne.bordereauLivraison,
+          }));
+          return {
+            ...fact,
+            ...input,
+            annexeId: input.annexeId,
+            montantHT: amountExclTax,
+            montantTVA: vatAmount,
+            montantTTC: amountInclTax,
+            lignes: updatedLignes,
+          };
+        });
+        return {
+          factures: updatedFactures,
+          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        };
+      });
+      if (existing) {
+        await get().addAuditLog(
+          AUDIT_MODULE.Factures,
+          AUDIT_ACTION.Modification,
+          `Facture ${existing.numero} modifiée`,
+          input.clientId,
+          { sourceType: "facture", sourceId: id },
+        );
+      }
+      return;
+    }
+
     const { error: errFact } = await supabase
       .from("factures")
       .update({
@@ -238,6 +331,27 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   removeFacture: async (id) => {
     const fact = get().factures.find((f) => f.id === id);
 
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updatedFactures = s.factures.filter((f) => f.id !== id);
+        return {
+          factures: updatedFactures,
+          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        };
+      });
+
+      if (fact) {
+        await get().addAuditLog(
+          AUDIT_MODULE.Factures,
+          AUDIT_ACTION.Suppression,
+          `Facture ${fact.numero} supprimée`,
+          fact.clientId,
+          { sourceType: "facture", sourceId: fact.id },
+        );
+      }
+      return;
+    }
+
     const { error } = await supabase.from("factures").delete().eq("id", id);
     if (error) throw error;
 
@@ -272,6 +386,27 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       throw new Error(
         "Pour solder une facture, enregistrez un paiement (encaissement) couvrant le reste dû.",
       );
+    }
+
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updatedFactures = s.factures.map((item) =>
+          item.id === id ? { ...item, statut } : item,
+        );
+        return {
+          factures: updatedFactures,
+          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        };
+      });
+
+      await get().addAuditLog(
+        AUDIT_MODULE.Factures,
+        AUDIT_ACTION.Modification,
+        `Facture ${facture.numero} → ${statut}`,
+        facture.clientId,
+        { sourceType: "facture", sourceId: id },
+      );
+      return;
     }
 
     const { error } = await supabase
@@ -309,6 +444,29 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     const reste = resteAPayer({ montantInvesti: fact.montantTTC, montantPaye: fact.montantPaye });
     const effective = validatePaymentAmount(montant, reste);
 
+    if (!isSupabaseConfigured) {
+      const newPaye = fact.montantPaye + effective;
+      const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
+      set((s) => {
+        const updatedFactures = s.factures.map((f) =>
+          f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f,
+        );
+        return {
+          factures: updatedFactures,
+          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        };
+      });
+
+      await get().addAuditLog(
+        AUDIT_MODULE.Factures,
+        AUDIT_ACTION.Paiement,
+        `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
+        fact.clientId,
+        { sourceType: "facture", sourceId: fact.id },
+      );
+      return;
+    }
+
     const { data, error } = await supabase.rpc("record_facture_paiement", {
       p_facture_id: id,
       p_montant: effective,
@@ -342,6 +500,28 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     if (!fact) throw new Error("Facture introuvable");
     if (fact.statut === "Annulée" || fact.statut === "Brouillon" || fact.statut === "Soldée") {
       throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
+    }
+
+    if (!isSupabaseConfigured) {
+      const newStatut: FactureStatut = montantPaye >= fact.montantTTC ? "Soldée" : montantPaye > 0 ? "Partielle" : "Envoyée";
+      set((s) => {
+        const updatedFactures = s.factures.map((f) =>
+          f.id === id ? { ...f, montantPaye, statut: newStatut } : f,
+        );
+        return {
+          factures: updatedFactures,
+          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        };
+      });
+
+      await get().addAuditLog(
+        AUDIT_MODULE.Factures,
+        AUDIT_ACTION.Modification,
+        `Paiement facture ${fact.numero} ajusté (classeur) → ${montantPaye.toLocaleString("fr-FR")} FCFA`,
+        fact.clientId,
+        { sourceType: "facture", sourceId: id },
+      );
+      return;
     }
 
     // RPC atomique (verrou ligne en DB) : évite d'écraser un encaissement concurrent

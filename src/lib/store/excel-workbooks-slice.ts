@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { SLTTState } from "@/lib/store";
 import type { ExcelWorkbook, ExcelWorkbookRow } from "@/lib/excel/types";
 import { useSession } from "@/lib/session/session-store";
@@ -51,6 +51,9 @@ export const createExcelWorkbooksSlice: StateCreator<
 
   getExcelWorkbookForClient: async (clientId) => {
     const cached = get().excelWorkbooks.find((w) => w.clientId === clientId);
+    if (!isSupabaseConfigured) {
+      return cached ?? null;
+    }
     const { data, error } = await supabase
       .from("excel_workbooks")
       .select("*")
@@ -73,6 +76,38 @@ export const createExcelWorkbooksSlice: StateCreator<
     const existing = await get().getExcelWorkbookForClient(input.clientId);
     const nextVersion = existing ? existing.version + 1 : 1;
     const nom = existing?.nom || `Classeur ${input.clientNom}`;
+
+    if (!isSupabaseConfigured) {
+      const now = new Date().toISOString();
+      const updated: ExcelWorkbook = {
+        id: existing?.id ?? crypto.randomUUID(),
+        clientId: input.clientId,
+        nom,
+        storagePath: existing?.storagePath,
+        snapshotJson: input.snapshotJson,
+        version: nextVersion,
+        updatedBy: userId ?? undefined,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      };
+
+      set((s) => ({
+        excelWorkbooks: [
+          updated,
+          ...s.excelWorkbooks.filter((w) => w.clientId !== input.clientId),
+        ],
+      }));
+
+      if (!input.silent) {
+        await get().addAuditLog(
+          AUDIT_MODULE.Comptabilite,
+          existing ? AUDIT_ACTION.Modification : AUDIT_ACTION.Creation,
+          `Classeur Excel « ${nom} » ${existing ? `enregistré (v${nextVersion})` : "créé"}`,
+          input.clientId,
+        );
+      }
+      return updated;
+    }
 
     // Limite snapshot JSON ~800 Ko — au-delà, exige un xlsx Storage.
     let snapshot = input.snapshotJson;
@@ -179,6 +214,9 @@ export const createExcelWorkbooksSlice: StateCreator<
   },
 
   getSignedExcelWorkbookUrl: async (storagePath) => {
+    if (!isSupabaseConfigured) {
+      return storagePath;
+    }
     const { data, error } = await supabase.storage
       .from(BUCKET)
       .createSignedUrl(storagePath, SIGNED_URL_TTL_SEC);
@@ -186,3 +224,4 @@ export const createExcelWorkbooksSlice: StateCreator<
     return data.signedUrl;
   },
 });
+

@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useSession } from "@/lib/session/session-store";
 import type { Archive, TypeDocument } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
@@ -115,6 +115,27 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
     const month = new Date().toISOString().slice(0, 7);
     const path = `${month}/${Date.now()}-${safeName}`;
 
+    if (!isSupabaseConfigured) {
+      const newArchive: Archive = {
+        id: crypto.randomUUID(),
+        nom: input.nom,
+        typeDocument: input.typeDocument,
+        taille: input.taille,
+        type: contentType,
+        storagePath: path,
+        dossierId: input.dossierId,
+        factureId: input.factureId,
+        depenseId: input.depenseId,
+        clientId: input.clientId,
+        annexeId,
+        creePar,
+        createdAt: new Date().toISOString(),
+      };
+      set((s) => ({ archives: [newArchive, ...s.archives] }));
+      await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Creation, `Document archivé "${input.nom}" (${input.typeDocument})`);
+      return newArchive;
+    }
+
     const { error: uploadError } = await supabase.storage
       .from("archives")
       .upload(path, input.file, { contentType, upsert: false });
@@ -147,12 +168,18 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
   deleteArchive: async (id) => {
     const archive = get().archives.find((a) => a.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({ archives: s.archives.filter((a) => a.id !== id) }));
+      if (archive) {
+        await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Suppression, `Document archivé "${archive.nom}" supprimé`);
+      }
+      return;
+    }
+
     if (archive) {
       const { error: storageError } = await supabase.storage.from("archives").remove([archive.storagePath]);
       if (storageError) {
-        // Non bloquant : la ligne DB reste la source de vérité de ce qui est
-        // "archivé" — on continue la suppression, mais on garde une trace
-        // du fichier physique potentiellement orphelin dans le bucket.
         logError(`[archives] Échec suppression fichier "${archive.nom}" du storage`, storageError, {
           message: storageError.message,
         });
@@ -167,6 +194,9 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
   },
 
   getSignedArchiveUrl: async (storagePath) => {
+    if (!isSupabaseConfigured) {
+      return storagePath;
+    }
     const { data, error } = await supabase.storage
       .from("archives")
       .createSignedUrl(storagePath, SIGNED_URL_TTL_SEC);

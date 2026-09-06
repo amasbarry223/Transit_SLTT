@@ -1,9 +1,11 @@
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 /** Marge avant expiration pour rafraîchir proactivement le JWT. */
 const TOKEN_REFRESH_SKEW_SEC = 60;
 
 async function resolveAccessToken(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null;
+
   const {
     data: { session },
   } = await supabase.auth.getSession();

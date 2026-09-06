@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { syncContratStats } from "@/lib/contrat-stats";
@@ -99,6 +99,34 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       client?.annexeId ??
       requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
+    if (!isSupabaseConfigured) {
+      const newContrat: Contrat = {
+        id: crypto.randomUUID(),
+        reference,
+        annexeId,
+        annexeNom: annexeId ? get().annexes.find((a) => a.id === annexeId)?.nom : undefined,
+        clientId: input.clientId,
+        clientNom: input.clientNom || client?.nom || "—",
+        objet: input.objet,
+        dateDebut: input.dateDebut,
+        dateFin: input.dateFin || undefined,
+        montant: input.montant,
+        statut: input.statut,
+        notes: input.notes || undefined,
+        nbPrestations: 0,
+        nbPrestationsRealisees: 0,
+        totalDepenses: 0,
+        creePar,
+        creeLe: new Date().toISOString(),
+      };
+      set((s) => ({
+        contrats: syncContratStats(s.depenses, s.contratPrestations, [newContrat, ...s.contrats]),
+        contratSeq: seq + 1,
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Contrat ${reference} créé — ${input.clientNom}`);
+      return newContrat;
+    }
+
     const { data, error } = await supabase
       .from("contrats")
       .insert({
@@ -134,6 +162,34 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
         throw new Error(`Transition contrat invalide : ${existingForStatut.statut} → ${input.statut}`);
       }
     }
+
+    if (!isSupabaseConfigured) {
+      const existing = get().contrats.find((c) => c.id === id);
+      set((s) => ({
+        contrats: s.contrats.map((contrat) =>
+          contrat.id === id
+            ? {
+                ...contrat,
+                ...input,
+                clientNom: input.clientNom,
+                annexeId: input.annexeId ?? contrat.annexeId,
+                annexeNom: input.annexeId
+                  ? s.annexes.find((a) => a.id === input.annexeId)?.nom ?? contrat.annexeNom
+                  : contrat.annexeNom,
+              }
+            : contrat,
+        ),
+      }));
+      if (existing) {
+        await get().addAuditLog(
+          AUDIT_MODULE.Contrats,
+          AUDIT_ACTION.Modification,
+          `Contrat ${existing.reference} modifié`,
+        );
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from("contrats")
       .update({
@@ -182,6 +238,13 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     if (!canTransitionContrat(existing.statut, statut)) {
       throw new Error(`Transition contrat invalide : ${existing.statut} → ${statut}`);
     }
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
+      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Contrat ${existing.reference} → ${statut}`);
+      return;
+    }
+
     const { error } = await supabase.from("contrats").update({ statut }).eq("id", id);
     if (error) throw error;
     set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
@@ -192,15 +255,21 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const contrat = get().contrats.find((c) => c.id === id);
     if (!contrat) return;
 
-    // Garde client-side — message clair AVANT l'appel réseau. La contrainte FK
-    // (NO ACTION sur depenses.contrat_id / contrat_prestations.contrat_id) est
-    // la garde de dernier recours côté DB en cas de course (2 onglets, etc.).
     const depensesLiees = get().depenses.filter((d) => d.contratId === id).length;
     const prestationsLiees = get().contratPrestations.filter((p) => p.contratId === id).length;
     if (depensesLiees > 0 || prestationsLiees > 0) {
       throw new Error(
         `Impossible de supprimer le contrat ${contrat.reference} : il porte ${depensesLiees} dépense(s) et ${prestationsLiees} prestation(s). Retirez-les d'abord.`,
       );
+    }
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        contrats: s.contrats.filter((c) => c.id !== id),
+        contratFichiers: s.contratFichiers.filter((f) => f.contratId !== id),
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Contrat ${contrat.reference} supprimé`);
+      return;
     }
 
     const fichiersLies = get().contratFichiers.filter((f) => f.contratId === id);
@@ -234,6 +303,33 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const contrat = get().contrats.find((c) => c.id === input.contratId);
     if (!contrat) throw new Error("Contrat introuvable.");
     const creePar = getConnectedUserName();
+
+    if (!isSupabaseConfigured) {
+      const newDepense: Depense = {
+        id: crypto.randomUUID(),
+        contratId: input.contratId,
+        libelle: input.libelle,
+        montant: input.montant,
+        dateDepense: input.dateDepense,
+        modePaiement: input.modePaiement,
+        note: input.note || undefined,
+        creePar,
+      };
+      set((s) => {
+        const updatedDepenses = [newDepense, ...s.depenses];
+        return {
+          depenses: updatedDepenses,
+          depenseSeq: seq + 1,
+          contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
+        };
+      });
+      await get().addAuditLog(
+        AUDIT_MODULE.Depenses,
+        AUDIT_ACTION.Creation,
+        `Dépense "${input.libelle}" (${input.montant.toLocaleString("fr-FR")} FCFA) — contrat ${contrat.reference}`,
+      );
+      return newDepense;
+    }
 
     let justificatifPath: string | undefined;
     if (input.justificatifDataUrl && input.justificatifNom) {
@@ -281,6 +377,21 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
 
   removeDepense: async (id) => {
     const depense = get().depenses.find((d) => d.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updatedDepenses = s.depenses.filter((d) => d.id !== id);
+        return {
+          depenses: updatedDepenses,
+          contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
+        };
+      });
+      if (depense) {
+        await get().addAuditLog(AUDIT_MODULE.Depenses, AUDIT_ACTION.Suppression, `Dépense "${depense.libelle}" supprimée`);
+      }
+      return;
+    }
+
     if (depense?.justificatifPath) {
       await supabase.storage.from("contrat-fichiers").remove([depense.justificatifPath]);
     }
@@ -302,6 +413,31 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
   addContratPrestation: async (input) => {
     const seq = get().contratPrestationSeq;
     const creePar = getConnectedUserName();
+
+    if (!isSupabaseConfigured) {
+      const newPrestation: ContratPrestation = {
+        id: crypto.randomUUID(),
+        contratId: input.contratId,
+        libelle: input.libelle,
+        description: input.description || undefined,
+        montant: input.montant ?? undefined,
+        statut: input.statut,
+        datePrevue: input.datePrevue || undefined,
+        dateRealisation: input.dateRealisation || undefined,
+        creePar,
+      };
+      set((s) => {
+        const updated = [newPrestation, ...s.contratPrestations];
+        return {
+          contratPrestations: updated,
+          contratPrestationSeq: seq + 1,
+          contrats: syncContratStats(s.depenses, updated, s.contrats),
+        };
+      });
+      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Prestation "${newPrestation.libelle}" ajoutée`);
+      return newPrestation;
+    }
+
     const { data, error } = await supabase
       .from("contrat_prestations")
       .insert({
@@ -332,6 +468,15 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
   },
 
   updateContratPrestation: async (id, input) => {
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updated = s.contratPrestations.map((p) => (p.id === id ? { ...p, ...input } : p));
+        return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
+      });
+      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Prestation "${input.libelle}" modifiée`);
+      return;
+    }
+
     const { error } = await supabase
       .from("contrat_prestations")
       .update({
@@ -354,6 +499,18 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
 
   removeContratPrestation: async (id) => {
     const prestation = get().contratPrestations.find((p) => p.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => {
+        const updated = s.contratPrestations.filter((p) => p.id !== id);
+        return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
+      });
+      if (prestation) {
+        await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Prestation "${prestation.libelle}" supprimée`);
+      }
+      return;
+    }
+
     const { error } = await supabase.from("contrat_prestations").delete().eq("id", id);
     if (error) throw error;
     set((s) => {

@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Annexe, AnnexeInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { AnnexeRow } from "@/lib/db-rows";
@@ -29,6 +29,14 @@ export const createAnnexesSlice: StateCreator<SLTTState, [], [], AnnexesSlice> =
   annexes: [],
 
   updateAnnexe: async (id, input) => {
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        annexes: s.annexes.map((a) => (a.id === id ? { ...a, ...input } : a)),
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Annexes, AUDIT_ACTION.Modification, "Identité annexe mise à jour");
+      return;
+    }
+
     const { error } = await supabase
       .from("annexes")
       .update({

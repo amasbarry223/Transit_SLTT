@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
   DEFAULT_PAIEMENT_MODE,
   DOSSIER_STATUT_SOLDE,
@@ -28,6 +28,10 @@ export async function syncDossierPayeFromEcritures(
 ): Promise<number> {
   const totalPaye = sumEcrituresPayeForDossier(dossierId, ecritures);
   const montantPaye = capDossierMontantPaye(totalPaye, dossier.montantInvesti);
+
+  if (!isSupabaseConfigured) {
+    return montantPaye;
+  }
 
   const { error } = await supabase
     .from("dossiers")
@@ -76,6 +80,39 @@ export async function syncEcritureWhenDossierSolde(
   ecritureSeq: number,
   context: DossierSoldeEcritureContext,
 ): Promise<EcritureSoldeLocalPatch> {
+  if (!isSupabaseConfigured) {
+    const existingIdx = ecritures.findIndex((e) => e.dossierId === dossier.id);
+    const prevPaye = existingIdx >= 0 ? ecritures[existingIdx].montantPaye : 0;
+    const newPaye = Math.min(dossier.montantInvesti, prevPaye + context.montantRecu);
+    const patchedEcriture: Ecriture = {
+      id: existingIdx >= 0 ? ecritures[existingIdx].id : crypto.randomUUID(),
+      date: existingIdx >= 0 ? ecritures[existingIdx].date : context.today,
+      datePaiement: context.resolvedDate,
+      clientId: dossier.clientId,
+      clientNom: dossier.clientNom,
+      dossierId: dossier.id,
+      annexeId: dossier.annexeId,
+      annexeNom: dossier.annexeNom,
+      montantInvesti: dossier.montantInvesti,
+      montantPaye: newPaye,
+      modePaiement: context.modePaiement ?? DEFAULT_PAIEMENT_MODE,
+      note: context.transitionNote ?? `Solde dossier ${dossier.reference}`,
+    };
+
+    if (existingIdx >= 0) {
+      return {
+        ecritures: ecritures.map((e, i) => (i === existingIdx ? patchedEcriture : e)),
+        dossierMontantPaye: newPaye,
+      };
+    }
+
+    return {
+      ecritures: [patchedEcriture, ...ecritures],
+      ecritureSeq: ecritureSeq + 1,
+      dossierMontantPaye: newPaye,
+    };
+  }
+
   const { data, error } = await supabase.rpc("record_dossier_solde_paiement", {
     p_dossier_id: dossier.id,
     p_montant: context.montantRecu,
@@ -125,3 +162,4 @@ export function shouldSyncEcritureOnDossierSolde(
 ): montantRecu is number {
   return newStatut === DOSSIER_STATUT_SOLDE && !!montantRecu && montantRecu > 0;
 }
+

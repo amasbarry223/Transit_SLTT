@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useSession } from "@/lib/session/session-store";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { normalizePermissions } from "@/lib/permissions";
@@ -150,10 +150,12 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
   },
 
   updateLastLogin: async (id) => {
-    await supabase
-      .from("profiles")
-      .update({ derniere_connexion: new Date().toISOString() })
-      .eq("id", id);
+    if (isSupabaseConfigured) {
+      await supabase
+        .from("profiles")
+        .update({ derniere_connexion: new Date().toISOString() })
+        .eq("id", id);
+    }
 
     set((s) => ({
       users: s.users.map((u) =>

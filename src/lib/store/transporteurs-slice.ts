@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Transporteur, TransporteurStatut } from "@/lib/domain-types";
 import type { TransporteurInput, SLTTState } from "@/lib/store";
 import type { TransporteurRow } from "@/lib/db-rows";
@@ -42,6 +42,31 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     const userId = useSession.getState().currentUserId;
     const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
+    if (!isSupabaseConfigured) {
+      const newTr: Transporteur = {
+        id: crypto.randomUUID(),
+        nom: input.nom,
+        contact: input.contact || "",
+        telephone: input.telephone,
+        email: input.email || undefined,
+        vehicule: input.vehicule,
+        immatriculation: input.immatriculation,
+        trajet: input.trajet || "",
+        capacite: input.capacite ? Number(input.capacite) : 0,
+        statut: input.statut,
+        nbDossiers: 0,
+        dateCreation: new Date().toISOString().slice(0, 10),
+        notes: input.notes || undefined,
+        annexeId,
+      };
+      set((s) => ({
+        transporteurs: [newTr, ...s.transporteurs],
+        transporteurSeq: seq + 1,
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Creation, `Transporteur ${input.nom} ajouté`);
+      return newTr;
+    }
+
     const { data, error } = await supabase
       .from("transporteurs")
       .insert({
@@ -71,6 +96,14 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   updateTransporteur: async (id, input) => {
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, ...input } : t)),
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Modification, `Transporteur ${input.nom} mis à jour`);
+      return;
+    }
+
     const { error } = await supabase
       .from("transporteurs")
       .update({
@@ -96,6 +129,17 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
 
   updateTransporteurStatut: async (id, statut) => {
     const transporteur = get().transporteurs.find((t) => t.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, statut } : t)),
+      }));
+      if (transporteur) {
+        await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Modification, `Transporteur ${transporteur.nom} → ${statut}`);
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from("transporteurs")
       .update({ statut })
@@ -112,6 +156,16 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
 
   removeTransporteur: async (id) => {
     const trans = get().transporteurs.find((t) => t.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        transporteurs: s.transporteurs.filter((t) => t.id !== id),
+      }));
+      if (trans) {
+        await get().addAuditLog(AUDIT_MODULE.Transporteurs, AUDIT_ACTION.Suppression, `Transporteur ${trans.nom} supprimé`);
+      }
+      return;
+    }
 
     const { error } = await supabase.from("transporteurs").delete().eq("id", id);
     if (error) throw error;

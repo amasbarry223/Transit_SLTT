@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { logError, logWarn } from "@/shared/logger";
 import { mapErrorToUserMessage } from "@/lib/error-messages";
+import { UI } from "@/lib/ui-messages";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ProfilePublicRow } from "@/lib/db-rows";
 import type { SLTTState } from "@/lib/store";

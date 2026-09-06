@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { toastWarning } from "@/lib/toast-helpers";
 import type {
@@ -81,6 +81,52 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   addDocument: async (input) => {
     const userId = currentUserId();
     const annexeId = resolveDocumentAnnexeId(get, input);
+
+    if (!isSupabaseConfigured) {
+      const docId = crypto.randomUUID();
+      const versionId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const doc: SlttDocument = {
+        id: docId,
+        nom: input.nom,
+        categorie: input.categorie,
+        mimeType: input.mimeType,
+        taille: input.taille,
+        dossierId: input.dossierId,
+        factureId: input.factureId,
+        clientId: input.clientId,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        annexeId,
+        currentVersion: 1,
+        creePar: userId ?? undefined,
+        creeLe: now,
+        updatedAt: now,
+      };
+      const version: DocumentVersion = {
+        id: versionId,
+        documentId: docId,
+        version: 1,
+        storagePath: input.dataUrl,
+        taille: input.taille,
+        mimeType: input.mimeType,
+        uploadedBy: userId ?? undefined,
+        createdAt: now,
+      };
+      set((s) => ({
+        documents: [doc, ...s.documents],
+        documentVersions: [version, ...s.documentVersions],
+      }));
+      await get().addAuditLog(
+        AUDIT_MODULE.Documents,
+        AUDIT_ACTION.Creation,
+        `Document « ${input.nom} » uploadé (${input.categorie})`,
+        input.clientId,
+        { sourceType: "document", sourceId: doc.id },
+      );
+      return doc;
+    }
+
     const blob = await dataUrlToBlob(input.dataUrl);
     const checksum = await sha256Hex(blob);
 
@@ -155,6 +201,45 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     if (!existing) throw new Error("Document introuvable");
 
     const userId = currentUserId();
+
+    if (!isSupabaseConfigured) {
+      const nextVersion = existing.currentVersion + 1;
+      const now = new Date().toISOString();
+      const version: DocumentVersion = {
+        id: crypto.randomUUID(),
+        documentId,
+        version: nextVersion,
+        storagePath: file.dataUrl,
+        taille: file.taille,
+        mimeType: file.mimeType,
+        uploadedBy: userId ?? undefined,
+        createdAt: now,
+      };
+      set((s) => ({
+        documents: s.documents.map((doc) =>
+          doc.id === documentId
+            ? {
+                ...doc,
+                nom: file.nom,
+                mimeType: file.mimeType,
+                taille: file.taille,
+                currentVersion: nextVersion,
+                updatedAt: now,
+              }
+            : doc,
+        ),
+        documentVersions: [version, ...s.documentVersions],
+      }));
+      await get().addAuditLog(
+        AUDIT_MODULE.Documents,
+        AUDIT_ACTION.Modification,
+        `Document « ${file.nom} » remplacé (v${nextVersion})`,
+        existing.clientId,
+        { sourceType: "document", sourceId: documentId },
+      );
+      return version;
+    }
+
     const { data: nextVersionRaw, error: verErr } = await supabase.rpc(
       "next_document_version",
       { p_document_id: documentId },
@@ -235,6 +320,37 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
   updateDocumentMeta: async (id, input) => {
     const existing = get().documents.find((doc) => doc.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        documents: s.documents.map((doc) =>
+          doc.id === id
+            ? {
+                ...doc,
+                nom: input.nom ?? doc.nom,
+                categorie: input.categorie ?? doc.categorie,
+                dossierId: input.dossierId === null ? undefined : (input.dossierId ?? doc.dossierId),
+                factureId: input.factureId === null ? undefined : (input.factureId ?? doc.factureId),
+                clientId: input.clientId === null ? undefined : (input.clientId ?? doc.clientId),
+                entityType:
+                  input.entityType === null ? undefined : (input.entityType ?? doc.entityType),
+                entityId: input.entityId === null ? undefined : (input.entityId ?? doc.entityId),
+                updatedAt: new Date().toISOString(),
+              }
+            : doc,
+        ),
+      }));
+
+      await get().addAuditLog(
+        AUDIT_MODULE.Documents,
+        AUDIT_ACTION.Modification,
+        `Métadonnées du document « ${input.nom ?? existing?.nom ?? id} » mises à jour`,
+        input.clientId === null ? undefined : (input.clientId ?? existing?.clientId),
+        { sourceType: "document", sourceId: id },
+      );
+      return;
+    }
+
     const payload: Record<string, unknown> = {};
     if (input.nom !== undefined) payload.nom = input.nom;
     if (input.categorie !== undefined) payload.categorie = input.categorie;
@@ -277,6 +393,26 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
   deleteDocument: async (id) => {
     const doc = get().documents.find((item) => item.id === id);
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        documents: s.documents.filter((item) => item.id !== id),
+        documentVersions: s.documentVersions.filter((version) => version.documentId !== id),
+        ocrJobs: s.ocrJobs.filter((job) => job.documentId !== id),
+      }));
+
+      if (doc) {
+        await get().addAuditLog(
+          AUDIT_MODULE.Documents,
+          AUDIT_ACTION.Suppression,
+          `Document « ${doc.nom} » supprimé`,
+          doc.clientId,
+          { sourceType: "document", sourceId: id },
+        );
+      }
+      return;
+    }
+
     // Toujours recharger les versions depuis la DB pour éviter les orphelins storage.
     const versions = await get().getDocumentVersions(id);
     const paths = versions.map((version) => version.storagePath).filter(Boolean);
@@ -286,9 +422,6 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
     const storageOk = await removeDocumentStoragePaths(paths);
     if (!storageOk) {
-      // La ligne DB est déjà supprimée (succès affiché) mais le fichier peut
-      // rester orphelin en Storage — le signaler au lieu d'avaler l'échec
-      // silencieusement, pour qu'un nettoyage manuel reste possible.
       toastWarning(toast, {
         title: "Document supprimé partiellement",
         description: "La fiche a été supprimée mais un fichier associé n'a pas pu être effacé du stockage.",
@@ -315,6 +448,10 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   getSignedDocumentUrl: async (storagePath) => getSignedDocumentUrl(storagePath),
 
   getDocumentVersions: async (documentId) => {
+    if (!isSupabaseConfigured) {
+      return get().documentVersions.filter((v) => v.documentId === documentId);
+    }
+
     const { data, error } = await supabase
       .from("document_versions")
       .select("*")
@@ -344,6 +481,22 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
     }
     if (!version) throw new Error("Version courante introuvable");
 
+    if (!isSupabaseConfigured) {
+      const job: OcrJob = {
+        id: crypto.randomUUID(),
+        documentId,
+        documentVersionId: version.id,
+        status: "pending",
+        provider: "tesseract",
+        targetForm,
+        createdBy: currentUserId() ?? undefined,
+        createdAt: new Date().toISOString(),
+        fields: [],
+      };
+      set((s) => ({ ocrJobs: [job, ...s.ocrJobs] }));
+      return job;
+    }
+
     const { data, error } = await supabase
       .from("ocr_jobs")
       .insert({
@@ -364,6 +517,35 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
   },
 
   updateOcrJobResult: async (jobId, result) => {
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        ocrJobs: s.ocrJobs.map((existingJob) =>
+          existingJob.id === jobId
+            ? {
+                ...existingJob,
+                status: result.status,
+                rawText: result.rawText ?? existingJob.rawText,
+                errorMessage: result.errorMessage ?? existingJob.errorMessage,
+                completedAt:
+                  result.status === "done" || result.status === "failed" || result.status === "validated"
+                    ? new Date().toISOString()
+                    : existingJob.completedAt,
+                fields: result.fields
+                  ? result.fields.map((f, i) => ({
+                      id: `local-field-${i}`,
+                      ocrJobId: jobId,
+                      fieldKey: f.fieldKey,
+                      fieldValue: f.fieldValue,
+                      confidence: f.confidence,
+                    }))
+                  : existingJob.fields,
+              }
+            : existingJob,
+        ),
+      }));
+      return get().ocrJobs.find((j) => j.id === jobId)!;
+    }
+
     // Statut simple (processing / failed) : update directe — plus fiable que la RPC.
     if (
       (result.status === "processing" || result.status === "failed") &&
@@ -484,6 +666,23 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
 
   failOcrJob: async (jobId, errorMessage) => {
     const completedAt = new Date().toISOString();
+
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        ocrJobs: s.ocrJobs.map((job) =>
+          job.id === jobId
+            ? {
+                ...job,
+                status: "failed",
+                errorMessage: errorMessage.slice(0, 2000),
+                completedAt,
+              }
+            : job,
+        ),
+      }));
+      return;
+    }
+
     const { error } = await supabase
       .from("ocr_jobs")
       .update({
@@ -514,10 +713,38 @@ export const createDocumentsSlice: StateCreator<SLTTState, [], [], DocumentsSlic
       throw new Error(`Transition job OCR invalide : ${existingJob.status} → validated`);
     }
 
+    if (!isSupabaseConfigured) {
+      set((s) => ({
+        ocrJobs: s.ocrJobs.map((job) => {
+          if (job.id !== jobId) return job;
+          const keys = new Set((job.fields || []).map((field) => field.fieldKey));
+          const fields = [
+            ...(job.fields || []).map((field) => ({
+              ...field,
+              validatedValue: validated[field.fieldKey] ?? field.validatedValue,
+            })),
+            ...Object.entries(validated)
+              .filter(([k]) => !keys.has(k))
+              .map(([fieldKey, fieldValue]) => ({
+                id: `local-${fieldKey}`,
+                ocrJobId: jobId,
+                fieldKey,
+                fieldValue,
+                validatedValue: fieldValue,
+              })),
+          ];
+          return {
+            ...job,
+            status: "validated" as const,
+            completedAt: new Date().toISOString(),
+            fields,
+          };
+        }),
+      }));
+      return;
+    }
+
     const entries = Object.entries(validated);
-    // Chaque entrée cible un field_key distinct pour ce job — indépendantes
-    // entre elles, donc parallélisables sans risque d'ordre ni de conflit
-    // d'écriture (chaque update-ou-insert garde sa logique inchangée).
     await Promise.all(
       entries.map(async ([fieldKey, value]) => {
         const { data: updated, error } = await supabase

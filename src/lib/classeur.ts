@@ -210,6 +210,8 @@ export async function fetchMouvementSuivi(
   sourceType: MouvementSourceType,
   sourceId: string,
 ): Promise<AuditEntry[]> {
+  if (!isSupabaseConfigured) return [];
+
   const { data, error } = await supabase
     .from("audit_logs")
     .select("*")

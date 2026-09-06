@@ -9,7 +9,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { pathForView } from "@/lib/app-navigation";
-import { supabase } from "@/lib/supabase";
 import { insertAuditLog } from "@/lib/audit";
 import { getErrorMessage } from "@/lib/utils";
 import { mapErrorToUserMessage } from "@/lib/error-messages";

@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { logError } from "@/shared/logger";
 import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
 
@@ -20,6 +20,8 @@ export async function uploadDocumentBlob(
   blob: Blob,
   contentType?: string,
 ): Promise<void> {
+  if (!isSupabaseConfigured) return;
+
   const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).upload(path, blob, {
     contentType: contentType || blob.type || "application/octet-stream",
     upsert: false,
@@ -31,6 +33,10 @@ export async function getSignedDocumentUrl(
   storagePath: string,
   expiresIn = SIGNED_URL_TTL_SEC,
 ): Promise<string> {
+  if (!isSupabaseConfigured) {
+    return storagePath;
+  }
+
   // Pont legacy : fichiers encore dans dossier_fichiers (data_url / bucket public).
   if (storagePath.startsWith("legacy/dossier_fichiers/")) {
     const id = storagePath.split("/")[2];
@@ -54,6 +60,8 @@ export async function getSignedDocumentUrl(
 /** Retourne false si la suppression a échoué (fichier(s) resté(s) orphelin(s) en Storage) — à surfacer à l'appelant plutôt qu'avaler silencieusement. */
 export async function removeDocumentStoragePaths(paths: string[]): Promise<boolean> {
   if (paths.length === 0) return true;
+  if (!isSupabaseConfigured) return true;
+
   const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
   if (error) {
     logError("[documents] Échec suppression storage", error, { message: error.message });

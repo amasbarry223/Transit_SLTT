@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type {
   ClotureCaisse,
@@ -86,10 +86,40 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     const initialReference = `OPC-${seq}`;
     const creePar = getConnectedUserName();
 
-    // Retry avec référence incrémentée si deux créations concurrentes ont
-    // calculé le même numéro — la contrainte unique en base
-    // (operations_comptables.reference) fait alors échouer l'un des deux
-    // inserts (même pattern que addBon/addDossier/addDevis/addFacture).
+    if (!isSupabaseConfigured) {
+      const newOperation: OperationComptable = {
+        id: crypto.randomUUID(),
+        reference: initialReference,
+        entiteType: "annexe",
+        annexeId: input.annexeId,
+        date: input.date,
+        clientId: input.clientId,
+        dossierId: input.dossierId,
+        clientNom: input.clientNom,
+        nature: input.nature,
+        type: input.type,
+        montant: input.montant,
+        modePaiement: input.modePaiement ?? "Espèces",
+        source: input.source ?? "saisie",
+        importRef: input.importRef,
+        creePar,
+      };
+
+      set((s) => ({
+        operationsComptables: [newOperation, ...s.operationsComptables],
+        operationComptableSeq: seq + 1,
+      }));
+
+      await get().addAuditLog(
+        AUDIT_MODULE.Comptabilite,
+        AUDIT_ACTION.Creation,
+        `Opération ${initialReference} — ${input.type} ${input.montant.toLocaleString("fr-FR")} FCFA (${input.nature})`,
+        input.clientId,
+        { sourceType: "operation_comptable", sourceId: newOperation.id },
+      );
+      return newOperation;
+    }
+
     const { data, reference } = await insertWithReferenceRetry<OperationComptableRow>(
       initialReference,
       (ref) =>
@@ -133,8 +163,10 @@ export const createComptabiliteGeneraleSlice: StateCreator<
 
   removeOperationComptable: async (id) => {
     const operation = get().operationsComptables.find((o) => o.id === id);
-    const { error } = await supabase.from("operations_comptables").delete().eq("id", id);
-    if (error) throw error;
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from("operations_comptables").delete().eq("id", id);
+      if (error) throw error;
+    }
     set((s) => ({ operationsComptables: s.operationsComptables.filter((o) => o.id !== id) }));
     if (operation) {
       await get().addAuditLog(
@@ -148,6 +180,46 @@ export const createComptabiliteGeneraleSlice: StateCreator<
   },
 
   recordClotureCaisse: async (input) => {
+    if (!isSupabaseConfigured) {
+      const ecart = input.soldeConstate - input.soldeTheorique;
+      const cloture: ClotureCaisse = {
+        id: crypto.randomUUID(),
+        entiteType: "annexe",
+        annexeId: input.annexeId,
+        periodeDebut: input.periodeDebut,
+        periodeFin: input.periodeFin,
+        soldeTheorique: input.soldeTheorique,
+        soldeConstate: input.soldeConstate,
+        ecart,
+        note: input.note,
+        cloturePar: getConnectedUserName(),
+        clotureLe: new Date().toISOString(),
+      };
+
+      set((s) => ({
+        cloturesCaisse: [
+          cloture,
+          ...s.cloturesCaisse.filter(
+            (c) =>
+              !(
+                c.entiteType === cloture.entiteType &&
+                c.annexeId === cloture.annexeId &&
+                c.periodeFin === cloture.periodeFin
+              ),
+          ),
+        ],
+      }));
+
+      await get().addAuditLog(
+        AUDIT_MODULE.Comptabilite,
+        AUDIT_ACTION.Validation,
+        `Clôture de caisse ${input.periodeDebut} → ${input.periodeFin} — écart ${cloture.ecart.toLocaleString("fr-FR")} FCFA`,
+        undefined,
+        { sourceType: "cloture_caisse", sourceId: cloture.id },
+      );
+      return cloture;
+    }
+
     const { data, error } = await supabase.rpc("record_cloture_caisse", {
       p_annexe_id: input.annexeId || null,
       p_periode_debut: input.periodeDebut,
@@ -183,3 +255,4 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     return cloture;
   },
 });
+

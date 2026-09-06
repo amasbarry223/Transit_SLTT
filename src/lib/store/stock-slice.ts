@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
 import type { ImportStockHistoriqueInput, SLTTState, StockItemInput, UpdateStockItemInput } from "@/lib/store";
 import type { MouvementRow, StockItemRow } from "@/lib/db-rows";
@@ -69,6 +69,33 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
   addStockItem: async (input) => {
     const seq = get().stockSeq;
 
+    if (!isSupabaseConfigured) {
+      const client = get().clients.find((c) => c.id === input.clientId);
+      const annexe = get().annexes.find((a) => a.id === input.annexeId);
+      const newItem: StockItem = {
+        id: crypto.randomUUID(),
+        marchandise: input.marchandise,
+        quantite: input.quantite,
+        unite: input.unite,
+        seuil: input.seuil,
+        depositaire: input.depositaire,
+        commercial: input.commercial,
+        sommePayee: input.sommePayee,
+        resteAPayer: input.resteAPayer,
+        date: input.date,
+        clientId: input.clientId,
+        clientNom: client?.nom,
+        annexeId: input.annexeId,
+        annexeNom: annexe?.nom,
+      };
+      set((s) => ({
+        stock: [newItem, ...s.stock],
+        stockSeq: seq + 1,
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Creation, `Article de stock créé : ${input.marchandise}`);
+      return newItem;
+    }
+
     const { data, error } = await supabase
       .from("stock_items")
       .insert({
@@ -100,6 +127,32 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
   addStockEntry: async (stockId, quantite, responsable) => {
     const stockItem = get().stock.find((s) => s.id === stockId);
     if (!stockItem) return;
+
+    if (!isSupabaseConfigured) {
+      const newQty = stockItem.quantite + quantite;
+      const newMouvement: Mouvement = {
+        id: crypto.randomUUID(),
+        annexeId: stockItem.annexeId,
+        annexeNom: stockItem.annexeNom,
+        date: new Date().toISOString(),
+        type: "Entrée",
+        marchandise: stockItem.marchandise,
+        quantite,
+        unite: stockItem.unite,
+        responsable,
+      };
+
+      set((s) => ({
+        stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
+        mouvements: [newMouvement, ...s.mouvements],
+      }));
+      await get().addAuditLog(
+        AUDIT_MODULE.Stock,
+        AUDIT_ACTION.Modification,
+        `Entrée de stock : +${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`,
+      );
+      return;
+    }
 
     // Mouvement appliqué atomiquement côté serveur (quantite = quantite + delta,
     // jamais un calcul client) pour éviter une perte de mise à jour si deux
@@ -142,6 +195,37 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
   addStockExit: async (stockId, quantite, responsable, bonRef, motif) => {
     const stockItem = get().stock.find((s) => s.id === stockId);
     if (!stockItem) return;
+
+    if (!isSupabaseConfigured) {
+      if (stockItem.quantite < quantite) {
+        throw new Error("Quantité supérieure au stock disponible.");
+      }
+      const newQty = stockItem.quantite - quantite;
+      const newMouvement: Mouvement = {
+        id: crypto.randomUUID(),
+        annexeId: stockItem.annexeId,
+        annexeNom: stockItem.annexeNom,
+        date: new Date().toISOString(),
+        type: "Sortie",
+        marchandise: stockItem.marchandise,
+        quantite,
+        unite: stockItem.unite,
+        responsable,
+        bonRef,
+        motif,
+      };
+
+      set((s) => ({
+        stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
+        mouvements: [newMouvement, ...s.mouvements],
+      }));
+      await get().addAuditLog(
+        AUDIT_MODULE.Stock,
+        AUDIT_ACTION.Modification,
+        `Sortie de stock : -${quantite} ${stockItem.unite} pour ${stockItem.marchandise}`,
+      );
+      return;
+    }
 
     const { data, error } = await supabase
       .rpc("apply_stock_movement", {
@@ -334,6 +418,32 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
   updateStockItem: async (id, input) => {
     const marchandise = input.marchandise.trim() || "Article à renommer";
     const unite = input.unite.trim() || "—";
+
+    if (!isSupabaseConfigured) {
+      const existing = get().stock.find((s) => s.id === id);
+      const client = input.clientId ? get().clients.find((c) => c.id === input.clientId) : undefined;
+      const updated: StockItem = {
+        id,
+        marchandise,
+        unite,
+        seuil: input.seuil,
+        depositaire: input.depositaire?.trim() || "—",
+        commercial: input.commercial?.trim() || "—",
+        sommePayee: input.sommePayee,
+        resteAPayer: input.resteAPayer,
+        date: input.date,
+        clientId: input.clientId,
+        clientNom: client?.nom ?? existing?.clientNom,
+        annexeId: existing?.annexeId ?? "",
+        annexeNom: existing?.annexeNom,
+        quantite: existing?.quantite ?? 0,
+      };
+      set((s) => ({
+        stock: s.stock.map((item) => (item.id === id ? updated : item)),
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Modification, `Article de stock modifié : ${marchandise}`);
+      return updated;
+    }
 
     const { data, error } = await supabase
       .from("stock_items")
