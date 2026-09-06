@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { logError, logWarn } from "@/shared/logger";
 
 export type AuditAction =
@@ -143,6 +143,7 @@ export async function insertAuditLog(params: {
   annexeId?: string;
 }): Promise<AuditEntry | null> {
   const ip = params.ip ?? (await resolveClientIp());
+  if (!isSupabaseConfigured) return null;
 
   try {
     const { data, error } = await supabase

@@ -6,7 +6,7 @@
 import type { AuditEntry } from "@/lib/audit";
 import { mapAuditLogFromDb, type AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { logWarn } from "@/shared/logger";
 import { resolveSlttBrand } from "@/lib/societe-brand";
 
@@ -134,6 +134,8 @@ function mapClasseurRowFromDb(row: ClasseurMouvementRow): ClasseurEntry {
 }
 
 export async function fetchClasseurMouvements(clientId: string): Promise<ClasseurEntry[] | null> {
+  if (!isSupabaseConfigured) return null;
+
   const { data, error } = await supabase
     .from("classeur_mouvements")
     .select("*")

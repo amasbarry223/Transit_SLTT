@@ -31,8 +31,12 @@ export function formatFCFACompact(amount: number): string {
  * midnight UTC, so getFullYear()/getMonth()/getDate() never shift by a day
  * in timezones behind UTC. Datetime strings (containing "T") are parsed as-is.
  */
-export function parseLocalDate(date: string): Date {
-  return date.includes("T") ? new Date(date) : new Date(`${date}T12:00:00`);
+export function parseLocalDate(date?: string | null | Date): Date {
+  if (!date) return new Date();
+  if (date instanceof Date) return isNaN(date.getTime()) ? new Date() : date;
+  const str = String(date).trim();
+  if (!str) return new Date();
+  return str.includes("T") ? new Date(str) : new Date(`${str}T12:00:00`);
 }
 
 function pad2(n: number): string {

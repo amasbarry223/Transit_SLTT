@@ -10,27 +10,27 @@ import type { UserRole } from "@/lib/domain-types";
 
 function useEffectivePermissionUser() {
   const currentUserId = useSession((s) => s.currentUserId);
+  const currentRole = useSession((s) => s.currentRole);
   const user = useStore((s) => s.users.find((u) => u.id === currentUserId));
-  const dataLoading = useStore((s) => s.dataLoading);
 
-  // Profil pas encore hydraté : pas de repli sur les defaults du rôle (évite
-  // un flash de modules interdits avant fetchData).
-  if (currentUserId && !user) {
-    if (dataLoading) return null;
-    return null;
+  if (user) {
+    return resolvePermissionUser(user);
   }
 
-  return resolvePermissionUser(user);
+  if (currentRole) {
+    return resolvePermissionUser(null, currentRole);
+  }
+
+  return null;
 }
 
 /** True lorsque le profil connecté est chargé et utilisable pour les checks UI. */
 export function usePermissionsReady(): boolean {
   const currentUserId = useSession((s) => s.currentUserId);
+  const currentRole = useSession((s) => s.currentRole);
   const hasUser = useStore((s) => s.users.some((u) => u.id === currentUserId));
-  const dataLoading = useStore((s) => s.dataLoading);
   if (!currentUserId) return false;
-  if (dataLoading) return false;
-  return hasUser;
+  return hasUser || Boolean(currentRole);
 }
 
 /** Retourne true si l'utilisateur connecté possède la permission demandée. */

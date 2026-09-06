@@ -64,6 +64,13 @@ export const useSession = create<SessionState>()((set) => ({
     set({ ...LOGGED_OUT });
     useNav.getState().resetNavigation();
 
+    try {
+      const { api } = await import("@/lib/api-client");
+      await api.auth.logout();
+    } catch {
+      /* ignore */
+    }
+
     if (!isSupabaseConfigured) return;
 
     try {

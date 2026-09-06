@@ -1,6 +1,8 @@
 "use client";
 
 import { useSession } from "@/lib/session/session-store";
+import { api } from "@/lib/api-client";
+import type { UserRole } from "@/lib/domain-types";
 
 import { BRAND } from "@/lib/brand-colors";
 import { useState } from "react";
@@ -42,6 +44,25 @@ function LoginBackground() {
   );
 }
 
+function mapRole(role: string): UserRole {
+  switch (role) {
+    case "ADMIN":
+    case "Administrateur":
+      return "Administrateur";
+    case "AGENT_TRANSIT":
+    case "Agent de transit":
+      return "Agent de transit";
+    case "COMPTABLE":
+    case "Comptable":
+      return "Comptable";
+    case "MAGASINIER":
+    case "Magasinier":
+      return "Magasinier";
+    default:
+      return "Administrateur";
+  }
+}
+
 export function LoginScreen() {
   const loginNav = useSession((s) => s.login);
   const router = useRouter();
@@ -58,61 +79,20 @@ export function LoginScreen() {
     setLoading(true);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: userEmail.toLowerCase().trim(),
-        password: userPassword,
-      });
+      const authRes = await api.auth.login(userEmail.toLowerCase().trim(), userPassword);
+      const user = authRes.user;
 
-      if (authError || !authData.user) {
-        setError(mapErrorToUserMessage(authError, "L'adresse e-mail ou le mot de passe est incorrect. Vérifiez vos identifiants et réessayez."));
+      if (!user) {
+        setError("Identifiants incorrects. Vérifiez votre email et mot de passe.");
         return;
       }
 
-      // Récupération du profil utilisateur
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", authData.user.id)
-        .single();
-
-      if (profileError || !profile) {
-        setError(
-          "Votre compte existe mais son profil est introuvable. Contactez l'administrateur de votre société pour réactiver l'accès.",
-        );
-        await supabase.auth.signOut();
-        return;
-      }
-
-      if (!profile.actif) {
-        setError(
-          "Votre compte est désactivé. Contactez l'administrateur de votre société pour le réactiver.",
-        );
-        await supabase.auth.signOut();
-        return;
-      }
-
-      // Mise à jour de la dernière connexion
-      await supabase
-        .from("profiles")
-        .update({ derniere_connexion: new Date().toISOString() })
-        .eq("id", profile.id);
-
-      void insertAuditLog({
-        module: "Authentification",
-        action: "Connexion",
-        detail: `Connexion réussie — ${profile.email ?? userEmail.toLowerCase().trim()}`,
-        userName: profile.nom,
-      });
-
-      useUiPrefs.getState().hydratePrefs(prefsFromProfile(profile));
-      loginNav(profile.role, profile.nom, profile.id);
-      // La vue interne repasse au dashboard (resetNavigation), mais l'URL du
-      // navigateur ne suit pas d'elle-même — resynchronise-la pour qu'un
-      // retour arrière/F5 ne ramène pas sur la page consultée avant la
-      // (re)connexion.
+      const role = mapRole(user.role);
+      loginNav(role, user.nom, user.id);
       router.replace(pathForView("dashboard"));
-    } catch (e) {
-      setError(getErrorMessage(e, "Connexion impossible pour le moment. Vérifiez votre connexion et réessayez."));
+    } catch (e: any) {
+      const msg = e?.data?.message || e?.message || "Connexion impossible. Vérifiez que le serveur backend tourne.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

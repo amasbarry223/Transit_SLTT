@@ -6,6 +6,8 @@ import { wipeStaleAppStorage } from "@/lib/session/legacy-persist";
 import { prefsFromProfile, useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useStore } from "@/lib/store";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { api } from "@/lib/api-client";
+import { normalizeRole } from "@/lib/permissions";
 import { LoginScreen, SupabaseRequiredScreen } from "@/features/auth";
 import { logWarn } from "@/shared/logger";
 import { AppShell } from "@/components/sltt/layout/app-shell";
@@ -62,10 +64,6 @@ async function cleanupForeignServiceWorkers(): Promise<"reload" | "ok"> {
 }
 
 export function AppRoot() {
-  if (!isSupabaseConfigured) {
-    return <SupabaseRequiredScreen />;
-  }
-
   return <AppRootInner />;
 }
 
@@ -91,157 +89,34 @@ function AppRootInner() {
     restoreRef.current = restoreSession;
   }, [logout, restoreSession]);
 
-  // Aligne Zustand sur le JWT Supabase. Sans JWT, le RLS renvoie [] → écrans vides.
+  // Synchronisation de session avec l'API NestJS
   useEffect(() => {
     let cancelled = false;
-    let markedReady = false;
-    let subscription: { unsubscribe: () => void } | null = null;
 
-    function markReady() {
-      if (cancelled || markedReady) return;
-      markedReady = true;
-      setAuthReady(true);
-    }
-
-    // Filet de sécurité : même si getSession / le réseau hang, afficher login/shell.
-    const safetyTimer = setTimeout(() => {
-      if (process.env.NODE_ENV === "development") {
-        logWarn("[SLTT] Timeout sync session — déblocage UI");
-      }
-      markReady();
-    }, AUTH_READY_TIMEOUT_MS);
-
-    async function applyProfile(userId: string) {
-      let lastError: string | null = null;
-
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("id, nom, role, actif, theme, date_format, selected_annexe_id")
-          .eq("id", userId)
-          .abortSignal(AbortSignal.timeout(PROFILE_QUERY_TIMEOUT_MS))
-          .maybeSingle();
-
-        // Erreur réseau / temporaire : ne pas forcer un logout (évite boucle signOut).
-        if (error) {
-          lastError = error.message;
-          if (
-            /failed to fetch|networkerror|load failed|abort|timed out/i.test(error.message) &&
-            attempt < 2
-          ) {
-            await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
-            continue;
-          }
-          if (process.env.NODE_ENV === "development") {
-            logWarn("[SLTT] Lecture profil", error, { message: error.message });
-          }
-          return false;
-        }
-
-        if (!profile || profile.actif === false) {
-          useUiPrefs.getState().resetPrefs();
-          await logoutRef.current();
-          return false;
-        }
-
-        restoreRef.current(profile.role, profile.nom, profile.id);
-        useUiPrefs.getState().hydratePrefs(prefsFromProfile(profile));
-        return true;
-      }
-
-      if (lastError && process.env.NODE_ENV === "development") {
-        logWarn("[SLTT] Lecture profil", lastError);
-      }
-      return false;
-    }
-
-    async function handleSession(session: { user: { id: string } } | null) {
-      if (!session?.user) {
-        useUiPrefs.getState().resetPrefs();
-        if (useSession.getState().isAuthenticated) {
-          await logoutRef.current();
-        }
-        return;
-      }
-      await applyProfile(session.user.id);
-    }
-
-    async function boot() {
-      // SW d'un autre projet sur localhost:3000 peut intercepter les fetch Supabase
-      // et laisser getSession() / les requêtes pendantes à jamais.
-      const swStatus = await cleanupForeignServiceWorkers();
-      if (swStatus === "reload" || cancelled) return;
-
-      const { data } = supabase.auth.onAuthStateChange((event, session) => {
-        // Différer les appels Supabase pour éviter le deadlock du client auth.
-        setTimeout(() => {
-          void (async () => {
-            if (cancelled) return;
-            try {
-              if (event === "INITIAL_SESSION") {
-                await handleSession(session);
-                markReady();
-                return;
-              }
-
-              if (event === "SIGNED_OUT" || !session?.user) {
-                useUiPrefs.getState().resetPrefs();
-                if (useSession.getState().isAuthenticated) {
-                  await logoutRef.current();
-                }
-                return;
-              }
-
-              if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-                await applyProfile(session.user.id);
-              }
-            } catch (e) {
-              if (process.env.NODE_ENV === "development") {
-                logWarn("[SLTT] Auth state change", e);
-              }
-              if (event === "INITIAL_SESSION") markReady();
-            }
-          })();
-        }, 0);
-      });
-      subscription = data.subscription;
-      if (cancelled) {
-        subscription.unsubscribe();
-        return;
-      }
-
-      // Repli si INITIAL_SESSION n'arrive pas (réseau / init Auth bloquée).
+    async function initSession() {
       try {
-        const result = await Promise.race([
-          supabase.auth.getSession().then((r) => ({ ok: true as const, r })),
-          new Promise<{ ok: false }>((resolve) =>
-            setTimeout(() => resolve({ ok: false }), AUTH_READY_TIMEOUT_MS - 500),
-          ),
-        ]);
+        await cleanupForeignServiceWorkers();
+        const user = api.getCurrentUser();
+        const token = api.getAccessToken();
 
-        if (cancelled || markedReady) return;
-
-        if (result.ok) {
-          if (result.r.error && process.env.NODE_ENV === "development") {
-            logWarn("[SLTT] getSession", result.r.error, { message: result.r.error.message });
-          }
-          await handleSession(result.r.data.session);
+        if (user && token && !cancelled) {
+          restoreRef.current(normalizeRole(user.role), user.nom, user.id);
         }
       } catch (e) {
         if (process.env.NODE_ENV === "development") {
-          logWarn("[SLTT] Sync session Auth", e);
+          logWarn("[SLTT] Erreur init session NestJS", e);
         }
       } finally {
-        markReady();
+        if (!cancelled) {
+          setAuthReady(true);
+        }
       }
     }
 
-    void boot();
+    void initSession();
 
     return () => {
       cancelled = true;
-      clearTimeout(safetyTimer);
-      subscription?.unsubscribe();
     };
   }, []);
 

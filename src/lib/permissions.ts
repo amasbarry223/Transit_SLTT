@@ -219,36 +219,50 @@ export interface PermissionUser {
   actif?: boolean;
 }
 
+export function normalizeRole(role: string | null | undefined): UserRole {
+  if (!role) return "Administrateur";
+  switch (role) {
+    case "ADMIN":
+    case "Administrateur":
+      return "Administrateur";
+    case "AGENT_TRANSIT":
+    case "Agent de transit":
+      return "Agent de transit";
+    case "COMPTABLE":
+    case "Comptable":
+      return "Comptable";
+    case "MAGASINIER":
+    case "Magasinier":
+      return "Magasinier";
+    default:
+      return "Administrateur";
+  }
+}
+
 export function hasPermission(user: PermissionUser | null | undefined, perm: string): boolean {
   if (!user || user.actif === false) return false;
-  if (user.role === "Administrateur") return true;
-  // Les permissions stockées font foi telles quelles — y compris un tableau
-  // vide, qui signifie "aucun accès" (un admin peut retirer tous les droits
-  // d'un utilisateur sans changer son rôle). Retomber sur les permissions
-  // par défaut du rôle ici contredirait la policy RLS has_permission() côté
-  // base, qui ne fait elle-même aucun repli sur le rôle.
+  const role = normalizeRole(user.role);
+  if (role === "Administrateur") return true;
   return normalizePermissions(user.permissions).includes(perm);
 }
 
 /**
  * Résout l'utilisateur effectif pour les checks de permission.
- * Sans profil hydraté, retourne null — ne jamais retomber sur le rôle de
- * session (mémoire, pas une source d'autorisation).
  */
 export function resolvePermissionUser(
   user: PermissionUser | null | undefined,
-  fallbackRole?: UserRole | null,
+  fallbackRole?: string | null,
 ): PermissionUser | null {
   if (user) {
     if (user.actif === false) return null;
-    // Cf. hasPermission : un tableau vide signifie "aucun accès", pas
-    // "utiliser les permissions par défaut du rôle".
-    return { ...user, permissions: normalizePermissions(user.permissions) };
+    const role = normalizeRole(user.role);
+    return { ...user, role, permissions: normalizePermissions(user.permissions) };
   }
   if (fallbackRole) {
+    const role = normalizeRole(fallbackRole);
     return {
-      role: fallbackRole,
-      permissions: ROLE_DEFAULT_PERMISSIONS[fallbackRole] ?? [],
+      role,
+      permissions: ROLE_DEFAULT_PERMISSIONS[role] ?? [],
       actif: true,
     };
   }

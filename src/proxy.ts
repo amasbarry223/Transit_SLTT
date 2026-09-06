@@ -34,7 +34,7 @@ export function proxy(request: NextRequest) {
     // Logos Storage + aperçus documents (signed URLs Supabase)
     `img-src 'self' data: blob: ${supabaseUrl}`,
     "font-src 'self' data:",
-    `connect-src 'self' ${supabaseUrl} ${supabaseWsUrl} blob:`,
+    `connect-src 'self' http://localhost:3001 ws://localhost:3001 ${supabaseUrl} ${supabaseWsUrl} blob:`,
     "worker-src 'self'",
     "manifest-src 'self'",
     "worker-src 'self' blob:",

@@ -1,8 +1,7 @@
 import type { StateCreator } from "zustand";
 import { logError, logWarn } from "@/shared/logger";
 import { mapErrorToUserMessage } from "@/lib/error-messages";
-import { UI } from "@/lib/ui-messages";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ProfilePublicRow } from "@/lib/db-rows";
 import type { SLTTState } from "@/lib/store";
 import {
@@ -143,6 +142,72 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
 
   const runFetchData = async () => {
     set({ dataLoading: true, loadError: null, partialLoadWarning: null });
+
+    if (!isSupabaseConfigured) {
+      try {
+        const { api } = await import("@/lib/api-client");
+        const [dossiersRes, clients, annexes] = await Promise.all([
+          api.dossiers.getAll().catch(() => ({ data: [] })),
+          api.clients.getAll().catch(() => []),
+          api.annexes.getAll().catch(() => []),
+        ]);
+        const currentUser = api.getCurrentUser();
+        const users = currentUser
+          ? [
+              {
+                id: currentUser.id,
+                nom: currentUser.nom,
+                email: currentUser.email,
+                role: (currentUser.role === "ADMIN" ? "Administrateur" : currentUser.role) as any,
+                permissions: currentUser.permissions || [],
+                actif: true,
+                derniereConnexion: new Date().toISOString(),
+                annexeIds: currentUser.annexeIds || [],
+              },
+            ]
+          : [];
+
+        const rawDossiers = Array.isArray(dossiersRes?.data)
+          ? dossiersRes.data
+          : Array.isArray(dossiersRes)
+          ? dossiersRes
+          : [];
+        const mappedDossiers = rawDossiers.map((d: any) => ({
+          id: d.id,
+          reference: d.numero || d.reference || `DOS-${(d.id || "").slice(0, 6)}`,
+          annexeId: d.annexeId || d.annexe_id || "",
+          annexeNom: d.annexe?.nom || "",
+          clientId: d.clientId || d.client_id || "",
+          clientNom: d.client?.nom || "—",
+          bl: d.numeroBl || d.bl || "",
+          camion: d.camion || "",
+          nature: d.marchandise || d.nature || "Marchandises diverses",
+          droitDouane: Number(d.valeurDouane || d.droitDouane || 0),
+          fraisCircuit: Number(d.fraisCircuit || 0),
+          fraisPrestation: Number(d.fraisPrestation || 0),
+          montantInvesti: Number(d.montantInvesti || 0),
+          montantPaye: Number(d.montantPaye || 0),
+          statut: (d.statut === "BROUILLON" ? "Brouillon" : d.statut === "CLOTURE" ? "Soldé" : "En cours") as any,
+          date: d.createdAt ? new Date(d.createdAt).toISOString().split("T")[0] : (d.date || new Date().toISOString().split("T")[0]),
+          notes: d.notes || undefined,
+        }));
+
+        set((state) => ({
+          ...state,
+          dossiers: mappedDossiers as any,
+          clients: (clients || []) as any,
+          annexes: (annexes || []) as any,
+          users: (users.length > 0 ? users : state.users) as any,
+          dataLoading: false,
+          lastSyncedAt: Date.now(),
+        }));
+      } catch (error) {
+        logWarn("[SLTT] Chargement données NestJS", error);
+        set({ dataLoading: false, lastSyncedAt: Date.now() });
+      }
+      return;
+    }
+
     try {
       const {
         data: { session },
