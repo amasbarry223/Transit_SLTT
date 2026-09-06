@@ -248,6 +248,23 @@ class ApiClient {
       }),
   };
 
+
+  // ---------------------------------------------------------------------------
+  // Devis
+  // ---------------------------------------------------------------------------
+  devis = {
+    getAll: (clientId?: string) => {
+      const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
+      return this.request<any[]>(`/devis${qs}`);
+    },
+    getById: (id: string) => this.request<any>(`/devis/${id}`),
+    create: (data: any) =>
+      this.request<any>('/devis', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  };
+
   // ---------------------------------------------------------------------------
   // Factures
   // ---------------------------------------------------------------------------
