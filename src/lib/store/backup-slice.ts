@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { api } from "@/lib/api-client";
 import type { SLTTState } from "@/lib/store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
@@ -26,28 +26,20 @@ export interface BackupSlice {
 
 export const createBackupSlice: StateCreator<SLTTState, [], [], BackupSlice> = (set, get) => ({
   listBackupTables: async () => {
-    if (!isSupabaseConfigured) return [];
-    const { data, error } = await supabase.rpc("list_business_tables");
-    if (error) throw error;
-    return (data as string[]) ?? [];
+    try {
+      const data = await api.backup.listTables();
+      return data ?? [];
+    } catch {
+      return [];
+    }
   },
 
   exportBackup: async () => {
-    if (!isSupabaseConfigured) {
-      return { meta: { exportedAt: new Date().toISOString(), tables: [] }, data: {} };
-    }
-    const { data, error } = await supabase.rpc("export_business_data");
-    if (error) throw error;
-    return data as BackupExportPayload;
+    return api.backup.export();
   },
 
   wipeBusinessData: async () => {
-    if (!isSupabaseConfigured) {
-      return {};
-    }
-    const { data, error } = await supabase.rpc("wipe_business_data");
-    if (error) throw error;
-    const report = (data as Record<string, number>) ?? {};
+    const report = await api.backup.wipe();
 
     await get().addAuditLog(
       AUDIT_MODULE.Systeme,
@@ -59,12 +51,7 @@ export const createBackupSlice: StateCreator<SLTTState, [], [], BackupSlice> = (
   },
 
   restoreBackup: async (backupData) => {
-    if (!isSupabaseConfigured) {
-      return { restored: {}, missingTables: [] };
-    }
-    const { data, error } = await supabase.rpc("restore_business_data", { payload: backupData });
-    if (error) throw error;
-    const result = (data as { restored?: Record<string, number>; missingTables?: string[] }) ?? {};
+    const result = await api.backup.restore(backupData);
     const restored = result.restored ?? {};
     const missingTables = result.missingTables ?? [];
 

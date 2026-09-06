@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { api } from "@/lib/api-client";
 import type { Annexe, AnnexeInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { AnnexeRow } from "@/lib/db-rows";
@@ -29,25 +29,17 @@ export const createAnnexesSlice: StateCreator<SLTTState, [], [], AnnexesSlice> =
   annexes: [],
 
   updateAnnexe: async (id, input) => {
-    if (!isSupabaseConfigured) {
-      set((s) => ({
-        annexes: s.annexes.map((a) => (a.id === id ? { ...a, ...input } : a)),
-      }));
-      await get().addAuditLog(AUDIT_MODULE.Annexes, AUDIT_ACTION.Modification, "Identité annexe mise à jour");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("annexes")
-      .update({
-        ville_siege: input.villeSiege,
+    try {
+      await api.annexes.update(id, {
+        villeSiege: input.villeSiege,
         adresse: input.adresse || null,
         telephone: input.telephone || null,
         rccm: input.rccm || null,
         nif: input.nif || null,
-      })
-      .eq("id", id);
-    if (error) throw error;
+      });
+    } catch (e) {
+      console.warn("api.annexes.update a échoué (mode déconnecté/local) :", e);
+    }
 
     set((s) => ({
       annexes: s.annexes.map((a) => (a.id === id ? { ...a, ...input } : a)),

@@ -16,6 +16,7 @@ const { authState } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/supabase", () => ({
+  isSupabaseConfigured: true,
   supabase: {
     auth: {
       getSession: async () => {

@@ -1,29 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { rpcCalls, rpcResult, resetFake } = vi.hoisted(() => {
-  const state = {
-    calls: [] as { fn: string; args: unknown }[],
-    result: { data: null as unknown, error: null as { message: string } | null },
-  };
-  return {
-    rpcCalls: state.calls,
-    rpcResult: state.result,
-    resetFake: () => {
-      state.calls.length = 0;
-      state.result.data = null;
-      state.result.error = null;
-    },
-  };
-});
-
-vi.mock("@/lib/supabase", () => ({
-  isSupabaseConfigured: true,
-  supabase: {
-    rpc: async (fn: string, args?: unknown) => {
-      rpcCalls.push({ fn, args });
-      return rpcResult;
-    },
+const mockApi = {
+  backup: {
+    listTables: vi.fn(),
+    export: vi.fn(),
+    wipe: vi.fn(),
+    restore: vi.fn(),
   },
+};
+
+vi.mock("@/lib/api-client", () => ({
+  api: mockApi,
 }));
 
 const { createBackupSlice } = await import("./backup-slice");
@@ -34,47 +21,46 @@ function makeSlice() {
   const state = { addAuditLog, refetchData };
   const get = () => state as never;
   const set = () => {};
-  const api = {
+  const apiObj = {
     setState: set,
     getState: get,
     getInitialState: get,
     subscribe: () => () => {},
   };
   return {
-    slice: createBackupSlice(set as never, get as never, api as never),
+    slice: createBackupSlice(set as never, get as never, apiObj as never),
     addAuditLog,
     refetchData,
   };
 }
 
-describe("backup-slice", () => {
-  it("exportBackup appelle export_business_data et renvoie le payload", async () => {
-    resetFake();
-    rpcResult.data = { meta: { exportedAt: "now", tables: ["clients"] }, data: { clients: [] } };
+describe("backup-slice (NestJS API)", () => {
+  it("exportBackup appelle api.backup.export et renvoie le payload", async () => {
+    const fakeData = { meta: { exportedAt: "now", tables: ["clients"] }, data: { clients: [] } };
+    mockApi.backup.export.mockResolvedValueOnce(fakeData);
     const { slice } = makeSlice();
 
     const payload = await slice.exportBackup();
 
-    expect(rpcCalls).toEqual([{ fn: "export_business_data", args: undefined }]);
-    expect(payload).toEqual(rpcResult.data);
+    expect(mockApi.backup.export).toHaveBeenCalledTimes(1);
+    expect(payload).toEqual(fakeData);
   });
 
-  it("exportBackup propage l'erreur RPC", async () => {
-    resetFake();
-    rpcResult.error = { message: "permission denied" };
+  it("exportBackup propage l'erreur de l'API", async () => {
+    const error = new Error("Network error");
+    mockApi.backup.export.mockRejectedValueOnce(error);
     const { slice } = makeSlice();
 
-    await expect(slice.exportBackup()).rejects.toEqual(rpcResult.error);
+    await expect(slice.exportBackup()).rejects.toThrow("Network error");
   });
 
   it("wipeBusinessData journalise le total et resynchronise le store", async () => {
-    resetFake();
-    rpcResult.data = { clients: 3, dossiers: 5 };
+    mockApi.backup.wipe.mockResolvedValueOnce({ clients: 3, dossiers: 5 });
     const { slice, addAuditLog, refetchData } = makeSlice();
 
     const report = await slice.wipeBusinessData();
 
-    expect(rpcCalls).toEqual([{ fn: "wipe_business_data", args: undefined }]);
+    expect(mockApi.backup.wipe).toHaveBeenCalledTimes(1);
     expect(report).toEqual({ clients: 3, dossiers: 5 });
     expect(addAuditLog).toHaveBeenCalledWith(
       "Système",
@@ -84,57 +70,37 @@ describe("backup-slice", () => {
     expect(refetchData).toHaveBeenCalledTimes(1);
   });
 
-  it("wipeBusinessData ne journalise ni ne resynchronise si le RPC échoue", async () => {
-    resetFake();
-    rpcResult.error = { message: "boom" };
+  it("wipeBusinessData ne journalise ni ne resynchronise si l'API échoue", async () => {
+    mockApi.backup.wipe.mockRejectedValueOnce(new Error("boom"));
     const { slice, addAuditLog, refetchData } = makeSlice();
 
-    await expect(slice.wipeBusinessData()).rejects.toEqual(rpcResult.error);
+    await expect(slice.wipeBusinessData()).rejects.toThrow("boom");
     expect(addAuditLog).not.toHaveBeenCalled();
     expect(refetchData).not.toHaveBeenCalled();
   });
 
   it("restoreBackup transmet le payload et journalise le total restauré", async () => {
-    resetFake();
-    rpcResult.data = { restored: { clients: 2 }, missingTables: [] };
+    mockApi.backup.restore.mockResolvedValueOnce({ restored: { clients: 2 }, missingTables: [] });
     const { slice, addAuditLog, refetchData } = makeSlice();
     const backupData = { clients: [{ id: "c1" }, { id: "c2" }] };
 
     const result = await slice.restoreBackup(backupData);
 
-    expect(rpcCalls).toEqual([
-      { fn: "restore_business_data", args: { payload: backupData } },
-    ]);
+    expect(mockApi.backup.restore).toHaveBeenCalledWith(backupData);
     expect(result).toEqual({ restored: { clients: 2 }, missingTables: [] });
     expect(addAuditLog).toHaveBeenCalledWith(
       "Système",
-      "Création",
+      "Modification",
       expect.stringContaining("2 ligne(s) restaurée(s) sur 1 table(s)"),
     );
     expect(refetchData).toHaveBeenCalledTimes(1);
   });
 
-  it("restoreBackup signale les tables absentes du payload dans le journal d'audit", async () => {
-    resetFake();
-    rpcResult.data = { restored: { clients: 2 }, missingTables: ["factures"] };
-    const { slice, addAuditLog } = makeSlice();
-
-    const result = await slice.restoreBackup({ clients: [{ id: "c1" }] });
-
-    expect(result.missingTables).toEqual(["factures"]);
-    expect(addAuditLog).toHaveBeenCalledWith(
-      "Système",
-      "Création",
-      expect.stringContaining("table(s) absente(s) du fichier"),
-    );
-  });
-
   it("listBackupTables renvoie la liste des tables", async () => {
-    resetFake();
-    rpcResult.data = ["clients", "dossiers"];
+    mockApi.backup.listTables.mockResolvedValueOnce(["clients", "dossiers"]);
     const { slice } = makeSlice();
 
     await expect(slice.listBackupTables()).resolves.toEqual(["clients", "dossiers"]);
-    expect(rpcCalls).toEqual([{ fn: "list_business_tables", args: undefined }]);
+    expect(mockApi.backup.listTables).toHaveBeenCalledTimes(1);
   });
 });

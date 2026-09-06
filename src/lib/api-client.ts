@@ -351,6 +351,15 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/annexes/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/annexes/${id}`, {
+        method: 'DELETE',
+      }),
   };
 
   // ---------------------------------------------------------------------------
@@ -422,6 +431,30 @@ class ApiClient {
       this.request<any>(`/notifications/${id}/read`, { method: 'PATCH' }),
     markAllAsRead: () =>
       this.request<any>('/notifications/read-all', { method: 'PATCH' }),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Sauvegarde, Export & Restauration (Backup)
+  // ---------------------------------------------------------------------------
+  backup = {
+    listTables: () => this.request<string[]>('/backup/tables'),
+    export: () =>
+      this.request<{
+        meta: { exportedAt: string; tables: string[] };
+        data: Record<string, unknown[]>;
+      }>('/backup/export'),
+    wipe: () =>
+      this.request<Record<string, number>>('/backup/wipe', {
+        method: 'POST',
+      }),
+    restore: (payload: Record<string, unknown[]>) =>
+      this.request<{ restored: Record<string, number>; missingTables: string[] }>(
+        '/backup/restore',
+        {
+          method: 'POST',
+          body: JSON.stringify({ payload }),
+        },
+      ),
   };
 }
 

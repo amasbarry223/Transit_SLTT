@@ -18,6 +18,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { StatsModule } from './modules/stats/stats.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { UsersModule } from './modules/users/users.module';
+import { BackupModule } from './modules/backup/backup.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { UsersModule } from './modules/users/users.module';
     StatsModule,
     AuditLogsModule,
     UsersModule,
+    BackupModule,
   ],
 })
 export class AppModule {}
