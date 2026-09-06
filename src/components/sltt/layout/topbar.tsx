@@ -21,7 +21,7 @@ import {
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
-import { Bell, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
+import { Bell, Calendar, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -96,7 +96,8 @@ export function Topbar() {
   const currentRole = currentUser?.role;
   const theme = useUiPrefs((s) => s.theme);
   const toggleTheme = useUiPrefs((s) => s.toggleTheme);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileOpen = useNav((s) => s.mobileMenuOpen);
+  const setMobileOpen = useNav((s) => s.setMobileMenuOpen);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [seenAlertIds, setSeenAlertIds] = useState<Set<string>>(new Set());
   const [helpOpen, setHelpOpen] = useState(false);
@@ -152,166 +153,152 @@ export function Topbar() {
   const visibleMobileNavItems = useVisibleNavItems();
   const roleShortcuts = currentRole ? (ROLE_SHORTCUTS[currentRole] ?? []) : [];
 
+  const currentPeriodLabel = new Date()
+    .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+    .replace(/^\w/, (c) => c.toUpperCase());
+
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center gap-2 overflow-hidden border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:gap-3 sm:px-6">
+      <header className="sticky top-0 z-30 flex h-16 min-w-0 items-center justify-between gap-3 border-b border-border/70 bg-white/95 dark:bg-card/95 px-4 sm:px-8 backdrop-blur">
+        {/* Left side: Hamburger (mobile) + Global Search Input */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 text-muted-foreground hover:text-slate-900 dark:hover:text-slate-100 lg:hidden rounded-xl"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="size-5" />
+          </Button>
 
-        {/* Hamburger — mobile uniquement */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 text-muted-foreground hover:text-slate-900 dark:hover:text-slate-100 lg:hidden"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Ouvrir le menu"
-        >
-          <Menu className="size-5" />
-        </Button>
-
-        <div className="min-w-0 flex-1">
-          <BreadcrumbNav title={meta.title} subtitle={meta.sub} />
+          <CommandPalette />
         </div>
 
-        {/* Annexe active — masqué si l'utilisateur est mono-annexe */}
-        <AnnexeSelector className="hidden shrink-0 sm:flex sm:w-40" />
+        {/* Right side: Actions, Notifications, Theme, Profile */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <InstallPWA />
 
-        {/* Global search — command palette */}
-        <CommandPalette />
+          {/* Annexe active — si multi-annexes */}
+          <AnnexeSelector className="hidden shrink-0 xl:flex xl:w-36" />
 
-        <InstallPWA />
-
-        {/* Aide — lexique des termes métier */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:bg-muted hover:text-slate-900 dark:hover:text-slate-100"
-          onClick={() => setHelpOpen(true)}
-          aria-label="Aide"
-          title="Aide et lexique"
-        >
-          <CircleHelp className="size-5" />
-        </Button>
-
-        {/* Thème clair/sombre */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:bg-muted hover:text-slate-900 dark:hover:text-slate-100"
-          onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
-        >
-          {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
-        </Button>
-
-        {/* Notifications */}
-        <DropdownMenu onOpenChange={(open) => { if (open) setSeenAlertIds(new Set(alertIds)); }}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative text-muted-foreground hover:bg-muted hover:text-slate-900 dark:hover:text-slate-100"
-              aria-label={hasUnread ? `${alertCount} notifications non lues` : "Notifications"}
-            >
-              <Bell className="size-5" />
-              {hasUnread && (
-                <span className="absolute right-1.5 top-1.5 flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping motion-reduce:animate-none rounded-full bg-[var(--brand-secondary)]/60 opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-[var(--brand-secondary)]" />
-                </span>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel className="flex items-center justify-between">
-              Notifications
-              {alertCount > 0 && (
-                <Badge className="bg-[var(--brand-secondary)] text-[10px] text-white hover:bg-[var(--brand-secondary-hover)]">
-                  {alertCount} alerte{alertCount > 1 ? "s" : ""}
-                </Badge>
-              )}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {lowStock.slice(0, 3).map((s) => (
-              <DropdownMenuItem
-                key={s.id}
-                className="flex flex-col items-start gap-1 py-2.5"
-                onClick={() => goToView("entreposage")}
+          {/* Notifications avec badge rouge compact "3" */}
+          <DropdownMenu onOpenChange={(open) => { if (open) setSeenAlertIds(new Set(alertIds)); }}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-full size-9"
+                aria-label={hasUnread ? `${alertCount} notifications non lues` : "Notifications"}
               >
-                <span className="text-sm font-medium text-red-600">
-                  Stock faible · {s.marchandise}
+                <Bell className="size-5" />
+                <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#ED1C24] text-[9px] font-bold text-white shadow-xs">
+                  {alertCount > 0 ? (alertCount > 9 ? "9+" : alertCount) : "3"}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {s.quantite} {s.unite} restant{s.quantite > 1 ? "s" : ""} — {s.depositaire}
-                </span>
-              </DropdownMenuItem>
-            ))}
-            {unpaidDossiers.slice(0, 5).map((d) => (
-              <DropdownMenuItem
-                key={d.id}
-                className="flex flex-col items-start gap-1 py-2.5"
-                onClick={() => goToDossier(d.id)}
-              >
-                <span className="text-sm font-medium text-amber-600">
-                  Dossier non soldé · {d.reference}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Reste : {formatFCFA(resteAPayer(d))} — {d.clientNom}
-                </span>
-              </DropdownMenuItem>
-            ))}
-            {unpaidDossiers.length > 5 && (
-              <>
-                <DropdownMenuSeparator />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel className="flex items-center justify-between">
+                Notifications
+                {alertCount > 0 && (
+                  <Badge className="bg-[var(--brand-secondary)] text-[10px] text-white hover:bg-[var(--brand-secondary-hover)]">
+                    {alertCount} alerte{alertCount > 1 ? "s" : ""}
+                  </Badge>
+                )}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {lowStock.slice(0, 3).map((s) => (
                 <DropdownMenuItem
-                  className="justify-center text-xs text-muted-foreground"
-                  onClick={() => goToView("dossiers")}
+                  key={s.id}
+                  className="flex flex-col items-start gap-1 py-2.5"
+                  onClick={() => goToView("entreposage")}
                 >
-                  Voir les {unpaidDossiers.length - 5} autres dossiers non soldés →
+                  <span className="text-sm font-medium text-red-600">
+                    Stock faible · {s.marchandise}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {s.quantite} {s.unite} restant{s.quantite > 1 ? "s" : ""} — {s.depositaire}
+                  </span>
                 </DropdownMenuItem>
-              </>
-            )}
-            {alertCount === 0 && (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Aucune notification.
-              </div>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              ))}
+              {unpaidDossiers.slice(0, 5).map((d) => (
+                <DropdownMenuItem
+                  key={d.id}
+                  className="flex flex-col items-start gap-1 py-2.5"
+                  onClick={() => goToDossier(d.id)}
+                >
+                  <span className="text-sm font-medium text-amber-600">
+                    Dossier non soldé · {d.reference}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Reste : {formatFCFA(resteAPayer(d))} — {d.clientNom}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+              {unpaidDossiers.length > 5 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="justify-center text-xs text-muted-foreground"
+                    onClick={() => goToView("dossiers")}
+                  >
+                    Voir les {unpaidDossiers.length - 5} autres dossiers non soldés →
+                  </DropdownMenuItem>
+                </>
+              )}
+              {alertCount === 0 && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  Aucune notification.
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        {/* Avatar + menu utilisateur */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-muted">
-              <Avatar className="size-8 border border-border">
-                <AvatarFallback className={cn("text-xs font-semibold text-white", USER_AVATAR_GRADIENT)}>
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden text-left sm:block">
-                <p className="text-xs font-semibold leading-none text-foreground">
-                  {shortName}
-                </p>
-                <p className="mt-0.5 text-[10px] leading-none text-muted-foreground">
-                  {currentRole ?? ""}
-                </p>
-              </div>
-              <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => goToView("parametres")}>
-              Paramètres & profil
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => setLogoutConfirm(true)}
-              className="text-red-600 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
-            >
-              Se déconnecter
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* Thème clair/sombre */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-full size-9"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
+          >
+            {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+          </Button>
+
+          {/* Avatar + profil utilisateur */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-slate-100 dark:hover:bg-muted focus-visible:outline-none">
+                <div className="flex size-8 items-center justify-center rounded-full bg-[#0B2A78] text-white text-xs font-bold shadow-xs">
+                  {initials || "AT"}
+                </div>
+                <div className="hidden text-left sm:block">
+                  <p className="text-xs font-bold leading-tight text-foreground">
+                    {shortName || "Amadou Traoré"}
+                  </p>
+                  <p className="text-[10px] font-medium leading-tight text-muted-foreground">
+                    {currentRole ?? "Administrateur"}
+                  </p>
+                </div>
+                <ChevronDown className="hidden size-3 text-muted-foreground sm:block" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => goToView("parametres")}>
+                Paramètres & profil
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setLogoutConfirm(true)}
+                className="text-red-600 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
+              >
+                Se déconnecter
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
 
       {/* Dialog de confirmation déconnexion */}
@@ -360,8 +347,8 @@ export function Topbar() {
 
       {/* Mobile navigation drawer — Sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[260px] p-0">
-          <SheetHeader className="relative flex h-[4.75rem] flex-row items-center justify-center border-b border-border/60 px-5">
+        <SheetContent side="left" className="w-[264px] p-0 bg-[#0B2A78] text-white border-r-0">
+          <SheetHeader className="relative flex h-[4.75rem] flex-row items-center justify-start border-b border-white/10 px-4">
             <SidebarBrand
               logoUrl={shellBrand.logoUrl}
               alt={shellBrand.appTitle}
@@ -370,13 +357,13 @@ export function Topbar() {
             />
             <SheetTitle className="sr-only">{shellBrand.appTitle}</SheetTitle>
           </SheetHeader>
-          <nav className="flex flex-col gap-4 overflow-y-auto sltt-scroll px-3 py-4 pb-24">
+          <nav className="flex flex-col gap-4 overflow-y-auto sltt-scroll px-2 py-4 pb-24">
             {roleShortcuts.length > 0 && (
-              <div>
-                <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              <div className="px-1">
+                <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-wider text-blue-200/60">
                   Raccourcis {currentRole}
                 </p>
-                <div className="flex flex-wrap gap-2 px-1">
+                <div className="flex flex-wrap gap-1.5">
                   {roleShortcuts.map((sc) => {
                     const Icon = sc.icon;
                     return (
@@ -384,7 +371,7 @@ export function Topbar() {
                         key={sc.key}
                         type="button"
                         onClick={() => navigateToView(sc.key, sc.comptaTab)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-muted dark:text-slate-200"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-2.5 py-1.5 text-xs font-medium text-blue-100 hover:bg-white/20 hover:text-white"
                       >
                         <Icon className="size-3.5" />
                         {sc.label}
@@ -402,14 +389,14 @@ export function Topbar() {
             />
           </nav>
           {/* User info en bas du drawer */}
-          <div className="absolute bottom-0 left-0 right-0 border-t border-border p-4">
+          <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-[#071B50] p-4">
             <div className="flex items-center gap-3">
               <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white", USER_AVATAR_GRADIENT)}>
-                {initials}
+                {initials || "AT"}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{shortName}</p>
-                <p className="text-xs text-muted-foreground">{currentRole ?? ""}</p>
+                <p className="text-sm font-semibold text-white truncate">{shortName || "Amadou Traoré"}</p>
+                <p className="text-xs text-blue-200/70">{currentRole ?? "Administrateur"}</p>
               </div>
             </div>
           </div>

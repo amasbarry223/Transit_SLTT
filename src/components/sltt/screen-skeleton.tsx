@@ -4,7 +4,7 @@ import type { ViewKey } from "@/lib/nav-store";
 import { cn } from "@/lib/utils";
 
 function Bone({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-md bg-slate-200/80 dark:bg-slate-700/60", className)} />;
+  return <div className={cn("animate-shimmer rounded-lg border border-border/20", className)} />;
 }
 
 function ListSkeleton() {

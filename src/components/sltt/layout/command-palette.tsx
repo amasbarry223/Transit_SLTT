@@ -154,17 +154,14 @@ export function CommandPalette() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-2 h-9 w-64 lg:w-80 rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground hover:bg-muted transition-colors"
+        className="hidden sm:flex items-center gap-2.5 h-10 w-64 md:w-80 lg:w-96 rounded-xl border border-slate-200/80 bg-[#F1F5F9] dark:bg-muted/50 px-3.5 text-xs sm:text-sm text-slate-500 hover:bg-slate-200/60 dark:hover:bg-muted transition-colors shadow-none"
       >
-        <Search className="size-4" />
-        <span>Rechercher un dossier, un client, une facture…</span>
-        <kbd className="ml-auto pointer-events-none select-none rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-500 dark:border-slate-600 bg-muted/40 dark:text-slate-400">
-          ⌘K
-        </kbd>
+        <Search className="size-4 text-slate-400 shrink-0" />
+        <span className="truncate">Rechercher un dossier, un client, une facture...</span>
       </button>
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden inline-flex items-center justify-center size-9 rounded-md text-muted-foreground dark:hover:text-slate-400 hover:bg-muted"
+        className="sm:hidden inline-flex items-center justify-center size-9 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-muted"
         aria-label="Rechercher"
       >
         <Search className="size-5" />

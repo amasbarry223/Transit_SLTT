@@ -1,0 +1,242 @@
+/**
+ * Transit SLTT — Design System Tokens
+ * Source unique de vérité pour les couleurs, la typographie, l'espacement,
+ * les arrondis, les ombres, les transitions et les micro-interactions.
+ */
+
+:root {
+  /* ==========================================================================
+     1. PALETTE DE COULEURS — INSTITUTIONNELLE & SÉMANTIQUE (Light Mode)
+     ========================================================================== */
+
+  /* Primaire SLTT — Bleu Nuit Souverain (#2D348C) */
+  --color-primary-50: #eef0fb;
+  --color-primary-100: #e4e7fa;
+  --color-primary-200: #c9cefa;
+  --color-primary-300: #a4adf3;
+  --color-primary-400: #7a86e9;
+  --color-primary-500: #5460db;
+  --color-primary-600: #3b45c2;
+  --color-primary-700: #2d348c; /* Base */
+  --color-primary-800: #262c76;
+  --color-primary-900: #212662;
+  --color-primary-950: #141740;
+
+  /* Accent / Secondaire — Rouge Carmin Dynamique (#EB2727) */
+  --color-accent-50: #fef2f2;
+  --color-accent-100: #fee2e2;
+  --color-accent-200: #fecaca;
+  --color-accent-300: #fca5a5;
+  --color-accent-400: #f87171;
+  --color-accent-500: #eb2727; /* Base */
+  --color-accent-600: #dc2626;
+  --color-accent-700: #b91c1c;
+  --color-accent-800: #991b1b;
+  --color-accent-900: #7f1d1d;
+  --color-accent-950: #450a0a;
+
+  /* Neutres Purs & Surfaces Raffinées */
+  --color-neutral-50: #f8f9fc;
+  --color-neutral-100: #f1f3f9;
+  --color-neutral-200: #e3e7f1;
+  --color-neutral-300: #d0d7e5;
+  --color-neutral-400: #98a2b8;
+  --color-neutral-500: #647087;
+  --color-neutral-600: #485368;
+  --color-neutral-700: #333d4e;
+  --color-neutral-800: #212836;
+  --color-neutral-900: #141924;
+  --color-neutral-950: #0a0e17;
+
+  /* Sémantiques : Succès (Émeraude) */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-200: #a7f3d0;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+
+  /* Sémantiques : Avertissement (Ambre Doré) */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+
+  /* Sémantiques : Danger / Destructif (Rouge) */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+
+  /* Sémantiques : Information (Ciel / Azur) */
+  --color-info-50: #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-200: #bae6fd;
+  --color-info-500: #0ea5e9;
+  --color-info-600: #0284c7;
+  --color-info-700: #0369a1;
+
+  /* ==========================================================================
+     2. ÉCHELLE TYPOGRAPHIQUE
+     ========================================================================== */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-xs-lh: 1rem;
+  --text-sm: 0.875rem;   /* 14px */
+  --text-sm-lh: 1.25rem;
+  --text-base: 1rem;      /* 16px */
+  --text-base-lh: 1.5rem;
+  --text-lg: 1.125rem;   /* 18px */
+  --text-lg-lh: 1.625rem;
+  --text-xl: 1.25rem;    /* 20px */
+  --text-xl-lh: 1.75rem;
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-2xl-lh: 2rem;
+  --text-3xl: 1.875rem;  /* 30px */
+  --text-3xl-lh: 2.25rem;
+  --text-4xl: 2.25rem;   /* 36px */
+  --text-4xl-lh: 2.5rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ==========================================================================
+     3. GRILLE D'ESPACEMENT (Multiples de 4)
+     ========================================================================== */
+  --space-0-5: 0.125rem; /* 2px */
+  --space-1: 0.25rem;   /* 4px */
+  --space-1-5: 0.375rem; /* 6px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-2-5: 0.625rem; /* 10px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-3-5: 0.875rem; /* 14px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ==========================================================================
+     4. ARRONDIS UNIFORMES (Border-Radius)
+     ========================================================================== */
+  --radius-xs: 0.25rem;  /* 4px */
+  --radius-sm: 0.375rem; /* 6px */
+  --radius-md: 0.625rem; /* 10px */
+  --radius-lg: 0.875rem; /* 14px */
+  --radius-xl: 1.125rem; /* 18px */
+  --radius-2xl: 1.5rem;  /* 24px */
+  --radius-full: 9999px;
+
+  /* ==========================================================================
+     5. ÉLÉVATIONS ET OMBRES COHÉRENTES (Multi-Layers)
+     ========================================================================== */
+  --shadow-2xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-xs: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 5px -1px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 6px 16px -3px rgba(45, 52, 140, 0.08), 0 3px 6px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 12px 28px -5px rgba(45, 52, 140, 0.12), 0 6px 12px -3px rgba(15, 23, 42, 0.06);
+  --shadow-xl: 0 20px 40px -8px rgba(45, 52, 140, 0.18), 0 10px 20px -4px rgba(15, 23, 42, 0.08);
+
+  /* ==========================================================================
+     6. COURBES D'ACCÉLÉRATION & TRANSITIONS STANDARDISÉES
+     ========================================================================== */
+  --ease-fast: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 350ms;
+
+  --transition-fast: all var(--duration-fast) var(--ease-fast);
+  --transition-normal: all var(--duration-normal) var(--ease-spring);
+  --transition-smooth: all var(--duration-slow) var(--ease-spring);
+}
+
+/* ==========================================================================
+   7. DARK MODE CONTRACT — NUANCES GRAPHITE SANS NOIR PUR
+   ========================================================================== */
+.dark {
+  /* Surfaces sombres hiérarchisées */
+  --dark-bg: #121319;
+  --dark-card: #1a1c25;
+  --dark-surface-elevated: #222530;
+  --dark-surface-sunken: #151720;
+  --dark-border: #2a2d3c;
+  --dark-border-focus: #4b5278;
+
+  /* Ombres sombres avec reflets doux */
+  --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+  --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.35), 0 1px 2px -1px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 2px 5px -1px rgba(0, 0, 0, 0.45), 0 1px 3px -1px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 16px -3px rgba(0, 0, 0, 0.55), 0 3px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 28px -5px rgba(0, 0, 0, 0.65), 0 6px 12px -3px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.75), 0 10px 20px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   8. KEYFRAMES & MICRO-INTERACTIONS
+   ========================================================================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--duration-normal) var(--ease-spring) both;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.5) 0%,
+    rgba(241, 245, 249, 0.9) 50%,
+    rgba(226, 232, 240, 0.5) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(38, 42, 56, 0.6) 0%,
+    rgba(54, 59, 78, 0.8) 50%,
+    rgba(38, 42, 56, 0.6) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite linear;
+}

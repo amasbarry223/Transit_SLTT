@@ -56,7 +56,7 @@ const DossierMobileCard = memo(function DossierMobileCard({
 }) {
   return (
     <Card
-      className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
+      className="cursor-pointer border-border/80 p-4 shadow-2xs transition-all hover:border-primary/40 active:bg-muted"
       onClick={() => onOpenDetail(dossier.id)}
     >
       <div className="flex items-start justify-between gap-2">

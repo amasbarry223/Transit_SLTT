@@ -43,7 +43,12 @@ export function RecuGeneratorActions({
       <>
         <div className="flex flex-wrap items-center gap-2">
           {canWrite ? (
-            <Button size="sm" onClick={() => void onSave()} disabled={busy} className="h-9 gap-1.5 px-4">
+            <Button
+              size="sm"
+              onClick={() => void onSave()}
+              disabled={busy}
+              className="h-9 gap-1.5 px-4 bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold rounded-xl shadow-md shadow-red-600/25 border border-red-500/40 transition-all"
+            >
               <Save className="size-3.5" />
               {submitting ? "Enregistrement…" : "Enregistrer"}
             </Button>
@@ -110,7 +115,11 @@ export function RecuGeneratorActions({
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {canWrite ? (
-            <Button onClick={() => void onSave()} disabled={busy} className="h-11 justify-center gap-2 sm:col-span-2">
+            <Button
+              onClick={() => void onSave()}
+              disabled={busy}
+              className="h-11 justify-center gap-2 sm:col-span-2 bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 transition-all"
+            >
               <Save className="size-4" />
               {submitting ? "Enregistrement…" : "Enregistrer le reçu"}
             </Button>

@@ -28,7 +28,7 @@ export interface NavItem {
   icon: LucideIcon;
   requiredPermission?: string;
   /** Regroupement visuel dans la sidebar — reflète le cycle métier, pas juste l'ordre alphabétique. */
-  section?: "Cycle commercial" | "Opérations d'entrepôt" | "Référentiels & support" | "Finance" | "Outils";
+  section?: "Cycle commercial" | "Opérations & entrepôt" | "Référentiel & support" | "Finance" | "Paramètres";
   /** Met en avant l'entité pivot du cycle métier (Dossiers) par un style distinct au repos. */
   pivot?: boolean;
   /** Sous-onglet Comptabilité lorsque key === "comptabilite". */
@@ -44,12 +44,12 @@ export const navItems: NavItem[] = [
   { navId: "dossiers", key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban, requiredPermission: "dossiers:read", section: "Cycle commercial", pivot: true },
   { navId: "factures", key: "factures", label: "Factures", icon: Receipt, requiredPermission: "factures:read", section: "Cycle commercial" },
 
-  { navId: "entreposage", key: "entreposage", label: "Entreposage", shortLabel: "Stock", icon: Warehouse, requiredPermission: "stock:read", section: "Opérations d'entrepôt" },
-  { navId: "bons", key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: FileOutput, requiredPermission: "bons:read", section: "Opérations d'entrepôt" },
+  { navId: "entreposage", key: "entreposage", label: "Entreposage", shortLabel: "Stock", icon: Warehouse, requiredPermission: "stock:read", section: "Opérations & entrepôt" },
+  { navId: "bons", key: "bons", label: "Bons de sortie", shortLabel: "Bons", icon: FileOutput, requiredPermission: "bons:read", section: "Opérations & entrepôt" },
 
-  { navId: "fournisseurs", key: "fournisseurs", label: "Fournisseurs", icon: Building2, requiredPermission: "fournisseurs:read", section: "Référentiels & support" },
-  { navId: "transporteurs", key: "transporteurs", label: "Transporteurs", icon: Truck, requiredPermission: "transporteurs:read", section: "Référentiels & support" },
-  { navId: "archives", key: "archives", label: "Archives", icon: Archive, requiredPermission: "archives:read", section: "Référentiels & support" },
+  { navId: "fournisseurs", key: "fournisseurs", label: "Fournisseurs", icon: Building2, requiredPermission: "fournisseurs:read", section: "Référentiel & support" },
+  { navId: "transporteurs", key: "transporteurs", label: "Transporteurs", icon: Truck, requiredPermission: "transporteurs:read", section: "Référentiel & support" },
+  { navId: "archives", key: "archives", label: "Archives", icon: Archive, requiredPermission: "archives:read", section: "Référentiel & support" },
 
   {
     navId: "comptabilite",
@@ -63,7 +63,7 @@ export const navItems: NavItem[] = [
   { navId: "recus-paiement", key: "recus-paiement", label: "Nouveau reçu", shortLabel: "Reçu", icon: FilePlus2, requiredPermission: "recus-paiement:read", section: "Finance" },
   { navId: "bilans", key: "bilans", label: "Bilans", shortLabel: "Bilans", icon: BarChart3, requiredPermission: "rapports:read", section: "Finance" },
 
-  { navId: "parametres", key: "parametres", label: "Paramètres", shortLabel: "Réglages", icon: Settings, requiredPermission: "parametres:read", section: "Outils" },
+  { navId: "parametres", key: "parametres", label: "Paramètres", shortLabel: "Réglages", icon: Settings, requiredPermission: "parametres:read", section: "Paramètres" },
 ];
 
 /**

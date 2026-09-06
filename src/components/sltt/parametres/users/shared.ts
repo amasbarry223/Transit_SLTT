@@ -69,6 +69,7 @@ export interface UserFormState {
 export function isCustomPermissionSet(role: UserRole, permissions: string[]): boolean {
   const actual = new Set(normalizePermissions(permissions));
   const standard = ROLE_DEFAULT_PERMISSIONS[role];
+  if (!standard) return false;
   if (actual.size !== standard.length) return true;
   return standard.some((p) => !actual.has(p));
 }

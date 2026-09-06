@@ -99,7 +99,7 @@ export function buildEncaissementsParMois(
 export function buildDossiersParMois(
   dossiers: Dossier[],
   anchorDate: Date,
-): { mois: string; valeur: number }[] {
+): { mois: string; valeur: number; crees: number; traites: number }[] {
   return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
     const chartDate = new Date(
       anchorDate.getFullYear(),
@@ -108,11 +108,16 @@ export function buildDossiersParMois(
     );
     const monthIndex = chartDate.getMonth();
     const year = chartDate.getFullYear();
-    const valeur = dossiers.filter((d) => {
+    const crees = dossiers.filter((d) => {
       const created = parseLocalDate(d.date);
       return created.getFullYear() === year && created.getMonth() === monthIndex;
     }).length;
-    return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur };
+    const traites = dossiers.filter((d) => {
+      const created = parseLocalDate(d.date);
+      const isTraite = d.statut === "Dédouané" || d.statut === "Livré" || d.statut === "Soldé";
+      return created.getFullYear() === year && created.getMonth() === monthIndex && isTraite;
+    }).length;
+    return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur: crees, crees, traites };
   });
 }
 

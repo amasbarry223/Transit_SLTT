@@ -14,12 +14,12 @@ export const SORT_OPTIONS: { value: ClientSortKey; label: string; headerLabel: s
 
 export function avatarGradient(type: ClientType): string {
   return type === "Entreprise"
-    ? "from-blue-600 to-indigo-700"
-    : "from-slate-600 to-slate-800";
+    ? "from-[#1344C8] to-[#0B2A78]"
+    : "from-[#2563EB] to-[#1D4ED8]";
 }
 
 export function rowAccentClass(type: ClientType): string {
   return type === "Entreprise"
-    ? "border-l-2 border-l-blue-400/60 dark:border-l-blue-500/50"
-    : "border-l-2 border-l-slate-300/70 dark:border-l-slate-600/60";
+    ? "border-l-2 border-l-[#1344C8]/80 dark:border-l-blue-400"
+    : "border-l-2 border-l-[#2563EB]/60 dark:border-l-blue-500";
 }

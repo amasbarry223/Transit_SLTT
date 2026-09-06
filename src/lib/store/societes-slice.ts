@@ -27,7 +27,7 @@ export const DEFAULT_SOCIETE: Societe = {
   nom: "Transit SLTT",
   raisonSociale: "Transit SLTT SARL",
   actif: true,
-  logoUrl: "/assets/logo_sltt.png",
+  logoUrl: "/logoV.png",
   adresse: "Conakry, République de Guinée",
   telephone: "+224 620 00 00 01",
   rccm: "GN.TCC.2020.B.1234",

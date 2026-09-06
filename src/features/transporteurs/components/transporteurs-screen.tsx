@@ -19,13 +19,23 @@ export function TransporteursScreen() {
     <div className="space-y-6 pb-10">
       <PageHeader title="Transporteurs" description="Annuaire des transporteurs et chauffeurs partenaires">
         {screen.canWrite && (
-          <Button onClick={screen.openAddForm}>
+          <Button
+            onClick={screen.openAddForm}
+            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
+          >
             <Plus className="size-4" /> Nouveau transporteur
           </Button>
         )}
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard
+          label="Total transporteurs"
+          value={String(screen.kpis.total)}
+          icon={Truck}
+          tone="blue"
+          sublabel="partenaires enregistrés"
+        />
         <KpiCard
           label="Actifs"
           value={String(screen.kpis.actifs)}

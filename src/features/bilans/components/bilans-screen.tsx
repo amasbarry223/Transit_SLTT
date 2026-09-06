@@ -51,7 +51,7 @@ export function BilansScreen() {
       </PageHeader>
 
       {/* Period selector */}
-      <Card className="p-4 shadow-sm border-border/80">
+      <Card className="rounded-2xl border border-border/70 p-4 shadow-xs bg-card">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={screen.periode} onValueChange={(v) => screen.setPeriode(v as Periode)}>
             <TabsList>

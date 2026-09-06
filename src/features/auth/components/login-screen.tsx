@@ -9,8 +9,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { pathForView } from "@/lib/app-navigation";
-import { insertAuditLog } from "@/lib/audit";
-import { getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { mapErrorToUserMessage } from "@/lib/error-messages";
 import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
@@ -48,6 +47,7 @@ function mapRole(role: string): UserRole {
     case "ADMIN":
     case "Administrateur":
       return "Administrateur";
+    case "TRANSITAIRE":
     case "AGENT_TRANSIT":
     case "Agent de transit":
       return "Agent de transit";
@@ -61,6 +61,7 @@ function mapRole(role: string): UserRole {
       return "Administrateur";
   }
 }
+
 
 export function LoginScreen() {
   const loginNav = useSession((s) => s.login);
@@ -97,47 +98,48 @@ export function LoginScreen() {
     }
   }
 
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     await signInWithCredentials(email, password);
   }
 
-
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4 sm:p-6">
       <LoginBackground />
 
-      <div className="relative z-10 w-full max-w-[420px]">
-        <div className="overflow-hidden rounded-2xl border border-white/25 bg-card shadow-[0_24px_80px_-12px_rgba(45,52,140,0.35)] dark:border-border/60">
-          <div className="flex flex-col items-center px-8 pb-6 pt-9">
+      <div className="relative z-10 w-full max-w-[440px]">
+        <div className="overflow-hidden rounded-2xl border border-white/25 bg-card/95 backdrop-blur-md shadow-[0_24px_80px_-12px_rgba(45,52,140,0.35)] dark:border-border/60">
+          <div className="flex flex-col items-center px-8 pb-5 pt-8">
             <Image
               src="/logoV.png"
               alt="Transit"
               width={140}
               height={140}
-              className="size-[132px] object-contain drop-shadow-md sm:size-[140px]"
+              className="size-[124px] object-contain drop-shadow-md sm:size-[136px] transition-transform duration-300 hover:scale-105"
               priority
               unoptimized
             />
           </div>
 
-          <Separator className="bg-muted" />
+          <Separator className="bg-border/60" />
 
-          <div className="px-8 py-7">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-foreground">
+          <div className="px-8 py-6">
+            <div className="mb-5 text-center sm:text-left">
+              <h2 className="text-lg font-bold text-foreground font-heading">
                 Connexion à votre espace
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Vos données sont protégées. Connectez-vous pour accéder à votre espace de travail.
+              <p className="mt-1 text-xs text-muted-foreground">
+                Plateforme logistique et gestion intégrale de transit SLTT.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
                 <Label
                   htmlFor="email"
-                  className="text-sm font-medium text-foreground/90"
+                  className="text-xs font-medium text-foreground/90"
                 >
                   Adresse e-mail
                 </Label>
@@ -152,7 +154,10 @@ export function LoginScreen() {
                       setError("");
                     }}
                     placeholder={UI.placeholders.email}
-                    className="h-11 border-slate-200 dark:border-slate-700 bg-slate-50/50 pl-10 focus:bg-white dark:focus:bg-slate-900"
+                    className={cn(
+                      "h-10.5 pl-10 bg-muted/40 transition-colors focus:bg-background",
+                      error && "border-destructive focus-visible:ring-destructive/30"
+                    )}
                     required
                     disabled={loading}
                     autoComplete="email"
@@ -160,11 +165,11 @@ export function LoginScreen() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <Label
                     htmlFor="password"
-                    className="text-sm font-medium text-foreground/90"
+                    className="text-xs font-medium text-foreground/90"
                   >
                     Mot de passe
                   </Label>
@@ -180,7 +185,10 @@ export function LoginScreen() {
                       setError("");
                     }}
                     placeholder={UI.placeholders.password}
-                    className="h-11 border-slate-200 dark:border-slate-700 bg-slate-50/50 pl-10 pr-10 focus:bg-white dark:focus:bg-slate-900"
+                    className={cn(
+                      "h-10.5 pl-10 pr-10 bg-muted/40 transition-colors focus:bg-background",
+                      error && "border-destructive focus-visible:ring-destructive/30"
+                    )}
                     required
                     disabled={loading}
                     autoComplete="current-password"
@@ -188,7 +196,7 @@ export function LoginScreen() {
                   <button
                     type="button"
                     onClick={() => setShowPwd((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-slate-600 dark:hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                     tabIndex={-1}
                   >
@@ -202,7 +210,7 @@ export function LoginScreen() {
               </div>
 
               {error && (
-                <div role="alert" className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/40 px-3 py-2.5 text-sm text-red-700 dark:text-red-300">
+                <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -210,24 +218,23 @@ export function LoginScreen() {
 
               <Button
                 type="submit"
-                className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/20"
+                className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/25 transition-all duration-200 active:scale-[0.99]"
                 disabled={loading}
               >
                 {loading ? UI.loading.verifying : "Se connecter"}
               </Button>
 
-              <p className="text-center text-xs text-muted-foreground">
-                Mot de passe oublié ou compte bloqué ? Contactez l&apos;administrateur de votre société pour
-                obtenir une réinitialisation.
+              <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
+                Mot de passe oublié ? Contactez l&apos;administrateur de votre société pour réinitialiser vos accès.
               </p>
-          </form>
+            </form>
 
-            <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5" />
-              Accès sécurisé · Transit © {new Date().getFullYear()}
+            <div className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="size-3.5 text-primary/80" />
+              <span>Accès sécurisé · Transit SLTT © {new Date().getFullYear()}</span>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-3">
               <InstallPWA variant="login" />
             </div>
           </div>

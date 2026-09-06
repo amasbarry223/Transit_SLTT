@@ -63,6 +63,23 @@ async function main() {
   });
 
   const transitaire = await prisma.profile.upsert({
+    where: { email: 'moussa.camara@sltt.gn' },
+    update: {},
+    create: {
+      email: 'moussa.camara@sltt.gn',
+      passwordHash: passwordTransit,
+      nom: 'Moussa Camara',
+      role: RoleUtilisateur.TRANSITAIRE,
+      permissions: ['dossiers.creer', 'dossiers.modifier', 'documents.upload'],
+      actif: true,
+      telephone: '+224 620 00 00 02',
+      userAnnexes: {
+        create: [{ annexeId: annexeSiege.id }],
+      },
+    },
+  });
+
+  await prisma.profile.upsert({
     where: { email: 'ibrahim.keita@sltt.ml' },
     update: {},
     create: {
@@ -80,6 +97,23 @@ async function main() {
   });
 
   const comptable = await prisma.profile.upsert({
+    where: { email: 'fatoumata.diallo@sltt.gn' },
+    update: {},
+    create: {
+      email: 'fatoumata.diallo@sltt.gn',
+      passwordHash: passwordCompta,
+      nom: 'Fatoumata Diallo',
+      role: RoleUtilisateur.COMPTABLE,
+      permissions: ['factures.creer', 'caisse.encaisser', 'caisse.decaisser', 'depenses.valider'],
+      actif: true,
+      telephone: '+224 620 00 00 03',
+      userAnnexes: {
+        create: [{ annexeId: annexeSiege.id }],
+      },
+    },
+  });
+
+  await prisma.profile.upsert({
     where: { email: 'fatoumata.diallo@sltt.ml' },
     update: {},
     create: {

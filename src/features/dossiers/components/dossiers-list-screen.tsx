@@ -18,6 +18,7 @@ import { KpiCard } from "@/components/sltt/kpi-card";
 import { usePermission } from "@/hooks/use-permission";
 import { DossierBulkImportButton } from "@/components/sltt/documents/dossier-bulk-import-dialog";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -44,20 +45,23 @@ export function DossiersListScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Dossiers de transit"
-        description="Suivi des dossiers douaniers et de leur soldage"
+        description="Cycle devis → dossier → dédouanement → livraison → solde"
       >
         {canWrite && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             <DossierBulkImportButton />
-            <Button onClick={() => openDossier(null, "create")}>
-              <Plus className="size-4" />
-              Nouveau dossier
+            <Button
+              onClick={() => openDossier(null, "create")}
+              className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="size-4 shrink-0 stroke-[3]" />
+              <span>Nouveau dossier</span>
             </Button>
           </div>
         )}
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Total dossiers"
           value={String(screen.stats.total)}
@@ -69,7 +73,7 @@ export function DossiersListScreen() {
           label="En cours"
           value={String(screen.stats.enCours)}
           icon={Clock}
-          tone="amber"
+          tone="indigo"
           sublabel="en traitement douanier"
         />
         <KpiCard
@@ -83,8 +87,8 @@ export function DossiersListScreen() {
           label="Marge cumulée"
           value={formatFCFA(screen.stats.ecartTotal)}
           icon={TrendingUp}
-          tone="indigo"
-          sublabel="marge dossier (prestation − frais)"
+          tone="amber"
+          sublabel="marge prestation − frais"
           tooltip="Frais de prestation moins droits de douane et frais de circuit."
         />
       </div>
@@ -253,20 +257,22 @@ export function DossiersListScreen() {
         }
       />
 
-      <DossiersListTable
-        filtered={screen.filtered}
-        paged={screen.paged}
-        startIdx={screen.startIdx}
-        endIdx={screen.endIdx}
-        safePage={screen.safePage}
-        totalPages={screen.totalPages}
-        hasActiveFilters={screen.hasActiveFilters}
-        canWrite={canWrite}
-        canTransition={canTransition}
-        transitionDossier={screen.transitionDossier}
-        onPageChange={screen.setPage}
-        onTransitionDossierChange={screen.setTransitionDossier}
-      />
+      <Card className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card p-0">
+        <DossiersListTable
+          filtered={screen.filtered}
+          paged={screen.paged}
+          startIdx={screen.startIdx}
+          endIdx={screen.endIdx}
+          safePage={screen.safePage}
+          totalPages={screen.totalPages}
+          hasActiveFilters={screen.hasActiveFilters}
+          canWrite={canWrite}
+          canTransition={canTransition}
+          transitionDossier={screen.transitionDossier}
+          onPageChange={screen.setPage}
+          onTransitionDossierChange={screen.setTransitionDossier}
+        />
+      </Card>
     </div>
   );
 }

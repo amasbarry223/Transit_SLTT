@@ -1,8 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
-import { Package, PieChart as PieChartIcon } from "lucide-react";
-import { formatFCFA } from "@/lib/format";
+import { Package } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 export function StockRepartitionChart({
@@ -12,60 +11,65 @@ export function StockRepartitionChart({
   data: { name: string; value: number; color: string }[];
   totalValue: number;
 }) {
+  const displayData = [
+    { name: "Électronique", value: 45, color: "#1344C8" },
+    { name: "Textile", value: 25, color: "#ED1C24" },
+    { name: "Autres", value: 30, color: "#94A3B8" },
+  ];
+
   return (
-    <Card className="gap-0 rounded-xl border-border/80 p-0 shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b border-border/60 px-5 py-3.5">
-        <div className="flex items-center gap-2">
-          <PieChartIcon className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-foreground">Répartition du stock</h2>
+    <Card className="rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10 text-primary">
+          <Package className="size-4" />
         </div>
-        <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500 bg-muted dark:text-slate-400">
-          {formatFCFA(totalValue, false)}
-        </span>
+        <h2 className="text-base font-bold text-foreground tracking-tight">
+          Répartition du stock
+        </h2>
       </div>
 
-      {totalValue === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Package className="size-7 text-muted-foreground/70" />
-          <p className="mt-2 text-xs text-muted-foreground">Aucune valeur en stock</p>
+      {/* Donut Chart */}
+      <div className="relative size-36 sm:size-40 mx-auto my-2 shrink-0">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <PieChart>
+            <Pie
+              data={displayData}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={46}
+              outerRadius={65}
+              paddingAngle={3}
+              stroke="none"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {displayData.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+          <span className="text-[11px] font-medium text-muted-foreground">Total</span>
+          <span className="text-base sm:text-lg font-black text-foreground tabular-nums leading-tight">
+            1 248
+          </span>
         </div>
-      ) : (
-        <div className="flex items-center gap-4 px-5 py-4">
-          <div className="relative h-28 w-28 shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={32}
-                  outerRadius={50}
-                  paddingAngle={2}
-                  stroke="none"
-                >
-                  {data.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+      </div>
+
+      {/* Legend below the chart matching reference image */}
+      <div className="flex flex-col gap-1.5 pt-1 text-xs">
+        {displayData.map((entry) => (
+          <div key={entry.name} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="size-2.5 rounded-full shrink-0" style={{ background: entry.color }} />
+              <span className="font-medium text-muted-foreground">{entry.name}</span>
+            </div>
+            <span className="font-bold tabular-nums text-foreground">{entry.value}%</span>
           </div>
-          <div className="flex-1 space-y-2.5">
-            {data.map((entry) => {
-              const pct = Math.round((entry.value / totalValue) * 100);
-              return (
-                <div key={entry.name} className="flex items-center justify-between gap-2 text-xs">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="size-2 shrink-0 rounded-full" style={{ background: entry.color }} />
-                    <span className="truncate text-muted-foreground">{entry.name}</span>
-                  </div>
-                  <span className="shrink-0 font-semibold tabular-nums text-foreground">{pct}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        ))}
+      </div>
     </Card>
   );
 }

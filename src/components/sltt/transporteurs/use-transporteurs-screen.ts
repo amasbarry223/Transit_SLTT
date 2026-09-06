@@ -85,7 +85,7 @@ export function useTransporteursScreen() {
         inactifs++;
       }
     }
-    return { actifs, inactifs, capaciteTotal };
+    return { total: transporteurs.length, actifs, inactifs, capaciteTotal };
   }, [transporteurs]);
 
   const filtered = useMemo(() => {

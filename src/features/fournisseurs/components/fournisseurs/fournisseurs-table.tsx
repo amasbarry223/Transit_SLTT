@@ -134,8 +134,8 @@ export function PrestatairesTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm bg-muted/40">
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-muted text-muted-foreground sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
+    <div className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card">
+      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 border-b border-border/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
         <span className="sr-only sm:not-sr-only sm:w-9">Type</span>
         <span>Prestataire</span>
         <span className="hidden text-right sm:block">Contact</span>
@@ -241,8 +241,8 @@ export function TarifsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm bg-muted/40">
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-muted text-muted-foreground sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
+    <div className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card">
+      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 border-b border-border/60 sm:grid-cols-[auto_1fr_auto_auto_auto] sm:gap-4 sm:px-5">
         <span className="w-10" />
         <span>Prestataire</span>
         <span className="text-right">Tarif contractuel</span>
@@ -338,9 +338,9 @@ export function CoutsTable({
   pagination: PaginationProps;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm bg-muted/40">
+    <div className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+        <h2 className="text-sm font-semibold text-foreground">
           Liaisons dossiers
         </h2>
         <Badge variant="secondary" className="text-[10px]">
@@ -358,7 +358,7 @@ export function CoutsTable({
         />
       ) : (
         <>
-          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-muted text-muted-foreground sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 border-b border-border/60 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:px-5">
             <span>Prestataire / Dossier</span>
             <span className="hidden sm:block">Description</span>
             <span className="text-right">Budgété</span>

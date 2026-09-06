@@ -36,7 +36,10 @@ export function ComptabiliteScreen() {
               <ScanLine className="size-4" />
               <span className="hidden sm:inline">Clôturer la caisse</span>
             </Button>
-            <Button onClick={() => journalScreen.setFormOpen(true)}>
+            <Button
+              onClick={() => journalScreen.setFormOpen(true)}
+              className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
+            >
               <Plus className="size-4" />
               Nouvelle opération
             </Button>

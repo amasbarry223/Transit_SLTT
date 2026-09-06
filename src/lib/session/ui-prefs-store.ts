@@ -11,6 +11,7 @@ export interface ProfileUiPrefs {
   theme: Theme;
   dateFormat: DateFormat;
   selectedAnnexeId: string | null;
+  sidebarCollapsed?: boolean;
 }
 
 interface UiPrefsState extends ProfileUiPrefs {
@@ -20,12 +21,14 @@ interface UiPrefsState extends ProfileUiPrefs {
   toggleTheme: () => void;
   setSelectedAnnexeId: (id: string | null) => void;
   setDateFormat: (format: DateFormat) => void;
+  toggleSidebar: () => void;
 }
 
 const DEFAULTS: ProfileUiPrefs = {
   theme: "light",
   selectedAnnexeId: null,
   dateFormat: "dmy",
+  sidebarCollapsed: false,
 };
 
 type PrefsPatch = {
@@ -116,4 +119,16 @@ export const useUiPrefs = create<UiPrefsState>()((set) => ({
     set({ dateFormat });
     schedulePersist({ date_format: dateFormat });
   },
+  toggleSidebar: () =>
+    set((s) => {
+      const next = !s.sidebarCollapsed;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("transit_sltt_sidebar_collapsed", next ? "1" : "0");
+        } catch {
+          /* ignore */
+        }
+      }
+      return { sidebarCollapsed: next };
+    }),
 }));

@@ -1,94 +1,160 @@
 "use client";
 
 import Image from "next/image";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
 import { useStore } from "@/lib/store";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
+import { useUiPrefs } from "@/lib/session/ui-prefs-store";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { NavList } from "./nav-list";
 
 export function SidebarBrand({
   logoUrl,
-  alt,
+  alt = "Traoré de Logistique",
   size = "md",
+  collapsed = false,
   onClick,
 }: {
   logoUrl?: string;
-  alt: string;
-  size?: "sm" | "md";
+  alt?: string;
+  size?: "sm" | "md" | "lg";
+  collapsed?: boolean;
   onClick?: () => void;
 }) {
-  const dim = size === "sm" ? "size-14" : "size-[4.25rem]";
-  const inner = (
-    <>
-      <span
-        aria-hidden
-        className="absolute -inset-3 rounded-full bg-primary/0 transition-all duration-300 ease-out group-hover:bg-primary/[0.08] group-hover:scale-110 motion-reduce:transition-none"
-      />
-      <span
-        aria-hidden
-        className="absolute -inset-1 rounded-full ring-1 ring-transparent transition-all duration-300 group-hover:ring-primary/20 motion-reduce:transition-none"
-      />
-      <Image
-        src={logoUrl ?? "/logoV.png"}
-        alt={alt}
-        width={size === "sm" ? 56 : 68}
-        height={size === "sm" ? 56 : 68}
-        className={`relative ${dim} object-contain drop-shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05] motion-reduce:transform-none`}
-        unoptimized
-      />
-    </>
-  );
+  const effectiveLogo = logoUrl || "/logoV.png";
 
-  if (onClick) {
+  if (collapsed) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className="group relative flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-        aria-label="Retour au tableau de bord"
+        className="flex items-center justify-center p-1 rounded-xl hover:bg-white/10 transition-colors"
+        title={alt}
       >
-        {inner}
+        <div className="relative size-10 rounded-full overflow-hidden bg-white/10 p-0.5 border border-white/20">
+          <Image
+            src={effectiveLogo}
+            alt={alt}
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
       </button>
     );
   }
 
-  return <div className="group relative flex items-center justify-center">{inner}</div>;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex flex-col items-center justify-center w-full px-2 py-2 text-center transition-opacity hover:opacity-95 focus:outline-none"
+    >
+      <div className="relative size-14 mb-2 drop-shadow-md">
+        <Image
+          src={effectiveLogo}
+          alt={alt}
+          fill
+          className="object-contain"
+          priority
+        />
+      </div>
+      <div className="flex flex-col items-center tracking-tight leading-tight">
+        <span className="text-[13px] font-black uppercase tracking-wider text-white">
+          Traore de Logistique
+        </span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-blue-200/90 mt-0.5">
+          Transit-Transport
+        </span>
+      </div>
+    </button>
+  );
 }
 
 export function Sidebar() {
-  const view = useNav((s) => s.view);
-  const comptaTab = useNav((s) => s.comptaTab);
+  const { view, comptaTab } = useNav();
   const { goToView } = useAppNavigation();
   const societes = useStore((s) => s.societes);
   const shellBrand = resolveAppShellBranding(societes);
   const visibleItems = useVisibleNavItems();
+  const sidebarCollapsed = useUiPrefs((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiPrefs((s) => s.toggleSidebar);
 
   return (
-    <aside className="hidden lg:flex w-[252px] shrink-0 flex-col border-r border-border/80 bg-sidebar h-screen sticky top-0">
-      <div className="relative flex items-center justify-center border-b border-border/60 px-4 py-6">
+    <aside
+      className={cn(
+        "hidden lg:flex shrink-0 flex-col bg-[#0B2A78] text-white border-r border-[#0B2A78]/90 h-screen sticky top-0 transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-2xl z-20",
+        sidebarCollapsed ? "w-[72px]" : "w-[260px]"
+      )}
+    >
+      <div
+        className={cn(
+          "relative flex items-center transition-all duration-300",
+          sidebarCollapsed ? "justify-center p-3" : "px-4 pt-5 pb-3"
+        )}
+      >
         <SidebarBrand
           logoUrl={shellBrand.logoUrl}
           alt={shellBrand.appTitle}
+          size={sidebarCollapsed ? "sm" : "md"}
+          collapsed={sidebarCollapsed}
           onClick={() => goToView("dashboard")}
-        />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent"
         />
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2.5 py-4 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="flex-1 overflow-y-auto px-3 py-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <NavList
           items={visibleItems}
           currentView={view}
           currentComptaTab={comptaTab}
+          collapsed={sidebarCollapsed}
           onNavigate={(item) =>
             goToView(item.key, item.comptaTab ? { comptaTab: item.comptaTab } : undefined)
           }
         />
       </nav>
+
+      {/* Bouton de réduction / agrandissement du menu */}
+      <div className="border-t border-white/10 p-2">
+        <TooltipProvider delayDuration={150}>
+          {sidebarCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  className="size-10 mx-auto flex text-blue-200 hover:bg-white/10 hover:text-white rounded-xl"
+                  aria-label="Agrandir le menu"
+                >
+                  <PanelLeftOpen className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Agrandir le menu</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSidebar}
+              className="w-full justify-start gap-2 text-xs font-medium text-blue-200/80 hover:bg-white/10 hover:text-white rounded-xl px-3"
+            >
+              <PanelLeftClose className="size-4 shrink-0" />
+              <span>Réduire le menu</span>
+            </Button>
+          )}
+        </TooltipProvider>
+      </div>
     </aside>
   );
 }

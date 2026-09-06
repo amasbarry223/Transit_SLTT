@@ -36,12 +36,12 @@ export const TONE_CLASSES: Record<Tone, string> = {
 };
 
 const dotClasses: Record<Tone, string> = {
-  blue: "bg-blue-500",
-  emerald: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-  indigo: "bg-indigo-500",
-  slate: "bg-slate-400",
+  blue: "bg-blue-500 ring-2 ring-blue-500/20",
+  emerald: "bg-emerald-500 ring-2 ring-emerald-500/20",
+  amber: "bg-amber-500 ring-2 ring-amber-500/20",
+  red: "bg-red-500 ring-2 ring-red-500/20",
+  indigo: "bg-indigo-500 ring-2 ring-indigo-500/20",
+  slate: "bg-slate-400 ring-2 ring-slate-400/20",
 };
 
 export function ToneBadge({

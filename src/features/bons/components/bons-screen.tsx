@@ -187,9 +187,12 @@ export function BonsScreen() {
       >
         <PageHeader title="Bons de sortie" description={currentTab.description}>
           {(activeTab === "caisse" ? canWriteCaisse : canWrite) && (
-            <Button onClick={currentTab.onCreate} className="shrink-0 self-start">
-              <Plus className="size-4" />
-              {currentTab.cta}
+            <Button
+              onClick={currentTab.onCreate}
+              className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shrink-0 self-start"
+            >
+              <Plus className="size-4 shrink-0 stroke-[3]" />
+              <span>{currentTab.cta}</span>
             </Button>
           )}
         </PageHeader>

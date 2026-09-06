@@ -140,7 +140,10 @@ export function ContratsScreen() {
     <div className="space-y-6">
       <PageHeader title="Contrats" description="Contrats d'entreposage, dépenses et prestations optionnelles">
         {canWrite && (
-          <Button onClick={() => setOpen(true)}>
+          <Button
+            onClick={() => setOpen(true)}
+            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
+          >
             <Plus className="size-4" />
             Nouveau contrat
           </Button>
@@ -195,7 +198,7 @@ export function ContratsScreen() {
         }
       />
 
-      <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
+      <Card className="gap-0 overflow-hidden rounded-2xl border border-border/70 p-0 shadow-xs bg-card">
         {filtered.length === 0 ? (
           <EmptyState
             icon={FileSignature}
@@ -245,13 +248,13 @@ export function ContratsScreen() {
             <div className="hidden overflow-x-auto md:block">
               <Table aria-label="Liste des contrats">
                 <TableHeader>
-                  <TableRow className="border-b border-border bg-muted/50 hover:bg-muted">
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Référence</TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Client</TableHead>
-                    <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">Objet</TableHead>
-                    <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">Montant</TableHead>
-                    <TableHead className="h-10 px-4 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Prestations</TableHead>
-                    <TableHead className="h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Statut</TableHead>
+                  <TableRow className="border-b border-border/60 bg-muted/40 hover:bg-muted/50">
+                    <TableHead className="h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Référence</TableHead>
+                    <TableHead className="h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Client</TableHead>
+                    <TableHead className="hidden h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Objet</TableHead>
+                    <TableHead className="hidden h-10 px-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:table-cell">Montant</TableHead>
+                    <TableHead className="h-10 px-4 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Prestations</TableHead>
+                    <TableHead className="h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Statut</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -484,7 +487,11 @@ function ContratFormModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit || saving}
+            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
+          >
             <Plus className="size-4" />
             Créer le contrat
           </Button>

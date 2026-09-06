@@ -110,7 +110,7 @@ export function societeToPrintHTMLBrand(s: Societe): PrintHTMLBrand {
 export const DEFAULT_TRANSIT_BRAND: SocieteBrand = {
   nom: "Transit SLTT",
   raisonSociale: "Transit SLTT SARL",
-  logoUrl: "/assets/logo_sltt.png",
+  logoUrl: "/logoV.png",
   afficherNomAvecLogo: true,
   legal: {
     adresse: "Conakry, République de Guinée",
@@ -122,7 +122,7 @@ export const DEFAULT_TRANSIT_BRAND: SocieteBrand = {
 
 export const DEFAULT_PRINT_HTML_BRAND: PrintHTMLBrand = {
   name: "Transit SLTT",
-  logoUrl: "/assets/logo_sltt.png",
+  logoUrl: "/logoV.png",
   afficherNomAvecLogo: true,
   legal: {
     adresse: "Conakry, République de Guinée",

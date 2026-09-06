@@ -30,6 +30,7 @@ import { RecusPaiementScreen } from "@/features/recus-paiement";
 import { TransporteursScreen } from "@/features/transporteurs";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
+import { BottomNav } from "./bottom-nav";
 import { cn } from "@/lib/utils";
 import { UI } from "@/lib/ui-messages";
 
@@ -95,7 +96,7 @@ export function AppShell() {
         <main
           className={cn(
             "min-h-0 flex-1",
-            isRecuWorkspace ? "overflow-hidden p-0" : "p-4 sm:p-6 lg:p-8",
+            isRecuWorkspace ? "overflow-hidden p-0" : "p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8",
           )}
         >
           <div className={cn("w-full", isRecuWorkspace && "h-full min-h-0")}>
@@ -144,6 +145,7 @@ export function AppShell() {
             )}
           </div>
         </main>
+        <BottomNav />
       </div>
     </div>
   );

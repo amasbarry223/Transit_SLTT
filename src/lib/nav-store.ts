@@ -44,6 +44,9 @@ interface NavState {
   comptaTab: ComptaTab;
   /** Canal transitoire (non persisté) pour préremplir une facture depuis une prestation optionnelle F6. */
   pendingFacturePrefill: PendingFacturePrefill;
+  /** Contrôle de l'ouverture du drawer de navigation sur mobile (depuis Topbar ou BottomNav) */
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
   go: (view: ViewKey, opts?: { id?: string | null; comptaTab?: ComptaTab }) => void;
   openDossier: (id: string | null, mode?: "create" | "edit") => void;
   openDossierDetail: (id: string) => void;
@@ -63,23 +66,26 @@ export const useNav = create<NavState>()((set) => ({
   devisEditMode: false,
   comptaTab: "ecritures",
   pendingFacturePrefill: null,
+  mobileMenuOpen: false,
 
+  setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
   go: (view, opts) =>
     set({
       view,
       selectedId: opts?.id ?? null,
+      mobileMenuOpen: false,
       ...(opts?.comptaTab ? { comptaTab: opts.comptaTab } : {}),
     }),
   openDossier: (id, mode = "edit") =>
-    set({ view: "dossier-form", selectedId: id, dossierFormMode: mode }),
+    set({ view: "dossier-form", selectedId: id, dossierFormMode: mode, mobileMenuOpen: false }),
   openDossierDetail: (id) =>
-    set({ view: "dossier-detail", selectedId: id }),
+    set({ view: "dossier-detail", selectedId: id, mobileMenuOpen: false }),
   openDossierOcrReview: (documentId) =>
-    set({ view: "dossier-ocr-review", selectedId: documentId }),
+    set({ view: "dossier-ocr-review", selectedId: documentId, mobileMenuOpen: false }),
   openDevisDetail: (id, edit = false) =>
-    set({ view: "devis-detail", selectedId: id, devisEditMode: edit }),
-  openClient: (id) => set({ view: "client-fiche", selectedId: id }),
-  openContratDetail: (id) => set({ view: "contrat-detail", selectedId: id }),
+    set({ view: "devis-detail", selectedId: id, devisEditMode: edit, mobileMenuOpen: false }),
+  openClient: (id) => set({ view: "client-fiche", selectedId: id, mobileMenuOpen: false }),
+  openContratDetail: (id) => set({ view: "contrat-detail", selectedId: id, mobileMenuOpen: false }),
   setPendingFacturePrefill: (p) => set({ pendingFacturePrefill: p }),
   resetNavigation: () =>
     set({
@@ -89,5 +95,6 @@ export const useNav = create<NavState>()((set) => ({
       devisEditMode: false,
       comptaTab: "ecritures",
       pendingFacturePrefill: null,
+      mobileMenuOpen: false,
     }),
 }));

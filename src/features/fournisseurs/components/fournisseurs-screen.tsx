@@ -30,41 +30,44 @@ export function FournisseursScreen() {
   const screen = useFournisseursScreen();
 
   const emptyCta = screen.canWrite ? (
-    <Button size="sm" onClick={screen.openCreateForm}>
+    <Button
+      onClick={screen.openCreateForm}
+      className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
+    >
       <Plus className="size-4" />
       Nouveau fournisseur
     </Button>
   ) : undefined;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader title="Fournisseurs" description={screen.currentMeta.description}>
         {screen.canWrite && (
-          <Button size="sm" onClick={screen.openCreateForm}>
+          <Button
+            onClick={screen.openCreateForm}
+            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
+          >
             <Plus className="size-4" />
             Nouveau fournisseur
           </Button>
         )}
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard compact label="Fournisseurs actifs" value={String(screen.actifs)} icon={Building2} tone="blue" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard label="Fournisseurs actifs" value={String(screen.actifs)} icon={Building2} tone="blue" />
         <KpiCard
-          compact
           label="Total sous-traité"
           value={formatFCFA(screen.totalMontant)}
           icon={TrendingDown}
           tone="red"
         />
         <KpiCard
-          compact
           label="Budget alloué"
           value={formatFCFA(screen.totalBudgete)}
           icon={TrendingUp}
           tone="indigo"
         />
         <KpiCard
-          compact
           label={screen.activeTab === "tarifs" ? "Avec tarif défini" : "Paiements en attente"}
           value={screen.activeTab === "tarifs" ? String(screen.avecTarif) : String(screen.enAttente)}
           icon={screen.activeTab === "tarifs" ? Banknote : AlertCircle}

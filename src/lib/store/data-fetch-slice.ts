@@ -374,7 +374,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
             nom: nomSoc,
             raisonSociale: raisonSoc,
             actif: true,
-            logoUrl: settingsMap.societe_logo_url || "/assets/logo_sltt.png",
+            logoUrl: settingsMap.societe_logo_url || "/logoV.png",
             adresse: settingsMap.societe_adresse || "Conakry, République de Guinée",
             telephone: settingsMap.societe_telephone || "+224 620 00 00 01",
             rccm: settingsMap.societe_rccm || "GN.TCC.2020.B.1234",

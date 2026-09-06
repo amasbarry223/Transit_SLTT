@@ -204,34 +204,37 @@ export function EntreposageScreen() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Entreposage"
-        description="Gestion du stock et des mouvements"
+        title="Entreposage & Stock"
+        description="Gestion du stock marchandise, suivi des lots et historique des mouvements"
       >
         <StockBulkImportButton />
         {canWrite && (
-          <Button onClick={openNewItemDialog}>
-            <Plus className="size-4" />
-            Nouvel article
+          <Button
+            onClick={openNewItemDialog}
+            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Plus className="size-4 shrink-0 stroke-[3]" />
+            <span>Nouvel article</span>
           </Button>
         )}
       </PageHeader>
 
       {alertesStockFaible > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200/80 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/30 px-4 py-3">
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200/80 dark:border-red-900/60 bg-red-50/70 dark:bg-red-950/30 px-4 py-3.5 shadow-xs">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-600 dark:text-red-400" />
           <div>
-            <p className="text-sm font-medium text-red-900 dark:text-red-200">
+            <p className="text-sm font-bold text-red-900 dark:text-red-200">
               {alertesStockFaible} article{alertesStockFaible > 1 ? "s" : ""} en
               stock faible
             </p>
-            <p className="mt-0.5 text-xs text-red-700 dark:text-red-300/80">
+            <p className="mt-0.5 text-xs text-red-700 dark:text-red-300/80 font-medium">
               Pensez à réapprovisionner ou à enregistrer une entrée de marchandise.
             </p>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Articles en stock"
           value={String(articlesEnStock)}
@@ -244,7 +247,7 @@ export function EntreposageScreen() {
           value={formatFCFA(valeurStock)}
           icon={Wallet}
           tone="indigo"
-          sublabel="valeur totale"
+          sublabel="valeur totale estimée"
         />
         <KpiCard
           label="Mouvements ce mois"

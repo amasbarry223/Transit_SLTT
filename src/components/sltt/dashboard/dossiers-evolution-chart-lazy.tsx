@@ -23,7 +23,7 @@ const DossiersEvolutionChartImpl = dynamic(
 );
 
 export function DossiersEvolutionChartLazy(props: {
-  data: { mois: string; valeur: number }[];
+  data: { mois: string; valeur?: number; crees?: number; traites?: number }[];
   gridColor: string;
   tickColor: string;
   barCursorFill: string;

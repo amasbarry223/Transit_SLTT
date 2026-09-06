@@ -106,12 +106,12 @@ export function TransporteursTable({
 }: TransporteursTableProps) {
   return (
     <>
-      <Card className="border-border/80 p-4 shadow-sm">
+      <Card className="rounded-2xl border border-border/70 p-4 shadow-xs bg-card">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-10 pl-9"
+              className="h-10 pl-9 rounded-xl bg-[#F1F5F9] dark:bg-muted/60 border-none focus-visible:ring-2 focus-visible:ring-[#1344C8]"
               placeholder="Société, contact, trajet, immat…"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -119,7 +119,7 @@ export function TransporteursTable({
           </div>
 
           <Select value={vehiculeFilter} onValueChange={onVehiculeFilterChange}>
-            <SelectTrigger className="h-10 w-full sm:w-44">
+            <SelectTrigger className="h-10 w-full sm:w-44 rounded-xl">
               <SelectValue placeholder="Véhicule" />
             </SelectTrigger>
             <SelectContent>
@@ -133,7 +133,7 @@ export function TransporteursTable({
           </Select>
 
           <Select value={statutFilter} onValueChange={onStatutFilterChange}>
-            <SelectTrigger className="h-10 w-full sm:w-40">
+            <SelectTrigger className="h-10 w-full sm:w-40 rounded-xl">
               <SelectValue placeholder="Statut" />
             </SelectTrigger>
             <SelectContent>
@@ -144,7 +144,7 @@ export function TransporteursTable({
           </Select>
 
           <Select value={sortBy} onValueChange={(v) => onSortByChange(v as SortKey)}>
-            <SelectTrigger className="h-10 w-full sm:w-52">
+            <SelectTrigger className="h-10 w-full sm:w-52 rounded-xl">
               <ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" />
               <SelectValue placeholder="Trier par…" />
             </SelectTrigger>
@@ -161,7 +161,7 @@ export function TransporteursTable({
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 gap-1.5 text-muted-foreground"
+              className="h-10 gap-1.5 text-muted-foreground rounded-xl"
               onClick={onClearFilters}
             >
               Réinitialiser
@@ -175,7 +175,7 @@ export function TransporteursTable({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 shrink-0"
+              className="h-9 shrink-0 rounded-xl"
               onClick={onExportPDF}
               disabled={filtered.length === 0}
               title="Imprimer la liste"
@@ -187,7 +187,7 @@ export function TransporteursTable({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 shrink-0"
+              className="h-9 shrink-0 rounded-xl"
               onClick={onExportExcel}
               disabled={filtered.length === 0}
               title="Exporter en Excel"
@@ -200,8 +200,8 @@ export function TransporteursTable({
         </div>
       </Card>
 
-      <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+      <Card className="gap-0 overflow-hidden rounded-2xl border border-border/70 p-0 shadow-xs bg-card">
+        <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-4 py-3">
           <Truck className="size-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold text-foreground">Liste des transporteurs</h2>
           <span className="ml-auto text-xs tabular-nums text-muted-foreground">

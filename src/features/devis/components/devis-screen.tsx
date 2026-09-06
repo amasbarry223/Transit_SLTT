@@ -21,6 +21,7 @@ import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { devisStatutNeedsConfirm } from "@/lib/confirm-transitions";
 import { DevisFormDialog } from "@/components/sltt/devis/devis-form-dialog";
 import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
@@ -228,8 +229,16 @@ export function DevisScreen() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Devis" description="Estimations tarifaires avant ouverture de dossier">
-        {canWrite && <Button onClick={() => { setEditDevis(null); setFormOpen(true); }}><Plus className="size-4" />Nouveau devis</Button>}
+      <PageHeader title="Devis & Cotations" description="Estimations tarifaires, cotations et conversion en dossiers">
+        {canWrite && (
+          <Button
+            onClick={() => { setEditDevis(null); setFormOpen(true); }}
+            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Plus className="size-4 shrink-0 stroke-[3]" />
+            <span>Nouveau devis</span>
+          </Button>
+        )}
       </PageHeader>
       <DevisListKpis totalDevis={scopedDevis.length} enAttente={enAttente} acceptes={acceptes} totalEstime={totalEstime} />
       <DevisListBanner enAttente={enAttente} />
@@ -240,16 +249,18 @@ export function DevisScreen() {
         activeFiltersCount={activeFiltersCount} clearFilters={clearFilters} filteredCount={filtered.length}
         handleExportPDF={handleExportPDF} handleExportExcel={handleExportExcel}
       />
-      <DevisListTable
-        filtered={filtered} paged={paged} hasActiveFilters={hasActiveFilters} canWrite={canWrite}
-        setEditDevis={setEditDevis} setFormOpen={setFormOpen}
-        handleOpenDevis={(d) => openDevisDetail(d.id, false)}
-        handleOpenEdit={(d) => openDevisDetail(d.id, true)}
-        handlePrintDevis={handlePrintDevis} handleQuickStatut={handleQuickStatut}
-        openDossierDetail={openDossierDetail} setConvertTarget={setConvertTarget}
-        setDeleteTarget={setDeleteTarget} startIdx={startIdx} endIdx={endIdx}
-        safePage={safePage} totalPages={totalPages} setPage={setPage}
-      />
+      <Card className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card p-0">
+        <DevisListTable
+          filtered={filtered} paged={paged} hasActiveFilters={hasActiveFilters} canWrite={canWrite}
+          setEditDevis={setEditDevis} setFormOpen={setFormOpen}
+          handleOpenDevis={(d) => openDevisDetail(d.id, false)}
+          handleOpenEdit={(d) => openDevisDetail(d.id, true)}
+          handlePrintDevis={handlePrintDevis} handleQuickStatut={handleQuickStatut}
+          openDossierDetail={openDossierDetail} setConvertTarget={setConvertTarget}
+          setDeleteTarget={setDeleteTarget} startIdx={startIdx} endIdx={endIdx}
+          safePage={safePage} totalPages={totalPages} setPage={setPage}
+        />
+      </Card>
       <DevisFormDialog
         open={formOpen} devis={editDevis} clients={clients}
         saving={savingDevis}

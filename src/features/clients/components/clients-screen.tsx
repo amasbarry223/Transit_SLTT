@@ -3,13 +3,14 @@
 import { useCallback, useMemo, useState } from "react";
 import { usePagination } from "@/shared/hooks/use-pagination";
 import {
-  UserPlus,
+  Plus,
   Search,
   Users,
   Building2,
   User,
   Wallet,
   Printer,
+  RotateCcw,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -22,8 +23,7 @@ import { toastError, toastWarning, toastSuccess } from "@/shared/utils/toast-hel
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
-import { PageHeader } from "@/components/sltt/page-header";
-import { KpiCard } from "@/components/sltt/kpi-card";
+import { DashboardKpiCard } from "@/components/sltt/dashboard/dashboard-kpi-card";
 import {
   ClientsTable,
   CLIENT_TYPES,
@@ -32,16 +32,16 @@ import {
   type ClientTypeFilter,
 } from "@/features/clients/components";
 import { ClientFormFields, emptyClientForm } from "@/features/clients/components/client-form-fields";
-import { Card } from "@/shared/components/ui/card";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/shared/components/ui/select";
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/components/ui/dialog";
+} from "@/components/ui/dialog";
 
 export function ClientsScreen() {
   const { toast } = useToast();
@@ -211,72 +211,99 @@ export function ClientsScreen() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Clients"
-        description="Annuaire, fiches et suivi des créances clients"
-      >
-        <Button variant="outline" onClick={handlePrint} disabled={filtered.length === 0}>
-          <Printer className="size-4" />
-          Imprimer la liste
-        </Button>
-        <Button
-          onClick={openCreateDialog}
-          disabled={!canWrite}
-          title={!canWrite ? "Vous n'avez pas la permission de créer un client." : undefined}
-        >
-          <UserPlus className="size-4" />
-          Nouveau client
-        </Button>
-      </PageHeader>
+    <div className="space-y-6 pb-6">
+      {/* 1. En-tête de page moderne aux couleurs TRAORE DE LOGISTIQUE */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+            Annuaire Clients
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground font-medium">
+            Portefeuille commercial, suivi des dossiers et des créances clients.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            disabled={filtered.length === 0}
+            className="rounded-xl h-10 text-xs sm:text-sm font-semibold border-border/80 hover:bg-slate-50 dark:hover:bg-muted gap-2"
+          >
+            <Printer className="size-4 text-slate-500" />
+            <span>Imprimer la liste</span>
+          </Button>
+
+          <Button
+            onClick={openCreateDialog}
+            disabled={!canWrite}
+            title={!canWrite ? "Vous n'avez pas la permission de créer un client." : undefined}
+            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Plus className="size-4 shrink-0 stroke-[3]" />
+            <span>Nouveau client</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* 2. 4 Grandes Cartes KPI Pleines et Colorées (Format Dashboard) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI 1: Total clients — Bleu Royal */}
+        <DashboardKpiCard
           label="Total clients"
-          value={String(stats.total)}
+          value={stats.total}
           icon={Users}
-          tone="blue"
-          sublabel="dans l'annuaire"
+          variant="royal"
+          sublabel="dans l'annuaire actif"
         />
-        <KpiCard
+
+        {/* KPI 2: Entreprises — Bleu */}
+        <DashboardKpiCard
           label="Entreprises"
-          value={String(stats.entreprises)}
+          value={stats.entreprises}
           icon={Building2}
-          tone="indigo"
-          sublabel="clients professionnels"
+          variant="blue"
+          sublabel={stats.total > 0 ? `${Math.round((stats.entreprises / stats.total) * 100)}% du portefeuille commercial` : "clients professionnels"}
         />
-        <KpiCard
+
+        {/* KPI 3: Particuliers — Bleu Marine */}
+        <DashboardKpiCard
           label="Particuliers"
-          value={String(stats.particuliers)}
+          value={stats.particuliers}
           icon={User}
-          tone="emerald"
-          sublabel="clients individuels"
+          variant="navy"
+          sublabel={stats.total > 0 ? `${Math.round((stats.particuliers / stats.total) * 100)}% du portefeuille commercial` : "clients individuels"}
         />
-        <KpiCard
+
+        {/* KPI 4: Créances totales — Rouge */}
+        <DashboardKpiCard
           label="Créances totales"
           value={formatFCFA(stats.totalDu)}
           icon={Wallet}
-          tone="amber"
-          sublabel="reste à encaisser"
+          variant="red"
+          sublabel="reste à recouvrer"
         />
       </div>
 
-      <Card className="border-border/80 p-4 shadow-sm">
+      {/* 3. Barre de Recherche et Filtres */}
+      <Card className="rounded-2xl border border-border/70 p-4 shadow-xs bg-card">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          {/* Champ recherche */}
+          <div className="relative flex-1 min-w-[260px] sm:max-w-md">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <Input
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
                 setPage(1);
               }}
-              placeholder="Rechercher par nom, téléphone, e-mail…"
-              className="h-10 pl-9"
+              placeholder="Rechercher par nom, téléphone, e-mail, adresse…"
+              className="h-10 pl-10 rounded-xl border border-slate-200/80 bg-[#F1F5F9] dark:bg-muted/40 text-xs sm:text-sm text-foreground focus-visible:ring-primary/40 shadow-none"
               aria-label="Rechercher un client"
             />
           </div>
 
+          {/* Filtre par type */}
           <Select
             value={typeFilter}
             onValueChange={(v) => {
@@ -284,10 +311,10 @@ export function ClientsScreen() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Filtrer par type">
+            <SelectTrigger className="h-10 w-full sm:w-44 rounded-xl border border-slate-200/80 bg-[#F1F5F9] dark:bg-muted/40 text-xs sm:text-sm" aria-label="Filtrer par type">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               <SelectItem value="all">Tous les types</SelectItem>
               {CLIENT_TYPES.map((t) => (
                 <SelectItem key={t} value={t}>
@@ -297,14 +324,15 @@ export function ClientsScreen() {
             </SelectContent>
           </Select>
 
+          {/* Tri */}
           <Select
             value={sortBy}
             onValueChange={(v) => handleSortChange(v as ClientSortKey)}
           >
-            <SelectTrigger className="h-10 w-full sm:w-48" aria-label="Trier les clients">
+            <SelectTrigger className="h-10 w-full sm:w-48 rounded-xl border border-slate-200/80 bg-[#F1F5F9] dark:bg-muted/40 text-xs sm:text-sm" aria-label="Trier les clients">
               <SelectValue placeholder="Trier par" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               {SORT_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
@@ -313,24 +341,28 @@ export function ClientsScreen() {
             </SelectContent>
           </Select>
 
+          {/* Réinitialiser */}
           {hasActiveFilters && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-muted-foreground"
+              className="h-10 rounded-xl text-muted-foreground hover:text-foreground gap-1.5"
               onClick={clearFilters}
             >
-              Réinitialiser
+              <RotateCcw className="size-3.5" />
+              <span>Réinitialiser</span>
             </Button>
           )}
 
-          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
+          {/* Compteur */}
+          <div className="ml-auto inline-flex items-center rounded-full bg-slate-100 dark:bg-muted px-3 py-1 text-xs font-bold text-foreground tabular-nums">
             {filtered.length} client{filtered.length !== 1 ? "s" : ""}
-          </p>
+          </div>
         </div>
       </Card>
 
-      <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
+      {/* 4. Tableau des Clients */}
+      <Card className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card p-0">
         <ClientsTable
           paged={paged}
           filteredCount={filtered.length}
@@ -349,6 +381,7 @@ export function ClientsScreen() {
         />
       </Card>
 
+      {/* 5. Modal Dialog Nouveau / Modifier Client */}
       <Dialog
         open={dialogOpen}
         onOpenChange={(open) => {
@@ -356,17 +389,19 @@ export function ClientsScreen() {
           if (!open) resetForm();
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg rounded-2xl">
           <DialogHeader>
-            <DialogTitle>{isEdit ? "Modifier le client" : "Nouveau client"}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg font-black text-foreground">
+              {isEdit ? "Modifier le client" : "Nouveau client"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
               {isEdit
-                ? "Mettez à jour les informations du client."
-                : "Ajoutez un client à l'annuaire avec ses coordonnées."}
+                ? "Mettez à jour les informations et coordonnées du client."
+                : "Ajoutez un nouveau client à l'annuaire commercial de Traoré de Logistique."}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave} className="space-y-4 pt-2">
             <ClientFormFields
               values={formValues}
               onChange={(patch) => setFormValues((v) => ({ ...v, ...patch }))}
@@ -374,16 +409,21 @@ export function ClientsScreen() {
               autoFocusNom
             />
 
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border/60">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
+                className="rounded-xl h-10 font-semibold"
               >
                 Annuler
               </Button>
-              <Button type="submit" disabled={!formValues.nom.trim() || savingClient}>
-                {isEdit ? "Enregistrer" : "Créer le client"}
+              <Button
+                type="submit"
+                disabled={!formValues.nom.trim() || savingClient}
+                className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold h-10 px-5 rounded-xl shadow-md shadow-red-600/20"
+              >
+                {isEdit ? "Enregistrer les modifications" : "Créer le client"}
               </Button>
             </DialogFooter>
           </form>

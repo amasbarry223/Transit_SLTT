@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import type { Client } from "@/features/clients/types";
 import { formatFCFA } from "@/lib/format";
-import { cn, getInitials } from "@/shared/utils/cn";
-import { UI } from "@/shared/utils/ui-messages";
+import { cn, getInitials } from "@/lib/utils";
+import { UI } from "@/lib/ui-messages";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { Card } from "@/components/ui/card";
@@ -76,7 +76,7 @@ function SortableHeader({
   return (
     <TableHead
       className={cn(
-        "h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground",
+        "h-11 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground",
         align === "center" && "text-center",
         align === "right" && "text-right",
       )}
@@ -85,19 +85,19 @@ function SortableHeader({
       <button
         type="button"
         className={cn(
-          "inline-flex items-center gap-1 rounded-md transition-colors hover:text-slate-700 dark:hover:text-slate-200",
+          "inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-primary",
           align === "center" && "mx-auto",
           align === "right" && "ml-auto",
-          isActive && "text-slate-800 dark:text-slate-100",
+          isActive && "text-primary font-black",
         )}
         onClick={() => onSortChange(sortKey)}
       >
-        {label}
+        <span>{label}</span>
         {isActive &&
           (sortKey === "nom" ? (
-            <ArrowUp className="size-3.5 shrink-0" aria-hidden />
+            <ArrowUp className="size-3.5 shrink-0 text-primary" aria-hidden />
           ) : (
-            <ArrowDown className="size-3.5 shrink-0" aria-hidden />
+            <ArrowDown className="size-3.5 shrink-0 text-primary" aria-hidden />
           ))}
       </button>
     </TableHead>
@@ -118,7 +118,7 @@ const ClientMobileCard = memo(function ClientMobileCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60",
+        "cursor-pointer rounded-2xl border border-border/80 p-4 shadow-xs transition-all hover:border-primary/40 hover:shadow-md active:bg-slate-50 dark:active:bg-slate-800/60",
         rowAccentClass(client.type),
       )}
       onClick={() => onOpenClient(client.id)}
@@ -127,14 +127,14 @@ const ClientMobileCard = memo(function ClientMobileCard({
         <div className="flex min-w-0 items-center gap-3">
           <div
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white",
+              "flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-xs font-bold text-white shadow-xs",
               avatarGradient(client.type),
             )}
           >
             {getInitials(client.nom)}
           </div>
           <div className="min-w-0">
-            <p className="truncate font-medium text-foreground">{client.nom}</p>
+            <p className="truncate font-bold text-foreground text-sm">{client.nom}</p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <ClientTypeBadge type={client.type} size="sm" />
             </div>
@@ -147,7 +147,7 @@ const ClientMobileCard = memo(function ClientMobileCard({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-muted-foreground hover:text-primary"
+            className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
             onClick={() => onOpenClient(client.id)}
             aria-label={`Voir la fiche de ${client.nom}`}
           >
@@ -157,7 +157,7 @@ const ClientMobileCard = memo(function ClientMobileCard({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 text-muted-foreground hover:text-primary"
+              className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
               onClick={(e) => onEditClient(client.id, e)}
               aria-label={`Modifier ${client.nom}`}
             >
@@ -166,26 +166,32 @@ const ClientMobileCard = memo(function ClientMobileCard({
           )}
         </div>
       </div>
-      <dl className="mt-3 space-y-1.5 text-sm">
+
+      <dl className="mt-3.5 space-y-2 text-xs border-t border-border/60 pt-3">
         {client.telephone && (
-          <div className="flex justify-between gap-3">
-            <dt className="text-xs text-muted-foreground">Téléphone</dt>
-            <dd className="font-mono text-xs text-foreground/90">{client.telephone}</dd>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-muted-foreground">Téléphone</dt>
+            <dd className="font-mono text-foreground font-medium">{client.telephone}</dd>
           </div>
         )}
-        <div className="flex justify-between gap-3">
-          <dt className="text-xs text-muted-foreground">Dossiers</dt>
-          <dd className="tabular-nums text-foreground/90">{client.nbDossiers}</dd>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted-foreground">Dossiers rattachés</dt>
+          <dd className="inline-flex items-center gap-1 font-bold tabular-nums text-foreground">
+            <FolderKanban className="size-3 text-primary" />
+            <span>{client.nbDossiers}</span>
+          </dd>
         </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-xs text-muted-foreground">Total dû</dt>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted-foreground">Total dû</dt>
           <dd className="tabular-nums">
             {client.totalDu > 0 ? (
-              <span className="font-semibold text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/80 px-2 py-0.5 text-xs font-bold text-[#ED1C24] dark:text-red-400">
                 {formatFCFA(client.totalDu)}
               </span>
             ) : (
-              <span className="text-emerald-600 dark:text-emerald-400">Soldé</span>
+              <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                Soldé
+              </span>
             )}
           </dd>
         </div>
@@ -210,7 +216,7 @@ const ClientTableRow = memo(function ClientTableRow({
       role="button"
       tabIndex={0}
       className={cn(
-        "cursor-pointer border-b border-border transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+        "cursor-pointer border-b border-border/60 transition-colors hover:bg-slate-50/80 dark:hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
         rowAccentClass(client.type),
       )}
       onClick={() => onOpenClient(client.id)}
@@ -221,68 +227,86 @@ const ClientTableRow = memo(function ClientTableRow({
         }
       }}
     >
-      <TableCell className="min-w-[180px] px-4 py-3.5">
+      {/* Client nom + avatar */}
+      <TableCell className="min-w-[200px] px-4 py-3.5">
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white",
+              "flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-xs font-bold text-white shadow-xs",
               avatarGradient(client.type),
             )}
           >
             {getInitials(client.nom)}
           </div>
-          <p className="truncate font-medium text-foreground">{client.nom}</p>
+          <div className="min-w-0">
+            <p className="truncate font-bold text-foreground text-sm">{client.nom}</p>
+          </div>
         </div>
       </TableCell>
-      <TableCell className="w-[130px] px-4 py-3.5">
+
+      {/* Type badge */}
+      <TableCell className="w-[140px] px-4 py-3.5">
         <ClientTypeBadge type={client.type} size="sm" />
       </TableCell>
-      <TableCell className="hidden min-w-[160px] px-4 py-3.5 md:table-cell">
-        <div className="space-y-1 text-sm">
+
+      {/* Contact info */}
+      <TableCell className="hidden min-w-[170px] px-4 py-3.5 md:table-cell">
+        <div className="space-y-1 text-xs">
           {client.telephone ? (
-            <p className="flex items-center gap-1.5 text-muted-foreground">
-              <Phone className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="font-mono text-xs">{client.telephone}</span>
+            <p className="flex items-center gap-1.5 text-muted-foreground font-medium">
+              <Phone className="size-3.5 shrink-0 text-slate-400" />
+              <span className="font-mono">{client.telephone}</span>
             </p>
           ) : (
             <p className="text-muted-foreground">—</p>
           )}
           {client.email && (
             <p className="flex items-center gap-1.5 text-muted-foreground">
-              <Mail className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="truncate text-xs">{client.email}</span>
+              <Mail className="size-3.5 shrink-0 text-slate-400" />
+              <span className="truncate">{client.email}</span>
             </p>
           )}
         </div>
       </TableCell>
+
+      {/* Adresse */}
       <TableCell className="hidden max-w-[200px] px-4 py-3.5 lg:table-cell">
         {client.adresse ? (
           <p
-            className="flex items-start gap-1.5 text-sm text-muted-foreground"
+            className="flex items-start gap-1.5 text-xs text-muted-foreground"
             title={client.adresse}
           >
-            <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+            <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
             <span className="line-clamp-2">{client.adresse}</span>
           </p>
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground text-xs">—</span>
         )}
       </TableCell>
+
+      {/* Nb dossiers */}
       <TableCell className="px-4 py-3.5 text-center">
-        <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-medium tabular-nums text-slate-700 bg-muted dark:text-slate-300">
-          <FolderKanban className="size-3.5" />
-          {client.nbDossiers}
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-muted px-2.5 py-1 text-xs font-bold tabular-nums text-foreground">
+          <FolderKanban className="size-3 text-primary" />
+          <span>{client.nbDossiers}</span>
         </span>
       </TableCell>
+
+      {/* Total dû */}
       <TableCell className="px-4 py-3.5 text-right tabular-nums">
         {client.totalDu > 0 ? (
-          <span className="font-semibold text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/80 px-2.5 py-1 text-xs font-bold text-[#ED1C24] dark:text-red-400">
             {formatFCFA(client.totalDu)}
           </span>
         ) : (
-          <span className="text-sm text-emerald-600 dark:text-emerald-400">Soldé</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            Soldé
+          </span>
         )}
       </TableCell>
+
+      {/* Actions */}
       <TableCell className="px-4 py-3.5">
         <div
           className="flex items-center justify-end gap-1"
@@ -291,10 +315,10 @@ const ClientTableRow = memo(function ClientTableRow({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-muted-foreground hover:text-primary"
+            className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
             onClick={() => onOpenClient(client.id)}
             aria-label={`Voir la fiche de ${client.nom}`}
-            title="Voir la fiche"
+            title="Voir la fiche client"
           >
             <Eye className="size-4" />
           </Button>
@@ -302,10 +326,10 @@ const ClientTableRow = memo(function ClientTableRow({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 text-muted-foreground hover:text-primary"
+              className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
               onClick={(e) => onEditClient(client.id, e)}
               aria-label={`Modifier ${client.nom}`}
-              title="Modifier"
+              title="Modifier le client"
             >
               <Pencil className="size-4" />
             </Button>
@@ -375,21 +399,21 @@ export function ClientsTable({
 
       <div className="hidden overflow-x-auto md:block">
         <Table aria-label="Liste des clients" className="min-w-[960px]">
-          <TableHeader className="sticky top-0 z-10 bg-muted/50">
-            <TableRow className="border-b border-border hover:bg-muted">
+          <TableHeader className="sticky top-0 z-10 bg-slate-50/80 dark:bg-muted/40 border-b border-border/80">
+            <TableRow className="hover:bg-transparent">
               <SortableHeader
                 label="Client"
                 sortKey="nom"
                 activeSort={sortBy}
                 onSortChange={onSortChange}
               />
-              <TableHead className="h-10 w-[130px] px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <TableHead className="h-11 w-[140px] px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 Type
               </TableHead>
-              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
+              <TableHead className="hidden h-11 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground md:table-cell">
                 Contact
               </TableHead>
-              <TableHead className="hidden h-10 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:table-cell">
+              <TableHead className="hidden h-11 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground lg:table-cell">
                 Adresse
               </TableHead>
               <SortableHeader
@@ -406,12 +430,12 @@ export function ClientsTable({
                 align="right"
                 onSortChange={onSortChange}
               />
-              <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <TableHead className="h-11 px-4 text-right text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="divide-y divide-border/60">
             {paged.map((c) => (
               <ClientTableRow
                 key={c.id}
