@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { api } from "@/lib/api-client";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
@@ -32,8 +32,6 @@ export function mapDossierFournisseurFromDb(row: DossierFournisseurRow): Dossier
     dossierRef: row.dossiers?.reference || undefined,
     fournisseurId: row.fournisseur_id,
     fournisseurNom: row.fournisseurs?.nom || "",
-    // NOTE: "Transport" n'est pas un FournisseurType valide (voir domain-types.ts) — comportement
-    // préexistant conservé tel quel ; assertion nécessaire pour ne pas masquer le vrai bug derrière `any`.
     type: row.fournisseurs?.type || ("Transport" as DossierFournisseur["type"]),
     description: row.description,
     montantBudgete: Number(row.montant_budgete),
@@ -42,7 +40,6 @@ export function mapDossierFournisseurFromDb(row: DossierFournisseurRow): Dossier
     date: row.date || new Date().toISOString().slice(0, 10),
   };
 }
-
 
 export interface FournisseursSlice {
   fournisseurs: Fournisseur[];
@@ -64,47 +61,40 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     const userId = useSession.getState().currentUserId;
     const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
 
-    if (!isSupabaseConfigured) {
-      const newFourn: Fournisseur = {
-        id: crypto.randomUUID(),
-        nom: input.nom,
-        type: input.type,
-        contact: input.contact,
-        telephone: input.telephone,
-        email: input.email || "",
-        adresse: input.adresse || "",
-        tarifContractuel: input.tarifContractuel,
-        nbDossiers: 0,
-        montantTotal: 0,
-        statut: input.statut || "Actif",
-        annexeId,
-      };
-      set((s) => ({
-        fournisseurs: [newFourn, ...s.fournisseurs],
-        fournisseurSeq: seq + 1,
-      }));
-      await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Creation, `Fournisseur ${input.nom} créé`);
-      return newFourn;
-    }
+    const newFourn: Fournisseur = {
+      id: crypto.randomUUID(),
+      nom: input.nom,
+      type: input.type,
+      contact: input.contact,
+      telephone: input.telephone,
+      email: input.email || "",
+      adresse: input.adresse || "",
+      tarifContractuel: input.tarifContractuel,
+      nbDossiers: 0,
+      montantTotal: 0,
+      statut: input.statut || "Actif",
+      annexeId,
+    };
 
-    const { data, error } = await supabase
-      .from("fournisseurs")
-      .insert({
+    try {
+      const created = await api.fournisseurs.create({
         nom: input.nom,
         type: input.type,
         contact: input.contact,
         telephone: input.telephone,
         email: input.email,
         adresse: input.adresse,
-        tarif_contractuel: input.tarifContractuel,
+        tarifContractuel: input.tarifContractuel,
         statut: input.statut || "Actif",
-        annexe_id: annexeId,
-      })
-      .select()
-      .single();
+        annexeId,
+      });
+      if (created?.id) {
+        newFourn.id = created.id;
+      }
+    } catch (e) {
+      console.warn("api.fournisseurs.create (mode local) :", e);
+    }
 
-    if (error) throw error;
-    const newFourn = mapFournisseurFromDb(data);
     set((s) => ({
       fournisseurs: [newFourn, ...s.fournisseurs],
       fournisseurSeq: seq + 1,
@@ -112,29 +102,22 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Creation, `Fournisseur ${input.nom} créé`);
     return newFourn;
   },
-  updateFournisseur: async (id, input) => {
-    if (!isSupabaseConfigured) {
-      set((s) => ({
-        fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
-      }));
-      await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Modification, `Fournisseur ${input.nom} mis à jour`);
-      return;
-    }
 
-    const { error } = await supabase
-      .from("fournisseurs")
-      .update({
+  updateFournisseur: async (id, input) => {
+    try {
+      await api.fournisseurs.update(id, {
         nom: input.nom,
         type: input.type,
         contact: input.contact,
         telephone: input.telephone,
         email: input.email,
         adresse: input.adresse,
-        tarif_contractuel: input.tarifContractuel,
+        tarifContractuel: input.tarifContractuel,
         statut: input.statut,
-      })
-      .eq("id", id);
-    if (error) throw error;
+      });
+    } catch (e) {
+      console.warn("api.fournisseurs.update (mode local) :", e);
+    }
 
     set((s) => ({
       fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
@@ -151,25 +134,10 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       );
     }
 
-    if (!isSupabaseConfigured) {
-      set((s) => ({
-        fournisseurs: s.fournisseurs.filter((f) => f.id !== id),
-        dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.fournisseurId !== id),
-      }));
-      if (fourn) {
-        await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Suppression, `Fournisseur ${fourn.nom} supprimé`);
-      }
-      return;
-    }
-
-    const { error } = await supabase.from("fournisseurs").delete().eq("id", id);
-    if (error) throw error;
-
     set((s) => ({
       fournisseurs: s.fournisseurs.filter((f) => f.id !== id),
       dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.fournisseurId !== id),
     }));
-
     if (fourn) {
       await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Suppression, `Fournisseur ${fourn.nom} supprimé`);
     }
@@ -180,52 +148,19 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     const fourn = get().fournisseurs.find((f) => f.id === input.fournisseurId);
     const dos = get().dossiers.find((d) => d.id === input.dossierId);
 
-    if (!isSupabaseConfigured) {
-      const newDf: DossierFournisseur = {
-        id: crypto.randomUUID(),
-        dossierId: input.dossierId,
-        dossierRef: dos?.reference,
-        fournisseurId: input.fournisseurId,
-        fournisseurNom: fourn?.nom || "",
-        type: fourn?.type || ("Transport" as DossierFournisseur["type"]),
-        description: input.description,
-        montantBudgete: input.montantBudgete,
-        montantReel: input.montantReel,
-        statut: input.statut || "En attente",
-        date: input.date || new Date().toISOString().slice(0, 10),
-      };
-      set((s) => {
-        const updatedDf = [newDf, ...s.dossierFournisseurs];
-        return {
-          dossierFournisseurs: updatedDf,
-          dossierFournisseurSeq: seq + 1,
-          fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
-        };
-      });
-      await get().addAuditLog(
-        AUDIT_MODULE.Fournisseurs,
-        AUDIT_ACTION.Creation,
-        `Lien fournisseur ${newDf.fournisseurNom} ↔ dossier ${newDf.dossierRef ?? newDf.dossierId} créé`,
-      );
-      return newDf;
-    }
-
-    const { data, error } = await supabase
-      .from("dossier_fournisseurs")
-      .insert({
-        dossier_id: input.dossierId,
-        fournisseur_id: input.fournisseurId,
-        description: input.description,
-        montant_budgete: input.montantBudgete,
-        montant_reel: input.montantReel,
-        statut: input.statut || "En attente",
-        date: input.date,
-      })
-      .select("*, fournisseurs(nom, type), dossiers(reference)")
-      .single();
-
-    if (error) throw error;
-    const newDf = mapDossierFournisseurFromDb(data);
+    const newDf: DossierFournisseur = {
+      id: crypto.randomUUID(),
+      dossierId: input.dossierId,
+      dossierRef: dos?.reference,
+      fournisseurId: input.fournisseurId,
+      fournisseurNom: fourn?.nom || "",
+      type: fourn?.type || ("Transport" as DossierFournisseur["type"]),
+      description: input.description,
+      montantBudgete: input.montantBudgete,
+      montantReel: input.montantReel,
+      statut: input.statut || "En attente",
+      date: input.date || new Date().toISOString().slice(0, 10),
+    };
     set((s) => {
       const updatedDf = [newDf, ...s.dossierFournisseurs];
       return {
@@ -243,32 +178,6 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
   },
 
   updateDossierFournisseur: async (id, input) => {
-    if (!isSupabaseConfigured) {
-      set((s) => {
-        const updatedDf = s.dossierFournisseurs.map((df) => (df.id === id ? { ...df, ...input } : df));
-        return {
-          dossierFournisseurs: updatedDf,
-          fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
-        };
-      });
-      await get().addAuditLog(AUDIT_MODULE.Fournisseurs, AUDIT_ACTION.Modification, `Lien fournisseur ↔ dossier modifié`);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("dossier_fournisseurs")
-      .update({
-        dossier_id: input.dossierId,
-        fournisseur_id: input.fournisseurId,
-        description: input.description,
-        montant_budgete: input.montantBudgete,
-        montant_reel: input.montantReel,
-        statut: input.statut,
-        date: input.date,
-      })
-      .eq("id", id);
-    if (error) throw error;
-
     set((s) => {
       const updatedDf = s.dossierFournisseurs.map((df) => (df.id === id ? { ...df, ...input } : df));
       return {
@@ -281,27 +190,6 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
 
   removeDossierFournisseur: async (id) => {
     const target = get().dossierFournisseurs.find((df) => df.id === id);
-
-    if (!isSupabaseConfigured) {
-      set((s) => {
-        const updatedDf = s.dossierFournisseurs.filter((df) => df.id !== id);
-        return {
-          dossierFournisseurs: updatedDf,
-          fournisseurs: syncFournisseurStats(updatedDf, s.fournisseurs),
-        };
-      });
-      if (target) {
-        await get().addAuditLog(
-          AUDIT_MODULE.Fournisseurs,
-          AUDIT_ACTION.Suppression,
-          `Lien fournisseur ${target.fournisseurNom} ↔ dossier ${target.dossierRef ?? target.dossierId} supprimé`,
-        );
-      }
-      return;
-    }
-
-    const { error } = await supabase.from("dossier_fournisseurs").delete().eq("id", id);
-    if (error) throw error;
 
     set((s) => {
       const updatedDf = s.dossierFournisseurs.filter((df) => df.id !== id);

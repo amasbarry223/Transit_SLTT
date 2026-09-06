@@ -1,19 +1,16 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { api } from "@/lib/api-client";
 import { useSession } from "@/lib/session/session-store";
 import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
 import { mapDevisFromDb } from "@/features/devis/services/devis-mapper";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
-import type { DevisRow } from "@/lib/db-rows";
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
-  insertWithReferenceRetry,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-import { logError } from "@/shared/logger";
 
 export { mapDevisFromDb };
 
@@ -49,9 +46,10 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
 
-    if (!isSupabaseConfigured) {
-      // Mode NestJS : appel API REST
-      const { api } = await import("@/lib/api-client");
+    let createdId = crypto.randomUUID();
+    let createdNumero = initialReference;
+
+    try {
       const created = await api.devis.create({
         numero: initialReference,
         clientId: input.clientId,
@@ -63,101 +61,46 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
           { designation: "Frais de prestation", quantite: 1, prixUnitaire: input.fraisPrestation },
         ],
       });
-      const clientNom = client?.nom ?? (input as any).clientNom ?? "—";
-      const newDevis: Devis = {
-        id: created.id,
-        reference: created.numero ?? initialReference,
-        clientId: input.clientId,
-        clientNom,
-        annexeId: annexeId ?? "",
-        annexeNom: annexe?.nom ?? "",
-        nature: input.nature ?? "",
-        droitDouane: Number(input.droitDouane),
-        fraisCircuit: Number(input.fraisCircuit),
-        fraisPrestation: Number(input.fraisPrestation),
-        total,
-        statut: "Brouillon",
-        dateCreation: new Date().toISOString().slice(0, 10),
-        dateValidite: input.dateValidite ?? "",
-        notes: input.notes,
-      };
-      const finalSeq = extractTrailingSeq(newDevis.reference) ?? get().devisSeq;
-      set((s) => ({
-        devis: [newDevis, ...s.devis],
-        devisSeq: useAnnexeNumbering ? s.devisSeq : finalSeq + 1,
-      }));
-      await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Creation, `Devis ${newDevis.reference} créé — Client ${clientNom}`);
-      return newDevis;
+      if (created?.id) createdId = created.id;
+      if (created?.numero) createdNumero = created.numero;
+    } catch (e) {
+      console.warn("api.devis.create (mode local) :", e);
     }
 
-    // Mode Supabase
-    const { data, reference } = await insertWithReferenceRetry<DevisRow>(initialReference, (ref) =>
-      supabase
-        .from("devis")
-        .insert({
-          reference: ref,
-          client_id: input.clientId,
-          annexe_id: annexeId,
-          nature: input.nature,
-          droit_douane: input.droitDouane,
-          frais_circuit: input.fraisCircuit,
-          frais_prestation: input.fraisPrestation,
-          total,
-          statut: "Brouillon",
-          date_validite: input.dateValidite,
-          notes: input.notes,
-        })
-        .select("*, clients(nom), annexes(nom)")
-        .single(),
-    );
-
-    const newDevis = mapDevisFromDb(data);
-    const finalSeq = extractTrailingSeq(reference) ?? get().devisSeq;
+    const clientNom = client?.nom ?? (input as any).clientNom ?? "—";
+    const newDevis: Devis = {
+      id: createdId,
+      reference: createdNumero,
+      clientId: input.clientId,
+      clientNom,
+      annexeId: annexeId ?? "",
+      annexeNom: annexe?.nom ?? "",
+      nature: input.nature ?? "",
+      droitDouane: Number(input.droitDouane),
+      fraisCircuit: Number(input.fraisCircuit),
+      fraisPrestation: Number(input.fraisPrestation),
+      total,
+      statut: "Brouillon",
+      dateCreation: new Date().toISOString().slice(0, 10),
+      dateValidite: input.dateValidite ?? "",
+      notes: input.notes,
+    };
+    const finalSeq = extractTrailingSeq(newDevis.reference) ?? get().devisSeq;
     set((s) => ({
       devis: [newDevis, ...s.devis],
       devisSeq: useAnnexeNumbering ? s.devisSeq : finalSeq + 1,
     }));
-    await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Creation, `Devis ${reference} créé — Client ${newDevis.clientNom}`);
+    await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Creation, `Devis ${newDevis.reference} créé — Client ${clientNom}`);
     return newDevis;
   },
 
   updateDevis: async (id, input) => {
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
-
-    if (!isSupabaseConfigured) {
-      const existing = get().devis.find((d) => d.id === id);
-      set((s) => ({
-        devis: s.devis.map((devisItem) =>
-          devisItem.id === id ? { ...devisItem, ...input, total } : devisItem
-        ),
-      }));
-      if (existing) {
-        await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Modification, `Devis ${existing.reference} modifié`);
-      }
-      return;
-    }
-
-    const { error } = await supabase
-      .from("devis")
-      .update({
-        client_id: input.clientId,
-        nature: input.nature,
-        droit_douane: input.droitDouane,
-        frais_circuit: input.fraisCircuit,
-        frais_prestation: input.fraisPrestation,
-        total,
-        date_validite: input.dateValidite,
-        notes: input.notes,
-      })
-      .eq("id", id);
-    if (error) throw error;
-
     const existing = get().devis.find((d) => d.id === id);
+
     set((s) => ({
       devis: s.devis.map((devisItem) =>
-        devisItem.id === id
-          ? { ...devisItem, ...input, total }
-          : devisItem
+        devisItem.id === id ? { ...devisItem, ...input, total } : devisItem
       ),
     }));
     if (existing) {
@@ -170,23 +113,6 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     if (existingBefore && !canTransitionDevis(existingBefore.statut, statut)) {
       throw new Error(`Transition non autorisée : ${existingBefore.statut} → ${statut}.`);
     }
-
-    if (!isSupabaseConfigured) {
-      const existing = get().devis.find((d) => d.id === id);
-      set((s) => ({
-        devis: s.devis.map((d) => (d.id === id ? { ...d, statut } : d)),
-      }));
-      if (existing) {
-        await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Modification, `Devis ${existing.reference} → ${statut}`);
-      }
-      return;
-    }
-
-    const { error } = await supabase
-      .from("devis")
-      .update({ statut })
-      .eq("id", id);
-    if (error) throw error;
 
     const existing = get().devis.find((d) => d.id === id);
     set((s) => ({
@@ -204,29 +130,6 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     );
 
     if (obsoletes.length === 0) return;
-
-    if (!isSupabaseConfigured) {
-      set((s) => ({
-        devis: s.devis.map((devisItem) =>
-          devisItem.dateValidite < today &&
-          devisItem.statut !== "Accepté" &&
-          devisItem.statut !== "Refusé"
-            ? { ...devisItem, statut: "Expiré" as DevisStatut }
-            : devisItem
-        ),
-      }));
-      await get().addAuditLog(
-        AUDIT_MODULE.Devis,
-        AUDIT_ACTION.Modification,
-        `${obsoletes.length} devis expiré${obsoletes.length !== 1 ? "s" : ""} automatiquement`,
-      );
-      return;
-    }
-
-    await supabase
-      .from("devis")
-      .update({ statut: "Expiré" })
-      .in("id", obsoletes.map((o) => o.id));
 
     set((s) => ({
       devis: s.devis.map((devisItem) =>
@@ -279,47 +182,11 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     const newDossier = await get().addDossier(inputDossier);
 
-    if (!isSupabaseConfigured) {
-      // Mode NestJS : lien local uniquement
-      set((s) => ({
-        devis: s.devis.map((devisItem) =>
-          devisItem.id === id ? { ...devisItem, statut: "Accepté", dossierId: newDossier.id } : devisItem
-        ),
-      }));
-      await get().addAuditLog(
-        AUDIT_MODULE.Devis,
-        AUDIT_ACTION.Validation,
-        `Devis ${dev.reference} converti en dossier ${newDossier.reference}`,
-      );
-      return newDossier;
-    }
-
-    // Mode Supabase : RPC atomique (WHERE dossier_id IS NULL) pour éviter les races TOCTOU
-    try {
-      const { error } = await supabase.rpc("link_devis_to_dossier", {
-        p_devis_id: id,
-        p_dossier_id: newDossier.id,
-      });
-      if (error) throw error;
-    } catch (linkError) {
-      try {
-        await get().removeDossier(newDossier.id);
-      } catch (rollbackError) {
-        logError(
-          "Rollback conversion devis→dossier échoué : dossier orphelin à purger manuellement",
-          rollbackError,
-          { dossierId: newDossier.id, devisId: id },
-        );
-      }
-      throw linkError;
-    }
-
     set((s) => ({
       devis: s.devis.map((devisItem) =>
         devisItem.id === id ? { ...devisItem, statut: "Accepté", dossierId: newDossier.id } : devisItem
       ),
     }));
-
     await get().addAuditLog(
       AUDIT_MODULE.Devis,
       AUDIT_ACTION.Validation,
@@ -330,19 +197,6 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
   removeDevis: async (id) => {
     const existing = get().devis.find((d) => d.id === id);
-
-    if (!isSupabaseConfigured) {
-      set((s) => ({
-        devis: s.devis.filter((d) => d.id !== id),
-      }));
-      if (existing) {
-        await get().addAuditLog(AUDIT_MODULE.Devis, AUDIT_ACTION.Suppression, `Devis ${existing.reference} supprimé`);
-      }
-      return;
-    }
-
-    const { error } = await supabase.from("devis").delete().eq("id", id);
-    if (error) throw error;
 
     set((s) => ({
       devis: s.devis.filter((d) => d.id !== id),

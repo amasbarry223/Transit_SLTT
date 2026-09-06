@@ -1,10 +1,7 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ContratFichier } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import type { ContratFichierRow } from "@/lib/db-rows";
-import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
-import { dataUrlToBlob } from "@/lib/documents/storage";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 interface AddContratFichierInput {
@@ -42,41 +39,15 @@ export const createContratFichiersSlice: StateCreator<SLTTState, [], [], Contrat
     const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
     const path = `${input.contratId}/${Date.now()}-${safeName}`;
 
-    if (!isSupabaseConfigured) {
-      const newFile: ContratFichier = {
-        id: crypto.randomUUID(),
-        contratId: input.contratId,
-        nom: input.nom,
-        taille: input.taille,
-        type: input.type,
-        dateUpload: new Date().toISOString(),
-        storagePath: input.dataUrl || path,
-      };
-      set((s) => ({ contratFichiers: [newFile, ...s.contratFichiers], contratFichierSeq: seq + 1 }));
-      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Fichier "${newFile.nom}" ajouté`);
-      return newFile;
-    }
-
-    const blob = await dataUrlToBlob(input.dataUrl);
-    const { error: uploadError } = await supabase.storage
-      .from("contrat-fichiers")
-      .upload(path, blob, { contentType: blob.type || "application/octet-stream", upsert: false });
-    if (uploadError) throw uploadError;
-
-    const { data, error } = await supabase
-      .from("contrat_fichiers")
-      .insert({
-        contrat_id: input.contratId,
-        nom: input.nom,
-        taille: input.taille,
-        type: input.type,
-        storage_path: path,
-      })
-      .select()
-      .single();
-    if (error) throw error;
-
-    const newFile = mapContratFichierFromDb(data);
+    const newFile: ContratFichier = {
+      id: crypto.randomUUID(),
+      contratId: input.contratId,
+      nom: input.nom,
+      taille: input.taille,
+      type: input.type,
+      dateUpload: new Date().toISOString(),
+      storagePath: input.dataUrl || path,
+    };
     set((s) => ({ contratFichiers: [newFile, ...s.contratFichiers], contratFichierSeq: seq + 1 }));
     await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Fichier "${newFile.nom}" ajouté`);
     return newFile;
@@ -84,20 +55,6 @@ export const createContratFichiersSlice: StateCreator<SLTTState, [], [], Contrat
 
   deleteContratFichier: async (id) => {
     const file = get().contratFichiers.find((f) => f.id === id);
-
-    if (!isSupabaseConfigured) {
-      set((s) => ({ contratFichiers: s.contratFichiers.filter((f) => f.id !== id) }));
-      if (file) {
-        await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Fichier "${file.nom}" supprimé`);
-      }
-      return;
-    }
-
-    if (file) {
-      await supabase.storage.from("contrat-fichiers").remove([file.storagePath]);
-    }
-    const { error } = await supabase.from("contrat_fichiers").delete().eq("id", id);
-    if (error) throw error;
     set((s) => ({ contratFichiers: s.contratFichiers.filter((f) => f.id !== id) }));
     if (file) {
       await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Fichier "${file.nom}" supprimé`);
@@ -105,13 +62,6 @@ export const createContratFichiersSlice: StateCreator<SLTTState, [], [], Contrat
   },
 
   getSignedContratFichierUrl: async (storagePath) => {
-    if (!isSupabaseConfigured) {
-      return storagePath; // dataUrl or direct path
-    }
-    const { data, error } = await supabase.storage
-      .from("contrat-fichiers")
-      .createSignedUrl(storagePath, SIGNED_URL_TTL_SEC);
-    if (error) throw error;
-    return data.signedUrl;
+    return storagePath; // dataUrl or direct path
   },
 });

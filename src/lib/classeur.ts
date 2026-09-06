@@ -6,7 +6,6 @@
 import type { AuditEntry } from "@/lib/audit";
 import { mapAuditLogFromDb, type AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { logWarn } from "@/shared/logger";
 import { resolveSlttBrand } from "@/lib/societe-brand";
 
@@ -133,25 +132,9 @@ function mapClasseurRowFromDb(row: ClasseurMouvementRow): ClasseurEntry {
   };
 }
 
-export async function fetchClasseurMouvements(clientId: string): Promise<ClasseurEntry[] | null> {
-  if (!isSupabaseConfigured) return null;
-
-  const { data, error } = await supabase
-    .from("classeur_mouvements")
-    .select("*")
-    .eq("client_id", clientId)
-    .order("date", { ascending: true })
-    .order("id", { ascending: true });
-
-  if (error) {
-    if (process.env.NODE_ENV === "development") {
-      logWarn("[classeur] Vue SQL indisponible, repli sur le calcul client-side", error, {
-        message: error.message,
-      });
-    }
-    return null;
-  }
-  return (data as ClasseurMouvementRow[]).map(mapClasseurRowFromDb);
+export async function fetchClasseurMouvements(_clientId: string): Promise<ClasseurEntry[] | null> {
+  // Calcul dynamique côté client à partir des dossiers, factures et écritures
+  return null;
 }
 
 export interface ClasseurFilters {
@@ -207,24 +190,8 @@ export function classeurEntrySourceType(entry: ClasseurEntry): MouvementSourceTy
 
 /** Suivi horodaté d'un mouvement (audit lié à source_type / source_id). */
 export async function fetchMouvementSuivi(
-  sourceType: MouvementSourceType,
-  sourceId: string,
+  _sourceType: MouvementSourceType,
+  _sourceId: string,
 ): Promise<AuditEntry[]> {
-  if (!isSupabaseConfigured) return [];
-
-  const { data, error } = await supabase
-    .from("audit_logs")
-    .select("*")
-    .eq("source_type", sourceType)
-    .eq("source_id", sourceId)
-    .order("date", { ascending: false });
-
-  if (error) {
-    if (process.env.NODE_ENV === "development") {
-      logWarn("[classeur] Suivi mouvement indisponible", error, { message: error.message });
-    }
-    return [];
-  }
-
-  return (data as Record<string, unknown>[]).map(mapAuditLogFromDb);
+  return [];
 }

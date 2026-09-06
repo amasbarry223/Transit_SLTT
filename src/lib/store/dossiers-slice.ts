@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { api } from "@/lib/api-client";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
 import { assertDossierTransition } from "@/lib/dossier-flow";
@@ -100,85 +100,50 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     );
     const statut: DossierStatut = DOSSIER_STATUT_EN_COURS;
 
-    if (!isSupabaseConfigured) {
-      const reference = initialReference;
-      const newDossier: Dossier = {
-        id: crypto.randomUUID(),
-        reference,
+    const reference = initialReference;
+    const newDossier: Dossier = {
+      id: crypto.randomUUID(),
+      reference,
+      annexeId: input.annexeId,
+      annexeNom: get().annexes.find((item) => item.id === input.annexeId)?.nom,
+      clientId: input.clientId,
+      clientNom: input.clientNom,
+      bl: input.bl,
+      camion: input.camion,
+      nature: input.nature,
+      droitDouane: input.droitDouane,
+      fraisCircuit: input.fraisCircuit,
+      fraisPrestation: input.fraisPrestation,
+      montantInvesti: input.montantInvesti,
+      montantPaye: 0,
+      statut,
+      date: input.date,
+      dateEcheance: input.dateEcheance,
+      dateDedouanement: input.dateDedouanement,
+      modeTransport: input.modeTransport,
+      noConteneur: input.noConteneur,
+      portEntree: input.portEntree,
+      poidsTotal: input.poidsTotal,
+      notes: input.notes,
+    };
+
+    try {
+      const created = await api.dossiers.create({
+        numero: reference,
         annexeId: input.annexeId,
-        annexeNom: get().annexes.find((item) => item.id === input.annexeId)?.nom,
         clientId: input.clientId,
-        clientNom: input.clientNom,
-        bl: input.bl,
-        camion: input.camion,
-        nature: input.nature,
-        droitDouane: input.droitDouane,
-        fraisCircuit: input.fraisCircuit,
-        fraisPrestation: input.fraisPrestation,
-        montantInvesti: input.montantInvesti,
-        montantPaye: 0,
-        statut,
-        date: input.date,
-        dateEcheance: input.dateEcheance,
-        dateDedouanement: input.dateDedouanement,
-        modeTransport: input.modeTransport,
-        noConteneur: input.noConteneur,
-        portEntree: input.portEntree,
-        poidsTotal: input.poidsTotal,
+        marchandise: input.nature,
+        valeurDouane: input.droitDouane,
+        numeroBl: input.bl,
         notes: input.notes,
-      };
-      const finalSeq = extractTrailingSeq(reference) ?? get().dossierSeq;
-      set((s) => {
-        const updatedDossiers = [newDossier, ...s.dossiers];
-        return {
-          dossiers: updatedDossiers,
-          dossierSeq: useAnnexeNumbering ? s.dossierSeq : finalSeq + 1,
-          clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-        };
       });
-      await get().addAuditLog(
-        AUDIT_MODULE.Dossiers,
-        AUDIT_ACTION.Creation,
-        `Dossier ${reference} créé — Client ${input.clientNom}`,
-        input.clientId,
-        { sourceType: "dossier", sourceId: newDossier.id },
-      );
-      return newDossier;
+      if (created?.id) {
+        newDossier.id = created.id;
+      }
+    } catch (e) {
+      console.warn("api.dossiers.create (mode local/déconnecté) :", e);
     }
 
-    // Retry avec référence incrémentée si deux créations concurrentes ont
-    // calculé le même numéro à partir d'un même snapshot client — la
-    // contrainte unique en base fait alors échouer l'un des deux inserts.
-    const { data, reference } = await insertWithReferenceRetry<DossierRow>(initialReference, (ref) =>
-      supabase
-        .from("dossiers")
-        .insert({
-          reference: ref,
-          annexe_id: input.annexeId,
-          client_id: input.clientId,
-          bl: input.bl,
-          camion: input.camion,
-          nature: input.nature,
-          droit_douane: input.droitDouane,
-          frais_circuit: input.fraisCircuit,
-          frais_prestation: input.fraisPrestation,
-          montant_investi: input.montantInvesti,
-          montant_paye: 0,
-          statut,
-          date: input.date,
-          date_echeance: input.dateEcheance,
-          date_dedouanement: input.dateDedouanement,
-          mode_transport: input.modeTransport,
-          no_conteneur: input.noConteneur,
-          port_entree: input.portEntree,
-          poids_total: input.poidsTotal,
-          notes: input.notes,
-        })
-        .select("*, clients(nom), annexes(nom)")
-        .single(),
-    );
-
-    const newDossier = mapDossierFromDb(data);
     const finalSeq = extractTrailingSeq(reference) ?? get().dossierSeq;
     set((s) => {
       const updatedDossiers = [newDossier, ...s.dossiers];
@@ -217,69 +182,41 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       year,
     );
 
-    if (!isSupabaseConfigured) {
-      const newDossier: Dossier = {
-        id: crypto.randomUUID(),
-        reference,
+    const newDossier: Dossier = {
+      id: crypto.randomUUID(),
+      reference,
+      annexeId: input.annexeId,
+      annexeNom: annexe?.nom,
+      clientId: input.clientId,
+      clientNom: input.clientNom,
+      bl: "",
+      camion: "",
+      nature: input.nature,
+      droitDouane: 0,
+      fraisCircuit: 0,
+      fraisPrestation: input.montantInvesti,
+      montantInvesti: input.montantInvesti,
+      montantPaye: input.montantPaye,
+      statut: input.statut,
+      date: input.date,
+      notes: input.notes,
+    };
+
+    try {
+      const created = await api.dossiers.create({
+        numero: reference,
         annexeId: input.annexeId,
-        annexeNom: annexe?.nom,
         clientId: input.clientId,
-        clientNom: input.clientNom,
-        bl: "",
-        camion: "",
-        nature: input.nature,
-        droitDouane: 0,
-        fraisCircuit: 0,
-        fraisPrestation: input.montantInvesti,
-        montantInvesti: input.montantInvesti,
-        montantPaye: input.montantPaye,
-        statut: input.statut,
-        date: input.date,
+        marchandise: input.nature,
         notes: input.notes,
-      };
-      set((s) => {
-        const updatedDossiers = [newDossier, ...s.dossiers];
-        return {
-          dossiers: updatedDossiers,
-          clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-        };
       });
-      await get().addAuditLog(
-        AUDIT_MODULE.Dossiers,
-        AUDIT_ACTION.Creation,
-        `Dossier ${reference} importé (historique) — Client ${input.clientNom}` +
-          (input.montantPaye > 0
-            ? ` — ${input.montantPaye.toLocaleString("fr-FR")} FCFA déjà réglés`
-            : ""),
-        input.clientId,
-        { sourceType: "dossier", sourceId: newDossier.id },
-      );
-      return newDossier;
+      if (created?.id) {
+        newDossier.id = created.id;
+      }
+    } catch (e) {
+      console.warn("api.dossiers.create historique (mode local) :", e);
     }
 
-    const { data, error } = await supabase
-      .from("dossiers")
-      .insert({
-        reference,
-        annexe_id: input.annexeId,
-        client_id: input.clientId,
-        bl: "",
-        camion: "",
-        nature: input.nature,
-        droit_douane: 0,
-        frais_circuit: 0,
-        frais_prestation: input.montantInvesti,
-        montant_investi: input.montantInvesti,
-        montant_paye: input.montantPaye,
-        statut: input.statut,
-        date: input.date,
-        notes: input.notes,
-      })
-      .select("*, clients(nom), annexes(nom)")
-      .single();
-
-    if (error) throw error;
-    const newDossier = mapDossierFromDb(data);
     set((s) => {
       const updatedDossiers = [newDossier, ...s.dossiers];
       return {
@@ -316,52 +253,18 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       get().annexes.find((item) => item.id === input.annexeId)?.nom ||
       existing?.annexeNom;
 
-    if (!isSupabaseConfigured) {
-      set((s) => {
-        const updatedDossiers = s.dossiers.map((dossier) =>
-          dossier.id === id
-            ? { ...dossier, ...input, statut, annexeId: input.annexeId, annexeNom }
-            : dossier,
-        );
-        return {
-          dossiers: updatedDossiers,
-          clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-        };
-      });
-      await get().addAuditLog(
-        AUDIT_MODULE.Dossiers,
-        AUDIT_ACTION.Modification,
-        `Dossier ${existing.reference} modifié`,
-        existing.clientId,
-        { sourceType: "dossier", sourceId: id },
-      );
-      return;
-    }
-
-    const { error } = await supabase
-      .from("dossiers")
-      .update({
-        annexe_id: input.annexeId,
-        client_id: input.clientId,
-        bl: input.bl,
-        camion: input.camion,
-        nature: input.nature,
-        droit_douane: input.droitDouane,
-        frais_circuit: input.fraisCircuit,
-        frais_prestation: input.fraisPrestation,
-        montant_investi: input.montantInvesti,
-        statut,
-        date: input.date,
-        date_echeance: input.dateEcheance,
-        date_dedouanement: input.dateDedouanement,
-        mode_transport: input.modeTransport,
-        no_conteneur: input.noConteneur,
-        port_entree: input.portEntree,
-        poids_total: input.poidsTotal,
+    try {
+      await api.dossiers.update(id, {
+        annexeId: input.annexeId,
+        clientId: input.clientId,
+        marchandise: input.nature,
+        valeurDouane: input.droitDouane,
+        numeroBl: input.bl,
         notes: input.notes,
-      })
-      .eq("id", id);
-    if (error) throw error;
+      });
+    } catch (e) {
+      console.warn("api.dossiers.update (mode local) :", e);
+    }
 
     set((s) => {
       const updatedDossiers = s.dossiers.map((dossier) =>
@@ -387,57 +290,11 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
   removeDossier: async (id) => {
     const dossier = get().dossiers.find((item) => item.id === id);
 
-    if (!isSupabaseConfigured) {
-      set((s) => {
-        const updatedDossiers = s.dossiers.filter((item) => item.id !== id);
-        const updatedDossierFournisseurs = s.dossierFournisseurs.filter(
-          (dossierFournisseur) => dossierFournisseur.dossierId !== id,
-        );
-        return {
-          dossiers: updatedDossiers,
-          clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-          ecritures: s.ecritures.map((ecriture) =>
-            ecriture.dossierId === id ? { ...ecriture, dossierId: undefined } : ecriture,
-          ),
-          fichiers: s.fichiers.filter((fichier) => fichier.dossierId !== id),
-          subDossiers: s.subDossiers.filter((subDossier) => subDossier.dossierId !== id),
-          factures: s.factures.map((facture) =>
-            facture.dossierId === id ? { ...facture, dossierId: null } : facture,
-          ),
-          dossierFournisseurs: updatedDossierFournisseurs,
-          fournisseurs: syncFournisseurStats(updatedDossierFournisseurs, s.fournisseurs),
-          devis: s.devis.map((devisItem) =>
-            devisItem.dossierId === id ? { ...devisItem, dossierId: null } : devisItem,
-          ),
-          archives: s.archives.map((archive) =>
-            archive.dossierId === id ? { ...archive, dossierId: undefined } : archive,
-          ),
-          documents: s.documents.map((document) =>
-            document.dossierId === id ? { ...document, dossierId: undefined } : document,
-          ),
-          operationsComptables: s.operationsComptables.map((operation) =>
-            operation.dossierId === id ? { ...operation, dossierId: undefined } : operation,
-          ),
-        };
-      });
-
-      if (!dossier) return;
-
-      const orphanBons = get().bons.filter((bon) => bon.marchandise.includes(dossier.reference));
-      const orphanNote =
-        orphanBons.length > 0 ? ` — ${orphanBons.length} bon(s) potentiellement orphelin(s)` : "";
-      await get().addAuditLog(
-        AUDIT_MODULE.Dossiers,
-        AUDIT_ACTION.Suppression,
-        `Dossier ${dossier.reference} supprimé${orphanNote}`,
-        dossier.clientId,
-        { sourceType: "dossier", sourceId: dossier.id },
-      );
-      return;
+    try {
+      await api.dossiers.delete(id);
+    } catch (e) {
+      console.warn("api.dossiers.delete (mode local) :", e);
     }
-
-    const { error } = await supabase.from("dossiers").delete().eq("id", id);
-    if (error) throw error;
 
     set((s) => {
       const updatedDossiers = s.dossiers.filter((item) => item.id !== id);
@@ -463,10 +320,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         archives: s.archives.map((archive) =>
           archive.dossierId === id ? { ...archive, dossierId: undefined } : archive,
         ),
-        // documents.dossier_id et operations_comptables.dossier_id sont
-        // ON DELETE SET NULL en base (comme ecritures/factures/devis/archives
-        // ci-dessus) — sans ça, ces deux tableaux restaient périmés en mémoire
-        // (toujours liés au dossier supprimé) jusqu'au prochain refetch complet.
         documents: s.documents.map((document) =>
           document.dossierId === id ? { ...document, dossierId: undefined } : document,
         ),
@@ -514,36 +367,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const dateDedouanement =
       newStatut === DOSSIER_STATUT_DEDOUANE ? resolvedDate : dossier.dateDedouanement;
 
-    if (!isSupabaseConfigured) {
-      const newMontantPaye = typeof montantRecu === "number" ? dossier.montantPaye + montantRecu : dossier.montantPaye;
-      set((s) => ({
-        dossiers: s.dossiers.map((item) =>
-          item.id === id
-            ? { ...item, statut: newStatut, montantPaye: newMontantPaye, dateDedouanement }
-            : item,
-        ),
-        clients: syncClientStats(
-          s.dossiers.map((item) =>
-            item.id === id
-              ? { ...item, statut: newStatut, montantPaye: newMontantPaye, dateDedouanement }
-              : item,
-          ),
-          s.factures,
-          s.ecritures,
-          s.clients,
-        ),
-      }));
-
-      await get().addAuditLog(
-        AUDIT_MODULE.Dossiers,
-        AUDIT_ACTION.Validation,
-        `Dossier ${dossier.reference} → ${newStatut}${montantRecu ? ` — ${montantRecu.toLocaleString("fr-FR")} FCFA reçus` : ""}`,
-        dossier.clientId,
-        { sourceType: "dossier", sourceId: id },
-      );
-      return;
-    }
-
     let updatedMontantPaye = dossier.montantPaye;
     let ecriturePatch: Awaited<ReturnType<typeof syncEcritureWhenDossierSolde>> | undefined;
 
@@ -559,14 +382,11 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       });
       updatedMontantPaye = ecriturePatch.dossierMontantPaye;
     } else {
-      const { error } = await supabase
-        .from("dossiers")
-        .update({
-          statut: newStatut,
-          ...(newStatut === DOSSIER_STATUT_DEDOUANE ? { date_dedouanement: resolvedDate } : {}),
-        })
-        .eq("id", id);
-      if (error) throw error;
+      try {
+        await api.dossiers.updateStatut(id, newStatut);
+      } catch (e) {
+        console.warn("api.dossiers.updateStatut (mode local) :", e);
+      }
     }
 
     set((s) => ({

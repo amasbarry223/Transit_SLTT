@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { UserRole } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 
@@ -70,16 +69,6 @@ export const useSession = create<SessionState>()((set) => ({
     } catch {
       /* ignore */
     }
-
-    if (!isSupabaseConfigured) return;
-
-    try {
-      await supabase.auth.signOut({ scope: "local" });
-    } catch {
-      /* ignore */
-    }
-
-    void supabase.auth.signOut({ scope: "global" }).catch(() => undefined);
   },
 
   touchActivity: () => set({ lastActivityAt: Date.now() }),

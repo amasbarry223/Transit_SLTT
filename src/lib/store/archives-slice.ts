@@ -1,13 +1,10 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useSession } from "@/lib/session/session-store";
 import type { Archive, TypeDocument } from "@/lib/domain-types";
-import type { SLTTState } from "@/lib/store";
-import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
 import type { ArchiveRow } from "@/lib/db-rows";
+import type { SLTTState } from "@/lib/store";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-import { logError } from "@/shared/logger";
 
 const ARCHIVES_ALLOWED_MIME = new Set([
   "application/pdf",
@@ -115,52 +112,21 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
     const month = new Date().toISOString().slice(0, 7);
     const path = `${month}/${Date.now()}-${safeName}`;
 
-    if (!isSupabaseConfigured) {
-      const newArchive: Archive = {
-        id: crypto.randomUUID(),
-        nom: input.nom,
-        typeDocument: input.typeDocument,
-        taille: input.taille,
-        type: contentType,
-        storagePath: path,
-        dossierId: input.dossierId,
-        factureId: input.factureId,
-        depenseId: input.depenseId,
-        clientId: input.clientId,
-        annexeId,
-        creePar,
-        createdAt: new Date().toISOString(),
-      };
-      set((s) => ({ archives: [newArchive, ...s.archives] }));
-      await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Creation, `Document archivé "${input.nom}" (${input.typeDocument})`);
-      return newArchive;
-    }
-
-    const { error: uploadError } = await supabase.storage
-      .from("archives")
-      .upload(path, input.file, { contentType, upsert: false });
-    if (uploadError) throw uploadError;
-
-    const { data, error } = await supabase
-      .from("archives")
-      .insert({
-        nom: input.nom,
-        type_document: input.typeDocument,
-        taille: input.taille,
-        mime_type: contentType,
-        storage_path: path,
-        dossier_id: input.dossierId || null,
-        facture_id: input.factureId || null,
-        depense_id: input.depenseId || null,
-        client_id: input.clientId || null,
-        annexe_id: annexeId,
-        cree_par: creePar,
-      })
-      .select()
-      .single();
-    if (error) throw error;
-
-    const newArchive = mapArchiveFromDb(data);
+    const newArchive: Archive = {
+      id: crypto.randomUUID(),
+      nom: input.nom,
+      typeDocument: input.typeDocument,
+      taille: input.taille,
+      type: contentType,
+      storagePath: path,
+      dossierId: input.dossierId,
+      factureId: input.factureId,
+      depenseId: input.depenseId,
+      clientId: input.clientId,
+      annexeId,
+      creePar,
+      createdAt: new Date().toISOString(),
+    };
     set((s) => ({ archives: [newArchive, ...s.archives] }));
     await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Creation, `Document archivé "${input.nom}" (${input.typeDocument})`);
     return newArchive;
@@ -168,25 +134,6 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
   deleteArchive: async (id) => {
     const archive = get().archives.find((a) => a.id === id);
-
-    if (!isSupabaseConfigured) {
-      set((s) => ({ archives: s.archives.filter((a) => a.id !== id) }));
-      if (archive) {
-        await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Suppression, `Document archivé "${archive.nom}" supprimé`);
-      }
-      return;
-    }
-
-    if (archive) {
-      const { error: storageError } = await supabase.storage.from("archives").remove([archive.storagePath]);
-      if (storageError) {
-        logError(`[archives] Échec suppression fichier "${archive.nom}" du storage`, storageError, {
-          message: storageError.message,
-        });
-      }
-    }
-    const { error } = await supabase.from("archives").delete().eq("id", id);
-    if (error) throw error;
     set((s) => ({ archives: s.archives.filter((a) => a.id !== id) }));
     if (archive) {
       await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Suppression, `Document archivé "${archive.nom}" supprimé`);
@@ -194,13 +141,6 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
   },
 
   getSignedArchiveUrl: async (storagePath) => {
-    if (!isSupabaseConfigured) {
-      return storagePath;
-    }
-    const { data, error } = await supabase.storage
-      .from("archives")
-      .createSignedUrl(storagePath, SIGNED_URL_TTL_SEC);
-    if (error) throw error;
-    return data.signedUrl;
+    return storagePath;
   },
 });

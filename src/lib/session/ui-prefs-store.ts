@@ -1,9 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useSession } from "@/lib/session/session-store";
-import { logWarn } from "@/shared/logger";
 
 export type Theme = "light" | "dark";
 /** dmy = JJ/MM/AAAA, mdy = MM/JJ/AAAA, ymd = AAAA-MM-JJ. */
@@ -55,16 +53,16 @@ function schedulePersist(patch: PrefsPatch) {
     pendingPatch = {};
     persistTimer = null;
 
-    const userId = useSession.getState().currentUserId;
-    if (!userId || !isSupabaseConfigured) return;
-
-    void supabase
-      .from("profiles")
-      .update(payload)
-      .eq("id", userId)
-      .then(({ error }) => {
-        if (error) logWarn("[SLTT] Sauvegarde des préférences", error);
-      });
+    if (typeof window !== "undefined") {
+      try {
+        const userId = useSession.getState().currentUserId;
+        const key = userId ? `transit_sltt_prefs_${userId}` : "transit_sltt_prefs";
+        const current = JSON.parse(localStorage.getItem(key) || "{}");
+        localStorage.setItem(key, JSON.stringify({ ...current, ...payload }));
+      } catch {
+        /* ignore */
+      }
+    }
   }, 300);
 }
 

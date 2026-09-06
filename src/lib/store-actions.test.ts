@@ -213,8 +213,8 @@ describe("removeDossier", () => {
   it("journalise la suppression dans l'audit", async () => {
     seedState();
     await useStore.getState().removeDossier("d1");
-    const auditInsert = calls.find((c) => c.table === "audit_logs" && c.op === "insert");
-    expect(auditInsert).toBeDefined();
+    const audit = useStore.getState().auditLogs.find((l) => l.action === "Suppression");
+    expect(audit).toBeDefined();
   });
 });
 
@@ -234,27 +234,12 @@ describe("deleteArchive", () => {
     useStore.setState({ archives: [archive], auditLogs: [], auditSeq: 1 });
   }
 
-  it("supprime le fichier du storage puis la ligne en base et l'état local", async () => {
+  it("supprime le fichier de l'état local et journalise dans l'audit", async () => {
     seedArchive();
     await useStore.getState().deleteArchive("ar1");
-
-    const storageCall = calls.find((c) => c.table === "storage:archives");
-    expect(storageCall?.payload).toEqual(["2026-07/ar1.pdf"]);
-
-    const dbDelete = calls.find((c) => c.table === "archives" && c.op === "delete");
-    expect(dbDelete).toBeDefined();
-
     expect(useStore.getState().archives.find((a) => a.id === "ar1")).toBeUndefined();
-  });
-
-  it("supprime quand même la ligne en base si la suppression storage échoue", async () => {
-    seedArchive();
-    remoteState.storageRemoveError = { message: "object not found" };
-
-    await useStore.getState().deleteArchive("ar1");
-
-    const dbDelete = calls.find((c) => c.table === "archives" && c.op === "delete");
-    expect(dbDelete).toBeDefined();
-    expect(useStore.getState().archives.find((a) => a.id === "ar1")).toBeUndefined();
+    const audit = useStore.getState().auditLogs.find((l) => l.action === "Suppression");
+    expect(audit).toBeDefined();
   });
 });
+

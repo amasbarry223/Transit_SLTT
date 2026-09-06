@@ -1,13 +1,8 @@
 import type { StateCreator } from "zustand";
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { SLTTState } from "@/lib/store";
 import type { ExcelWorkbook, ExcelWorkbookRow } from "@/lib/excel/types";
 import { useSession } from "@/lib/session/session-store";
-import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-const BUCKET = "excel-workbooks";
-const SNAPSHOT_MAX_BYTES = 800_000;
 
 export function mapExcelWorkbookFromDb(row: ExcelWorkbookRow): ExcelWorkbook {
   return {
@@ -51,24 +46,7 @@ export const createExcelWorkbooksSlice: StateCreator<
 
   getExcelWorkbookForClient: async (clientId) => {
     const cached = get().excelWorkbooks.find((w) => w.clientId === clientId);
-    if (!isSupabaseConfigured) {
-      return cached ?? null;
-    }
-    const { data, error } = await supabase
-      .from("excel_workbooks")
-      .select("*")
-      .eq("client_id", clientId)
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) return cached ?? null;
-    const mapped = mapExcelWorkbookFromDb(data as ExcelWorkbookRow);
-    set((s) => ({
-      excelWorkbooks: [
-        mapped,
-        ...s.excelWorkbooks.filter((w) => w.clientId !== clientId),
-      ],
-    }));
-    return mapped;
+    return cached ?? null;
   },
 
   saveExcelWorkbook: async (input) => {
@@ -77,151 +55,38 @@ export const createExcelWorkbooksSlice: StateCreator<
     const nextVersion = existing ? existing.version + 1 : 1;
     const nom = existing?.nom || `Classeur ${input.clientNom}`;
 
-    if (!isSupabaseConfigured) {
-      const now = new Date().toISOString();
-      const updated: ExcelWorkbook = {
-        id: existing?.id ?? crypto.randomUUID(),
-        clientId: input.clientId,
-        nom,
-        storagePath: existing?.storagePath,
-        snapshotJson: input.snapshotJson,
-        version: nextVersion,
-        updatedBy: userId ?? undefined,
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-      };
+    const now = new Date().toISOString();
+    const updated: ExcelWorkbook = {
+      id: existing?.id ?? crypto.randomUUID(),
+      clientId: input.clientId,
+      nom,
+      storagePath: existing?.storagePath,
+      snapshotJson: input.snapshotJson,
+      version: nextVersion,
+      updatedBy: userId ?? undefined,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
 
-      set((s) => ({
-        excelWorkbooks: [
-          updated,
-          ...s.excelWorkbooks.filter((w) => w.clientId !== input.clientId),
-        ],
-      }));
+    set((s) => ({
+      excelWorkbooks: [
+        updated,
+        ...s.excelWorkbooks.filter((w) => w.clientId !== input.clientId),
+      ],
+    }));
 
-      if (!input.silent) {
-        await get().addAuditLog(
-          AUDIT_MODULE.Comptabilite,
-          existing ? AUDIT_ACTION.Modification : AUDIT_ACTION.Creation,
-          `Classeur Excel « ${nom} » ${existing ? `enregistré (v${nextVersion})` : "créé"}`,
-          input.clientId,
-        );
-      }
-      return updated;
-    }
-
-    // Limite snapshot JSON ~800 Ko — au-delà, exige un xlsx Storage.
-    let snapshot = input.snapshotJson;
-    let xlsxBlob = input.xlsxBlob ?? null;
-    const size = new Blob([JSON.stringify(snapshot)]).size;
-    if (size > SNAPSHOT_MAX_BYTES) {
-      if (!xlsxBlob) {
-        throw new Error(
-          "Classeur trop volumineux : fournissez un export .xlsx pour le secours Storage.",
-        );
-      }
-      snapshot = {
-        truncated: true,
-        name: snapshot.name,
-        id: snapshot.id,
-      };
-    }
-
-    let storagePath = existing?.storagePath ?? null;
-    if (xlsxBlob) {
-      const safe = input.clientNom.replace(/[^\w.\-]+/g, "_").slice(0, 40);
-      const path = `${input.clientId}/v${nextVersion}-${Date.now()}-${safe}.xlsx`;
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, xlsxBlob, {
-          contentType:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          upsert: false,
-        });
-      if (upErr) throw upErr;
-      storagePath = path;
-    }
-
-    // Truncated sans storage = perte de données — refuser.
-    if ((snapshot as { truncated?: boolean }).truncated && !storagePath) {
-      throw new Error(
-        "Impossible d'enregistrer un snapshot tronqué sans fichier Storage.",
-      );
-    }
-
-    if (existing) {
-      const expectedVersion = existing.version;
-      const { data, error } = await supabase
-        .from("excel_workbooks")
-        .update({
-          nom,
-          snapshot_json: snapshot,
-          storage_path: storagePath,
-          version: nextVersion,
-          updated_by: userId,
-        })
-        .eq("id", existing.id)
-        .eq("version", expectedVersion)
-        .select()
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) {
-        throw new Error(
-          "Conflit de version : le classeur a été modifié ailleurs. Rechargez puis réessayez.",
-        );
-      }
-      const mapped = mapExcelWorkbookFromDb(data as ExcelWorkbookRow);
-      set((s) => ({
-        excelWorkbooks: s.excelWorkbooks.map((w) =>
-          w.id === mapped.id ? mapped : w,
-        ),
-      }));
-      // Audit uniquement sur save manuel (pas autosave silencieux) — géré par l'appelant via silent.
-      if (!input.silent) {
-        await get().addAuditLog(
-          AUDIT_MODULE.Comptabilite,
-          AUDIT_ACTION.Modification,
-          `Classeur Excel « ${nom} » enregistré (v${nextVersion})`,
-          input.clientId,
-        );
-      }
-      return mapped;
-    }
-
-    const { data, error } = await supabase
-      .from("excel_workbooks")
-      .insert({
-        client_id: input.clientId,
-        nom,
-        snapshot_json: snapshot,
-        storage_path: storagePath,
-        version: 1,
-        updated_by: userId,
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    const mapped = mapExcelWorkbookFromDb(data as ExcelWorkbookRow);
-    set((s) => ({ excelWorkbooks: [mapped, ...s.excelWorkbooks] }));
     if (!input.silent) {
       await get().addAuditLog(
         AUDIT_MODULE.Comptabilite,
-        AUDIT_ACTION.Creation,
-        `Classeur Excel « ${nom} » créé`,
+        existing ? AUDIT_ACTION.Modification : AUDIT_ACTION.Creation,
+        `Classeur Excel « ${nom} » ${existing ? `enregistré (v${nextVersion})` : "créé"}`,
         input.clientId,
       );
     }
-    return mapped;
+    return updated;
   },
 
   getSignedExcelWorkbookUrl: async (storagePath) => {
-    if (!isSupabaseConfigured) {
-      return storagePath;
-    }
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(storagePath, SIGNED_URL_TTL_SEC);
-    if (error) throw error;
-    return data.signedUrl;
+    return storagePath;
   },
 });
-

@@ -1,5 +1,4 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { BonSortie, BonSortieCaisse, BonSortieCaisseInput, StockItem } from "@/lib/domain-types";
 import type { BonInput, SLTTState } from "@/lib/store";
@@ -9,7 +8,6 @@ import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
-  insertWithReferenceRetry,
 } from "@/lib/store/reference";
 
 export function mapBonFromDb(row: BonSortieRow): BonSortie {
@@ -86,64 +84,25 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       get().bonSeq,
     );
 
-    if (!isSupabaseConfigured) {
-      const numero = initialNumero;
-      const client = get().clients.find((c) => c.id === input.clientId);
-      const newBon: BonSortie = {
-        id: crypto.randomUUID(),
-        reference: numero,
-        date: input.date,
-        clientId: input.clientId,
-        clientNom: client?.nom || "",
-        annexeId: input.annexeId,
-        annexeNom: annexe?.nom,
-        stockId: input.stockId,
-        marchandise: input.marchandise,
-        quantite: input.quantite,
-        unite: input.unite,
-        motif: input.motif,
-        montant: input.montant,
-        statut: "Brouillon",
-      };
+    const numero = initialNumero;
+    const client = get().clients.find((c) => c.id === input.clientId);
+    const newBon: BonSortie = {
+      id: crypto.randomUUID(),
+      reference: numero,
+      date: input.date,
+      clientId: input.clientId,
+      clientNom: client?.nom || "",
+      annexeId: input.annexeId,
+      annexeNom: annexe?.nom,
+      stockId: input.stockId,
+      marchandise: input.marchandise,
+      quantite: input.quantite,
+      unite: input.unite,
+      motif: input.motif,
+      montant: input.montant,
+      statut: "Brouillon",
+    };
 
-      const finalSeq = extractTrailingSeq(numero) ?? get().bonSeq;
-      set((s) => ({
-        bons: [newBon, ...s.bons],
-        bonSeq: useAnnexeNumbering ? s.bonSeq : finalSeq + 1,
-      }));
-      await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Creation, `Bon ${numero} créé`);
-
-      if (input.statut === "Validé") {
-        const validated = await get().validateBon(newBon.id);
-        if (!validated) {
-          throw new Error("Stock insuffisant pour valider ce bon de sortie.");
-        }
-        return get().bons.find((b) => b.id === newBon.id) ?? newBon;
-      }
-      return newBon;
-    }
-
-    const { data, reference: numero } = await insertWithReferenceRetry<BonSortieRow>(initialNumero, (ref) =>
-      supabase
-        .from("bons_sortie")
-        .insert({
-          reference: ref,
-          date: input.date,
-          client_id: input.clientId,
-          annexe_id: input.annexeId,
-          stock_id: input.stockId,
-          marchandise: input.marchandise,
-          quantite: input.quantite,
-          unite: input.unite,
-          motif: input.motif,
-          montant: input.montant,
-          statut: "Brouillon",
-        })
-        .select("*, clients(nom), annexes(nom)")
-        .single(),
-    );
-
-    const newBon = mapBonFromDb(data);
     const finalSeq = extractTrailingSeq(numero) ?? get().bonSeq;
     set((s) => ({
       bons: [newBon, ...s.bons],
@@ -158,7 +117,6 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       }
       return get().bons.find((b) => b.id === newBon.id) ?? newBon;
     }
-
     return newBon;
   },
 
@@ -166,65 +124,19 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const bon = get().bons.find((b) => b.id === id);
     if (!bon || bon.statut === "Validé") return false;
 
-    if (!isSupabaseConfigured) {
-      const stockItem = findStockForBon(get().stock, bon);
-      if (stockItem && stockItem.quantite < bon.quantite) {
-        return false;
-      }
-      const newStockQty = stockItem ? stockItem.quantite - bon.quantite : 0;
-      set((s) => ({
-        bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" as const } : b)),
-        stock: stockItem
-          ? s.stock.map((item) => (item.id === stockItem.id ? { ...item, quantite: newStockQty } : item))
-          : s.stock,
-        mouvements: [
-          {
-            id: crypto.randomUUID(),
-            annexeId: stockItem?.annexeId || bon.annexeId,
-            annexeNom: stockItem?.annexeNom || bon.annexeNom,
-            date: new Date().toISOString(),
-            type: "Sortie" as const,
-            marchandise: bon.marchandise,
-            quantite: bon.quantite,
-            unite: bon.unite,
-            responsable: getConnectedUserName(),
-            bonRef: bon.reference,
-          },
-          ...s.mouvements,
-        ],
-      }));
-      await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Validation, `Bon de sortie ${bon.reference} validé`);
-      return true;
-    }
-
-    const { data, error } = await supabase
-      .rpc("validate_bon_sortie", {
-        p_bon_id: id,
-        p_responsable: getConnectedUserName(),
-      })
-      .single();
-    if (error) {
-      if (/stock insuffisant/i.test(error.message)) return false;
-      throw error;
-    }
-    const result = data as { bon: BonSortieRow; mouvement_id: string; stock_quantite: number };
-    const validatedBon = mapBonFromDb(result.bon);
-
     const stockItem = findStockForBon(get().stock, bon);
+    if (stockItem && stockItem.quantite < bon.quantite) {
+      return false;
+    }
+    const newStockQty = stockItem ? stockItem.quantite - bon.quantite : 0;
     set((s) => ({
-      bons: s.bons.map((b) =>
-        b.id === id ? { ...validatedBon, clientNom: b.clientNom, annexeNom: b.annexeNom } : b,
-      ),
+      bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" as const } : b)),
       stock: stockItem
-        ? s.stock.map((item) =>
-            item.id === stockItem.id
-              ? { ...item, quantite: Number(result.stock_quantite) }
-              : item,
-          )
+        ? s.stock.map((item) => (item.id === stockItem.id ? { ...item, quantite: newStockQty } : item))
         : s.stock,
       mouvements: [
         {
-          id: result.mouvement_id,
+          id: crypto.randomUUID(),
           annexeId: stockItem?.annexeId || bon.annexeId,
           annexeNom: stockItem?.annexeNom || bon.annexeNom,
           date: new Date().toISOString(),
@@ -248,81 +160,27 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const creePar = getConnectedUserName();
     const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
 
-    if (!isSupabaseConfigured) {
-      const reference = initialReference;
-      const newBon: BonSortieCaisse = {
-        id: crypto.randomUUID(),
-        reference,
-        date: input.date,
-        annexeId: input.annexeId,
-        annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
-        montantTotal,
-        creePar,
-        creeLe: new Date().toISOString(),
-        lignes: input.lignes.map((ligne, idx) => ({
-          id: `BSCL-${idx + 1}`,
-          date: ligne.date,
-          beneficiaire: ligne.beneficiaire,
-          motif: ligne.motif,
-          montant: ligne.montant,
-        })),
-      };
-      set((s) => ({
-        bonsSortieCaisse: [newBon, ...s.bonsSortieCaisse],
-        bonSortieCaisseSeq: seq + 1,
-      }));
-      await get().addAuditLog(
-        AUDIT_MODULE.Bons,
-        AUDIT_ACTION.Creation,
-        `Bon de sortie caisse ${reference} créé — ${montantTotal.toLocaleString("fr-FR")} FCFA`,
-      );
-      return newBon;
-    }
-
-    const { data: dbBon, reference } = await insertWithReferenceRetry<BonSortieCaisseRow>(
-      initialReference,
-      (ref) =>
-        supabase
-          .from("bons_sortie_caisse")
-          .insert({
-            reference: ref,
-            date: input.date,
-            annexe_id: input.annexeId,
-            montant_total: montantTotal,
-            cree_par: creePar,
-          })
-          .select()
-          .single(),
-    );
-
-    if (input.lignes.length > 0) {
-      const { error: errLignes } = await supabase
-        .from("bons_sortie_caisse_lignes")
-        .insert(
-          input.lignes.map((ligne) => ({
-            bon_id: dbBon.id,
-            date: ligne.date,
-            beneficiaire: ligne.beneficiaire,
-            motif: ligne.motif,
-            montant: ligne.montant,
-          })),
-        );
-      if (errLignes) throw errLignes;
-    }
-
-    const { data: fullBon, error: errFetch } = await supabase
-      .from("bons_sortie_caisse")
-      .select("*, bons_sortie_caisse_lignes(*), annexes(nom)")
-      .eq("id", dbBon.id)
-      .single();
-    if (errFetch) throw errFetch;
-
-    const newBon = mapBonSortieCaisseFromDb(fullBon);
-    const finalSeqMatch = reference.match(/(\d+)$/);
-    const finalSeq = finalSeqMatch ? Number.parseInt(finalSeqMatch[1], 10) : seq;
+    const reference = initialReference;
+    const newBon: BonSortieCaisse = {
+      id: crypto.randomUUID(),
+      reference,
+      date: input.date,
+      annexeId: input.annexeId,
+      annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
+      montantTotal,
+      creePar,
+      creeLe: new Date().toISOString(),
+      lignes: input.lignes.map((ligne, idx) => ({
+        id: `BSCL-${idx + 1}`,
+        date: ligne.date,
+        beneficiaire: ligne.beneficiaire,
+        motif: ligne.motif,
+        montant: ligne.montant,
+      })),
+    };
     set((s) => ({
       bonsSortieCaisse: [newBon, ...s.bonsSortieCaisse],
-      bonSortieCaisseSeq: finalSeq + 1,
+      bonSortieCaisseSeq: seq + 1,
     }));
     await get().addAuditLog(
       AUDIT_MODULE.Bons,
@@ -334,17 +192,6 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
   removeBonSortieCaisse: async (id) => {
     const bon = get().bonsSortieCaisse.find((b) => b.id === id);
-
-    if (!isSupabaseConfigured) {
-      set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));
-      if (bon) {
-        await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Suppression, `Bon de sortie caisse ${bon.reference} supprimé`);
-      }
-      return;
-    }
-
-    const { error } = await supabase.from("bons_sortie_caisse").delete().eq("id", id);
-    if (error) throw error;
     set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));
     if (bon) {
       await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Suppression, `Bon de sortie caisse ${bon.reference} supprimé`);

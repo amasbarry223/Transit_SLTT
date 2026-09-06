@@ -1,4 +1,3 @@
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
   DEFAULT_PAIEMENT_MODE,
   DOSSIER_STATUT_SOLDE,
@@ -18,7 +17,7 @@ export function capDossierMontantPaye(totalPaye: number, montantInvesti: number)
 }
 
 /**
- * Recalcule le montant payé d'un dossier à partir de ses écritures et persiste en base.
+ * Recalcule le montant payé d'un dossier à partir de ses écritures.
  * Utilisé par recordPayment et addEcriture.
  */
 export async function syncDossierPayeFromEcritures(
@@ -28,22 +27,11 @@ export async function syncDossierPayeFromEcritures(
 ): Promise<number> {
   const totalPaye = sumEcrituresPayeForDossier(dossierId, ecritures);
   const montantPaye = capDossierMontantPaye(totalPaye, dossier.montantInvesti);
-
-  if (!isSupabaseConfigured) {
-    return montantPaye;
-  }
-
-  const { error } = await supabase
-    .from("dossiers")
-    .update({ montant_paye: montantPaye })
-    .eq("id", dossierId);
-  if (error) throw error;
-
   return montantPaye;
 }
 
 export interface DossierSoldeEcritureContext {
-  /** Montant reçu à l'instant T (delta) — le calcul du cumul est fait en DB, atomiquement. */
+  /** Montant reçu à l'instant T (delta). */
   montantRecu: number;
   modePaiement?: PaiementMode;
   transitionNote?: string;
@@ -54,25 +42,11 @@ export interface DossierSoldeEcritureContext {
 export interface EcritureSoldeLocalPatch {
   ecritures: Ecriture[];
   ecritureSeq?: number;
-  /** Montant payé du dossier tel que recalculé par la DB (sum(ecritures) authoritative). */
   dossierMontantPaye: number;
 }
 
-interface RecordDossierSoldePaiementRow {
-  dossier_montant_paye: number | string;
-  ecriture_id: string;
-  ecriture_montant_paye: number | string;
-  ecriture_mode_paiement: PaiementMode | null;
-  ecriture_date_paiement: string | null;
-  ecriture_note: string | null;
-}
-
 /**
- * Enregistre atomiquement le paiement de solde + le passage du dossier à
- * « Soldé » via le RPC record_dossier_solde_paiement (verrou dossier +
- * écriture côté Postgres, cumul calculé en DB). Remplace l'ancien calcul
- * client (lecture état local + Math.min/max + deux .update() séparés) qui
- * pouvait faire perdre un paiement en cas de transitions concurrentes.
+ * Enregistre localement le paiement de solde + le passage du dossier à « Soldé ».
  */
 export async function syncEcritureWhenDossierSolde(
   dossier: Dossier,
@@ -80,78 +54,35 @@ export async function syncEcritureWhenDossierSolde(
   ecritureSeq: number,
   context: DossierSoldeEcritureContext,
 ): Promise<EcritureSoldeLocalPatch> {
-  if (!isSupabaseConfigured) {
-    const existingIdx = ecritures.findIndex((e) => e.dossierId === dossier.id);
-    const prevPaye = existingIdx >= 0 ? ecritures[existingIdx].montantPaye : 0;
-    const newPaye = Math.min(dossier.montantInvesti, prevPaye + context.montantRecu);
-    const patchedEcriture: Ecriture = {
-      id: existingIdx >= 0 ? ecritures[existingIdx].id : crypto.randomUUID(),
-      date: existingIdx >= 0 ? ecritures[existingIdx].date : context.today,
-      datePaiement: context.resolvedDate,
-      clientId: dossier.clientId,
-      clientNom: dossier.clientNom,
-      dossierId: dossier.id,
-      annexeId: dossier.annexeId,
-      annexeNom: dossier.annexeNom,
-      montantInvesti: dossier.montantInvesti,
-      montantPaye: newPaye,
-      modePaiement: context.modePaiement ?? DEFAULT_PAIEMENT_MODE,
-      note: context.transitionNote ?? `Solde dossier ${dossier.reference}`,
-    };
-
-    if (existingIdx >= 0) {
-      return {
-        ecritures: ecritures.map((e, i) => (i === existingIdx ? patchedEcriture : e)),
-        dossierMontantPaye: newPaye,
-      };
-    }
-
-    return {
-      ecritures: [patchedEcriture, ...ecritures],
-      ecritureSeq: ecritureSeq + 1,
-      dossierMontantPaye: newPaye,
-    };
-  }
-
-  const { data, error } = await supabase.rpc("record_dossier_solde_paiement", {
-    p_dossier_id: dossier.id,
-    p_montant: context.montantRecu,
-    p_mode: context.modePaiement ?? null,
-    p_date: context.resolvedDate,
-    p_note: context.transitionNote ?? null,
-  });
-  if (error) throw error;
-  const row = (data as RecordDossierSoldePaiementRow[] | null)?.[0];
-  if (!row) throw new Error("Réponse inattendue du serveur lors du solde du dossier.");
-
-  const dossierMontantPaye = Number(row.dossier_montant_paye);
   const existingIdx = ecritures.findIndex((e) => e.dossierId === dossier.id);
+  const prevPaye = existingIdx >= 0 ? ecritures[existingIdx].montantPaye : 0;
+  const newPaye = Math.min(dossier.montantInvesti, prevPaye + context.montantRecu);
   const patchedEcriture: Ecriture = {
-    id: row.ecriture_id,
+    id: existingIdx >= 0 ? ecritures[existingIdx].id : crypto.randomUUID(),
     date: existingIdx >= 0 ? ecritures[existingIdx].date : context.today,
-    datePaiement: row.ecriture_date_paiement ?? context.resolvedDate,
+    datePaiement: context.resolvedDate,
     clientId: dossier.clientId,
     clientNom: dossier.clientNom,
     dossierId: dossier.id,
     annexeId: dossier.annexeId,
     annexeNom: dossier.annexeNom,
-    montantInvesti: existingIdx >= 0 ? ecritures[existingIdx].montantInvesti : dossier.montantInvesti,
-    montantPaye: Number(row.ecriture_montant_paye),
-    modePaiement: row.ecriture_mode_paiement ?? context.modePaiement ?? DEFAULT_PAIEMENT_MODE,
-    note: row.ecriture_note ?? `Solde dossier ${dossier.reference}`,
+    montantInvesti: dossier.montantInvesti,
+    montantPaye: newPaye,
+    modePaiement: context.modePaiement ?? DEFAULT_PAIEMENT_MODE,
+    note: context.transitionNote ?? `Solde dossier ${dossier.reference}`,
   };
 
   if (existingIdx >= 0) {
     return {
       ecritures: ecritures.map((e, i) => (i === existingIdx ? patchedEcriture : e)),
-      dossierMontantPaye,
+      dossierMontantPaye: newPaye,
     };
   }
 
   return {
     ecritures: [patchedEcriture, ...ecritures],
     ecritureSeq: ecritureSeq + 1,
-    dossierMontantPaye,
+    dossierMontantPaye: newPaye,
   };
 }
 
@@ -162,4 +93,3 @@ export function shouldSyncEcritureOnDossierSolde(
 ): montantRecu is number {
   return newStatut === DOSSIER_STATUT_SOLDE && !!montantRecu && montantRecu > 0;
 }
-

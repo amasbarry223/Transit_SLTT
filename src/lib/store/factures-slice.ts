@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { api } from "@/lib/api-client";
 import { syncClientStats } from "@/lib/client-stats";
 import { validatePaymentAmount } from "@/lib/payments";
 import { canTransitionFacture } from "@/lib/status-flow";
@@ -88,110 +88,62 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     );
     const creePar = getConnectedUserName();
 
-    if (!isSupabaseConfigured) {
-      const numero = initialNumero;
-      const factId = crypto.randomUUID();
-      const client = get().clients.find((c) => c.id === input.clientId);
-      const newFacture: Facture = {
-        id: factId,
+    const numero = initialNumero;
+    const factId = crypto.randomUUID();
+    const client = get().clients.find((c) => c.id === input.clientId);
+    const newFacture: Facture = {
+      id: factId,
+      numero,
+      dossierId: input.dossierId ?? null,
+      clientId: input.clientId,
+      clientNom: client?.nom || "—",
+      annexeId: input.annexeId,
+      annexeNom: annexe?.nom,
+      date: input.date,
+      dateEcheance: input.dateEcheance,
+      statut: "Brouillon",
+      tauxTVA: input.tauxTVA,
+      montantHT: amountExclTax,
+      montantTVA: vatAmount,
+      montantTTC: amountInclTax,
+      montantPaye: 0,
+      notes: input.notes,
+      creePar,
+      creeLe: new Date().toISOString(),
+      lignes: input.lignes.map((ligne, idx) => ({
+        id: `FL-${idx + 1}`,
+        description: ligne.description,
+        quantite: ligne.quantite,
+        prixUnitaire: ligne.prixUnitaire,
+        montantHT: ligne.quantite * ligne.prixUnitaire,
+        compagnie: ligne.compagnie,
+        bordereauLivraison: ligne.bordereauLivraison,
+      })),
+    };
+
+    try {
+      const created = await api.factures.create({
         numero,
-        dossierId: input.dossierId ?? null,
-        clientId: input.clientId,
-        clientNom: client?.nom || "—",
         annexeId: input.annexeId,
-        annexeNom: annexe?.nom,
-        date: input.date,
+        clientId: input.clientId,
+        dossierId: input.dossierId || undefined,
+        dateEmission: input.date,
         dateEcheance: input.dateEcheance,
-        statut: "Brouillon",
-        tauxTVA: input.tauxTVA,
-        montantHT: amountExclTax,
-        montantTVA: vatAmount,
-        montantTTC: amountInclTax,
-        montantPaye: 0,
+        tauxTva: input.tauxTVA,
         notes: input.notes,
-        creePar,
-        creeLe: new Date().toISOString(),
-        lignes: input.lignes.map((ligne, idx) => ({
-          id: `FL-${idx + 1}`,
-          description: ligne.description,
-          quantite: ligne.quantite,
-          prixUnitaire: ligne.prixUnitaire,
-          montantHT: ligne.quantite * ligne.prixUnitaire,
-          compagnie: ligne.compagnie,
-          bordereauLivraison: ligne.bordereauLivraison,
+        lignes: input.lignes.map((l) => ({
+          designation: l.description,
+          quantite: l.quantite,
+          prixUnitaire: l.prixUnitaire,
         })),
-      };
-
-      const finalSeq = extractTrailingSeq(numero) ?? get().factureSeq;
-      set((s) => {
-        const updatedFactures = [newFacture, ...s.factures];
-        return {
-          factures: updatedFactures,
-          factureSeq: useAnnexeNumbering ? s.factureSeq : finalSeq + 1,
-          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-        };
       });
-      await get().addAuditLog(
-        AUDIT_MODULE.Factures,
-        AUDIT_ACTION.Creation,
-        `Facture ${numero} créée`,
-        newFacture.clientId,
-        { sourceType: "facture", sourceId: newFacture.id },
-      );
-      return newFacture;
+      if (created?.id) {
+        newFacture.id = created.id;
+      }
+    } catch (e) {
+      console.warn("api.factures.create (mode local) :", e);
     }
 
-    // Retry avec numéro incrémenté si deux créations concurrentes ont calculé
-    // le même numéro à partir d'un même snapshot client (contrainte unique en base).
-    const { data: dbFact, reference: numero } = await insertWithReferenceRetry<{ id: string }>(initialNumero, (ref) =>
-      supabase
-        .from("factures")
-        .insert({
-          numero: ref,
-          dossier_id: input.dossierId,
-          client_id: input.clientId,
-          annexe_id: input.annexeId,
-          date: input.date,
-          date_echeance: input.dateEcheance,
-          statut: "Brouillon",
-          taux_tva: input.tauxTVA,
-          montant_ht: amountExclTax,
-          montant_tva: vatAmount,
-          montant_ttc: amountInclTax,
-          montant_paye: 0,
-          notes: input.notes,
-          cree_par: creePar,
-        })
-        .select()
-        .single(),
-    );
-
-    if (input.lignes.length > 0) {
-      const { error: errLignes } = await supabase
-        .from("facture_lignes")
-        .insert(
-          input.lignes.map((ligne) => ({
-            facture_id: dbFact.id,
-            description: ligne.description,
-            quantite: ligne.quantite,
-            prix_unitaire: ligne.prixUnitaire,
-            montant_ht: ligne.quantite * ligne.prixUnitaire,
-            compagnie: ligne.compagnie || null,
-            bordereau_livraison: ligne.bordereauLivraison || null,
-          })),
-        );
-      if (errLignes) throw errLignes;
-    }
-
-    const { data: fullFact, error: errFetch } = await supabase
-      .from("factures")
-      .select("*, facture_lignes(*), clients(nom), annexes(nom)")
-      .eq("id", dbFact.id)
-      .single();
-
-    if (errFetch) throw errFetch;
-
-    const newFacture = mapFactureFromDb(fullFact);
     const finalSeq = extractTrailingSeq(numero) ?? get().factureSeq;
     set((s) => {
       const updatedFactures = [newFacture, ...s.factures];
@@ -217,78 +169,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       input.lignes,
       input.tauxTVA,
     );
-
-    if (!isSupabaseConfigured) {
-      set((s) => {
-        const updatedFactures = s.factures.map((fact) => {
-          if (fact.id !== id) return fact;
-          const updatedLignes: FactureLigne[] = input.lignes.map((ligne, idx) => ({
-            id: `FL-${idx + 1}`,
-            description: ligne.description,
-            quantite: ligne.quantite,
-            prixUnitaire: ligne.prixUnitaire,
-            montantHT: ligne.quantite * ligne.prixUnitaire,
-            compagnie: ligne.compagnie,
-            bordereauLivraison: ligne.bordereauLivraison,
-          }));
-          return {
-            ...fact,
-            ...input,
-            annexeId: input.annexeId,
-            montantHT: amountExclTax,
-            montantTVA: vatAmount,
-            montantTTC: amountInclTax,
-            lignes: updatedLignes,
-          };
-        });
-        return {
-          factures: updatedFactures,
-          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-        };
-      });
-      if (existing) {
-        await get().addAuditLog(
-          AUDIT_MODULE.Factures,
-          AUDIT_ACTION.Modification,
-          `Facture ${existing.numero} modifiée`,
-          input.clientId,
-          { sourceType: "facture", sourceId: id },
-        );
-      }
-      return;
-    }
-
-    const { error: errFact } = await supabase
-      .from("factures")
-      .update({
-        dossier_id: input.dossierId,
-        client_id: input.clientId,
-        annexe_id: input.annexeId,
-        date: input.date,
-        date_echeance: input.dateEcheance,
-        taux_tva: input.tauxTVA,
-        montant_ht: amountExclTax,
-        montant_tva: vatAmount,
-        montant_ttc: amountInclTax,
-        notes: input.notes,
-      })
-      .eq("id", id);
-
-    if (errFact) throw errFact;
-
-    const lignesPayload = input.lignes.map((ligne) => ({
-      description: ligne.description,
-      quantite: ligne.quantite,
-      prix_unitaire: ligne.prixUnitaire,
-      montant_ht: ligne.quantite * ligne.prixUnitaire,
-      compagnie: ligne.compagnie || null,
-      bordereau_livraison: ligne.bordereauLivraison || null,
-    }));
-    const { error: errLignes } = await supabase.rpc("replace_facture_lignes", {
-      p_facture_id: id,
-      p_lignes: lignesPayload,
-    });
-    if (errLignes) throw errLignes;
 
     set((s) => {
       const updatedFactures = s.factures.map((fact) => {
@@ -331,30 +211,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   removeFacture: async (id) => {
     const fact = get().factures.find((f) => f.id === id);
 
-    if (!isSupabaseConfigured) {
-      set((s) => {
-        const updatedFactures = s.factures.filter((f) => f.id !== id);
-        return {
-          factures: updatedFactures,
-          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-        };
-      });
-
-      if (fact) {
-        await get().addAuditLog(
-          AUDIT_MODULE.Factures,
-          AUDIT_ACTION.Suppression,
-          `Facture ${fact.numero} supprimée`,
-          fact.clientId,
-          { sourceType: "facture", sourceId: fact.id },
-        );
-      }
-      return;
-    }
-
-    const { error } = await supabase.from("factures").delete().eq("id", id);
-    if (error) throw error;
-
     set((s) => {
       const updatedFactures = s.factures.filter((f) => f.id !== id);
       return {
@@ -388,33 +244,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       );
     }
 
-    if (!isSupabaseConfigured) {
-      set((s) => {
-        const updatedFactures = s.factures.map((item) =>
-          item.id === id ? { ...item, statut } : item,
-        );
-        return {
-          factures: updatedFactures,
-          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-        };
-      });
-
-      await get().addAuditLog(
-        AUDIT_MODULE.Factures,
-        AUDIT_ACTION.Modification,
-        `Facture ${facture.numero} → ${statut}`,
-        facture.clientId,
-        { sourceType: "facture", sourceId: id },
-      );
-      return;
-    }
-
-    const { error } = await supabase
-      .from("factures")
-      .update({ statut })
-      .eq("id", id);
-    if (error) throw error;
-
     set((s) => {
       const updatedFactures = s.factures.map((item) =>
         item.id === id ? { ...item, statut } : item,
@@ -444,38 +273,17 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     const reste = resteAPayer({ montantInvesti: fact.montantTTC, montantPaye: fact.montantPaye });
     const effective = validatePaymentAmount(montant, reste);
 
-    if (!isSupabaseConfigured) {
-      const newPaye = fact.montantPaye + effective;
-      const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
-      set((s) => {
-        const updatedFactures = s.factures.map((f) =>
-          f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f,
-        );
-        return {
-          factures: updatedFactures,
-          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-        };
-      });
-
-      await get().addAuditLog(
-        AUDIT_MODULE.Factures,
-        AUDIT_ACTION.Paiement,
-        `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
-        fact.clientId,
-        { sourceType: "facture", sourceId: fact.id },
-      );
-      return;
+    const caisseId = (get() as any).caisses?.[0]?.id;
+    if (caisseId) {
+      try {
+        await api.factures.enregistrerPaiement(id, { montant: effective, caisseId });
+      } catch (e) {
+        console.warn("api.factures.enregistrerPaiement (mode local) :", e);
+      }
     }
 
-    const { data, error } = await supabase.rpc("record_facture_paiement", {
-      p_facture_id: id,
-      p_montant: effective,
-    });
-    if (error) throw error;
-    const row = data as { montant_paye: number; statut: FactureStatut };
-    const newPaye = Number(row.montant_paye);
-    const newStatut = row.statut;
-
+    const newPaye = fact.montantPaye + effective;
+    const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
     set((s) => {
       const updatedFactures = s.factures.map((f) =>
         f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f,
@@ -502,42 +310,10 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
     }
 
-    if (!isSupabaseConfigured) {
-      const newStatut: FactureStatut = montantPaye >= fact.montantTTC ? "Soldée" : montantPaye > 0 ? "Partielle" : "Envoyée";
-      set((s) => {
-        const updatedFactures = s.factures.map((f) =>
-          f.id === id ? { ...f, montantPaye, statut: newStatut } : f,
-        );
-        return {
-          factures: updatedFactures,
-          clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-        };
-      });
-
-      await get().addAuditLog(
-        AUDIT_MODULE.Factures,
-        AUDIT_ACTION.Modification,
-        `Paiement facture ${fact.numero} ajusté (classeur) → ${montantPaye.toLocaleString("fr-FR")} FCFA`,
-        fact.clientId,
-        { sourceType: "facture", sourceId: id },
-      );
-      return;
-    }
-
-    // RPC atomique (verrou ligne en DB) : évite d'écraser un encaissement concurrent
-    // enregistré au même moment via recordFacturePaiement.
-    const { data, error } = await supabase.rpc("patch_facture_montant_paye", {
-      p_facture_id: id,
-      p_montant_paye: montantPaye,
-    });
-    if (error) throw error;
-    const row = data as { montant_paye: number; statut: FactureStatut };
-    const paye = Number(row.montant_paye);
-    const newStatut = row.statut;
-
+    const newStatut: FactureStatut = montantPaye >= fact.montantTTC ? "Soldée" : montantPaye > 0 ? "Partielle" : "Envoyée";
     set((s) => {
       const updatedFactures = s.factures.map((f) =>
-        f.id === id ? { ...f, montantPaye: paye, statut: newStatut } : f,
+        f.id === id ? { ...f, montantPaye, statut: newStatut } : f,
       );
       return {
         factures: updatedFactures,
@@ -548,7 +324,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     await get().addAuditLog(
       AUDIT_MODULE.Factures,
       AUDIT_ACTION.Modification,
-      `Paiement facture ${fact.numero} ajusté (classeur) → ${paye.toLocaleString("fr-FR")} FCFA`,
+      `Paiement facture ${fact.numero} ajusté (classeur) → ${montantPaye.toLocaleString("fr-FR")} FCFA`,
       fact.clientId,
       { sourceType: "facture", sourceId: id },
     );

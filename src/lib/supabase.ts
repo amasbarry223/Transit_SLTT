@@ -1,24 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const supabasePublicKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  "";
-
-/** True when URL and public key are both configured. */
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublicKey);
+/** Migration vers NestJS + MySQL : Supabase est désactivé. */
+export const isSupabaseConfigured = false;
 
 export const supabase = createClient(
-  supabaseUrl || "https://placeholder.supabase.co",
-  supabasePublicKey || "placeholder-key",
+  "http://localhost:3001",
+  "placeholder-disabled-token",
   {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      // Évite un hang infini si un navigateur / onglet laisse un lock Auth orphelin.
-      lockAcquireTimeout: 5_000,
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
   },
 );

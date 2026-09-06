@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -62,5 +63,11 @@ export class DossiersController {
     @Body('statut') statut: any,
   ) {
     return this.dossiersService.updateStatut(id, user, statut);
+  }
+
+  @Delete(':id')
+  @RequirePermission('dossiers.supprimer')
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.dossiersService.remove(id, user);
   }
 }

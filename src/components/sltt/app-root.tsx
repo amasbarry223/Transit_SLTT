@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { IDLE_TIMEOUT, IDLE_WARNING_BEFORE, useSession } from "@/lib/session/session-store";
 import { wipeStaleAppStorage } from "@/lib/session/legacy-persist";
-import { prefsFromProfile, useUiPrefs } from "@/lib/session/ui-prefs-store";
 import { useStore } from "@/lib/store";
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { api } from "@/lib/api-client";
 import { normalizeRole } from "@/lib/permissions";
-import { LoginScreen, SupabaseRequiredScreen } from "@/features/auth";
+import { LoginScreen } from "@/features/auth";
 import { logWarn } from "@/shared/logger";
 import { AppShell } from "@/components/sltt/layout/app-shell";
 import { useSupabaseRealtime } from "@/hooks/use-supabase-realtime";

@@ -225,6 +225,11 @@ class ApiClient {
         method: 'PATCH',
         body: JSON.stringify({ statut }),
       }),
+
+    delete: (id: string) =>
+      this.request<any>(`/dossiers/${id}`, {
+        method: 'DELETE',
+      }),
   };
 
   // ---------------------------------------------------------------------------
@@ -336,6 +341,11 @@ class ApiClient {
     create: (data: any) =>
       this.request<any>('/fournisseurs', {
         method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/fournisseurs/${id}`, {
+        method: 'PUT',
         body: JSON.stringify(data),
       }),
   };

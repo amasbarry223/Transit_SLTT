@@ -195,4 +195,9 @@ export class DossiersService {
 
     return updated;
   }
+
+  async remove(id: string, user: CurrentUserType) {
+    await this.findOne(id, user);
+    return this.prisma.dossier.delete({ where: { id } });
+  }
 }

@@ -1,4 +1,3 @@
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { logError, logWarn } from "@/shared/logger";
 
 export type AuditAction =
@@ -143,35 +142,17 @@ export async function insertAuditLog(params: {
   annexeId?: string;
 }): Promise<AuditEntry | null> {
   const ip = params.ip ?? (await resolveClientIp());
-  if (!isSupabaseConfigured) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from("audit_logs")
-      .insert({
-        user_name: params.userName,
-        module: params.module,
-        action: params.action,
-        detail: params.detail,
-        ip,
-        client_id: params.clientId ?? null,
-        source_type: params.source?.sourceType ?? null,
-        source_id: params.source?.sourceId ?? null,
-        annexe_id: params.annexeId ?? null,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapAuditLogFromDb(data as Record<string, unknown>);
-  } catch (err) {
-    const message =
-      err instanceof Error
-        ? err.message
-        : typeof err === "object" && err !== null && "message" in err
-          ? String((err as { message: unknown }).message)
-          : String(err);
-    logError(`[audit] Échec insert (${params.module}/${params.action})`, err, { message });
-    return null;
-  }
+  return {
+    id: crypto.randomUUID(),
+    date: new Date().toISOString(),
+    user: params.userName || "Système",
+    module: params.module,
+    action: params.action,
+    detail: params.detail,
+    ip,
+    clientId: params.clientId,
+    sourceType: params.source?.sourceType,
+    sourceId: params.source?.sourceId,
+    annexeId: params.annexeId,
+  };
 }
