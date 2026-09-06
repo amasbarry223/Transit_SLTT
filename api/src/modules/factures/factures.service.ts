@@ -126,9 +126,14 @@ export class FacturesService {
     const montantTva = (montantHt * tauxTva) / 100;
     const montantTtc = montantHt + montantTva;
 
+    const dateEmission = factureData.dateEmission ? new Date(factureData.dateEmission) : new Date();
+    const dateEcheance = factureData.dateEcheance ? new Date(factureData.dateEcheance) : undefined;
+
     return this.prisma.facture.create({
       data: {
         ...factureData,
+        dateEmission,
+        dateEcheance,
         creeParId: user.id,
         montantHt,
         tauxTva,

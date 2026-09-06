@@ -45,9 +45,14 @@ export class DevisService {
     const montantTva = (montantHt * 18) / 100;
     const montantTtc = montantHt + montantTva;
 
+    const dateEmission = devisData.dateEmission ? new Date(devisData.dateEmission) : new Date();
+    const dateValidite = devisData.dateValidite ? new Date(devisData.dateValidite) : undefined;
+
     return this.prisma.devis.create({
       data: {
         ...devisData,
+        dateEmission,
+        dateValidite,
         montantHt,
         montantTva,
         montantTtc,
