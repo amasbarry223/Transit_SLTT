@@ -8,7 +8,7 @@ import {
   RECEIPT_WIDTH_MM,
   RECEIPT_HEIGHT_MM,
 } from "@/lib/recus-paiement-styles";
-import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import { acquirePrintTarget, resolveLogoUrl, triggerPrint, warnPopupBlocked } from "../print-document";
 import { fmtDate, fmtFCFA } from "./shared";
@@ -130,9 +130,9 @@ export function buildRecuPaiementPrintHTML(data: RecuPaiementModuleData, brand: 
 }
 
 export function printRecuPaiementModule(data: RecuPaiementModuleData, societe?: SocieteBrand | null): boolean {
-  if (!requireSocieteBrand(societe, "ce reçu")) return false;
+  const safeSociete = ensureSocieteBrand(societe);
 
-  const html = buildRecuPaiementPrintHTML(data, societe);
+  const html = buildRecuPaiementPrintHTML(data, safeSociete);
   const win = acquirePrintTarget({
     widthMm: RECEIPT_WIDTH_MM,
     heightMm: RECEIPT_HEIGHT_MM,

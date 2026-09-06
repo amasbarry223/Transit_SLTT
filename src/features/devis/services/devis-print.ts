@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "@/lib/export/html-escape";
 import {
   OFFICIAL_LETTERHEAD_CSS,
@@ -121,9 +121,9 @@ const DEVIS_DOC_BAR_CSS = `
 }`;
 
 export function printDevis(data: DevisData, societe?: SocieteBrand | null): void {
-  if (!requireSocieteBrand(societe, "ce devis")) return;
-  const letterheadHTML = buildOfficialLetterheadHTML(societe);
-  const prestataireNom = prestataireDisplayName(societe);
+  const resolvedBrand = ensureSocieteBrand(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(resolvedBrand);
+  const prestataireNom = prestataireDisplayName(resolvedBrand);
 
   const items = [
     { label: "Droits de douane estimés", value: data.droitDouane, color: "#2f91e1" },
@@ -315,7 +315,7 @@ table { width: 100%; border-collapse: collapse; }
         <div class="sig-note">Lu et approuvé</div>
       </div>
       <div class="sig-box">
-        <div class="sig-lbl">Cachet &amp; signature ${htmlEscape(societe.nom)}</div>
+        <div class="sig-lbl">Cachet &amp; signature ${htmlEscape(resolvedBrand.nom)}</div>
         <div class="sig-note">Pour la direction</div>
       </div>
     </div>
@@ -323,7 +323,7 @@ table { width: 100%; border-collapse: collapse; }
 
   <footer class="footer">
     <div class="footer-note">Estimation provisoire · Non contractuel sans signature des deux parties</div>
-    <div class="footer-brand">${documentFooterHTML(societe.nom)}</div>
+    <div class="footer-brand">${documentFooterHTML(resolvedBrand.nom)}</div>
   </footer>
 
 </div>
@@ -338,8 +338,8 @@ export function printDevisList(
   filterLabel?: string,
   societe?: SocieteBrand | null,
 ): void {
-  if (!requireSocieteBrand(societe, "la liste des devis")) return;
-  const letterheadHTML = buildOfficialLetterheadHTML(societe);
+  const resolvedBrand = ensureSocieteBrand(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(resolvedBrand);
   const today = new Date().toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
@@ -374,7 +374,7 @@ export function printDevisList(
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Liste des devis — ${htmlEscape(societe.nom)}</title>
+<title>Liste des devis — ${htmlEscape(resolvedBrand.nom)}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -556,7 +556,7 @@ tfoot .total-amount {
 
   <footer class="footer">
     <div class="footer-note">Document interne · liste des estimations tarifaires</div>
-    <div class="footer-brand">${documentFooterHTML(societe.nom)}</div>
+    <div class="footer-brand">${documentFooterHTML(resolvedBrand.nom)}</div>
   </footer>
 
 </div>

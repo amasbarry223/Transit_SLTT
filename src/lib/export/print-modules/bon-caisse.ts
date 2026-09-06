@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { MISSING_SIGNATORY_LABEL, type SocieteBrand, type SocieteLegalInfo } from "@/lib/societe-brand";
+import { ensureSocieteBrand, MISSING_SIGNATORY_LABEL, type SocieteBrand, type SocieteLegalInfo } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
   acquirePrintTarget,
@@ -37,13 +37,13 @@ export interface BonSortieCaisseModuleData {
 }
 
 function bonDataToBrand(data: BonSortieCaisseModuleData): SocieteBrand {
-  return {
+  return ensureSocieteBrand({
     nom: data.societeNom,
     raisonSociale: data.raisonSociale,
     logoUrl: data.logoUrl,
     afficherNomAvecLogo: data.afficherNomAvecLogo,
     legal: data.legal,
-  };
+  });
 }
 
 /** Construit le HTML complet du bon de sortie de caisse (aperçu iframe ou fenêtre d'impression). */

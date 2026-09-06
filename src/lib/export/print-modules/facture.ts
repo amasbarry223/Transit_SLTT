@@ -2,6 +2,7 @@
 
 import { BRAND } from "@/lib/brand-colors";
 import {
+  ensureSocieteBrand,
   requireSocieteBrand,
   type SocieteBrand,
 } from "@/lib/societe-brand";
@@ -71,8 +72,8 @@ function statutTone(statut: string): "ok" | "warn" | "off" | "neutral" {
 }
 
 export function printFactureModule(data: FactureModuleData, societe?: SocieteBrand | null): void {
-  if (!requireSocieteBrand(societe, "cette facture")) return;
-  const letterheadHTML = buildOfficialLetterheadHTML(societe);
+  const resolvedBrand = ensureSocieteBrand(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(resolvedBrand);
 
   const hasLignesDetails = data.lignes.some((l) => l.compagnie || l.bordereauLivraison);
   const numeroAffiche = data.annexeSeq != null ? `N°${data.annexeSeq}` : data.numero;
@@ -409,8 +410,8 @@ tbody td:last-child { border-right: none; }
   </div>
 
   <footer class="footer">
-    <div class="footer-note">Facture générée · ${htmlEscape(data.genereParNom)} · ${fmtDate(new Date().toISOString())}<br>${platformFooterHTML(societe.nom)}</div>
-    <div class="footer-brand">${documentFooterHTML(societe.nom)}</div>
+    <div class="footer-note">Facture générée · ${htmlEscape(data.genereParNom)} · ${fmtDate(new Date().toISOString())}<br>${platformFooterHTML(resolvedBrand.nom)}</div>
+    <div class="footer-brand">${documentFooterHTML(resolvedBrand.nom)}</div>
   </footer>
 
 </div>

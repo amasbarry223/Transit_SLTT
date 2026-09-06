@@ -108,27 +108,27 @@ export function societeToPrintHTMLBrand(s: Societe): PrintHTMLBrand {
 }
 
 export const DEFAULT_TRANSIT_BRAND: SocieteBrand = {
-  nom: "Transit SLTT",
-  raisonSociale: "Transit SLTT SARL",
+  nom: "TRAORE DE LOGISTIQUE",
+  raisonSociale: "TRAORE DE LOGISTIQUE - TRANSIT-TRANSPORT",
   logoUrl: "/logoV.png",
   afficherNomAvecLogo: true,
   legal: {
-    adresse: "Conakry, République de Guinée",
-    telephone: "+224 620 00 00 01",
-    rccm: "GN.TCC.2020.B.1234",
-    nif: "123456789",
+    adresse: "Bamako, Mali / Abidjan, Côte d'Ivoire",
+    telephone: "+223 00 00 00 00 / +225 00 00 00 00",
+    rccm: "MA.BKO.2024.B.1234",
+    nif: "0812345678",
   },
 };
 
 export const DEFAULT_PRINT_HTML_BRAND: PrintHTMLBrand = {
-  name: "Transit SLTT",
+  name: "TRAORE DE LOGISTIQUE",
   logoUrl: "/logoV.png",
   afficherNomAvecLogo: true,
   legal: {
-    adresse: "Conakry, République de Guinée",
-    telephone: "+224 620 00 00 01",
-    rccm: "GN.TCC.2020.B.1234",
-    nif: "123456789",
+    adresse: "Bamako, Mali / Abidjan, Côte d'Ivoire",
+    telephone: "+223 00 00 00 00 / +225 00 00 00 00",
+    rccm: "MA.BKO.2024.B.1234",
+    nif: "0812345678",
   },
 };
 
@@ -226,26 +226,28 @@ export function resolveDossierCoutLabels(annexeCode?: string | null): DossierCou
 export const MISSING_SIGNATORY_LABEL = "Non renseigné";
 
 export function warnMissingBrand(context: string): boolean {
-  window.alert(
-    `Impossible d'imprimer ${context} : identité de l'entreprise non configurée. Renseignez-la dans Paramètres > Entreprise.`,
-  );
-  return false;
+  console.warn(`Branding entreprise non configuré pour ${context}, utilisation des coordonnées par défaut.`);
+  return true;
+}
+
+export function ensureSocieteBrand(brand?: SocieteBrand | null): SocieteBrand {
+  if (brand?.nom?.trim()) return brand;
+  return DEFAULT_TRANSIT_BRAND;
 }
 
 export function requireSocieteBrand(
   brand: SocieteBrand | null | undefined,
-  context: string,
+  _context?: string,
 ): brand is SocieteBrand {
-  if (brand?.nom?.trim()) return true;
-  return warnMissingBrand(context);
+  // Toujours autoriser l'impression en injectant les valeurs par défaut si nécessaire
+  return true;
 }
 
 export function requirePrintHTMLBrand(
   brand: PrintHTMLBrand | null | undefined,
-  context: string,
+  _context?: string,
 ): brand is PrintHTMLBrand {
-  if (brand?.name?.trim()) return true;
-  return warnMissingBrand(context);
+  return true;
 }
 
 /** Ligne légale en texte brut (aperçu UI facture). */

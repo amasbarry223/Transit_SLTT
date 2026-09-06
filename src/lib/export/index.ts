@@ -1,6 +1,6 @@
 export { htmlEscape } from "./html-escape";
 
-export { printHTML } from "./print-document";
+export { printHTML, printHtmlDocument } from "./print-document";
 
 export { exportToExcel } from "./excel-export";
 

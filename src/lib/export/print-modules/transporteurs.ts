@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 
 import { htmlEscape } from "@/lib/export/html-escape";
 import {
@@ -35,8 +35,8 @@ export function printTransporteurs(
   filterLabel?: string,
   societe?: SocieteBrand | null,
 ): void {
-  if (!requireSocieteBrand(societe, "l'annuaire transporteurs")) return;
-  const letterheadHTML = buildOfficialLetterheadHTML(societe);
+  const resolvedBrand = ensureSocieteBrand(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(resolvedBrand);
   const today = new Date().toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
@@ -79,7 +79,7 @@ export function printTransporteurs(
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Annuaire transporteurs — ${htmlEscape(societe.nom)}</title>
+<title>Annuaire transporteurs — ${htmlEscape(resolvedBrand.nom)}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -354,7 +354,7 @@ tfoot .total-num {
 
   <footer class="footer">
     <div class="footer-note">Document confidentiel · usage interne uniquement</div>
-    <div class="footer-brand">${htmlEscape(societe.nom)} · © ${new Date().getFullYear()}</div>
+    <div class="footer-brand">${htmlEscape(resolvedBrand.nom)} · © ${new Date().getFullYear()}</div>
   </footer>
 
 </div>

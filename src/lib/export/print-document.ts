@@ -6,6 +6,7 @@ import {
   PRINT_WINDOW_READY_MS,
 } from "@/lib/constants";
 import {
+  ensureSocieteBrand,
   requireSocieteBrand,
   type SocieteBrand,
   type SocieteLegalInfo,
@@ -89,15 +90,16 @@ export function buildOfficialLetterheadHTML(
   brand: SocieteBrand,
   options?: { logoClass?: string },
 ): string {
+  const resolved = ensureSocieteBrand(brand);
   const logoClass = options?.logoClass ?? "official-letterhead-logo";
-  const logoImg = brandLogoImgHTML(brand, logoClass, "v=transparent2");
-  const displayName = brand.raisonSociale || brand.nom;
-  const showName = brand.afficherNomAvecLogo !== false;
+  const logoImg = brandLogoImgHTML(resolved, logoClass, "v=transparent2");
+  const displayName = resolved.raisonSociale || resolved.nom;
+  const showName = resolved.afficherNomAvecLogo !== false;
   const nameLines = showName ? splitRaisonSocialeLines(displayName) : [];
   const nameHTML = nameLines
     .map((line) => `<div class="official-letterhead-name-line">${htmlEscape(line.toUpperCase())}</div>`)
     .join("\n");
-  const l = brand.legal;
+  const l = resolved.legal;
 
   const legalHTML = [
     l?.adresse
@@ -131,15 +133,19 @@ export function buildOfficialLetterheadHTML(
 export { OFFICIAL_LETTERHEAD_CSS };
 
 export function buildBrandSubHTML(brand: SocieteBrand): string {
-  const legalLine = buildLegalLine(brand.legal);
+  const resolved = ensureSocieteBrand(brand);
+  const legalLine = buildLegalLine(resolved.legal);
   if (legalLine) return legalLine;
-  if (brand.afficherNomAvecLogo === false) return "";
-  return htmlEscape(brand.nom);
+  if (resolved.afficherNomAvecLogo === false) return "";
+  return htmlEscape(resolved.nom);
 }
 
 /**
- * Impression via iframe cachée (pas de popup → pas de bloqueur navigateur).
- * Remplace window.open pour tous les modules d'impression SLTT.
+ * Impression via iframe dédiée et isolée (évite le blocage des popups).
+ * Conçu selon les meilleures pratiques modernes (Chrome/Edge/Safari/Firefox) :
+ * - Toujours un iframe neuf (supprime tout iframe précédent pour éviter les blocages Chromium post-print).
+ * - Ne JAMAIS utiliser visibility:hidden ni display:none (qui provoquent des impressions blanches).
+ * - Positionnement dans le viewport avec opacité 0.001 et z-index négatif.
  */
 const PRINT_FRAME_ID = "sltt-print-frame";
 
@@ -163,83 +169,174 @@ export function acquirePrintTarget(options?: PrintTargetOptions): Window | null 
   const heightMm = options?.heightMm ?? DEFAULT_PRINT_HEIGHT_MM;
   const frameId = options?.frameId ?? PRINT_FRAME_ID;
 
-  let iframe = document.getElementById(frameId) as HTMLIFrameElement | null;
-  if (!iframe) {
-    iframe = document.createElement("iframe");
-    iframe.id = frameId;
-    iframe.name = frameId;
-    iframe.setAttribute("aria-hidden", "true");
-    iframe.setAttribute("title", "Impression SLTT");
-    iframe.setAttribute("tabindex", "-1");
-    // Dimensions réelles requises : une iframe 0×0 fait caler indéfiniment
-    // la génération d'aperçu du dialogue d'impression système (Chromium).
-    // Pour le reçu carnet (19,5×8,2 cm), passer widthMm/heightMm dédiés.
-    Object.assign(iframe.style, {
-      position: "fixed",
-      left: "-10000px",
-      top: "0",
-      width: `${widthMm}mm`,
-      height: `${heightMm}mm`,
-      border: "0",
-      opacity: "0",
-      pointerEvents: "none",
-      visibility: "hidden",
-    });
-    document.body.appendChild(iframe);
-  } else {
-    // Resynchronise les dimensions si l'iframe existe déjà (ex. reçu vs A4).
-    Object.assign(iframe.style, {
-      width: `${widthMm}mm`,
-      height: `${heightMm}mm`,
-    });
+  // Supprimer tout iframe existant pour repartir sur un contexte vierge
+  const existing = document.getElementById(frameId);
+  if (existing) {
+    try {
+      existing.remove();
+    } catch {
+      // ignore
+    }
   }
 
+  const iframe = document.createElement("iframe");
+  iframe.id = frameId;
+  iframe.name = frameId;
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.setAttribute("title", "Impression SLTT");
+  iframe.setAttribute("tabindex", "-1");
+
+  // Rendu valide pour le moteur de rasterisation print du navigateur :
+  // Visible pour le moteur de rendu mais transparent et cliquable au travers pour l'utilisateur
+  Object.assign(iframe.style, {
+    position: "fixed",
+    right: "0px",
+    bottom: "0px",
+    width: `${widthMm}mm`,
+    height: `${heightMm}mm`,
+    border: "none",
+    margin: "0",
+    padding: "0",
+    opacity: "0.001",
+    pointerEvents: "none",
+    zIndex: "-99999",
+  });
+
+  document.body.appendChild(iframe);
   return iframe.contentWindow;
 }
 
 /**
- * Ancien message popup — conservé si même l'iframe échoue (contexte sandbox rare).
+ * Message d'aide si l'impression échoue.
  */
 export function warnPopupBlocked(): void {
-  window.alert(
-    "Impossible d'ouvrir l'aperçu d'impression. Vérifiez que le site n'est pas en mode restreint, puis réessayez.",
-  );
+  toast({
+    title: "Impression impossible",
+    description: "Vérifiez que votre navigateur autorise l'impression ou l'ouverture de fenêtres pour ce site.",
+    variant: "destructive",
+  });
 }
 
-/** Attend le chargement des images avant d'ouvrir la boîte d'impression. */
+/** Attend le chargement des images et des polices avant d'ouvrir la boîte d'impression. */
 export function triggerPrint(win: Window, delayMs = PRINT_WINDOW_READY_MS): void {
-  // Retour visuel le temps de préparer le document (chargement du logo,
-  // etc.) — sans ça le clic sur « Imprimer » ne montre rien avant que la
-  // boîte de dialogue système n'apparaisse, ce qui se lit comme un blocage.
   const progress = toastLoading(toast, {
     title: "Préparation de l'impression…",
     description: UI.loading.processing,
   });
+
+  let hasExecuted = false;
+  let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const cleanup = () => {
+    if (fallbackTimer) {
+      clearTimeout(fallbackTimer);
+      fallbackTimer = null;
+    }
+    try {
+      progress.dismiss();
+    } catch {
+      // ignore
+    }
+  };
+
   const doPrint = () => {
-    progress.dismiss();
+    if (hasExecuted) return;
+    hasExecuted = true;
+    cleanup();
+
     try {
       win.focus();
     } catch {
-      // iframe cross-doc focus peut échouer — print() suffit
+      // ignore
     }
-    win.print();
+
+    try {
+      win.print();
+    } catch (err) {
+      console.warn("Échec de window.print() sur l'iframe, bascule vers fenêtre directe :", err);
+      try {
+        const popup = window.open("", "_blank");
+        if (popup && win.document) {
+          popup.document.open();
+          popup.document.write(win.document.documentElement.outerHTML);
+          popup.document.close();
+          popup.focus();
+          popup.print();
+          return;
+        }
+      } catch {
+        // popup bloqué
+      }
+      toast({
+        title: "Impression impossible",
+        description: "Vérifiez que votre navigateur autorise l'impression.",
+        variant: "destructive",
+      });
+    }
   };
-  const imgs = Array.from(win.document.images);
-  const pending = imgs.filter((img) => !img.complete);
-  if (pending.length === 0) {
-    setTimeout(doPrint, delayMs);
-    return;
+
+  // Nettoyage de l'iframe après fermeture du dialogue d'impression
+  try {
+    win.addEventListener(
+      "afterprint",
+      () => {
+        cleanup();
+        setTimeout(() => {
+          try {
+            const frame = win.frameElement as HTMLElement | null;
+            if (frame) frame.remove();
+          } catch {
+            // ignore
+          }
+        }, 1000);
+      },
+      { once: true },
+    );
+  } catch {
+    // ignore
   }
-  let loaded = 0;
-  const done = () => {
-    loaded += 1;
-    if (loaded >= pending.length) setTimeout(doPrint, PRINT_IMAGE_READY_MS);
-  };
-  pending.forEach((img) => {
-    img.addEventListener("load", done, { once: true });
-    img.addEventListener("error", done, { once: true });
-  });
-  setTimeout(doPrint, PRINT_FALLBACK_MS);
+
+  // Inspection des ressources document (images & fonts)
+  try {
+    const doc = win.document;
+    if (!doc) {
+      setTimeout(doPrint, delayMs);
+      return;
+    }
+
+    const imgs = Array.from(doc.images || []);
+    const pending = imgs.filter((img) => !img.complete && img.src);
+
+    const waitForFonts = () => {
+      if (doc.fonts && doc.fonts.ready) {
+        doc.fonts.ready
+          .then(() => setTimeout(doPrint, delayMs))
+          .catch(() => setTimeout(doPrint, delayMs));
+      } else {
+        setTimeout(doPrint, delayMs);
+      }
+    };
+
+    if (pending.length === 0) {
+      waitForFonts();
+    } else {
+      let loaded = 0;
+      const onDone = () => {
+        loaded += 1;
+        if (loaded >= pending.length) {
+          waitForFonts();
+        }
+      };
+      pending.forEach((img) => {
+        img.addEventListener("load", onDone, { once: true });
+        img.addEventListener("error", onDone, { once: true });
+      });
+    }
+  } catch {
+    setTimeout(doPrint, delayMs);
+  }
+
+  fallbackTimer = setTimeout(doPrint, PRINT_FALLBACK_MS);
 }
 
 export interface BuildPrintDocumentOptions {
@@ -250,8 +347,9 @@ export interface BuildPrintDocumentOptions {
 
 /** Construit le HTML complet d'un document générique (gabarit printHTML). */
 export function buildPrintDocument({ title, body, brand }: BuildPrintDocumentOptions): string {
-  const letterheadHTML = buildOfficialLetterheadHTML(brand);
-  const footerHTML = documentFooterHTML(brand.nom);
+  const resolved = ensureSocieteBrand(brand);
+  const letterheadHTML = buildOfficialLetterheadHTML(resolved);
+  const footerHTML = documentFooterHTML(resolved.nom);
   const editedOn = new Date().toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
@@ -273,7 +371,7 @@ ${PRINT_HTML_DOCUMENT_CSS}
   <section class="doc-section">
     <div class="doc-head">
       <div>
-        <div class="doc-eyebrow">Document interne</div>
+        <div class="doc-eyebrow">Document officiel</div>
         <h1 class="doc-title">${htmlEscape(title)}</h1>
       </div>
       <div class="doc-meta">
@@ -288,24 +386,52 @@ ${PRINT_HTML_DOCUMENT_CSS}
 </html>`;
 }
 
-/** Écrit le HTML dans la cible d'impression (iframe) et lance print(). */
-export function openPrintWindow(html: string, _windowFeatures?: string): void {
-  const win = acquirePrintTarget();
+export interface PrintHtmlDocumentOptions {
+  html: string;
+  title?: string;
+  widthMm?: number;
+  heightMm?: number;
+  frameId?: string;
+  delayMs?: number;
+}
+
+/**
+ * Moteur universel d'impression HTML.
+ * Prépare la cible, injecte le HTML de façon sécurisée et déclenche l'impression.
+ */
+export function printHtmlDocument(options: PrintHtmlDocumentOptions | string): void {
+  const opts = typeof options === "string" ? { html: options } : options;
+  const win = acquirePrintTarget({
+    widthMm: opts.widthMm,
+    heightMm: opts.heightMm,
+    frameId: opts.frameId,
+  });
   if (!win) {
     warnPopupBlocked();
     return;
   }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  triggerPrint(win);
+
+  try {
+    win.document.open();
+    win.document.write(opts.html);
+    win.document.close();
+  } catch {
+    const frame = win.frameElement as HTMLIFrameElement | null;
+    if (frame) frame.srcdoc = opts.html;
+  }
+
+  triggerPrint(win, opts.delayMs);
+}
+
+/** Écrit le HTML dans la cible d'impression (iframe) et lance print(). */
+export function openPrintWindow(html: string, _windowFeatures?: string): void {
+  printHtmlDocument(html);
 }
 
 /**
- * Print a specific HTML string in a new window.
- * Useful for generating a clean PDF/document without the app chrome.
+ * Imprime un fragment HTML arbitraire avec en-tête et pied de page officiel.
  */
 export function printHTML(title: string, bodyHTML: string, brand?: SocieteBrand | null): void {
-  if (!requireSocieteBrand(brand, "ce document")) return;
-  openPrintWindow(buildPrintDocument({ title, body: bodyHTML, brand }));
+  const resolvedBrand = ensureSocieteBrand(brand);
+  openPrintWindow(buildPrintDocument({ title, body: bodyHTML, brand: resolvedBrand }));
 }

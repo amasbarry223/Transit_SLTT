@@ -1,6 +1,6 @@
 "use client";
 
-import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { DEFAULT_TRANSIT_BRAND, ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
   buildOfficialLetterheadHTML,
@@ -38,7 +38,7 @@ export interface StockInventoryGroup {
 }
 
 function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
-  const societe = group.societe;
+  const societe = ensureSocieteBrand(group.societe);
   const letterheadHTML = buildOfficialLetterheadHTML(societe);
   const now = new Date();
   const today = now.toLocaleDateString("fr-FR", {
@@ -232,11 +232,16 @@ function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
 }
 
 export function printStockInventory(groups: StockInventoryGroup[]): void {
-  const validGroups = groups.filter((g) => g.societe?.nom?.trim());
-  if (validGroups.length === 0) {
-    requireSocieteBrand(undefined, "l'inventaire stock");
-    return;
-  }
+  const safeGroups = (groups || []).map((g) => ({
+    ...g,
+    societe: ensureSocieteBrand(g.societe),
+  }));
+  const validGroups = safeGroups.length > 0 ? safeGroups : [
+    {
+      societe: DEFAULT_TRANSIT_BRAND,
+      rows: [],
+    },
+  ];
 
   const now = new Date();
   const docRefBase = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;

@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 
 import type { ClientPrintRow } from "@/features/clients/types";
 import { htmlEscape } from "@/lib/export/html-escape";
@@ -25,8 +25,8 @@ export function printClients(
   filterLabel?: string,
   societe?: SocieteBrand | null,
 ): void {
-  if (!requireSocieteBrand(societe, "l'annuaire clients")) return;
-  const letterheadHTML = buildOfficialLetterheadHTML(societe);
+  const resolvedBrand = ensureSocieteBrand(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(resolvedBrand);
   const today = new Date().toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
@@ -69,7 +69,7 @@ export function printClients(
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Annuaire clients — ${htmlEscape(societe.nom)}</title>
+<title>Annuaire clients — ${htmlEscape(resolvedBrand.nom)}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -363,7 +363,7 @@ tfoot .total-dossiers {
 
   <footer class="footer">
     <div class="footer-note">Document confidentiel · usage interne uniquement</div>
-    <div class="footer-brand">${htmlEscape(societe.nom)} · © ${new Date().getFullYear()}</div>
+    <div class="footer-brand">${htmlEscape(resolvedBrand.nom)} · © ${new Date().getFullYear()}</div>
   </footer>
 
 </div>

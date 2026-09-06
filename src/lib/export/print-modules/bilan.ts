@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
   OFFICIAL_LETTERHEAD_CSS,
@@ -43,8 +43,8 @@ export function printBilan(
   tauxRecouvrement: number,
   societe?: SocieteBrand | null,
 ): void {
-  if (!requireSocieteBrand(societe, "le bilan financier")) return;
-  const letterheadHTML = buildOfficialLetterheadHTML(societe);
+  const safeSociete = ensureSocieteBrand(societe);
+  const letterheadHTML = buildOfficialLetterheadHTML(safeSociete);
   const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
   const rowsHTML = rows
@@ -350,8 +350,8 @@ tfoot .total-amount {
   </section>
 
   <footer class="footer">
-    <div class="footer-note">Document confidentiel · usage interne uniquement<br>${platformFooterHTML(societe.nom)}</div>
-    <div class="footer-brand">${documentFooterHTML(societe.nom)}</div>
+    <div class="footer-note">Document confidentiel · usage interne uniquement<br>${platformFooterHTML(safeSociete.nom)}</div>
+    <div class="footer-brand">${documentFooterHTML(safeSociete.nom)}</div>
   </footer>
 
 </div>
