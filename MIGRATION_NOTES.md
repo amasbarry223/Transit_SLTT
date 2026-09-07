@@ -12,7 +12,7 @@ Toutes les tables, clés primaires (UUID), clés étrangères, enums et index du
 | Entité Supabase | Modèle Prisma | Remarques / Particularités |
 | :--- | :--- | :--- |
 | `auth.users` + `public.profiles` | `Profile` | Unification dans le modèle `Profile` avec champ `passwordHash` (bcrypt 12 rounds) |
-| `annexes` | `Annexe` | Multi-agences (Conakry Siège, Kamsar Port...) |
+| `annexes` | `Annexe` | Multi-agences physiques (Mali Siège Bamako, Côte d'Ivoire Agence Abidjan) |
 | `user_annexes` | `UserAnnexe` | Table de liaison N-N pour le scoping multi-annexes |
 | `dossiers` | `Dossier` | Cœur du métier transit (statut, conteneurs, BL, étapes) |
 | `conteneurs` | `Conteneur` | Statut au port, numéro, type, plomb |

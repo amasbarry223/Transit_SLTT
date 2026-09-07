@@ -88,13 +88,18 @@ npm run dev
 
 ## 🔑 Identifiants de Connexion par Défaut (après le Seed)
 
+Les deux implantations physiques (annexes) gérées sont :
+* **Mali** : Siège Central (Bamako)
+* **Côte d'Ivoire** : Agence Portuaire / Transit (Abidjan)
+
 Si vous avez exécuté `npm run db:seed` dans le dossier `api/` :
 
-| Rôle | Email | Mot de passe |
-| :--- | :--- | :--- |
-| **Administrateur** | `amadou.traore@sltt.ml` | `sltt2026` |
-| **Agent Transit** | `moussa.camara@sltt.gn` | `transit2026` |
-| **Comptable** | `fatoumata.diallo@sltt.gn` | `compta2026` |
+| Rôle | Email | Mot de passe | Annexe rattachée |
+| :--- | :--- | :--- | :--- |
+| **Administrateur** | `amadou.traore@sltt.ml` | `sltt2026` | Mali & Côte d'Ivoire (Global) |
+| **Agent Transit Mali** | `ibrahim.keita@sltt.ml` | `transit2026` | Mali (Bamako) |
+| **Agent Transit CI** | `moussa.camara@sltt.ci` | `transit2026` | Côte d'Ivoire (Abidjan) |
+| **Comptable** | `fatoumata.diallo@sltt.ml` | `compta2026` | Mali (Bamako) |
 
 ---
 

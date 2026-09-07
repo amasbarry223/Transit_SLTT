@@ -6,36 +6,50 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Démarrage du seed Transit SLTT...');
 
-  // 1. Annexes
-  const annexeSiege = await prisma.annexe.upsert({
-    where: { code: 'CKY-SIEGE' },
-    update: {},
-    create: {
-      code: 'CKY-SIEGE',
-      nom: 'Conakry - Siège Central',
-      ville: 'Conakry',
-      pays: 'Guinée',
+  // 1. Annexes (Mali et Côte d'Ivoire)
+  const annexeMali = await prisma.annexe.upsert({
+    where: { code: 'ML-SIEGE' },
+    update: {
+      nom: 'Mali - Siège Bamako',
+      ville: 'Bamako',
+      pays: 'Mali',
       estSiege: true,
-      telephone: '+224 620 00 00 01',
-      email: 'conakry@transit-sltt.com',
+      telephone: '+223 76 96 47 06',
+      email: 'bamako@transit-sltt.com',
     },
-  });
-
-  const annexeKamsar = await prisma.annexe.upsert({
-    where: { code: 'KMR-PORT' },
-    update: {},
     create: {
-      code: 'KMR-PORT',
-      nom: 'Kamsar - Agence Portuaire',
-      ville: 'Kamsar',
-      pays: 'Guinée',
-      estSiege: false,
-      telephone: '+224 620 00 00 02',
-      email: 'kamsar@transit-sltt.com',
+      code: 'ML-SIEGE',
+      nom: 'Mali - Siège Bamako',
+      ville: 'Bamako',
+      pays: 'Mali',
+      estSiege: true,
+      telephone: '+223 76 96 47 06',
+      email: 'bamako@transit-sltt.com',
     },
   });
 
-  console.log('✅ Annexes créées');
+  const annexeCI = await prisma.annexe.upsert({
+    where: { code: 'CI-ABJ' },
+    update: {
+      nom: "Côte d'Ivoire - Agence Abidjan",
+      ville: 'Abidjan',
+      pays: "Côte d'Ivoire",
+      estSiege: false,
+      telephone: '+225 07 00 00 02',
+      email: 'abidjan@transit-sltt.com',
+    },
+    create: {
+      code: 'CI-ABJ',
+      nom: "Côte d'Ivoire - Agence Abidjan",
+      ville: 'Abidjan',
+      pays: "Côte d'Ivoire",
+      estSiege: false,
+      telephone: '+225 07 00 00 02',
+      email: 'abidjan@transit-sltt.com',
+    },
+  });
+
+  console.log('✅ Annexes créées (Mali & Côte d\'Ivoire)');
 
   // 2. Utilisateurs
   const passwordAdmin = await bcrypt.hash('sltt2026', 12);
@@ -55,31 +69,14 @@ async function main() {
       telephone: '+223 70 00 00 01',
       userAnnexes: {
         create: [
-          { annexeId: annexeSiege.id },
-          { annexeId: annexeKamsar.id },
+          { annexeId: annexeMali.id },
+          { annexeId: annexeCI.id },
         ],
       },
     },
   });
 
-  const transitaire = await prisma.profile.upsert({
-    where: { email: 'moussa.camara@sltt.gn' },
-    update: {},
-    create: {
-      email: 'moussa.camara@sltt.gn',
-      passwordHash: passwordTransit,
-      nom: 'Moussa Camara',
-      role: RoleUtilisateur.TRANSITAIRE,
-      permissions: ['dossiers.creer', 'dossiers.modifier', 'documents.upload'],
-      actif: true,
-      telephone: '+224 620 00 00 02',
-      userAnnexes: {
-        create: [{ annexeId: annexeSiege.id }],
-      },
-    },
-  });
-
-  await prisma.profile.upsert({
+  const transitaireMali = await prisma.profile.upsert({
     where: { email: 'ibrahim.keita@sltt.ml' },
     update: {},
     create: {
@@ -91,29 +88,29 @@ async function main() {
       actif: true,
       telephone: '+223 70 00 00 02',
       userAnnexes: {
-        create: [{ annexeId: annexeSiege.id }],
+        create: [{ annexeId: annexeMali.id }],
       },
     },
   });
 
-  const comptable = await prisma.profile.upsert({
-    where: { email: 'fatoumata.diallo@sltt.gn' },
+  const transitaireCI = await prisma.profile.upsert({
+    where: { email: 'moussa.camara@sltt.ci' },
     update: {},
     create: {
-      email: 'fatoumata.diallo@sltt.gn',
-      passwordHash: passwordCompta,
-      nom: 'Fatoumata Diallo',
-      role: RoleUtilisateur.COMPTABLE,
-      permissions: ['factures.creer', 'caisse.encaisser', 'caisse.decaisser', 'depenses.valider'],
+      email: 'moussa.camara@sltt.ci',
+      passwordHash: passwordTransit,
+      nom: 'Moussa Camara',
+      role: RoleUtilisateur.TRANSITAIRE,
+      permissions: ['dossiers.creer', 'dossiers.modifier', 'documents.upload'],
       actif: true,
-      telephone: '+224 620 00 00 03',
+      telephone: '+225 07 00 00 02',
       userAnnexes: {
-        create: [{ annexeId: annexeSiege.id }],
+        create: [{ annexeId: annexeCI.id }],
       },
     },
   });
 
-  await prisma.profile.upsert({
+  const comptableMali = await prisma.profile.upsert({
     where: { email: 'fatoumata.diallo@sltt.ml' },
     update: {},
     create: {
@@ -125,7 +122,7 @@ async function main() {
       actif: true,
       telephone: '+223 70 00 00 03',
       userAnnexes: {
-        create: [{ annexeId: annexeSiege.id }],
+        create: [{ annexeId: annexeMali.id }],
       },
     },
   });
@@ -133,19 +130,31 @@ async function main() {
   console.log('✅ Profils créés');
 
   // 3. Caisse
-  const caissePrincipale = await prisma.caisse.upsert({
-    where: { code: 'CAISSE-CKY-01' },
+  const caisseMali = await prisma.caisse.upsert({
+    where: { code: 'CAISSE-BKO-01' },
     update: {},
     create: {
-      code: 'CAISSE-CKY-01',
-      nom: 'Caisse Principale Siège',
-      annexeId: annexeSiege.id,
+      code: 'CAISSE-BKO-01',
+      nom: 'Caisse Principale Bamako',
+      annexeId: annexeMali.id,
       soldeActuel: 50000000,
-      devise: 'GNF',
+      devise: 'FCFA',
     },
   });
 
-  console.log('✅ Caisse créée');
+  await prisma.caisse.upsert({
+    where: { code: 'CAISSE-ABJ-01' },
+    update: {},
+    create: {
+      code: 'CAISSE-ABJ-01',
+      nom: 'Caisse Agence Abidjan',
+      annexeId: annexeCI.id,
+      soldeActuel: 25000000,
+      devise: 'FCFA',
+    },
+  });
+
+  console.log('✅ Caisses créées (FCFA)');
 
   // 4. Clients
   const client1 = await prisma.client.upsert({
@@ -153,11 +162,11 @@ async function main() {
     update: {},
     create: {
       code: 'CLI-001',
-      nom: 'Société des Établissements Diallo',
+      nom: 'Société des Établissements Diallo SARL',
       type: TypeClient.ENTREPRISE,
-      telephone: '+224 621 11 22 33',
-      email: 'contact@diallo-sa.com',
-      adresse: 'Boulevard du Commerce, Conakry',
+      telephone: '+223 76 11 22 33',
+      email: 'contact@diallo-sa.ml',
+      adresse: 'Zone Industrielle Sotuba, Bamako',
     },
   });
 
@@ -166,11 +175,11 @@ async function main() {
     update: {},
     create: {
       code: 'CLI-002',
-      nom: 'Traoré & Frères Import-Export',
+      nom: 'Ivoire & Sahel Import-Export',
       type: TypeClient.ENTREPRISE,
-      telephone: '+224 622 33 44 55',
-      email: 'traorefreres@gmail.com',
-      adresse: 'Madina, Conakry',
+      telephone: '+225 07 33 44 55',
+      email: 'contact@ivoiresahel.ci',
+      adresse: 'Treichville, Abidjan',
     },
   });
 
@@ -182,10 +191,10 @@ async function main() {
     update: {},
     create: {
       code: 'FOURN-001',
-      nom: 'Trans-Guinée Logistique',
-      telephone: '+224 623 44 55 66',
-      email: 'contact@transguinee.com',
-      contact: 'Moussa Camara',
+      nom: 'Sahel-Transit Logistique SARL',
+      telephone: '+223 79 55 22 11',
+      email: 'contact@saheltransit.ml',
+      contact: 'Aliou Coulibaly',
     },
   });
 
@@ -197,9 +206,9 @@ async function main() {
     update: {},
     create: {
       numero: 'SLTT-TR-2026-0001',
-      annexeId: annexeSiege.id,
+      annexeId: annexeMali.id,
       clientId: client1.id,
-      creeParId: transitaire.id,
+      creeParId: transitaireMali.id,
       type: TypeDossier.IMPORT,
       statut: StatutDossier.EN_COURS,
       voieTransport: VoieTransport.MARITIME,
@@ -208,7 +217,7 @@ async function main() {
       navireVol: 'MSC ALTAIR',
       compagnie: 'MSC',
       portProvenance: 'Anvers (Belgique)',
-      portDestination: 'Port Autonome de Conakry',
+      portDestination: "Port Autonome d'Abidjan",
       poids: 14500,
       volume: 48,
       nombreColis: 120,
@@ -226,8 +235,8 @@ async function main() {
       trackingPublic: {
         create: {
           codeTracking: 'TRK-SLTT-0001',
-          statutAffiche: 'En navigation vers Conakry',
-          dernierePosition: 'Océan Atlantique - Cap-Vert',
+          statutAffiche: 'En transit vers Bamako via Abidjan',
+          dernierePosition: 'En route corridor Abidjan - Bamako',
         },
       },
     },
@@ -235,8 +244,8 @@ async function main() {
 
   // 7. Paramètres dynamiques (dashboard settings)
   const defaultSettings = [
-    { cle: 'nom_societe', valeur: 'Transit SLTT SARL', description: 'Raison sociale' },
-    { cle: 'devise_principale', valeur: 'GNF', description: 'Devise par défaut' },
+    { cle: 'nom_societe', valeur: 'Tonomi - Transit SLTT', description: 'Raison sociale' },
+    { cle: 'devise_principale', valeur: 'FCFA', description: 'Devise par défaut' },
     { cle: 'taux_tva_defaut', valeur: '18', description: 'Taux TVA standard (%)' },
     { cle: 'delai_echeance_jours', valeur: '30', description: 'Délai de paiement factures' },
     { cle: 'email_contact', valeur: 'contact@transit-sltt.com', description: 'Email support' },

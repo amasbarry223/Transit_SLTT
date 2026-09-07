@@ -28,10 +28,10 @@ export const DEFAULT_SOCIETE: Societe = {
   raisonSociale: "Transit SLTT SARL",
   actif: true,
   logoUrl: "/logoV.png",
-  adresse: "Conakry, République de Guinée",
-  telephone: "+224 620 00 00 01",
-  rccm: "GN.TCC.2020.B.1234",
-  nif: "123456789",
+  adresse: "Niaréla - Rue 516 porte C/63, Bamako, Mali",
+  telephone: "+223 76 96 47 06 / 92 92 46 48",
+  rccm: "Ma.Bko.2025 B.5897",
+  nif: "084151062H",
   afficherNomAvecLogo: true,
 };
 
