@@ -113,7 +113,7 @@ export function AdminPanel({
               TOTAL DOSSIERS
             </p>
             <p className="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-              {dossiersCount > 0 ? dossiersCount.toLocaleString("fr-FR") : "1 248"}
+              {dossiersCount.toLocaleString("fr-FR")}
             </p>
             <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
               ↗ +12%
@@ -136,7 +136,7 @@ export function AdminPanel({
               CLIENTS
             </p>
             <p className="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-              {clientsCount > 0 ? clientsCount.toLocaleString("fr-FR") : "356"}
+              {clientsCount.toLocaleString("fr-FR")}
             </p>
             <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
               ↗ +8%

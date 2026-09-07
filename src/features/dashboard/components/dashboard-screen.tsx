@@ -124,7 +124,7 @@ export function DashboardScreen() {
         {/* Card 1: Total dossiers — Royal Blue */}
         <DashboardKpiCard
           label="Total dossiers"
-          value={dossiers.length > 0 ? dossiers.length : 1248}
+          value={dossiers.length}
           icon={Package}
           variant="royal"
           trend={{ value: 12, label: "vs mois dernier", isPositive: true }}
@@ -134,7 +134,7 @@ export function DashboardScreen() {
         {/* Card 2: Clients — Blue */}
         <DashboardKpiCard
           label="Clients"
-          value={clients.length > 0 ? clients.length : 356}
+          value={clients.length}
           icon={Users}
           variant="blue"
           trend={{ value: 8, label: "vs mois dernier", isPositive: true }}
@@ -144,7 +144,7 @@ export function DashboardScreen() {
         {/* Card 3: Factures — Vibrant Red */}
         <DashboardKpiCard
           label="Factures"
-          value={factures.length > 0 ? factures.length : 892}
+          value={factures.length}
           icon={FileText}
           variant="red"
           trend={{ value: 15, label: "vs mois dernier", isPositive: true }}
@@ -154,7 +154,7 @@ export function DashboardScreen() {
         {/* Card 4: Bons de sortie — Deep Navy */}
         <DashboardKpiCard
           label="Bons de sortie"
-          value={bons.length > 0 ? bons.length : 1021}
+          value={bons.length}
           icon={Ship}
           variant="navy"
           trend={{ value: 10, label: "vs mois dernier", isPositive: true }}
@@ -164,7 +164,7 @@ export function DashboardScreen() {
         {/* Card 5: Dossiers en cours — Blue */}
         <DashboardKpiCard
           label="Dossiers en cours"
-          value={dossiersEnCours > 0 ? dossiersEnCours : 243}
+          value={dossiersEnCours}
           icon={Truck}
           variant="blue"
           trend={{ value: 6, label: "vs mois dernier", isPositive: true }}
