@@ -18,3 +18,10 @@ export const RequirePermission = (...permissions: string[]) =>
 /** Décorateur pour les rôles requis */
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+
+/**
+ * Marque une route comme publique — le JwtAuthGuard global la laisse passer
+ * sans token (login/refresh/logout, suivi public de dossier).
+ */
+export const IS_PUBLIC_KEY = 'isPublic';
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);

@@ -9,13 +9,14 @@ import {
 import { TrackingService } from './tracking.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { RequirePermission } from '../../shared/decorators';
+import { Public, RequirePermission } from '../../shared/decorators';
 
 @Controller('tracking')
 export class TrackingController {
   constructor(private readonly trackingService: TrackingService) {}
 
   /** Route publique accessible sans compte ni token */
+  @Public()
   @Get('public/:code')
   async getPublicTracking(@Param('code') code: string) {
     return this.trackingService.getPublicTracking(code);
