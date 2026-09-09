@@ -7,7 +7,30 @@ import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
-import type { DossierStatut } from "@/lib/domain-types";
+import type { DossierStatut, FactureStatut, DevisStatut } from "@/lib/domain-types";
+
+// Prisma StatutFacture (BROUILLON | ENVOYEE | PARTIELLEMENT_PAYEE | PAYEE | ANNULEE | RETARD)
+// -> FactureStatut du front. ENVOYEE et RETARD comptent comme "Envoyée" (facture émise,
+// non soldée) : sans ça une facture émise repassait "Brouillon" au rechargement et
+// bloquait l'enregistrement des paiements.
+function mapFactureStatut(raw: unknown): FactureStatut {
+  const s = String(raw ?? "").toUpperCase();
+  if (s === "PAYEE") return "Soldée";
+  if (s === "PARTIELLEMENT_PAYEE") return "Partielle";
+  if (s === "ANNULEE") return "Annulée";
+  if (s === "ENVOYEE" || s === "RETARD") return "Envoyée";
+  return "Brouillon";
+}
+
+// Prisma StatutDevis (BROUILLON | ENVOYE | ACCEPTE | REFUSE | EXPIRE) -> DevisStatut du front.
+function mapDevisStatut(raw: unknown): DevisStatut {
+  const s = String(raw ?? "").toUpperCase();
+  if (s === "ENVOYE") return "Envoyé";
+  if (s === "ACCEPTE") return "Accepté";
+  if (s === "REFUSE") return "Refusé";
+  if (s === "EXPIRE") return "Expiré";
+  return "Brouillon";
+}
 
 export interface DataFetchSlice {
   dataLoading: boolean;
@@ -162,19 +185,20 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         annexeId: f.annexeId || "",
         date: f.dateEmission ? new Date(f.dateEmission).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
         dateEcheance: f.dateEcheance ? new Date(f.dateEcheance).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-        statut: (f.statut === "PAYEE" ? "Soldée" : f.statut === "PARTIELLEMENT_PAYEE" ? "Partielle" : f.statut === "ANNULEE" ? "Annulée" : "Brouillon") as any,
+        statut: mapFactureStatut(f.statut),
         lignes: (f.lignes || []).map((l: any) => ({
           id: l.id,
-          description: l.description,
-          quantite: Number(l.quantite || 1),
-          prixUnitaire: Number(l.prixUnitaire || 0),
-          montantHT: Number(l.montantHT || 0),
+          description: l.designation ?? l.description ?? "",
+          quantite: Number(l.quantite ?? 1),
+          prixUnitaire: Number(l.prixUnitaire ?? 0),
+          montantHT: Number(l.montantTotal ?? l.montantHT ?? 0),
         })),
-        tauxTVA: Number(f.tauxTVA || 18),
-        montantHT: Number(f.montantHT || 0),
-        montantTVA: Number(f.montantTVA || 0),
-        montantTTC: Number(f.montantTTC || 0),
-        montantPaye: Number(f.montantPaye || 0),
+        // Prisma renvoie montantHt / tauxTva / montantTva / montantTtc.
+        tauxTVA: Number(f.tauxTva ?? f.tauxTVA ?? 18),
+        montantHT: Number(f.montantHt ?? f.montantHT ?? 0),
+        montantTVA: Number(f.montantTva ?? f.montantTVA ?? 0),
+        montantTTC: Number(f.montantTtc ?? f.montantTTC ?? 0),
+        montantPaye: Number(f.montantPaye ?? 0),
         notes: f.notes || "",
         creePar: f.creeParId || "",
         creeLe: f.createdAt ? new Date(f.createdAt).toISOString() : new Date().toISOString(),
@@ -231,7 +255,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           fraisCircuit,
           fraisPrestation,
           total: Number(d.montantTtc || d.montantHt || 0),
-          statut: (d.statut === "ACCEPTE" ? "Accepté" : d.statut === "REFUSE" ? "Refusé" : d.statut === "EXPIRE" ? "Expiré" : "Brouillon") as any,
+          statut: mapDevisStatut(d.statut),
           dateCreation: d.createdAt ? new Date(d.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
           dateValidite: d.dateValidite ? new Date(d.dateValidite).toISOString().slice(0, 10) : "",
           notes: d.notes || "",
