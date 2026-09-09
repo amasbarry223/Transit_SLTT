@@ -11,7 +11,7 @@ export function mapExcelWorkbookFromDb(row: ExcelWorkbookRow): ExcelWorkbook {
     nom: row.nom,
     storagePath: row.storage_path || undefined,
     snapshotJson: row.snapshot_json,
-    version: Number(row.version),
+    version: Number(row.version ?? 0),
     updatedBy: row.updated_by || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

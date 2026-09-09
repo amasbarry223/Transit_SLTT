@@ -17,7 +17,7 @@ export function mapContratFichierFromDb(row: ContratFichierRow): ContratFichier 
     id: row.id,
     contratId: row.contrat_id,
     nom: row.nom,
-    taille: Number(row.taille),
+    taille: Number(row.taille ?? 0),
     type: row.type,
     dateUpload: row.date_upload || row.created_at,
     storagePath: row.storage_path,

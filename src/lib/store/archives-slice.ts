@@ -49,7 +49,7 @@ export function mapArchiveFromDb(row: ArchiveRow): Archive {
     id: row.id,
     nom: row.nom,
     typeDocument: row.type_document,
-    taille: Number(row.taille),
+    taille: Number(row.taille ?? 0),
     type: row.mime_type,
     storagePath: row.storage_path,
     dossierId: row.dossier_id || undefined,

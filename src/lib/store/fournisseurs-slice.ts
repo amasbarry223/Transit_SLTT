@@ -34,8 +34,8 @@ export function mapDossierFournisseurFromDb(row: DossierFournisseurRow): Dossier
     fournisseurNom: row.fournisseurs?.nom || "",
     type: row.fournisseurs?.type || ("Transport" as DossierFournisseur["type"]),
     description: row.description,
-    montantBudgete: Number(row.montant_budgete),
-    montantReel: Number(row.montant_reel),
+    montantBudgete: Number(row.montant_budgete ?? 0),
+    montantReel: Number(row.montant_reel ?? 0),
     statut: row.statut,
     date: row.date || new Date().toISOString().slice(0, 10),
   };

@@ -21,10 +21,10 @@ export function mapBonFromDb(row: BonSortieRow): BonSortie {
     annexeNom: row.annexes?.nom,
     stockId: row.stock_id || undefined,
     marchandise: row.marchandise,
-    quantite: Number(row.quantite),
+    quantite: Number(row.quantite ?? 0),
     unite: row.unite,
     motif: row.motif,
-    montant: Number(row.montant),
+    montant: Number(row.montant ?? 0),
     statut: row.statut,
   };
 }
@@ -36,7 +36,7 @@ export function mapBonSortieCaisseFromDb(row: BonSortieCaisseRow): BonSortieCais
     date: row.date,
     annexeId: row.annexe_id,
     annexeNom: row.annexes?.nom,
-    montantTotal: Number(row.montant_total),
+    montantTotal: Number(row.montant_total ?? 0),
     creePar: row.cree_par || undefined,
     creeLe: row.created_at,
     lignes: (row.bons_sortie_caisse_lignes || []).map((ligne) => ({
@@ -44,7 +44,7 @@ export function mapBonSortieCaisseFromDb(row: BonSortieCaisseRow): BonSortieCais
       date: ligne.date,
       beneficiaire: ligne.beneficiaire,
       motif: ligne.motif,
-      montant: Number(ligne.montant),
+      montant: Number(ligne.montant ?? 0),
     })),
   };
 }

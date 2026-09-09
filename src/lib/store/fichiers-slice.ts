@@ -20,7 +20,7 @@ export function mapFichierFromDb(row: DossierFichierRow): DossierFichier {
     dossierId: row.dossier_id,
     sousDossierId: row.sous_dossier_id,
     nom: row.nom,
-    taille: Number(row.taille),
+    taille: Number(row.taille ?? 0),
     type: row.type,
     dateUpload: row.date_upload || new Date().toISOString(),
     dataUrl: row.data_url,
