@@ -50,6 +50,16 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
   const runFetchData = async () => {
     set({ dataLoading: true, loadError: null, partialLoadWarning: null });
 
+    // Chaque ressource qui échoue est tracée : au lieu de disparaître
+    // silencieusement (l'utilisateur croit qu'il n'a "aucune facture"), on
+    // affiche un avertissement de chargement partiel.
+    const failed: string[] = [];
+    const tracked = <T,>(label: string, p: Promise<T>, fallback: T): Promise<T> =>
+      p.catch(() => {
+        failed.push(label);
+        return fallback;
+      });
+
     try {
       const [
         dossiersRes,
@@ -71,24 +81,24 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         usersRes,
         auditLogsRes,
       ] = await Promise.all([
-        api.dossiers.getAll().catch(() => ({ data: [], meta: {} })),
-        api.clients.getAll().catch(() => []),
-        api.annexes.getAll().catch(() => []),
-        api.factures.getAll().catch(() => ({ data: [], meta: {} })),
-        api.devis.getAll().catch(() => []),
-        api.fournisseurs.getAll().catch(() => []),
-        api.contrats.getAll().catch(() => []),
-        api.transporteurs.getAll().catch(() => []),
-        api.stock.getItems().catch(() => []),
-        api.stock.getMouvements().catch(() => []),
-        api.bons.getBonsSortie().catch(() => []),
-        api.bons.getBonsCaisse().catch(() => []),
-        api.recusPaiement.getAll().catch(() => []),
-        api.comptabilite.getOperations().catch(() => []),
-        api.comptabilite.getClotures().catch(() => []),
-        api.settings.getAll().catch(() => ({ list: [], map: {} })),
-        api.users.getAll().catch(() => []),
-        api.auditLogs.getAll({ limit: 100 }).catch(() => []),
+        tracked("dossiers", api.dossiers.getAll(), { data: [], meta: {} } as any),
+        tracked("clients", api.clients.getAll(), [] as any),
+        tracked("annexes", api.annexes.getAll(), [] as any),
+        tracked("factures", api.factures.getAll(), { data: [], meta: {} } as any),
+        tracked("devis", api.devis.getAll(), [] as any),
+        tracked("fournisseurs", api.fournisseurs.getAll(), [] as any),
+        tracked("contrats", api.contrats.getAll(), [] as any),
+        tracked("transporteurs", api.transporteurs.getAll(), [] as any),
+        tracked("stock", api.stock.getItems(), [] as any),
+        tracked("mouvements de stock", api.stock.getMouvements(), [] as any),
+        tracked("bons de sortie", api.bons.getBonsSortie(), [] as any),
+        tracked("bons de caisse", api.bons.getBonsCaisse(), [] as any),
+        tracked("reçus de paiement", api.recusPaiement.getAll(), [] as any),
+        tracked("opérations comptables", api.comptabilite.getOperations(), [] as any),
+        tracked("clôtures", api.comptabilite.getClotures(), [] as any),
+        tracked("paramètres", api.settings.getAll(), { list: [], map: {} } as any),
+        tracked("utilisateurs", api.users.getAll(), [] as any),
+        tracked("journal d'audit", api.auditLogs.getAll({ limit: 100 }), [] as any),
       ]);
 
       const currentUser = api.getCurrentUser();
@@ -499,11 +509,20 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           ...updatedSequences,
           dataLoading: false,
           lastSyncedAt: Date.now(),
+          partialLoadWarning:
+            failed.length > 0
+              ? `Certaines données n'ont pas pu être chargées (${failed.join(", ")}). Les informations affichées peuvent être incomplètes.`
+              : null,
         };
       });
     } catch (error) {
       logWarn("[SLTT] Chargement données NestJS", error);
-      set({ dataLoading: false, lastSyncedAt: Date.now() });
+      set({
+        dataLoading: false,
+        lastSyncedAt: Date.now(),
+        loadError:
+          "Impossible de charger les données de l'application. Vérifiez votre connexion puis réessayez.",
+      });
     }
   };
 

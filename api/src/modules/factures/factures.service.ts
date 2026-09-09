@@ -258,6 +258,11 @@ export class FacturesService {
         where: { id },
         data: { montantPaye: { increment: montant } },
       });
+      // Contrôle du dépassement sur la valeur RÉELLE post-écriture : deux
+      // paiements concurrents du reste dû ne peuvent plus surpayer la facture.
+      if (incremented.montantPaye > incremented.montantTtc + 0.5) {
+        throw new BadRequestException('Le montant dépasse le reste dû.');
+      }
       const statut =
         incremented.montantPaye >= facture.montantTtc - 0.5 ? 'PAYEE' : 'PARTIELLEMENT_PAYEE';
       const updatedFacture = await tx.facture.update({
