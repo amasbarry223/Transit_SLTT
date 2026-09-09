@@ -103,9 +103,15 @@ export class DepensesService {
     const existing = await this.prisma.depense.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro ${data.numero} existe déjà`);
 
+    // Une dépense démarre toujours EN_ATTENTE : le client ne peut pas s'auto-approuver
+    // ni marquer la dépense payée en contournant le workflow.
+    const { statut: _st, approuveParId: _ap, creeParId: _cp, id: _id, ...depenseData } = data;
+
     return this.prisma.depense.create({
       data: {
-        ...data,
+        ...depenseData,
+        montant: Number(depenseData.montant) || 0,
+        statut: 'EN_ATTENTE',
         creeParId: user.id,
       },
       include: { annexe: true, fournisseur: true },

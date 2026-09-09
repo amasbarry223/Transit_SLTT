@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -91,34 +91,42 @@ export class StockService {
   }
 
   async createMouvement(data: any) {
-    const mouvement = await this.prisma.mouvementStock.create({
-      data: {
-        stockId: data.stockId || null,
-        annexeId: data.annexeId,
-        date: data.date || new Date().toISOString().slice(0, 10),
-        type: data.type,
-        marchandise: data.marchandise || null,
-        quantite: Number(data.quantite || 0),
-        unite: data.unite || null,
-        responsable: data.responsable || null,
-        bonRef: data.bonRef || null,
-        motif: data.motif || null,
-      },
-      include: { annexe: true, stock: true },
-    });
-
-    // Mettre à jour la quantité du stock si lié à un stockId
-    if (data.stockId) {
-      const stock = await this.prisma.stockItem.findUnique({ where: { id: data.stockId } });
-      if (stock) {
-        const delta = data.type === 'Entrée' ? Number(data.quantite) : -Number(data.quantite);
-        await this.prisma.stockItem.update({
-          where: { id: data.stockId },
-          data: { quantite: Math.max(0, stock.quantite + delta) },
-        });
-      }
+    const quantite = Number(data.quantite);
+    if (!Number.isFinite(quantite) || quantite <= 0) {
+      throw new BadRequestException('La quantité du mouvement doit être supérieure à 0');
     }
 
-    return mouvement;
+    return this.prisma.$transaction(async (tx: any) => {
+      const mouvement = await tx.mouvementStock.create({
+        data: {
+          stockId: data.stockId || null,
+          annexeId: data.annexeId,
+          date: data.date || new Date().toISOString().slice(0, 10),
+          type: data.type,
+          marchandise: data.marchandise || null,
+          quantite,
+          unite: data.unite || null,
+          responsable: data.responsable || null,
+          bonRef: data.bonRef || null,
+          motif: data.motif || null,
+        },
+        include: { annexe: true, stock: true },
+      });
+
+      // Ajuste le stock lié de façon atomique (increment) : évite les pertes de
+      // mise à jour quand deux mouvements arrivent en même temps.
+      if (data.stockId) {
+        const stock = await tx.stockItem.findUnique({ where: { id: data.stockId } });
+        if (stock) {
+          const delta = data.type === 'Entrée' ? quantite : -quantite;
+          await tx.stockItem.update({
+            where: { id: data.stockId },
+            data: { quantite: Math.max(0, stock.quantite + delta) },
+          });
+        }
+      }
+
+      return mouvement;
+    });
   }
 }

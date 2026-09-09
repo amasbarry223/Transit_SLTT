@@ -1,6 +1,15 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/** Aligne la valeur reçue sur l'enum Prisma TypeClient (PARTICULIER | ENTREPRISE | ONG | GOUVERNEMENT). */
+function normalizeTypeClient(raw: unknown): 'PARTICULIER' | 'ENTREPRISE' | 'ONG' | 'GOUVERNEMENT' {
+  const upper = String(raw ?? '').toUpperCase();
+  if (upper === 'PARTICULIER') return 'PARTICULIER';
+  if (upper === 'ONG') return 'ONG';
+  if (upper === 'ETAT' || upper === 'GOUVERNEMENT') return 'GOUVERNEMENT';
+  return 'ENTREPRISE';
+}
+
 @Injectable()
 export class ClientsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -53,14 +62,7 @@ export class ClientsService {
       data.code = code;
     }
 
-    let type = data.type || 'ENTREPRISE';
-    if (typeof type === 'string') {
-      const upper = type.toUpperCase();
-      if (upper === 'PARTICULIER') type = 'PARTICULIER';
-      else if (upper === 'ONG') type = 'ONG';
-      else if (upper === 'ETAT') type = 'ETAT';
-      else type = 'ENTREPRISE';
-    }
+    const type = normalizeTypeClient(data.type);
 
     return this.prisma.client.create({
       data: {
@@ -93,13 +95,7 @@ export class ClientsService {
     if (data.rccm !== undefined) updateData.rccm = data.rccm || null;
     if (data.actif !== undefined) updateData.actif = data.actif;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
-    if (data.type !== undefined) {
-      const upper = String(data.type).toUpperCase();
-      if (upper === 'PARTICULIER') updateData.type = 'PARTICULIER';
-      else if (upper === 'ONG') updateData.type = 'ONG';
-      else if (upper === 'ETAT') updateData.type = 'ETAT';
-      else updateData.type = 'ENTREPRISE';
-    }
+    if (data.type !== undefined) updateData.type = normalizeTypeClient(data.type);
     return this.prisma.client.update({ where: { id }, data: updateData });
   }
 

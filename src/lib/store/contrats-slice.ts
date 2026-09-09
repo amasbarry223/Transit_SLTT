@@ -3,7 +3,7 @@ import type { StateCreator } from "zustand";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { syncContratStats } from "@/lib/contrat-stats";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import type {
   Contrat,
   ContratInput,
@@ -215,7 +215,14 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
   removeDepense: async (id) => {
     const depense = get().depenses.find((d) => d.id === id);
 
-    await api.depenses.delete(id);
+    // Les dépenses de contrat ne sont pour l'instant pas persistées côté API :
+    // un 404 signifie simplement "jamais enregistrée", on poursuit la suppression locale.
+    try {
+      await api.depenses.delete(id);
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 404) throw e;
+      logWarn("removeDepense: dépense absente de l'API (mode local), suppression locale seule", { id });
+    }
 
     set((s) => {
       const updatedDepenses = s.depenses.filter((d) => d.id !== id);

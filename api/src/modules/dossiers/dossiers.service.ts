@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -319,7 +320,14 @@ export class DossiersService {
   }
 
   async remove(id: string, user: CurrentUserType) {
-    await this.findOne(id, user);
+    const dossier = await this.findOne(id, user);
+    // Facture.dossier et Depense.dossier n'ont pas de cascade : sans ce garde-fou
+    // la suppression échoue en 500 (contrainte FK) dès qu'un dossier est facturé.
+    if (dossier.factures.length > 0 || dossier.depenses.length > 0) {
+      throw new BadRequestException(
+        'Ce dossier a des factures ou des dépenses rattachées. Annulez-le plutôt que de le supprimer.',
+      );
+    }
     return this.prisma.dossier.delete({ where: { id } });
   }
 }

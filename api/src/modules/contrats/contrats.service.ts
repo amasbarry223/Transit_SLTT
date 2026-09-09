@@ -46,6 +46,11 @@ export class ContratsService {
   }
 
   async create(data: any) {
+    if (data.reference) {
+      const existing = await this.prisma.contrat.findUnique({ where: { reference: data.reference } });
+      if (existing) throw new ConflictException(`La référence de contrat ${data.reference} existe déjà`);
+    }
+
     const dateDebut = data.dateDebut ? new Date(data.dateDebut) : new Date();
     const dateFin = data.dateFin ? new Date(data.dateFin) : undefined;
 
@@ -73,13 +78,19 @@ export class ContratsService {
     await this.findOne(id);
 
     const updateData: any = {};
-    if (data.reference !== undefined) updateData.reference = data.reference;
+    if (data.reference !== undefined) {
+      const clash = await this.prisma.contrat.findUnique({ where: { reference: data.reference } });
+      if (clash && clash.id !== id) {
+        throw new ConflictException(`La référence de contrat ${data.reference} existe déjà`);
+      }
+      updateData.reference = data.reference;
+    }
     if (data.annexeId !== undefined) updateData.annexeId = data.annexeId;
     if (data.clientId !== undefined) updateData.clientId = data.clientId;
     if (data.objet !== undefined) updateData.objet = data.objet;
     if (data.dateDebut !== undefined) updateData.dateDebut = new Date(data.dateDebut);
     if (data.dateFin !== undefined) updateData.dateFin = data.dateFin ? new Date(data.dateFin) : null;
-    if (data.montant !== undefined) updateData.montant = Number(data.montant);
+    if (data.montant !== undefined) updateData.montant = Number(data.montant) || 0;
     if (data.statut !== undefined) updateData.statut = data.statut;
     if (data.notes !== undefined) updateData.notes = data.notes;
     if (data.creePar !== undefined) updateData.creePar = data.creePar;

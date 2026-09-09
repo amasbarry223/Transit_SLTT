@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/** Statut d'un reçu à partir de la somme due et du montant payé, avec tolérance d'arrondi. */
+function statutRecu(somme: number, montantPaye: number): 'SOLDE' | 'PARTIEL' | 'EN_ATTENTE' {
+  const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
+  if (reste < 0.5) return 'SOLDE';
+  return montantPaye > 0 ? 'PARTIEL' : 'EN_ATTENTE';
+}
+
 @Injectable()
 export class RecusPaiementService {
   constructor(private prisma: PrismaService) {}
@@ -33,10 +40,10 @@ export class RecusPaiementService {
   }
 
   async create(data: any) {
-    const somme = Number(data.somme || 0);
-    const montantPaye = Number(data.montantPaye || 0);
-    const reste = Math.max(0, somme - montantPaye);
-    const statut = reste === 0 ? 'SOLDE' : montantPaye > 0 ? 'PARTIEL' : 'EN_ATTENTE';
+    const somme = Number(data.somme) || 0;
+    const montantPaye = Number(data.montantPaye) || 0;
+    const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
+    const statut = statutRecu(somme, montantPaye);
 
     return this.prisma.recuPaiement.create({
       data: {
@@ -56,16 +63,18 @@ export class RecusPaiementService {
   }
 
   async update(id: string, data: any) {
-    await this.findOne(id);
-    const updateData: any = { ...data };
+    const current = await this.findOne(id);
+    // Champs non modifiables directement (recalculés ou techniques).
+    const { reste: _r, statut: _s, id: _id, createdAt: _c, updatedAt: _u, ...safe } = data;
+    const updateData: any = { ...safe };
     if (data.somme !== undefined || data.montantPaye !== undefined) {
-      const current = await this.findOne(id);
-      const somme = data.somme !== undefined ? Number(data.somme) : current.somme;
-      const montantPaye = data.montantPaye !== undefined ? Number(data.montantPaye) : current.montantPaye;
+      const somme = data.somme !== undefined ? Number(data.somme) || 0 : current.somme;
+      const montantPaye =
+        data.montantPaye !== undefined ? Number(data.montantPaye) || 0 : current.montantPaye;
       updateData.somme = somme;
       updateData.montantPaye = montantPaye;
-      updateData.reste = Math.max(0, somme - montantPaye);
-      updateData.statut = updateData.reste === 0 ? 'SOLDE' : montantPaye > 0 ? 'PARTIEL' : 'EN_ATTENTE';
+      updateData.reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
+      updateData.statut = statutRecu(somme, montantPaye);
     }
 
     return this.prisma.recuPaiement.update({

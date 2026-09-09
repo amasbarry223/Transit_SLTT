@@ -108,7 +108,20 @@ export class FacturesService {
     const existing = await this.prisma.facture.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro de facture ${data.numero} existe déjà`);
 
-    const { lignes, ...factureData } = data;
+    // On ne laisse pas le client fixer lui-même l'état financier de la facture.
+    const {
+      lignes,
+      montantPaye: _mp,
+      montantHt: _mht,
+      montantTva: _mtva,
+      montantTtc: _mttc,
+      statut: _st,
+      creeParId: _cp,
+      id: _id,
+      createdAt: _ca,
+      updatedAt: _ua,
+      ...factureData
+    } = data;
 
     // Calcul automatique des totaux si lignes fournies
     let montantHt = 0;
@@ -240,15 +253,16 @@ export class FacturesService {
     }
 
     return this.prisma.$transaction(async (tx: any) => {
-      const nouveauMontantPaye = facture.montantPaye + montant;
-      const statut = nouveauMontantPaye >= facture.montantTtc ? 'PAYEE' : 'PARTIELLEMENT_PAYEE';
-
+      // Incrément atomique : deux encaissements simultanés ne s'écrasent pas.
+      const incremented = await tx.facture.update({
+        where: { id },
+        data: { montantPaye: { increment: montant } },
+      });
+      const statut =
+        incremented.montantPaye >= facture.montantTtc - 0.5 ? 'PAYEE' : 'PARTIELLEMENT_PAYEE';
       const updatedFacture = await tx.facture.update({
         where: { id },
-        data: {
-          montantPaye: nouveauMontantPaye,
-          statut,
-        },
+        data: { statut },
       });
 
       // Créer la transaction de caisse
