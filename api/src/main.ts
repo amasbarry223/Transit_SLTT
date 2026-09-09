@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,6 +15,10 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
     credentials: true,
   });
+
+  // Traduit les erreurs Prisma (P2002, P2025, P2003…) en 409/404/400 au lieu
+  // d'un 500 avec stack trace.
+  app.useGlobalFilters(new PrismaExceptionFilter());
 
   // Validation globale des DTOs (class-validator)
   app.useGlobalPipes(
