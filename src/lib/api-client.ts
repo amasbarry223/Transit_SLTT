@@ -339,6 +339,11 @@ class ApiClient {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+    updateStatut: (id: string, statut: string) =>
+      this.request<any>(`/factures/${id}/statut`, {
+        method: 'PATCH',
+        body: JSON.stringify({ statut }),
+      }),
     delete: (id: string) =>
       this.request<any>(`/factures/${id}`, {
         method: 'DELETE',

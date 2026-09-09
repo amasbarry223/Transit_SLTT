@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -53,6 +54,16 @@ export class FacturesController {
     @Body() body: any,
   ) {
     return this.facturesService.update(id, user, body);
+  }
+
+  @Patch(':id/statut')
+  @RequirePermission('factures.modifier')
+  async updateStatut(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+    @Body('statut') statut: string,
+  ) {
+    return this.facturesService.updateStatut(id, user, statut);
   }
 
   @Delete(':id')

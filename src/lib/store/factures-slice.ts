@@ -221,13 +221,17 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     if (!canTransitionFacture(facture.statut, statut)) {
       throw new Error(`Transition non autorisée : ${facture.statut} → ${statut}.`);
     }
-    // Soldée ne peut résulter que d'un encaissement (RPC record_facture_paiement)
-    // — jamais d'un PATCH statut qui force montant_paye = TTC hors journal.
+    // Soldée ne peut résulter que d'un encaissement, jamais d'un changement
+    // de statut qui forcerait montantPaye = TTC hors journal de caisse.
     if (statut === "Soldée") {
       throw new Error(
         "Pour solder une facture, enregistrez un paiement (encaissement) couvrant le reste dû.",
       );
     }
+
+    // Persistance : sans ça, "Envoyée" / "Annulée" repartaient en "Brouillon"
+    // au rechargement (et bloquaient ensuite l'encaissement).
+    await api.factures.updateStatut(id, statut);
 
     set((s) => {
       const updatedFactures = s.factures.map((item) =>

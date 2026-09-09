@@ -203,6 +203,53 @@ export class FacturesService {
     });
   }
 
+  /** Transitions de statut manuelles (émission, annulation). Le passage à
+   *  PAYEE / PARTIELLEMENT_PAYEE ne se fait QUE via enregistrerPaiement. */
+  private static readonly STATUT_TRANSITIONS: Record<string, string[]> = {
+    BROUILLON: ['ENVOYEE', 'ANNULEE'],
+    ENVOYEE: ['ANNULEE', 'BROUILLON'],
+    RETARD: ['ANNULEE'],
+    PARTIELLEMENT_PAYEE: ['ANNULEE'],
+    PAYEE: ['ANNULEE'],
+    ANNULEE: [],
+  };
+
+  private static readonly FR_TO_PRISMA_STATUT: Record<string, string> = {
+    Brouillon: 'BROUILLON',
+    'Envoyée': 'ENVOYEE',
+    Partielle: 'PARTIELLEMENT_PAYEE',
+    'Soldée': 'PAYEE',
+    'Annulée': 'ANNULEE',
+  };
+
+  async updateStatut(id: string, user: CurrentUserType, statutRaw: string) {
+    const facture = await this.findOne(id, user);
+    const target = FacturesService.FR_TO_PRISMA_STATUT[statutRaw] ?? String(statutRaw).toUpperCase();
+
+    if (target === 'PAYEE' || target === 'PARTIELLEMENT_PAYEE') {
+      throw new BadRequestException(
+        'Pour solder une facture, enregistrez un encaissement.',
+      );
+    }
+    const allowed = FacturesService.STATUT_TRANSITIONS[facture.statut] ?? [];
+    if (facture.statut !== target && !allowed.includes(target)) {
+      throw new BadRequestException(
+        `Transition de statut interdite : ${facture.statut} → ${target}.`,
+      );
+    }
+    if (target === 'BROUILLON' && facture.montantPaye > 0) {
+      throw new BadRequestException(
+        'Une facture déjà encaissée ne peut pas repasser en brouillon.',
+      );
+    }
+
+    return this.prisma.facture.update({
+      where: { id },
+      data: { statut: target as any },
+      include: { lignes: true, client: true },
+    });
+  }
+
   async remove(id: string, user: CurrentUserType) {
     const facture = await this.findOne(id, user);
     if (facture.montantPaye > 0 || facture.transactions.length > 0) {
