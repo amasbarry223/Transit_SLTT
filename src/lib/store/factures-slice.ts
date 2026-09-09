@@ -291,14 +291,20 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     const reste = resteAPayer({ montantInvesti: fact.montantTTC, montantPaye: fact.montantPaye });
     const effective = validatePaymentAmount(montant, reste);
 
-    const caisseId = (get() as any).caisses?.[0]?.id;
-    if (caisseId) {
-      try {
-        await api.factures.enregistrerPaiement(id, { montant: effective, caisseId });
-      } catch (e) {
-        console.warn("api.factures.enregistrerPaiement (mode local) :", e);
-      }
+    // L'encaissement crée une transaction de caisse côté serveur : il faut une
+    // caisse de la MÊME annexe que la facture (avant, on prenait caisses[0]
+    // — souvent inexistant — et le paiement n'était jamais persisté).
+    const caissesResp = await api.caisse.getAll(fact.annexeId).catch(() => [] as any[]);
+    const caisses = Array.isArray(caissesResp) ? caissesResp : [];
+    const caisse =
+      caisses.find((c) => c.annexeId === fact.annexeId && c.statut !== "FERMEE") ??
+      caisses.find((c) => c.statut !== "FERMEE");
+    if (!caisse?.id) {
+      throw new Error(
+        "Aucune caisse ouverte pour cette annexe. Ouvrez-en une avant d'encaisser une facture.",
+      );
     }
+    await api.factures.enregistrerPaiement(id, { montant: effective, caisseId: caisse.id });
 
     const newPaye = fact.montantPaye + effective;
     const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
@@ -326,6 +332,14 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     if (!fact) throw new Error("Facture introuvable");
     if (fact.statut === "Annulée" || fact.statut === "Brouillon" || fact.statut === "Soldée") {
       throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
+    }
+    if (!Number.isFinite(montantPaye) || montantPaye < 0) {
+      throw new Error("Le montant payé ne peut pas être négatif.");
+    }
+    if (montantPaye > fact.montantTTC + 0.5) {
+      throw new Error(
+        `Le montant payé (${montantPaye.toLocaleString("fr-FR")}) dépasse le total de la facture (${fact.montantTTC.toLocaleString("fr-FR")}).`,
+      );
     }
 
     const newStatut: FactureStatut = montantPaye >= fact.montantTTC ? "Soldée" : montantPaye > 0 ? "Partielle" : "Envoyée";

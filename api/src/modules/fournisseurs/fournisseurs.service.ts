@@ -7,14 +7,17 @@ export class FournisseursService {
 
   async findAll(search?: string) {
     return this.prisma.fournisseur.findMany({
-      where: search
-        ? {
-            OR: [
-              { nom: { contains: search, mode: 'insensitive' } },
-              { code: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
+      where: {
+        actif: true,
+        ...(search
+          ? {
+              OR: [
+                { nom: { contains: search, mode: 'insensitive' } },
+                { code: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
       orderBy: { nom: 'asc' },
       include: {
         _count: { select: { depenses: true } },
@@ -74,6 +77,12 @@ export class FournisseursService {
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.fournisseur.delete({ where: { id } });
+    // Suppression logique : une dépense peut référencer ce fournisseur
+    // (FK optionnelle onDelete: SetNull) — un delete physique effacerait
+    // silencieusement le lien sur l'historique des dépenses.
+    return this.prisma.fournisseur.update({
+      where: { id },
+      data: { actif: false },
+    });
   }
 }

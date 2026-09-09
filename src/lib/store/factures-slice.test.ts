@@ -7,6 +7,9 @@ const mockApi = {
     delete: vi.fn(),
     enregistrerPaiement: vi.fn(),
   },
+  caisse: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
 };
 
 vi.mock("@/lib/api-client", () => ({
@@ -78,6 +81,7 @@ describe("patchFactureMontantPaye (NestJS API)", () => {
 describe("updateFacture / removeFacture — persistance serveur", () => {
   const editInput = {
     clientId: "c1",
+    clientNom: "Golaine Tech",
     annexeId: "33333333-3333-3333-3333-333333333333",
     date: "2026-07-01",
     dateEcheance: "2026-07-15",
