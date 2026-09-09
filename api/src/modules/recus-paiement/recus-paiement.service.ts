@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /** Statut d'un reçu à partir de la somme due et du montant payé, avec tolérance d'arrondi. */
@@ -44,6 +44,16 @@ export class RecusPaiementService {
     const montantPaye = Number(data.montantPaye) || 0;
     const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
     const statut = statutRecu(somme, montantPaye);
+
+    if (data.reference) {
+      const existing = await this.prisma.recuPaiement.findUnique({
+        where: { reference: data.reference },
+        select: { id: true },
+      });
+      if (existing) {
+        throw new ConflictException(`Le reçu ${data.reference} existe déjà.`);
+      }
+    }
 
     return this.prisma.recuPaiement.create({
       data: {

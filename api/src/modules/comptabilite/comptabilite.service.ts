@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -20,10 +25,47 @@ export class ComptabiliteService {
     });
   }
 
+  /** Référence unique OPC-N. Le compteur front se réinitialise après un reload
+   *  (seq non persisté) et renvoyait des doublons -> on tranche côté serveur. */
+  private async nextOperationReference(): Promise<string> {
+    const last = await this.prisma.operationComptable.findFirst({
+      where: { reference: { startsWith: 'OPC-' } },
+      orderBy: { createdAt: 'desc' },
+      select: { reference: true },
+    });
+    const lastNum = Number(String(last?.reference ?? '').replace(/^OPC-/, '')) || 0;
+    for (let n = lastNum + 1; n < lastNum + 50; n++) {
+      const candidate = `OPC-${n}`;
+      const exists = await this.prisma.operationComptable.findUnique({
+        where: { reference: candidate },
+        select: { id: true },
+      });
+      if (!exists) return candidate;
+    }
+    return `OPC-${Date.now()}`;
+  }
+
   async createOperation(data: any) {
+    const montant = Number(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new BadRequestException("Le montant de l'opération doit être supérieur à 0.");
+    }
+    if (data.type !== 'Entrée' && data.type !== 'Sortie') {
+      throw new BadRequestException("Le type doit être « Entrée » ou « Sortie ».");
+    }
+
+    const reference =
+      data.reference &&
+      !(await this.prisma.operationComptable.findUnique({
+        where: { reference: data.reference },
+        select: { id: true },
+      }))
+        ? data.reference
+        : await this.nextOperationReference();
+
     return this.prisma.operationComptable.create({
       data: {
-        reference: data.reference,
+        reference,
         annexeId: data.annexeId || null,
         date: data.date || new Date().toISOString().slice(0, 10),
         clientId: data.clientId || null,
@@ -31,7 +73,7 @@ export class ComptabiliteService {
         clientNom: data.clientNom || null,
         nature: data.nature,
         type: data.type,
-        montant: Number(data.montant || 0),
+        montant,
         modePaiement: data.modePaiement || 'Espèces',
         source: data.source || 'saisie',
         importRef: data.importRef || null,
@@ -63,9 +105,29 @@ export class ComptabiliteService {
   }
 
   async createCloture(data: any) {
-    const soldeTheorique = Number(data.soldeTheorique || 0);
-    const soldeConstate = Number(data.soldeConstate || 0);
-    const ecart = soldeConstate - soldeTheorique;
+    const soldeTheorique = Number(data.soldeTheorique) || 0;
+    const soldeConstate = Number(data.soldeConstate) || 0;
+    const ecart = Math.round((soldeConstate - soldeTheorique) * 100) / 100;
+
+    if (!data.periodeDebut || !data.periodeFin) {
+      throw new BadRequestException('La période de clôture (début et fin) est obligatoire.');
+    }
+    const iso = /^\d{4}-\d{2}-\d{2}/;
+    if (iso.test(data.periodeDebut) && iso.test(data.periodeFin) && data.periodeDebut > data.periodeFin) {
+      throw new BadRequestException('La date de début de période est postérieure à la date de fin.');
+    }
+    // Une même période ne se clôture qu'une fois par annexe.
+    const dejaCloturee = await this.prisma.clotureCaisse.findFirst({
+      where: {
+        annexeId: data.annexeId || null,
+        periodeDebut: data.periodeDebut,
+        periodeFin: data.periodeFin,
+      },
+      select: { id: true },
+    });
+    if (dejaCloturee) {
+      throw new ConflictException('Cette période a déjà été clôturée pour cette annexe.');
+    }
 
     return this.prisma.clotureCaisse.create({
       data: {
