@@ -3,7 +3,6 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -320,14 +319,16 @@ export class DossiersService {
   }
 
   async remove(id: string, user: CurrentUserType) {
-    const dossier = await this.findOne(id, user);
-    // Facture.dossier et Depense.dossier n'ont pas de cascade : sans ce garde-fou
-    // la suppression échoue en 500 (contrainte FK) dès qu'un dossier est facturé.
-    if (dossier.factures.length > 0 || dossier.depenses.length > 0) {
-      throw new BadRequestException(
-        'Ce dossier a des factures ou des dépenses rattachées. Annulez-le plutôt que de le supprimer.',
-      );
-    }
-    return this.prisma.dossier.delete({ where: { id } });
+    await this.findOne(id, user);
+    // Facture.dossier / Depense.dossier n'ont pas de cascade (et ne doivent pas
+    // disparaître avec le dossier) : on les détache d'abord, sinon la suppression
+    // échoue en 500 (contrainte FK). Cohérent avec l'UI qui annonce
+    // "factures déconnectées du dossier (non supprimées)".
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.facture.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+      await tx.depense.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+      await tx.dossier.delete({ where: { id } });
+      return { id };
+    });
   }
 }

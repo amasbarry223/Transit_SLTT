@@ -1,6 +1,6 @@
 import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
 import { assertDossierTransition } from "@/lib/dossier-flow";
@@ -202,6 +202,11 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         clientId: input.clientId,
         marchandise: input.nature,
         notes: input.notes,
+        // Un import historique conserve son statut et sa date d'origine : sans
+        // ça le dossier repassait "En cours" / daté d'aujourd'hui au rechargement.
+        statut: input.statut,
+        dateDepart: input.date,
+        date: input.date,
       });
       if (created?.id) {
         newDossier.id = created.id;
@@ -296,6 +301,12 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     try {
       await api.dossiers.delete(id);
     } catch (e) {
+      // Un refus métier (400/403/409 : dossier facturé, hors périmètre…) doit
+      // remonter à l'utilisateur ; seuls un 404 (déjà supprimé) ou une panne
+      // réseau/serveur laissent la suppression locale se poursuivre.
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500 && e.status !== 404) {
+        throw e;
+      }
       logWarn("api.dossiers.delete (mode local)", e);
     }
 
