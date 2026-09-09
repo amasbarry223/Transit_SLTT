@@ -123,22 +123,10 @@ export class FacturesService {
       ...factureData
     } = data;
 
-    // Calcul automatique des totaux si lignes fournies
-    let montantHt = 0;
-    const lignesFormatted = (lignes || []).map((l: any) => {
-      const total = (Number(l.quantite) || 1) * (Number(l.prixUnitaire) || 0);
-      montantHt += total;
-      return {
-        designation: l.designation,
-        quantite: Number(l.quantite) || 1,
-        prixUnitaire: Number(l.prixUnitaire) || 0,
-        montantTotal: total,
-      };
-    });
-
-    const tauxTva = factureData.tauxTva !== undefined ? Number(factureData.tauxTva) : 18;
-    const montantTva = (montantHt * tauxTva) / 100;
-    const montantTtc = montantHt + montantTva;
+    const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(
+      lignes,
+      factureData.tauxTva,
+    );
 
     const dateEmission = factureData.dateEmission ? new Date(factureData.dateEmission) : new Date();
     const dateEcheance = factureData.dateEcheance ? new Date(factureData.dateEcheance) : undefined;
@@ -161,7 +149,9 @@ export class FacturesService {
     });
   }
 
-  /** Recalcule HT / TVA / TTC à partir des lignes. */
+  /** Recalcule HT / TVA / TTC à partir des lignes.
+   *  TVA arrondie à l'unité (FCFA sans décimale) — même règle que le front
+   *  (computeInvoiceAmounts) pour que l'affichage ne bouge pas après reload. */
   private computeTotals(lignes: any[], tauxTvaRaw: unknown) {
     let montantHt = 0;
     const lignesFormatted = (lignes || []).map((l: any) => {
@@ -172,7 +162,7 @@ export class FacturesService {
       return { designation: l.designation, quantite, prixUnitaire, montantTotal };
     });
     const tauxTva = tauxTvaRaw !== undefined ? Number(tauxTvaRaw) : 18;
-    const montantTva = (montantHt * tauxTva) / 100;
+    const montantTva = Math.round((montantHt * tauxTva) / 100);
     return { montantHt, tauxTva, montantTva, montantTtc: montantHt + montantTva, lignesFormatted };
   }
 

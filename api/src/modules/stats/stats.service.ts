@@ -28,8 +28,8 @@ export class StatsService {
       this.prisma.dossier.count({ where: { ...annexeFilter, statut: 'EN_DEDOUANEMENT' } }),
       this.prisma.client.count({ where: { actif: true } }),
       this.prisma.facture.findMany({
-        // Les factures annulées ne pèsent ni dans le CA ni dans l'impayé.
-        where: { ...annexeFilter, statut: { not: 'ANNULEE' } },
+        // CA et impayé = factures réellement émises : ni annulées, ni brouillons.
+        where: { ...annexeFilter, statut: { notIn: ['ANNULEE', 'BROUILLON'] } },
         select: { montantTtc: true, montantPaye: true, statut: true },
       }),
       this.prisma.caisse.findMany({
