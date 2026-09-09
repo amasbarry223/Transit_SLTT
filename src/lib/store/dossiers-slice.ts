@@ -385,8 +385,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     let ecriturePatch: Awaited<ReturnType<typeof syncEcritureWhenDossierSolde>> | undefined;
 
     if (shouldSyncEcritureOnDossierSolde(newStatut, montantRecu)) {
-      // Solde + encaissement atomiques côté DB (verrou + cumul en Postgres) —
-      // le statut est mis à "Soldé" par le RPC lui-même, pas de .update() séparé ici.
+      // L'écriture (encaissement de solde) reste locale : le classeur n'a pas
+      // encore de backend. Cf. memory "classeur not persisted".
       ecriturePatch = await syncEcritureWhenDossierSolde(dossier, get().ecritures, get().ecritureSeq, {
         montantRecu,
         modePaiement,
@@ -395,12 +395,15 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         today,
       });
       updatedMontantPaye = ecriturePatch.dossierMontantPaye;
-    } else {
-      try {
-        await api.dossiers.updateStatut(id, newStatut);
-      } catch (e) {
-        logWarn("api.dossiers.updateStatut (mode local)", e);
-      }
+    }
+
+    // Le changement de statut du dossier, lui, DOIT être poussé — y compris sur
+    // le chemin "Soldé + paiement", sinon le dossier repasse à son ancien statut
+    // au rechargement et la transition suivante est bloquée.
+    try {
+      await api.dossiers.updateStatut(id, newStatut);
+    } catch (e) {
+      logWarn("api.dossiers.updateStatut (mode local)", e);
     }
 
     set((s) => ({
