@@ -129,7 +129,15 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     try {
       const dbStatut =
-        statut === "Accepté" ? "ACCEPTE" : statut === "Refusé" ? "REFUSE" : statut === "Expiré" ? "EXPIRE" : "BROUILLON";
+        statut === "Accepté"
+          ? "ACCEPTE"
+          : statut === "Refusé"
+            ? "REFUSE"
+            : statut === "Expiré"
+              ? "EXPIRE"
+              : statut === "Envoyé"
+                ? "ENVOYE"
+                : "BROUILLON";
       await api.devis.update(id, { statut: dbStatut });
     } catch (e) {
       logWarn("api.devis.update statut (mode local)", e);
@@ -146,9 +154,14 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
   expireDevisObsoletes: async () => {
     const today = new Date().toISOString().slice(0, 10);
-    const obsoletes = get().devis.filter(
-      (d) => d.dateValidite < today && d.statut !== "Accepté" && d.statut !== "Refusé" && d.statut !== "Expiré"
-    );
+    // Un devis sans date de validité ("") n'est PAS expiré ("" < today est vrai).
+    const isObsolete = (d: Devis) =>
+      !!d.dateValidite &&
+      d.dateValidite < today &&
+      d.statut !== "Accepté" &&
+      d.statut !== "Refusé" &&
+      d.statut !== "Expiré";
+    const obsoletes = get().devis.filter(isObsolete);
 
     if (obsoletes.length === 0) return;
 
@@ -158,11 +171,10 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       } catch {}
     }
 
+    const obsoleteIds = new Set(obsoletes.map((d) => d.id));
     set((s) => ({
       devis: s.devis.map((devisItem) =>
-        devisItem.dateValidite < today &&
-        devisItem.statut !== "Accepté" &&
-        devisItem.statut !== "Refusé"
+        obsoleteIds.has(devisItem.id)
           ? { ...devisItem, statut: "Expiré" as DevisStatut }
           : devisItem
       ),
