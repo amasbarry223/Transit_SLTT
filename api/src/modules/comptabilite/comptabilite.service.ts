@@ -42,7 +42,10 @@ export class ComptabiliteService {
   }
 
   async deleteOperation(id: string) {
-    return this.prisma.operationComptable.delete({ where: { id } });
+    const existing = await this.prisma.operationComptable.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException(`Opération ${id} non trouvée`);
+    await this.prisma.operationComptable.delete({ where: { id } });
+    return { id };
   }
 
   // Clôtures de caisse

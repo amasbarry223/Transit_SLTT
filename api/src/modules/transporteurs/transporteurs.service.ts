@@ -53,8 +53,13 @@ export class TransporteursService {
 
   async update(id: string, data: any) {
     await this.findOne(id);
-    const updateData: any = { ...data };
-    if (data.capacite !== undefined) updateData.capacite = Number(data.capacite);
+    // Liste blanche : le front renvoie parfois l'entité mappée (annexeNom,
+    // nbDossiers…) qui ferait planter Prisma sur un champ inconnu.
+    const updateData: any = {};
+    for (const k of ['nom', 'contact', 'telephone', 'email', 'vehicule', 'immatriculation', 'trajet', 'statut', 'notes', 'annexeId'] as const) {
+      if (data[k] !== undefined) updateData[k] = data[k];
+    }
+    if (data.capacite !== undefined) updateData.capacite = Number(data.capacite) || 0;
     return this.prisma.transporteur.update({
       where: { id },
       data: updateData,
