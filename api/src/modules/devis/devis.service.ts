@@ -68,13 +68,19 @@ export class DevisService {
   }
 
   async update(id: string, data: any) {
-    await this.findOne(id);
+    const current = await this.findOne(id);
     const updateData: any = {};
 
     // Liste blanche : le front renvoie parfois l'entité mappée entière.
     if (data.clientId !== undefined) updateData.clientId = data.clientId;
     if (data.annexeId !== undefined) updateData.annexeId = data.annexeId || null;
-    if (data.dossierId !== undefined) updateData.dossierId = data.dossierId || null;
+    if (data.dossierId !== undefined) {
+      // Un devis déjà converti ne se rattache pas à un autre dossier.
+      if (current.dossierId && data.dossierId && current.dossierId !== data.dossierId) {
+        throw new ConflictException('Ce devis est déjà rattaché à un dossier.');
+      }
+      updateData.dossierId = data.dossierId || null;
+    }
     if (data.nature !== undefined) updateData.nature = data.nature || null;
     if (data.notes !== undefined) updateData.notes = data.notes ?? null;
     if (data.statut !== undefined) updateData.statut = data.statut;
