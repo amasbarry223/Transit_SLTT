@@ -5,23 +5,7 @@ import {
   filterClasseurJournal,
   hasClasseurPeriodFilter,
 } from "./classeur";
-import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
-
-const SLTT_ID = "22222222-2222-2222-2222-222222222222";
-
-const societes: Societe[] = [
-  {
-    id: SLTT_ID,
-    nom: "SLTT",
-    actif: true,
-    adresse: "Bamako",
-    telephone: "",
-    rccm: "",
-    nif: "",
-    logoUrl: "",
-    afficherNomAvecLogo: true,
-  },
-];
+import type { Dossier, Ecriture, Facture } from "@/lib/domain-types";
 
 describe("buildClasseurJournal", () => {
   it("trie chronologiquement et calcule le solde cumulé", () => {
@@ -50,7 +34,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Dossier[];
 
-    const journal = buildClasseurJournal("c1", dossiers, [], [], societes);
+    const journal = buildClasseurJournal("c1", dossiers, [], []);
     expect(journal).toHaveLength(2);
     expect(journal[0].reference).toBe("DOS-002");
     expect(journal[0].libelle).toBe("Dossier transit — Export · BL BL-99");
@@ -78,7 +62,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Ecriture[];
 
-    const journal = buildClasseurJournal("c1", [], ecritures, [], societes);
+    const journal = buildClasseurJournal("c1", [], ecritures, []);
     expect(journal).toHaveLength(1);
     expect(journal[0].type).toBe("Paiement");
   });
@@ -97,7 +81,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Facture[];
 
-    const journal = buildClasseurJournal("c1", [], [], factures, societes);
+    const journal = buildClasseurJournal("c1", [], [], factures);
     expect(journal[0].debit).toBe(0);
     expect(journal[0].credit).toBe(0);
   });
@@ -129,7 +113,6 @@ describe("filterClasseurJournal", () => {
       },
     ] as Ecriture[],
     [],
-    societes,
   );
 
   it("filtre par type et période", () => {
@@ -174,7 +157,6 @@ describe("computeClasseurTotals", () => {
         },
       ] as Ecriture[],
       [],
-      societes,
     );
 
     const filtered = filterClasseurJournal(full, { type: "Paiement" });
@@ -183,7 +165,6 @@ describe("computeClasseurTotals", () => {
     expect(totals.totalDebit).toBe(400);
     expect(totals.totalCredit).toBe(100);
     expect(totals.soldeNet).toBe(300);
-    expect(totals.parSociete).toEqual([{ societeNom: "SLTT", soldeNet: 300 }]);
   });
 });
 

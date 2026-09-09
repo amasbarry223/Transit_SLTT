@@ -55,7 +55,6 @@ export interface FacturesSlice {
   removeFacture: (id: string) => Promise<void>;
   updateFactureStatut: (id: string, statut: FactureStatut) => Promise<void>;
   recordFacturePaiement: (id: string, montant: number) => Promise<void>;
-  patchFactureMontantPaye: (id: string, montantPaye: number) => Promise<void>;
 }
 
 function computeInvoiceAmounts(
@@ -294,8 +293,12 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     // L'encaissement crée une transaction de caisse côté serveur : il faut une
     // caisse de la MÊME annexe que la facture (avant, on prenait caisses[0]
     // — souvent inexistant — et le paiement n'était jamais persisté).
-    const caissesResp = await api.caisse.getAll(fact.annexeId).catch(() => [] as any[]);
-    const caisses = Array.isArray(caissesResp) ? caissesResp : [];
+    const caissesResp = await api.caisse.getAll(fact.annexeId).catch(() => []);
+    const caisses: Array<{ id?: string; annexeId?: string; statut?: string }> = Array.isArray(
+      caissesResp,
+    )
+      ? caissesResp
+      : [];
     const caisse =
       caisses.find((c) => c.annexeId === fact.annexeId && c.statut !== "FERMEE") ??
       caisses.find((c) => c.statut !== "FERMEE");
@@ -324,41 +327,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
       fact.clientId,
       { sourceType: "facture", sourceId: fact.id },
-    );
-  },
-
-  patchFactureMontantPaye: async (id, montantPaye) => {
-    const fact = get().factures.find((f) => f.id === id);
-    if (!fact) throw new Error("Facture introuvable");
-    if (fact.statut === "Annulée" || fact.statut === "Brouillon" || fact.statut === "Soldée") {
-      throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
-    }
-    if (!Number.isFinite(montantPaye) || montantPaye < 0) {
-      throw new Error("Le montant payé ne peut pas être négatif.");
-    }
-    if (montantPaye > fact.montantTTC + 0.5) {
-      throw new Error(
-        `Le montant payé (${montantPaye.toLocaleString("fr-FR")}) dépasse le total de la facture (${fact.montantTTC.toLocaleString("fr-FR")}).`,
-      );
-    }
-
-    const newStatut: FactureStatut = montantPaye >= fact.montantTTC ? "Soldée" : montantPaye > 0 ? "Partielle" : "Envoyée";
-    set((s) => {
-      const updatedFactures = s.factures.map((f) =>
-        f.id === id ? { ...f, montantPaye, statut: newStatut } : f,
-      );
-      return {
-        factures: updatedFactures,
-        clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-      };
-    });
-
-    await get().addAuditLog(
-      AUDIT_MODULE.Factures,
-      AUDIT_ACTION.Modification,
-      `Paiement facture ${fact.numero} ajusté (classeur) → ${montantPaye.toLocaleString("fr-FR")} FCFA`,
-      fact.clientId,
-      { sourceType: "facture", sourceId: id },
     );
   },
 });

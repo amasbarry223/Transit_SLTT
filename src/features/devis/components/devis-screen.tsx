@@ -7,7 +7,7 @@ import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { exportToExcel, printDevis, printDevisList } from "@/lib/export";
-import { resolveSlttBrand } from "@/lib/classeur";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";

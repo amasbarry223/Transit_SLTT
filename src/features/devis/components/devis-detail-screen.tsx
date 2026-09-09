@@ -8,7 +8,7 @@ import { usePermission } from "@/shared/hooks/use-permission";
 import type { DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printDevis } from "@/lib/export";
-import { resolveSlttBrand } from "@/lib/classeur";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useUnsavedChangesWarning } from "@/shared/hooks/use-unsaved-changes-warning";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";

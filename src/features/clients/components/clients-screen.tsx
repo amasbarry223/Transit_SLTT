@@ -17,7 +17,7 @@ import { useStore } from "@/lib/store";
 import type { ClientInput } from "@/features/clients/types";
 import { formatFCFA } from "@/lib/format";
 import { printClients } from "@/features/clients/services/client-print";
-import { resolveSlttBrand } from "@/lib/classeur";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastWarning, toastSuccess } from "@/shared/utils/toast-helpers";
 import { usePermission } from "@/shared/hooks/use-permission";

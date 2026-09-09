@@ -11,10 +11,6 @@ import {
   type DocumentsSlice,
 } from "@/lib/store/documents-slice";
 import {
-  createExcelWorkbooksSlice,
-  type ExcelWorkbooksSlice,
-} from "@/lib/store/excel-workbooks-slice";
-import {
   createDossiersSlice,
   type DossiersSlice,
 } from "@/lib/store/dossiers-slice";
@@ -354,7 +350,7 @@ export interface UserInput {
   annexeIds: string[];
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, ExcelWorkbooksSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
   dossierSeq: number;
   auditSeq: number;
   ecritureSeq: number;
@@ -394,7 +390,6 @@ export const useStore = create<SLTTState>()((set, get, api) => ({
   ...createContratFichiersSlice(set, get, api),
   ...createArchivesSlice(set, get, api),
   ...createDocumentsSlice(set, get, api),
-  ...createExcelWorkbooksSlice(set, get, api),
   ...createDossiersSlice(set, get, api),
   ...createTransporteursSlice(set, get, api),
   ...createSocietesSlice(set, get, api),

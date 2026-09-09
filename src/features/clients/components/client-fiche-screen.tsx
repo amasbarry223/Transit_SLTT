@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { AuditEntry } from "@/lib/audit";
 import {
   ArrowLeft,
@@ -22,10 +22,8 @@ import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import {
   buildClasseurJournal,
-  fetchClasseurMouvements,
   filterClasseurJournal,
   computeClasseurTotals,
-  fetchMouvementSuivi,
   classeurEntrySourceType,
   hasClasseurPeriodFilter,
   type ClasseurEntry,
@@ -51,7 +49,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { cn } from "@/shared/utils/cn";
 import { ClientProfileCard } from "@/features/clients/components/client-fiche/client-profile-card";
 import { ClasseurTab } from "@/features/clients/components/client-fiche/classeur-tab";
-import { ClasseurImportDialog } from "@/features/clients/components/client-fiche/classeur-import-dialog";
 import { ClasseurSuiviDialog } from "@/features/clients/components/client-fiche/classeur-suivi-dialog";
 import { DossiersTab } from "@/features/clients/components/client-fiche/dossiers-tab";
 import { FacturesTab } from "@/features/clients/components/client-fiche/factures-tab";
@@ -67,9 +64,7 @@ export function ClientFicheScreen() {
   // rôle comme Agent de transit qui n'a que clients:read ne doit pas y
   // accéder via la fiche client.
   const canSeeCompta = usePermission("comptabilite:read");
-  const canWriteCompta = usePermission("comptabilite:write");
   const canWriteDossiers = usePermission("dossiers:write");
-  const canWriteFactures = usePermission("factures:write");
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
@@ -101,7 +96,6 @@ export function ClientFicheScreen() {
   const [suiviEntry, setSuiviEntry] = useState<ClasseurEntry | null>(null);
   const [suiviLogs, setSuiviLogs] = useState<AuditEntry[]>([]);
   const [suiviLoading, setSuiviLoading] = useState(false);
-  const [classeurImportOpen, setClasseurImportOpen] = useState(false);
 
   const client = useMemo(
     () => clients.find((c) => c.id === selectedId),
@@ -130,47 +124,15 @@ export function ClientFicheScreen() {
     [allMouvements, stockIds],
   );
 
-  const clientSideJournal = useMemo(
+  // Classeur : vue calculée en lecture seule du grand livre client
+  // (dossiers + écritures + factures du store). Pas de source SQL dédiée.
+  const classeurJournal = useMemo(
     () =>
       selectedId
-        ? buildClasseurJournal(selectedId, allDossiers, allEcritures, allFactures, societes)
+        ? buildClasseurJournal(selectedId, allDossiers, allEcritures, allFactures)
         : [],
-    [selectedId, allDossiers, allEcritures, allFactures, societes],
+    [selectedId, allDossiers, allEcritures, allFactures],
   );
-  const [sqlJournal, setSqlJournal] = useState<{ clientId: string; rows: ClasseurEntry[] } | null>(
-    null,
-  );
-  useEffect(() => {
-    if (!selectedId) return;
-    let cancelled = false;
-    // Repli silencieux : en cas d'échec, sqlJournal reste null et
-    // classeurJournal retombe déjà sur clientSideJournal (cf. plus bas) —
-    // pas de toast nécessaire pour ce rafraîchissement best-effort, juste
-    // éviter une rejection de promesse non gérée.
-    fetchClasseurMouvements(selectedId)
-      .then((rows) => {
-        if (!cancelled && rows) setSqlJournal({ clientId: selectedId, rows });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId]);
-
-  function refreshClasseurSql() {
-    if (!selectedId) return;
-    // Invalide le cache SQL pour retomber sur le journal client (à jour via store)
-    // puis recharger la vue.
-    setSqlJournal(null);
-    fetchClasseurMouvements(selectedId)
-      .then((rows) => {
-        if (rows) setSqlJournal({ clientId: selectedId, rows });
-      })
-      .catch(() => {});
-  }
-
-  const classeurJournal =
-    sqlJournal?.clientId === selectedId ? sqlJournal.rows : clientSideJournal;
   const classeurFiltered = useMemo(
     () => filterClasseurJournal(classeurJournal, classeurFilters),
     [classeurJournal, classeurFilters],
@@ -317,24 +279,18 @@ export function ClientFicheScreen() {
     );
   }
 
-  async function openClasseurSuivi(entry: ClasseurEntry) {
+  function openClasseurSuivi(entry: ClasseurEntry) {
     setSuiviEntry(entry);
-    setSuiviLoading(true);
-    setSuiviLogs([]);
+    setSuiviLoading(false);
 
     const sourceType = classeurEntrySourceType(entry);
-    const remote = await fetchMouvementSuivi(sourceType, entry.sourceId);
-    const local = auditLogs.filter(
-      (log) => log.sourceType === sourceType && log.sourceId === entry.sourceId,
-    );
-    const merged = new Map<string, AuditEntry>();
-    for (const log of [...remote, ...local]) merged.set(log.id, log);
     setSuiviLogs(
-      Array.from(merged.values()).sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-      ),
+      auditLogs
+        .filter(
+          (log) => log.sourceType === sourceType && log.sourceId === entry.sourceId,
+        )
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     );
-    setSuiviLoading(false);
   }
 
   function closeClasseurSuivi() {
@@ -537,20 +493,15 @@ export function ClientFicheScreen() {
 
         {canSeeCompta && (
         <ClasseurTab
-          journalEntries={classeurJournal}
           classeurFilters={classeurFilters}
           onFiltersChange={setClasseurFilters}
           classeurFiltered={classeurFiltered}
           classeurTotals={classeurTotals}
-          isSyncing={sqlJournal?.clientId !== selectedId}
           classeurPeriodFiltered={classeurPeriodFiltered}
           clientAuditHistory={clientAuditHistory}
           onExportExcel={handleExportClasseurExcel}
-          onOpenImport={() => setClasseurImportOpen(true)}
           onPrint={handlePrintClasseur}
           onRowClick={openClasseurSuivi}
-          onGridDataChanged={refreshClasseurSql}
-          canImport={canWriteCompta || canWriteDossiers || canWriteFactures}
         />
         )}
 
@@ -665,17 +616,6 @@ export function ClientFicheScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <ClasseurImportDialog
-        open={classeurImportOpen}
-        onOpenChange={setClasseurImportOpen}
-        client={client ?? null}
-        journalEntries={classeurJournal}
-        canWriteDossiers={canWriteDossiers}
-        canWriteCompta={canWriteCompta}
-        canWriteFactures={canWriteFactures}
-        onApplied={refreshClasseurSql}
-      />
     </div>
   );
 }
