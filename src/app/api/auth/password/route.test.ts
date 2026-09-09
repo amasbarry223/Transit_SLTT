@@ -11,17 +11,16 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       permissions: [] as string[],
       actif: true,
     },
-    loginError: null as string | null,
-    updateUserError: null as string | null,
-    updateCalls: [] as { id: string; payload: unknown }[],
+    // Erreur renvoyée par `PATCH /auth/password` côté NestJS (null = succès).
+    changePasswordError: null as { status: number; message: string } | null,
+    changePasswordCalls: [] as { payload: unknown }[],
   };
   return {
     fakeState,
     resetFake: () => {
       fakeState.profile.actif = true;
-      fakeState.loginError = null;
-      fakeState.updateUserError = null;
-      fakeState.updateCalls = [];
+      fakeState.changePasswordError = null;
+      fakeState.changePasswordCalls = [];
     },
   };
 });
@@ -31,29 +30,21 @@ vi.stubGlobal(
   vi.fn(async (url: string, options?: RequestInit) => {
     const method = options?.method?.toUpperCase() || "GET";
 
-    // /auth/me
+    // /auth/me — utilisé par requireUser()
     if (typeof url === "string" && url.includes("/auth/me")) {
       const p = fakeState.profile;
       if (!p.actif) return new Response(JSON.stringify({ message: "Inactif." }), { status: 403 });
       return new Response(JSON.stringify(p), { status: 200 });
     }
 
-    // POST /auth/login (vérification mot de passe actuel)
-    if (typeof url === "string" && url.includes("/auth/login") && method === "POST") {
-      if (fakeState.loginError) {
-        return new Response(JSON.stringify({ message: fakeState.loginError }), { status: 401 });
-      }
-      return new Response(JSON.stringify({ accessToken: "mock-tok" }), { status: 200 });
-    }
-
-    // PUT /users/:id (mise à jour mot de passe)
-    if (typeof url === "string" && /\/users\/[^/]+$/.test(url) && method === "PUT") {
-      const id = url.split("/").pop() || "";
+    // PATCH /auth/password — endpoint NestJS appelé directement par la route
+    if (typeof url === "string" && url.includes("/auth/password") && method === "PATCH") {
       const body = options?.body ? JSON.parse(options.body as string) : {};
-      fakeState.updateCalls.push({ id, payload: body });
-
-      if (fakeState.updateUserError) {
-        return new Response(JSON.stringify({ message: fakeState.updateUserError }), { status: 400 });
+      fakeState.changePasswordCalls.push({ payload: body });
+      if (fakeState.changePasswordError) {
+        return new Response(JSON.stringify({ message: fakeState.changePasswordError.message }), {
+          status: fakeState.changePasswordError.status,
+        });
       }
       return new Response(JSON.stringify({ success: true }), { status: 200 });
     }
@@ -105,25 +96,24 @@ describe("PATCH /api/auth/password", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rejette si le mot de passe actuel est incorrect", async () => {
-    fakeState.loginError = "Email ou mot de passe incorrect";
+  it("propage l'erreur si le mot de passe actuel est incorrect", async () => {
+    fakeState.changePasswordError = { status: 400, message: "Mot de passe actuel incorrect." };
     const res = await PATCH(req({ currentPassword: "wrong", newPassword: "Newpass123" }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("Mot de passe actuel incorrect.");
-    expect(fakeState.updateCalls).toHaveLength(0);
   });
 
   it("change le mot de passe quand la vérification réussit", async () => {
     const res = await PATCH(req({ currentPassword: "old12345", newPassword: "Newpass123" }));
     expect(res.status).toBe(200);
-    expect(fakeState.updateCalls).toEqual([
-      { id: "u1", payload: { password: "Newpass123" } },
+    expect(fakeState.changePasswordCalls).toEqual([
+      { payload: { currentPassword: "old12345", newPassword: "Newpass123" } },
     ]);
   });
 
-  it("renvoie l'erreur si la mise à jour échoue", async () => {
-    fakeState.updateUserError = "update failed";
+  it("propage l'erreur si la mise à jour échoue", async () => {
+    fakeState.changePasswordError = { status: 400, message: "update failed" };
     const res = await PATCH(req({ currentPassword: "old12345", newPassword: "Newpass123" }));
     expect(res.status).toBe(400);
     const body = await res.json();
