@@ -343,7 +343,7 @@ model Facture {
   montantTva   Float         @default(0) @map("montant_tva")
   montantTtc   Float         @default(0) @map("montant_ttc")
   montantPaye  Float         @default(0) @map("montant_paye")
-  devise       String        @default("GNF")
+  devise       String        @default("FCFA")
   notes        String?
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
@@ -387,7 +387,7 @@ model Devis {
   montantHt    Float       @default(0) @map("montant_ht")
   montantTva   Float       @default(0) @map("montant_tva")
   montantTtc   Float       @default(0) @map("montant_ttc")
-  devise       String      @default("GNF")
+  devise       String      @default("FCFA")
   notes        String?
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
@@ -421,7 +421,7 @@ model Cotation {
   dateDemande  DateTime       @default(now()) @map("date_demande")
   statut       StatutCotation @default(BROUILLON)
   montantTotal Float          @default(0) @map("montant_total")
-  devise       String         @default("GNF")
+  devise       String         @default("FCFA")
   notes        String?
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
@@ -480,7 +480,7 @@ model Depense {
   categorie     CategorieDepense @default(DIVERS)
   statut        StatutDepense    @default(EN_ATTENTE)
   montant       Float
-  devise        String           @default("GNF")
+  devise        String           @default("FCFA")
   justificatif  String?
   description   String?
   dateDepense   DateTime         @default(now()) @map("date_depense")
@@ -509,7 +509,7 @@ model Caisse {
   nom          String
   annexeId     String       @map("annexe_id")
   soldeActuel  Float        @default(0) @map("solde_actuel")
-  devise       String       @default("GNF")
+  devise       String       @default("FCFA")
   statut       StatutCaisse @default(OUVERTE)
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
