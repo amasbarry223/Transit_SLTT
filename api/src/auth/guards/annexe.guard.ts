@@ -30,7 +30,8 @@ export class AnnexeGuard implements CanActivate {
     const user = request.user;
 
     if (!user) throw new ForbiddenException('Non authentifié');
-    if (user.role === 'Administrateur') return true;
+    // Le rôle dans le JWT est l'enum Prisma ('ADMIN'), pas le libellé applicatif.
+    if (user.role === 'ADMIN' || user.role === 'Administrateur') return true;
 
     // Cherche l'annexe_id dans params > body > query
     const targetAnnexeId =

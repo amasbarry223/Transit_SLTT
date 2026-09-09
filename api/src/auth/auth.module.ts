@@ -7,13 +7,18 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { AnnexeGuard } from './guards/annexe.guard';
+import { jwtAccessSecret, jwtAccessExpiresIn } from './jwt.config';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'transit_sltt_super_secret_jwt_key_default_dev_2025',
-      signOptions: { expiresIn: '15m' },
+    // registerAsync : la factory s'exécute pendant l'init du conteneur Nest,
+    // donc APRÈS ConfigModule.forRoot() — .env est bien chargé ici.
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: jwtAccessSecret(),
+        signOptions: { expiresIn: jwtAccessExpiresIn() as `${number}m` },
+      }),
     }),
   ],
   controllers: [AuthController],

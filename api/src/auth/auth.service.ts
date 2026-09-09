@@ -9,14 +9,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtPayload, CurrentUserType } from './auth.types';
+import { jwtRefreshSecret, jwtRefreshExpiresIn } from './jwt.config';
 
 const BCRYPT_ROUNDS = 12;
-
-// Un seul point de vérité pour le secret du refresh token : signer avec une
-// valeur et vérifier avec une autre (env absente) déconnectait les utilisateurs
-// dès l'expiration de l'access token.
-const JWT_REFRESH_SECRET =
-  process.env.JWT_REFRESH_SECRET || 'transit_sltt_super_secret_refresh_key_dev_2025';
+const REFRESH_TOKEN_DAYS = 7;
 
 @Injectable()
 export class AuthService {
@@ -68,18 +64,18 @@ export class AuthService {
 
     const accessToken = this.jwt.sign(payload);
 
-    // Refresh token (7j)
     const refreshToken = this.jwt.sign(
       { sub: profile.id },
       {
-        secret: JWT_REFRESH_SECRET,
-        expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as any,
+        secret: jwtRefreshSecret(),
+        expiresIn: jwtRefreshExpiresIn() as any,
       },
     );
 
-    // Persister le refresh token
+    // La ligne en base doit expirer en même temps que le JWT lui-même,
+    // sinon l'un des deux invalide le refresh avant l'autre.
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_DAYS);
     await this.prisma.refreshToken.upsert({
       where: { token: refreshToken },
       create: { userId: profile.id, token: refreshToken, expiresAt },
@@ -105,7 +101,7 @@ export class AuthService {
     let payload: { sub: string };
     try {
       payload = this.jwt.verify<{ sub: string }>(refreshToken, {
-        secret: JWT_REFRESH_SECRET,
+        secret: jwtRefreshSecret(),
       });
     } catch {
       throw new UnauthorizedException('Refresh token invalide ou expiré');
