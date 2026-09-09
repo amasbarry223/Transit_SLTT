@@ -32,16 +32,16 @@ import {
   type ClientTypeFilter,
 } from "@/features/clients/components";
 import { ClientFormFields, emptyClientForm } from "@/features/clients/components/client-form-fields";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 
 export function ClientsScreen() {
   const { toast } = useToast();
@@ -59,6 +60,7 @@ export function ClientsScreen() {
   const societes = useStore((s) => s.societes);
   const addClient = useStore((s) => s.addClient);
   const updateClient = useStore((s) => s.updateClient);
+  const deleteClient = useStore((s) => s.deleteClient);
   const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
   const scopedClients = useMemo(
     () => filterByAnnexe(clients, selectedAnnexeId),
@@ -74,6 +76,7 @@ export function ClientsScreen() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [savingClient, setSavingClient] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<ClientInput>(
     emptyClientForm(activeAnnexeId ?? ""),
   );
@@ -148,6 +151,27 @@ export function ClientsScreen() {
     },
     [clients],
   );
+
+  const openDeleteDialog = useCallback((id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDeletingId(id);
+  }, []);
+
+  const clientToDelete = useMemo(
+    () => clients.find((c) => c.id === deletingId) ?? null,
+    [clients, deletingId],
+  );
+
+  async function handleDelete() {
+    if (!deletingId) return;
+    const nom = clientToDelete?.nom ?? "Le client";
+    try {
+      await deleteClient(deletingId);
+      toastSuccess(toast, { title: "Client supprimé", description: `${nom} a été retiré de l'annuaire.` });
+    } catch (err: unknown) {
+      toastError(toast, err, { title: "Impossible de supprimer le client", fallback: "Impossible de supprimer le client." });
+    }
+  }
 
   function handleSortChange(key: ClientSortKey) {
     setSortBy(key);
@@ -377,6 +401,7 @@ export function ClientsScreen() {
           onPageChange={setPage}
           onOpenClient={openClient}
           onEditClient={openEditDialog}
+          onDeleteClient={openDeleteDialog}
           onCreateClient={openCreateDialog}
         />
       </Card>
@@ -429,6 +454,33 @@ export function ClientsScreen() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* 6. Confirmation de suppression d'un client */}
+      <ConfirmDeleteDialog
+        open={deletingId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingId(null);
+        }}
+        title="Supprimer ce client ?"
+        description={
+          clientToDelete ? (
+            <>
+              <span className="font-semibold text-foreground">{clientToDelete.nom}</span> sera retiré de
+              l&apos;annuaire commercial. Cette action est irréversible.
+            </>
+          ) : (
+            "Cette action est irréversible."
+          )
+        }
+        consequences={
+          clientToDelete && clientToDelete.nbDossiers > 0
+            ? [
+                `${clientToDelete.nbDossiers} dossier(s) rattaché(s) — leur historique reste conservé mais n'est plus lié à ce client`,
+              ]
+            : undefined
+        }
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

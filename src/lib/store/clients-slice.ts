@@ -13,6 +13,7 @@ export interface ClientsSlice {
   clients: Client[];
   addClient: (input: ClientInput) => Promise<Client>;
   updateClient: (id: string, input: ClientInput) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
   getClient: (id: string) => Client | undefined;
 }
 
@@ -62,6 +63,24 @@ export const createClientsSlice: StateCreator<SLTTState, [], [], ClientsSlice> =
       AUDIT_MODULE.Clients,
       AUDIT_ACTION.Modification,
       `Client ${validInput.nom} mis à jour`,
+      id,
+    );
+  },
+
+  deleteClient: async (id) => {
+    const existing = get().clients.find((c) => c.id === id);
+    if (!existing) return;
+
+    const result = await clientService.delete(id);
+    if (!result.ok) throw result.error;
+
+    set((s) => ({
+      clients: s.clients.filter((c) => c.id !== id),
+    }));
+    await get().addAuditLog(
+      AUDIT_MODULE.Clients,
+      AUDIT_ACTION.Suppression,
+      `Client ${existing.nom} supprimé`,
       id,
     );
   },

@@ -42,9 +42,9 @@ export interface ClientRow {
   id: string;
   nom: string;
   type: ClientType;
-  telephone: string;
-  email: string;
-  adresse: string;
+  telephone: string | null;
+  email: string | null;
+  adresse: string | null;
   annexe_id: string;
   annexes?: NamedRelation;
 }

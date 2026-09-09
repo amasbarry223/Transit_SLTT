@@ -251,6 +251,10 @@ class ApiClient {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+    delete: (id: string) =>
+      this.request<any>(`/clients/${id}`, {
+        method: 'DELETE',
+      }),
   };
 
 

@@ -7,15 +7,18 @@ export class ClientsService {
 
   async findAll(search?: string) {
     return this.prisma.client.findMany({
-      where: search
-        ? {
-            OR: [
-              { nom: { contains: search, mode: 'insensitive' } },
-              { code: { contains: search, mode: 'insensitive' } },
-              { email: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
+      where: {
+        actif: true,
+        ...(search
+          ? {
+              OR: [
+                { nom: { contains: search, mode: 'insensitive' } },
+                { code: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
       orderBy: { nom: 'asc' },
       include: {
         _count: {

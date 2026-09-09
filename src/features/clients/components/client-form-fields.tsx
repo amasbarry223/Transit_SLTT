@@ -3,16 +3,16 @@
 import { Building2, User } from "lucide-react";
 import type { ClientInput } from "@/features/clients/types";
 import type { Annexe } from "@/lib/domain-types";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { cn } from "@/shared/utils/cn";
 
 const clientTypes: ClientInput["type"][] = ["Entreprise", "Particulier"];
 
@@ -45,7 +45,7 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
         </Label>
         <Input
           id={`${idPrefix}-nom`}
-          value={values.nom}
+          value={values.nom ?? ""}
           onChange={(e) => onChange({ nom: e.target.value })}
           placeholder="Ex. Société ABC Logistique"
           className="h-10"
@@ -58,7 +58,7 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
           <Label htmlFor={`${idPrefix}-annexe`} className="text-sm font-medium text-foreground/90">
             Annexe <span className="text-red-500">*</span>
           </Label>
-          <Select value={values.annexeId} onValueChange={(v) => onChange({ annexeId: v })}>
+          <Select value={values.annexeId || undefined} onValueChange={(v) => onChange({ annexeId: v })}>
             <SelectTrigger id={`${idPrefix}-annexe`} className="h-10 w-full" aria-label="Sélectionner une annexe">
               <SelectValue placeholder="Sélectionner une annexe" />
             </SelectTrigger>
@@ -107,7 +107,7 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
           </Label>
           <Input
             id={`${idPrefix}-tel`}
-            value={values.telephone}
+            value={values.telephone ?? ""}
             onChange={(e) => onChange({ telephone: e.target.value })}
             placeholder="Ex. +223 70 00 00 00"
             className="h-10"
@@ -120,7 +120,7 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
           <Input
             id={`${idPrefix}-email`}
             type="email"
-            value={values.email}
+            value={values.email ?? ""}
             onChange={(e) => onChange({ email: e.target.value })}
             placeholder="Ex. contact@exemple.com"
             className="h-10"
@@ -134,7 +134,7 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
         </Label>
         <Input
           id={`${idPrefix}-adresse`}
-          value={values.adresse}
+          value={values.adresse ?? ""}
           onChange={(e) => onChange({ adresse: e.target.value })}
           placeholder="Ex. Quartier, ville"
           className="h-10"

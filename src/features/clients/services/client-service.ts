@@ -54,8 +54,18 @@ export async function updateClient(
   }
 }
 
+export async function deleteClient(id: string): Promise<Result<void, AppError>> {
+  try {
+    await api.clients.delete(id);
+    return ok(undefined);
+  } catch (e) {
+    return err(toAppError(e, "Impossible de supprimer le client."));
+  }
+}
+
 export const clientService = {
   create: createClient,
   update: updateClient,
+  delete: deleteClient,
 };
 
