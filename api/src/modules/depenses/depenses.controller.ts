@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -66,5 +67,11 @@ export class DepensesController {
     @Body() body: { caisseId: string; motif?: string },
   ) {
     return this.depensesService.payerDepuisCaisse(id, user, body);
+  }
+
+  @Delete(':id')
+  @RequirePermission('depenses.supprimer')
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.depensesService.remove(id, user);
   }
 }

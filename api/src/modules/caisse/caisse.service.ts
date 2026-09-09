@@ -72,7 +72,15 @@ export class CaisseService {
       throw new BadRequestException("Cette caisse est fermée aux opérations");
     }
 
-    if (data.type === 'SORTIE' && caisse.soldeActuel < data.montant) {
+    const montant = Number(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new BadRequestException("Le montant doit être supérieur à 0");
+    }
+    if (data.type !== 'ENTREE' && data.type !== 'SORTIE') {
+      throw new BadRequestException("Type de transaction invalide");
+    }
+
+    if (data.type === 'SORTIE' && caisse.soldeActuel < montant) {
       throw new BadRequestException("Solde insuffisant dans la caisse");
     }
 
@@ -81,13 +89,13 @@ export class CaisseService {
         data: {
           caisseId,
           type: data.type,
-          montant: data.montant,
+          montant,
           motif: data.motif,
           effectueParId: user.id,
         },
       });
 
-      const increment = data.type === 'ENTREE' ? data.montant : -data.montant;
+      const increment = data.type === 'ENTREE' ? montant : -montant;
       const updatedCaisse = await tx.caisse.update({
         where: { id: caisseId },
         data: { soldeActuel: { increment } },

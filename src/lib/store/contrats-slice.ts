@@ -264,6 +264,8 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
   removeDepense: async (id) => {
     const depense = get().depenses.find((d) => d.id === id);
 
+    await api.depenses.delete(id);
+
     set((s) => {
       const updatedDepenses = s.depenses.filter((d) => d.id !== id);
       return {

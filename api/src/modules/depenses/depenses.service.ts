@@ -127,6 +127,17 @@ export class DepensesService {
     });
   }
 
+  async remove(id: string, user: CurrentUserType) {
+    const depense = await this.findOne(id, user);
+    if (depense.statut === 'PAYEE' || depense.transactions.length > 0) {
+      throw new BadRequestException(
+        'Impossible de supprimer une dépense déjà payée. Elle est liée à un mouvement de caisse.',
+      );
+    }
+    await this.prisma.depense.delete({ where: { id } });
+    return { id };
+  }
+
   async payerDepuisCaisse(
     id: string,
     user: CurrentUserType,
@@ -134,8 +145,23 @@ export class DepensesService {
   ) {
     const depense = await this.findOne(id, user);
 
+    if (depense.statut === 'PAYEE') {
+      throw new BadRequestException('Cette dépense est déjà payée.');
+    }
+    if (depense.statut !== 'APPROUVEE') {
+      throw new BadRequestException(
+        'La dépense doit être approuvée avant paiement.',
+      );
+    }
+
     const caisse = await this.prisma.caisse.findUnique({ where: { id: data.caisseId } });
     if (!caisse) throw new NotFoundException("Caisse non trouvée");
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(caisse.annexeId)) {
+      throw new ForbiddenException("Cette caisse n'appartient pas à votre annexe.");
+    }
+    if (caisse.statut === 'FERMEE') {
+      throw new BadRequestException('Cette caisse est fermée aux opérations.');
+    }
 
     if (caisse.soldeActuel < depense.montant) {
       throw new BadRequestException("Solde de caisse insuffisant");

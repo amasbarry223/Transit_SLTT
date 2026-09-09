@@ -135,6 +135,8 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       );
     }
 
+    await api.fournisseurs.delete(id);
+
     set((s) => ({
       fournisseurs: s.fournisseurs.filter((f) => f.id !== id),
       dossierFournisseurs: s.dossierFournisseurs.filter((df) => df.fournisseurId !== id),

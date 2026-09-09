@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -41,6 +43,22 @@ export class FacturesController {
   @RequirePermission('factures.creer')
   async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.facturesService.create(user, body);
+  }
+
+  @Put(':id')
+  @RequirePermission('factures.modifier')
+  async update(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+    @Body() body: any,
+  ) {
+    return this.facturesService.update(id, user, body);
+  }
+
+  @Delete(':id')
+  @RequirePermission('factures.supprimer')
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.facturesService.remove(id, user);
   }
 
   @Post(':id/paiements')

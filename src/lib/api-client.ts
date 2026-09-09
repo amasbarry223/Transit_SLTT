@@ -322,6 +322,15 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/factures/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/factures/${id}`, {
+        method: 'DELETE',
+      }),
     enregistrerPaiement: (id: string, data: { montant: number; caisseId: string; motif?: string }) =>
       this.request<any>(`/factures/${id}/paiements`, {
         method: 'POST',
@@ -368,6 +377,10 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    delete: (id: string) =>
+      this.request<any>(`/depenses/${id}`, {
+        method: 'DELETE',
+      }),
   };
 
   fournisseurs = {
@@ -385,6 +398,10 @@ class ApiClient {
       this.request<any>(`/fournisseurs/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/fournisseurs/${id}`, {
+        method: 'DELETE',
       }),
   };
 

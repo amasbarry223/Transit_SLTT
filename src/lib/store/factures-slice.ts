@@ -170,6 +170,22 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       input.tauxTVA,
     );
 
+    // Persistance obligatoire : une facture sans écriture serveur repartait à
+    // zéro au rechargement. On propage l'erreur pour que l'UI la signale.
+    await api.factures.update(id, {
+      clientId: input.clientId,
+      dossierId: input.dossierId || undefined,
+      dateEmission: input.date,
+      dateEcheance: input.dateEcheance,
+      tauxTva: input.tauxTVA,
+      notes: input.notes,
+      lignes: input.lignes.map((l) => ({
+        designation: l.description,
+        quantite: l.quantite,
+        prixUnitaire: l.prixUnitaire,
+      })),
+    });
+
     set((s) => {
       const updatedFactures = s.factures.map((fact) => {
         if (fact.id !== id) return fact;
@@ -210,6 +226,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
 
   removeFacture: async (id) => {
     const fact = get().factures.find((f) => f.id === id);
+
+    await api.factures.delete(id);
 
     set((s) => {
       const updatedFactures = s.factures.filter((f) => f.id !== id);
