@@ -9,7 +9,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { pathForView } from "@/lib/app-navigation";
-import { cn, getErrorMessage } from "@/shared/utils/cn";
+import { cn } from "@/shared/utils/cn";
 import { mapErrorToUserMessage } from "@/shared/utils/error-messages";
 import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
@@ -86,9 +86,13 @@ export function LoginScreen() {
       const role = mapRole(user.role);
       loginNav(role, user.nom, user.id);
       router.replace(pathForView("dashboard"));
-    } catch (e: any) {
-      const msg = e?.data?.message || e?.message || "Connexion impossible. Vérifiez que le serveur backend tourne.";
-      setError(msg);
+    } catch (e) {
+      setError(
+        mapErrorToUserMessage(
+          e,
+          "Connexion impossible. Vérifiez que le serveur backend tourne.",
+        ),
+      );
     } finally {
       setLoading(false);
     }

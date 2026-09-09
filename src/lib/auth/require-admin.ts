@@ -27,15 +27,36 @@ export interface AuthenticatedProfile {
   actif: boolean;
 }
 
+/** Forme d'un utilisateur renvoyé par `/auth/me` ou reconstruit depuis les claims JWT. */
+interface NestUser {
+  id: string;
+  email?: string;
+  nom?: string;
+  role?: string;
+  permissions?: string[];
+  annexeIds?: string[];
+  actif?: boolean;
+}
+
+interface JwtClaims {
+  sub?: string;
+  email?: string;
+  nom?: string;
+  role?: string;
+  permissions?: string[];
+  annexeIds?: string[];
+  actif?: boolean;
+}
+
 /**
  * Extrait le payload d'un JWT de façon sécurisée côté serveur Next.js
  */
-function decodeJwtClaims(token: string): any | null {
+function decodeJwtClaims(token: string): JwtClaims | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
     const json = Buffer.from(parts[1], "base64url").toString("utf8");
-    return JSON.parse(json);
+    return JSON.parse(json) as JwtClaims;
   } catch {
     return null;
   }
@@ -58,7 +79,7 @@ async function getAuthenticatedProfile(request: Request): Promise<{
   const token = authHeader.slice(7);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-  let nestUser: any = null;
+  let nestUser: NestUser | null = null;
 
   try {
     const res = await fetch(`${apiUrl}/auth/me`, {
@@ -67,9 +88,9 @@ async function getAuthenticatedProfile(request: Request): Promise<{
     });
 
     if (res.ok) {
-      nestUser = await res.json();
+      nestUser = (await res.json()) as NestUser;
     } else if (res.status === 401 || res.status === 403) {
-      const errData = await res.json().catch(() => ({}));
+      const errData = (await res.json().catch(() => ({}))) as { message?: string };
       throw new AuthError(errData.message || "Profil introuvable ou inactif.", 401);
     }
   } catch (err) {
@@ -101,10 +122,10 @@ async function getAuthenticatedProfile(request: Request): Promise<{
     throw new AuthError("Profil introuvable ou inactif.", 401);
   }
 
-  const role = nestUser.role === "ADMIN" ? "Administrateur" : nestUser.role;
-  const isAdmin = role === "Administrateur" || nestUser.role === "ADMIN";
-  const permissions =
-    (nestUser.permissions as string[]) || (isAdmin ? ["*"] : []);
+  const rawRole = nestUser.role ?? "OPERATEUR";
+  const role = rawRole === "ADMIN" ? "Administrateur" : rawRole;
+  const isAdmin = role === "Administrateur";
+  const permissions = nestUser.permissions ?? (isAdmin ? ["*"] : []);
 
   const profile: AuthenticatedProfile = {
     id: nestUser.id,
@@ -112,7 +133,8 @@ async function getAuthenticatedProfile(request: Request): Promise<{
     email: nestUser.email || "",
     role,
     permissions,
-    actif: nestUser.actif !== false,
+    // Un profil inactif a déjà levé une AuthError plus haut.
+    actif: true,
   };
 
   const user: AuthenticatedUser = {
@@ -128,8 +150,7 @@ async function getAuthenticatedProfile(request: Request): Promise<{
 }
 
 export async function requireUser(request: Request) {
-  const { user, profile, isAdmin } = await getAuthenticatedProfile(request);
-  return { user, profile, isAdmin, admin: null as any };
+  return getAuthenticatedProfile(request);
 }
 
 export async function requireUserManager(request: Request) {
@@ -143,7 +164,7 @@ export async function requireUserManager(request: Request) {
     throw new AuthError("Accès réservé à la gestion des utilisateurs.", 403);
   }
 
-  return { user, profile, admin: null as any, isAdmin };
+  return { user, profile, isAdmin };
 }
 
 export function authErrorResponse(error: unknown) {

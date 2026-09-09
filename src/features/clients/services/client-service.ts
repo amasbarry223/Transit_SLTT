@@ -21,7 +21,7 @@ export async function createClient(input: ClientInput): Promise<Result<Client, A
     return ok({
       id: created.id,
       nom: created.nom,
-      type: (created.type === "PARTICULIER" ? "Particulier" : "Entreprise") as any,
+      type: created.type === "PARTICULIER" ? "Particulier" : "Entreprise",
       telephone: created.telephone || "",
       email: created.email || "",
       adresse: created.adresse || "",
@@ -31,8 +31,8 @@ export async function createClient(input: ClientInput): Promise<Result<Client, A
       totalDu: 0,
       totalPaye: 0,
     });
-  } catch (e: any) {
-    return err(toAppError(e, e?.message || "Impossible de créer le client."));
+  } catch (e) {
+    return err(toAppError(e, "Impossible de créer le client."));
   }
 }
 
@@ -49,8 +49,8 @@ export async function updateClient(
       adresse: input.adresse,
     });
     return ok(undefined);
-  } catch (e: any) {
-    return err(toAppError(e, e?.message || "Impossible de mettre à jour le client."));
+  } catch (e) {
+    return err(toAppError(e, "Impossible de mettre à jour le client."));
   }
 }
 

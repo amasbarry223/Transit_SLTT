@@ -27,7 +27,7 @@ async function assertNotLastActiveAdmin(token: string | null, targetId: string) 
       cache: "no-store",
     });
     if (!listRes.ok) return;
-    const users: any[] = await listRes.json();
+    const users = (await listRes.json()) as Array<{ role?: string; actif?: boolean }>;
     const activeAdmins = users.filter(
       (u) => (u.role === "ADMIN" || u.role === "Administrateur") && u.actif !== false,
     );

@@ -65,7 +65,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       logWarn("api.devis.create (mode local)", e);
     }
 
-    const clientNom = client?.nom ?? (input as any).clientNom ?? "—";
+    const clientNom = client?.nom ?? input.clientNom ?? "—";
     const newDevis: Devis = {
       id: createdId,
       reference: createdNumero,

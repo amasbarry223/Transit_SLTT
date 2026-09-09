@@ -59,6 +59,14 @@ function extractErrorCode(e: unknown): string | undefined {
 
 function extractErrorMessage(e: unknown): string | undefined {
   if (typeof e === "string" && e.trim()) return e.trim();
+  // ApiError expose le corps de la réponse NestJS dans `data` (`{ message }`).
+  if (e && typeof e === "object" && "data" in e) {
+    const data = (e as { data?: unknown }).data;
+    if (data && typeof data === "object" && "message" in data) {
+      const msg = (data as { message?: unknown }).message;
+      if (typeof msg === "string" && msg.trim()) return msg.trim();
+    }
+  }
   if (e instanceof Error && e.message.trim()) return e.message.trim();
   if (e && typeof e === "object" && "message" in e) {
     const msg = (e as { message?: unknown }).message;
