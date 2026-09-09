@@ -36,7 +36,6 @@ export {
 
 export {
   FETCH_ENTITY_SOFT_CAPS,
-  SIGNED_URL_TTL_SEC,
   RECOVERY_RATE_THRESHOLDS,
   getRecoveryRateColor,
 } from "./business";

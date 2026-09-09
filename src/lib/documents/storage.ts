@@ -1,39 +1,3 @@
-import { logError } from "@/shared/logger";
-import { SIGNED_URL_TTL_SEC } from "@/lib/constants";
-
-export const DOCUMENTS_BUCKET = "documents";
-
-/** Construit un chemin Storage unique pour une version de document. */
-export function buildDocumentStoragePath(
-  documentId: string,
-  version: number,
-  fileName: string,
-): string {
-  const safeName = fileName.replace(/[^\w.\-]+/g, "_");
-  const month = new Date().toISOString().slice(0, 7);
-  return `${month}/${documentId}/v${version}-${Date.now()}-${safeName}`;
-}
-
-export async function uploadDocumentBlob(
-  _path: string,
-  _blob: Blob,
-  _contentType?: string,
-): Promise<void> {
-  // Stockage géré côté serveur NestJS via l'API documents
-}
-
-export async function getSignedDocumentUrl(
-  storagePath: string,
-  _expiresIn = SIGNED_URL_TTL_SEC,
-): Promise<string> {
-  return storagePath;
-}
-
-/** Retourne false si la suppression a échoué — à surfacer à l'appelant plutôt qu'avaler silencieusement. */
-export async function removeDocumentStoragePaths(_paths: string[]): Promise<boolean> {
-  return true;
-}
-
 /** Hash SHA-256 hex (navigateur). */
 export async function sha256Hex(blob: Blob): Promise<string | undefined> {
   try {

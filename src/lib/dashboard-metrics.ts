@@ -1,5 +1,5 @@
 import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
-import { resteAPayer, calculerEcart } from "@/lib/domain-types";
+import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { filterByPeriode } from "@/lib/benefice";
 import { sommeFacturesEncaissees } from "@/lib/client-stats";
@@ -9,10 +9,9 @@ import {
   ECHEANCE_IMMINENTE_JOURS,
   MS_PER_DAY,
 } from "@/lib/constants";
-import { DOSSIER_STATUT_HEX } from "@/components/sltt/status-badge";
 import { CHART_BRAND } from "@/lib/brand-colors";
 
-export const DASHBOARD_CHART_MONTHS = [
+const DASHBOARD_CHART_MONTHS = [
   "Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
 ];
 
@@ -78,24 +77,6 @@ export function computeRestesAPayer(dossiers: Dossier[]): {
   return { totalRestesAPayer: total, nbDossiersNonSoldes: count };
 }
 
-export function buildEncaissementsParMois(
-  ecrituresAvecDate: Ecriture[],
-  anchorDate: Date,
-): { mois: string; valeur: number }[] {
-  return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
-    const chartDate = new Date(
-      anchorDate.getFullYear(),
-      anchorDate.getMonth() - (CHART_MONTHS_OFFSET - index),
-      1,
-    );
-    const monthIndex = chartDate.getMonth();
-    const year = chartDate.getFullYear();
-    const valeur = filterByPeriode(ecrituresAvecDate, year, monthIndex)
-      .reduce((sum, ecriture) => sum + ecriture.montantPaye, 0);
-    return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur };
-  });
-}
-
 export function buildDossiersParMois(
   dossiers: Dossier[],
   anchorDate: Date,
@@ -152,42 +133,6 @@ export function buildStockRepartition(
     rows.push({ name: "Autres", value: rest, color: CHART_BRAND.slate });
   }
   return rows;
-}
-
-export function buildEcartsParPeriode(
-  dossiers: Dossier[],
-  anchorDate: Date,
-): { periode: string; ecart: number }[] {
-  return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
-    const chartDate = new Date(
-      anchorDate.getFullYear(),
-      anchorDate.getMonth() - (CHART_MONTHS_OFFSET - index),
-      1,
-    );
-    const monthIndex = chartDate.getMonth();
-    const year = chartDate.getFullYear();
-    const ecart = filterByPeriode(dossiers, year, monthIndex)
-      .reduce((sum, dossier) => sum + calculerEcart(dossier), 0);
-    return { periode: DASHBOARD_CHART_MONTHS[monthIndex], ecart };
-  });
-}
-
-/**
- * Uses DOSSIER_STATUT_HEX (status-badge.tsx) so the donut always agrees with
- * the DossierStatutBadge shown everywhere else — see LOGIC-04 in the audit.
- */
-export function buildStatutDonutData(
-  dossiers: Dossier[],
-): { name: string; value: number; color: string }[] {
-  const counts: Record<string, number> = {};
-  for (const d of dossiers) {
-    counts[d.statut] = (counts[d.statut] ?? 0) + 1;
-  }
-  return Object.entries(counts).map(([name, value]) => ({
-    name,
-    value,
-    color: DOSSIER_STATUT_HEX[name as keyof typeof DOSSIER_STATUT_HEX] ?? "#92A3BA",
-  }));
 }
 
 export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[]): LiveAlert[] {
