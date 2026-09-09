@@ -6,7 +6,6 @@ export const USER_ROLES = [
   "Administrateur",
   "Agent de transit",
   "Comptable",
-  "Magasinier",
 ] as const satisfies readonly UserRole[];
 
 export const strongPasswordSchema = z

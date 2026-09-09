@@ -47,18 +47,14 @@ function mapRole(role: string): UserRole {
     case "ADMIN":
     case "Administrateur":
       return "Administrateur";
-    case "TRANSITAIRE":
-    case "AGENT_TRANSIT":
-    case "Agent de transit":
-      return "Agent de transit";
     case "COMPTABLE":
     case "Comptable":
       return "Comptable";
-    case "MAGASINIER":
-    case "Magasinier":
-      return "Magasinier";
+    case "TRANSITAIRE":
+    case "AGENT_TRANSIT":
+    case "Agent de transit":
     default:
-      return "Administrateur";
+      return "Agent de transit";
   }
 }
 

@@ -25,7 +25,6 @@ import { useCurrentUser } from "@/hooks/use-permission";
 import { cn } from "@/lib/utils";
 
 import { AgentPanel } from "@/components/sltt/dashboard/agent-panel";
-import { MagasinierPanel } from "@/components/sltt/dashboard/magasinier-panel";
 import { ComptablePanel } from "@/components/sltt/dashboard/comptable-panel";
 import { AdminPanel } from "@/components/sltt/dashboard/admin-panel";
 import { DossiersEvolutionChartLazy } from "@/components/sltt/dashboard/dossiers-evolution-chart-lazy";
@@ -190,8 +189,6 @@ export function DashboardScreen() {
               go={go as (v: "dossiers" | "devis", opts?: { id?: string | null }) => void}
               openDossier={openDossier}
             />
-          ) : currentRole === "Magasinier" ? (
-            <MagasinierPanel go={go as (v: "entreposage" | "bons", opts?: { id?: string | null }) => void} />
           ) : currentRole === "Comptable" ? (
             <ComptablePanel go={go as (v: "comptabilite" | "bilans" | "factures", opts?: { id?: string | null }) => void} />
           ) : (

@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 const PRESET_ROLES: UserRole[] = [
   "Agent de transit",
   "Comptable",
-  "Magasinier",
   "Administrateur",
 ];
 

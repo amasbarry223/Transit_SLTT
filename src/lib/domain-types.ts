@@ -16,8 +16,7 @@ export type { ClientType, Client } from "@/features/clients/types";
 export type UserRole =
   | "Administrateur"
   | "Agent de transit"
-  | "Comptable"
-  | "Magasinier";
+  | "Comptable";
 
 export interface Dossier {
   id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Shield, Truck, Wallet, Warehouse } from "lucide-react";
+import { Shield, Truck, Wallet } from "lucide-react";
 import { normalizePermissions, ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import { defaultSelectionForRole } from "@/components/sltt/permission-matrix";
 import type { UserRole } from "@/lib/store";
@@ -12,14 +12,12 @@ export const allRoles: UserRole[] = [
   "Administrateur",
   "Agent de transit",
   "Comptable",
-  "Magasinier",
 ];
 
-export const roleTone: Record<UserRole, "red" | "blue" | "emerald" | "amber" | "indigo"> = {
+export const roleTone: Record<UserRole, "red" | "blue" | "emerald"> = {
   Administrateur: "red",
   "Agent de transit": "blue",
   Comptable: "emerald",
-  Magasinier: "amber",
 };
 
 export const roleMeta: Record<
@@ -40,11 +38,6 @@ export const roleMeta: Record<
     icon: Wallet,
     description: "Comptabilité, factures et rapports",
     gradient: "from-emerald-500/10 to-teal-500/10 border-emerald-200/60 dark:border-emerald-900/40",
-  },
-  Magasinier: {
-    icon: Warehouse,
-    description: "Entreposage et bons de sortie",
-    gradient: "from-amber-500/10 to-yellow-500/10 border-amber-200/60 dark:border-amber-900/40",
   },
 };
 

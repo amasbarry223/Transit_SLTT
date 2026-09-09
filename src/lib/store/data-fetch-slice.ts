@@ -5,6 +5,7 @@ import { api } from "@/lib/api-client";
 import { syncContratStats } from "@/lib/contrat-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapAuditLogFromDb } from "@/lib/audit";
+import { normalizeRole } from "@/lib/permissions";
 
 export interface DataFetchSlice {
   dataLoading: boolean;
@@ -67,31 +68,29 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
 
       const currentUser = api.getCurrentUser();
       const fetchedUsers = Array.isArray(usersRes) ? usersRes : [];
-      const users = fetchedUsers.length > 0
-        ? fetchedUsers.map((u: any) => ({
-            id: u.id,
-            nom: u.nom,
-            email: u.email,
-            role: (u.role === "ADMIN" ? "Administrateur" : u.role) as any,
-            permissions: u.permissions || [],
-            actif: u.actif ?? true,
-            derniereConnexion: u.derniereConnexion ? new Date(u.derniereConnexion).toISOString() : "",
-            annexeIds: (u.userAnnexes || []).map((ua: any) => ua.annexe?.id || ua.annexeId),
-          }))
-        : currentUser
-        ? [
-            {
-              id: currentUser.id,
-              nom: currentUser.nom,
-              email: currentUser.email,
-              role: (currentUser.role === "ADMIN" ? "Administrateur" : currentUser.role) as any,
-              permissions: currentUser.permissions || [],
-              actif: true,
-              derniereConnexion: new Date().toISOString(),
-              annexeIds: currentUser.annexeIds || [],
-            },
-          ]
-        : [];
+      let users = fetchedUsers.map((u: any) => ({
+        id: u.id,
+        nom: u.nom,
+        email: u.email,
+        role: normalizeRole(u.role),
+        permissions: u.permissions || [],
+        actif: u.actif ?? true,
+        derniereConnexion: u.derniereConnexion ? new Date(u.derniereConnexion).toISOString() : "",
+        annexeIds: (u.userAnnexes || []).map((ua: any) => ua.annexe?.id || ua.annexeId),
+      }));
+
+      if (currentUser && !users.some((u) => u.id === currentUser.id)) {
+        users.push({
+          id: currentUser.id,
+          nom: currentUser.nom,
+          email: currentUser.email,
+          role: normalizeRole(currentUser.role),
+          permissions: currentUser.permissions || [],
+          actif: true,
+          derniereConnexion: new Date().toISOString(),
+          annexeIds: currentUser.annexeIds || [],
+        });
+      }
 
       const rawDossiers = Array.isArray(dossiersRes?.data)
         ? dossiersRes.data

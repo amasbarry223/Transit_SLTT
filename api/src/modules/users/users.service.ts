@@ -7,24 +7,16 @@ export function mapToPrismaRole(role: string): RoleUtilisateur {
   switch (role) {
     case 'Administrateur':
     case 'ADMIN':
+    case 'Direction':
+    case 'DIRECTEUR':
       return RoleUtilisateur.ADMIN;
-    case 'Agent de transit':
-    case 'TRANSITAIRE':
-      return RoleUtilisateur.TRANSITAIRE;
     case 'Comptable':
     case 'COMPTABLE':
       return RoleUtilisateur.COMPTABLE;
-    case 'Commercial':
-    case 'COMMERCIAL':
-      return RoleUtilisateur.COMMERCIAL;
-    case 'Magasinier':
-    case 'OPERATEUR':
-      return RoleUtilisateur.OPERATEUR;
-    case 'Client':
-    case 'CLIENT':
-      return RoleUtilisateur.CLIENT;
+    case 'Agent de transit':
+    case 'TRANSITAIRE':
     default:
-      return RoleUtilisateur.OPERATEUR;
+      return RoleUtilisateur.TRANSITAIRE;
   }
 }
 
@@ -32,24 +24,16 @@ export function mapToAppRole(role: RoleUtilisateur | string): string {
   switch (role) {
     case RoleUtilisateur.ADMIN:
     case 'ADMIN':
+    case 'Direction':
+    case 'DIRECTEUR':
       return 'Administrateur';
-    case RoleUtilisateur.TRANSITAIRE:
-    case 'TRANSITAIRE':
-      return 'Agent de transit';
     case RoleUtilisateur.COMPTABLE:
     case 'COMPTABLE':
       return 'Comptable';
-    case RoleUtilisateur.COMMERCIAL:
-    case 'COMMERCIAL':
-      return 'Commercial';
-    case RoleUtilisateur.OPERATEUR:
-    case 'OPERATEUR':
-      return 'Magasinier';
-    case RoleUtilisateur.CLIENT:
-    case 'CLIENT':
-      return 'Client';
+    case RoleUtilisateur.TRANSITAIRE:
+    case 'TRANSITAIRE':
     default:
-      return String(role);
+      return 'Agent de transit';
   }
 }
 

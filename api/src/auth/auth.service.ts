@@ -3,6 +3,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -186,5 +187,32 @@ export class AuthService {
     });
 
     return updated;
+  }
+
+  /** Permet à un utilisateur connecté de modifier son mot de passe en validant l'ancien */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: userId },
+    });
+    if (!profile) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    const passwordValid = await bcrypt.compare(currentPassword, profile.passwordHash);
+    if (!passwordValid) {
+      throw new BadRequestException('Mot de passe actuel incorrect');
+    }
+
+    if (newPassword.length < 8) {
+      throw new BadRequestException('Le nouveau mot de passe doit contenir au moins 8 caractères');
+    }
+
+    const passwordHash = await this.hashPassword(newPassword);
+    await this.prisma.profile.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { success: true, message: 'Mot de passe mis à jour avec succès' };
   }
 }

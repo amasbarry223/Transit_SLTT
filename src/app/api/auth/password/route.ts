@@ -17,28 +17,14 @@ export async function PATCH(request: NextRequest) {
 
     const token = request.headers.get("authorization");
 
-    // 1. Vérifier le mot de passe actuel via /auth/login
-    const verifyRes = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: profile.email,
-        password: currentPassword,
-      }),
-    });
-
-    if (!verifyRes.ok) {
-      throw new AuthError("Mot de passe actuel incorrect.", 400);
-    }
-
-    // 2. Mettre à jour le mot de passe via PUT /users/:id
-    const updateRes = await fetch(`${API_URL}/users/${user.id}`, {
-      method: "PUT",
+    // Appel direct au endpoint /auth/password de NestJS (accessible à tout utilisateur authentifié)
+    const updateRes = await fetch(`${API_URL}/auth/password`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: token } : {}),
       },
-      body: JSON.stringify({ password: newPassword }),
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
 
     if (!updateRes.ok) {

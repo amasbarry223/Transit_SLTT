@@ -48,6 +48,8 @@ export function usePermission(perm: string): boolean {
 export function useCanView(view: ViewKey | null | undefined): boolean {
   const effective = useEffectivePermissionUser();
   if (!view) return false;
+  // La vue paramètres / profil ("Mon compte") est accessible à tout utilisateur connecté
+  if (view === "parametres") return Boolean(effective);
   const perm = VIEW_PERMISSIONS[view];
   if (!perm) return true;
   return hasPermission(effective, perm);
@@ -68,6 +70,21 @@ export function useHasRole(...roles: UserRole[]): boolean {
 /** Retourne l'objet User de l'utilisateur connecté, ou null. */
 export function useCurrentUser() {
   const currentUserId = useSession((s) => s.currentUserId);
+  const currentUserName = useSession((s) => s.currentUserName);
+  const currentRole = useSession((s) => s.currentRole);
   const user = useStore((s) => s.users.find((u) => u.id === currentUserId));
-  return user ?? null;
+  if (user) return user;
+  if (currentUserId) {
+    return {
+      id: currentUserId,
+      nom: currentUserName || "Utilisateur",
+      email: "",
+      role: currentRole ?? "Agent de transit",
+      permissions: [],
+      actif: true,
+      derniereConnexion: "",
+      annexeIds: [],
+    };
+  }
+  return null;
 }

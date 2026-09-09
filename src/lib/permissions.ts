@@ -159,27 +159,6 @@ export const ALL_PERMISSION_KEYS = PERMISSION_MODULES.flatMap((m) =>
 
 export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
   Administrateur: [...ALL_PERMISSION_KEYS],
-  Comptable: [
-    "dashboard:read",
-    "clients:read",
-    "dossiers:read",
-    "factures:read",
-    "factures:write",
-    "fournisseurs:read",
-    "comptabilite:read",
-    "comptabilite:write",
-    "recus-paiement:read",
-    "recus-paiement:write",
-    "bons:read",
-    "bons:write-caisse",
-    "rapports:read",
-    "contrats:read",
-    "contrats:write",
-    "archives:read",
-    "archives:write",
-    "documents:read",
-    "documents:write",
-  ],
   "Agent de transit": [
     "dashboard:read",
     "clients:read",
@@ -190,6 +169,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "dossiers:write",
     "dossiers:transition",
     "factures:read",
+    "stock:read",
+    "bons:read",
     "fournisseurs:read",
     "fournisseurs:write",
     "transporteurs:read",
@@ -199,17 +180,29 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     "archives:write",
     "documents:read",
     "documents:write",
+    "parametres:read",
   ],
-  Magasinier: [
+  Comptable: [
     "dashboard:read",
-    "stock:read",
-    "stock:write",
-    "bons:read",
-    "bons:write",
+    "clients:read",
+    "devis:read",
     "contrats:read",
     "contrats:write",
+    "dossiers:read",
+    "factures:read",
+    "factures:write",
+    "bons:read",
+    "bons:write-caisse",
+    "fournisseurs:read",
+    "transporteurs:read",
+    "comptabilite:read",
+    "comptabilite:write",
+    "recus-paiement:read",
+    "recus-paiement:write",
+    "rapports:read",
     "archives:read",
     "documents:read",
+    "parametres:read",
   ],
 };
 
@@ -221,19 +214,26 @@ export interface PermissionUser {
 
 export function normalizeRole(role: string | null | undefined): UserRole {
   if (!role) return "Administrateur";
-  switch (role) {
+  const r = String(role).trim();
+  switch (r) {
     case "ADMIN":
     case "Administrateur":
+    case "DIRECTION":
+    case "Direction":
+    case "Directeur":
       return "Administrateur";
+    case "TRANSITAIRE":
     case "AGENT_TRANSIT":
     case "Agent de transit":
+    case "COMMERCIAL":
+    case "Commercial":
+    case "MAGASINIER":
+    case "OPERATEUR":
+    case "Magasinier":
       return "Agent de transit";
     case "COMPTABLE":
     case "Comptable":
       return "Comptable";
-    case "MAGASINIER":
-    case "Magasinier":
-      return "Magasinier";
     default:
       return "Administrateur";
   }
@@ -243,7 +243,10 @@ export function hasPermission(user: PermissionUser | null | undefined, perm: str
   if (!user || user.actif === false) return false;
   const role = normalizeRole(user.role);
   if (role === "Administrateur") return true;
-  return normalizePermissions(user.permissions).includes(perm);
+  const perms = user.permissions && user.permissions.length > 0
+    ? normalizePermissions(user.permissions)
+    : (ROLE_DEFAULT_PERMISSIONS[role] ?? []);
+  return perms.includes(perm);
 }
 
 /**
@@ -256,7 +259,10 @@ export function resolvePermissionUser(
   if (user) {
     if (user.actif === false) return null;
     const role = normalizeRole(user.role);
-    return { ...user, role, permissions: normalizePermissions(user.permissions) };
+    const effectivePerms = user.permissions && user.permissions.length > 0
+      ? normalizePermissions(user.permissions)
+      : (ROLE_DEFAULT_PERMISSIONS[role] ?? []);
+    return { ...user, role, permissions: effectivePerms };
   }
   if (fallbackRole) {
     const role = normalizeRole(fallbackRole);

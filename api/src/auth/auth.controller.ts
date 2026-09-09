@@ -7,6 +7,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -49,5 +50,17 @@ export class AuthController {
     @Body() body: { nom?: string; email?: string },
   ) {
     return this.authService.updateProfile(user.id, body);
+  }
+
+  @Patch('password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @CurrentUser() user: CurrentUserType,
+    @Body() body: { currentPassword?: string; newPassword?: string },
+  ) {
+    if (!body.currentPassword || !body.newPassword) {
+      throw new BadRequestException('Mot de passe actuel et nouveau mot de passe requis');
+    }
+    return this.authService.changePassword(user.id, body.currentPassword, body.newPassword);
   }
 }

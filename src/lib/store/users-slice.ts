@@ -146,7 +146,6 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
     if (!trimmedEmail) throw new Error("L'e-mail est requis.");
 
     const existing = get().users.find((u) => u.id === id);
-    if (!existing) throw new Error("Utilisateur introuvable.");
 
     const res = await fetchWithAuth("/api/auth/profile", {
       method: "PATCH",
@@ -156,17 +155,36 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
     if (!res.ok) throw new Error(payload.error || "Impossible de mettre à jour le profil.");
 
     const updated = payload.user ? mapProfileFromDb(payload.user) : {
-      ...existing,
+      ...(existing || {
+        id,
+        role: useSession.getState().currentRole,
+        permissions: [],
+        actif: true,
+        derniereConnexion: "",
+        annexeIds: [],
+      }),
       nom: trimmedNom,
       email: trimmedEmail,
     };
 
     set((s) => ({
-      users: s.users.map((u) =>
-        u.id === id ? { ...u, nom: updated.nom, email: updated.email } : u,
-      ),
+      users: s.users.some((u) => u.id === id)
+        ? s.users.map((u) => (u.id === id ? { ...u, nom: updated.nom, email: updated.email } : u))
+        : [updated, ...s.users],
     }));
 
     useSession.getState().setCurrentUserName(updated.nom);
+
+    try {
+      const { api } = await import("@/lib/api-client");
+      const currentSessionUser = api.getCurrentUser();
+      if (currentSessionUser) {
+        currentSessionUser.nom = updated.nom;
+        currentSessionUser.email = updated.email;
+        localStorage.setItem("transit_sltt_user", JSON.stringify(currentSessionUser));
+      }
+    } catch {
+      /* ignore */
+    }
   },
 });
