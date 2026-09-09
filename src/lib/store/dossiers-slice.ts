@@ -132,6 +132,9 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         dateDedouanement: input.dateDedouanement,
         noConteneur: input.noConteneur,
         conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
+        // Démarre "En cours", pas le défaut Prisma BROUILLON — sinon la 1re
+        // transition de statut échoue après rechargement (assertDossierTransition).
+        statut,
       });
       if (created?.id) {
         newDossier.id = created.id;

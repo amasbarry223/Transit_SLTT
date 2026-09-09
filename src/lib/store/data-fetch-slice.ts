@@ -7,6 +7,7 @@ import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
+import type { DossierStatut } from "@/lib/domain-types";
 
 export interface DataFetchSlice {
   dataLoading: boolean;
@@ -105,10 +106,12 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         else if (vt.includes("ROUT") || vt.includes("TERR")) modeTransport = "Routier";
         else if (vt.includes("FERR")) modeTransport = "Ferroviaire";
 
-        let statut: "Brouillon" | "En cours" | "Dédouané" | "Livré" | "Soldé" = "En cours";
+        // Le flux frontend ne connaît pas d'état "Brouillon" (DossierStatut) :
+        // un dossier BROUILLON côté API est traité comme "En cours", sinon sa
+        // transition suivante échouerait (assertDossierTransition).
+        let statut: DossierStatut = "En cours";
         const st = String(d.statut || "").toUpperCase();
-        if (st.includes("BROUILLON")) statut = "Brouillon";
-        else if (st.includes("DEDOUAN")) statut = "Dédouané";
+        if (st.includes("DEDOUAN")) statut = "Dédouané";
         else if (st.includes("LIVR")) statut = "Livré";
         else if (st.includes("CLOTUR") || st.includes("SOLDE")) statut = "Soldé";
         else statut = "En cours";
@@ -131,7 +134,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           fraisPrestation: Number(d.fraisPrestation || 0),
           montantInvesti: Number(d.montantInvesti || 0),
           montantPaye: Number(d.montantPaye || 0),
-          statut: statut as any,
+          statut,
           date: d.dateDepart
             ? new Date(d.dateDepart).toISOString().split("T")[0]
             : (d.date ? String(d.date).split("T")[0] : (d.createdAt ? new Date(d.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0])),
