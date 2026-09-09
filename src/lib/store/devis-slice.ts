@@ -5,15 +5,12 @@ import { useSession } from "@/lib/session/session-store";
 import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
-import { mapDevisFromDb } from "@/features/devis/services/devis-mapper";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export { mapDevisFromDb };
 
 function currentUserAnnexeIds(get: () => SLTTState): string[] {
   const userId = useSession.getState().currentUserId;

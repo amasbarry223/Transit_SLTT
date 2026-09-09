@@ -4,9 +4,18 @@ import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { normalizePermissions } from "@/lib/permissions";
 import type { User, UserRole } from "@/lib/domain-types";
 import type { UserInput, SLTTState } from "@/lib/store";
-import type { ProfileRow } from "@/lib/db-rows";
 
-export function mapProfileFromDb(row: ProfileRow): User {
+interface ProfileRow {
+  id: string;
+  nom: string;
+  email: string;
+  role: string;
+  permissions: string[] | null;
+  actif: boolean;
+  derniere_connexion: string | null;
+}
+
+function mapProfileFromDb(row: ProfileRow): User {
   const role = row.role as UserRole;
   const raw = Array.isArray(row.permissions) ? row.permissions : [];
   const normalized = normalizePermissions(raw);

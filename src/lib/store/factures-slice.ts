@@ -8,45 +8,12 @@ import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { Facture, FactureLigne, FactureStatut } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import type { FactureInput, SLTTState } from "@/lib/store";
-import type { FactureRow } from "@/lib/db-rows";
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
   insertWithReferenceRetry,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapFactureFromDb(row: FactureRow): Facture {
-  return {
-    id: row.id,
-    numero: row.numero,
-    dossierId: row.dossier_id,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || "—",
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    date: row.date,
-    dateEcheance: row.date_echeance,
-    statut: row.statut,
-    tauxTVA: Number(row.taux_tva ?? 0),
-    montantHT: Number(row.montant_ht ?? 0),
-    montantTVA: Number(row.montant_tva ?? 0),
-    montantTTC: Number(row.montant_ttc ?? 0),
-    montantPaye: Number(row.montant_paye ?? 0),
-    notes: row.notes,
-    creePar: row.cree_par,
-    creeLe: row.cree_le ?? row.created_at,
-    lignes: (row.facture_lignes || []).map((ligne) => ({
-      id: ligne.id,
-      description: ligne.description,
-      quantite: Number(ligne.quantite ?? 0),
-      prixUnitaire: Number(ligne.prix_unitaire ?? 0),
-      montantHT: Number(ligne.montant_ht ?? 0),
-      compagnie: ligne.compagnie || undefined,
-      bordereauLivraison: ligne.bordereau_livraison || undefined,
-    })),
-  };
-}
 
 export interface FacturesSlice {
   factures: Facture[];

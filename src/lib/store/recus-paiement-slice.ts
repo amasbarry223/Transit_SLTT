@@ -3,26 +3,7 @@ import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { RecuPaiement, RecuPaiementInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
-import type { RecuPaiementRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapRecuPaiementFromDb(row: RecuPaiementRow): RecuPaiement {
-  return {
-    id: row.id,
-    reference: row.reference,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    nom: row.nom,
-    prenom: row.prenom,
-    somme: Number(row.somme ?? 0),
-    motif: row.motif,
-    montantPaye: Number(row.montant_paye ?? 0),
-    reste: Number(row.reste ?? 0),
-    statut: row.statut,
-    creePar: row.cree_par || undefined,
-    createdAt: row.created_at,
-  };
-}
 
 export interface RecusPaiementSlice {
   recusPaiement: RecuPaiement[];

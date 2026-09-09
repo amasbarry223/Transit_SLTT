@@ -2,44 +2,7 @@ import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
 import type { ImportStockHistoriqueInput, SLTTState, StockItemInput, UpdateStockItemInput } from "@/lib/store";
-import type { MouvementRow, StockItemRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapStockItemFromDb(row: StockItemRow): StockItem {
-  return {
-    id: row.id,
-    clientId: row.client_id || undefined,
-    clientNom: row.clients?.nom || undefined,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    marchandise: row.marchandise,
-    quantite: Number(row.quantite ?? 0),
-    unite: row.unite,
-    seuil: Number(row.seuil ?? 0),
-    depositaire: row.depositaire,
-    commercial: row.commercial,
-    sommePayee: Number(row.somme_payee ?? 0),
-    resteAPayer: Number(row.reste_a_payer ?? 0),
-    date: row.date,
-  };
-}
-
-export function mapMouvementFromDb(row: MouvementRow): Mouvement {
-  return {
-    id: row.id,
-    stockId: row.stock_id || undefined,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    date: row.date,
-    type: row.type,
-    marchandise: row.marchandise || "",
-    quantite: Number(row.quantite ?? 0),
-    unite: row.unite || "",
-    responsable: row.responsable || "",
-    bonRef: row.bon_ref || undefined,
-    motif: row.motif || undefined,
-  };
-}
 
 export interface StockSlice {
   stock: StockItem[];

@@ -3,25 +3,7 @@ import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import type { Societe, SocieteInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
-import type { SocieteRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapSocieteFromDb(row: SocieteRow): Societe {
-  return {
-    id: row.id,
-    nom: row.nom,
-    raisonSociale: row.raison_sociale || undefined,
-    actif: row.actif,
-    logoUrl: row.logo_url || undefined,
-    adresse: row.adresse || undefined,
-    telephone: row.telephone || undefined,
-    rccm: row.rccm || undefined,
-    nif: row.nif || undefined,
-    afficherNomAvecLogo: row.afficher_nom_avec_logo ?? true,
-    signataireDg: row.signataire_dg || undefined,
-    signatairePdg: row.signataire_pdg || undefined,
-  };
-}
 
 export const DEFAULT_SOCIETE: Societe = {
   id: "22222222-2222-2222-2222-222222222222",

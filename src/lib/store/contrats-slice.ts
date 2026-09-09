@@ -13,58 +13,8 @@ import type {
   Depense,
 } from "@/lib/domain-types";
 import type { AddDepenseInput, SLTTState } from "@/lib/store";
-import type { ContratPrestationRow, ContratRow, DepenseRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 import { nextYearlyReference } from "@/lib/store/reference";
-
-export function mapContratFromDb(
-  row: ContratRow,
-): Omit<Contrat, "nbPrestations" | "nbPrestationsRealisees" | "totalDepenses"> {
-  return {
-    id: row.id,
-    reference: row.reference,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || "—",
-    objet: row.objet,
-    dateDebut: row.date_debut,
-    dateFin: row.date_fin || undefined,
-    montant: Number(row.montant ?? 0),
-    statut: row.statut,
-    notes: row.notes || undefined,
-    creePar: row.cree_par || undefined,
-    creeLe: row.created_at,
-  };
-}
-
-export function mapDepenseFromDb(row: DepenseRow): Depense {
-  return {
-    id: row.id,
-    contratId: row.contrat_id,
-    libelle: row.libelle,
-    montant: Number(row.montant ?? 0),
-    dateDepense: row.date_depense,
-    modePaiement: row.mode_paiement,
-    justificatifPath: row.justificatif_path || undefined,
-    note: row.note || undefined,
-    creePar: row.cree_par || undefined,
-  };
-}
-
-export function mapContratPrestationFromDb(row: ContratPrestationRow): ContratPrestation {
-  return {
-    id: row.id,
-    contratId: row.contrat_id,
-    libelle: row.libelle,
-    description: row.description || undefined,
-    montant: row.montant != null ? Number(row.montant) : undefined,
-    statut: row.statut,
-    datePrevue: row.date_prevue || undefined,
-    dateRealisation: row.date_realisation || undefined,
-    creePar: row.cree_par || undefined,
-  };
-}
 
 export interface ContratsSlice {
   contrats: Contrat[];

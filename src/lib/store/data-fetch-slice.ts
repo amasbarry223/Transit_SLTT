@@ -3,6 +3,7 @@ import { logWarn } from "@/shared/logger";
 import type { SLTTState } from "@/lib/store";
 import { api } from "@/lib/api-client";
 import { syncContratStats } from "@/lib/contrat-stats";
+import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
@@ -395,6 +396,27 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
 
       const settingsMap = (settingsRes as any)?.map || {};
 
+      const rawClients = Array.isArray((clients as any)?.data)
+        ? (clients as any).data
+        : Array.isArray(clients)
+        ? clients
+        : [];
+      const mappedClients = rawClients.map((c: any) => ({
+        id: c.id,
+        nom: c.nom,
+        type: (String(c.type || "").toUpperCase() === "PARTICULIER" ? "Particulier" : "Entreprise") as
+          | "Particulier"
+          | "Entreprise",
+        telephone: c.telephone ?? "",
+        email: c.email ?? "",
+        adresse: c.adresse ?? "",
+        annexeId: c.annexeId ?? c.annexe_id ?? "",
+        annexeNom: c.annexe?.nom ?? undefined,
+        nbDossiers: c._count?.dossiers ?? 0,
+        totalDu: 0,
+        totalPaye: 0,
+      }));
+
       set((state) => {
         const nextContrats = syncContratStats(state.depenses, state.contratPrestations, mappedContrats);
 
@@ -420,7 +442,12 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         const intermediateState = {
           ...state,
           dossiers: mappedDossiers as any,
-          clients: (clients || []) as any,
+          clients: syncClientStats(
+            mappedDossiers as any,
+            mappedFactures as any,
+            state.ecritures,
+            mappedClients as any,
+          ) as any,
           annexes: (annexes || []) as any,
           factures: mappedFactures as any,
           fournisseurs: mappedFournisseurs as any,

@@ -1,7 +1,6 @@
 import type { StateCreator } from "zustand";
 import type { ContratFichier } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
-import type { ContratFichierRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 interface AddContratFichierInput {
@@ -12,17 +11,6 @@ interface AddContratFichierInput {
   dataUrl: string;
 }
 
-export function mapContratFichierFromDb(row: ContratFichierRow): ContratFichier {
-  return {
-    id: row.id,
-    contratId: row.contrat_id,
-    nom: row.nom,
-    taille: Number(row.taille ?? 0),
-    type: row.type,
-    dateUpload: row.date_upload || row.created_at,
-    storagePath: row.storage_path,
-  };
-}
 
 export interface ContratFichiersSlice {
   contratFichiers: ContratFichier[];

@@ -8,45 +8,7 @@ import type {
   OperationComptableInput,
 } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
-import type { ClotureCaisseRow, OperationComptableRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapOperationComptableFromDb(row: OperationComptableRow): OperationComptable {
-  return {
-    id: row.id,
-    reference: row.reference,
-    entiteType: "annexe",
-    annexeId: row.annexe_id || undefined,
-    date: row.date,
-    clientId: row.client_id || undefined,
-    dossierId: row.dossier_id || undefined,
-    dossierRef: row.dossiers?.reference || undefined,
-    clientNom: row.client_nom,
-    nature: row.nature,
-    type: row.type,
-    montant: Number(row.montant || 0),
-    modePaiement: (row.mode_paiement as OperationComptable["modePaiement"]) || "Espèces",
-    source: row.source,
-    importRef: row.import_ref || undefined,
-    creePar: row.cree_par || undefined,
-  };
-}
-
-export function mapClotureCaisseFromDb(row: ClotureCaisseRow): ClotureCaisse {
-  return {
-    id: row.id,
-    entiteType: "annexe",
-    annexeId: row.annexe_id || undefined,
-    periodeDebut: row.periode_debut,
-    periodeFin: row.periode_fin,
-    soldeTheorique: Number(row.solde_theorique || 0),
-    soldeConstate: Number(row.solde_constate || 0),
-    ecart: Number(row.ecart || 0),
-    note: row.note || undefined,
-    cloturePar: row.cloture_par || undefined,
-    clotureLe: row.cloture_le,
-  };
-}
 
 export interface RecordClotureCaisseInput {
   entiteType: EntiteComptableType;

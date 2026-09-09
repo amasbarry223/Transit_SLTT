@@ -2,29 +2,9 @@ import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import type { Transporteur, TransporteurStatut } from "@/lib/domain-types";
 import type { TransporteurInput, SLTTState } from "@/lib/store";
-import type { TransporteurRow } from "@/lib/db-rows";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapTransporteurFromDb(row: TransporteurRow): Transporteur {
-  return {
-    id: row.id,
-    nom: row.nom,
-    contact: row.contact || "",
-    telephone: row.telephone,
-    email: row.email || undefined,
-    vehicule: row.vehicule,
-    immatriculation: row.immatriculation,
-    trajet: row.trajet || "",
-    capacite: row.capacite ? Number(row.capacite) : 0,
-    statut: row.statut,
-    nbDossiers: 0,
-    dateCreation: row.date_creation || new Date().toISOString().slice(0, 10),
-    notes: row.notes || undefined,
-    annexeId: row.annexe_id,
-  };
-}
 
 export interface TransporteursSlice {
   transporteurs: Transporteur[];

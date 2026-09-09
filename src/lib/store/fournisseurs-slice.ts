@@ -6,41 +6,7 @@ import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import type { DossierFournisseur, DossierFournisseurInput, Fournisseur, FournisseurInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
-import type { DossierFournisseurRow, FournisseurRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapFournisseurFromDb(row: FournisseurRow): Fournisseur {
-  return {
-    id: row.id,
-    nom: row.nom,
-    type: row.type,
-    contact: row.contact,
-    telephone: row.telephone,
-    email: row.email || "",
-    adresse: row.adresse || "",
-    tarifContractuel: row.tarif_contractuel ? Number(row.tarif_contractuel) : undefined,
-    nbDossiers: 0,
-    montantTotal: 0,
-    statut: row.statut,
-    annexeId: row.annexe_id,
-  };
-}
-
-export function mapDossierFournisseurFromDb(row: DossierFournisseurRow): DossierFournisseur {
-  return {
-    id: row.id,
-    dossierId: row.dossier_id,
-    dossierRef: row.dossiers?.reference || undefined,
-    fournisseurId: row.fournisseur_id,
-    fournisseurNom: row.fournisseurs?.nom || "",
-    type: row.fournisseurs?.type || ("Transport" as DossierFournisseur["type"]),
-    description: row.description,
-    montantBudgete: Number(row.montant_budgete ?? 0),
-    montantReel: Number(row.montant_reel ?? 0),
-    statut: row.statut,
-    date: row.date || new Date().toISOString().slice(0, 10),
-  };
-}
 
 export interface FournisseursSlice {
   fournisseurs: Fournisseur[];

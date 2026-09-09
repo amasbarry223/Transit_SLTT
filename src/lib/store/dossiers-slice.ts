@@ -12,7 +12,6 @@ import {
 } from "@/lib/constants";
 import { resteAPayer, type Dossier, type DossierStatut, type PaiementMode } from "@/lib/domain-types";
 import type { DossierInput, ImportDossierHistoriqueInput, SLTTState } from "@/lib/store";
-import type { DossierRow } from "@/lib/db-rows";
 import {
   shouldSyncEcritureOnDossierSolde,
   syncEcritureWhenDossierSolde,
@@ -24,34 +23,6 @@ import {
   bumpTrailingSeq,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapDossierFromDb(row: DossierRow): Dossier {
-  return {
-    id: row.id,
-    reference: row.reference,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || "—",
-    bl: row.bl,
-    camion: row.camion,
-    nature: row.nature,
-    droitDouane: Number(row.droit_douane ?? 0),
-    fraisCircuit: Number(row.frais_circuit ?? 0),
-    fraisPrestation: Number(row.frais_prestation ?? 0),
-    montantInvesti: Number(row.montant_investi ?? 0),
-    montantPaye: Number(row.montant_paye ?? 0),
-    statut: row.statut,
-    date: row.date,
-    dateEcheance: row.date_echeance ?? undefined,
-    dateDedouanement: row.date_dedouanement ?? undefined,
-    modeTransport: row.mode_transport ?? undefined,
-    noConteneur: row.no_conteneur ?? undefined,
-    portEntree: row.port_entree ?? undefined,
-    poidsTotal: row.poids_total ? Number(row.poids_total) : undefined,
-    notes: row.notes ?? undefined,
-  };
-}
 
 export interface DossiersSlice {
   dossiers: Dossier[];

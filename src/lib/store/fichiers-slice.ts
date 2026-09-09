@@ -1,31 +1,9 @@
 import type { StateCreator } from "zustand";
 import type { DossierFichier, SubDossier } from "@/lib/domain-types";
 import type { FichierInput, SLTTState, SubDossierInput } from "@/lib/store";
-import type { DossierFichierRow, SubDossierRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
-export function mapSubDossierFromDb(row: SubDossierRow): SubDossier {
-  return {
-    id: row.id,
-    dossierId: row.dossier_id,
-    nom: row.nom,
-    description: row.description,
-    dateCreation: row.date_creation || new Date().toISOString(),
-  };
-}
 
-export function mapFichierFromDb(row: DossierFichierRow): DossierFichier {
-  return {
-    id: row.id,
-    dossierId: row.dossier_id,
-    sousDossierId: row.sous_dossier_id,
-    nom: row.nom,
-    taille: Number(row.taille ?? 0),
-    type: row.type,
-    dateUpload: row.date_upload || new Date().toISOString(),
-    dataUrl: row.data_url,
-  };
-}
 
 export interface FichiersSlice {
   subDossiers: SubDossier[];

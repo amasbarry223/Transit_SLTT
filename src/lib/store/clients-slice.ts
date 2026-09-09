@@ -2,12 +2,9 @@ import type { StateCreator } from "zustand";
 import type { Client, ClientInput } from "@/features/clients/types";
 import { clientInputSchema } from "@/features/clients/schemas/client-schema";
 import { clientService } from "@/features/clients/services/client-service";
-import { mapClientFromDb } from "@/features/clients/services/client-mapper";
 import { ValidationError } from "@/shared/errors";
 import type { SLTTState } from "@/lib/store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export { mapClientFromDb };
 
 export interface ClientsSlice {
   clients: Client[];

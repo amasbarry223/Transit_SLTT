@@ -3,52 +3,12 @@ import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { BonLigne, BonSortie, BonSortieCaisse, BonSortieCaisseInput, Mouvement, StockItem } from "@/lib/domain-types";
 import type { BonInput, SLTTState } from "@/lib/store";
-import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
 } from "@/lib/store/reference";
-
-export function mapBonFromDb(row: BonSortieRow): BonSortie {
-  return {
-    id: row.id,
-    reference: row.reference,
-    date: row.date,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || row.client_nom || "",
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    stockId: row.stock_id || undefined,
-    marchandise: row.marchandise,
-    quantite: Number(row.quantite ?? 0),
-    unite: row.unite,
-    motif: row.motif,
-    montant: Number(row.montant ?? 0),
-    statut: row.statut,
-  };
-}
-
-export function mapBonSortieCaisseFromDb(row: BonSortieCaisseRow): BonSortieCaisse {
-  return {
-    id: row.id,
-    reference: row.reference,
-    date: row.date,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    montantTotal: Number(row.montant_total ?? 0),
-    creePar: row.cree_par || undefined,
-    creeLe: row.created_at,
-    lignes: (row.bons_sortie_caisse_lignes || []).map((ligne) => ({
-      id: ligne.id,
-      date: ligne.date,
-      beneficiaire: ligne.beneficiaire,
-      motif: ligne.motif,
-      montant: Number(ligne.montant ?? 0),
-    })),
-  };
-}
 
 export function findStockForBon(
   stock: StockItem[],
