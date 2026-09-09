@@ -433,6 +433,23 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
 
       const settingsMap = (settingsRes as any)?.map || {};
 
+      // L'API renvoie `ville` ; le front attend `villeSiege`. Sans ce mapping
+      // toutes les annexes affichaient une ville vide. rccm/nif/devise n'ont
+      // pas encore de colonne côté API (repli sur les paramètres société).
+      const rawAnnexes = Array.isArray(annexes) ? annexes : [];
+      const mappedAnnexes = rawAnnexes.map((a: any) => ({
+        id: a.id,
+        nom: a.nom,
+        code: a.code ?? "",
+        villeSiege: a.villeSiege ?? a.ville ?? "",
+        adresse: a.adresse ?? undefined,
+        telephone: a.telephone ?? undefined,
+        rccm: a.rccm ?? settingsMap.societe_rccm ?? undefined,
+        nif: a.nif ?? settingsMap.societe_nif ?? undefined,
+        devise: a.devise ?? settingsMap.devise_principale ?? "FCFA",
+        actif: a.actif !== false,
+      }));
+
       const rawClients = Array.isArray((clients as any)?.data)
         ? (clients as any).data
         : Array.isArray(clients)
@@ -485,7 +502,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
             state.ecritures,
             mappedClients as any,
           ) as any,
-          annexes: (annexes || []) as any,
+          annexes: mappedAnnexes as any,
           factures: mappedFactures as any,
           fournisseurs: mappedFournisseurs as any,
           contrats: nextContrats as any,

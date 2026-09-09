@@ -39,18 +39,18 @@ export class AnnexesService {
     return this.prisma.annexe.create({ data });
   }
 
-  async update(id: string, data: Partial<{
-    nom: string;
-    adresse?: string;
-    ville?: string;
-    pays?: string;
-    telephone?: string;
-    email?: string;
-    estSiege?: boolean;
-    actif?: boolean;
-  }>) {
+  async update(id: string, data: any) {
     await this.findOne(id);
-    return this.prisma.annexe.update({ where: { id }, data });
+    // Liste blanche : le front peut envoyer des champs "métier" (villeSiege,
+    // rccm…) qui n'existent pas sur le modèle et feraient planter Prisma.
+    const updateData: any = {};
+    for (const k of ['nom', 'adresse', 'ville', 'pays', 'telephone', 'email', 'estSiege', 'actif'] as const) {
+      if (data[k] !== undefined) updateData[k] = data[k];
+    }
+    if (data.villeSiege !== undefined && updateData.ville === undefined) {
+      updateData.ville = data.villeSiege;
+    }
+    return this.prisma.annexe.update({ where: { id }, data: updateData });
   }
 
   async remove(id: string) {
