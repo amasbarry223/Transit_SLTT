@@ -12,6 +12,12 @@ import type { JwtPayload, CurrentUserType } from './auth.types';
 
 const BCRYPT_ROUNDS = 12;
 
+// Un seul point de vérité pour le secret du refresh token : signer avec une
+// valeur et vérifier avec une autre (env absente) déconnectait les utilisateurs
+// dès l'expiration de l'access token.
+const JWT_REFRESH_SECRET =
+  process.env.JWT_REFRESH_SECRET || 'transit_sltt_super_secret_refresh_key_dev_2025';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -66,7 +72,7 @@ export class AuthService {
     const refreshToken = this.jwt.sign(
       { sub: profile.id },
       {
-        secret: process.env.JWT_REFRESH_SECRET || 'transit_sltt_super_secret_refresh_key_dev_2025',
+        secret: JWT_REFRESH_SECRET,
         expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as any,
       },
     );
@@ -99,7 +105,7 @@ export class AuthService {
     let payload: { sub: string };
     try {
       payload = this.jwt.verify<{ sub: string }>(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: JWT_REFRESH_SECRET,
       });
     } catch {
       throw new UnauthorizedException('Refresh token invalide ou expiré');

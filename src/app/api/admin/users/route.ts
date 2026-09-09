@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         email: email.trim().toLowerCase(),
         role: role === "Administrateur" ? "ADMIN" : role,
         permissions: normalizedPerms,
-        motDePasse: password,
+        password,
         annexeIds: [],
       }),
     });

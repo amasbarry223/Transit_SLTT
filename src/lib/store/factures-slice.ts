@@ -278,7 +278,9 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     await api.factures.enregistrerPaiement(id, { montant: effective, caisseId: caisse.id });
 
     const newPaye = fact.montantPaye + effective;
-    const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
+    // Même tolérance d'arrondi que le backend (factures.service) pour ne pas
+    // afficher "Partielle" alors que l'API a déjà passé la facture à PAYEE.
+    const newStatut: FactureStatut = newPaye >= fact.montantTTC - 0.5 ? "Soldée" : "Partielle";
     set((s) => {
       const updatedFactures = s.factures.map((f) =>
         f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f,

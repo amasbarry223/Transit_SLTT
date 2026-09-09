@@ -34,13 +34,15 @@ export class UsersController {
   @Post()
   @Roles('ADMIN')
   async create(@Body() body: any) {
-    return this.usersService.create(body);
+    // Le proxy Next.js envoie le mot de passe sous "motDePasse" ; sans cette
+    // normalisation le service prenait le mot de passe par défaut pour tous.
+    return this.usersService.create({ ...body, password: body.password ?? body.motDePasse });
   }
 
   @Put(':id')
   @Roles('ADMIN')
   async update(@Param('id') id: string, @Body() body: any) {
-    return this.usersService.update(id, body);
+    return this.usersService.update(id, { ...body, password: body.password ?? body.motDePasse });
   }
 
   @Patch(':id/password')
