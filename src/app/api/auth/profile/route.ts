@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await res.json();
 
-    await insertAdminAuditLog(null, { id: user.id, nom }, {
+    await insertAdminAuditLog(token, { id: user.id, nom }, {
       action: "Modification",
       detail: `Profil de ${nom} mis à jour`,
     });

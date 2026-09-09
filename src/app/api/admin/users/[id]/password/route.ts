@@ -57,7 +57,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       throw new AuthError(errData.message || "Impossible de réinitialiser le mot de passe.", res.status);
     }
 
-    await insertAdminAuditLog(null, actorProfile, {
+    await insertAdminAuditLog(token, actorProfile, {
       action: "Modification",
       detail: `Mot de passe réinitialisé pour l'utilisateur ${id}`,
     });

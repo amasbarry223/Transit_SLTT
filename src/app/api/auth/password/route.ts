@@ -32,7 +32,7 @@ export async function PATCH(request: NextRequest) {
       throw new AuthError(errData.message || "Impossible de mettre à jour le mot de passe.", updateRes.status);
     }
 
-    await insertAdminAuditLog(null, profile, {
+    await insertAdminAuditLog(token, profile, {
       action: "Modification",
       detail: "Mot de passe modifié par l'utilisateur",
     });

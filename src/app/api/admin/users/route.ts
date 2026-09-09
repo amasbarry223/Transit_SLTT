@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const user = await res.json();
 
-    await insertAdminAuditLog(null, actorProfile, {
+    await insertAdminAuditLog(token, actorProfile, {
       action: "Création",
       detail: `Utilisateur ${nom.trim()} créé`,
     });

@@ -32,6 +32,9 @@ export class ApiError extends Error {
 
 class ApiClient {
   private baseUrl: string;
+  /** Rafraîchissement en cours — partagé pour éviter que N requêtes 401
+   *  simultanées ne déclenchent N appels /auth/refresh concurrents. */
+  private refreshInFlight: Promise<boolean> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -136,6 +139,15 @@ class ApiClient {
   }
 
   private async refreshTokens(): Promise<boolean> {
+    // Un seul refresh à la fois : les autres requêtes 401 attendent son résultat.
+    if (this.refreshInFlight) return this.refreshInFlight;
+    this.refreshInFlight = this.doRefreshTokens().finally(() => {
+      this.refreshInFlight = null;
+    });
+    return this.refreshInFlight;
+  }
+
+  private async doRefreshTokens(): Promise<boolean> {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) return false;
 

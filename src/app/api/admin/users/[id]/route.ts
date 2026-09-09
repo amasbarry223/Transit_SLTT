@@ -113,7 +113,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     const user = await res.json();
 
-    await insertAdminAuditLog(null, actorProfile, {
+    await insertAdminAuditLog(token, actorProfile, {
       action: "Modification",
       detail: `Utilisateur ${nom.trim()} mis à jour`,
     });
@@ -182,7 +182,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       throw new AuthError(errData.message || "Impossible de supprimer l'utilisateur.", res.status);
     }
 
-    await insertAdminAuditLog(null, actorProfile, {
+    await insertAdminAuditLog(token, actorProfile, {
       action: "Suppression",
       detail: `Utilisateur ${targetNom} supprimé`,
     });

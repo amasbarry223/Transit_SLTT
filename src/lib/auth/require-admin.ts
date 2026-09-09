@@ -1,4 +1,4 @@
-import { logError } from "@/shared/logger";
+import { logError, logWarn } from "@/shared/logger";
 
 export class AuthError extends Error {
   status: number;
@@ -38,30 +38,6 @@ interface NestUser {
   actif?: boolean;
 }
 
-interface JwtClaims {
-  sub?: string;
-  email?: string;
-  nom?: string;
-  role?: string;
-  permissions?: string[];
-  annexeIds?: string[];
-  actif?: boolean;
-}
-
-/**
- * Extrait le payload d'un JWT de façon sécurisée côté serveur Next.js
- */
-function decodeJwtClaims(token: string): JwtClaims | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const json = Buffer.from(parts[1], "base64url").toString("utf8");
-    return JSON.parse(json) as JwtClaims;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Authentifie la requête via l'API NestJS (ou décode le JWT émis par NestJS).
  * Remplace définitivement l'ancien auth Supabase.
@@ -89,32 +65,20 @@ async function getAuthenticatedProfile(request: Request): Promise<{
 
     if (res.ok) {
       nestUser = (await res.json()) as NestUser;
-    } else if (res.status === 401 || res.status === 403) {
+    } else {
+      // Toute réponse non-OK (401, 403, 500…) échoue fermé en 401. On NE
+      // retombe PAS sur les claims du JWT : non vérifiés = forgeables. Seul
+      // NestJS, qui détient le secret, fait autorité sur l'identité.
       const errData = (await res.json().catch(() => ({}))) as { message?: string };
       throw new AuthError(errData.message || "Profil introuvable ou inactif.", 401);
     }
   } catch (err) {
     if (err instanceof AuthError) throw err;
+    logWarn("[auth] /auth/me injoignable", err);
+    throw new AuthError("Session invalide ou expirée.", 401);
   }
 
-  // Si l'API NestJS n'a pas pu être interrogée via HTTP ou en fallback direct,
-  // on utilise les claims du JWT émis par NestJS
-  if (!nestUser) {
-    const claims = decodeJwtClaims(token);
-    if (claims && claims.sub) {
-      nestUser = {
-        id: claims.sub,
-        email: claims.email || "",
-        nom: claims.nom || "Utilisateur",
-        role: claims.role || "OPERATEUR",
-        permissions: claims.permissions || [],
-        annexeIds: claims.annexeIds || [],
-        actif: claims.actif !== false,
-      };
-    }
-  }
-
-  if (!nestUser) {
+  if (!nestUser?.id) {
     throw new AuthError("Session invalide ou expirée.", 401);
   }
 

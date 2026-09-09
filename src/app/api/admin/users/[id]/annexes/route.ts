@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       throw new AuthError(errData.message || "Impossible de mettre à jour les annexes.", res.status);
     }
 
-    await insertAdminAuditLog(null, actorProfile, {
+    await insertAdminAuditLog(token, actorProfile, {
       action: "Modification",
       detail: `Annexes de l'utilisateur ${id} mises à jour`,
     });
