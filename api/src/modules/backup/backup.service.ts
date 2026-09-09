@@ -94,27 +94,30 @@ export class BackupService {
   }
 
   async wipeData(): Promise<Record<string, number>> {
-    const report: Record<string, number> = {};
-
-    // Suppression dans l'ordre des contraintes d'intégrité
-    report['lignes_facture'] = (await this.prisma.ligneFacture.deleteMany()).count;
-    report['factures'] = (await this.prisma.facture.deleteMany()).count;
-    report['lignes_devis'] = (await this.prisma.ligneDevis.deleteMany()).count;
-    report['devis'] = (await this.prisma.devis.deleteMany()).count;
-    report['lignes_cotation'] = (await this.prisma.ligneCotation.deleteMany()).count;
-    report['cotations'] = (await this.prisma.cotation.deleteMany()).count;
-    report['transactions_caisse'] = (await this.prisma.transactionCaisse.deleteMany()).count;
-    report['caisses'] = (await this.prisma.caisse.deleteMany()).count;
-    report['depenses'] = (await this.prisma.depense.deleteMany()).count;
-    report['documents'] = (await this.prisma.document.deleteMany()).count;
-    report['etapes_dossier'] = (await this.prisma.etapeDossier.deleteMany()).count;
-    report['conteneurs'] = (await this.prisma.conteneur.deleteMany()).count;
-    report['tracking_public'] = (await this.prisma.trackingPublic.deleteMany()).count;
-    report['dossiers'] = (await this.prisma.dossier.deleteMany()).count;
-    report['fournisseurs'] = (await this.prisma.fournisseur.deleteMany()).count;
-    report['clients'] = (await this.prisma.client.deleteMany()).count;
-
-    return report;
+    // Tout ou rien : un wipe interrompu à mi-course laisserait la base
+    // dans un état incohérent (enfants sans parents, FK orphelines).
+    return this.prisma.$transaction(async (tx: any) => {
+      const report: Record<string, number> = {};
+      // Ordre imposé par les contraintes d'intégrité : transactions AVANT
+      // factures/caisses/dépenses (FK sans cascade).
+      report['transactions_caisse'] = (await tx.transactionCaisse.deleteMany()).count;
+      report['lignes_facture'] = (await tx.ligneFacture.deleteMany()).count;
+      report['factures'] = (await tx.facture.deleteMany()).count;
+      report['lignes_devis'] = (await tx.ligneDevis.deleteMany()).count;
+      report['devis'] = (await tx.devis.deleteMany()).count;
+      report['lignes_cotation'] = (await tx.ligneCotation.deleteMany()).count;
+      report['cotations'] = (await tx.cotation.deleteMany()).count;
+      report['caisses'] = (await tx.caisse.deleteMany()).count;
+      report['depenses'] = (await tx.depense.deleteMany()).count;
+      report['documents'] = (await tx.document.deleteMany()).count;
+      report['etapes_dossier'] = (await tx.etapeDossier.deleteMany()).count;
+      report['conteneurs'] = (await tx.conteneur.deleteMany()).count;
+      report['tracking_public'] = (await tx.trackingPublic.deleteMany()).count;
+      report['dossiers'] = (await tx.dossier.deleteMany()).count;
+      report['fournisseurs'] = (await tx.fournisseur.deleteMany()).count;
+      report['clients'] = (await tx.client.deleteMany()).count;
+      return report;
+    });
   }
 
   async restoreData(payload: Record<string, unknown[]>) {
@@ -127,34 +130,31 @@ export class BackupService {
       }
     }
 
-    // Réinsertion des données dans l'ordre hiérarchique
-    if (payload.clients?.length) {
-      const res = await this.prisma.client.createMany({ data: payload.clients as any, skipDuplicates: true });
-      restored['clients'] = res.count;
-    }
-    if (payload.fournisseurs?.length) {
-      const res = await this.prisma.fournisseur.createMany({ data: payload.fournisseurs as any, skipDuplicates: true });
-      restored['fournisseurs'] = res.count;
-    }
-    if (payload.dossiers?.length) {
-      const res = await this.prisma.dossier.createMany({ data: payload.dossiers as any, skipDuplicates: true });
-      restored['dossiers'] = res.count;
-    }
-    if (payload.conteneurs?.length) {
-      const res = await this.prisma.conteneur.createMany({ data: payload.conteneurs as any, skipDuplicates: true });
-      restored['conteneurs'] = res.count;
-    }
-    if (payload.etapes_dossier?.length) {
-      const res = await this.prisma.etapeDossier.createMany({ data: payload.etapes_dossier as any, skipDuplicates: true });
-      restored['etapes_dossier'] = res.count;
-    }
-    if (payload.devis?.length) {
-      const res = await this.prisma.devis.createMany({ data: payload.devis as any, skipDuplicates: true });
-      restored['devis'] = res.count;
-    }
-    if (payload.factures?.length) {
-      const res = await this.prisma.facture.createMany({ data: payload.factures as any, skipDuplicates: true });
-      restored['factures'] = res.count;
+    // Réinsertion dans l'ordre hiérarchique. Symétrique de exportData() :
+    // toutes les tables exportées sont restaurées (sinon perte silencieuse).
+    const steps: Array<[string, () => Promise<{ count: number }>]> = [
+      ['clients', () => this.prisma.client.createMany({ data: payload.clients as any, skipDuplicates: true })],
+      ['fournisseurs', () => this.prisma.fournisseur.createMany({ data: payload.fournisseurs as any, skipDuplicates: true })],
+      ['dossiers', () => this.prisma.dossier.createMany({ data: payload.dossiers as any, skipDuplicates: true })],
+      ['conteneurs', () => this.prisma.conteneur.createMany({ data: payload.conteneurs as any, skipDuplicates: true })],
+      ['etapes_dossier', () => this.prisma.etapeDossier.createMany({ data: payload.etapes_dossier as any, skipDuplicates: true })],
+      ['tracking_public', () => this.prisma.trackingPublic.createMany({ data: payload.tracking_public as any, skipDuplicates: true })],
+      ['devis', () => this.prisma.devis.createMany({ data: payload.devis as any, skipDuplicates: true })],
+      ['lignes_devis', () => this.prisma.ligneDevis.createMany({ data: payload.lignes_devis as any, skipDuplicates: true })],
+      ['cotations', () => this.prisma.cotation.createMany({ data: payload.cotations as any, skipDuplicates: true })],
+      ['lignes_cotation', () => this.prisma.ligneCotation.createMany({ data: payload.lignes_cotation as any, skipDuplicates: true })],
+      ['factures', () => this.prisma.facture.createMany({ data: payload.factures as any, skipDuplicates: true })],
+      ['lignes_facture', () => this.prisma.ligneFacture.createMany({ data: payload.lignes_facture as any, skipDuplicates: true })],
+      ['caisses', () => this.prisma.caisse.createMany({ data: payload.caisses as any, skipDuplicates: true })],
+      ['transactions_caisse', () => this.prisma.transactionCaisse.createMany({ data: payload.transactions_caisse as any, skipDuplicates: true })],
+      ['depenses', () => this.prisma.depense.createMany({ data: payload.depenses as any, skipDuplicates: true })],
+      ['documents', () => this.prisma.document.createMany({ data: payload.documents as any, skipDuplicates: true })],
+    ];
+
+    for (const [table, run] of steps) {
+      if (Array.isArray(payload[table]) && payload[table].length) {
+        restored[table] = (await run()).count;
+      }
     }
 
     return { restored, missingTables };

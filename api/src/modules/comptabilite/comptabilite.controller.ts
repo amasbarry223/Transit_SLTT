@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/common';
 import { ComptabiliteService } from './comptabilite.service';
+import { RequirePermission } from '../../shared/decorators';
 
 @Controller('comptabilite')
 export class ComptabiliteController {
@@ -14,11 +15,13 @@ export class ComptabiliteController {
   }
 
   @Post('operations')
+  @RequirePermission('comptabilite:write')
   createOperation(@Body() body: any) {
     return this.service.createOperation(body);
   }
 
   @Delete('operations/:id')
+  @RequirePermission('comptabilite:write')
   deleteOperation(@Param('id') id: string) {
     return this.service.deleteOperation(id);
   }
@@ -29,6 +32,7 @@ export class ComptabiliteController {
   }
 
   @Post('clotures')
+  @RequirePermission('comptabilite:write')
   createCloture(@Body() body: any) {
     return this.service.createCloture(body);
   }
