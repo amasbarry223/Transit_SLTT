@@ -3,7 +3,7 @@
 import { useUiPrefs } from "@/lib/session/ui-prefs-store";
 
 import { useStore } from "@/lib/store";
-import { useCurrentUser } from "@/hooks/use-permission";
+import { useCurrentUser } from "@/shared/hooks/use-permission";
 import type { Annexe } from "@/lib/domain-types";
 
 export interface ActiveAnnexe {

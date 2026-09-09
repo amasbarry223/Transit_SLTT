@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import { useStore, type TypeDocument } from "@/lib/store";
 import { matchesQuery } from "@/lib/search-filter";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { usePermission, useHasRole } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { usePermission, useHasRole } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { usePagination } from "@/shared/hooks/use-pagination";
 import type { FilterChip } from "@/components/sltt/list-filters";
 import { useUnifiedDocs } from "./use-unified-docs";

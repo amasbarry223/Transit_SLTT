@@ -13,13 +13,13 @@ import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { InfoCallout } from "@/components/sltt/info-callout";
-import { usePermission } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
+import { useUnsavedChangesWarning } from "@/shared/hooks/use-unsaved-changes-warning";
 import { TransitionDialog } from "@/components/sltt/dossier-transition-dialog";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Separator } from "@/shared/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,8 +29,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/alert-dialog";
+import { cn } from "@/shared/utils/cn";
 import { useDossierFormState } from "./dossier-form/use-dossier-form-state";
 import { useDossierFormActions } from "./dossier-form/use-dossier-form-actions";
 import {

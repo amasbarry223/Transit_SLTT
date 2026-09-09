@@ -2,8 +2,8 @@
 
 import { FileText, FolderOpen, FolderPlus } from "lucide-react";
 import type { DossierFichier, FichierInput, SubDossier } from "@/lib/store";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { FileDropZone } from "./file-drop-zone";

@@ -10,8 +10,8 @@ import { LoginScreen } from "@/features/auth";
 import { logWarn } from "@/shared/logger";
 import { AppShell } from "@/components/sltt/layout/app-shell";
 import { Loader2 } from "lucide-react";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 
 const ACTIVITY_EVENTS = ["mousemove", "keydown", "click", "scroll", "touchstart"] as const;
 const ACTIVITY_THROTTLE = 15 * 1000;

@@ -6,10 +6,10 @@ import type { Facture } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 
 function isFactureEchue(f: Facture): boolean {
   return (

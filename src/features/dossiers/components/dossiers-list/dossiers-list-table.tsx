@@ -6,7 +6,7 @@ import { useNav } from "@/lib/nav-store";
 import { calculerEcart } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
 import { DossierStatutBadge, EcartValue } from "@/components/sltt/status-badge";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { StatusQuickAction } from "@/components/sltt/status-quick-action";
@@ -15,8 +15,8 @@ import {
   getNextTransition,
   TRANSITION_META,
 } from "@/components/sltt/dossier-transition-dialog";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import {
   Table,
   TableBody,
@@ -24,8 +24,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/table";
+import { cn } from "@/shared/utils/cn";
 import type { Dossier } from "@/lib/domain-types";
 import { TablePagination } from "@/components/sltt/table-pagination";
 

@@ -2,8 +2,8 @@
 
 import { ArrowRight, FolderKanban, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 
 export function AgentPanel({
   go,

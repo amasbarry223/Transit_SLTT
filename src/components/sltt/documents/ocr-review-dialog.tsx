@@ -6,17 +6,17 @@ import { useStore } from "@/lib/store";
 import type { DossierInput } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { logError, logWarn } from "@/shared/logger";
-import { UI } from "@/lib/ui-messages";
-import { usePermission } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { UI } from "@/shared/utils/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { runOcrOnStoragePath } from "@/lib/documents/ocr/run-ocr";
 import { mapDossierFieldsFromText } from "@/lib/documents/ocr/mappers/dossier-mapper";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -24,16 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { DocumentViewer } from "./document-viewer";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { DOSSIER_STATUT_EN_COURS } from "@/lib/constants";
 import { resolveTransitSociete } from "@/lib/societe-brand";
 

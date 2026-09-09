@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import type { Client } from "@/lib/domain-types";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { cn, getInitials } from "@/lib/utils";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { cn, getInitials } from "@/shared/utils/cn";
 import { avatarGradient } from "./shared";
 
 type ClientProfileCardProps = {

@@ -19,13 +19,13 @@ import {
 } from "@/lib/classeur-import";
 import { DEFAULT_PAIEMENT_MODE } from "@/lib/constants";
 import { useStore } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { formatFCFA } from "@/lib/format";
-import { cn, getErrorMessage } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { cn, getErrorMessage } from "@/shared/utils/cn";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -33,8 +33,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+} from "@/shared/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 
 type Phase = "pick" | "review" | "importing";
 

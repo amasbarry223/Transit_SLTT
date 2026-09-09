@@ -4,8 +4,8 @@ import { useMemo } from "react";
 import { FileText, Users, Bell, User, ChevronRight, Calendar } from "lucide-react";
 import type { ViewKey } from "@/lib/nav-store";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Card } from "@/shared/components/ui/card";
+import { cn } from "@/shared/utils/cn";
 
 interface AdminPanelProps {
   go: (v: ViewKey) => void;

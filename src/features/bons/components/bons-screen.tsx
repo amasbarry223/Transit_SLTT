@@ -7,12 +7,12 @@ import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { useToast } from "@/hooks/use-toast";
-import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { usePermission } from "@/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { usePermission } from "@/shared/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/shared/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,11 +22,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/alert-dialog";
+import { cn } from "@/shared/utils/cn";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { resolveSlttBrand } from "@/lib/societe-brand";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { BonMarchandiseTab } from "./bons/bon-marchandise-tab";
 import { BonCaisseTab } from "./bons/bon-caisse-tab";
 import { BonFormDialog } from "./bons/bon-form-dialog";

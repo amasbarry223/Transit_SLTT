@@ -12,21 +12,21 @@ import {
 } from "lucide-react";
 import type { SlttDocument, DocumentVersion } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
-import { usePermission } from "@/hooks/use-permission";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { formatDateShort } from "@/lib/format";
 import { formatFileSize } from "@/lib/file-utils";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { DocumentUploadZone, type DocumentUploadFile } from "./document-upload-zone";
 import { DocumentViewer } from "./document-viewer";

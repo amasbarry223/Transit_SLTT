@@ -10,8 +10,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { UI } from "@/lib/ui-messages";
+} from "@/shared/components/ui/alert-dialog";
+import { UI } from "@/shared/utils/ui-messages";
 
 /**
  * Dialogue de confirmation de suppression partagé — standardise les 8 implémentations

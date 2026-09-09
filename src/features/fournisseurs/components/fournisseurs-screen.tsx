@@ -8,8 +8,8 @@ import {
   AlertCircle,
   Banknote,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/shared/components/ui/button";
+import { Tabs, TabsContent } from "@/shared/components/ui/tabs";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ListFilters } from "@/components/sltt/list-filters";

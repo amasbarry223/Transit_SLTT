@@ -15,17 +15,17 @@ import { useNav } from "@/lib/nav-store";
 import { formatFCFA } from "@/lib/format";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
-import { usePermission } from "@/hooks/use-permission";
+import { usePermission } from "@/shared/hooks/use-permission";
 import { DossierBulkImportButton } from "@/components/sltt/documents/dossier-bulk-import-dialog";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { ListFilters } from "@/components/sltt/list-filters";
 import {
   DossiersListTable,

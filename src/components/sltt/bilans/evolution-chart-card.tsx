@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { CHART_COLORS } from "@/lib/constants";
 import { formatFCFACompact } from "@/lib/format";
 import { ChartTooltip } from "./chart-tooltips";

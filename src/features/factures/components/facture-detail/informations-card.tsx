@@ -4,7 +4,7 @@ import { CalendarDays, Clock, FolderKanban, Percent, Receipt, User } from "lucid
 import type { Dossier, Facture } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { InfoRow } from "./info-row";
 
 export function InformationsCard({

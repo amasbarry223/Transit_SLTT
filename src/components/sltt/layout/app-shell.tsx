@@ -2,10 +2,10 @@
 
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { useCanView } from "@/hooks/use-permission";
+import { useCanView } from "@/shared/hooks/use-permission";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 
 import { ArchivesScreen } from "@/features/archives";
@@ -31,8 +31,8 @@ import { TransporteursScreen } from "@/features/transporteurs";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
 import { BottomNav } from "./bottom-nav";
-import { cn } from "@/lib/utils";
-import { UI } from "@/lib/ui-messages";
+import { cn } from "@/shared/utils/cn";
+import { UI } from "@/shared/utils/ui-messages";
 
 export function AppShell() {
   const view = useNav((s) => s.view);

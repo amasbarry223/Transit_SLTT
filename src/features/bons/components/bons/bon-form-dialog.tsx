@@ -4,13 +4,13 @@ import { useMemo, useState } from "react";
 import { AlertCircle, Check, FilePen, Package, Plus, Trash2, Truck } from "lucide-react";
 import type { BonMotif, StockItem } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
-import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
+import { QuickClientButton } from "@/features/clients";
 import { formatDateShort, formatFCFA } from "@/lib/format";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -18,16 +18,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,8 +37,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/alert-dialog";
+import { cn } from "@/shared/utils/cn";
 import { computeAnnexeScopedReference } from "@/lib/store/reference";
 import { BON_MOTIFS } from "./use-bon-filters";
 

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
-import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
+import { useVisibleNavItems } from "@/shared/hooks/use-visible-nav-items";
 import { useStore } from "@/lib/store";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
 import { useUiPrefs } from "@/lib/session/ui-prefs-store";
@@ -13,9 +13,9 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/tooltip";
+import { Button } from "@/shared/components/ui/button";
+import { cn } from "@/shared/utils/cn";
 import { NavList } from "./nav-list";
 
 export function SidebarBrand({

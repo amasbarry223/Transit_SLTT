@@ -10,13 +10,13 @@ import { requirePrintHTMLBrand, resolveSlttBrand } from "@/lib/societe-brand";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Table,
   TableBody,
@@ -24,8 +24,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TabsContent } from "@/components/ui/tabs";
+} from "@/shared/components/ui/table";
+import { TabsContent } from "@/shared/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 
 type BonCaisseTabProps = {
   bons: BonSortieCaisse[];

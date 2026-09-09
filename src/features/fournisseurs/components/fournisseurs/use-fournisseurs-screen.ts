@@ -13,10 +13,10 @@ import {
   type FournisseurType,
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
-import { usePermission } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
-import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
+import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
 import type { FilterChip } from "@/components/sltt/list-filters";
 import type { MetaTabItem } from "@/components/sltt/meta-tabs-list";

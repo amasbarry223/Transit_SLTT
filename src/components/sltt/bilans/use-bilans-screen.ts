@@ -7,11 +7,11 @@ import { exportToExcel, printBilan } from "@/lib/export";
 import { resolveClasseurPrintBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
 import { sommeFacturesEncaissees } from "@/lib/client-stats";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
+import { useBeneficeParSociete } from "@/shared/hooks/use-benefice-par-societe";
 import { CHART_COLORS } from "@/lib/constants";
 import { currentYearMonth, getPeriodeLabel, type Periode, type SortDir, type SortKey } from "./shared";
 

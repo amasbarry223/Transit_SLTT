@@ -8,9 +8,9 @@ import {
   DOC_MAX_FILE_BYTES,
   DOC_MAX_FILE_MB,
 } from "@/lib/constants";
-import { useToast } from "@/hooks/use-toast";
-import { toastWarning } from "@/lib/toast-helpers";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastWarning } from "@/shared/utils/toast-helpers";
+import { cn } from "@/shared/utils/cn";
 import type { DocumentCategorie } from "@/lib/domain-types";
 
 export type DocumentUploadFile = {

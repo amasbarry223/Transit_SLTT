@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import { ArrowRight, CheckCircle2, Package, Plus, Warehouse } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 
 export function MagasinierPanel({ go }: { go: (v: "entreposage" | "bons", opts?: { id?: string | null }) => void }) {
   const stock = useStore((s) => s.stock);

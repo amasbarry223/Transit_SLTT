@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import { Button } from "@/shared/components/ui/button";
 import {
   PERMISSION_MODULES,
   ROLE_DEFAULT_PERMISSIONS,
@@ -11,7 +11,7 @@ import {
   selectionToPermissions,
 } from "@/lib/permissions";
 import type { UserRole } from "@/lib/domain-types";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 const PRESET_ROLES: UserRole[] = [
   "Agent de transit",

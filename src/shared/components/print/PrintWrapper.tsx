@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from "react";
 import { usePrint } from "@/shared/hooks/usePrint";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { Printer } from "lucide-react";
 
 export interface PrintWrapperProps {

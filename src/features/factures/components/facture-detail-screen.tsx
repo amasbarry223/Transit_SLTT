@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { ArrowLeft, Receipt } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,21 +13,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/shared/components/ui/alert-dialog";
 import {
   useStore,
   type FactureStatut,
 } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { useSession } from "@/lib/session/session-store";
-import { usePermission } from "@/hooks/use-permission";
+import { usePermission } from "@/shared/hooks/use-permission";
 import { formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
 import { printFactureModule, type SocieteBrand } from "@/lib/export";
 import { mergeAnnexeIntoBrand, resolveSlttBrand } from "@/lib/societe-brand";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { useUnsavedChangesWarning } from "@/shared/hooks/use-unsaved-changes-warning";
 
 import { NEXT_STATUT } from "./facture-detail/facture-statut-config";
 import { FactureSummaryHeader } from "./facture-detail/facture-summary-header";

@@ -20,16 +20,16 @@ import {
   type ContratPrestationStatut,
 } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { usePermission } from "@/hooks/use-permission";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastInfo, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastInfo, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ToneBadge, TONE_CLASSES } from "@/components/sltt/status-badge";
 
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -37,15 +37,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { cn } from "@/shared/utils/cn";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { contratStatutNeedsConfirm } from "@/lib/confirm-transitions";

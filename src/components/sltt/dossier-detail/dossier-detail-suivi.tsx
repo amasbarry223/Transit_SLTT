@@ -14,9 +14,9 @@ import { formatFCFA, formatDateShort } from "@/lib/format";
 import type { Ecriture, Facture } from "@/lib/store";
 import type { DossierFournisseur } from "@/lib/store";
 import type { AuditEntry } from "@/lib/audit";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Separator } from "@/shared/components/ui/separator";
 import { EmptyState } from "@/components/sltt/empty-state";
 import {
   Table,
@@ -25,7 +25,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 import {
   EcritureStatutBadge,
   FactureStatutBadge,

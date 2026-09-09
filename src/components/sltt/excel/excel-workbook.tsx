@@ -4,7 +4,7 @@ import type { ClasseurEntry } from "@/lib/classeur";
 import { ExcelToolbar } from "./excel-toolbar";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { useExcelWorkbook } from "./use-excel-workbook";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { Loader2 } from "lucide-react";
 import "./excel-skin.css";
 

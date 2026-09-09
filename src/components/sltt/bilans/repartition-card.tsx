@@ -1,10 +1,10 @@
 import { Percent } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { formatFCFA } from "@/lib/format";
 import { RECOVERY_RATE_THRESHOLDS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { PieTooltip } from "./chart-tooltips";
 
 interface PieDatum {

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { UI } from "@/lib/ui-messages";
-import { cn } from "@/lib/utils";
+import { Button } from "@/shared/components/ui/button";
+import { UI } from "@/shared/utils/ui-messages";
+import { cn } from "@/shared/utils/cn";
 
 function isDirectUrl(url: string): boolean {
   return url.startsWith("data:") || url.startsWith("http");

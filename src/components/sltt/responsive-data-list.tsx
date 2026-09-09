@@ -1,15 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import {
   Table,
   TableBody,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/table";
+import { cn } from "@/shared/utils/cn";
 
 export type ResponsiveColumn<T> = {
   key: string;

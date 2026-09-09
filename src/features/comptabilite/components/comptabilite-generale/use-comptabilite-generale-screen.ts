@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { OperationComptable, OperationComptableType } from "@/lib/domain-types";
-import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
+import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
 import {
   computeOperationsTotals,
   computeRunningEcart,
@@ -12,10 +12,10 @@ import {
   filterOperationsByPeriode,
   resolveEntitesComptables,
 } from "@/lib/comptabilite-generale";
-import { usePermission } from "@/hooks/use-permission";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { exportToExcel } from "@/lib/export";
 import { formatDateShort } from "@/lib/format";
 import { PAGE_SIZE } from "./shared";

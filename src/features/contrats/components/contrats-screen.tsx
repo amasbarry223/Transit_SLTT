@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { usePagination } from "@/hooks/use-pagination";
+import { usePagination } from "@/shared/hooks/use-pagination";
 import {
   Plus,
   FileSignature,
@@ -14,27 +14,27 @@ import { useStore, type ContratInput, type ContratStatut } from "@/lib/store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
-import { usePermission } from "@/hooks/use-permission";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { useToast } from "@/shared/hooks/use-toast";
 
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { ListFilters, type FilterChip } from "@/components/sltt/list-filters";
-import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
+import { QuickClientButton } from "@/features/clients";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { CONTRAT_STATUTS, CONTRAT_STATUT_TONE } from "./contrat-detail";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -42,14 +42,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 
 const PAGE_SIZE = 8;
 

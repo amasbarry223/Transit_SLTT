@@ -11,9 +11,9 @@ import {
   type SocieteBrand,
   type SocieteLegalInfo,
 } from "@/lib/societe-brand";
-import { toast } from "@/hooks/use-toast";
-import { toastLoading } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { toast } from "@/shared/hooks/use-toast";
+import { toastLoading } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { splitTextIntoLines } from "@/lib/recus-paiement-styles";
 import { htmlEscape } from "./html-escape";
 import { OFFICIAL_LETTERHEAD_CSS, PRINT_HTML_DOCUMENT_CSS } from "./print-styles";

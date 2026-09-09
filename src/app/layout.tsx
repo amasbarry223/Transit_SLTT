@@ -4,7 +4,7 @@ import { Inter, Sora } from "next/font/google";
 import { BRAND } from "@/lib/brand-colors";
 import "@/styles/globals.css";
 import "@/styles/print.css";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/shared/components/ui/toaster";
 import { ThemeEffect } from "@/components/sltt/theme-effect";
 import { AppRoot } from "@/components/sltt/app-root";
 import { AppSerwistProvider } from "@/components/pwa/serwist-provider";

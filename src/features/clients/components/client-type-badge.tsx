@@ -2,7 +2,7 @@
 
 import { Building2, User } from "lucide-react";
 import type { ClientType } from "@/lib/domain-types";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export function ClientTypeBadge({
   type,

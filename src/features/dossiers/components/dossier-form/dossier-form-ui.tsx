@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Card } from "@/shared/components/ui/card";
+import { cn } from "@/shared/utils/cn";
 
 export { FormField } from "@/components/sltt/form-field";
 

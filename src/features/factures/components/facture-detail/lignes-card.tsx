@@ -1,7 +1,7 @@
 "use client";
 
 import type { Facture } from "@/lib/store";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { LignesTable } from "./lignes-table";
 import { FinancialSummary } from "./financial-summary";
 

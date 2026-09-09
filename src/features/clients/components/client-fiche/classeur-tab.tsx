@@ -6,18 +6,18 @@ import type { ClasseurEntry, ClasseurFilters, ClasseurTotals } from "@/lib/class
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { TabsContent } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { TabsContent } from "@/shared/components/ui/tabs";
+import { cn } from "@/shared/utils/cn";
 import { TabEmptyState, classeurStatutTone } from "./shared";
 import { ClasseurGridLazy } from "./classeur-grid-lazy";
 

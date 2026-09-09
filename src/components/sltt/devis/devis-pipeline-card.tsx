@@ -1,10 +1,10 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { StatusVerticalStepper } from "@/components/sltt/status-vertical-stepper";
 import type { DevisStatut } from "@/lib/store";
 import { DEVIS_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { STATUT_CONFIG, STATUT_FLOW } from "@/components/sltt/devis/devis-statut-config";
 
 export function DevisPipelineCard({ statut, canWrite, onSelect }: {

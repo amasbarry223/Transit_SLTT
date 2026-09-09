@@ -1,8 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/utils/cn";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle } from "lucide-react";
 

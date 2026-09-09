@@ -4,15 +4,15 @@ import { ClipboardList, ExternalLink, Eye, FileText, FolderKanban, MoreHorizonta
 import type { Dispatch, SetStateAction } from "react";
 import type { Devis, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/shared/utils/cn";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
 import { StatusQuickAction } from "@/components/sltt/status-quick-action";
 import { TablePagination } from "@/components/sltt/table-pagination";

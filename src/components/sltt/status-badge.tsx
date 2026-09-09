@@ -1,8 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { BRAND, CHART_BRAND } from "@/lib/brand-colors";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/shared/components/ui/badge";
 import {
   DossierStatut,
   EcritureStatut,

@@ -6,15 +6,15 @@ import { useStore } from "@/lib/store";
 import type { AuditAction } from "@/lib/store";
 import { formatDateTime } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -22,8 +22,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from "@/shared/components/ui/table";
+import { Button } from "@/shared/components/ui/button";
 import { api } from "@/lib/api-client";
 import { mapAuditLogFromDb } from "@/lib/audit";
 

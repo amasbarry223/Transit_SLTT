@@ -3,11 +3,11 @@
 import { ChevronRight, FileCheck2, MoreHorizontal, Pencil, Printer, Save, Trash2, X } from "lucide-react";
 import type { Devis, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
 import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
 

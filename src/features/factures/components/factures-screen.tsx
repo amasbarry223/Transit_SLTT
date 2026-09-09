@@ -2,9 +2,9 @@
 
 import { useCallback } from "react";
 import { Plus, Receipt, Search, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { InfoCallout } from "@/components/sltt/info-callout";

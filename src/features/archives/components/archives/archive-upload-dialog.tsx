@@ -4,25 +4,25 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { Upload } from "lucide-react";
 import { useStore, type TypeDocument } from "@/lib/store";
 import { deriveClientIdFromRattachement } from "@/lib/archives-utils";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
+import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { MAX_FILE_SIZE, TYPES_DOCUMENT, type RattachementKind } from "./shared";
 
 /* ------------------------------------------------------------------ */

@@ -2,7 +2,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { Package } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 
 export function StockRepartitionChart({
   data,

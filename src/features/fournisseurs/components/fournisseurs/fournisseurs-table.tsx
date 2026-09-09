@@ -8,9 +8,9 @@ import { formatFCFA, formatDateShort } from "@/lib/format";
 import { ActifStatutBadge, DossierFournisseurStatutBadge } from "@/components/sltt/status-badge";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Button } from "@/shared/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
+import { cn } from "@/shared/utils/cn";
 import type { FournisseurType } from "@/lib/store";
 import { TYPE_META, getFournisseurTypeMeta } from "./fournisseur-type-meta";
 

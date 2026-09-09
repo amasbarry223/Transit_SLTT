@@ -2,13 +2,13 @@
 
 import type { NavItem } from "@/lib/nav-items";
 import type { ComptaTab, ViewKey } from "@/lib/nav-store";
-import { cn, isNavActive } from "@/lib/utils";
+import { cn, isNavActive } from "@/shared/utils/cn";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/shared/components/ui/tooltip";
 
 function NavSectionLabel({ label, first, collapsed }: { label: string; first?: boolean; collapsed?: boolean }) {
   if (collapsed) {

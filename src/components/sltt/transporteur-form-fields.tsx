@@ -19,9 +19,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { TransporteurInput, TransporteurStatut, TypeVehicule } from "@/lib/store";
 import { FormField } from "@/components/sltt/form-field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { Input } from "@/shared/components/ui/input";
+import { Textarea } from "@/shared/components/ui/textarea";
+import { cn } from "@/shared/utils/cn";
 
 export const VEHICULES: TypeVehicule[] = [
   "Camion",

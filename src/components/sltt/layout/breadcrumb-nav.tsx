@@ -5,7 +5,7 @@ import { useNav, type ViewKey } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { useStore } from "@/lib/store";
 import { navItems } from "@/lib/nav-items";
-import { useCanView } from "@/hooks/use-permission";
+import { useCanView } from "@/shared/hooks/use-permission";
 
 const DETAIL_PARENT: Partial<Record<ViewKey, ViewKey>> = {
   "dossier-detail": "dossiers",

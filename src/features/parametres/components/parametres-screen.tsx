@@ -11,16 +11,16 @@ import {
   DatabaseBackup,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useCanManageUsers, usePermission } from "@/hooks/use-permission";
+import { useCanManageUsers, usePermission } from "@/shared/hooks/use-permission";
 import { UsersTab } from "@/components/sltt/parametres/users-tab";
 import { PageHeader } from "@/components/sltt/page-header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { cn } from "@/shared/utils/cn";
 import { ProfileTab } from "@/components/sltt/parametres/profile-tab";
 import { SocietesTab } from "@/components/sltt/parametres/societe-tab";
 import { SecurityTab } from "@/components/sltt/parametres/security-tab";
 import { AuditTab } from "@/components/sltt/parametres/audit-tab";
-import { PreferencesTab } from "@/components/sltt/parametres/preferences-tab";
+import { PreferencesTab } from "@/features/parametres/components/parametres/preferences-tab";
 import { BackupTab } from "@/components/sltt/parametres/backup-tab";
 
 type ParamTab = "users" | "societes" | "profile" | "security" | "audit" | "preferences" | "backup";

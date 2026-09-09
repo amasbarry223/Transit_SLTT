@@ -1,14 +1,14 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
+import { cn } from "@/shared/utils/cn";
+import { Card } from "@/shared/components/ui/card";
 import { TrendingUp, TrendingDown, Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/shared/components/ui/tooltip";
 
 export type KpiTone = "blue" | "emerald" | "amber" | "red" | "indigo" | "violet";
 

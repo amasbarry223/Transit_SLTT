@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 import type { DossierStatut } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 const STATUTS_ORDERED: DossierStatut[] = ["En cours", "Dédouané", "Livré", "Soldé"];
 

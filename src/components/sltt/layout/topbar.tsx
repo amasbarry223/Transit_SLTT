@@ -17,13 +17,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/shared/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
 import { Bell, Calendar, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/shared/components/ui/button";
+import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,33 +31,33 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@/shared/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+} from "@/shared/components/ui/dialog";
+import { Badge } from "@/shared/components/ui/badge";
 import { CommandPalette } from "./command-palette";
 import { BreadcrumbNav } from "./breadcrumb-nav";
 import { NavList } from "./nav-list";
 import type { NavItem } from "@/lib/nav-items";
-import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
+import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/shared/utils/cn";
 import type { ComptaTab } from "@/lib/nav-store";
-import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
+import { useVisibleNavItems } from "@/shared/hooks/use-visible-nav-items";
 import { ROLE_SHORTCUTS } from "@/lib/role-shortcuts";
 import { resolveAppShellBranding } from "@/lib/societe-brand";
 import { AnnexeSelector } from "@/components/sltt/annexe-selector";
 import { GLOSSARY } from "@/lib/glossary";
-import { useCurrentUser, usePermission } from "@/hooks/use-permission";
+import { useCurrentUser, usePermission } from "@/shared/hooks/use-permission";
 import { InstallPWA } from "@/components/pwa/InstallPWA";
 
 const viewTitles: Record<ViewKey, { title: string; sub: string }> = {

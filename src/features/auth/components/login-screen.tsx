@@ -9,13 +9,13 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { pathForView } from "@/lib/app-navigation";
-import { cn, getErrorMessage } from "@/lib/utils";
-import { mapErrorToUserMessage } from "@/lib/error-messages";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { cn, getErrorMessage } from "@/shared/utils/cn";
+import { mapErrorToUserMessage } from "@/shared/utils/error-messages";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Separator } from "@/shared/components/ui/separator";
 import { prefsFromProfile, useUiPrefs } from "@/lib/session/ui-prefs-store";
 import {
   Eye,

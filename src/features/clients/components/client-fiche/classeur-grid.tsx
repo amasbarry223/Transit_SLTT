@@ -13,11 +13,11 @@ import {
 import type { ClasseurEntry } from "@/lib/classeur";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { useStore } from "@/lib/store";
-import { usePermission } from "@/hooks/use-permission";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { cn } from "@/lib/utils";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { cn } from "@/shared/utils/cn";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 

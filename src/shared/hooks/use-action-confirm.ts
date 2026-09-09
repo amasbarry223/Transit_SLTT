@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 
 /**
  * Encapsule le triplet "cible sélectionnée → action → toast" pour les confirmations

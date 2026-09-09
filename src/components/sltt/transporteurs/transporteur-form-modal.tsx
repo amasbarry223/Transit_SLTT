@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Truck, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useStore, type Transporteur, type TransporteurInput } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
 import {
   TransporteurFormFields,
   TransporteurFormStepper,
@@ -17,7 +17,7 @@ import {
   validateTransporteurStep,
   firstInvalidTransporteurStep,
 } from "@/components/sltt/transporteur-form-fields";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 
 interface TransporteurFormModalProps {
   open: boolean;

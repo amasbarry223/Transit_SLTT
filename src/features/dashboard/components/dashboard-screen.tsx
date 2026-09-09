@@ -20,9 +20,9 @@ import { useStore } from "@/lib/store";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { getDashboardSections, type DashboardSection } from "@/lib/dashboard-config";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
-import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
-import { useCurrentUser } from "@/hooks/use-permission";
-import { cn } from "@/lib/utils";
+import { useBeneficeParSociete } from "@/shared/hooks/use-benefice-par-societe";
+import { useCurrentUser } from "@/shared/hooks/use-permission";
+import { cn } from "@/shared/utils/cn";
 
 import { AgentPanel } from "@/components/sltt/dashboard/agent-panel";
 import { ComptablePanel } from "@/components/sltt/dashboard/comptable-panel";

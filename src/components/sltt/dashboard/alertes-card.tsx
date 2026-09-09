@@ -2,8 +2,8 @@
 
 import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LiveAlert } from "@/lib/dashboard-metrics";
-import { UI } from "@/lib/ui-messages";
-import { Card } from "@/components/ui/card";
+import { UI } from "@/shared/utils/ui-messages";
+import { Card } from "@/shared/components/ui/card";
 
 export function AlertesCard({
   alertes,

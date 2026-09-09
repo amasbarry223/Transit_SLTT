@@ -4,11 +4,11 @@ import { Pencil, Plus, X } from "lucide-react";
 import type { Facture } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Card } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
+import { Switch } from "@/shared/components/ui/switch";
 import { FinancialSummary } from "./financial-summary";
 import type { useFactureEditState } from "./use-facture-edit-state";
 

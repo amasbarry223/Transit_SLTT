@@ -1,14 +1,14 @@
 "use client";
 
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { cn } from "@/lib/utils";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
+import { cn } from "@/shared/utils/cn";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 
 /**
  * Sélecteur d'annexe (topbar) — double rôle : (1) filtre de vue partagé entre

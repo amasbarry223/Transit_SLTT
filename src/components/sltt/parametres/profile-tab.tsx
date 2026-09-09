@@ -4,13 +4,13 @@ import { useSession } from "@/lib/session/session-store";
 
 import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/shared/utils/cn";
 
 export function ProfileTab() {
   const users = useStore((s) => s.users);

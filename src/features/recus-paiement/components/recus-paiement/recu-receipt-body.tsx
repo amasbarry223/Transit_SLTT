@@ -4,7 +4,7 @@ import type { RecuPaiementModuleData } from "@/lib/export";
 import { fmtDate, fmtFCFA } from "@/lib/export/print-modules/shared";
 import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";
 import { RECEIPT_BLUE, RECEIPT_SIG_HEIGHT_MM, RECEIPT_SIG_WIDTH_MM } from "@/lib/recus-paiement-styles";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 interface RecuReceiptBodyProps {
   data: RecuPaiementModuleData;

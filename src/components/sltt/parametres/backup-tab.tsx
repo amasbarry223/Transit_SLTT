@@ -4,15 +4,15 @@ import { useRef, useState } from "react";
 import { DatabaseBackup, Download, Upload, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { BackupExportPayload } from "@/lib/store/backup-slice";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 
 import { backupRestoreSchema } from "@/lib/schemas/store-inputs";
 import { zodErrorMessage } from "@/lib/api/schemas";
 import { formatFileSize } from "@/lib/file-utils";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import { DangerConfirmDialog } from "@/components/sltt/danger-confirm-dialog";
 
 const WIPE_CONFIRM_PHRASE = "SUPPRIMER TOUT";

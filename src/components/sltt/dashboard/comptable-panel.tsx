@@ -5,8 +5,8 @@ import { ArrowRight, CheckCircle2, FileOutput, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 
 export function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "factures", opts?: { id?: string | null }) => void }) {
   const ecritures = useStore((s) => s.ecritures);

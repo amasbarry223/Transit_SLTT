@@ -5,7 +5,7 @@ import { FileSpreadsheet, FileUp, Plus, ScanLine } from "lucide-react";
 import { PageHeader } from "@/components/sltt/page-header";
 import { JournalCaissePanel } from "./comptabilite-generale/journal-caisse-panel";
 import { useComptabiliteGeneraleScreen } from "./comptabilite-generale/use-comptabilite-generale-screen";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 
 export function ComptabiliteScreen() {
   const [importOpen, setImportOpen] = useState(false);

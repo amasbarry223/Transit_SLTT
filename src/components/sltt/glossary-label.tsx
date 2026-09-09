@@ -7,8 +7,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/tooltip";
+import { cn } from "@/shared/utils/cn";
 
 export function GlossaryLabel({
   term,

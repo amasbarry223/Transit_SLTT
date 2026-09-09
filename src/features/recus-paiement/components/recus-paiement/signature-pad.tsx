@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { Eraser } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/shared/components/ui/button";
+import { cn } from "@/shared/utils/cn";
 import { RECEIPT_BLUE } from "@/lib/recus-paiement-styles";
 
 interface SignaturePadProps {

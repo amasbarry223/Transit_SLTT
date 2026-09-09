@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { resolveTransitSociete } from "@/lib/societe-brand";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export type ExcelSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 

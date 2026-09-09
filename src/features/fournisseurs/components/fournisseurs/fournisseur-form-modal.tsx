@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { Building2, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Dialog, DialogContent } from "@/shared/components/ui/dialog";
 import {
   useStore,
   type Fournisseur,
@@ -13,16 +13,16 @@ import {
   type FournisseurType,
   type FournisseurStatut,
 } from "@/lib/store";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
+} from "@/shared/components/ui/select";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
 import { TYPES } from "./fournisseur-type-meta";
 
 export function FournisseurFormModal({

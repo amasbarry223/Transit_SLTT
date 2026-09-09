@@ -2,7 +2,7 @@
 
 import type { Devis } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export function FinancialBreakdown({ devis }: { devis: Devis }) {
   const items = [

@@ -12,7 +12,7 @@ import {
   RECEIPT_WIDTH_MM,
 } from "@/lib/recus-paiement-styles";
 import type { SocieteBrand } from "@/lib/societe-brand";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { RecuReceiptBody } from "./recu-receipt-body";
 import { RecuReceiptHeader } from "./recu-receipt-header";
 

@@ -16,7 +16,7 @@ import {
 import type { Dossier } from "@/lib/domain-types";
 import { formatDateShort } from "@/lib/format";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 function InfoTile({
   icon: Icon,

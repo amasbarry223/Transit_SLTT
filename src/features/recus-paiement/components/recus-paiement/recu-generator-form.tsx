@@ -1,10 +1,10 @@
 "use client";
 
 import { formatFCFA } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { cn } from "@/shared/utils/cn";
+import { Badge } from "@/shared/components/ui/badge";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import { SignaturePad } from "./signature-pad";
 import type { RecuGeneratorFormState } from "./use-recu-generator";
 import type { RecuPaiementStatut } from "@/lib/domain-types";

@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { UserPlus } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useCurrentUser } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useCurrentUser } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import {
   normalizePermissions,
   permissionsToSelection,
@@ -12,10 +12,10 @@ import {
 import { permissionsFromSelection } from "@/components/sltt/permission-matrix";
 import type { User as UserAccount, UserInput } from "@/lib/store";
 import { matchesQuery } from "@/lib/search-filter";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { UserFormModal } from "./users/user-form-modal";

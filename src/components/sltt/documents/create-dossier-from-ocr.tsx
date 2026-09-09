@@ -4,17 +4,17 @@ import { useState } from "react";
 import { ScanText, Loader2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAppNavigation } from "@/lib/app-navigation";
-import { usePermission } from "@/hooks/use-permission";
-import { useToast } from "@/hooks/use-toast";
-import { toastError } from "@/lib/toast-helpers";
-import { Button } from "@/components/ui/button";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError } from "@/shared/utils/toast-helpers";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import { DocumentUploadZone, type DocumentUploadFile } from "./document-upload-zone";
 
 /**

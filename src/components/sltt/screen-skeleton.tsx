@@ -1,7 +1,7 @@
 "use client";
 
 import type { ViewKey } from "@/lib/nav-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 function Bone({ className }: { className?: string }) {
   return <div className={cn("animate-shimmer rounded-lg border border-border/20", className)} />;

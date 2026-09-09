@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { TrendingUp, ChevronDown } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 
 interface DossierMoisPoint {
   mois: string;

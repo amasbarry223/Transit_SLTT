@@ -3,10 +3,10 @@
 import { useCallback, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
-import { Button } from "@/components/ui/button";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { Button } from "@/shared/components/ui/button";
+import { ToastAction } from "@/shared/components/ui/toast";
+import { useToast } from "@/shared/hooks/use-toast";
+import { cn } from "@/shared/utils/cn";
 import { RecuGeneratorActions } from "./recus-paiement/recu-generator-actions";
 import { RecuGeneratorForm } from "./recus-paiement/recu-generator-form";
 import { RecuReceiptPreview } from "./recus-paiement/recu-receipt-preview";

@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { ClasseurEntry } from "@/lib/classeur";
 import { useStore } from "@/lib/store";
-import { usePermission } from "@/hooks/use-permission";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { logWarn } from "@/shared/logger";
 import { buildEmptyWorkbookData, ensureGrandLivreCapacity } from "@/lib/excel/template";
 import { DEFAULT_PAIEMENT_MODE } from "@/lib/constants";

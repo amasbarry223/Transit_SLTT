@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { formatFCFA } from "@/lib/format";
 import { PAYMENT_RING_RADIUS_PX } from "@/lib/constants";
 

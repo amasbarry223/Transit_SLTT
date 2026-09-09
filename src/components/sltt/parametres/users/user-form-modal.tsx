@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useCurrentUser } from "@/hooks/use-permission";
+import { useCurrentUser } from "@/shared/hooks/use-permission";
 import { selectionToPermissions } from "@/lib/permissions";
 import {
   PermissionMatrix,
@@ -20,12 +20,12 @@ import {
   permissionsFromSelection,
 } from "@/components/sltt/permission-matrix";
 import type { UserRole } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
-import { toastWarning } from "@/lib/toast-helpers";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastWarning } from "@/shared/utils/toast-helpers";
 import { passwordStrengthError } from "@/lib/api/schemas";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -33,9 +33,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
+} from "@/shared/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/shared/utils/cn";
 import { AnnexePicker } from "./annexe-picker";
 import { PasswordField } from "./password-field";
 import { RolePicker } from "./role-picker";

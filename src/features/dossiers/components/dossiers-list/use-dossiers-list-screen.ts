@@ -13,10 +13,10 @@ import { matchesQuery } from "@/lib/search-filter";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/societe-brand";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 
 export const PAGE_SIZE = 8;
 
