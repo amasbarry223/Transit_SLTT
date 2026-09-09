@@ -159,6 +159,8 @@ model Annexe {
   pays      String   @default("Guinée")
   telephone String?
   email     String?
+  rccm      String?
+  nif       String?
   estSiege  Boolean  @default(false) @map("est_siege")
   actif     Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
@@ -166,6 +168,7 @@ model Annexe {
 
   userAnnexes UserAnnexe[]
   dossiers    Dossier[]
+  devis       Devis[]
   factures    Facture[]
   caisses     Caisse[]
   depenses    Depense[]
@@ -265,6 +268,7 @@ model Dossier {
   conteneurs     Conteneur[]
   etapes         EtapeDossier[]
   factures       Facture[]
+  devis          Devis[]
   depenses       Depense[]
   documents      Document[]
   trackingPublic TrackingPublic?
@@ -381,6 +385,9 @@ model Devis {
   id           String      @id @default(uuid())
   numero       String      @unique
   clientId     String      @map("client_id")
+  annexeId     String?     @map("annexe_id")
+  dossierId    String?     @map("dossier_id")
+  nature       String?
   dateEmission DateTime    @default(now()) @map("date_emission")
   dateValidite DateTime?   @map("date_validite")
   statut       StatutDevis @default(BROUILLON)
@@ -392,10 +399,14 @@ model Devis {
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
-  client Client       @relation(fields: [clientId], references: [id])
-  lignes LigneDevis[]
+  client  Client       @relation(fields: [clientId], references: [id])
+  annexe  Annexe?      @relation(fields: [annexeId], references: [id])
+  dossier Dossier?     @relation(fields: [dossierId], references: [id])
+  lignes  LigneDevis[]
 
   @@index([clientId])
+  @@index([annexeId])
+  @@index([dossierId])
   @@map("devis")
 }
 

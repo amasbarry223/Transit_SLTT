@@ -15,13 +15,13 @@ export const createAnnexesSlice: StateCreator<SLTTState, [], [], AnnexesSlice> =
 
   updateAnnexe: async (id, input) => {
     try {
-      // L'API n'a que ville / adresse / telephone ; villeSiege est le nom front
-      // de `ville`. rccm / nif n'ont pas de colonne annexe (portés par la
-      // société) -> non envoyés, sinon Prisma rejette l'argument inconnu.
+      // villeSiege est le nom front de la colonne `ville`.
       await api.annexes.update(id, {
         ville: input.villeSiege ?? undefined,
         adresse: input.adresse ?? null,
         telephone: input.telephone ?? null,
+        rccm: input.rccm ?? null,
+        nif: input.nif ?? null,
       });
     } catch (e) {
       logWarn("api.annexes.update a échoué (mode déconnecté/local)", e);

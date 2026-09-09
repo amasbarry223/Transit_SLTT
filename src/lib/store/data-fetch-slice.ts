@@ -261,6 +261,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           annexeId: d.annexeId || "",
           annexeNom: d.annexe?.nom || "",
           nature: d.nature || "",
+          dossierId: d.dossierId ?? undefined,
           droitDouane: droitDouane || Number(d.montantHt || 0),
           fraisCircuit,
           fraisPrestation,

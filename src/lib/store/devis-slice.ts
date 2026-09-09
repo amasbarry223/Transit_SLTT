@@ -51,6 +51,8 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       const created = await api.devis.create({
         numero: initialReference,
         clientId: input.clientId,
+        annexeId: annexeId ?? undefined,
+        nature: input.nature,
         dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
         notes: input.notes,
         lignes: [
@@ -99,6 +101,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     try {
       await api.devis.update(id, {
         clientId: input.clientId,
+        nature: input.nature,
         dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
         notes: input.notes,
         lignes: [
@@ -223,7 +226,10 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     const newDossier = await get().addDossier(inputDossier);
 
     try {
-      await api.devis.update(id, { statut: "ACCEPTE" });
+      // On persiste le lien devis -> dossier : sinon, après un rechargement,
+      // dev.dossierId redevient undefined et le même devis peut être reconverti
+      // (doublon de dossiers).
+      await api.devis.update(id, { statut: "ACCEPTE", dossierId: newDossier.id });
     } catch {}
 
     set((s) => ({

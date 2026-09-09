@@ -26,6 +26,7 @@ export class DevisService {
       where: clientId ? { clientId } : undefined,
       include: {
         client: { select: { id: true, nom: true, code: true } },
+        annexe: { select: { id: true, nom: true, code: true } },
         lignes: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -35,7 +36,7 @@ export class DevisService {
   async findOne(id: string) {
     const devis = await this.prisma.devis.findUnique({
       where: { id },
-      include: { client: true, lignes: true },
+      include: { client: true, annexe: true, lignes: true },
     });
     if (!devis) throw new NotFoundException(`Devis ${id} non trouvé`);
     return devis;
@@ -45,36 +46,43 @@ export class DevisService {
     const existing = await this.prisma.devis.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro de devis ${data.numero} existe déjà`);
 
-    const { lignes, id: _id, statut: _st, montantHt: _mht, montantTva: _mtva, montantTtc: _mttc, ...devisData } = data;
-    const { montantHt, montantTva, montantTtc, lignesFormatted } = computeDevisTotals(lignes);
-
-    const dateEmission = devisData.dateEmission ? new Date(devisData.dateEmission) : new Date();
-    const dateValidite = devisData.dateValidite ? new Date(devisData.dateValidite) : undefined;
+    const { montantHt, montantTva, montantTtc, lignesFormatted } = computeDevisTotals(data.lignes);
 
     return this.prisma.devis.create({
       data: {
-        ...devisData,
-        dateEmission,
-        dateValidite,
+        numero: data.numero,
+        clientId: data.clientId,
+        annexeId: data.annexeId || null,
+        dossierId: data.dossierId || null,
+        nature: data.nature || null,
+        dateEmission: data.dateEmission ? new Date(data.dateEmission) : new Date(),
+        dateValidite: data.dateValidite ? new Date(data.dateValidite) : undefined,
+        notes: data.notes ?? null,
         montantHt,
         montantTva,
         montantTtc,
         lignes: { create: lignesFormatted },
       },
-      include: { lignes: true, client: true },
+      include: { lignes: true, client: true, annexe: true },
     });
   }
 
   async update(id: string, data: any) {
     await this.findOne(id);
-    const { lignes, id: _id, montantHt: _mht, montantTva: _mtva, montantTtc: _mttc, ...devisData } = data;
-    const updateData: any = { ...devisData };
+    const updateData: any = {};
 
-    if (devisData.dateEmission) updateData.dateEmission = new Date(devisData.dateEmission);
-    if (devisData.dateValidite) updateData.dateValidite = new Date(devisData.dateValidite);
+    // Liste blanche : le front renvoie parfois l'entité mappée entière.
+    if (data.clientId !== undefined) updateData.clientId = data.clientId;
+    if (data.annexeId !== undefined) updateData.annexeId = data.annexeId || null;
+    if (data.dossierId !== undefined) updateData.dossierId = data.dossierId || null;
+    if (data.nature !== undefined) updateData.nature = data.nature || null;
+    if (data.notes !== undefined) updateData.notes = data.notes ?? null;
+    if (data.statut !== undefined) updateData.statut = data.statut;
+    if (data.dateEmission) updateData.dateEmission = new Date(data.dateEmission);
+    if (data.dateValidite) updateData.dateValidite = new Date(data.dateValidite);
 
-    if (lignes) {
-      const { montantHt, montantTva, montantTtc, lignesFormatted } = computeDevisTotals(lignes);
+    if (data.lignes) {
+      const { montantHt, montantTva, montantTtc, lignesFormatted } = computeDevisTotals(data.lignes);
       updateData.montantHt = montantHt;
       updateData.montantTva = montantTva;
       updateData.montantTtc = montantTtc;
@@ -82,13 +90,13 @@ export class DevisService {
     }
 
     return this.prisma.$transaction(async (tx: any) => {
-      if (lignes) {
+      if (data.lignes) {
         await tx.ligneDevis.deleteMany({ where: { devisId: id } });
       }
       return tx.devis.update({
         where: { id },
         data: updateData,
-        include: { lignes: true, client: true },
+        include: { lignes: true, client: true, annexe: true },
       });
     });
   }
