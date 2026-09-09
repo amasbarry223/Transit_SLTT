@@ -24,5 +24,5 @@ export function resolveDocumentAnnexeId(get: () => SLTTState, input: AddDocument
   }
   const userId = currentUserId();
   const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
-  return requireActiveAnnexeId(userAnnexeIds);
+  return requireActiveAnnexeId(userAnnexeIds, get().annexes);
 }

@@ -4,7 +4,7 @@ import { PERMISSIONS_KEY } from '../../shared/decorators';
 import type { CurrentUserType } from '../auth.types';
 
 /**
- * Guard de permissions — traduit les RLS policies Supabase `has_permission(perm)`.
+ * Guard de permissions.
  * L'Administrateur bypass toutes les permissions.
  * Pour les autres rôles, vérifie que la permission est dans user.permissions.
  */

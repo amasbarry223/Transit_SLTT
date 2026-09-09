@@ -26,7 +26,7 @@ export function BilansScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Bilans périodiques"
-        description="Analyse financière par période, basée sur les écritures comptables (hors module Factures)"
+        description="Analyse financière par période : chiffre d'affaires facturé, règlements encaissés et soldes clients"
       >
         <Button
           variant="outline"

@@ -5,9 +5,11 @@ import { assertPermissionCeiling } from "@/lib/auth/user-guards";
 import { normalizePermissions } from "@/lib/permissions";
 import { createUserBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
 export async function POST(request: NextRequest) {
   try {
-    const { admin, isAdmin, profile: actorProfile } = await requireUserManager(request);
+    const { isAdmin, profile: actorProfile } = await requireUserManager(request);
     const raw = await request.json();
     const parsed = createUserBodySchema.safeParse(raw);
     if (!parsed.success) {
@@ -23,51 +25,37 @@ export async function POST(request: NextRequest) {
     const normalizedPerms = normalizePermissions(permissions || []);
     assertPermissionCeiling(actorProfile.permissions, normalizedPerms, isAdmin);
 
-    const { data: authUser, error: createError } = await admin.auth.admin.createUser({
-      email: email.trim().toLowerCase(),
-      password,
-      email_confirm: true,
-      user_metadata: {
-        nom: nom.trim(),
+    // Délégation à l'API NestJS
+    const token = request.headers.get("authorization");
+    const res = await fetch(`${API_URL}/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: token } : {}),
       },
+      body: JSON.stringify({
+        nom: nom.trim(),
+        email: email.trim().toLowerCase(),
+        role: role === "Administrateur" ? "ADMIN" : role,
+        permissions: normalizedPerms,
+        motDePasse: password,
+        annexeIds: [],
+      }),
     });
 
-    if (createError || !authUser.user) {
-      throw new AuthError(createError?.message || "Impossible de créer l'utilisateur.", 400);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ message: "Impossible de créer l'utilisateur." }));
+      throw new AuthError(errData.message || "Impossible de créer l'utilisateur.", res.status);
     }
 
-    // upsert plutôt qu'update : ne dépend pas silencieusement du trigger
-    // on_auth_user_created pour que la ligne profiles existe déjà (cf.
-    // 20260902_handle_new_user_trigger.sql — le trigger reste la voie
-    // normale, mais cette route ne doit pas casser si jamais il est absent
-    // ou en retard sur un environnement donné).
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .upsert(
-        {
-          id: authUser.user.id,
-          nom: nom.trim(),
-          email: email.trim().toLowerCase(),
-          role,
-          permissions: normalizedPerms,
-          actif: true,
-        },
-        { onConflict: "id" },
-      )
-      .select("*")
-      .single();
+    const user = await res.json();
 
-    if (profileError) {
-      await admin.auth.admin.deleteUser(authUser.user.id);
-      throw new AuthError(profileError.message, 400);
-    }
-
-    await insertAdminAuditLog(admin, actorProfile, {
+    await insertAdminAuditLog(null, actorProfile, {
       action: "Création",
       detail: `Utilisateur ${nom.trim()} créé`,
     });
 
-    return Response.json({ user: profile }, { status: 201 });
+    return Response.json({ user }, { status: 201 });
   } catch (error) {
     return authErrorResponse(error);
   }

@@ -21,25 +21,18 @@ const { fakeState, resetFake } = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerClient: () => ({
-    auth: {
-      getUser: async () => ({ data: { user: { id: "u1" } }, error: null }),
-    },
+vi.stubGlobal(
+  "fetch",
+  vi.fn(async (url: string) => {
+    // /auth/me
+    if (typeof url === "string" && url.includes("/auth/me")) {
+      const p = fakeState.profile;
+      if (!p.actif) return new Response(JSON.stringify({ message: "Inactif." }), { status: 403 });
+      return new Response(JSON.stringify(p), { status: 200 });
+    }
+    return new Response(JSON.stringify({ message: "Not found" }), { status: 404 });
   }),
-}));
-
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: fakeState.profile, error: null }),
-        }),
-      }),
-    }),
-  }),
-}));
+);
 
 const { POST } = await import("@/app/api/export/excel/route");
 
@@ -56,6 +49,7 @@ function req(body: unknown, withAuth = true) {
 
 beforeEach(() => {
   resetFake();
+  vi.clearAllMocks();
 });
 
 describe("POST /api/export/excel", () => {

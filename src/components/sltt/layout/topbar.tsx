@@ -127,18 +127,62 @@ export function Topbar() {
           sub: shellBrand.appSubtitle,
         });
 
-  // Live alerts — chaque source reste soumise à la permission de son module
-  // d'origine : la cloche ne doit pas devenir un canal de fuite de données
-  // (client, montants dus) vers un rôle qui n'a pas accès au module concerné.
-  const lowStock = canSeeStock ? stock.filter((s) => s.quantite < s.seuil) : [];
-  const unpaidDossiers = canSeeDossiers ? dossiers.filter((d) => resteAPayer(d) > 0) : [];
-  const alertCount = lowStock.length + unpaidDossiers.length;
-  // Comparaison par identifiants (pas un simple booléen) : une nouvelle alerte
-  // qui apparaît après une première consultation doit redéclencher le badge.
-  const alertIds = useMemo(
-    () => [...lowStock.map((s) => `stock-${s.id}`), ...unpaidDossiers.map((d) => `dossier-${d.id}`)],
-    [lowStock, unpaidDossiers],
+  // Live alerts entièrement dynamiques
+  const canSeeFactures = usePermission("factures:read");
+  const factures = useStore((s) => s.factures);
+
+  const lowStock = useMemo(
+    () => (canSeeStock ? stock.filter((s) => s.quantite <= s.seuil) : []),
+    [canSeeStock, stock],
   );
+
+  const nowStr = new Date().toISOString().slice(0, 10);
+  const overdueDossiers = useMemo(
+    () =>
+      canSeeDossiers
+        ? dossiers.filter(
+            (d) =>
+              d.dateEcheance &&
+              d.dateEcheance < nowStr &&
+              d.statut !== "Soldé" &&
+              (d.statut as string) !== "CLOTURE" &&
+              (d.statut as string) !== "Clôturé",
+          )
+        : [],
+    [canSeeDossiers, dossiers, nowStr],
+  );
+
+  const unpaidDossiers = useMemo(
+    () =>
+      canSeeDossiers
+        ? dossiers.filter((d) => resteAPayer(d) > 0 && !overdueDossiers.some((od) => od.id === d.id))
+        : [],
+    [canSeeDossiers, dossiers, overdueDossiers],
+  );
+
+  const unpaidFactures = useMemo(
+    () =>
+      canSeeFactures
+        ? factures.filter(
+            (f) => f.statut !== "Soldée" && (f.statut as string) !== "PAYEE" && f.statut !== "Annulée",
+          )
+        : [],
+    [canSeeFactures, factures],
+  );
+
+  const alertCount =
+    lowStock.length + overdueDossiers.length + unpaidDossiers.length + unpaidFactures.length;
+
+  const alertIds = useMemo(
+    () => [
+      ...lowStock.map((s) => `stock-${s.id}`),
+      ...overdueDossiers.map((d) => `overdue-${d.id}`),
+      ...unpaidDossiers.map((d) => `unpaid-${d.id}`),
+      ...unpaidFactures.map((f) => `facture-${f.id}`),
+    ],
+    [lowStock, overdueDossiers, unpaidDossiers, unpaidFactures],
+  );
+
   const hasUnread = alertIds.some((id) => !seenAlertIds.has(id));
 
   function navigateToView(key: ViewKey, comptaTab?: ComptaTab) {
@@ -182,73 +226,134 @@ export function Topbar() {
           {/* Annexe active — si multi-annexes */}
           <AnnexeSelector className="hidden shrink-0 xl:flex xl:w-36" />
 
-          {/* Notifications avec badge rouge compact "3" */}
+          {/* Notifications dynamiques */}
           <DropdownMenu onOpenChange={(open) => { if (open) setSeenAlertIds(new Set(alertIds)); }}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className="relative text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-full size-9"
-                aria-label={hasUnread ? `${alertCount} notifications non lues` : "Notifications"}
+                aria-label={hasUnread && alertCount > 0 ? `${alertCount} notification(s) non lue(s)` : "Notifications"}
               >
                 <Bell className="size-5" />
-                <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#ED1C24] text-[9px] font-bold text-white shadow-xs">
-                  {alertCount > 0 ? (alertCount > 9 ? "9+" : alertCount) : "3"}
-                </span>
+                {alertCount > 0 && hasUnread && (
+                  <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#ED1C24] text-[9px] font-bold text-white shadow-xs">
+                    {alertCount > 9 ? "9+" : alertCount}
+                  </span>
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel className="flex items-center justify-between">
-                Notifications
+            <DropdownMenuContent align="end" className="w-84 max-h-[85vh] overflow-y-auto">
+              <DropdownMenuLabel className="flex items-center justify-between py-2">
+                <span className="font-semibold text-sm">Notifications & Alertes</span>
                 {alertCount > 0 && (
-                  <Badge className="bg-[var(--brand-secondary)] text-[10px] text-white hover:bg-[var(--brand-secondary-hover)]">
-                    {alertCount} alerte{alertCount > 1 ? "s" : ""}
+                  <Badge className="bg-[#ED1C24] text-[10px] text-white hover:bg-red-700">
+                    {alertCount} active{alertCount > 1 ? "s" : ""}
                   </Badge>
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {lowStock.slice(0, 3).map((s) => (
-                <DropdownMenuItem
-                  key={s.id}
-                  className="flex flex-col items-start gap-1 py-2.5"
-                  onClick={() => goToView("entreposage")}
-                >
-                  <span className="text-sm font-medium text-red-600">
-                    Stock faible · {s.marchandise}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {s.quantite} {s.unite} restant{s.quantite > 1 ? "s" : ""} — {s.depositaire}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-              {unpaidDossiers.slice(0, 5).map((d) => (
-                <DropdownMenuItem
-                  key={d.id}
-                  className="flex flex-col items-start gap-1 py-2.5"
-                  onClick={() => goToDossier(d.id)}
-                >
-                  <span className="text-sm font-medium text-amber-600">
-                    Dossier non soldé · {d.reference}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Reste : {formatFCFA(resteAPayer(d))} — {d.clientNom}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-              {unpaidDossiers.length > 5 && (
+
+              {/* 1. Stocks faibles */}
+              {lowStock.length > 0 && (
                 <>
+                  <div className="px-2 py-1.5 text-[11px] font-bold tracking-wider uppercase text-red-600 dark:text-red-400">
+                    Stock critique ({lowStock.length})
+                  </div>
+                  {lowStock.slice(0, 3).map((s) => (
+                    <DropdownMenuItem
+                      key={s.id}
+                      className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                      onClick={() => goToView("entreposage")}
+                    >
+                      <span className="text-xs font-semibold text-red-600 dark:text-red-400">
+                        {s.marchandise}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Quantité restante : {s.quantite} {s.unite} (seuil : {s.seuil})
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="justify-center text-xs text-muted-foreground"
-                    onClick={() => goToView("dossiers")}
-                  >
-                    Voir les {unpaidDossiers.length - 5} autres dossiers non soldés →
-                  </DropdownMenuItem>
                 </>
               )}
+
+              {/* 2. Dossiers en retard / surestaries */}
+              {overdueDossiers.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-[11px] font-bold tracking-wider uppercase text-amber-600 dark:text-amber-400">
+                    Dossiers en retard / Surestaries ({overdueDossiers.length})
+                  </div>
+                  {overdueDossiers.slice(0, 3).map((d) => (
+                    <DropdownMenuItem
+                      key={d.id}
+                      className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                      onClick={() => goToDossier(d.id)}
+                    >
+                      <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                        {d.reference} — {d.clientNom}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Échéance dépassée : {d.dateEcheance} ({d.statut})
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {/* 3. Dossiers non soldés */}
+              {unpaidDossiers.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-[11px] font-bold tracking-wider uppercase text-blue-600 dark:text-blue-400">
+                    Dossiers avec solde dû ({unpaidDossiers.length})
+                  </div>
+                  {unpaidDossiers.slice(0, 3).map((d) => (
+                    <DropdownMenuItem
+                      key={d.id}
+                      className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                      onClick={() => goToDossier(d.id)}
+                    >
+                      <span className="text-xs font-semibold text-foreground">
+                        {d.reference} — {d.clientNom}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Reste à payer : <strong>{formatFCFA(resteAPayer(d))}</strong>
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {/* 4. Factures impayées */}
+              {unpaidFactures.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-[11px] font-bold tracking-wider uppercase text-slate-500">
+                    Factures à régler ({unpaidFactures.length})
+                  </div>
+                  {unpaidFactures.slice(0, 2).map((f) => (
+                    <DropdownMenuItem
+                      key={f.id}
+                      className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                      onClick={() => goToView("factures")}
+                    >
+                      <span className="text-xs font-semibold text-foreground">
+                        Facture {f.numero}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {f.clientNom} — {formatFCFA(f.montantTTC)}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
               {alertCount === 0 && (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  Aucune notification.
+                <div className="py-8 text-center text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">Aucune alerte active</p>
+                  <p>Tous les stocks, dossiers et paiements sont à jour.</p>
                 </div>
               )}
             </DropdownMenuContent>

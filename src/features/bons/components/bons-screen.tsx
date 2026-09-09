@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Package, Banknote } from "lucide-react";
-import type { BonMotif } from "@/lib/domain-types";
+import type { BonLigne, BonMotif, BonSortie } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
@@ -87,21 +87,49 @@ export function BonsScreen() {
     }
   }, [selectedId, go, canWrite, allBons]);
 
-  function buildBonHTML(bon: {
-    reference: string;
-    date: string;
-    clientNom: string;
-    marchandise: string;
-    quantite: number;
-    unite: string;
-    motif: BonMotif;
-    montant: number;
-  }) {
+  function buildBonHTML(bon: BonSortie) {
     const motifColors: Record<string, string> = {
       Vente: "background:#dfeefa;color:#155a93",
       Livraison: "background:#e0e7ff;color:#3730a3",
       Transfert: "background:#fef3c7;color:#92400e",
     };
+
+    const hasLignes = Boolean(bon.lignes && bon.lignes.length > 0);
+
+    const lignesTableHTML = hasLignes
+      ? `
+      <table style="margin-top:16px">
+        <thead>
+          <tr>
+            <th style="text-align:left;width:30px">#</th>
+            <th style="text-align:left">Marchandise</th>
+            <th style="text-align:right">Quantité</th>
+            <th style="text-align:right">Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bon.lignes!
+            .map(
+              (l: BonLigne, idx: number) => `
+            <tr>
+              <td>${idx + 1}</td>
+              <td>${htmlEscape(l.marchandise)}</td>
+              <td style="text-align:right">${l.quantite} ${htmlEscape(l.unite)}</td>
+              <td style="text-align:right" class="num">${formatFCFA(l.montant)}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+          <tr class="total-row">
+            <th colspan="2">Total</th>
+            <td style="text-align:right;font-weight:bold">${bon.quantite}</td>
+            <td style="text-align:right" class="num">${formatFCFA(bon.montant)}</td>
+          </tr>
+        </tbody>
+      </table>
+      `
+      : "";
+
     return `
       <h1>Bon de sortie — Marchandise</h1>
       <div class="subtitle">Référence : <strong>${htmlEscape(bon.reference)}</strong> · <span class="badge" style="${motifColors[bon.motif] ?? ""}">${htmlEscape(bon.motif)}</span></div>
@@ -109,12 +137,19 @@ export function BonsScreen() {
         <tbody>
           <tr><th style="width:40%">Date</th><td>${formatDateShort(bon.date)}</td></tr>
           <tr><th>Client</th><td>${htmlEscape(bon.clientNom)}</td></tr>
+          <tr><th>Motif de sortie</th><td>${htmlEscape(bon.motif)}</td></tr>
+          ${
+            !hasLignes
+              ? `
           <tr><th>Marchandise</th><td>${htmlEscape(bon.marchandise)}</td></tr>
           <tr><th>Quantité sortie</th><td>${bon.quantite} ${htmlEscape(bon.unite)}</td></tr>
-          <tr><th>Motif de sortie</th><td>${htmlEscape(bon.motif)}</td></tr>
           <tr class="total-row"><th>Montant</th><td class="num">${formatFCFA(bon.montant)}</td></tr>
+          `
+              : ""
+          }
         </tbody>
       </table>
+      ${lignesTableHTML}
       <div style="margin-top:64px;display:flex;justify-content:space-between">
         <div>
           <div style="border-top:1px solid #92a3ba;width:200px;padding-top:6px;font-size:11px;color:#6b7280">Signature du responsable</div>

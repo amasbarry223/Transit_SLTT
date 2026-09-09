@@ -72,10 +72,17 @@ export class ContratsService {
   async update(id: string, data: any) {
     await this.findOne(id);
 
-    const updateData: any = { ...data };
-    if (data.dateDebut) updateData.dateDebut = new Date(data.dateDebut);
-    if (data.dateFin) updateData.dateFin = new Date(data.dateFin);
+    const updateData: any = {};
+    if (data.reference !== undefined) updateData.reference = data.reference;
+    if (data.annexeId !== undefined) updateData.annexeId = data.annexeId;
+    if (data.clientId !== undefined) updateData.clientId = data.clientId;
+    if (data.objet !== undefined) updateData.objet = data.objet;
+    if (data.dateDebut !== undefined) updateData.dateDebut = new Date(data.dateDebut);
+    if (data.dateFin !== undefined) updateData.dateFin = data.dateFin ? new Date(data.dateFin) : null;
     if (data.montant !== undefined) updateData.montant = Number(data.montant);
+    if (data.statut !== undefined) updateData.statut = data.statut;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.creePar !== undefined) updateData.creePar = data.creePar;
 
     return this.prisma.contrat.update({
       where: { id },

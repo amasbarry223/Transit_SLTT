@@ -112,23 +112,36 @@ async function resolveClientIp(): Promise<string> {
   return cachedClientIp;
 }
 
+import { api } from "@/lib/api-client";
+
 export function mapAuditLogFromDb(row: Record<string, unknown>): AuditEntry {
+  const donnees = (row.donnees as Record<string, any>) || {};
+  const userObj = (row.user as Record<string, any>) || {};
+  const userName = String(
+    userObj.nom ||
+    donnees.userName ||
+    row.user_name ||
+    row.user_nom ||
+    "Système",
+  );
+  const detail = String(donnees.detail || row.detail || row.action || "");
+
   return {
     id: String(row.id),
-    date: String(row.date ?? row.created_at ?? new Date().toISOString()),
-    user: String(row.user_name ?? row.user_nom ?? "Système"),
-    module: row.module as AuditModule,
-    action: row.action as AuditAction,
-    detail: String(row.detail),
-    ip: String(row.ip ?? "N/A"),
-    clientId: row.client_id ? String(row.client_id) : undefined,
-    sourceType: row.source_type ? (String(row.source_type) as AuditSourceType) : undefined,
-    sourceId: row.source_id ? String(row.source_id) : undefined,
-    annexeId: row.annexe_id ? String(row.annexe_id) : undefined,
+    date: String(row.createdAt ?? row.date ?? row.created_at ?? new Date().toISOString()),
+    user: userName,
+    module: (row.entite || row.module || "Système") as AuditModule,
+    action: (row.action as AuditAction) || "Modification",
+    detail,
+    ip: String(row.adresseIp ?? row.ip ?? "N/A"),
+    clientId: row.clientId ? String(row.clientId) : (row.client_id ? String(row.client_id) : undefined),
+    sourceType: (row.sourceType || row.source_type) as AuditSourceType | undefined,
+    sourceId: (row.sourceId || row.source_id || row.entiteId) as string | undefined,
+    annexeId: (row.annexeId || row.annexe_id) as string | undefined,
   };
 }
 
-/** Insère une entrée d'audit en base. Retourne l'entrée créée ou null en cas d'échec. */
+/** Insère une entrée d'audit en base de données. Retourne l'entrée créée. */
 export async function insertAuditLog(params: {
   module: AuditModule;
   action: AuditAction;
@@ -142,8 +155,33 @@ export async function insertAuditLog(params: {
   annexeId?: string;
 }): Promise<AuditEntry | null> {
   const ip = params.ip ?? (await resolveClientIp());
+  let dbId = crypto.randomUUID();
+
+  try {
+    const created = await api.auditLogs.log({
+      action: params.action,
+      entite: params.module,
+      entiteId: params.source?.sourceId,
+      detail: params.detail,
+      userName: params.userName || "Système",
+      ip,
+      donnees: {
+        detail: params.detail,
+        userName: params.userName,
+        clientId: params.clientId,
+        annexeId: params.annexeId,
+        source: params.source,
+      },
+    });
+    if (created?.id) dbId = created.id;
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      logWarn("[audit] Échec de persistance du log d'audit (mode local)", err);
+    }
+  }
+
   return {
-    id: crypto.randomUUID(),
+    id: dbId,
     date: new Date().toISOString(),
     user: params.userName || "Système",
     module: params.module,

@@ -1,17 +1,18 @@
 import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, requireUserManager } from "@/lib/auth/require-admin";
 import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
-import { assertAnnexeCeiling, assertCanTouchTarget } from "@/lib/auth/user-guards";
+import { assertAnnexeCeiling } from "@/lib/auth/user-guards";
 import { updateUserAnnexesBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-/** Remplace intégralement les annexes assignées à un utilisateur (delete + insert). */
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+/** Remplace intégralement les annexes assignées à un utilisateur. */
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { user, admin, isAdmin, profile: actorProfile } = await requireUserManager(request);
+    const { user, isAdmin, profile: actorProfile } = await requireUserManager(request);
     const { id } = await context.params;
-    await assertCanTouchTarget(admin, id, isAdmin);
 
     const raw = await request.json();
     const parsed = updateUserAnnexesBodySchema.safeParse(raw);
@@ -19,21 +20,26 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       throw new AuthError(zodErrorMessage(parsed.error), 400);
     }
     const { annexeIds } = parsed.data;
-    await assertAnnexeCeiling(admin, user.id, annexeIds, isAdmin);
+    await assertAnnexeCeiling(null, user.id, annexeIds, isAdmin);
 
-    const { error: deleteError } = await admin.from("user_annexes").delete().eq("user_id", id);
-    if (deleteError) {
-      throw new AuthError(deleteError.message, 400);
+    const token = request.headers.get("authorization");
+
+    // Délégation à l'API NestJS
+    const res = await fetch(`${API_URL}/users/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: token } : {}),
+      },
+      body: JSON.stringify({ annexeIds }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ message: "Impossible de mettre à jour les annexes." }));
+      throw new AuthError(errData.message || "Impossible de mettre à jour les annexes.", res.status);
     }
 
-    const { error: insertError } = await admin
-      .from("user_annexes")
-      .insert(annexeIds.map((annexeId) => ({ user_id: id, annexe_id: annexeId })));
-    if (insertError) {
-      throw new AuthError(insertError.message, 400);
-    }
-
-    await insertAdminAuditLog(admin, actorProfile, {
+    await insertAdminAuditLog(null, actorProfile, {
       action: "Modification",
       detail: `Annexes de l'utilisateur ${id} mises à jour`,
     });

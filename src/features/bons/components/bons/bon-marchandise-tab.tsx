@@ -325,7 +325,18 @@ function BonMobileCard({
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-xs text-muted-foreground">Marchandise</dt>
-          <dd className="truncate text-right text-foreground/90">{bon.marchandise}</dd>
+          <dd className="truncate text-right text-foreground/90">
+            {bon.lignes && bon.lignes.length > 1 ? (
+              <span>
+                <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 mr-1">
+                  {bon.lignes.length} art.
+                </span>
+                {bon.marchandise}
+              </span>
+            ) : (
+              bon.marchandise
+            )}
+          </dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-xs text-muted-foreground">Motif</dt>
@@ -336,7 +347,7 @@ function BonMobileCard({
         <div className="flex justify-between gap-3">
           <dt className="text-xs text-muted-foreground">Quantité</dt>
           <dd className="tabular-nums text-foreground/90">
-            {bon.quantite} {bon.unite}
+            {bon.quantite} {bon.lignes && bon.lignes.length > 1 ? "(total)" : bon.unite}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
@@ -407,17 +418,32 @@ function BonTableRow({
       <TableCell className="max-w-[160px] px-4 py-3.5">
         <p className="truncate font-medium text-foreground/90">{bon.clientNom}</p>
       </TableCell>
-      <TableCell className="hidden max-w-[140px] px-4 py-3.5 md:table-cell">
-        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <TableCell className="hidden max-w-[180px] px-4 py-3.5 md:table-cell">
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Package className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="truncate">{bon.marchandise}</span>
-        </span>
+          {bon.lignes && bon.lignes.length > 1 ? (
+            <span
+              className="truncate"
+              title={bon.lignes.map((l) => `${l.marchandise} (${l.quantite} ${l.unite})`).join("\n")}
+            >
+              <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 mr-1.5">
+                {bon.lignes.length} art.
+              </span>
+              <span className="text-foreground/90">{bon.marchandise}</span>
+            </span>
+          ) : (
+            <span className="truncate text-foreground/90">{bon.marchandise}</span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="px-4 py-3.5">
         <ToneBadge tone={BON_MOTIF_TONE[bon.motif]}>{bon.motif}</ToneBadge>
       </TableCell>
       <TableCell className="px-4 py-3.5 text-right tabular-nums text-foreground/90">
-        {bon.quantite} <span className="text-xs text-muted-foreground">{bon.unite}</span>
+        {bon.quantite}{" "}
+        <span className="text-xs text-muted-foreground">
+          {bon.lignes && bon.lignes.length > 1 ? "(total)" : bon.unite}
+        </span>
       </TableCell>
       <TableCell className="hidden px-4 py-3.5 text-right tabular-nums font-medium text-foreground sm:table-cell">
         {formatFCFA(bon.montant)}

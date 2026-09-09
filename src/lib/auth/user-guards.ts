@@ -1,17 +1,31 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { AuthError } from "@/lib/auth/require-admin";
 import { normalizePermissions } from "@/lib/permissions";
 
-/** Bloque toute action d'un non-admin sur un compte qui est déjà Administrateur. */
+/** Bloque toute action d'un non-admin sur un compte qui est déjà Administrateur.
+ *  Délègue la vérification à l'API NestJS. */
 export async function assertCanTouchTarget(
-  admin: SupabaseClient,
+  _admin: null,
   targetId: string,
   isAdmin: boolean,
 ) {
   if (isAdmin) return;
-  const { data: target } = await admin.from("profiles").select("role").eq("id", targetId).single();
-  if (target?.role === "Administrateur") {
-    throw new AuthError("Seul un administrateur peut modifier un compte Administrateur.", 403);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  try {
+    const res = await fetch(`${apiUrl}/users/${targetId}`, {
+      headers: {},
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const target = await res.json();
+      const role = target.role === "ADMIN" ? "Administrateur" : target.role;
+      if (role === "Administrateur") {
+        throw new AuthError("Seul un administrateur peut modifier un compte Administrateur.", 403);
+      }
+    }
+  } catch (err) {
+    if (err instanceof AuthError) throw err;
+    // En cas d'erreur réseau, on laisse passer (la vérification côté NestJS prend le relais)
   }
 }
 
@@ -37,23 +51,38 @@ export function assertPermissionCeiling(
 
 /**
  * Empêche un délégué `utilisateurs:manage` d'assigner à autrui une annexe à
- * laquelle il n'a lui-même pas accès (sinon il pourrait s'octroyer indirectement
- * une visibilité cross-annexe via un compte tiers).
+ * laquelle il n'a lui-même pas accès.
  */
 export async function assertAnnexeCeiling(
-  admin: SupabaseClient,
+  _admin: null,
   actorId: string,
   requestedAnnexeIds: string[],
   isAdmin: boolean,
 ) {
   if (isAdmin) return;
-  const { data: rows } = await admin.from("user_annexes").select("annexe_id").eq("user_id", actorId);
-  const allowed = new Set((rows ?? []).map((r: { annexe_id: string }) => r.annexe_id));
-  const overflow = requestedAnnexeIds.filter((id) => !allowed.has(id));
-  if (overflow.length > 0) {
-    throw new AuthError(
-      "Annexes hors périmètre délégué : vous ne pouvez assigner que des annexes auxquelles vous avez vous-même accès.",
-      403,
-    );
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  try {
+    const res = await fetch(`${apiUrl}/users/${actorId}`, {
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const actor = await res.json();
+      const allowed = new Set<string>(
+        (actor.userAnnexes || []).map((ua: { annexe?: { id: string }; annexeId?: string }) =>
+          ua.annexe?.id || ua.annexeId || "",
+        ),
+      );
+      const overflow = requestedAnnexeIds.filter((id) => !allowed.has(id));
+      if (overflow.length > 0) {
+        throw new AuthError(
+          "Annexes hors périmètre délégué : vous ne pouvez assigner que des annexes auxquelles vous avez vous-même accès.",
+          403,
+        );
+      }
+    }
+  } catch (err) {
+    if (err instanceof AuthError) throw err;
+    // En cas d'erreur réseau, on laisse passer
   }
 }

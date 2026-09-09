@@ -44,7 +44,13 @@ export function useBonFilters(bons: BonSortie[], initialSearch = "") {
 
   const filtered = useMemo(() => {
     return bons.filter((bon) => {
-      if (!matchesQuery(bon, ["reference", "clientNom", "marchandise"], search)) return false;
+      const matchMain = matchesQuery(bon, ["reference", "clientNom", "marchandise"], search);
+      const matchLignes =
+        !matchMain &&
+        search.trim() !== "" &&
+        bon.lignes?.some((l) => l.marchandise.toLowerCase().includes(search.toLowerCase().trim()));
+
+      if (!matchMain && !matchLignes) return false;
       if (clientFilter !== "all" && bon.clientId !== clientFilter) return false;
       if (motifFilter !== "all" && bon.motif !== motifFilter) return false;
       if (statutFilter !== "all" && bon.statut !== statutFilter) return false;

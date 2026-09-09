@@ -9,7 +9,6 @@ import { normalizeRole } from "@/lib/permissions";
 import { LoginScreen } from "@/features/auth";
 import { logWarn } from "@/shared/logger";
 import { AppShell } from "@/components/sltt/layout/app-shell";
-import { useSupabaseRealtime } from "@/hooks/use-supabase-realtime";
 import { Loader2 } from "lucide-react";
 import { UI } from "@/lib/ui-messages";
 import { Button } from "@/components/ui/button";
@@ -174,8 +173,6 @@ function AppRootInner() {
       clearTimeout(logoutTimer);
     };
   }, [authReady, isAuthenticated, lastActivityAt, loginAt]);
-
-  useSupabaseRealtime(authReady && isAuthenticated);
 
   if (!authReady) {
     return (

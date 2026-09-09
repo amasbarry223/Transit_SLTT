@@ -4,6 +4,7 @@ import type { SLTTState } from "@/lib/store";
 import { api } from "@/lib/api-client";
 import { syncContratStats } from "@/lib/contrat-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
+import { mapAuditLogFromDb } from "@/lib/audit";
 
 export interface DataFetchSlice {
   dataLoading: boolean;
@@ -42,6 +43,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         cloturesRes,
         settingsRes,
         usersRes,
+        auditLogsRes,
       ] = await Promise.all([
         api.dossiers.getAll().catch(() => ({ data: [], meta: {} })),
         api.clients.getAll().catch(() => []),
@@ -60,6 +62,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         api.comptabilite.getClotures().catch(() => []),
         api.settings.getAll().catch(() => ({ list: [], map: {} })),
         api.users.getAll().catch(() => []),
+        api.auditLogs.getAll({ limit: 100 }).catch(() => []),
       ]);
 
       const currentUser = api.getCurrentUser();
@@ -95,25 +98,52 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         : Array.isArray(dossiersRes)
         ? dossiersRes
         : [];
-      const mappedDossiers = rawDossiers.map((d: any) => ({
-        id: d.id,
-        reference: d.numero || d.reference || `DOS-${(d.id || "").slice(0, 6)}`,
-        annexeId: d.annexeId || d.annexe_id || "",
-        annexeNom: d.annexe?.nom || "",
-        clientId: d.clientId || d.client_id || "",
-        clientNom: d.client?.nom || "—",
-        bl: d.numeroBl || d.bl || "",
-        camion: d.camion || "",
-        nature: d.marchandise || d.nature || "Marchandises diverses",
-        droitDouane: Number(d.valeurDouane || d.droitDouane || 0),
-        fraisCircuit: Number(d.fraisCircuit || 0),
-        fraisPrestation: Number(d.fraisPrestation || 0),
-        montantInvesti: Number(d.montantInvesti || 0),
-        montantPaye: Number(d.montantPaye || 0),
-        statut: (d.statut === "BROUILLON" ? "Brouillon" : d.statut === "CLOTURE" ? "Soldé" : "En cours") as any,
-        date: d.createdAt ? new Date(d.createdAt).toISOString().split("T")[0] : (d.date || new Date().toISOString().split("T")[0]),
-        notes: d.notes || undefined,
-      }));
+      const mappedDossiers = rawDossiers.map((d: any) => {
+        let modeTransport: "Maritime" | "Aérien" | "Routier" | "Ferroviaire" = "Maritime";
+        const vt = String(d.voieTransport || "").toUpperCase();
+        if (vt.includes("AER")) modeTransport = "Aérien";
+        else if (vt.includes("ROUT") || vt.includes("TERR")) modeTransport = "Routier";
+        else if (vt.includes("FERR")) modeTransport = "Ferroviaire";
+
+        let statut: "Brouillon" | "En cours" | "Dédouané" | "Livré" | "Soldé" = "En cours";
+        const st = String(d.statut || "").toUpperCase();
+        if (st.includes("BROUILLON")) statut = "Brouillon";
+        else if (st.includes("DEDOUAN")) statut = "Dédouané";
+        else if (st.includes("LIVR")) statut = "Livré";
+        else if (st.includes("CLOTUR") || st.includes("SOLDE")) statut = "Soldé";
+        else statut = "En cours";
+
+        const conteneurNumero = d.conteneurs?.[0]?.numero || d.noConteneur || undefined;
+        const poids = d.poids != null ? Number(d.poids) : (d.poidsTotal != null ? Number(d.poidsTotal) : undefined);
+
+        return {
+          id: d.id,
+          reference: d.numero || d.reference || `DOS-${(d.id || "").slice(0, 6)}`,
+          annexeId: d.annexeId || d.annexe_id || "",
+          annexeNom: d.annexe?.nom || "",
+          clientId: d.clientId || d.client_id || "",
+          clientNom: d.client?.nom || "—",
+          bl: d.numeroBl || d.bl || "",
+          camion: d.navireVol || d.camion || "",
+          nature: d.marchandise || d.nature || "Marchandises diverses",
+          droitDouane: Number(d.valeurDouane || d.droitDouane || 0),
+          fraisCircuit: Number(d.fraisCircuit || 0),
+          fraisPrestation: Number(d.fraisPrestation || 0),
+          montantInvesti: Number(d.montantInvesti || 0),
+          montantPaye: Number(d.montantPaye || 0),
+          statut: statut as any,
+          date: d.dateDepart
+            ? new Date(d.dateDepart).toISOString().split("T")[0]
+            : (d.date ? String(d.date).split("T")[0] : (d.createdAt ? new Date(d.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0])),
+          dateEcheance: d.dateArriveePrevue ? new Date(d.dateArriveePrevue).toISOString().split("T")[0] : (d.dateEcheance || undefined),
+          dateDedouanement: d.dateArriveeEffective ? new Date(d.dateArriveeEffective).toISOString().split("T")[0] : (d.dateDedouanement || undefined),
+          modeTransport,
+          noConteneur: conteneurNumero,
+          portEntree: d.portDestination || d.portEntree || undefined,
+          poidsTotal: poids,
+          notes: d.notes || undefined,
+        };
+      });
 
       const rawFactures = Array.isArray(facturesRes?.data)
         ? facturesRes.data
@@ -361,6 +391,9 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         clotureLe: c.clotureLe || "",
       }));
 
+      const rawAuditLogs = Array.isArray(auditLogsRes) ? auditLogsRes : [];
+      const mappedAuditLogs = rawAuditLogs.map((log: any) => mapAuditLogFromDb(log));
+
       const settingsMap = (settingsRes as any)?.map || {};
 
       set((state) => {
@@ -404,6 +437,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           cloturesCaisse: mappedClotures as any,
           societes: mappedSocietes,
           users: (users.length > 0 ? users : state.users) as any,
+          auditLogs: (mappedAuditLogs.length > 0 ? mappedAuditLogs : state.auditLogs) as any,
         };
         const updatedSequences = syncSequencesFromData(intermediateState as any);
 

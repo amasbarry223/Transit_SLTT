@@ -11,9 +11,8 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       permissions: [] as string[],
       actif: true,
     },
-    updateUserError: null as { message: string } | null,
-    profileUpdateError: null as { message: string } | null,
-    updateUserByIdCalls: [] as { id: string; payload: unknown }[],
+    updateProfileError: null as string | null,
+    patchCalls: [] as { body: unknown; headers?: Record<string, string> }[],
   };
   return {
     fakeState,
@@ -21,48 +20,45 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       fakeState.profile.actif = true;
       fakeState.profile.nom = "Test User";
       fakeState.profile.email = "test@sltt.ml";
-      fakeState.updateUserError = null;
-      fakeState.profileUpdateError = null;
-      fakeState.updateUserByIdCalls.length = 0;
+      fakeState.updateProfileError = null;
+      fakeState.patchCalls = [];
     },
   };
 });
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerClient: () => ({
-    auth: { getUser: async () => ({ data: { user: { id: "u1" } }, error: null }) },
-  }),
-}));
+vi.stubGlobal(
+  "fetch",
+  vi.fn(async (url: string, options?: RequestInit) => {
+    const method = options?.method?.toUpperCase() || "GET";
 
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: fakeState.profile, error: null }),
-        }),
-      }),
-      update: (payload: Record<string, unknown>) => ({
-        eq: () => ({
-          select: () => ({
-            single: async () =>
-              fakeState.profileUpdateError
-                ? { data: null, error: fakeState.profileUpdateError }
-                : { data: { ...fakeState.profile, ...payload }, error: null },
-          }),
-        }),
-      }),
-    }),
-    auth: {
-      admin: {
-        updateUserById: async (id: string, payload: unknown) => {
-          fakeState.updateUserByIdCalls.push({ id, payload });
-          return { error: fakeState.updateUserError };
-        },
-      },
-    },
+    // /auth/me
+    if (typeof url === "string" && url.includes("/auth/me")) {
+      const p = fakeState.profile;
+      if (!p.actif) return new Response(JSON.stringify({ message: "Inactif." }), { status: 403 });
+      return new Response(JSON.stringify(p), { status: 200 });
+    }
+
+    // PATCH /auth/profile
+    if (typeof url === "string" && url.includes("/auth/profile") && method === "PATCH") {
+      const body = options?.body ? JSON.parse(options.body as string) : {};
+      fakeState.patchCalls.push({ body });
+
+      if (fakeState.updateProfileError) {
+        return new Response(JSON.stringify({ message: fakeState.updateProfileError }), { status: 400 });
+      }
+
+      const updated = { ...fakeState.profile, ...body };
+      return new Response(JSON.stringify(updated), { status: 200 });
+    }
+
+    // Audit
+    if (typeof url === "string" && url.includes("/audit")) {
+      return new Response(JSON.stringify({ ok: true }), { status: 201 });
+    }
+
+    return new Response(JSON.stringify({ message: "Not found" }), { status: 404 });
   }),
-}));
+);
 
 vi.mock("@/lib/auth/admin-audit", () => ({
   insertAdminAuditLog: async () => {},
@@ -83,6 +79,7 @@ function req(body: unknown, withAuth = true) {
 
 beforeEach(() => {
   resetFake();
+  vi.clearAllMocks();
 });
 
 describe("PATCH /api/auth/profile", () => {
@@ -91,22 +88,28 @@ describe("PATCH /api/auth/profile", () => {
     expect(res.status).toBe(401);
   });
 
-  it("synchronise nom et e-mail côté Auth et profiles", async () => {
+  it("met à jour le profil avec succès", async () => {
     const res = await PATCH(req({ nom: "Nouveau Nom", email: "nouveau@sltt.ml" }));
     expect(res.status).toBe(200);
-    expect(fakeState.updateUserByIdCalls).toEqual([
-      { id: "u1", payload: { email: "nouveau@sltt.ml", user_metadata: { nom: "Nouveau Nom" } } },
+    expect(fakeState.patchCalls).toEqual([
+      { body: { nom: "Nouveau Nom", email: "nouveau@sltt.ml" } },
     ]);
     const body = await res.json();
     expect(body.user.nom).toBe("Nouveau Nom");
     expect(body.user.email).toBe("nouveau@sltt.ml");
   });
 
-  it("n'écrit pas role ni permissions dans user_metadata", async () => {
-    await PATCH(req({ nom: "Nouveau Nom", email: "nouveau@sltt.ml" }));
-    const payload = fakeState.updateUserByIdCalls[0]?.payload as { user_metadata?: Record<string, unknown> };
-    expect(payload.user_metadata).toEqual({ nom: "Nouveau Nom" });
-    expect(payload.user_metadata).not.toHaveProperty("role");
-    expect(payload.user_metadata).not.toHaveProperty("permissions");
+  it("rejette un e-mail invalide", async () => {
+    const res = await PATCH(req({ nom: "Nouveau Nom", email: "pas-un-email" }));
+    expect(res.status).toBe(400);
+    expect(fakeState.patchCalls).toHaveLength(0);
+  });
+
+  it("renvoie l'erreur en cas d'échec de mise à jour côté API", async () => {
+    fakeState.updateProfileError = "Cet e-mail est déjà utilisé.";
+    const res = await PATCH(req({ nom: "Nouveau Nom", email: "existant@sltt.ml" }));
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("Cet e-mail est déjà utilisé.");
   });
 });

@@ -7,6 +7,101 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
+function normalizeVoieTransport(val?: string): 'MARITIME' | 'AERIEN' | 'TERRESTRE' | undefined {
+  if (!val) return undefined;
+  const upper = String(val).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (upper.includes('AER')) return 'AERIEN';
+  if (upper.includes('ROUT') || upper.includes('TERR') || upper.includes('FERR')) return 'TERRESTRE';
+  if (upper.includes('MAR')) return 'MARITIME';
+  return 'MARITIME';
+}
+
+function normalizeStatutDossier(
+  val?: string,
+): 'BROUILLON' | 'EN_COURS' | 'EN_DEDOUANEMENT' | 'EN_ATTENTE_LIVRAISON' | 'LIVRE' | 'CLOTURE' | 'ANNULE' | undefined {
+  if (!val) return undefined;
+  const upper = String(val).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_');
+  if (upper.includes('BROUILLON')) return 'BROUILLON';
+  if (upper.includes('DEDOUAN')) return 'EN_DEDOUANEMENT';
+  if (upper.includes('LIVR')) return 'LIVRE';
+  if (upper.includes('ATTENTE')) return 'EN_ATTENTE_LIVRAISON';
+  if (upper.includes('SOLDE') || upper.includes('CLOTUR')) return 'CLOTURE';
+  if (upper.includes('ANNUL')) return 'ANNULE';
+  if (upper.includes('COURS')) return 'EN_COURS';
+  return 'EN_COURS';
+}
+
+function parseDossierDate(val?: any): Date | null | undefined {
+  if (val === null) return null;
+  if (!val) return undefined;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+function buildDossierPrismaData(data: any): Record<string, any> {
+  const res: Record<string, any> = {};
+
+  if (data.annexeId !== undefined) res.annexeId = data.annexeId;
+  if (data.clientId !== undefined) res.clientId = data.clientId;
+  if (data.numero !== undefined) res.numero = data.numero;
+  if (data.type !== undefined) res.type = data.type;
+
+  const st = normalizeStatutDossier(data.statut);
+  if (st !== undefined) res.statut = st;
+
+  const vt = normalizeVoieTransport(data.voieTransport ?? data.modeTransport);
+  if (vt !== undefined) res.voieTransport = vt;
+
+  const march = data.marchandise ?? data.nature;
+  if (march !== undefined) res.marchandise = march;
+
+  const p = data.poids ?? data.poidsTotal;
+  if (p !== undefined) res.poids = p !== null && p !== '' ? Number(p) : null;
+
+  if (data.volume !== undefined) res.volume = data.volume !== null && data.volume !== '' ? Number(data.volume) : null;
+  if (data.nombreColis !== undefined) {
+    res.nombreColis = data.nombreColis !== null && data.nombreColis !== '' ? parseInt(data.nombreColis, 10) : null;
+  }
+
+  const nv = data.navireVol ?? data.camion;
+  if (nv !== undefined) res.navireVol = nv || null;
+
+  if (data.compagnie !== undefined) res.compagnie = data.compagnie || null;
+
+  const bl = data.numeroBl ?? data.bl;
+  if (bl !== undefined) res.numeroBl = bl || null;
+
+  if (data.portProvenance !== undefined) res.portProvenance = data.portProvenance || null;
+
+  const pDest = data.portDestination ?? data.portEntree;
+  if (pDest !== undefined) res.portDestination = pDest || null;
+
+  const dDepart = parseDossierDate(data.dateDepart ?? data.date);
+  if (dDepart !== undefined) res.dateDepart = dDepart;
+
+  const dArrPrev = parseDossierDate(data.dateArriveePrevue ?? data.dateEcheance);
+  if (dArrPrev !== undefined) res.dateArriveePrevue = dArrPrev;
+
+  const dArrEff = parseDossierDate(data.dateArriveeEffective ?? data.dateDedouanement);
+  if (dArrEff !== undefined) res.dateArriveeEffective = dArrEff;
+
+  const dLiv = parseDossierDate(data.dateLivraison);
+  if (dLiv !== undefined) res.dateLivraison = dLiv;
+
+  if (data.bureauDouane !== undefined) res.bureauDouane = data.bureauDouane || null;
+  if (data.numeroDeclaration !== undefined) res.numeroDeclaration = data.numeroDeclaration || null;
+
+  const dDecl = parseDossierDate(data.dateDeclaration);
+  if (dDecl !== undefined) res.dateDeclaration = dDecl;
+
+  const vd = data.valeurDouane ?? data.droitDouane;
+  if (vd !== undefined) res.valeurDouane = vd !== null && vd !== '' ? Number(vd) : null;
+
+  if (data.notes !== undefined) res.notes = data.notes || null;
+
+  return res;
+}
+
 @Injectable()
 export class DossiersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,10 +142,10 @@ export class DossiersService {
       ...(query.search
         ? {
             OR: [
-              { numero: { contains: query.search, mode: 'insensitive' } },
-              { numeroBl: { contains: query.search, mode: 'insensitive' } },
-              { client: { nom: { contains: query.search, mode: 'insensitive' } } },
-              { numeroDeclaration: { contains: query.search, mode: 'insensitive' } },
+              { numero: { contains: query.search } },
+              { numeroBl: { contains: query.search } },
+              { client: { nom: { contains: query.search } } },
+              { numeroDeclaration: { contains: query.search } },
             ],
           }
         : {}),
@@ -113,23 +208,31 @@ export class DossiersService {
       throw new ForbiddenException("Vous ne pouvez pas créer de dossier dans cette annexe");
     }
 
-    // Vérifier l'unicité du numéro
-    const existing = await this.prisma.dossier.findUnique({ where: { numero: data.numero } });
-    if (existing) throw new ConflictException(`Le numéro de dossier ${data.numero} existe déjà`);
+    // Vérifier l'unicité du numéro seulement si fourni
+    if (data.numero && typeof data.numero === 'string') {
+      const existing = await this.prisma.dossier.findUnique({ where: { numero: data.numero } });
+      if (existing) throw new ConflictException(`Le numéro de dossier ${data.numero} existe déjà`);
+    }
 
-    const { conteneurs, ...dossierData } = data;
+    const prismaData = buildDossierPrismaData(data);
+    const conteneurs =
+      data.conteneurs ?? (data.noConteneur ? [{ numero: data.noConteneur, type: '40_PIEDS', plomb: '', statut: 'EN_TRANSIT' }] : undefined);
 
     // Création transactionnelle avec conteneurs et code tracking
     return this.prisma.$transaction(async (tx: any) => {
       const dossier = await tx.dossier.create({
         data: {
-          ...dossierData,
+          ...prismaData,
+          numero: data.numero ?? `DOS-${Date.now()}`,
+          annexeId: data.annexeId,
+          clientId: data.clientId,
+          statut: prismaData.statut ?? 'EN_COURS',
           creeParId: user.id,
           conteneurs: conteneurs?.length
             ? {
                 create: conteneurs.map((c: any) => ({
                   numero: c.numero,
-                  type: c.type,
+                  type: c.type || '40_PIEDS',
                   plomb: c.plomb,
                   statut: c.statut || 'EN_TRANSIT',
                 })),
@@ -169,8 +272,26 @@ export class DossiersService {
 
   async update(id: string, user: CurrentUserType, data: any) {
     const existing = await this.findOne(id, user);
+    const updateData = buildDossierPrismaData(data);
 
-    const { conteneurs, ...updateData } = data;
+    const conteneurs = data.conteneurs ?? (data.noConteneur ? [{ numero: data.noConteneur }] : undefined);
+    if (conteneurs?.length) {
+      for (const c of conteneurs) {
+        if (!c.numero) continue;
+        const existingConteneur = existing.conteneurs?.find((ex: any) => ex.numero === c.numero);
+        if (!existingConteneur) {
+          await this.prisma.conteneur.create({
+            data: {
+              dossierId: id,
+              numero: c.numero,
+              type: c.type || '40_PIEDS',
+              plomb: c.plomb,
+              statut: c.statut || 'EN_TRANSIT',
+            },
+          });
+        }
+      }
+    }
 
     return this.prisma.dossier.update({
       where: { id },
@@ -180,17 +301,18 @@ export class DossiersService {
   }
 
   async updateStatut(id: string, user: CurrentUserType, statut: any) {
-    const existing = await this.findOne(id, user);
+    await this.findOne(id, user);
+    const normalizedStatut = normalizeStatutDossier(statut) || 'EN_COURS';
 
     const updated = await this.prisma.dossier.update({
       where: { id },
-      data: { statut },
+      data: { statut: normalizedStatut as any },
     });
 
     // Mettre à jour le statut affiché sur le tracking public
     await this.prisma.trackingPublic.updateMany({
       where: { dossierId: id },
-      data: { statutAffiche: statut },
+      data: { statutAffiche: normalizedStatut as any },
     });
 
     return updated;

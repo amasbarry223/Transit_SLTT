@@ -85,7 +85,7 @@ function resolveArchiveAnnexeId(get: () => SLTTState, input: AddArchiveInput): s
   }
   const userId = useSession.getState().currentUserId;
   const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
-  return requireActiveAnnexeId(userAnnexeIds);
+  return requireActiveAnnexeId(userAnnexeIds, get().annexes);
 }
 
 export interface ArchivesSlice {

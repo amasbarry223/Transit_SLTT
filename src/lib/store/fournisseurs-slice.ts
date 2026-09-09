@@ -59,7 +59,8 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
   addFournisseur: async (input) => {
     const seq = get().fournisseurSeq;
     const userId = useSession.getState().currentUserId;
-    const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
+    const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
+    const annexeId = requireActiveAnnexeId(userAnnexeIds, get().annexes);
 
     const newFourn: Fournisseur = {
       id: crypto.randomUUID(),

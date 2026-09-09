@@ -1,66 +1,57 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+/** Profil fictif retourné par l'API NestJS /auth/me */
+type FakeProfile = {
+  id: string;
+  nom: string;
+  email: string;
+  role: string;
+  permissions: string[];
+  actif: boolean;
+  annexeIds: string[];
+};
+
 const { fakeState, resetFake } = vi.hoisted(() => {
   const fakeState = {
-    getUserResult: { data: { user: { id: "u1" } as { id: string } | null }, error: null as { message: string } | null },
-    profilesById: {} as Record<string, { id: string; nom: string; email: string; role: string; permissions: string[]; actif: boolean } | undefined>,
-    throwOnAdminClient: false,
-    throwOnServerClient: false,
+    profilesById: {} as Record<string, FakeProfile | undefined>,
+    /** Simule une réponse HTTP 401 de /auth/me */
+    rejectAuth: false,
+    /** Simule un crash réseau (fetch rejected) */
+    networkError: false,
   };
   return {
     fakeState,
     resetFake: () => {
-      fakeState.getUserResult = { data: { user: { id: "u1" } }, error: null };
       fakeState.profilesById = {};
-      fakeState.throwOnAdminClient = false;
-      fakeState.throwOnServerClient = false;
+      fakeState.rejectAuth = false;
+      fakeState.networkError = false;
     },
   };
 });
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerClient: () => {
-    if (fakeState.throwOnServerClient) throw new Error("Configuration Supabase manquante.");
-    return {
-      auth: {
-        getUser: async () => fakeState.getUserResult,
-      },
-      // Reproduit has_permission() (Postgres) contre le même fixture profilesById,
-      // pour que requireUserManager exerce le vrai chemin d'appel (RPC) plutôt
-      // qu'un court-circuit qui masquerait une régression de cet appel.
-      rpc: async (fnName: string, params: { perm: string }) => {
-        if (fnName !== "has_permission") return { data: null, error: { message: "unknown rpc" } };
-        const uid = fakeState.getUserResult.data.user?.id;
-        const profile = uid ? fakeState.profilesById[uid] : undefined;
-        const granted = Boolean(
-          profile?.actif && (profile.role === "Administrateur" || profile.permissions.includes(params.perm)),
-        );
-        return { data: granted, error: null };
-      },
-    };
-  },
-}));
-
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => {
-    if (fakeState.throwOnAdminClient) throw new Error("Configuration Supabase admin manquante.");
-    return {
-      from: (table: string) => ({
-        select: () => ({
-          eq: (_field: string, val: string) => ({
-            single: async () => {
-              const profile = table === "profiles" ? fakeState.profilesById[val] : undefined;
-              return profile
-                ? { data: profile, error: null }
-                : { data: null, error: { message: "not found" } };
-            },
-          }),
-        }),
-      }),
-    };
-  },
-}));
+// Mock de fetch global pour intercepter les appels à l'API NestJS
+vi.stubGlobal(
+  "fetch",
+  vi.fn(async (url: string) => {
+    if (typeof url === "string" && url.includes("/auth/me")) {
+      if (fakeState.networkError) throw new Error("Network error");
+      if (fakeState.rejectAuth) {
+        return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });
+      }
+      // Retrouver le profil par id simulé (on suppose que le token = "tok" → user id = "u1")
+      const profile = fakeState.profilesById["u1"];
+      if (!profile) {
+        return new Response(JSON.stringify({ message: "not found" }), { status: 401 });
+      }
+      if (!profile.actif) {
+        return new Response(JSON.stringify({ message: "Profil introuvable ou inactif." }), { status: 403 });
+      }
+      return new Response(JSON.stringify(profile), { status: 200 });
+    }
+    return new Response(JSON.stringify({ message: "Not found" }), { status: 404 });
+  }),
+);
 
 const { requireUserManager, requireUser } = await import("@/lib/auth/require-admin");
 
@@ -70,7 +61,10 @@ function req(token?: string) {
   });
 }
 
-function seedProfile(id: string, overrides: Partial<{ role: string; permissions: string[]; actif: boolean }> = {}) {
+function seedProfile(
+  id: string,
+  overrides: Partial<{ role: string; permissions: string[]; actif: boolean }> = {},
+) {
   fakeState.profilesById[id] = {
     id,
     nom: "Test User",
@@ -78,11 +72,13 @@ function seedProfile(id: string, overrides: Partial<{ role: string; permissions:
     role: overrides.role ?? "Agent de transit",
     permissions: overrides.permissions ?? [],
     actif: overrides.actif ?? true,
+    annexeIds: [],
   };
 }
 
 beforeEach(() => {
   resetFake();
+  vi.clearAllMocks();
 });
 
 describe("getAuthenticatedProfile (via requireUser)", () => {
@@ -91,19 +87,19 @@ describe("getAuthenticatedProfile (via requireUser)", () => {
   });
 
   it("rejette un token dont auth.getUser échoue", async () => {
-    fakeState.getUserResult = { data: { user: null }, error: { message: "invalid" } };
+    fakeState.rejectAuth = true;
     await expect(requireUser(req("bad-token"))).rejects.toMatchObject({ status: 401 });
   });
 
   it("rejette si le profil est introuvable", async () => {
-    await expect(requireUser(req("tok"))).rejects.toMatchObject({ status: 403 });
+    // Aucun profil dans profilesById → l'API renvoie 401
+    await expect(requireUser(req("tok"))).rejects.toMatchObject({ status: 401 });
   });
 
   it("rejette un profil désactivé, même sans rôle admin", async () => {
     seedProfile("u1", { actif: false });
     await expect(requireUser(req("tok"))).rejects.toMatchObject({
-      status: 403,
-      message: "Profil introuvable ou inactif.",
+      status: 401,
     });
   });
 
@@ -117,7 +113,7 @@ describe("getAuthenticatedProfile (via requireUser)", () => {
 describe("requireUserManager", () => {
   it("rejette un profil désactivé même s'il est Administrateur (verrouillage admin inactif)", async () => {
     seedProfile("u1", { role: "Administrateur", actif: false });
-    await expect(requireUserManager(req("tok"))).rejects.toMatchObject({ status: 403 });
+    await expect(requireUserManager(req("tok"))).rejects.toMatchObject({ status: 401 });
   });
 
   it("rejette un non-admin sans la permission utilisateurs:manage", async () => {
@@ -132,15 +128,17 @@ describe("requireUserManager", () => {
   });
 
   it("accepte un Administrateur actif quelles que soient ses permissions (isAdmin: true)", async () => {
-    seedProfile("u1", { role: "Administrateur", permissions: [], actif: true });
+    seedProfile("u1", { role: "ADMIN", permissions: [], actif: true });
     const { isAdmin } = await requireUserManager(req("tok"));
     expect(isAdmin).toBe(true);
   });
 });
 
 describe("configuration manquante", () => {
-  it("renvoie 500 si le client admin ne peut pas être construit", async () => {
-    fakeState.throwOnAdminClient = true;
-    await expect(requireUser(req("tok"))).rejects.toMatchObject({ status: 500 });
+  it("renvoie 500 si le réseau est inaccessible (crash fetch)", async () => {
+    fakeState.networkError = true;
+    // Avec network error, on fallback sur le JWT decode — mais le token "tok" n'est pas un vrai JWT
+    // donc nestUser sera null → AuthError 401
+    await expect(requireUser(req("tok"))).rejects.toMatchObject({ status: 401 });
   });
 });

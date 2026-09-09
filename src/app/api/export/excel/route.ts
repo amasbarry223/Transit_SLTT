@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const { module } = parsed.data;
     const requiredPerm = EXPORT_MODULE_PERMISSIONS[module as ExportModule];
-    const canExport = isAdmin || perms.includes(requiredPerm);
+    const canExport = isAdmin || perms.includes(requiredPerm) || perms.includes("*");
     if (!canExport) {
       throw new AuthError(
         `Permission insuffisante pour exporter le module « ${module} » (${requiredPerm} requis).`,

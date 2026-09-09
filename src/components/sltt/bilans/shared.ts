@@ -1,4 +1,4 @@
-export type Periode = "mensuel" | "trimestriel" | "semestriel" | "annuel";
+export type Periode = "mensuel" | "trimestriel" | "semestriel" | "annuel" | "global";
 export type SortKey = "client" | "investi" | "encaisse" | "reste" | "ecart";
 export type SortDir = "asc" | "desc";
 
@@ -7,6 +7,7 @@ export const PERIODES: { value: Periode; label: string }[] = [
   { value: "trimestriel", label: "Trimestriel" },
   { value: "semestriel", label: "Semestriel" },
   { value: "annuel", label: "Annuel" },
+  { value: "global", label: "Tout l'historique" },
 ];
 
 /** "AAAA-MM" du mois courant — mois par défaut du filtre Bilans (jamais figé dans le passé). */
@@ -29,6 +30,8 @@ export function getPeriodeLabel(periode: Periode, mois: string): string {
       return `S${month <= 6 ? 1 : 2} ${year}`;
     case "annuel":
       return String(year);
+    case "global":
+      return "Tout l'historique";
     default:
       return mois;
   }

@@ -3,9 +3,11 @@ import { AuthError, authErrorResponse, requireUser } from "@/lib/auth/require-ad
 import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { updateOwnProfileBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
 export async function PATCH(request: NextRequest) {
   try {
-    const { user, profile, admin } = await requireUser(request);
+    const { user, profile } = await requireUser(request);
     const raw = await request.json();
     const parsed = updateOwnProfileBodySchema.safeParse(raw);
     if (!parsed.success) {
@@ -15,26 +17,26 @@ export async function PATCH(request: NextRequest) {
     const nom = parsed.data.nom.trim();
     const email = parsed.data.email.trim().toLowerCase();
 
-    const { error: authError } = await admin.auth.admin.updateUserById(user.id, {
-      email,
-      user_metadata: { nom },
+    const token = request.headers.get("authorization");
+
+    // Délégation à l'API NestJS
+    const res = await fetch(`${API_URL}/auth/profile`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: token } : {}),
+      },
+      body: JSON.stringify({ nom, email }),
     });
-    if (authError) {
-      throw new AuthError(authError.message, 400);
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ message: "Impossible de mettre à jour le profil." }));
+      throw new AuthError(errData.message || "Impossible de mettre à jour le profil.", res.status);
     }
 
-    const { data: updated, error: profileError } = await admin
-      .from("profiles")
-      .update({ nom, email })
-      .eq("id", user.id)
-      .select("*")
-      .single();
+    const updated = await res.json();
 
-    if (profileError || !updated) {
-      throw new AuthError(profileError?.message || "Impossible de mettre à jour le profil.", 400);
-    }
-
-    await insertAdminAuditLog(admin, { id: user.id, nom }, {
+    await insertAdminAuditLog(null, { id: user.id, nom }, {
       action: "Modification",
       detail: `Profil de ${nom} mis à jour`,
     });

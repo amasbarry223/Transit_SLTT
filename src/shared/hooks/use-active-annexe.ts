@@ -34,13 +34,17 @@ export function useActiveAnnexe(): ActiveAnnexe {
   const selectedAnnexeId = useUiPrefs((s) => s.selectedAnnexeId);
   const setSelectedAnnexeId = useUiPrefs((s) => s.setSelectedAnnexeId);
 
-  const userAnnexeIds = user?.annexeIds ?? [];
+  const isAdmin = (user?.role as string) === "ADMIN" || user?.role === "Administrateur";
+  const userAnnexeIds = (user?.annexeIds && user.annexeIds.length > 0)
+    ? user.annexeIds
+    : (isAdmin ? allAnnexes.map((a) => a.id) : []);
+
   const annexes = allAnnexes.filter((a) => userAnnexeIds.includes(a.id));
 
   const activeAnnexeId =
     (selectedAnnexeId && userAnnexeIds.includes(selectedAnnexeId) ? selectedAnnexeId : null) ??
     userAnnexeIds[0] ??
-    null;
+    (allAnnexes[0]?.id ?? null);
 
   return {
     annexes,

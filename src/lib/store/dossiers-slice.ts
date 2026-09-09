@@ -20,7 +20,7 @@ import {
   computeDossierReference,
   computeHistoricalDossierReference,
   extractTrailingSeq,
-  insertWithReferenceRetry,
+  bumpTrailingSeq,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
@@ -93,19 +93,27 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
   addDossier: async (input) => {
     const year = new Date().getFullYear();
+    const annexe = get().annexes.find((item) => item.id === input.annexeId);
     const { reference: initialReference, useAnnexeNumbering } = resolveDossierReference(
       get,
       input.annexeId,
       year,
     );
-    const statut: DossierStatut = DOSSIER_STATUT_EN_COURS;
 
-    const reference = initialReference;
+    // Si la référence est déjà prise localement (créations simultanées), on bump
+    let reference = initialReference;
+    let safetyCount = 0;
+    while (get().dossiers.some((item) => item.reference === reference) && safetyCount < 10) {
+      reference = bumpTrailingSeq(reference);
+      safetyCount++;
+    }
+
+    const statut = DOSSIER_STATUT_EN_COURS;
     const newDossier: Dossier = {
       id: crypto.randomUUID(),
       reference,
       annexeId: input.annexeId,
-      annexeNom: get().annexes.find((item) => item.id === input.annexeId)?.nom,
+      annexeNom: annexe?.nom,
       clientId: input.clientId,
       clientNom: input.clientNom,
       bl: input.bl,
@@ -136,6 +144,22 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         valeurDouane: input.droitDouane,
         numeroBl: input.bl,
         notes: input.notes,
+        voieTransport: input.modeTransport,
+        modeTransport: input.modeTransport,
+        poids: input.poidsTotal,
+        poidsTotal: input.poidsTotal,
+        navireVol: input.camion,
+        camion: input.camion,
+        portDestination: input.portEntree,
+        portEntree: input.portEntree,
+        dateDepart: input.date,
+        date: input.date,
+        dateArriveePrevue: input.dateEcheance,
+        dateEcheance: input.dateEcheance,
+        dateArriveeEffective: input.dateDedouanement,
+        dateDedouanement: input.dateDedouanement,
+        noConteneur: input.noConteneur,
+        conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
       });
       if (created?.id) {
         newDossier.id = created.id;
@@ -163,12 +187,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     return newDossier;
   },
 
-  /**
-   * Backfill d'un dossier déjà connu (import Excel multi-clients) : contrairement
-   * à addDossier, écrit montant_paye et statut directement — ce ne sont pas des
-   * dossiers qui démarrent un flux métier, mais des opérations déjà closes ou
-   * partiellement réglées dont on documente l'historique.
-   */
   importDossierHistorique: async (input) => {
     const year = Number(input.date.slice(0, 4)) || new Date().getFullYear();
     const societe = get().societes[0];
@@ -239,12 +257,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
   updateDossier: async (id, input) => {
     const existing = get().dossiers.find((dossier) => dossier.id === id);
-    // Le statut ne se change que via transitionDossier (flux guidé) — jamais
-    // via input.statut, qui n'est pas passé par assertDossierTransition
-    // (pas de vérif reste-à-payer avant "Soldé", etc.). Sans dossier existant
-    // en cache local, on ne peut pas savoir quel statut est réellement
-    // persisté : on refuse plutôt que de faire confiance à une valeur
-    // non validée.
     if (!existing) {
       throw new Error("Dossier introuvable localement — rafraîchissez la page avant de modifier ce dossier.");
     }
@@ -261,6 +273,22 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         valeurDouane: input.droitDouane,
         numeroBl: input.bl,
         notes: input.notes,
+        voieTransport: input.modeTransport,
+        modeTransport: input.modeTransport,
+        poids: input.poidsTotal,
+        poidsTotal: input.poidsTotal,
+        navireVol: input.camion,
+        camion: input.camion,
+        portDestination: input.portEntree,
+        portEntree: input.portEntree,
+        dateDepart: input.date,
+        date: input.date,
+        dateArriveePrevue: input.dateEcheance,
+        dateEcheance: input.dateEcheance,
+        dateArriveeEffective: input.dateDedouanement,
+        dateDedouanement: input.dateDedouanement,
+        noConteneur: input.noConteneur,
+        conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
       });
     } catch (e) {
       console.warn("api.dossiers.update (mode local) :", e);

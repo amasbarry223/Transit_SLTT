@@ -154,4 +154,37 @@ export class AuthService {
       select: { id: true, actif: true, role: true },
     });
   }
+
+  /** Met à jour le profil de l'utilisateur connecté */
+  async updateProfile(userId: string, data: { nom?: string; email?: string }) {
+    if (data.email) {
+      const email = data.email.toLowerCase().trim();
+      const existing = await this.prisma.profile.findUnique({
+        where: { email },
+      });
+      if (existing && existing.id !== userId) {
+        throw new ConflictException(`L'email ${data.email} est déjà utilisé`);
+      }
+    }
+
+    const updated = await this.prisma.profile.update({
+      where: { id: userId },
+      data: {
+        nom: data.nom?.trim(),
+        email: data.email?.toLowerCase().trim(),
+      },
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        telephone: true,
+        role: true,
+        permissions: true,
+        actif: true,
+        avatarUrl: true,
+      },
+    });
+
+    return updated;
+  }
 }

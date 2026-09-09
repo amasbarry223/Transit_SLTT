@@ -202,6 +202,15 @@ export interface Mouvement {
   motif?: string;
 }
 
+export interface BonLigne {
+  id: string;
+  stockId?: string;
+  marchandise: string;
+  quantite: number;
+  unite: string;
+  montant: number;
+}
+
 export interface BonSortie {
   id: string;
   reference: string;
@@ -218,6 +227,7 @@ export interface BonSortie {
   motif: BonMotif;
   montant: number;
   statut: "Validé" | "Brouillon";
+  lignes?: BonLigne[];
 }
 
 /* ------------------------------------------------------------------ */

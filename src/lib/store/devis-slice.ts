@@ -34,7 +34,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
   addDevis: async (input) => {
     const client = get().clients.find((c) => c.id === input.clientId);
-    const annexeId = client?.annexeId ?? requireActiveAnnexeId(currentUserAnnexeIds(get));
+    const annexeId = client?.annexeId ?? requireActiveAnnexeId(currentUserAnnexeIds(get), get().annexes);
     const annexe = get().annexes.find((a) => a.id === annexeId);
     const { reference: initialReference, useAnnexeNumbering } = computeAnnexeScopedReference(
       undefined,
@@ -191,6 +191,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       dev.annexeId ||
       requireActiveAnnexeId(
         get().users.find((u) => u.id === useSession.getState().currentUserId)?.annexeIds ?? [],
+        get().annexes,
       );
 
     const inputDossier: DossierInput = {

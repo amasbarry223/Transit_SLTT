@@ -1,80 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { fetchAllPaged, FETCH_PAGE_SIZE } from "@/lib/store/fetch-pages";
+import {
+  FETCH_PAGE_SIZE,
+  FETCH_SOFT_CAPS,
+  isTransientFetchError,
+  toFetchError,
+} from "@/lib/store/fetch-pages";
 
-describe("fetchAllPaged", () => {
-  it("agrège plusieurs pages jusqu'à épuisement", async () => {
-    const pages = [
-      Array.from({ length: FETCH_PAGE_SIZE }, (_, i) => ({ id: i })),
-      [{ id: FETCH_PAGE_SIZE }],
-    ];
-    let call = 0;
-    const buildQuery = () => ({
-      range: async () => {
-        const data = pages[call++] ?? [];
-        return { data, error: null };
-      },
-    });
-
-    const { data, truncated, error } = await fetchAllPaged<{ id: number }>(buildQuery);
-    expect(error).toBeNull();
-    expect(truncated).toBe(false);
-    expect(data).toHaveLength(FETCH_PAGE_SIZE + 1);
+describe("fetch-pages utils", () => {
+  it("définit la taille de page par défaut", () => {
+    expect(FETCH_PAGE_SIZE).toBe(500);
   });
 
-  it("respecte le softCap et marque truncated", async () => {
-    const buildQuery = () => ({
-      range: async (from: number, to: number) => {
-        const size = to - from + 1;
-        return {
-          data: Array.from({ length: size }, (_, i) => ({ id: from + i })),
-          error: null,
-        };
-      },
-    });
-
-    const { data, truncated } = await fetchAllPaged(buildQuery, {
-      softCap: 50,
-      pageSize: 20,
-    });
-    expect(data).toHaveLength(50);
-    expect(truncated).toBe(true);
+  it("définit les limites douces (soft caps) pour les tables volumineuses", () => {
+    expect(FETCH_SOFT_CAPS.audit_logs).toBe(2_000);
+    expect(FETCH_SOFT_CAPS.documents).toBe(1_000);
   });
 
-  it("propage l'erreur sans perdre le tampon déjà lu", async () => {
-    let call = 0;
-    const buildQuery = () => ({
-      range: async () => {
-        call += 1;
-        if (call === 1) {
-          return { data: [{ id: 1 }], error: null };
-        }
-        return { data: null, error: { message: "timeout" } };
-      },
-    });
-
-    const { data, error } = await fetchAllPaged(buildQuery, { pageSize: 1, softCap: 10 });
-    expect(data).toEqual([{ id: 1 }]);
-    expect(error?.message).toBe("timeout");
+  it("détecte les erreurs réseau transitoires", () => {
+    expect(isTransientFetchError("Failed to fetch")).toBe(true);
+    expect(isTransientFetchError("TypeError: NetworkError when attempting to fetch")).toBe(true);
+    expect(isTransientFetchError("The user aborted a request.")).toBe(true);
+    expect(isTransientFetchError("Invalid credentials")).toBe(false);
   });
 
-  it("retente les erreurs réseau transitoires", async () => {
-    let call = 0;
-    const buildQuery = () => ({
-      range: async () => {
-        call += 1;
-        if (call < 3) {
-          return { data: null, error: { message: "TypeError: Failed to fetch" } };
-        }
-        if (call === 3) {
-          return { data: [{ id: 42 }], error: null };
-        }
-        return { data: [], error: null };
-      },
-    });
+  it("convertit les erreurs transitoires en message convivial", () => {
+    const err = toFetchError("Failed to fetch");
+    expect(err.message).toContain("Connexion au serveur interrompue");
 
-    const { data, error } = await fetchAllPaged(buildQuery, { pageSize: 1, softCap: 10 });
-    expect(error).toBeNull();
-    expect(data).toEqual([{ id: 42 }]);
-    expect(call).toBe(4);
+    const regularErr = toFetchError("Dossier introuvable");
+    expect(regularErr.message).toBe("Dossier introuvable");
   });
 });

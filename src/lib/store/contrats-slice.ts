@@ -95,7 +95,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const annexeId =
       input.annexeId ??
       client?.annexeId ??
-      requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
+      requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? [], get().annexes);
     let dbId = crypto.randomUUID();
     try {
       const created = await api.contrats.create({

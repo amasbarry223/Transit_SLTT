@@ -1,6 +1,6 @@
 import { UI } from "@/shared/utils/ui-messages";
 
-/** Codes Supabase Auth → messages utilisateur en français. */
+/** Codes d'erreur Auth → messages utilisateur en français. */
 const AUTH_ERROR_MAP: Record<string, string> = {
   invalid_credentials:
     "L'adresse e-mail ou le mot de passe est incorrect. Vérifiez vos identifiants et réessayez.",

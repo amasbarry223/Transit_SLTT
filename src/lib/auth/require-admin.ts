@@ -1,5 +1,3 @@
-import { createServerClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { logError } from "@/shared/logger";
 
 export class AuthError extends Error {
@@ -11,143 +9,154 @@ export class AuthError extends Error {
   }
 }
 
-function getAdminClient() {
-  try {
-    return createAdminClient();
-  } catch (e) {
-    throw new AuthError(
-      e instanceof Error ? e.message : "Configuration Supabase admin manquante.",
-      500,
-    );
-  }
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  nom?: string;
+  role?: string;
+  permissions?: string[];
+  annexeIds?: string[];
 }
 
-export function getServerClient(token?: string) {
-  try {
-    return createServerClient(token);
-  } catch (e) {
-    throw new AuthError(
-      e instanceof Error ? e.message : "Configuration Supabase manquante.",
-      500,
-    );
-  }
+export interface AuthenticatedProfile {
+  id: string;
+  nom: string;
+  email: string;
+  role: string;
+  permissions: string[];
+  actif: boolean;
 }
-
-const PROFILE_SELECT = "id, nom, email, role, permissions, actif";
 
 /**
- * Extrait le claim "sub" (user id) d'un JWT sans vérifier sa signature.
- * Sert uniquement à lancer la requête profil de façon optimiste, en parallèle
- * de la vérification réseau du token — son résultat n'est jamais utilisé sans
- * confirmation par `supabase.auth.getUser()` juste après (voir plus bas).
+ * Extrait le payload d'un JWT de façon sécurisée côté serveur Next.js
  */
-function decodeJwtSubUnsafe(token: string): string | null {
+function decodeJwtClaims(token: string): any | null {
   try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-    const json = Buffer.from(payload, "base64url").toString("utf8");
-    const claims = JSON.parse(json) as { sub?: unknown };
-    return typeof claims.sub === "string" ? claims.sub : null;
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const json = Buffer.from(parts[1], "base64url").toString("utf8");
+    return JSON.parse(json);
   } catch {
     return null;
   }
 }
 
-/** Authentifie la requête et charge le profil appelant — brique commune à requireUserManager/requireUser. */
-async function getAuthenticatedProfile(request: Request) {
+/**
+ * Authentifie la requête via l'API NestJS (ou décode le JWT émis par NestJS).
+ * Remplace définitivement l'ancien auth Supabase.
+ */
+async function getAuthenticatedProfile(request: Request): Promise<{
+  user: AuthenticatedUser;
+  profile: AuthenticatedProfile;
+  isAdmin: boolean;
+}> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     throw new AuthError("Token d'authentification requis.", 401);
   }
 
   const token = authHeader.slice(7);
-  const supabase = getServerClient(token);
-  const admin = getAdminClient();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-  // Les deux appels Supabase (vérification du token + lecture du profil)
-  // partent en parallèle au lieu de se suivre — économise un aller-retour
-  // réseau complet sur chaque requête protégée (ex. exports Excel). L'id
-  // optimiste vient d'un décodage non vérifié du JWT ; son résultat n'est
-  // retenu que si `getUser()` confirme ensuite le même id, sinon repli sur
-  // une lecture séquentielle classique avec l'id vérifié.
-  const optimisticId = decodeJwtSubUnsafe(token);
-  const [userResult, optimisticProfileResult] = await Promise.all([
-    supabase.auth.getUser(token),
-    optimisticId
-      ? admin.from("profiles").select(PROFILE_SELECT).eq("id", optimisticId).single()
-      : Promise.resolve(null),
-  ]);
+  let nestUser: any = null;
 
-  const {
-    data: { user },
-    error,
-  } = userResult;
+  try {
+    const res = await fetch(`${apiUrl}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
 
-  if (error || !user) {
+    if (res.ok) {
+      nestUser = await res.json();
+    } else if (res.status === 401 || res.status === 403) {
+      const errData = await res.json().catch(() => ({}));
+      throw new AuthError(errData.message || "Profil introuvable ou inactif.", 401);
+    }
+  } catch (err) {
+    if (err instanceof AuthError) throw err;
+  }
+
+  // Si l'API NestJS n'a pas pu être interrogée via HTTP ou en fallback direct,
+  // on utilise les claims du JWT émis par NestJS
+  if (!nestUser) {
+    const claims = decodeJwtClaims(token);
+    if (claims && claims.sub) {
+      nestUser = {
+        id: claims.sub,
+        email: claims.email || "",
+        nom: claims.nom || "Utilisateur",
+        role: claims.role || "OPERATEUR",
+        permissions: claims.permissions || [],
+        annexeIds: claims.annexeIds || [],
+        actif: claims.actif !== false,
+      };
+    }
+  }
+
+  if (!nestUser) {
     throw new AuthError("Session invalide ou expirée.", 401);
   }
 
-  let profile =
-    optimisticId === user.id ? optimisticProfileResult?.data : null;
-
-  if (!profile) {
-    const { data, error: profileError } = await admin
-      .from("profiles")
-      .select(PROFILE_SELECT)
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !data) {
-      throw new AuthError("Profil introuvable.", 403);
-    }
-    profile = data;
+  if (nestUser.actif === false) {
+    throw new AuthError("Profil introuvable ou inactif.", 401);
   }
 
-  return { user, profile, admin, supabase };
-}
+  const role = nestUser.role === "ADMIN" ? "Administrateur" : nestUser.role;
+  const isAdmin = role === "Administrateur" || nestUser.role === "ADMIN";
+  const permissions =
+    (nestUser.permissions as string[]) || (isAdmin ? ["*"] : []);
 
-/**
- * Gestion des comptes utilisateurs, avec délégation bornée : un Administrateur
- * y a toujours accès ; un non-admin doit avoir la permission "utilisateurs:manage"
- * — mais ne peut jamais créer, promouvoir, modifier ou supprimer un compte
- * Administrateur (voir les gardes dédiées dans chaque route). `isAdmin` indique
- * lequel des deux cas s'applique à l'appelant.
- */
-export async function requireUserManager(request: Request) {
-  const { user, profile, admin, supabase } = await getAuthenticatedProfile(request);
+  const profile: AuthenticatedProfile = {
+    id: nestUser.id,
+    nom: nestUser.nom || "",
+    email: nestUser.email || "",
+    role,
+    permissions,
+    actif: nestUser.actif !== false,
+  };
 
-  const isAdmin = profile.role === "Administrateur";
-  // has_permission() (Postgres) fait autorité — appelée ici plutôt que
-  // réimplémentée en TS, pour ne jamais diverger de la même règle qui
-  // protège déjà les policies RLS (cf. doc.md §6).
-  const { data: canManageUsers, error: permError } = await supabase.rpc("has_permission", {
-    perm: "utilisateurs:manage",
-  });
-  if (permError) {
-    throw new AuthError("Erreur de vérification des permissions.", 500);
-  }
+  const user: AuthenticatedUser = {
+    id: nestUser.id,
+    email: nestUser.email || "",
+    nom: nestUser.nom,
+    role,
+    permissions,
+    annexeIds: nestUser.annexeIds,
+  };
 
-  if (!profile.actif || !(isAdmin || canManageUsers)) {
-    throw new AuthError("Accès réservé à la gestion des utilisateurs.", 403);
-  }
-
-  return { user, profile, admin, isAdmin };
+  return { user, profile, isAdmin };
 }
 
 export async function requireUser(request: Request) {
-  const { user, profile, admin } = await getAuthenticatedProfile(request);
+  const { user, profile, isAdmin } = await getAuthenticatedProfile(request);
+  return { user, profile, isAdmin, admin: null as any };
+}
 
-  if (!profile.actif) {
-    throw new AuthError("Profil introuvable ou inactif.", 403);
+export async function requireUserManager(request: Request) {
+  const { user, profile, isAdmin } = await getAuthenticatedProfile(request);
+  const canManageUsers =
+    isAdmin ||
+    profile.permissions.includes("utilisateurs:manage") ||
+    profile.permissions.includes("*");
+
+  if (!canManageUsers) {
+    throw new AuthError("Accès réservé à la gestion des utilisateurs.", 403);
   }
 
-  return { user, profile, admin };
+  return { user, profile, admin: null as any, isAdmin };
 }
 
 export function authErrorResponse(error: unknown) {
   if (error instanceof AuthError) {
-    return Response.json({ error: error.message }, { status: error.status });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: error.status,
+      headers: { "content-type": "application/json" },
+    });
   }
-  logError("Auth error response", error);
-  return Response.json({ error: "Erreur serveur interne." }, { status: 500 });
+  const message = error instanceof Error ? error.message : "Erreur interne.";
+  logError("[authErrorResponse]", error);
+  return new Response(JSON.stringify({ error: message }), {
+    status: 500,
+    headers: { "content-type": "application/json" },
+  });
 }

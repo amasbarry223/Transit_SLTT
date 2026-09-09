@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-type FakeProfile = { id: string; nom: string; email: string; role: string; permissions: string[]; actif: boolean };
+type FakeProfile = {
+  id: string;
+  nom: string;
+  email: string;
+  role: string;
+  permissions: string[];
+  actif: boolean;
+};
 
 const { fakeState, resetFake } = vi.hoisted(() => {
   const fakeState = {
@@ -14,8 +21,8 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       actif: true,
     } as FakeProfile,
     profilesById: {} as Record<string, FakeProfile>,
-    updateUserByIdError: null as { message: string } | null,
-    updateUserByIdCalls: [] as { id: string; payload: unknown }[],
+    updatePasswordError: null as string | null,
+    passwordPatchCalls: [] as { id: string; body: unknown }[],
   };
   return {
     fakeState,
@@ -38,51 +45,53 @@ const { fakeState, resetFake } = vi.hoisted(() => {
           actif: true,
         },
       };
-      fakeState.updateUserByIdError = null;
-      fakeState.updateUserByIdCalls.length = 0;
+      fakeState.updatePasswordError = null;
+      fakeState.passwordPatchCalls = [];
     },
   };
 });
 
-function lookupProfile(id: string): FakeProfile | undefined {
-  if (id === fakeState.callerProfile.id) return fakeState.callerProfile;
-  return fakeState.profilesById[id];
-}
+vi.stubGlobal(
+  "fetch",
+  vi.fn(async (url: string, options?: RequestInit) => {
+    const method = options?.method?.toUpperCase() || "GET";
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerClient: () => ({
-    auth: { getUser: async () => ({ data: { user: { id: fakeState.callerProfile.id } }, error: null }) },
-    rpc: async (fnName: string, params: { perm: string }) => {
-      if (fnName !== "has_permission") return { data: null, error: { message: "unknown rpc" } };
+    // Auth /auth/me
+    if (typeof url === "string" && url.includes("/auth/me")) {
       const p = fakeState.callerProfile;
-      const granted = Boolean(p.actif && (p.role === "Administrateur" || p.permissions.includes(params.perm)));
-      return { data: granted, error: null };
-    },
-  }),
-}));
+      if (!p.actif) return new Response(JSON.stringify({ message: "Inactif." }), { status: 403 });
+      return new Response(JSON.stringify(p), { status: 200 });
+    }
 
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({
-    from: () => ({
-      select: () => ({
-        eq: (_field: string, id: string) => ({
-          single: async () => {
-            const p = lookupProfile(id);
-            return p ? { data: p, error: null } : { data: null, error: { message: "not found" } };
-          },
-        }),
-      }),
-    }),
-    auth: {
-      admin: {
-        updateUserById: async (id: string, payload: unknown) => {
-          fakeState.updateUserByIdCalls.push({ id, payload });
-          return { error: fakeState.updateUserByIdError };
-        },
-      },
-    },
+    // PATCH /users/:id/password
+    if (typeof url === "string" && /\/users\/[^/]+\/password$/.test(url) && method === "PATCH") {
+      const parts = url.split("/");
+      const id = parts[parts.length - 2];
+      const body = options?.body ? JSON.parse(options.body as string) : {};
+      fakeState.passwordPatchCalls.push({ id, body });
+
+      if (fakeState.updatePasswordError) {
+        return new Response(JSON.stringify({ message: fakeState.updatePasswordError }), { status: 400 });
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
+    }
+
+    // GET /users/:id
+    if (typeof url === "string" && /\/users\/[^/]+$/.test(url) && method === "GET") {
+      const id = url.split("/").pop() || "";
+      const profile = id === fakeState.callerProfile.id ? fakeState.callerProfile : fakeState.profilesById[id];
+      if (!profile) return new Response(JSON.stringify({ message: "not found" }), { status: 404 });
+      return new Response(JSON.stringify(profile), { status: 200 });
+    }
+
+    // Audit
+    if (typeof url === "string" && url.includes("/audit")) {
+      return new Response(JSON.stringify({ ok: true }), { status: 201 });
+    }
+
+    return new Response(JSON.stringify({ message: "Not found" }), { status: 404 });
   }),
-}));
+);
 
 vi.mock("@/lib/auth/admin-audit", () => ({
   insertAdminAuditLog: async () => {},
@@ -107,6 +116,7 @@ function req(body: unknown, withAuth = true) {
 
 beforeEach(() => {
   resetFake();
+  vi.clearAllMocks();
 });
 
 describe("POST /api/admin/users/[id]/password", () => {
@@ -124,14 +134,14 @@ describe("POST /api/admin/users/[id]/password", () => {
     fakeState.profilesById.target1.role = "Administrateur";
     const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(403);
-    expect(fakeState.updateUserByIdCalls).toHaveLength(0);
+    expect(fakeState.passwordPatchCalls).toHaveLength(0);
   });
 
   it("autorise un manager non-admin à réinitialiser le mot de passe d'un utilisateur normal", async () => {
     const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(200);
-    expect(fakeState.updateUserByIdCalls).toEqual([
-      { id: "target1", payload: { password: "Newpassword123" } },
+    expect(fakeState.passwordPatchCalls).toEqual([
+      { id: "target1", body: { motDePasse: "Newpassword123" } },
     ]);
   });
 
@@ -141,10 +151,13 @@ describe("POST /api/admin/users/[id]/password", () => {
     fakeState.profilesById.target1.role = "Administrateur";
     const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(200);
+    expect(fakeState.passwordPatchCalls).toEqual([
+      { id: "target1", body: { motDePasse: "Newpassword123" } },
+    ]);
   });
 
   it("renvoie l'erreur si la mise à jour échoue", async () => {
-    fakeState.updateUserByIdError = { message: "update failed" };
+    fakeState.updatePasswordError = "update failed";
     const res = await POST(req({ password: "Newpassword123" }), ctx("target1"));
     expect(res.status).toBe(400);
   });

@@ -1,52 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const { calls, remoteState, resetFake } = vi.hoisted(() => {
-  const calls: { table: string; op: "delete" | "insert"; payload?: unknown }[] = [];
-  const remoteState = { storageRemoveError: null as { message: string } | null };
-  return {
-    calls,
-    remoteState,
-    resetFake: () => {
-      calls.length = 0;
-      remoteState.storageRemoveError = null;
-    },
-  };
-});
-
-vi.mock("@/lib/supabase", () => ({
-  isSupabaseConfigured: true,
-  supabase: {
-    from: (table: string) => ({
-      delete: () => ({
-        eq: async () => {
-          calls.push({ table, op: "delete" });
-          return { error: null };
-        },
-      }),
-      insert: (payload: unknown) => ({
-        select: () => ({
-          single: async () => {
-            calls.push({ table, op: "insert", payload });
-            return {
-              data: { id: "audit-test-1", created_at: new Date().toISOString(), ...(payload as object) },
-              error: null,
-            };
-          },
-        }),
-      }),
-    }),
-    storage: {
-      from: (bucket: string) => ({
-        remove: async (paths: string[]) => {
-          calls.push({ table: `storage:${bucket}`, op: "delete", payload: paths });
-          return { error: remoteState.storageRemoveError };
-        },
-      }),
-    },
-  },
-}));
-
-const { useStore } = await import("@/lib/store");
+import { describe, expect, it } from "vitest";
+import { useStore } from "@/lib/store";
 import type {
   Archive,
   Client,
@@ -89,10 +42,6 @@ const baseClient: Client = {
   totalPaye: 0,
 };
 
-beforeEach(() => {
-  resetFake();
-});
-
 describe("removeDossier", () => {
   function seedState() {
     const ecriture: Ecriture = {
@@ -106,8 +55,21 @@ describe("removeDossier", () => {
       montantPaye: 0,
       modePaiement: "Espèces",
     };
-    const fichier = { id: "f1", dossierId: "d1", nom: "bl.pdf", taille: 100, type: "application/pdf", dateUpload: "2026-07-01", dataUrl: "data:," };
-    const subDossier: SubDossier = { id: "sd1", dossierId: "d1", nom: "Sous-dossier 1", dateCreation: "2026-07-01" };
+    const fichier = {
+      id: "f1",
+      dossierId: "d1",
+      nom: "bl.pdf",
+      taille: 100,
+      type: "application/pdf",
+      dateUpload: "2026-07-01",
+      dataUrl: "data:,",
+    };
+    const subDossier: SubDossier = {
+      id: "sd1",
+      dossierId: "d1",
+      nom: "Sous-dossier 1",
+      dateCreation: "2026-07-01",
+    };
     const facture: Facture = {
       id: "fa1",
       numero: "FA-0001",
@@ -242,4 +204,3 @@ describe("deleteArchive", () => {
     expect(audit).toBeDefined();
   });
 });
-

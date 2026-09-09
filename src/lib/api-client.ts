@@ -650,6 +650,31 @@ class ApiClient {
   };
 
   // ---------------------------------------------------------------------------
+  // Audit Logs & Traçabilité
+  // ---------------------------------------------------------------------------
+  auditLogs = {
+    getAll: (params?: { entite?: string; action?: string; limit?: number }) => {
+      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<any[]>(`/audit-logs${qs}`);
+    },
+    log: (data: {
+      userId?: string;
+      action: string;
+      entite?: string;
+      module?: string;
+      entiteId?: string;
+      detail?: string;
+      userName?: string;
+      ip?: string;
+      donnees?: any;
+    }) =>
+      this.request<any>('/audit-logs', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
   // Utilisateurs
   // ---------------------------------------------------------------------------
   users = {

@@ -90,6 +90,7 @@ import {
   type StockItem,
   type Mouvement,
   type BonSortie,
+  type BonLigne,
   type BonMotif,
   type User,
   type UserRole,
@@ -149,6 +150,7 @@ export type {
   StockItem,
   Mouvement,
   BonSortie,
+  BonLigne,
   BonMotif,
   User,
   UserRole,
@@ -246,6 +248,14 @@ export interface ImportDossierHistoriqueInput {
 
 export type { ClientInput } from "@/features/clients/types";
 
+export interface BonLigneInput {
+  stockId?: string;
+  marchandise: string;
+  quantite: number;
+  unite: string;
+  montant: number;
+}
+
 export interface BonInput {
   date: string;
   clientId: string;
@@ -258,6 +268,7 @@ export interface BonInput {
   motif: BonMotif;
   montant: number;
   statut?: "Validé" | "Brouillon";
+  lignes?: BonLigneInput[];
 }
 
 export interface StockItemInput {

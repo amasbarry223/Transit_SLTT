@@ -1,31 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+/**
+ * Module Supabase Server supprimé.
+ * L'application utilise désormais NestJS + MySQL via api-client.ts.
+ * Ce fichier est conservé pour éviter des erreurs d'import dans d'anciens modules.
+ */
 
-function getPublicKey() {
-  return (
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+export function createServerClient(_accessToken?: string): never {
+  throw new Error(
+    "[createServerClient] Supabase a été supprimé. Utilisez api-client.ts (NestJS/MySQL) à la place.",
   );
-}
-
-export function createServerClient(accessToken?: string) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publicKey = getPublicKey();
-
-  if (!url || !publicKey) {
-    throw new Error("Configuration Supabase manquante.");
-  }
-
-  return createClient(url, publicKey, {
-    global: accessToken
-      ? {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      : undefined,
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
 }

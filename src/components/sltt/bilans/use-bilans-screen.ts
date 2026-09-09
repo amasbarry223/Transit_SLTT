@@ -24,6 +24,7 @@ export function useBilansScreen() {
 
   const allEcritures = useStore((s) => s.ecritures);
   const clients = useStore((s) => s.clients);
+  const dossiers = useStore((s) => s.dossiers);
   const societes = useStore((s) => s.societes);
   const factures = useStore((s) => s.factures);
   const depenses = useStore((s) => s.depenses);
@@ -32,9 +33,45 @@ export function useBilansScreen() {
 
   const periodeLabel = getPeriodeLabel(periode, mois);
 
+  const combinedEcritures = useMemo(() => {
+    const fromFactures = factures.map((f) => ({
+      id: `fac-${f.id}`,
+      date: f.date,
+      datePaiement: f.date,
+      clientId: f.clientId,
+      clientNom: f.clientNom,
+      dossierId: f.dossierId || undefined,
+      annexeId: f.annexeId,
+      montantInvesti: Number(f.montantTTC || 0),
+      montantPaye: Number(f.montantPaye || 0),
+      modePaiement: "Virement" as const,
+      note: `Facture ${f.numero}`,
+    }));
+
+    const direct = allEcritures;
+
+    const fromDossiers = dossiers
+      .filter((d) => (d.montantInvesti > 0 || d.montantPaye > 0) && !factures.some((f) => f.dossierId === d.id))
+      .map((d) => ({
+        id: `dos-${d.id}`,
+        date: d.date,
+        datePaiement: d.dateDedouanement || d.date,
+        clientId: d.clientId,
+        clientNom: d.clientNom,
+        dossierId: d.id,
+        annexeId: d.annexeId,
+        montantInvesti: Number(d.montantInvesti || 0),
+        montantPaye: Number(d.montantPaye || 0),
+        modePaiement: "Virement" as const,
+        note: `Dossier ${d.reference}`,
+      }));
+
+    return [...fromFactures, ...direct, ...fromDossiers];
+  }, [factures, allEcritures, dossiers]);
+
   const filteredEcritures = useMemo(() => {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
-    return allEcritures.filter((e) => {
+    return combinedEcritures.filter((e) => {
       const d = parseLocalDate(e.date);
       const eYear = d.getFullYear();
       const eMonth = d.getMonth() + 1;
@@ -47,11 +84,13 @@ export function useBilansScreen() {
           return eYear === year && (eMonth <= 6) === (month <= 6);
         case "annuel":
           return eYear === year;
+        case "global":
+          return true;
         default:
           return true;
       }
     });
-  }, [allEcritures, mois, periode]);
+  }, [combinedEcritures, mois, periode]);
 
   // F5 — Bénéfice sur le mois de référence sélectionné (indépendant de la
   // granularité "période" choisie, qui ne s'applique qu'au récap client).
@@ -114,7 +153,7 @@ export function useBilansScreen() {
     const [year] = (mois || currentYearMonth()).split("-").map(Number);
     return Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
-      const monthEcritures = allEcritures.filter((e) => {
+      const monthEcritures = combinedEcritures.filter((e) => {
         const d = parseLocalDate(e.date);
         return d.getFullYear() === year && d.getMonth() + 1 === m;
       });
@@ -124,7 +163,7 @@ export function useBilansScreen() {
         encaisse: monthEcritures.reduce((s, e) => s + e.montantPaye, 0),
       };
     });
-  }, [allEcritures, mois]);
+  }, [combinedEcritures, mois]);
 
   const recapParClient = useMemo(() => {
     return clients

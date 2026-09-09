@@ -5,9 +5,11 @@ import { resetPasswordBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    const { admin, isAdmin, profile: actorProfile } = await requireUserManager(request);
+    const { isAdmin, profile: actorProfile } = await requireUserManager(request);
     const { id } = await context.params;
     const raw = await request.json();
     const parsed = resetPasswordBodySchema.safeParse(raw);
@@ -16,19 +18,46 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
     const { password } = parsed.data;
 
+    const token = request.headers.get("authorization");
+
     if (!isAdmin) {
-      const { data: target } = await admin.from("profiles").select("role").eq("id", id).single();
-      if (target?.role === "Administrateur") {
-        throw new AuthError("Seul un administrateur peut réinitialiser le mot de passe d'un compte Administrateur.", 403);
+      // Vérifier que la cible n'est pas un Admin
+      try {
+        const targetRes = await fetch(`${API_URL}/users/${id}`, {
+          headers: token ? { Authorization: token } : {},
+          cache: "no-store",
+        });
+        if (targetRes.ok) {
+          const target = await targetRes.json();
+          const role = target.role === "ADMIN" ? "Administrateur" : target.role;
+          if (role === "Administrateur") {
+            throw new AuthError(
+              "Seul un administrateur peut réinitialiser le mot de passe d'un compte Administrateur.",
+              403,
+            );
+          }
+        }
+      } catch (err) {
+        if (err instanceof AuthError) throw err;
       }
     }
 
-    const { error } = await admin.auth.admin.updateUserById(id, { password });
-    if (error) {
-      throw new AuthError(error.message, 400);
+    // Délégation à l'API NestJS
+    const res = await fetch(`${API_URL}/users/${id}/password`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: token } : {}),
+      },
+      body: JSON.stringify({ motDePasse: password }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ message: "Impossible de réinitialiser le mot de passe." }));
+      throw new AuthError(errData.message || "Impossible de réinitialiser le mot de passe.", res.status);
     }
 
-    await insertAdminAuditLog(admin, actorProfile, {
+    await insertAdminAuditLog(null, actorProfile, {
       action: "Modification",
       detail: `Mot de passe réinitialisé pour l'utilisateur ${id}`,
     });

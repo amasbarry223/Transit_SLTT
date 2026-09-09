@@ -24,11 +24,12 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Non authentifié');
     }
 
-    if (user.role === 'ADMIN') {
+    const userRole = String(user.role || '').toUpperCase();
+    if (userRole === 'ADMIN' || userRole === 'ADMINISTRATEUR') {
       return true;
     }
 
-    const hasRole = requiredRoles.includes(user.role);
+    const hasRole = requiredRoles.some((r) => r.toUpperCase() === userRole || r === user.role);
     if (!hasRole) {
       throw new ForbiddenException("Vous n'avez pas le rôle requis pour cette action");
     }

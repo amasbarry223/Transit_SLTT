@@ -1,13 +1,64 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RoleUtilisateur } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+
+export function mapToPrismaRole(role: string): RoleUtilisateur {
+  switch (role) {
+    case 'Administrateur':
+    case 'ADMIN':
+      return RoleUtilisateur.ADMIN;
+    case 'Agent de transit':
+    case 'TRANSITAIRE':
+      return RoleUtilisateur.TRANSITAIRE;
+    case 'Comptable':
+    case 'COMPTABLE':
+      return RoleUtilisateur.COMPTABLE;
+    case 'Commercial':
+    case 'COMMERCIAL':
+      return RoleUtilisateur.COMMERCIAL;
+    case 'Magasinier':
+    case 'OPERATEUR':
+      return RoleUtilisateur.OPERATEUR;
+    case 'Client':
+    case 'CLIENT':
+      return RoleUtilisateur.CLIENT;
+    default:
+      return RoleUtilisateur.OPERATEUR;
+  }
+}
+
+export function mapToAppRole(role: RoleUtilisateur | string): string {
+  switch (role) {
+    case RoleUtilisateur.ADMIN:
+    case 'ADMIN':
+      return 'Administrateur';
+    case RoleUtilisateur.TRANSITAIRE:
+    case 'TRANSITAIRE':
+      return 'Agent de transit';
+    case RoleUtilisateur.COMPTABLE:
+    case 'COMPTABLE':
+      return 'Comptable';
+    case RoleUtilisateur.COMMERCIAL:
+    case 'COMMERCIAL':
+      return 'Commercial';
+    case RoleUtilisateur.OPERATEUR:
+    case 'OPERATEUR':
+      return 'Magasinier';
+    case RoleUtilisateur.CLIENT:
+    case 'CLIENT':
+      return 'Client';
+    default:
+      return String(role);
+  }
+}
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.profile.findMany({
+    const profiles = await this.prisma.profile.findMany({
       select: {
         id: true,
         email: true,
@@ -27,6 +78,11 @@ export class UsersService {
       },
       orderBy: { nom: 'asc' },
     });
+
+    return profiles.map((p) => ({
+      ...p,
+      role: mapToAppRole(p.role),
+    }));
   }
 
   async findOne(id: string) {
@@ -40,32 +96,38 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException(`Utilisateur ${id} non trouvé`);
     const { passwordHash, ...safeUser } = user;
-    return safeUser;
+    return {
+      ...safeUser,
+      role: mapToAppRole(safeUser.role),
+    };
   }
 
   async create(data: {
     email: string;
-    password: string;
+    password?: string;
     nom: string;
     telephone?: string;
     role?: any;
     permissions?: string[];
     annexeIds?: string[];
   }) {
+    const email = data.email.toLowerCase().trim();
     const existing = await this.prisma.profile.findUnique({
-      where: { email: data.email.toLowerCase().trim() },
+      where: { email },
     });
     if (existing) throw new ConflictException(`L'email ${data.email} est déjà utilisé`);
 
-    const passwordHash = await bcrypt.hash(data.password, 12);
+    const rawPassword = data.password || 'Transit2026!';
+    const passwordHash = await bcrypt.hash(rawPassword, 12);
+    const prismaRole = mapToPrismaRole(data.role || 'Magasinier');
 
-    return this.prisma.profile.create({
+    const created = await this.prisma.profile.create({
       data: {
-        email: data.email.toLowerCase().trim(),
+        email,
         passwordHash,
         nom: data.nom,
         telephone: data.telephone,
-        role: data.role || 'OPERATEUR',
+        role: prismaRole,
         permissions: data.permissions || [],
         userAnnexes: data.annexeIds?.length
           ? {
@@ -82,6 +144,11 @@ export class UsersService {
         actif: true,
       },
     });
+
+    return {
+      ...created,
+      role: mapToAppRole(created.role),
+    };
   }
 
   async update(
@@ -101,7 +168,7 @@ export class UsersService {
     const updateData: any = {};
     if (data.nom) updateData.nom = data.nom;
     if (data.telephone !== undefined) updateData.telephone = data.telephone;
-    if (data.role) updateData.role = data.role;
+    if (data.role) updateData.role = mapToPrismaRole(data.role);
     if (data.permissions) updateData.permissions = data.permissions;
     if (data.actif !== undefined) updateData.actif = data.actif;
     if (data.password) {
@@ -116,7 +183,7 @@ export class UsersService {
       });
     }
 
-    return this.prisma.profile.update({
+    const updated = await this.prisma.profile.update({
       where: { id },
       data: updateData,
       select: {
@@ -128,6 +195,21 @@ export class UsersService {
         actif: true,
       },
     });
+
+    return {
+      ...updated,
+      role: mapToAppRole(updated.role),
+    };
+  }
+
+  async resetPassword(id: string, newPassword: string) {
+    await this.findOne(id);
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.profile.update({
+      where: { id },
+      data: { passwordHash },
+    });
+    return { success: true };
   }
 
   async delete(id: string) {

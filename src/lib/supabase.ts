@@ -1,16 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+/**
+ * Supabase supprimé — ce fichier est conservé pour compatibilité ascendante
+ * des imports existants mais n'exporte plus aucun client Supabase.
+ * L'application utilise désormais NestJS + MySQL via api-client.ts.
+ */
 
-/** Migration vers NestJS + MySQL : Supabase est désactivé. */
 export const isSupabaseConfigured = false;
-
-export const supabase = createClient(
-  "http://localhost:3001",
-  "placeholder-disabled-token",
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  },
-);

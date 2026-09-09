@@ -1,6 +1,6 @@
 import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
-import type { BonSortie, BonSortieCaisse, BonSortieCaisseInput, StockItem } from "@/lib/domain-types";
+import type { BonLigne, BonSortie, BonSortieCaisse, BonSortieCaisseInput, Mouvement, StockItem } from "@/lib/domain-types";
 import type { BonInput, SLTTState } from "@/lib/store";
 import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
@@ -89,6 +89,19 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const numero = initialNumero;
     const client = get().clients.find((c) => c.id === input.clientId);
 
+    const hasLignes = Boolean(input.lignes && input.lignes.length > 0);
+    const lignes: BonLigne[] = hasLignes
+      ? input.lignes!.map((l) => ({ ...l, id: crypto.randomUUID() }))
+      : [];
+
+    const totalQuantite = hasLignes ? lignes.reduce((acc, l) => acc + (Number(l.quantite) || 0), 0) : input.quantite;
+    const totalMontant = hasLignes ? lignes.reduce((acc, l) => acc + (Number(l.montant) || 0), 0) : input.montant;
+    const marchandise = hasLignes
+      ? lignes.map((l) => l.marchandise).join(", ")
+      : input.marchandise;
+    const unite = hasLignes ? lignes[0]?.unite || input.unite : input.unite;
+    const stockId = hasLignes ? lignes[0]?.stockId || input.stockId : input.stockId;
+
     let dbId = crypto.randomUUID();
     try {
       const created = await api.bons.createBonSortie({
@@ -97,12 +110,12 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         clientId: input.clientId,
         clientNom: client?.nom || "",
         annexeId: input.annexeId,
-        stockId: input.stockId,
-        marchandise: input.marchandise,
-        quantite: input.quantite,
-        unite: input.unite,
+        stockId,
+        marchandise,
+        quantite: totalQuantite,
+        unite,
         motif: input.motif,
-        montant: input.montant,
+        montant: totalMontant,
         statut: input.statut || "Brouillon",
       });
       if (created?.id) dbId = created.id;
@@ -118,13 +131,14 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       clientNom: client?.nom || "",
       annexeId: input.annexeId,
       annexeNom: annexe?.nom,
-      stockId: input.stockId,
-      marchandise: input.marchandise,
-      quantite: input.quantite,
-      unite: input.unite,
+      stockId,
+      marchandise,
+      quantite: totalQuantite,
+      unite,
       motif: input.motif,
-      montant: input.montant,
+      montant: totalMontant,
       statut: "Brouillon",
+      lignes: hasLignes ? lignes : undefined,
     };
 
     const finalSeq = extractTrailingSeq(numero) ?? get().bonSeq;
@@ -148,6 +162,64 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const bon = get().bons.find((b) => b.id === id);
     if (!bon || bon.statut === "Validé") return false;
 
+    // Si le bon comporte plusieurs lignes d'articles
+    if (bon.lignes && bon.lignes.length > 0) {
+      const neededByStockId = new Map<string, number>();
+      for (const ligne of bon.lignes) {
+        const stockItem = findStockForBon(get().stock, ligne);
+        if (stockItem) {
+          const current = neededByStockId.get(stockItem.id) || 0;
+          neededByStockId.set(stockItem.id, current + ligne.quantite);
+        }
+      }
+
+      for (const [stockId, neededQty] of neededByStockId.entries()) {
+        const stockItem = get().stock.find((s) => s.id === stockId);
+        if (stockItem && stockItem.quantite < neededQty) {
+          return false;
+        }
+      }
+
+      try {
+        await api.bons.validateBonSortie(id);
+      } catch (e) {
+        console.warn("api.bons.validateBonSortie (mode local) :", e);
+      }
+
+      let updatedStock = [...get().stock];
+      const newMouvements: Mouvement[] = [];
+      for (const ligne of bon.lignes) {
+        const stockItem = findStockForBon(updatedStock, ligne);
+        if (stockItem) {
+          const newStockQty = Math.max(0, stockItem.quantite - ligne.quantite);
+          updatedStock = updatedStock.map((item) =>
+            item.id === stockItem.id ? { ...item, quantite: newStockQty } : item,
+          );
+          newMouvements.push({
+            id: crypto.randomUUID(),
+            annexeId: stockItem.annexeId || bon.annexeId,
+            annexeNom: stockItem.annexeNom || bon.annexeNom,
+            date: new Date().toISOString(),
+            type: "Sortie" as const,
+            marchandise: ligne.marchandise,
+            quantite: ligne.quantite,
+            unite: ligne.unite,
+            responsable: getConnectedUserName(),
+            bonRef: bon.reference,
+          });
+        }
+      }
+
+      set((s) => ({
+        bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" as const } : b)),
+        stock: updatedStock,
+        mouvements: [...newMouvements, ...s.mouvements],
+      }));
+      await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Validation, `Bon de sortie ${bon.reference} validé`);
+      return true;
+    }
+
+    // Cas mono-article rétrocompatible
     const stockItem = findStockForBon(get().stock, bon);
     if (stockItem && stockItem.quantite < bon.quantite) {
       return false;

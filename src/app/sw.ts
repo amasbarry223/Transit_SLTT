@@ -10,12 +10,8 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-/** Ne jamais mettre en cache Supabase ni les routes API internes. */
+/** Ne jamais mettre en cache les routes API internes ni les appels backend. */
 const secureRuntimeCaching = [
-  {
-    matcher: ({ url }: { url: URL }) => /\.supabase\.co$/i.test(url.hostname),
-    handler: new NetworkOnly(),
-  },
   {
     matcher: ({
       sameOrigin,

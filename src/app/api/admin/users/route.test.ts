@@ -1,6 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+/** Profil fictif NestJS */
+type FakeProfile = {
+  id: string;
+  nom: string;
+  email: string;
+  role: string;
+  permissions: string[];
+  actif: boolean;
+  annexeIds: string[];
+};
+
 const { fakeState, resetFake } = vi.hoisted(() => {
   const fakeState = {
     callerProfile: {
@@ -10,69 +21,63 @@ const { fakeState, resetFake } = vi.hoisted(() => {
       role: "Comptable",
       permissions: ["utilisateurs:manage", "dossiers:read"] as string[],
       actif: true,
-    },
-    createUserResult: {
-      data: { user: { id: "new-user-1" } as { id: string } | null },
-      error: null as { message: string } | null,
-    },
-    profileUpdateError: null as { message: string } | null,
-    deleteUserCalls: [] as string[],
+      annexeIds: [] as string[],
+    } as FakeProfile,
+    createUserResult: { id: "new-user-1", nom: "Nouveau", email: "nouveau@sltt.ml", role: "Agent de transit" } as Record<string, unknown> | null,
+    createUserError: null as string | null,
   };
   return {
     fakeState,
     resetFake: () => {
-      fakeState.callerProfile.role = "Comptable";
-      fakeState.callerProfile.permissions = ["utilisateurs:manage", "dossiers:read"];
-      fakeState.callerProfile.actif = true;
-      fakeState.createUserResult = { data: { user: { id: "new-user-1" } }, error: null };
-      fakeState.profileUpdateError = null;
-      fakeState.deleteUserCalls.length = 0;
+      fakeState.callerProfile = {
+        id: "manager1",
+        nom: "Manager",
+        email: "manager@sltt.ml",
+        role: "Comptable",
+        permissions: ["utilisateurs:manage", "dossiers:read"],
+        actif: true,
+        annexeIds: [],
+      };
+      fakeState.createUserResult = { id: "new-user-1", nom: "Nouveau", email: "nouveau@sltt.ml", role: "Agent de transit" };
+      fakeState.createUserError = null;
     },
   };
 });
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerClient: () => ({
-    auth: { getUser: async () => ({ data: { user: { id: "manager1" } }, error: null }) },
-    rpc: async (fnName: string, params: { perm: string }) => {
-      if (fnName !== "has_permission") return { data: null, error: { message: "unknown rpc" } };
-      const p = fakeState.callerProfile;
-      const granted = Boolean(p.actif && (p.role === "Administrateur" || p.permissions.includes(params.perm)));
-      return { data: granted, error: null };
-    },
-  }),
-}));
+// Mock de fetch global
+vi.stubGlobal(
+  "fetch",
+  vi.fn(async (url: string, options?: RequestInit) => {
+    const method = options?.method?.toUpperCase() || "GET";
 
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({
-    from: () => ({
-      // profile lookup used by requireUserManager
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: fakeState.callerProfile, error: null }),
-        }),
-      }),
-      // profile upsert after auth-user creation
-      upsert: (payload: Record<string, unknown>) => ({
-        select: () => ({
-          single: async () =>
-            fakeState.profileUpdateError
-              ? { data: null, error: fakeState.profileUpdateError }
-              : { data: payload, error: null },
-        }),
-      }),
-    }),
-    auth: {
-      admin: {
-        createUser: async () => fakeState.createUserResult,
-        deleteUser: async (id: string) => {
-          fakeState.deleteUserCalls.push(id);
-          return { error: null };
-        },
-      },
-    },
+    // Auth /auth/me — authentification de l'appelant
+    if (typeof url === "string" && url.includes("/auth/me")) {
+      const profile = fakeState.callerProfile;
+      if (!profile.actif) {
+        return new Response(JSON.stringify({ message: "Profil inactif." }), { status: 403 });
+      }
+      return new Response(JSON.stringify(profile), { status: 200 });
+    }
+
+    // POST /users — création d'un utilisateur
+    if (typeof url === "string" && url.includes("/users") && method === "POST") {
+      if (fakeState.createUserError) {
+        return new Response(
+          JSON.stringify({ message: fakeState.createUserError }),
+          { status: 400 },
+        );
+      }
+      return new Response(JSON.stringify(fakeState.createUserResult), { status: 201 });
+    }
+
+    // Audit
+    if (typeof url === "string" && url.includes("/audit")) {
+      return new Response(JSON.stringify({ ok: true }), { status: 201 });
+    }
+
+    return new Response(JSON.stringify({ message: "Not found" }), { status: 404 });
   }),
-}));
+);
 
 vi.mock("@/lib/auth/admin-audit", () => ({
   insertAdminAuditLog: async () => {},
@@ -98,6 +103,7 @@ const validBody = {
 
 beforeEach(() => {
   resetFake();
+  vi.clearAllMocks();
 });
 
 describe("POST /api/admin/users", () => {
@@ -114,7 +120,7 @@ describe("POST /api/admin/users", () => {
   it("rejette un profil désactivé", async () => {
     fakeState.callerProfile.actif = false;
     const res = await POST(req(validBody));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
   });
 
   it("rejette un manager sans permission utilisateurs:manage", async () => {
@@ -141,7 +147,7 @@ describe("POST /api/admin/users", () => {
   });
 
   it("autorise un Administrateur à créer un autre compte Administrateur", async () => {
-    fakeState.callerProfile.role = "Administrateur";
+    fakeState.callerProfile.role = "ADMIN";
     fakeState.callerProfile.permissions = [];
     const res = await POST(req({ ...validBody, role: "Administrateur" }));
     expect(res.status).toBe(201);
@@ -162,18 +168,11 @@ describe("POST /api/admin/users", () => {
     expect(body.error).toContain("hors périmètre délégué");
   });
 
-  it("renvoie l'erreur si la création du compte auth échoue", async () => {
-    fakeState.createUserResult = { data: { user: null }, error: { message: "email already exists" } };
+  it("renvoie l'erreur si la création du compte échoue", async () => {
+    fakeState.createUserError = "email already exists";
     const res = await POST(req(validBody));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("email already exists");
-  });
-
-  it("supprime le compte auth orphelin si l'écriture du profil échoue (rollback)", async () => {
-    fakeState.profileUpdateError = { message: "profile insert failed" };
-    const res = await POST(req(validBody));
-    expect(res.status).toBe(400);
-    expect(fakeState.deleteUserCalls).toEqual(["new-user-1"]);
   });
 });

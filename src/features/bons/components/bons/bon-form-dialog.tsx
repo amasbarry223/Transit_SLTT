@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, FilePen, Truck } from "lucide-react";
+import { AlertCircle, Check, FilePen, Package, Plus, Trash2, Truck } from "lucide-react";
 import type { BonMotif, StockItem } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
@@ -49,6 +49,22 @@ type BonFormDialogProps = {
   canWrite: boolean;
 };
 
+interface FormArticleLigne {
+  id: string;
+  stockId: string;
+  quantite: string;
+  montant: string;
+}
+
+function createEmptyLigne(): FormArticleLigne {
+  return {
+    id: crypto.randomUUID(),
+    stockId: "",
+    quantite: "",
+    montant: "",
+  };
+}
+
 export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: BonFormDialogProps) {
   const { toast } = useToast();
   const [confirmValiderOpen, setConfirmValiderOpen] = useState(false);
@@ -63,58 +79,132 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
 
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
   const [formClientId, setFormClientId] = useState("");
-  const [formStockId, setFormStockId] = useState("");
-  const [formQuantite, setFormQuantite] = useState("");
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
-  const [formMontant, setFormMontant] = useState("");
+  const [formLignes, setFormLignes] = useState<FormArticleLigne[]>([createEmptyLigne()]);
 
-  const selectedStock: StockItem | undefined = useMemo(
-    () => stock.find((item) => item.id === formStockId),
-    [stock, formStockId],
-  );
   const selectedClient = useMemo(
     () => clients.find((client) => client.id === formClientId),
     [clients, formClientId],
   );
 
-  const quantiteNum = Number(formQuantite) || 0;
-  const stockDisponible = selectedStock?.quantite ?? 0;
-  const depasseStock = selectedStock !== undefined && quantiteNum > stockDisponible;
-  const montantNum = Number(formMontant) || 0;
-
+  // Réinitialisation du formulaire à l'ouverture
   const [prevDialogOpen, setPrevDialogOpen] = useState(open);
   if (open !== prevDialogOpen) {
     setPrevDialogOpen(open);
     if (open) {
       setFormDate(new Date().toISOString().slice(0, 10));
       setFormClientId("");
-      setFormStockId("");
-      setFormQuantite("");
       setFormMotif("");
-      setFormMontant("");
+      setFormLignes([createEmptyLigne()]);
     }
   }
 
+  // Analyses des lignes
+  const lignesAnalysis = useMemo(() => {
+    return formLignes.map((ligne) => {
+      const item = stock.find((s) => s.id === ligne.stockId);
+      const qte = Number(ligne.quantite) || 0;
+      const mnt = Number(ligne.montant) || 0;
+      const stockDispo = item?.quantite ?? 0;
+      const depasse = item !== undefined && qte > stockDispo;
+      return {
+        ...ligne,
+        stockItem: item,
+        quantiteNum: qte,
+        montantNum: mnt,
+        stockDispo,
+        depasse,
+        valide: Boolean(item && qte > 0 && !depasse),
+      };
+    });
+  }, [formLignes, stock]);
+
+  const hasInvalidStock = lignesAnalysis.some((l) => l.depasse);
+  const allLignesValid =
+    lignesAnalysis.length > 0 &&
+    lignesAnalysis.every((l) => l.stockItem && l.quantiteNum > 0 && !l.depasse);
+
+  const totalMontant = lignesAnalysis.reduce((acc, l) => acc + l.montantNum, 0);
+  const totalQuantite = lignesAnalysis.reduce((acc, l) => acc + l.quantiteNum, 0);
+
+  // Stock principal / Annexe pour calcul de la référence
+  const firstStockItem = lignesAnalysis.find((l) => l.stockItem)?.stockItem;
+  const selectedSociete = societes[0];
+  const previewReference = firstStockItem
+    ? computeAnnexeScopedReference(
+        selectedSociete,
+        annexes.find((a) => a.id === firstStockItem.annexeId),
+        "BS",
+        bons.map((b) => b.reference),
+        bonSeq,
+      ).reference
+    : nextReference;
+
+  function handleLigneChange(id: string, field: keyof FormArticleLigne, value: string) {
+    setFormLignes((prev) =>
+      prev.map((l) => {
+        if (l.id !== id) return l;
+        const updated = { ...l, [field]: value };
+        if (field === "stockId") {
+          const picked = stock.find((s) => s.id === value);
+          if (picked && !formClientId && picked.clientId) {
+            setFormClientId(picked.clientId);
+          }
+        }
+        return updated;
+      }),
+    );
+  }
+
+  function handleAddLigne() {
+    setFormLignes((prev) => [...prev, createEmptyLigne()]);
+  }
+
+  function handleRemoveLigne(id: string) {
+    if (formLignes.length <= 1) return;
+    setFormLignes((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  function prepareBonPayload(statut: "Validé" | "Brouillon") {
+    if (!selectedClient || !formMotif || !firstStockItem) return null;
+
+    const payloadLignes = lignesAnalysis
+      .filter((l) => l.stockItem && l.quantiteNum > 0)
+      .map((l) => ({
+        stockId: l.stockItem!.id,
+        marchandise: l.stockItem!.marchandise,
+        quantite: l.quantiteNum,
+        unite: l.stockItem!.unite,
+        montant: l.montantNum,
+      }));
+
+    return {
+      date: formDate,
+      clientId: formClientId,
+      clientNom: selectedClient.nom,
+      annexeId: firstStockItem.annexeId,
+      stockId: firstStockItem.id,
+      marchandise: payloadLignes.map((l) => l.marchandise).join(", "),
+      quantite: totalQuantite,
+      unite: firstStockItem.unite,
+      motif: formMotif,
+      montant: totalMontant,
+      statut,
+      lignes: payloadLignes,
+    };
+  }
+
   async function handleValider() {
-    if (!canWrite || !selectedStock || !selectedClient || !formMotif) return;
+    if (!canWrite || !allLignesValid || !selectedClient || !formMotif) return;
+    const payload = prepareBonPayload("Validé");
+    if (!payload) return;
+
     setSaving(true);
     try {
-      await addBon({
-        date: formDate,
-        clientId: formClientId,
-        clientNom: selectedClient.nom,
-        annexeId: selectedStock.annexeId,
-        stockId: selectedStock.id,
-        marchandise: selectedStock.marchandise,
-        quantite: quantiteNum,
-        unite: selectedStock.unite,
-        motif: formMotif,
-        montant: montantNum,
-        statut: "Validé",
-      });
+      await addBon(payload);
       toastSuccess(toast, {
         title: "Bon de sortie validé",
-        description: "Bon de sortie validé — stock décrémenté.",
+        description: `Bon de sortie validé — ${payload.lignes.length} article(s) décrémenté(s) du stock.`,
       });
       onOpenChange(false);
     } catch (error: unknown) {
@@ -123,7 +213,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
         toastWarning(toast, {
           title: "Validation impossible — stock insuffisant",
           description:
-            "Le stock disponible est inférieur à la quantité demandée. Le bon a été enregistré comme brouillon.",
+            "Le stock disponible est inférieur à la quantité demandée sur un ou plusieurs articles. Le bon a été enregistré comme brouillon.",
         });
         onOpenChange(false);
       } else {
@@ -138,25 +228,16 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
   }
 
   async function handleSaveDraft() {
-    if (!canWrite || !selectedStock || !selectedClient || !formMotif) return;
+    if (!canWrite || !selectedClient || !formMotif || !firstStockItem) return;
+    const payload = prepareBonPayload("Brouillon");
+    if (!payload || payload.lignes.length === 0) return;
+
     setSaving(true);
     try {
-      await addBon({
-        date: formDate,
-        clientId: formClientId,
-        clientNom: selectedClient.nom,
-        annexeId: selectedStock.annexeId,
-        stockId: selectedStock.id,
-        marchandise: selectedStock.marchandise,
-        quantite: quantiteNum,
-        unite: selectedStock.unite,
-        motif: formMotif,
-        montant: montantNum,
-        statut: "Brouillon",
-      });
+      await addBon(payload);
       toastSuccess(toast, {
         title: "Brouillon enregistré",
-        description: "Le bon a été sauvegardé comme brouillon.",
+        description: "Le bon de sortie multi-articles a été sauvegardé comme brouillon.",
       });
       onOpenChange(false);
     } catch (error: unknown) {
@@ -169,32 +250,12 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
     }
   }
 
-  function handleStockChange(stockId: string) {
-    setFormStockId(stockId);
-    const picked = stock.find((item) => item.id === stockId);
-    if (picked) {
-      if (!formClientId && picked.clientId) setFormClientId(picked.clientId);
-    }
-  }
-
-  const selectedSociete = societes[0];
-  // L'annexe d'un bon est héritée du stock visé (non resélectionnable, cf.
-  // handleValider) — l'aperçu ne peut donc refléter la vraie numérotation
-  // par annexe qu'une fois un stock choisi ; avant ça, `nextReference`
-  // (compteur global générique) reste la meilleure estimation possible.
-  const previewReference = selectedStock
-    ? computeAnnexeScopedReference(
-        selectedSociete,
-        annexes.find((a) => a.id === selectedStock.annexeId),
-        "BS",
-        bons.map((b) => b.reference),
-        bonSeq,
-      ).reference
-    : nextReference;
+  const isFormReady =
+    Boolean(canWrite && formClientId && formMotif && allLignesValid && !hasInvalidStock);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl lg:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl lg:max-w-5xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-3">
             <DialogTitle>Nouveau bon de sortie</DialogTitle>
@@ -206,92 +267,57 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
             </Badge>
           </div>
           <DialogDescription>
-            Sélectionnez le client, la marchandise et la quantité à sortir du stock.
+            Sélectionnez le client, le motif et ajoutez les articles à sortir du stock.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="bs-date" className="text-sm font-medium text-foreground/90">
-                Date
-              </Label>
-              <Input
-                id="bs-date"
-                type="date"
-                value={formDate}
-                onChange={(event) => setFormDate(event.target.value)}
-                className="h-10"
-              />
-            </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Formulaire à gauche */}
+          <div className="space-y-5 lg:col-span-7">
+            {/* Informations générales */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="bs-date" className="text-xs font-medium text-foreground/90">
+                  Date
+                </Label>
+                <Input
+                  id="bs-date"
+                  type="date"
+                  value={formDate}
+                  onChange={(event) => setFormDate(event.target.value)}
+                  className="h-9"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bs-client" className="text-sm font-medium text-foreground/90">
-                Client <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex gap-2">
-                <Select value={formClientId} onValueChange={setFormClientId}>
-                  <SelectTrigger id="bs-client" className="h-10 w-full">
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <QuickClientButton onCreated={setFormClientId} />
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="bs-client" className="text-xs font-medium text-foreground/90">
+                  Client <span className="text-red-500">*</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Select value={formClientId} onValueChange={setFormClientId}>
+                    <SelectTrigger id="bs-client" className="h-9 w-full">
+                      <SelectValue placeholder="Sélectionner un client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <QuickClientButton onCreated={setFormClientId} />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bs-stock" className="text-sm font-medium text-foreground/90">
-                Marchandise <span className="text-red-500">*</span>
-              </Label>
-              <Select value={formStockId} onValueChange={handleStockChange}>
-                <SelectTrigger id="bs-stock" className="h-10 w-full">
-                  <SelectValue placeholder="Sélectionner une marchandise" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stock.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.marchandise} (stock : {item.quantite} {item.unite})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bs-quantite" className="text-sm font-medium text-foreground/90">
-                Quantité à sortir <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="bs-quantite"
-                type="number"
-                min={0}
-                value={formQuantite}
-                onChange={(event) => setFormQuantite(event.target.value)}
-                aria-invalid={depasseStock}
-                placeholder={UI.placeholders.amountFCFA}
-                className="h-10"
-              />
-              {depasseStock && selectedStock && (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  La quantité dépasse le stock disponible ({stockDisponible} {selectedStock.unite}).
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bs-motif" className="text-sm font-medium text-foreground/90">
-                Motif <span className="text-red-500">*</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="bs-motif" className="text-xs font-medium text-foreground/90">
+                Motif commun <span className="text-red-500">*</span>
               </Label>
               <Select value={formMotif} onValueChange={(value) => setFormMotif(value as BonMotif)}>
-                <SelectTrigger id="bs-motif" className="h-10 w-full">
-                  <SelectValue placeholder="Sélectionner un motif" />
+                <SelectTrigger id="bs-motif" className="h-9 w-full">
+                  <SelectValue placeholder="Sélectionner un motif de sortie" />
                 </SelectTrigger>
                 <SelectContent>
                   {BON_MOTIFS.map((motif) => (
@@ -303,37 +329,148 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bs-montant" className="text-sm font-medium text-foreground/90">
-                Montant <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="bs-montant"
-                  type="number"
-                  min={0}
-                  value={formMontant}
-                  onChange={(event) => setFormMontant(event.target.value)}
-                  placeholder={UI.placeholders.amountFCFA}
-                  className="h-10 pr-16"
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
-                  FCFA
+            {/* Section Articles */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between border-b pb-2">
+                <div className="flex items-center gap-2">
+                  <Package className="size-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">
+                    Articles concernés ({formLignes.length})
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddLigne}
+                  className="h-8 gap-1 text-xs"
+                >
+                  <Plus className="size-3.5" />
+                  Ajouter un article
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {formLignes.map((ligne, index) => {
+                  const analysis = lignesAnalysis[index];
+                  const item = analysis?.stockItem;
+                  const depasse = analysis?.depasse;
+
+                  return (
+                    <div
+                      key={ligne.id}
+                      className={cn(
+                        "relative rounded-lg border p-3.5 space-y-3 transition-colors",
+                        depasse
+                          ? "border-red-300 bg-red-50/40 dark:border-red-900/60 dark:bg-red-950/20"
+                          : "border-border/80 bg-muted/20 hover:bg-muted/30",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Ligne #{index + 1}
+                        </span>
+                        {formLignes.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveLigne(ligne.id)}
+                            className="size-7 text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
+                            title="Supprimer cette ligne"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-foreground/80">
+                          Marchandise en stock <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          value={ligne.stockId}
+                          onValueChange={(val) => handleLigneChange(ligne.id, "stockId", val)}
+                        >
+                          <SelectTrigger className="h-9 w-full">
+                            <SelectValue placeholder="Choisir un article en stock" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {stock.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.marchandise} ({s.quantite} {s.unite} dispo)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-foreground/80">
+                            Quantité {item ? `(${item.unite})` : ""} <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            placeholder="0"
+                            value={ligne.quantite}
+                            onChange={(e) => handleLigneChange(ligne.id, "quantite", e.target.value)}
+                            className={cn("h-9", depasse && "border-red-500 focus-visible:ring-red-500")}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-foreground/80">
+                            Montant (FCFA)
+                          </Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="0"
+                            value={ligne.montant}
+                            onChange={(e) => handleLigneChange(ligne.id, "montant", e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+
+                      {depasse && item && (
+                        <div className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                          <AlertCircle className="size-3.5 shrink-0" />
+                          <span>
+                            Dépasse le stock dispo ({item.quantite} {item.unite}).
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Barre de totaux */}
+              <div className="flex items-center justify-between rounded-lg bg-muted/60 px-4 py-2.5 text-sm">
+                <span className="text-xs text-muted-foreground">
+                  Total : <strong>{totalQuantite}</strong> article(s) cumulé(s)
+                </span>
+                <span className="font-semibold text-foreground">
+                  Total : {formatFCFA(totalMontant)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div>
+          {/* Aperçu à droite */}
+          <div className="lg:col-span-5">
             <BonPreview
               reference={previewReference}
               date={formDate}
               client={selectedClient?.nom}
-              marchandise={selectedStock?.marchandise}
-              quantite={quantiteNum}
-              unite={selectedStock?.unite}
               motif={formMotif}
-              montant={montantNum}
+              lignes={lignesAnalysis}
+              totalMontant={totalMontant}
+              totalQuantite={totalQuantite}
               societeNom={selectedSociete?.nom}
               logoUrl={selectedSociete?.logoUrl}
               afficherNomAvecLogo={selectedSociete?.afficherNomAvecLogo}
@@ -348,25 +485,14 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
           <Button
             variant="outline"
             onClick={handleSaveDraft}
-            disabled={
-              !canWrite || saving || !formClientId || !formStockId || !formMotif || quantiteNum <= 0 || montantNum <= 0
-            }
+            disabled={!canWrite || saving || !formClientId || !formMotif || !firstStockItem}
           >
             <FilePen className="size-4" />
             Brouillon
           </Button>
           <Button
             onClick={() => setConfirmValiderOpen(true)}
-            disabled={
-              !canWrite ||
-              saving ||
-              depasseStock ||
-              !formClientId ||
-              !formStockId ||
-              !formMotif ||
-              quantiteNum <= 0 ||
-              montantNum <= 0
-            }
+            disabled={!isFormReady || saving}
           >
             <Check className="size-4" />
             Valider le bon
@@ -377,13 +503,25 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
       <AlertDialog open={confirmValiderOpen} onOpenChange={setConfirmValiderOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Valider ce bon de sortie ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action décrémente réellement le stock de{" "}
-              <strong>
-                {quantiteNum} {selectedStock?.unite ?? ""}
-              </strong>{" "}
-              sur « {selectedStock?.marchandise} ». Elle n'est pas annulable directement depuis cet écran.
+            <AlertDialogTitle>Valider ce bon de sortie multi-articles ?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Cette action décrémente réellement le stock pour les articles suivants :
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {lignesAnalysis
+                    .filter((l) => l.stockItem && l.quantiteNum > 0)
+                    .map((l, i) => (
+                      <li key={i}>
+                        <strong>{l.quantiteNum} {l.stockItem?.unite}</strong> — {l.stockItem?.marchandise}
+                      </li>
+                    ))}
+                </ul>
+                <p className="text-xs text-amber-600 dark:text-amber-400 pt-1">
+                  Cette validation mettra immédiatement à jour l'inventaire en stock.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -394,7 +532,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
                 void handleValider();
               }}
             >
-              Valider
+              Confirmer la sortie
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -407,11 +545,10 @@ function BonPreview({
   reference,
   date,
   client,
-  marchandise,
-  quantite,
-  unite,
   motif,
-  montant,
+  lignes,
+  totalMontant,
+  totalQuantite,
   societeNom,
   logoUrl,
   afficherNomAvecLogo = true,
@@ -419,45 +556,23 @@ function BonPreview({
   reference: string;
   date: string;
   client?: string;
-  marchandise?: string;
-  quantite: number;
-  unite?: string;
   motif: BonMotif | "";
-  montant: number;
+  lignes: Array<{
+    stockItem?: StockItem;
+    quantiteNum: number;
+    montantNum: number;
+  }>;
+  totalMontant: number;
+  totalQuantite: number;
   societeNom?: string;
   logoUrl?: string;
   afficherNomAvecLogo?: boolean;
 }) {
-  const rows: { label: string; value: React.ReactNode }[] = [
-    {
-      label: "Date",
-      value: date ? formatDateShort(date) : "—",
-    },
-    {
-      label: "Client",
-      value: client || <span className="text-muted-foreground">À renseigner</span>,
-    },
-    {
-      label: "Marchandise",
-      value: marchandise || <span className="text-muted-foreground">À renseigner</span>,
-    },
-    {
-      label: "Quantité",
-      value: quantite > 0 ? `${quantite} ${unite || ""}`.trim() : "—",
-    },
-    {
-      label: "Motif",
-      value: motif || <span className="text-muted-foreground">À renseigner</span>,
-    },
-    {
-      label: "Montant",
-      value: montant > 0 ? formatFCFA(montant) : "—",
-    },
-  ];
+  const validLignes = lignes.filter((l) => l.stockItem || l.quantiteNum > 0);
 
   return (
-    <div className="rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white bg-muted/40 p-6 font-[var(--font-heading)]">
-      <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
+    <div className="rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 p-5 font-[var(--font-heading)]">
+      <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -467,48 +582,95 @@ function BonPreview({
             className="h-10 w-auto max-w-28 object-contain"
           />
         ) : (
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Truck className="size-5" />
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Truck className="size-4" />
           </div>
         )}
         {afficherNomAvecLogo && (
           <div>
-            <p className="font-bold leading-tight text-foreground">{societeNom || "—"}</p>
+            <p className="font-bold text-sm leading-tight text-foreground">{societeNom || "—"}</p>
             <p className="text-[11px] leading-tight text-muted-foreground">Bon de sortie — Marchandise</p>
           </div>
         )}
       </div>
 
-      <div className="my-5 text-center">
-        <p className="text-lg font-bold tracking-tight text-foreground">BON DE SORTIE — MARCHANDISE</p>
-        <p className="mt-1 font-mono text-xs text-muted-foreground">{reference}</p>
+      <div className="my-4 text-center">
+        <p className="text-base font-bold tracking-tight text-foreground">BON DE SORTIE</p>
+        <p className="mt-0.5 font-mono text-xs text-muted-foreground">{reference}</p>
       </div>
 
+      {/* Métadonnées */}
+      <div className="mb-4 space-y-1.5 text-xs">
+        <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1">
+          <span className="text-muted-foreground">Date :</span>
+          <span className="font-medium text-foreground">{date ? formatDateShort(date) : "—"}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1">
+          <span className="text-muted-foreground">Client :</span>
+          <span className="font-medium text-foreground">{client || "À renseigner"}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1">
+          <span className="text-muted-foreground">Motif :</span>
+          <span className="font-medium text-foreground">{motif || "À renseigner"}</span>
+        </div>
+      </div>
+
+      {/* Tableau des articles */}
       <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-muted/60 border-b border-slate-200 dark:border-slate-700 text-muted-foreground">
+              <th className="px-2 py-1.5 text-left font-medium">Article</th>
+              <th className="px-2 py-1.5 text-right font-medium">Qté</th>
+              <th className="px-2 py-1.5 text-right font-medium">Montant</th>
+            </tr>
+          </thead>
           <tbody>
-            {rows.map((row, index) => (
-              <tr
-                key={row.label}
-                className={cn(
-                  "border-b border-slate-100 dark:border-slate-800 last:border-0",
-                  index % 2 === 0 && "bg-muted/50",
-                )}
-              >
-                <td className="w-1/3 px-3 py-1.5 text-xs font-medium uppercase text-muted-foreground">
-                  {row.label}
+            {validLignes.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-2 py-3 text-center text-muted-foreground italic">
+                  Aucun article sélectionné
                 </td>
-                <td className="px-3 py-1.5 tabular-nums text-slate-800 dark:text-slate-200">{row.value}</td>
               </tr>
-            ))}
+            ) : (
+              validLignes.map((l, index) => (
+                <tr
+                  key={index}
+                  className={cn(
+                    "border-b border-slate-100 dark:border-slate-800 last:border-0",
+                    index % 2 === 0 && "bg-muted/30",
+                  )}
+                >
+                  <td className="px-2 py-1.5 font-medium text-foreground truncate max-w-[120px]">
+                    {l.stockItem?.marchandise || "Article"}
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-foreground/90">
+                    {l.quantiteNum > 0 ? `${l.quantiteNum} ${l.stockItem?.unite || ""}` : "—"}
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-foreground/90">
+                    {l.montantNum > 0 ? formatFCFA(l.montantNum) : "—"}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
+          {validLignes.length > 0 && (
+            <tfoot>
+              <tr className="bg-muted/80 font-semibold border-t border-slate-200 dark:border-slate-700">
+                <td className="px-2 py-1.5 text-foreground">Total</td>
+                <td className="px-2 py-1.5 text-right text-foreground tabular-nums">{totalQuantite}</td>
+                <td className="px-2 py-1.5 text-right text-foreground tabular-nums">{formatFCFA(totalMontant)}</td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 
-      <div className="mt-8 flex items-end justify-between">
-        <div className="text-xs text-muted-foreground">Signature du responsable</div>
-        <div className="text-xs text-muted-foreground">__________</div>
+      <div className="mt-6 flex items-end justify-between text-[11px] text-muted-foreground">
+        <div>Signature du magasinier</div>
+        <div>Cachet SLTT</div>
       </div>
     </div>
   );
 }
+

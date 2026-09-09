@@ -135,7 +135,7 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="space-y-0 border-b border-border/60 px-6 py-5 text-left">
+        <DialogHeader className="shrink-0 space-y-0 border-b border-border/60 px-6 py-4 text-left">
           <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
               <Truck className="size-5" />
@@ -160,7 +160,7 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
             </div>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-4">
             <TransporteurFormStepper
               currentStep={step}
               completedThrough={completedThrough}
@@ -169,8 +169,8 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-[320px] overflow-y-auto px-6 py-5">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
             <TransporteurFormFields
               values={form}
               onChange={handleChange}
@@ -180,7 +180,7 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
             />
           </div>
 
-          <DialogFooter className="flex-col gap-3 border-t border-border/60 px-6 py-4 bg-muted/40 sm:flex-row sm:justify-between">
+          <DialogFooter className="shrink-0 flex-col gap-3 border-t border-border/60 px-6 py-4 bg-muted/40 sm:flex-row sm:justify-between">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
               <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-muted-foreground">
                 Annuler

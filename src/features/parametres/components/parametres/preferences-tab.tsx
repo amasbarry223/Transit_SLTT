@@ -79,7 +79,7 @@ export function PreferencesTab() {
               Recharger les données
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Relance la lecture de toutes les données depuis Supabase.
+              Relance la lecture de toutes les données depuis le serveur.
             </p>
             <Button
               variant="outline"
@@ -87,7 +87,7 @@ export function PreferencesTab() {
               onClick={() => setCacheConfirmOpen(true)}
             >
               <RotateCcw className="size-4" />
-              Recharger depuis Supabase
+              Recharger depuis le serveur
             </Button>
           </div>
         </div>
@@ -96,13 +96,13 @@ export function PreferencesTab() {
       <ConfirmActionDialog
         open={cacheConfirmOpen}
         onOpenChange={setCacheConfirmOpen}
-        title="Recharger les données depuis Supabase ?"
+        title="Recharger les données depuis le serveur ?"
         description="Toutes les données affichées seront relues depuis la base. Les modifications non enregistrées pourraient être perdues."
         confirmLabel="Recharger"
         onConfirm={async () => {
           try {
             await refetchData();
-            toastSuccess(toast, { title: "Données rechargées", description: "Les données ont été relues depuis Supabase.", });
+            toastSuccess(toast, { title: "Données rechargées", description: "Les données ont été relues depuis le serveur.", });
           } catch {
             toastWarning(toast, { title: "Échec du rechargement", description: "Impossible de recharger les données." });
           }

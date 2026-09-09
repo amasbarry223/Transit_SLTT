@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Param,
   Body,
@@ -40,6 +41,13 @@ export class UsersController {
   @Roles('ADMIN')
   async update(@Param('id') id: string, @Body() body: any) {
     return this.usersService.update(id, body);
+  }
+
+  @Patch(':id/password')
+  @Roles('ADMIN')
+  async resetPassword(@Param('id') id: string, @Body() body: any) {
+    const pwd = body.motDePasse || body.password;
+    return this.usersService.resetPassword(id, pwd);
   }
 
   @Delete(':id')

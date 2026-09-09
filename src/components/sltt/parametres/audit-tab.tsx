@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, ScrollText, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, RefreshCw, ScrollText, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { AuditAction } from "@/lib/store";
 import { formatDateTime } from "@/lib/format";
@@ -24,6 +24,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api-client";
+import { mapAuditLogFromDb } from "@/lib/audit";
 
 const AUDIT_PAGE_SIZE = 8;
 
@@ -42,10 +44,30 @@ const actionTone: Record<
 
 export function AuditTab() {
   const auditLogs = useStore((s) => s.auditLogs);
+  const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [moduleFilter, setModuleFilter] = useState<string>("all");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+
+  const refreshLogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.auditLogs.getAll({ limit: 200 });
+      if (Array.isArray(res)) {
+        const mapped = res.map((item) => mapAuditLogFromDb(item));
+        useStore.setState({ auditLogs: mapped });
+      }
+    } catch (e) {
+      console.error("Erreur chargement audit logs:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshLogs();
+  }, [refreshLogs]);
 
   const modules = useMemo(
     () => [...new Set(auditLogs.map((e) => e.module))].sort(),
@@ -167,11 +189,23 @@ export function AuditTab() {
       </Card>
 
       <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <ScrollText className="size-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">
-            Journal d&apos;audit
-          </h3>
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-2">
+            <ScrollText className="size-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">
+              Journal d&apos;audit
+            </h3>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={refreshLogs}
+            disabled={loading}
+          >
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            Actualiser
+          </Button>
         </div>
 
         {filtered.length === 0 ? (

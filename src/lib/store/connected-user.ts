@@ -12,15 +12,24 @@ export function getConnectedUserName(): string {
  * de repli que useActiveAnnexe() (hooks/use-active-annexe.ts) : choix
  * profil s'il reste valide, sinon première annexe assignée.
  */
-export function resolveActiveAnnexeId(userAnnexeIds: string[]): string | null {
+export function resolveActiveAnnexeId(userAnnexeIds: string[], fallbackAnnexes?: { id: string; estSiege?: boolean }[]): string | null {
   const selected = useUiPrefs.getState().selectedAnnexeId;
   if (selected && userAnnexeIds.includes(selected)) return selected;
-  return userAnnexeIds[0] ?? null;
+  if (userAnnexeIds[0]) return userAnnexeIds[0];
+
+  // Repli gracieux : si l'utilisateur n'a pas encore de liste locale (ex. avant premier rechargement)
+  // et qu'une sélection globale ou des annexes existent en mémoire
+  if (selected && (!fallbackAnnexes || fallbackAnnexes.some((a) => a.id === selected))) return selected;
+  if (fallbackAnnexes && fallbackAnnexes.length > 0) {
+    const siege = fallbackAnnexes.find((a) => a.estSiege);
+    return siege?.id ?? fallbackAnnexes[0].id;
+  }
+  return null;
 }
 
 /** Comme resolveActiveAnnexeId mais lève une erreur métier si aucune annexe. */
-export function requireActiveAnnexeId(userAnnexeIds: string[]): string {
-  const annexeId = resolveActiveAnnexeId(userAnnexeIds);
+export function requireActiveAnnexeId(userAnnexeIds: string[], fallbackAnnexes?: { id: string; estSiege?: boolean }[]): string {
+  const annexeId = resolveActiveAnnexeId(userAnnexeIds, fallbackAnnexes);
   if (!annexeId) {
     throw new Error("Aucune annexe active — assignez une annexe à l'utilisateur.");
   }

@@ -41,7 +41,8 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   addTransporteur: async (input) => {
     const seq = get().transporteurSeq;
     const userId = useSession.getState().currentUserId;
-    const annexeId = requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? []);
+    const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
+    const annexeId = requireActiveAnnexeId(userAnnexeIds, get().annexes);
 
     let dbId = crypto.randomUUID();
     try {

@@ -12,7 +12,7 @@ export const FETCH_ENTITY_SOFT_CAPS = {
   recusPaiement: 5_000,
 } as const;
 
-/** Signed URL expiry for Supabase storage (1 hour). */
+/** Signed URL expiry for storage (1 hour). */
 export const SIGNED_URL_TTL_SEC = 3600;
 
 /** Recovery rate color thresholds (percent). */
