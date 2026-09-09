@@ -23,7 +23,7 @@ export function nextYearlyReference(
  * (ex. ML-FACT-2026-0001, CI-DEVIS-2026-0003). Numérotation SLTT séparée par
  * annexe dès qu'un code d'annexe est disponible.
  */
-export function nextAnnexeYearlyReference(
+function nextAnnexeYearlyReference(
   annexeCode: string,
   prefix: string,
   seq: number,
@@ -54,7 +54,7 @@ export function bumpTrailingSeq(reference: string): string {
 }
 
 /** true si l'erreur Postgres/PostgREST est une violation de contrainte unique (23505). */
-export function isUniqueViolation(error: unknown): boolean {
+function isUniqueViolation(error: unknown): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
@@ -91,7 +91,7 @@ export async function insertWithReferenceRetry<T>(
  * C'est ce qui garantit une numérotation ML-/CI- consécutive par annexe plutôt
  * qu'un simple partage du même compteur avec un préfixe différent.
  */
-export function nextScopedSeq(
+function nextScopedSeq(
   refs: Array<string | null | undefined>,
   isInScope: (ref: string) => boolean,
 ): number {

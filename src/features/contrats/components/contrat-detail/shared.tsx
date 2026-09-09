@@ -1,4 +1,4 @@
-import type { ContratInput, ContratPrestationStatut, ContratStatut } from "@/lib/store";
+import type { ContratPrestationStatut, ContratStatut } from "@/lib/store";
 import type { PaiementMode } from "@/lib/domain-types";
 
 export const CONTRAT_STATUTS: ContratStatut[] = ["Actif", "Clôturé", "Suspendu"];
@@ -14,30 +14,6 @@ export const PRESTATION_STATUT_TONE: Record<ContratPrestationStatut, "blue" | "e
   Annulée: "red",
 };
 export const MODES_PAIEMENT: PaiementMode[] = ["Espèces", "Virement", "Mobile Money", "Chèque"];
-
-export function contratToInput(contrat: {
-  clientId: string;
-  clientNom: string;
-  annexeId: string;
-  objet: string;
-  dateDebut: string;
-  dateFin?: string;
-  montant: number;
-  statut: ContratStatut;
-  notes?: string;
-}): ContratInput {
-  return {
-    clientId: contrat.clientId,
-    clientNom: contrat.clientNom,
-    annexeId: contrat.annexeId,
-    objet: contrat.objet,
-    dateDebut: contrat.dateDebut,
-    dateFin: contrat.dateFin,
-    montant: contrat.montant,
-    statut: contrat.statut,
-    notes: contrat.notes,
-  };
-}
 
 export function InfoRow({ label, value }: { label: string; value: string }) {
   return (

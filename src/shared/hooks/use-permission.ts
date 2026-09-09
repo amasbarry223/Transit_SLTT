@@ -24,15 +24,6 @@ function useEffectivePermissionUser() {
   return null;
 }
 
-/** True lorsque le profil connecté est chargé et utilisable pour les checks UI. */
-export function usePermissionsReady(): boolean {
-  const currentUserId = useSession((s) => s.currentUserId);
-  const currentRole = useSession((s) => s.currentRole);
-  const hasUser = useStore((s) => s.users.some((u) => u.id === currentUserId));
-  if (!currentUserId) return false;
-  return hasUser || Boolean(currentRole);
-}
-
 /** Retourne true si l'utilisateur connecté possède la permission demandée. */
 export function usePermission(perm: string): boolean {
   return hasPermission(useEffectivePermissionUser(), perm);

@@ -1,34 +1,6 @@
 import { AuthError } from "@/lib/auth/require-admin";
 import { normalizePermissions } from "@/lib/permissions";
 
-/** Bloque toute action d'un non-admin sur un compte qui est déjà Administrateur.
- *  Délègue la vérification à l'API NestJS. */
-export async function assertCanTouchTarget(
-  _admin: null,
-  targetId: string,
-  isAdmin: boolean,
-) {
-  if (isAdmin) return;
-
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-  try {
-    const res = await fetch(`${apiUrl}/users/${targetId}`, {
-      headers: {},
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const target = await res.json();
-      const role = target.role === "ADMIN" ? "Administrateur" : target.role;
-      if (role === "Administrateur") {
-        throw new AuthError("Seul un administrateur peut modifier un compte Administrateur.", 403);
-      }
-    }
-  } catch (err) {
-    if (err instanceof AuthError) throw err;
-    // En cas d'erreur réseau, on laisse passer (la vérification côté NestJS prend le relais)
-  }
-}
-
 /**
  * Empêche un délégué `utilisateurs:manage` de s'auto-attribuer (ou d'attribuer
  * à autrui) des permissions qu'il ne possède pas lui-même.

@@ -26,7 +26,7 @@ export function resolveLogoUrl(path?: string): string | undefined {
   return `${window.location.origin}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
-export function brandLogoImgHTML(
+function brandLogoImgHTML(
   brand: SocieteBrand,
   className = "brand-logo",
   cacheBust?: string,
@@ -132,14 +132,6 @@ export function buildOfficialLetterheadHTML(
 }
 
 export { OFFICIAL_LETTERHEAD_CSS };
-
-export function buildBrandSubHTML(brand: SocieteBrand): string {
-  const resolved = ensureSocieteBrand(brand);
-  const legalLine = buildLegalLine(resolved.legal);
-  if (legalLine) return legalLine;
-  if (resolved.afficherNomAvecLogo === false) return "";
-  return htmlEscape(resolved.nom);
-}
 
 /**
  * Impression via iframe dédiée et isolée (évite le blocage des popups).
@@ -347,7 +339,7 @@ export interface BuildPrintDocumentOptions {
 }
 
 /** Construit le HTML complet d'un document générique (gabarit printHTML). */
-export function buildPrintDocument({ title, body, brand }: BuildPrintDocumentOptions): string {
+function buildPrintDocument({ title, body, brand }: BuildPrintDocumentOptions): string {
   const resolved = ensureSocieteBrand(brand);
   const letterheadHTML = buildOfficialLetterheadHTML(resolved);
   const footerHTML = documentFooterHTML(resolved.nom);
@@ -400,7 +392,7 @@ export interface PrintHtmlDocumentOptions {
  * Moteur universel d'impression HTML.
  * Prépare la cible, injecte le HTML de façon sécurisée et déclenche l'impression.
  */
-export function printHtmlDocument(options: PrintHtmlDocumentOptions | string): void {
+function printHtmlDocument(options: PrintHtmlDocumentOptions | string): void {
   const opts = typeof options === "string" ? { html: options } : options;
   const win = acquirePrintTarget({
     widthMm: opts.widthMm,
@@ -424,15 +416,10 @@ export function printHtmlDocument(options: PrintHtmlDocumentOptions | string): v
   triggerPrint(win, opts.delayMs);
 }
 
-/** Écrit le HTML dans la cible d'impression (iframe) et lance print(). */
-export function openPrintWindow(html: string, _windowFeatures?: string): void {
-  printHtmlDocument(html);
-}
-
 /**
  * Imprime un fragment HTML arbitraire avec en-tête et pied de page officiel.
  */
 export function printHTML(title: string, bodyHTML: string, brand?: SocieteBrand | null): void {
   const resolvedBrand = ensureSocieteBrand(brand);
-  openPrintWindow(buildPrintDocument({ title, body: bodyHTML, brand: resolvedBrand }));
+  printHtmlDocument(buildPrintDocument({ title, body: bodyHTML, brand: resolvedBrand }));
 }

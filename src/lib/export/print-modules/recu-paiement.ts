@@ -99,7 +99,7 @@ function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBra
 }
 
 /** Construit le HTML complet du reçu (aperçu ou impression). */
-export function buildRecuPaiementHTML(
+function buildRecuPaiementHTML(
   data: RecuPaiementModuleData,
   brand: SocieteBrand,
   options?: BuildRecuPaiementHTMLOptions,
@@ -125,7 +125,7 @@ ${toolbar}${buildReceiptContentHTML(data, brand)}
 }
 
 /** HTML minimal pour impression — uniquement le reçu, format verrouillé 19,5×8,2 cm. */
-export function buildRecuPaiementPrintHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
+function buildRecuPaiementPrintHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
   return buildRecuPaiementHTML(data, brand, { includePrintToolbar: false });
 }
 

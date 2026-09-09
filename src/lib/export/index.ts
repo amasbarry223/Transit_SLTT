@@ -1,6 +1,6 @@
 export { htmlEscape } from "./html-escape";
 
-export { printHTML, printHtmlDocument } from "./print-document";
+export { printHTML } from "./print-document";
 
 export { exportToExcel } from "./excel-export";
 
@@ -13,7 +13,6 @@ export {
   printDevis,
   printDevisList,
   printFactureModule,
-  buildRecuPaiementHTML,
   printRecuPaiementModule,
   printStockInventory,
   printTransporteurs,

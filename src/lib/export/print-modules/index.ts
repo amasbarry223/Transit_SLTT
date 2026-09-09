@@ -7,7 +7,6 @@ export {
 } from "@/features/devis/services/devis-print";
 export { printFactureModule, type FactureModuleData } from "./facture";
 export {
-  buildRecuPaiementHTML,
   printRecuPaiementModule,
   type RecuPaiementModuleData,
 } from "./recu-paiement";

@@ -45,7 +45,7 @@ function threeDigitsToWords(n: number): string {
 }
 
 /** Convertit un entier positif en toutes lettres françaises (sans devise). */
-export function numberToWordsFr(value: number): string {
+function numberToWordsFr(value: number): string {
   const n = Math.floor(Math.abs(value));
   if (n === 0) return "zéro";
 

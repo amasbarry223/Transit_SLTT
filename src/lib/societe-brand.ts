@@ -55,30 +55,11 @@ export function resolveDossierReferencePrefix(societes: Societe[]): string {
 }
 
 /** Libellé affiché uniforme (Classeur, badges, exports) — toujours le nom en base, éditable depuis Paramètres. */
-export function resolveSocieteDisplayName(societe: Pick<Societe, "nom">): string {
-  return societe.nom;
-}
-
-
-export function societeToBrand(s: Societe): SocieteBrand {
+function societeToBrand(s: Societe): SocieteBrand {
   return {
     nom: s.nom,
     raisonSociale: s.raisonSociale,
     logoUrl: s.logoUrl,
-    afficherNomAvecLogo: s.afficherNomAvecLogo,
-    legal: {
-      adresse: s.adresse,
-      telephone: s.telephone,
-      rccm: s.rccm,
-      nif: s.nif,
-    },
-  };
-}
-
-export function societeToPrintHTMLBrand(s: Societe): PrintHTMLBrand {
-  return {
-    logoUrl: s.logoUrl,
-    name: s.nom,
     afficherNomAvecLogo: s.afficherNomAvecLogo,
     legal: {
       adresse: s.adresse,
@@ -102,18 +83,6 @@ export const DEFAULT_TRANSIT_BRAND: SocieteBrand = {
   },
 };
 
-export const DEFAULT_PRINT_HTML_BRAND: PrintHTMLBrand = {
-  name: "TRAORE DE LOGISTIQUE",
-  logoUrl: "/logoV.png",
-  afficherNomAvecLogo: true,
-  legal: {
-    adresse: "Bamako, Mali / Abidjan, Côte d'Ivoire",
-    telephone: "+223 00 00 00 00 / +225 00 00 00 00",
-    rccm: "MA.BKO.2024.B.1234",
-    nif: "0812345678",
-  },
-};
-
 /** Branding dynamique pour l'impression du classeur (identité SLTT unique). */
 export function resolveClasseurPrintBrand(societes: Societe[]): SocieteBrand {
   return resolveSlttBrand(societes);
@@ -121,12 +90,7 @@ export function resolveClasseurPrintBrand(societes: Societe[]): SocieteBrand {
 /** Identité transit pour impressions (devis, classeur, listes…). */
 export function resolveSlttBrand(societes: Societe[]): SocieteBrand {
   const s = resolveTransitSociete(societes);
-  return s ? { ...societeToBrand(s), nom: resolveSocieteDisplayName(s) } : DEFAULT_TRANSIT_BRAND;
-}
-
-export function resolvePrintHTMLBrand(societes: Societe[]): PrintHTMLBrand {
-  const s = resolveTransitSociete(societes);
-  return s ? societeToPrintHTMLBrand(s) : DEFAULT_PRINT_HTML_BRAND;
+  return s ? societeToBrand(s) : DEFAULT_TRANSIT_BRAND;
 }
 
 /** Branding shell (topbar, login) — nom + logo depuis la société transit. */

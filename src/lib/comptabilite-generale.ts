@@ -21,7 +21,7 @@ export function resolveEntitesComptables(annexes: Annexe[]): EntiteComptable[] {
     .map((a) => ({ type: "annexe", id: a.id, label: `Annexe ${a.nom}` }));
 }
 
-export function operationMatchesEntite(operation: OperationComptable, entite: EntiteComptable): boolean {
+function operationMatchesEntite(operation: OperationComptable, entite: EntiteComptable): boolean {
   if (operation.entiteType !== entite.type) return false;
   return operation.annexeId === entite.id;
 }
@@ -95,13 +95,3 @@ export function computeRunningEcart(operations: OperationComptable[]): Operation
   });
 }
 
-export type OperationScopeFilter = "tous" | "dossiers" | "generales";
-
-export function filterOperationsByScope(
-  operations: OperationComptable[],
-  scope: OperationScopeFilter,
-): OperationComptable[] {
-  if (scope === "dossiers") return operations.filter((o) => !!o.dossierId);
-  if (scope === "generales") return operations.filter((o) => !o.dossierId);
-  return operations;
-}

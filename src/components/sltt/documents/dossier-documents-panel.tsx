@@ -360,15 +360,3 @@ export function DossierDocumentsPanel({
     </div>
   );
 }
-
-/** Hook léger pour précharger les versions d'un dossier si besoin. */
-export function useDossierDocumentsWarmup(dossierId: string) {
-  const getDocumentVersions = useStore((s) => s.getDocumentVersions);
-  const documents = useStore((s) => s.documents);
-  useEffect(() => {
-    const docs = documents.filter((d) => d.dossierId === dossierId);
-    docs.slice(0, 5).forEach((d) => {
-      void getDocumentVersions(d.id).catch(() => undefined);
-    });
-  }, [dossierId, documents, getDocumentVersions]);
-}
