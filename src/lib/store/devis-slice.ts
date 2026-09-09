@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import { useSession } from "@/lib/session/session-store";
@@ -64,7 +65,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       if (created?.id) createdId = created.id;
       if (created?.numero) createdNumero = created.numero;
     } catch (e) {
-      console.warn("api.devis.create (mode local) :", e);
+      logWarn("api.devis.create (mode local)", e);
     }
 
     const clientNom = client?.nom ?? (input as any).clientNom ?? "—";
@@ -110,7 +111,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
         ],
       });
     } catch (e) {
-      console.warn("api.devis.update (mode local) :", e);
+      logWarn("api.devis.update (mode local)", e);
     }
 
     set((s) => ({
@@ -134,7 +135,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
         statut === "Accepté" ? "ACCEPTE" : statut === "Refusé" ? "REFUSE" : statut === "Expiré" ? "EXPIRE" : "BROUILLON";
       await api.devis.update(id, { statut: dbStatut });
     } catch (e) {
-      console.warn("api.devis.update statut (mode local) :", e);
+      logWarn("api.devis.update statut (mode local)", e);
     }
 
     const existing = get().devis.find((d) => d.id === id);
@@ -235,7 +236,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     try {
       await api.devis.delete(id);
     } catch (e) {
-      console.warn("api.devis.delete (mode local) :", e);
+      logWarn("api.devis.delete (mode local)", e);
     }
 
     set((s) => ({

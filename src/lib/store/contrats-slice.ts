@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
@@ -112,7 +113,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.contrats.create (mode local) :", e);
+      logWarn("api.contrats.create (mode local)", e);
     }
 
     const newContrat: Contrat = {
@@ -155,7 +156,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     try {
       await api.contrats.update(id, input);
     } catch (e) {
-      console.warn("api.contrats.update (mode local) :", e);
+      logWarn("api.contrats.update (mode local)", e);
     }
 
     const existing = get().contrats.find((c) => c.id === id);
@@ -194,7 +195,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     try {
       await api.contrats.update(id, { statut });
     } catch (e) {
-      console.warn("api.contrats.updateStatut (mode local) :", e);
+      logWarn("api.contrats.updateStatut (mode local)", e);
     }
 
     set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
@@ -216,7 +217,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     try {
       await api.contrats.delete(id);
     } catch (e) {
-      console.warn("api.contrats.delete (mode local) :", e);
+      logWarn("api.contrats.delete (mode local)", e);
     }
 
     set((s) => ({

@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, RefreshCw, ScrollText, Search } from "lucide
 import { useStore } from "@/lib/store";
 import type { AuditAction } from "@/lib/store";
 import { formatDateTime } from "@/lib/format";
+import { logError } from "@/shared/logger";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { Card } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
@@ -59,7 +60,7 @@ export function AuditTab() {
         useStore.setState({ auditLogs: mapped });
       }
     } catch (e) {
-      console.error("Erreur chargement audit logs:", e);
+      logError("Erreur chargement audit logs", e);
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import type { Societe, SocieteInput } from "@/lib/domain-types";
@@ -59,7 +60,7 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
         societe_afficher_nom_avec_logo: String(input.afficherNomAvecLogo ?? true),
       });
     } catch (e) {
-      console.warn("api.settings.setMany a échoué (mode local) :", e);
+      logWarn("api.settings.setMany a échoué (mode local)", e);
     }
 
     set((s) => ({

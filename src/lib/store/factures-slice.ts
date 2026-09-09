@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import { syncClientStats } from "@/lib/client-stats";
@@ -140,7 +141,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
         newFacture.id = created.id;
       }
     } catch (e) {
-      console.warn("api.factures.create (mode local) :", e);
+      logWarn("api.factures.create (mode local)", e);
     }
 
     const finalSeq = extractTrailingSeq(numero) ?? get().factureSeq;

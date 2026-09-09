@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
@@ -93,7 +94,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         newFourn.id = created.id;
       }
     } catch (e) {
-      console.warn("api.fournisseurs.create (mode local) :", e);
+      logWarn("api.fournisseurs.create (mode local)", e);
     }
 
     set((s) => ({
@@ -117,7 +118,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         statut: input.statut,
       });
     } catch (e) {
-      console.warn("api.fournisseurs.update (mode local) :", e);
+      logWarn("api.fournisseurs.update (mode local)", e);
     }
 
     set((s) => ({

@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import { syncClientStats } from "@/lib/client-stats";
@@ -165,7 +166,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         newDossier.id = created.id;
       }
     } catch (e) {
-      console.warn("api.dossiers.create (mode local/déconnecté) :", e);
+      logWarn("api.dossiers.create (mode local/déconnecté)", e);
     }
 
     const finalSeq = extractTrailingSeq(reference) ?? get().dossierSeq;
@@ -232,7 +233,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         newDossier.id = created.id;
       }
     } catch (e) {
-      console.warn("api.dossiers.create historique (mode local) :", e);
+      logWarn("api.dossiers.create historique (mode local)", e);
     }
 
     set((s) => {
@@ -291,7 +292,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
       });
     } catch (e) {
-      console.warn("api.dossiers.update (mode local) :", e);
+      logWarn("api.dossiers.update (mode local)", e);
     }
 
     set((s) => {
@@ -321,7 +322,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     try {
       await api.dossiers.delete(id);
     } catch (e) {
-      console.warn("api.dossiers.delete (mode local) :", e);
+      logWarn("api.dossiers.delete (mode local)", e);
     }
 
     set((s) => {
@@ -413,7 +414,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       try {
         await api.dossiers.updateStatut(id, newStatut);
       } catch (e) {
-        console.warn("api.dossiers.updateStatut (mode local) :", e);
+        logWarn("api.dossiers.updateStatut (mode local)", e);
       }
     }
 

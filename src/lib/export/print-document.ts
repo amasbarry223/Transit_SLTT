@@ -11,6 +11,7 @@ import {
   type SocieteBrand,
   type SocieteLegalInfo,
 } from "@/lib/societe-brand";
+import { logWarn } from "@/shared/logger";
 import { toast } from "@/shared/hooks/use-toast";
 import { toastLoading } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
@@ -253,7 +254,7 @@ export function triggerPrint(win: Window, delayMs = PRINT_WINDOW_READY_MS): void
     try {
       win.print();
     } catch (err) {
-      console.warn("Échec de window.print() sur l'iframe, bascule vers fenêtre directe :", err);
+      logWarn("Échec de window.print() sur l'iframe, bascule vers fenêtre directe", err);
       try {
         const popup = window.open("", "_blank");
         if (popup && win.document) {

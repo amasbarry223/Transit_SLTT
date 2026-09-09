@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import type { Transporteur, TransporteurStatut } from "@/lib/domain-types";
 import type { TransporteurInput, SLTTState } from "@/lib/store";
@@ -61,7 +62,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.transporteurs.create (mode local) :", e);
+      logWarn("api.transporteurs.create (mode local)", e);
     }
 
     const newTr: Transporteur = {
@@ -92,7 +93,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     try {
       await api.transporteurs.update(id, input);
     } catch (e) {
-      console.warn("api.transporteurs.update (mode local) :", e);
+      logWarn("api.transporteurs.update (mode local)", e);
     }
 
     set((s) => ({
@@ -105,7 +106,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     try {
       await api.transporteurs.update(id, { statut });
     } catch (e) {
-      console.warn("api.transporteurs.update statut (mode local) :", e);
+      logWarn("api.transporteurs.update statut (mode local)", e);
     }
 
     const transporteur = get().transporteurs.find((t) => t.id === id);
@@ -121,7 +122,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     try {
       await api.transporteurs.delete(id);
     } catch (e) {
-      console.warn("api.transporteurs.delete (mode local) :", e);
+      logWarn("api.transporteurs.delete (mode local)", e);
     }
 
     const trans = get().transporteurs.find((t) => t.id === id);

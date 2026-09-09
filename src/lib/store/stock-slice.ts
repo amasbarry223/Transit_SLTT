@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
 import type { ImportStockHistoriqueInput, SLTTState, StockItemInput, UpdateStockItemInput } from "@/lib/store";
@@ -88,7 +89,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.stock.createItem (mode local) :", e);
+      logWarn("api.stock.createItem (mode local)", e);
     }
 
     const newItem: StockItem = {
@@ -134,7 +135,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       });
       if (created?.id) dbMvtId = created.id;
     } catch (e) {
-      console.warn("api.stock.createMouvement (mode local) :", e);
+      logWarn("api.stock.createMouvement (mode local)", e);
     }
 
     const newMouvement: Mouvement = {
@@ -184,7 +185,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       });
       if (created?.id) dbMvtId = created.id;
     } catch (e) {
-      console.warn("api.stock.createMouvement exit (mode local) :", e);
+      logWarn("api.stock.createMouvement exit (mode local)", e);
     }
 
     const newMouvement: Mouvement = {
@@ -308,7 +309,7 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
         clientId: input.clientId,
       });
     } catch (e) {
-      console.warn("api.stock.updateItem (mode local) :", e);
+      logWarn("api.stock.updateItem (mode local)", e);
     }
 
     const updated: StockItem = {

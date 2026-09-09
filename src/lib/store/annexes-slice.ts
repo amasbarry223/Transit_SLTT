@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import type { Annexe, AnnexeInput } from "@/lib/domain-types";
@@ -38,7 +39,7 @@ export const createAnnexesSlice: StateCreator<SLTTState, [], [], AnnexesSlice> =
         nif: input.nif || null,
       });
     } catch (e) {
-      console.warn("api.annexes.update a échoué (mode déconnecté/local) :", e);
+      logWarn("api.annexes.update a échoué (mode déconnecté/local)", e);
     }
 
     set((s) => ({

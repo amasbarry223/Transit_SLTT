@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { RecuPaiement, RecuPaiementInput } from "@/lib/domain-types";
@@ -65,7 +66,7 @@ export const createRecusPaiementSlice: StateCreator<
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.recusPaiement.create (mode local) :", e);
+      logWarn("api.recusPaiement.create (mode local)", e);
     }
 
     const newRecu: RecuPaiement = {
@@ -104,7 +105,7 @@ export const createRecusPaiementSlice: StateCreator<
     try {
       await api.recusPaiement.update(id, input);
     } catch (e) {
-      console.warn("api.recusPaiement.update (mode local) :", e);
+      logWarn("api.recusPaiement.update (mode local)", e);
     }
 
     const existing = get().recusPaiement.find((r) => r.id === id);
@@ -141,7 +142,7 @@ export const createRecusPaiementSlice: StateCreator<
     try {
       await api.recusPaiement.delete(id);
     } catch (e) {
-      console.warn("api.recusPaiement.delete (mode local) :", e);
+      logWarn("api.recusPaiement.delete (mode local)", e);
     }
 
     const recu = get().recusPaiement.find((r) => r.id === id);

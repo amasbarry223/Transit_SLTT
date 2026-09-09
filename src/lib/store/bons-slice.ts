@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { BonLigne, BonSortie, BonSortieCaisse, BonSortieCaisseInput, Mouvement, StockItem } from "@/lib/domain-types";
@@ -120,7 +121,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.bons.createBonSortie (mode local) :", e);
+      logWarn("api.bons.createBonSortie (mode local)", e);
     }
 
     const newBon: BonSortie = {
@@ -183,7 +184,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       try {
         await api.bons.validateBonSortie(id);
       } catch (e) {
-        console.warn("api.bons.validateBonSortie (mode local) :", e);
+        logWarn("api.bons.validateBonSortie (mode local)", e);
       }
 
       let updatedStock = [...get().stock];
@@ -228,7 +229,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     try {
       await api.bons.validateBonSortie(id);
     } catch (e) {
-      console.warn("api.bons.validateBonSortie (mode local) :", e);
+      logWarn("api.bons.validateBonSortie (mode local)", e);
     }
 
     const newStockQty = stockItem ? stockItem.quantite - bon.quantite : 0;
@@ -276,7 +277,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.bons.createBonCaisse (mode local) :", e);
+      logWarn("api.bons.createBonCaisse (mode local)", e);
     }
 
     const newBon: BonSortieCaisse = {
@@ -312,7 +313,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     try {
       await api.bons.deleteBonCaisse(id);
     } catch (e) {
-      console.warn("api.bons.deleteBonCaisse (mode local) :", e);
+      logWarn("api.bons.deleteBonCaisse (mode local)", e);
     }
 
     const bon = get().bonsSortieCaisse.find((b) => b.id === id);

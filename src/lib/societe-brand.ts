@@ -225,11 +225,6 @@ export function resolveDossierCoutLabels(annexeCode?: string | null): DossierCou
 
 export const MISSING_SIGNATORY_LABEL = "Non renseigné";
 
-export function warnMissingBrand(context: string): boolean {
-  console.warn(`Branding entreprise non configuré pour ${context}, utilisation des coordonnées par défaut.`);
-  return true;
-}
-
 export function ensureSocieteBrand(brand?: SocieteBrand | null): SocieteBrand {
   if (brand?.nom?.trim()) return brand;
   return DEFAULT_TRANSIT_BRAND;

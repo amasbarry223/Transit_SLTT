@@ -1,3 +1,4 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type {
@@ -105,7 +106,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.comptabilite.createOperation (mode local) :", e);
+      logWarn("api.comptabilite.createOperation (mode local)", e);
     }
 
     const newOperation: OperationComptable = {
@@ -145,7 +146,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     try {
       await api.comptabilite.deleteOperation(id);
     } catch (e) {
-      console.warn("api.comptabilite.deleteOperation (mode local) :", e);
+      logWarn("api.comptabilite.deleteOperation (mode local)", e);
     }
 
     const operation = get().operationsComptables.find((o) => o.id === id);
@@ -180,7 +181,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
       });
       if (created?.id) dbId = created.id;
     } catch (e) {
-      console.warn("api.comptabilite.createCloture (mode local) :", e);
+      logWarn("api.comptabilite.createCloture (mode local)", e);
     }
 
     const cloture: ClotureCaisse = {
