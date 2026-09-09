@@ -45,15 +45,6 @@ export function resolveTransitSociete(societes: Societe[]): Societe | undefined 
   return societes[0];
 }
 
-/** Afficher le sélecteur d'annexe dès qu'il y a plus d'une implantation. */
-export function shouldShowAnnexeForSociete(
-  _societeId: string,
-  _societes: Societe[],
-  annexes: Annexe[],
-): boolean {
-  return annexes.length > 1;
-}
-
 /**
  * Préfixe des références dossier — dérivé du nom (éditable) de la société
  * transit, avec repli si aucune société n'est encore configurée (compte
@@ -68,15 +59,6 @@ export function resolveSocieteDisplayName(societe: Pick<Societe, "nom">): string
   return societe.nom;
 }
 
-export function resolveSocieteDisplayNameById(
-  societes: Societe[],
-  societeId: string,
-  fallback = "Non affecté",
-): string {
-  const societe = societes.find((item) => item.id === societeId);
-  if (!societe) return fallback;
-  return resolveSocieteDisplayName(societe);
-}
 
 export function societeToBrand(s: Societe): SocieteBrand {
   return {

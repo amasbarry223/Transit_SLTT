@@ -1,16 +1,3 @@
-/** Hash SHA-256 hex (navigateur). */
-export async function sha256Hex(blob: Blob): Promise<string | undefined> {
-  try {
-    const buffer = await blob.arrayBuffer();
-    const digest = await crypto.subtle.digest("SHA-256", buffer);
-    return Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  } catch {
-    return undefined;
-  }
-}
-
 /**
  * Convertit une data: URL en Blob sans passer par fetch() : la CSP
  * (connect-src) n'autorise pas les requêtes vers le schéma data:, donc

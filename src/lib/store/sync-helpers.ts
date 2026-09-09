@@ -4,32 +4,6 @@ import {
 } from "@/lib/constants";
 import type { Dossier, Ecriture, PaiementMode } from "@/lib/domain-types";
 
-/** Somme des montants payés sur les écritures liées à un dossier. */
-export function sumEcrituresPayeForDossier(dossierId: string, ecritures: Ecriture[]): number {
-  return ecritures
-    .filter((e) => e.dossierId === dossierId)
-    .reduce((sum, e) => sum + e.montantPaye, 0);
-}
-
-/** Plafonne le montant payé au montant investi du dossier. */
-export function capDossierMontantPaye(totalPaye: number, montantInvesti: number): number {
-  return Math.min(montantInvesti, Math.max(0, totalPaye));
-}
-
-/**
- * Recalcule le montant payé d'un dossier à partir de ses écritures.
- * Utilisé par recordPayment et addEcriture.
- */
-export async function syncDossierPayeFromEcritures(
-  dossierId: string,
-  ecritures: Ecriture[],
-  dossier: Pick<Dossier, "montantInvesti">,
-): Promise<number> {
-  const totalPaye = sumEcrituresPayeForDossier(dossierId, ecritures);
-  const montantPaye = capDossierMontantPaye(totalPaye, dossier.montantInvesti);
-  return montantPaye;
-}
-
 export interface DossierSoldeEcritureContext {
   /** Montant reçu à l'instant T (delta). */
   montantRecu: number;
