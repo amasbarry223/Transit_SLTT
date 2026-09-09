@@ -1,15 +1,17 @@
 import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { AuditLogsService } from './audit-logs.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../shared/decorators';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { CurrentUser, RequirePermission } from '../../shared/decorators';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Controller('audit-logs')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class AuditLogsController {
   constructor(private readonly auditLogsService: AuditLogsService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @RequirePermission('audit:read')
   async findAll(
     @Query('entite') entite?: string,
     @Query('action') action?: string,
@@ -19,9 +21,11 @@ export class AuditLogsController {
   }
 
   @Post()
-  async create(@Body() body: any) {
+  async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+    // L'auteur du log est toujours l'utilisateur authentifié : impossible
+    // d'écrire une entrée au nom de quelqu'un d'autre.
     return this.auditLogsService.log({
-      userId: body.userId,
+      userId: user.id,
       action: body.action,
       entite: body.entite || body.module || 'Utilisateurs',
       entiteId: body.entiteId,
