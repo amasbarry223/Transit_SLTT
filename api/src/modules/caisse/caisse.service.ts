@@ -80,26 +80,28 @@ export class CaisseService {
       throw new BadRequestException("Type de transaction invalide");
     }
 
-    if (data.type === 'SORTIE' && caisse.soldeActuel < montant) {
-      throw new BadRequestException("Solde insuffisant dans la caisse");
-    }
-
     return this.prisma.$transaction(async (tx: any) => {
       const transaction = await tx.transactionCaisse.create({
         data: {
           caisseId,
           type: data.type,
           montant,
-          motif: data.motif,
+          motif: data.motif || 'Opération de caisse',
           effectueParId: user.id,
         },
       });
 
       const increment = data.type === 'ENTREE' ? montant : -montant;
+      // Increment atomique puis contrôle sur la valeur RÉELLE post-écriture :
+      // si le solde devient négatif (sorties concurrentes), on throw et toute
+      // la transaction est annulée.
       const updatedCaisse = await tx.caisse.update({
         where: { id: caisseId },
         data: { soldeActuel: { increment } },
       });
+      if (updatedCaisse.soldeActuel < 0) {
+        throw new BadRequestException('Solde insuffisant dans la caisse');
+      }
 
       return { transaction, soldeActuel: updatedCaisse.soldeActuel };
     });

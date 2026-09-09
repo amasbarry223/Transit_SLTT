@@ -168,16 +168,21 @@ export class DepensesService {
     if (caisse.statut === 'FERMEE') {
       throw new BadRequestException('Cette caisse est fermée aux opérations.');
     }
-
-    if (caisse.soldeActuel < depense.montant) {
-      throw new BadRequestException("Solde de caisse insuffisant");
+    if (!(depense.montant > 0)) {
+      throw new BadRequestException('Le montant de la dépense est invalide.');
     }
 
     return this.prisma.$transaction(async (tx: any) => {
-      const updated = await tx.depense.update({
-        where: { id },
+      // "Claim" du paiement : seule la 1re requête concurrente passe APPROUVEE
+      // -> PAYEE ; les suivantes voient count === 0 et s'arrêtent (pas de
+      // double décaissement).
+      const claimed = await tx.depense.updateMany({
+        where: { id, statut: 'APPROUVEE' },
         data: { statut: 'PAYEE' },
       });
+      if (claimed.count === 0) {
+        throw new BadRequestException('Cette dépense vient d’être payée par ailleurs.');
+      }
 
       await tx.transactionCaisse.create({
         data: {
@@ -190,12 +195,15 @@ export class DepensesService {
         },
       });
 
-      await tx.caisse.update({
+      const updatedCaisse = await tx.caisse.update({
         where: { id: data.caisseId },
         data: { soldeActuel: { decrement: depense.montant } },
       });
+      if (updatedCaisse.soldeActuel < 0) {
+        throw new BadRequestException('Solde de caisse insuffisant');
+      }
 
-      return updated;
+      return tx.depense.findUnique({ where: { id }, include: { annexe: true, fournisseur: true } });
     });
   }
 }
