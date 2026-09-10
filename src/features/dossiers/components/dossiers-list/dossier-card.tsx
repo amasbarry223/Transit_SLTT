@@ -9,6 +9,7 @@ import {
   Pencil,
   ArrowRightCircle,
   Trash2,
+  Layers,
 } from "lucide-react";
 import { calculerEcart, type Dossier } from "@/lib/domain-types";
 import { formatDateShort } from "@/lib/format";
@@ -25,17 +26,77 @@ import {
   DossierStatutBadge,
   EcartValue,
   DOSSIER_STATUT_TONE,
+  type Tone,
 } from "@/components/sltt/status-badge";
 import { getNextTransition, TRANSITION_META } from "@/components/sltt/dossier-transition-dialog";
 
-/** Teinte de l'icône dossier selon le statut (réutilise la charte des badges). */
-const ICON_TONE: Record<string, string> = {
-  blue: "text-blue-500 dark:text-blue-400",
-  indigo: "text-indigo-500 dark:text-indigo-400",
-  amber: "text-amber-500 dark:text-amber-400",
-  emerald: "text-emerald-500 dark:text-emerald-400",
-  red: "text-red-500 dark:text-red-400",
-  slate: "text-slate-400",
+/** Palette par statut : chaque statut a sa couleur de dossier, à la Windows. */
+const CARD_TONE: Record<
+  Tone,
+  {
+    accent: string;
+    iconWrap: string;
+    icon: string;
+    tint: string;
+    selectedRing: string;
+    selectedBg: string;
+    pill: string;
+  }
+> = {
+  blue: {
+    accent: "from-blue-400 to-blue-600",
+    iconWrap: "bg-blue-100 group-hover:bg-blue-200/80 dark:bg-blue-950/60 dark:group-hover:bg-blue-900/60",
+    icon: "text-blue-600 dark:text-blue-300",
+    tint: "hover:bg-blue-50/60 dark:hover:bg-blue-950/20",
+    selectedRing: "ring-blue-500/40 border-blue-400",
+    selectedBg: "bg-blue-50/80 dark:bg-blue-950/30",
+    pill: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
+  },
+  indigo: {
+    accent: "from-indigo-400 to-indigo-600",
+    iconWrap: "bg-indigo-100 group-hover:bg-indigo-200/80 dark:bg-indigo-950/60 dark:group-hover:bg-indigo-900/60",
+    icon: "text-indigo-600 dark:text-indigo-300",
+    tint: "hover:bg-indigo-50/60 dark:hover:bg-indigo-950/20",
+    selectedRing: "ring-indigo-500/40 border-indigo-400",
+    selectedBg: "bg-indigo-50/80 dark:bg-indigo-950/30",
+    pill: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300",
+  },
+  amber: {
+    accent: "from-amber-400 to-amber-600",
+    iconWrap: "bg-amber-100 group-hover:bg-amber-200/80 dark:bg-amber-950/60 dark:group-hover:bg-amber-900/60",
+    icon: "text-amber-600 dark:text-amber-300",
+    tint: "hover:bg-amber-50/60 dark:hover:bg-amber-950/20",
+    selectedRing: "ring-amber-500/40 border-amber-400",
+    selectedBg: "bg-amber-50/80 dark:bg-amber-950/30",
+    pill: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
+  },
+  emerald: {
+    accent: "from-emerald-400 to-emerald-600",
+    iconWrap: "bg-emerald-100 group-hover:bg-emerald-200/80 dark:bg-emerald-950/60 dark:group-hover:bg-emerald-900/60",
+    icon: "text-emerald-600 dark:text-emerald-300",
+    tint: "hover:bg-emerald-50/60 dark:hover:bg-emerald-950/20",
+    selectedRing: "ring-emerald-500/40 border-emerald-400",
+    selectedBg: "bg-emerald-50/80 dark:bg-emerald-950/30",
+    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
+  },
+  red: {
+    accent: "from-red-400 to-red-600",
+    iconWrap: "bg-red-100 dark:bg-red-950/60",
+    icon: "text-red-600 dark:text-red-300",
+    tint: "hover:bg-red-50/60 dark:hover:bg-red-950/20",
+    selectedRing: "ring-red-500/40 border-red-400",
+    selectedBg: "bg-red-50/80 dark:bg-red-950/30",
+    pill: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300",
+  },
+  slate: {
+    accent: "from-slate-300 to-slate-500",
+    iconWrap: "bg-slate-100 dark:bg-slate-800/60",
+    icon: "text-slate-500 dark:text-slate-300",
+    tint: "hover:bg-slate-50 dark:hover:bg-slate-900/30",
+    selectedRing: "ring-slate-400/40 border-slate-400",
+    selectedBg: "bg-slate-50 dark:bg-slate-900/40",
+    pill: "bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300",
+  },
 };
 
 type DossierCardProps = {
@@ -66,8 +127,9 @@ export const DossierCard = memo(function DossierCard({
   const [hover, setHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const nextTrans = getNextTransition(dossier.statut);
-  const tone = DOSSIER_STATUT_TONE[dossier.statut];
-  const FolderIcon = hover || selected || menuOpen ? FolderOpen : Folder;
+  const tone = CARD_TONE[DOSSIER_STATUT_TONE[dossier.statut]] ?? CARD_TONE.slate;
+  const open = hover || selected || menuOpen;
+  const FolderIcon = open ? FolderOpen : Folder;
 
   return (
     <div
@@ -91,20 +153,37 @@ export const DossierCard = memo(function DossierCard({
         }
       }}
       className={cn(
-        "group relative flex h-full flex-col rounded-2xl border bg-card p-4 text-left shadow-2xs outline-none transition-all",
-        "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+        "group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card pt-4 pb-4 px-4 text-left shadow-2xs outline-none transition-all",
+        "hover:-translate-y-0.5 hover:shadow-lg",
         "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
         selected
-          ? "border-primary ring-2 ring-primary/25 bg-primary/[0.04]"
-          : "border-border/80",
+          ? cn("ring-2", tone.selectedRing, tone.selectedBg)
+          : cn("border-border/80", tone.tint),
       )}
     >
-      {/* En-tête : icône dossier + menu */}
+      {/* Bandeau couleur du statut */}
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r transition-opacity",
+          tone.accent,
+          selected || hover ? "opacity-100" : "opacity-60",
+        )}
+      />
+
+      {/* En-tête : tuile icône dossier + menu */}
       <div className="flex items-start justify-between gap-2">
-        <FolderIcon
-          className={cn("size-11 shrink-0 transition-colors", ICON_TONE[tone] ?? ICON_TONE.slate)}
-          strokeWidth={1.5}
-        />
+        <div
+          className={cn(
+            "flex size-12 shrink-0 items-center justify-center rounded-xl transition-colors",
+            tone.iconWrap,
+          )}
+        >
+          <FolderIcon
+            className={cn("size-6 transition-transform group-hover:scale-105", tone.icon)}
+            strokeWidth={2}
+          />
+        </div>
 
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
@@ -142,10 +221,7 @@ export const DossierCard = memo(function DossierCard({
             {canWrite && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() => onDelete(dossier)}
-                >
+                <DropdownMenuItem variant="destructive" onSelect={() => onDelete(dossier)}>
                   <Trash2 className="size-4" />
                   Supprimer
                 </DropdownMenuItem>
@@ -165,11 +241,16 @@ export const DossierCard = memo(function DossierCard({
         </p>
       </div>
 
-      {/* Métadonnées */}
-      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+      {/* Métadonnées : date + pastille "pièces" colorée */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
         <span className="tabular-nums">{formatDateShort(dossier.date)}</span>
-        <span aria-hidden>·</span>
-        <span className="tabular-nums">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium tabular-nums",
+            tone.pill,
+          )}
+        >
+          <Layers className="size-3" />
           {itemCount} pièce{itemCount !== 1 ? "s" : ""}
         </span>
       </div>
