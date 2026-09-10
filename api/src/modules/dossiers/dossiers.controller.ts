@@ -65,6 +65,16 @@ export class DossiersController {
     return this.dossiersService.updateStatut(id, user, statut);
   }
 
+  @Post(':id/paiements')
+  @RequirePermission('dossiers.modifier')
+  async enregistrerPaiement(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+    @Body() body: { montant: number; statut?: string },
+  ) {
+    return this.dossiersService.enregistrerPaiement(id, user, body);
+  }
+
   @Delete(':id')
   @RequirePermission('dossiers.supprimer')
   async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {

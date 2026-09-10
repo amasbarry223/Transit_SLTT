@@ -238,6 +238,12 @@ class ApiClient {
         body: JSON.stringify({ statut }),
       }),
 
+    enregistrerPaiement: (id: string, montant: number, statut?: string) =>
+      this.request<any>(`/dossiers/${id}/paiements`, {
+        method: 'POST',
+        body: JSON.stringify({ montant, statut }),
+      }),
+
     delete: (id: string) =>
       this.request<any>(`/dossiers/${id}`, {
         method: 'DELETE',

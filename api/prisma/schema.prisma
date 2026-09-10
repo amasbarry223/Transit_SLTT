@@ -258,6 +258,10 @@ model Dossier {
   numeroDeclaration String?      @map("numero_declaration")
   dateDeclaration  DateTime?     @map("date_declaration")
   valeurDouane     Float?        @map("valeur_douane")
+  fraisCircuit     Float         @default(0) @map("frais_circuit")
+  fraisPrestation  Float         @default(0) @map("frais_prestation")
+  montantInvesti   Float         @default(0) @map("montant_investi")
+  montantPaye      Float         @default(0) @map("montant_paye")
   notes            String?
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")

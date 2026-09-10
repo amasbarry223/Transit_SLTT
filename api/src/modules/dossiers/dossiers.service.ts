@@ -97,6 +97,12 @@ function buildDossierPrismaData(data: any): Record<string, any> {
   const vd = data.valeurDouane ?? data.droitDouane;
   if (vd !== undefined) res.valeurDouane = vd !== null && vd !== '' ? Number(vd) : null;
 
+  const num = (v: any) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  if (data.fraisCircuit !== undefined) res.fraisCircuit = num(data.fraisCircuit);
+  if (data.fraisPrestation !== undefined) res.fraisPrestation = num(data.fraisPrestation);
+  if (data.montantInvesti !== undefined) res.montantInvesti = num(data.montantInvesti);
+  // montantPaye ne se fixe QUE via enregistrerPaiement (jamais un update libre).
+
   if (data.notes !== undefined) res.notes = data.notes || null;
 
   return res;
@@ -227,6 +233,12 @@ export class DossiersService {
           annexeId: data.annexeId,
           clientId: data.clientId,
           statut: prismaData.statut ?? 'EN_COURS',
+          // À la création uniquement (import historique) : un dossier peut déjà
+          // avoir été réglé. Ensuite, montantPaye ne bouge que par paiement.
+          montantPaye:
+            data.montantPaye !== undefined && Number.isFinite(Number(data.montantPaye))
+              ? Number(data.montantPaye)
+              : 0,
           creeParId: user.id,
           conteneurs: conteneurs?.length
             ? {
@@ -316,6 +328,41 @@ export class DossiersService {
     });
 
     return updated;
+  }
+
+  /** Enregistre un règlement client sur le dossier (incrément atomique de
+   *  montantPaye, borné à montantInvesti). Optionnellement change le statut. */
+  async enregistrerPaiement(
+    id: string,
+    user: CurrentUserType,
+    data: { montant: number; statut?: string },
+  ) {
+    const dossier = await this.findOne(id, user);
+    const montant = Number(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new ConflictException('Le montant du règlement doit être supérieur à 0.');
+    }
+
+    return this.prisma.$transaction(async (tx: any) => {
+      const incremented = await tx.dossier.update({
+        where: { id },
+        data: { montantPaye: { increment: montant } },
+      });
+      // Ne jamais dépasser l'assiette due (paiements concurrents).
+      const plafond = incremented.montantInvesti || dossier.montantInvesti || 0;
+      if (plafond > 0 && incremented.montantPaye > plafond + 0.5) {
+        await tx.dossier.update({ where: { id }, data: { montantPaye: plafond } });
+      }
+      if (data.statut) {
+        const normalized = normalizeStatutDossier(data.statut) || dossier.statut;
+        await tx.dossier.update({ where: { id }, data: { statut: normalized as any } });
+        await tx.trackingPublic.updateMany({
+          where: { dossierId: id },
+          data: { statutAffiche: normalized as any },
+        });
+      }
+      return tx.dossier.findUnique({ where: { id }, include: { client: true, annexe: true } });
+    });
   }
 
   async remove(id: string, user: CurrentUserType) {

@@ -114,6 +114,9 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         clientId: input.clientId,
         marchandise: input.nature,
         valeurDouane: input.droitDouane,
+        fraisCircuit: input.fraisCircuit,
+        fraisPrestation: input.fraisPrestation,
+        montantInvesti: input.montantInvesti,
         numeroBl: input.bl,
         notes: input.notes,
         voieTransport: input.modeTransport,
@@ -202,11 +205,15 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         clientId: input.clientId,
         marchandise: input.nature,
         notes: input.notes,
-        // Un import historique conserve son statut et sa date d'origine : sans
-        // ça le dossier repassait "En cours" / daté d'aujourd'hui au rechargement.
+        // Un import historique conserve son statut, sa date ET ses montants
+        // d'origine : sans ça le dossier repassait "En cours" / daté
+        // d'aujourd'hui / à 0 FCFA au rechargement.
         statut: input.statut,
         dateDepart: input.date,
         date: input.date,
+        fraisPrestation: input.montantInvesti,
+        montantInvesti: input.montantInvesti,
+        montantPaye: input.montantPaye,
       });
       if (created?.id) {
         newDossier.id = created.id;
@@ -251,6 +258,9 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         clientId: input.clientId,
         marchandise: input.nature,
         valeurDouane: input.droitDouane,
+        fraisCircuit: input.fraisCircuit,
+        fraisPrestation: input.fraisPrestation,
+        montantInvesti: input.montantInvesti,
         numeroBl: input.bl,
         notes: input.notes,
         voieTransport: input.modeTransport,
@@ -385,8 +395,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     let ecriturePatch: Awaited<ReturnType<typeof syncEcritureWhenDossierSolde>> | undefined;
 
     if (shouldSyncEcritureOnDossierSolde(newStatut, montantRecu)) {
-      // L'écriture (encaissement de solde) reste locale : le classeur n'a pas
-      // encore de backend. Cf. memory "classeur not persisted".
+      // L'écriture (ligne de classeur) reste locale : le classeur n'a pas encore
+      // de backend. Cf. memory "classeur not persisted".
       ecriturePatch = await syncEcritureWhenDossierSolde(dossier, get().ecritures, get().ecritureSeq, {
         montantRecu,
         modePaiement,
@@ -394,16 +404,24 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
         resolvedDate,
         today,
       });
-      updatedMontantPaye = ecriturePatch.dossierMontantPaye;
+      // montantPaye du dossier = incrément (cohérent avec le backend
+      // /paiements), borné à l'assiette due — pas dérivé de l'écriture.
+      const plafond = dossier.montantInvesti > 0 ? dossier.montantInvesti : Number.POSITIVE_INFINITY;
+      updatedMontantPaye = Math.min(plafond, dossier.montantPaye + montantRecu);
     }
 
-    // Le changement de statut du dossier, lui, DOIT être poussé — y compris sur
-    // le chemin "Soldé + paiement", sinon le dossier repasse à son ancien statut
-    // au rechargement et la transition suivante est bloquée.
+    // Le changement de statut DOIT être poussé (sinon le dossier repasse à son
+    // ancien statut au rechargement). Quand la transition s'accompagne d'un
+    // encaissement, on passe par /paiements pour incrémenter montantPaye côté
+    // serveur en même temps ; sinon simple updateStatut.
     try {
-      await api.dossiers.updateStatut(id, newStatut);
+      if (typeof montantRecu === "number" && montantRecu > 0) {
+        await api.dossiers.enregistrerPaiement(id, montantRecu, newStatut);
+      } else {
+        await api.dossiers.updateStatut(id, newStatut);
+      }
     } catch (e) {
-      logWarn("api.dossiers.updateStatut (mode local)", e);
+      logWarn("api.dossiers.updateStatut/paiement (mode local)", e);
     }
 
     set((s) => ({
