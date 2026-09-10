@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Plus, FolderKanban } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
+import { useAppNavigation } from "@/lib/app-navigation";
 import { useStore } from "@/lib/store";
 import type { Dossier } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
@@ -50,15 +51,18 @@ export function DossiersGrid({
   onPageChange,
   onTransitionDossierChange,
 }: DossiersGridProps) {
-  const { openDossier, openDossierDetail } = useNav();
+  const { openDossier } = useNav();
+  const currentId = useNav((s) => s.selectedId);
+  const { goToDossier, goToEditDossier } = useAppNavigation();
   const removeDossier = useStore((s) => s.removeDossier);
   const { toast } = useToast();
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Dossier | null>(null);
 
-  const handleOpen = useCallback((id: string) => openDossierDetail(id), [openDossierDetail]);
-  const handleEdit = useCallback((id: string) => openDossier(id, "edit"), [openDossier]);
+  // Un clic sur la carte ouvre le dossier (URL synchronisée -> le rafraîchissement
+  // ne perd pas le dossier ouvert).
+  const handleOpen = useCallback((id: string) => goToDossier(id), [goToDossier]);
+  const handleEdit = useCallback((id: string) => goToEditDossier(id), [goToEditDossier]);
   const handleTransition = useCallback(
     (dossier: Dossier) => onTransitionDossierChange(dossier),
     [onTransitionDossierChange],
@@ -79,7 +83,6 @@ export function DossiersGrid({
       });
     } finally {
       setDeleteTarget(null);
-      setSelectedId(null);
     }
   }
 
@@ -121,22 +124,15 @@ export function DossiersGrid({
 
   return (
     <div className="space-y-4">
-      {/* Clic dans le vide = désélection */}
-      <div
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setSelectedId(null);
-        }}
-      >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {paged.map((dossier) => (
           <DossierCard
             key={dossier.id}
             dossier={dossier}
             itemCount={countsByDossier.get(dossier.id) ?? 0}
-            selected={selectedId === dossier.id}
+            current={currentId === dossier.id}
             canWrite={canWrite}
             canTransition={canTransition}
-            onSelect={setSelectedId}
             onOpen={handleOpen}
             onEdit={handleEdit}
             onTransition={handleTransition}

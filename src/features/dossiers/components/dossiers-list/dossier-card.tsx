@@ -102,10 +102,10 @@ const CARD_TONE: Record<
 type DossierCardProps = {
   dossier: Dossier;
   itemCount: number;
-  selected: boolean;
+  /** Dossier actuellement ouvert (surbrillance passive). */
+  current: boolean;
   canWrite: boolean;
   canTransition: boolean;
-  onSelect: (id: string) => void;
   onOpen: (id: string) => void;
   onEdit: (id: string) => void;
   onTransition: (dossier: Dossier) => void;
@@ -115,10 +115,9 @@ type DossierCardProps = {
 export const DossierCard = memo(function DossierCard({
   dossier,
   itemCount,
-  selected,
+  current,
   canWrite,
   canTransition,
-  onSelect,
   onOpen,
   onEdit,
   onTransition,
@@ -128,35 +127,32 @@ export const DossierCard = memo(function DossierCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const nextTrans = getNextTransition(dossier.statut);
   const tone = CARD_TONE[DOSSIER_STATUT_TONE[dossier.statut]] ?? CARD_TONE.slate;
-  const open = hover || selected || menuOpen;
-  const FolderIcon = open ? FolderOpen : Folder;
+  const highlighted = hover || current || menuOpen;
+  const FolderIcon = highlighted ? FolderOpen : Folder;
 
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label={`Dossier ${dossier.reference} — ${dossier.clientNom}`}
-      aria-pressed={selected}
+      aria-label={`Ouvrir le dossier ${dossier.reference} — ${dossier.clientNom}`}
+      aria-current={current ? "page" : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)}
       onBlur={() => setHover(false)}
-      onClick={() => onSelect(dossier.id)}
+      onClick={() => onOpen(dossier.id)}
       onDoubleClick={() => onOpen(dossier.id)}
       onKeyDown={(e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onOpen(dossier.id);
-        } else if (e.key === " ") {
-          e.preventDefault();
-          onSelect(dossier.id);
         }
       }}
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card pt-4 pb-4 px-4 text-left shadow-2xs outline-none transition-all",
+        "group relative flex h-full cursor-pointer select-none flex-col overflow-hidden rounded-2xl border bg-card pt-4 pb-4 px-4 text-left shadow-2xs outline-none transition-all",
         "hover:-translate-y-0.5 hover:shadow-lg",
         "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-        selected
+        current
           ? cn("ring-2", tone.selectedRing, tone.selectedBg)
           : cn("border-border/80", tone.tint),
       )}
@@ -167,7 +163,7 @@ export const DossierCard = memo(function DossierCard({
         className={cn(
           "pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r transition-opacity",
           tone.accent,
-          selected || hover ? "opacity-100" : "opacity-60",
+          highlighted ? "opacity-100" : "opacity-60",
         )}
       />
 
