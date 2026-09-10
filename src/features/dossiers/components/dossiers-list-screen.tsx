@@ -9,6 +9,8 @@ import {
   TrendingUp,
   ArrowUpDown,
   FolderKanban,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
@@ -27,8 +29,10 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { ListFilters } from "@/components/sltt/list-filters";
+import { cn } from "@/shared/utils/cn";
 import {
   DossiersListTable,
+  DossiersGrid,
   useDossiersListScreen,
   STATUT_OPTIONS,
   SORT_OPTIONS,
@@ -230,6 +234,40 @@ export function DossiersListScreen() {
         }
         actions={
           <>
+            <div
+              className="flex h-10 shrink-0 items-center rounded-lg border border-border/70 bg-muted/40 p-0.5"
+              role="group"
+              aria-label="Mode d'affichage"
+            >
+              <button
+                type="button"
+                onClick={() => screen.setViewMode("grid")}
+                aria-pressed={screen.viewMode === "grid"}
+                title="Affichage en grille"
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-md transition-colors",
+                  screen.viewMode === "grid"
+                    ? "bg-card text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <LayoutGrid className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => screen.setViewMode("list")}
+                aria-pressed={screen.viewMode === "list"}
+                title="Affichage en tableau"
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-md transition-colors",
+                  screen.viewMode === "list"
+                    ? "bg-card text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <List className="size-4" />
+              </button>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -257,8 +295,8 @@ export function DossiersListScreen() {
         }
       />
 
-      <Card className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card p-0">
-        <DossiersListTable
+      {screen.viewMode === "grid" ? (
+        <DossiersGrid
           filtered={screen.filtered}
           paged={screen.paged}
           startIdx={screen.startIdx}
@@ -268,11 +306,29 @@ export function DossiersListScreen() {
           hasActiveFilters={screen.hasActiveFilters}
           canWrite={canWrite}
           canTransition={canTransition}
+          countsByDossier={screen.countsByDossier}
           transitionDossier={screen.transitionDossier}
           onPageChange={screen.setPage}
           onTransitionDossierChange={screen.setTransitionDossier}
         />
-      </Card>
+      ) : (
+        <Card className="rounded-2xl border border-border/70 overflow-hidden shadow-xs bg-card p-0">
+          <DossiersListTable
+            filtered={screen.filtered}
+            paged={screen.paged}
+            startIdx={screen.startIdx}
+            endIdx={screen.endIdx}
+            safePage={screen.safePage}
+            totalPages={screen.totalPages}
+            hasActiveFilters={screen.hasActiveFilters}
+            canWrite={canWrite}
+            canTransition={canTransition}
+            transitionDossier={screen.transitionDossier}
+            onPageChange={screen.setPage}
+            onTransitionDossierChange={screen.setTransitionDossier}
+          />
+        </Card>
+      )}
     </div>
   );
 }

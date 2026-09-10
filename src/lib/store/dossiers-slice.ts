@@ -307,10 +307,11 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     try {
       await api.dossiers.delete(id);
     } catch (e) {
-      // Un refus métier (400/403/409 : dossier facturé, hors périmètre…) doit
-      // remonter à l'utilisateur ; seuls un 404 (déjà supprimé) ou une panne
-      // réseau/serveur laissent la suppression locale se poursuivre.
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500 && e.status !== 404) {
+      // Un refus métier explicite (400 validation, 403 hors périmètre, 409
+      // conflit) doit remonter à l'utilisateur. Un 404 (déjà supprimé), un 401
+      // (session expirée, gérée globalement) ou une panne réseau/serveur
+      // laissent la suppression locale se poursuivre.
+      if (e instanceof ApiError && [400, 403, 409, 422].includes(e.status)) {
         throw e;
       }
       logWarn("api.dossiers.delete (mode local)", e);

@@ -20,6 +20,18 @@ import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 
 export const PAGE_SIZE = 8;
 
+export type DossiersViewMode = "grid" | "list";
+const VIEW_MODE_KEY = "sltt.dossiers.viewMode";
+
+function readViewMode(): DossiersViewMode {
+  if (typeof window === "undefined") return "grid";
+  try {
+    return localStorage.getItem(VIEW_MODE_KEY) === "list" ? "list" : "grid";
+  } catch {
+    return "grid";
+  }
+}
+
 export const STATUT_OPTIONS: (DossierStatut | "Tous")[] = [
   "Tous",
   "En cours",
@@ -55,6 +67,24 @@ export function useDossiersListScreen() {
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
+  const factures = useStore((s) => s.factures);
+  const fichiers = useStore((s) => s.fichiers);
+  const subDossiers = useStore((s) => s.subDossiers);
+  const devis = useStore((s) => s.devis);
+
+  /** Nb de pièces rattachées à chaque dossier (factures + fichiers + devis + sous-dossiers). */
+  const countsByDossier = useMemo(() => {
+    const map = new Map<string, number>();
+    const bump = (id: string | null | undefined) => {
+      if (!id) return;
+      map.set(id, (map.get(id) ?? 0) + 1);
+    };
+    factures.forEach((f) => bump(f.dossierId));
+    fichiers.forEach((f) => bump(f.dossierId));
+    subDossiers.forEach((s) => bump(s.dossierId));
+    devis.forEach((d) => bump(d.dossierId));
+    return map;
+  }, [factures, fichiers, subDossiers, devis]);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
@@ -65,6 +95,16 @@ export function useDossiersListScreen() {
   const [sortBy, setSortBy] = useState<SortKey>("date-desc");
   const [page, setPage] = useState(1);
   const [transitionDossier, setTransitionDossier] = useState<Dossier | null>(null);
+  const [viewMode, setViewModeState] = useState<DossiersViewMode>(readViewMode);
+
+  const setViewMode = (mode: DossiersViewMode) => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, mode);
+    } catch {
+      /* stockage indisponible (navigation privée) — préférence non mémorisée */
+    }
+  };
 
   // Mémoïsé sur la clé jour (pas sur getDashboardAnchorDate() en dep directe,
   // qui renvoie un nouveau Date à chaque appel et casserait le useMemo de
@@ -268,6 +308,9 @@ export function useDossiersListScreen() {
     setPage,
     transitionDossier,
     setTransitionDossier,
+    viewMode,
+    setViewMode,
+    countsByDossier,
     availableYears,
     filtered,
     stats,
