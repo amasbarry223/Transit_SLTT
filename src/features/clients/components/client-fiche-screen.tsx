@@ -9,7 +9,6 @@ import {
   Copy,
   MessageCircle,
   Check,
-  FolderKanban,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -32,7 +31,6 @@ import {
 import { resolveSlttBrand, resolveTransitSociete } from "@/lib/societe-brand";
 import { TOAST_COPY_RESET_MS } from "@/lib/constants";
 import { exportToExcel, printClasseur } from "@/lib/export";
-import { PageHeader } from "@/components/sltt/page-header";
 import { ClientFormFields, emptyClientForm } from "@/features/clients/components/client-form-fields";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -48,6 +46,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { cn } from "@/shared/utils/cn";
 import { ClientProfileCard } from "@/features/clients/components/client-fiche/client-profile-card";
+import { FinancialSummary } from "@/features/clients/components/client-fiche/financial-summary";
 import { ClasseurTab } from "@/features/clients/components/client-fiche/classeur-tab";
 import { ClasseurSuiviDialog } from "@/features/clients/components/client-fiche/classeur-suivi-dialog";
 import { DossiersTab } from "@/features/clients/components/client-fiche/dossiers-tab";
@@ -377,82 +376,38 @@ export function ClientFicheScreen() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <Button
-          variant="ghost"
-          onClick={() => go("clients")}
-          className="-ml-2 w-fit text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
-        >
-          <ArrowLeft className="size-4" />
-          Retour aux clients
-        </Button>
-        <PageHeader title="Fiche client" description="Vue consolidée du client" />
-      </div>
+    <div className="space-y-5">
+      <Button
+        variant="ghost"
+        onClick={() => go("clients")}
+        className="-ml-2 h-8 w-fit text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Clients
+      </Button>
 
       <ClientProfileCard
         client={client}
-        totalDu={totalDu}
         onEdit={canWrite ? openEditDialog : undefined}
-        onRelance={openRelanceDialog}
+        onNewDossier={canWriteDossiers ? () => openDossier(null, "create") : undefined}
       />
 
-      <div className="sticky top-16 z-20 -mx-4 border-y border-border/80 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
-            {/* Total non filtré, sur tout l'historique — le Classeur (onglet) affiche
-                les mêmes libellés (Investi / Total payé / Reste à payer) mais sur sa
-                sélection filtrée, d'où "(historique)" ici pour distinguer les deux. */}
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Reste à payer (historique)</p>
-              <p className={cn("text-lg font-bold tabular-nums", totalDu > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
-                {formatFCFA(totalDu)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total payé (historique)</p>
-              <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatFCFA(totalPaye)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Investi (historique)</p>
-              <p className="text-lg font-bold tabular-nums text-foreground">{formatFCFA(totalInvesti)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Prochaine action</p>
-              {totalDu > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("classeur")}
-                  className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
-                >
-                  {pendingCount} solde{pendingCount !== 1 ? "s" : ""} ouvert{pendingCount !== 1 ? "s" : ""} — voir le Classeur
-                </button>
-              ) : (
-                <p className="text-sm font-medium text-foreground/90">Compte à jour</p>
-              )}
-            </div>
-          </div>
-          {canWriteDossiers && (
-            <Button className="shrink-0" onClick={() => openDossier(null, "create")}>
-              <FolderKanban className="size-4" />
-              Nouveau dossier
-            </Button>
-          )}
-        </div>
-      </div>
+      <FinancialSummary
+        totalDu={totalDu}
+        totalPaye={totalPaye}
+        totalInvesti={totalInvesti}
+        pendingCount={pendingCount}
+        onSeeClasseur={canSeeCompta ? () => setActiveTab("classeur") : undefined}
+        onRelance={openRelanceDialog}
+      />
 
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as FicheTab)}
         className="gap-0"
       >
-        <div
-          className={cn(
-            "sticky top-0 z-10 -mx-4 border-b border-border bg-background/95 backdrop-blur sm:-mx-6 lg:-mx-8",
-            "supports-[backdrop-filter]:bg-background/80",
-          )}
-        >
-          <TabsList className="flex h-12 w-full items-stretch rounded-none p-0 bg-muted/80">
+        <div className="sticky top-16 z-10 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <TabsList className="flex h-12 w-full items-stretch gap-1 rounded-none bg-transparent p-0">
             {visibleFicheTabs.map((t) => {
               const Icon = t.icon;
               const count =
@@ -468,23 +423,22 @@ export function ClientFicheScreen() {
                   key={t.key}
                   value={t.key}
                   className={cn(
-                    "relative flex flex-1 items-center justify-center gap-2 rounded-none",
-                    "border-0 border-b-2 border-transparent bg-transparent px-2 py-0",
-                    "text-sm font-medium text-slate-500 shadow-none transition-colors dark:text-slate-400",
-                    "hover:bg-white/60 hover:text-slate-900 dark:hover:text-slate-100",
-                    "data-[state=active]:border-primary data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900",
-                    "data-[state=active]:text-primary data-[state=active]:shadow-none",
+                    "relative flex flex-1 items-center justify-center gap-1.5 rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-0 min-w-0",
+                    "text-sm font-medium text-muted-foreground shadow-none transition-colors",
+                    "hover:text-foreground",
+                    "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none",
                     "focus-visible:ring-0 focus-visible:ring-offset-0",
                     "[&[data-state=active]_svg]:text-primary",
-                    "min-w-0",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-muted-foreground" />
+                  <Icon className="size-4 shrink-0" />
                   <span className="hidden truncate sm:inline">{t.label}</span>
                   <span className="truncate sm:hidden">{t.shortLabel}</span>
-                  <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
-                    {count}
-                  </span>
+                  {count > 0 && (
+                    <span className="ml-0.5 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground data-[state=active]:bg-primary/10">
+                      {count}
+                    </span>
+                  )}
                 </TabsTrigger>
               );
             })}
