@@ -39,6 +39,8 @@ export interface Dossier {
   dateEcheance?: string;
   /** Date réelle de dédouanement (remplie quand statut → Dédouané). */
   dateDedouanement?: string;
+  /** Date du règlement client (remplie au 1er encaissement sur le dossier). */
+  dateSolde?: string;
   /** Mode de transport principal. */
   modeTransport?: "Maritime" | "Aérien" | "Routier" | "Ferroviaire";
   /** Numéro de conteneur (si Maritime). */

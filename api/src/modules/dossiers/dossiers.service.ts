@@ -239,6 +239,10 @@ export class DossiersService {
             data.montantPaye !== undefined && Number.isFinite(Number(data.montantPaye))
               ? Number(data.montantPaye)
               : 0,
+          dateSolde:
+            Number(data.montantPaye) > 0
+              ? parseDossierDate(data.dateSolde ?? data.date ?? data.dateDepart) ?? new Date()
+              : null,
           creeParId: user.id,
           conteneurs: conteneurs?.length
             ? {
@@ -335,18 +339,22 @@ export class DossiersService {
   async enregistrerPaiement(
     id: string,
     user: CurrentUserType,
-    data: { montant: number; statut?: string },
+    data: { montant: number; statut?: string; date?: string },
   ) {
     const dossier = await this.findOne(id, user);
     const montant = Number(data.montant);
     if (!Number.isFinite(montant) || montant <= 0) {
       throw new ConflictException('Le montant du règlement doit être supérieur à 0.');
     }
+    const datePaiement = data.date ? new Date(data.date) : new Date();
 
     return this.prisma.$transaction(async (tx: any) => {
       const incremented = await tx.dossier.update({
         where: { id },
-        data: { montantPaye: { increment: montant } },
+        data: {
+          montantPaye: { increment: montant },
+          dateSolde: Number.isNaN(datePaiement.getTime()) ? new Date() : datePaiement,
+        },
       });
       // Ne jamais dépasser l'assiette due (paiements concurrents).
       const plafond = incremented.montantInvesti || dossier.montantInvesti || 0;

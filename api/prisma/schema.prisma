@@ -262,6 +262,7 @@ model Dossier {
   fraisPrestation  Float         @default(0) @map("frais_prestation")
   montantInvesti   Float         @default(0) @map("montant_investi")
   montantPaye      Float         @default(0) @map("montant_paye")
+  dateSolde        DateTime?     @map("date_solde")
   notes            String?
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")

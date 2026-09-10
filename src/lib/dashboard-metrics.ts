@@ -2,7 +2,7 @@ import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { filterByPeriode } from "@/lib/benefice";
-import { sommeFacturesEncaissees } from "@/lib/client-stats";
+import { sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
 import {
   CHART_MONTHS_COUNT,
   CHART_MONTHS_OFFSET,
@@ -36,6 +36,7 @@ export function computeEncaisseVariation(
   ecrituresAvecDate: Ecriture[],
   factures: Facture[],
   anchorDate: Date,
+  dossiers: Dossier[] = [],
 ): { chiffreEncaisse: number; variationEncaisse: number } {
   const curM = anchorDate.getMonth();
   const curY = anchorDate.getFullYear();
@@ -50,7 +51,12 @@ export function computeEncaisseVariation(
     // Annulée (cf. sommeFacturesEncaissees) pour rester cohérent avec le
     // totalPaye affiché sur la fiche client (client-stats.ts).
     const fromFactures = sommeFacturesEncaissees(filterByPeriode(factures, year, month));
-    return fromEcritures + fromFactures;
+    // Dossiers réglés directement (sans facture), datés par dateSolde.
+    const fromDossiers = sommeDossiersEncaisses(dossiers, factures, (iso) => {
+      const d = parseLocalDate(iso);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month;
+    });
+    return fromEcritures + fromFactures + fromDossiers;
   };
 
   const current = encaisseSur(curY, curM);

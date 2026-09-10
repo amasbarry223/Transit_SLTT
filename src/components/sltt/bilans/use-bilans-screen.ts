@@ -6,7 +6,7 @@ import { parseLocalDate } from "@/lib/format";
 import { exportToExcel, printBilan } from "@/lib/export";
 import { resolveClasseurPrintBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
-import { sommeFacturesEncaissees } from "@/lib/client-stats";
+import { sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
@@ -48,14 +48,16 @@ export function useBilansScreen() {
       note: `Facture ${f.numero}`,
     }));
 
-    const direct = allEcritures;
+    // ecritures est un vestige toujours vide ; on ne garde que les non-liées
+    // par prudence si une source future en réintroduit.
+    const direct = allEcritures.filter((e) => !e.dossierId);
 
     const fromDossiers = dossiers
       .filter((d) => (d.montantInvesti > 0 || d.montantPaye > 0) && !factures.some((f) => f.dossierId === d.id))
       .map((d) => ({
         id: `dos-${d.id}`,
-        date: d.date,
-        datePaiement: d.dateDedouanement || d.date,
+        date: d.dateSolde || d.date,
+        datePaiement: d.dateSolde || d.dateDedouanement || d.date,
         clientId: d.clientId,
         clientNom: d.clientNom,
         dossierId: d.id,
@@ -120,10 +122,16 @@ export function useBilansScreen() {
   const beneficeAnnexe = useMemo(() => {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
     const m = month - 1;
+    const dansLeMois = (iso: string) => {
+      const d = parseLocalDate(iso);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === m;
+    };
     const computeFor = (annexeId: string | null) => {
+      const dossiersScope = annexeId ? dossiers.filter((d) => d.annexeId === annexeId) : dossiers;
       const recettes =
         filterByAnnexeAndPeriode(ecrituresAvecDate, annexeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
-        sommeFacturesEncaissees(filterByAnnexeAndPeriode(factures, annexeId, year, m));
+        sommeFacturesEncaissees(filterByAnnexeAndPeriode(factures, annexeId, year, m)) +
+        sommeDossiersEncaisses(dossiersScope, factures, dansLeMois);
       const depensesMois =
         filterByAnnexeAndPeriode(caisseAvecDate, annexeId, year, m).reduce((sum, d) => sum + d.montant, 0) +
         filterByAnnexeAndPeriode(
@@ -138,7 +146,7 @@ export function useBilansScreen() {
       consolide: computeFor(null),
       parAnnexe: annexes.map((a) => ({ annexe: a, ...computeFor(a.id) })),
     };
-  }, [ecrituresAvecDate, factures, caisseAvecDate, depensesAvecDateEtAnnexe, annexes, mois]);
+  }, [ecrituresAvecDate, factures, dossiers, caisseAvecDate, depensesAvecDateEtAnnexe, annexes, mois]);
 
   // Le calcul ci-dessus porte toujours sur un seul mois de référence, quelle
   // que soit la granularité "période" choisie (voir commentaire F5 plus haut)

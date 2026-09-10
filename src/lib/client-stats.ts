@@ -13,6 +13,25 @@ export function sommeFacturesEncaissees(factures: Facture[]): number {
 }
 
 /**
+ * Règlements reçus sur les dossiers NON facturés — quand un dossier n'a pas de
+ * facture, c'est lui qui porte le montant encaissé (même règle que les bilans
+ * et syncClientStats). `inPeriode`, si fourni, filtre sur `dateSolde`.
+ */
+export function sommeDossiersEncaisses(
+  dossiers: Dossier[],
+  factures: Facture[],
+  inPeriode?: (dateSolde: string) => boolean,
+): number {
+  const facturedDossierIds = new Set(
+    factures.map((f) => f.dossierId).filter((x): x is string => Boolean(x)),
+  );
+  return dossiers
+    .filter((d) => !facturedDossierIds.has(d.id) && d.montantPaye > 0)
+    .filter((d) => !inPeriode || (d.dateSolde ? inPeriode(d.dateSolde) : false))
+    .reduce((sum, d) => sum + d.montantPaye, 0);
+}
+
+/**
  * Recalcule les agrégats client à partir des dossiers, factures et écritures.
  * Les factures déjà rattachées à un dossier du client sont exclues pour éviter
  * le double comptage (le dossier porte déjà l'encours).

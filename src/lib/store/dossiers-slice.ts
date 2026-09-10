@@ -13,10 +13,6 @@ import {
 import { resteAPayer, type Dossier, type DossierStatut, type PaiementMode } from "@/lib/domain-types";
 import type { DossierInput, ImportDossierHistoriqueInput, SLTTState } from "@/lib/store";
 import {
-  shouldSyncEcritureOnDossierSolde,
-  syncEcritureWhenDossierSolde,
-} from "@/lib/store/sync-helpers";
-import {
   computeDossierReference,
   computeHistoricalDossierReference,
   extractTrailingSeq,
@@ -391,32 +387,24 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const dateDedouanement =
       newStatut === DOSSIER_STATUT_DEDOUANE ? resolvedDate : dossier.dateDedouanement;
 
+    // montantPaye du dossier = incrément borné à l'assiette due — cohérent avec
+    // le backend /paiements. Plus d'écriture locale jetable (le dossier.montantPaye
+    // persiste désormais et sert de source unique aux bilans / au classeur).
     let updatedMontantPaye = dossier.montantPaye;
-    let ecriturePatch: Awaited<ReturnType<typeof syncEcritureWhenDossierSolde>> | undefined;
-
-    if (shouldSyncEcritureOnDossierSolde(newStatut, montantRecu)) {
-      // L'écriture (ligne de classeur) reste locale : le classeur n'a pas encore
-      // de backend. Cf. memory "classeur not persisted".
-      ecriturePatch = await syncEcritureWhenDossierSolde(dossier, get().ecritures, get().ecritureSeq, {
-        montantRecu,
-        modePaiement,
-        transitionNote,
-        resolvedDate,
-        today,
-      });
-      // montantPaye du dossier = incrément (cohérent avec le backend
-      // /paiements), borné à l'assiette due — pas dérivé de l'écriture.
+    let updatedDateSolde = dossier.dateSolde;
+    if (typeof montantRecu === "number" && montantRecu > 0) {
       const plafond = dossier.montantInvesti > 0 ? dossier.montantInvesti : Number.POSITIVE_INFINITY;
       updatedMontantPaye = Math.min(plafond, dossier.montantPaye + montantRecu);
+      updatedDateSolde = dossier.dateSolde || resolvedDate;
     }
 
     // Le changement de statut DOIT être poussé (sinon le dossier repasse à son
     // ancien statut au rechargement). Quand la transition s'accompagne d'un
-    // encaissement, on passe par /paiements pour incrémenter montantPaye côté
-    // serveur en même temps ; sinon simple updateStatut.
+    // encaissement, on passe par /paiements pour incrémenter montantPaye + dater
+    // le règlement côté serveur en même temps ; sinon simple updateStatut.
     try {
       if (typeof montantRecu === "number" && montantRecu > 0) {
-        await api.dossiers.enregistrerPaiement(id, montantRecu, newStatut);
+        await api.dossiers.enregistrerPaiement(id, montantRecu, newStatut, resolvedDate);
       } else {
         await api.dossiers.updateStatut(id, newStatut);
       }
@@ -424,25 +412,24 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       logWarn("api.dossiers.updateStatut/paiement (mode local)", e);
     }
 
-    set((s) => ({
-      dossiers: s.dossiers.map((item) =>
-        item.id === id
-          ? { ...item, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
-          : item,
-      ),
-      ecritures: ecriturePatch?.ecritures ?? s.ecritures,
-      ecritureSeq: ecriturePatch?.ecritureSeq ?? s.ecritureSeq,
-      clients: syncClientStats(
-        s.dossiers.map((item) =>
-          item.id === id
-            ? { ...item, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
-            : item,
-        ),
-        s.factures,
-        ecriturePatch?.ecritures ?? s.ecritures,
-        s.clients,
-      ),
-    }));
+    const applyPatch = (item: Dossier): Dossier =>
+      item.id === id
+        ? {
+            ...item,
+            statut: newStatut,
+            montantPaye: updatedMontantPaye,
+            dateDedouanement,
+            dateSolde: updatedDateSolde,
+          }
+        : item;
+
+    set((s) => {
+      const updatedDossiers = s.dossiers.map(applyPatch);
+      return {
+        dossiers: updatedDossiers,
+        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+      };
+    });
 
     await get().addAuditLog(
       AUDIT_MODULE.Dossiers,

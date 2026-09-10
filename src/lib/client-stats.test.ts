@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { syncClientStats } from "./client-stats";
+import { syncClientStats, sommeDossiersEncaisses } from "./client-stats";
 import type { Client, Dossier, Facture, Ecriture } from "@/lib/store";
 
 describe("syncClientStats", () => {
@@ -40,6 +40,20 @@ describe("syncClientStats", () => {
     ] as Facture[];
     const [updated] = syncClientStats([], factures, [], clients);
     expect(updated.totalDu).toBe(0);
+  });
+
+  it("sommeDossiersEncaisses : dossiers réglés sans facture, filtrés par dateSolde", () => {
+    const dossiers = [
+      { id: "d1", montantPaye: 400, dateSolde: "2026-03-10" },
+      { id: "d2", montantPaye: 900, dateSolde: "2026-04-02" }, // hors période
+      { id: "d3", montantPaye: 700, dateSolde: "2026-03-20" }, // mais facturé -> exclu
+      { id: "d4", montantPaye: 0, dateSolde: "2026-03-15" }, // rien payé
+    ] as Dossier[];
+    const factures = [{ dossierId: "d3" }] as Facture[];
+    const enMars = (iso: string) => iso >= "2026-03-01" && iso <= "2026-03-31";
+    expect(sommeDossiersEncaisses(dossiers, factures, enMars)).toBe(400);
+    // sans filtre période : d1 + d2 (d3 facturé exclu, d4 = 0)
+    expect(sommeDossiersEncaisses(dossiers, factures)).toBe(1300);
   });
 
   it("compte le reste à payer d'une facture impayée même sans dossier associé", () => {

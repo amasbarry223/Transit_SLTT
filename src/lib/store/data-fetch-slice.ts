@@ -173,6 +173,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
             : (d.date ? String(d.date).split("T")[0] : (d.createdAt ? new Date(d.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0])),
           dateEcheance: d.dateArriveePrevue ? new Date(d.dateArriveePrevue).toISOString().split("T")[0] : (d.dateEcheance || undefined),
           dateDedouanement: d.dateArriveeEffective ? new Date(d.dateArriveeEffective).toISOString().split("T")[0] : (d.dateDedouanement || undefined),
+          dateSolde: d.dateSolde ? new Date(d.dateSolde).toISOString().split("T")[0] : undefined,
           modeTransport,
           noConteneur: conteneurNumero,
           portEntree: d.portDestination || d.portEntree || undefined,

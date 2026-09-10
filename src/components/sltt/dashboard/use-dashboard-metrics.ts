@@ -26,8 +26,8 @@ export function useDashboardMetrics({
   anchorDate: Date;
 }) {
   const { chiffreEncaisse, variationEncaisse } = useMemo(
-    () => computeEncaisseVariation(ecrituresAvecDate, factures, anchorDate),
-    [ecrituresAvecDate, factures, anchorDate],
+    () => computeEncaisseVariation(ecrituresAvecDate, factures, anchorDate, dossiers),
+    [ecrituresAvecDate, factures, anchorDate, dossiers],
   );
 
   const { totalRestesAPayer, nbDossiersNonSoldes } = useMemo(

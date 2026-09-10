@@ -70,7 +70,7 @@ export class DossiersController {
   async enregistrerPaiement(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserType,
-    @Body() body: { montant: number; statut?: string },
+    @Body() body: { montant: number; statut?: string; date?: string },
   ) {
     return this.dossiersService.enregistrerPaiement(id, user, body);
   }

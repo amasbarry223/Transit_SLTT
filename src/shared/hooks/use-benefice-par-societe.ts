@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { computeBenefice } from "@/lib/benefice";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { parseLocalDate } from "@/lib/format";
+import { sommeDossiersEncaisses } from "@/lib/client-stats";
 import { useStore } from "@/lib/store";
 
 export type BeneficeMensuel = {
@@ -27,6 +28,7 @@ function filterByPeriode<T extends { date: string }>(
 export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate()) {
   const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
+  const dossiers = useStore((s) => s.dossiers);
   const depenses = useStore((s) => s.depenses);
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
 
@@ -54,6 +56,10 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
   const mois = anchorDate.getMonth();
 
   return useMemo(() => {
+    const dansLeMois = (iso: string) => {
+      const d = parseLocalDate(iso);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === annee && d.getMonth() === mois;
+    };
     const recettes =
       filterByPeriode(ecrituresAvecDate, annee, mois).reduce(
         (sum, e) => sum + e.montantPaye,
@@ -62,7 +68,10 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
       filterByPeriode(factures, annee, mois).reduce(
         (sum, f) => sum + f.montantPaye,
         0,
-      );
+      ) +
+      // Dossiers réglés directement (sans facture) : le montantPaye du dossier
+      // persiste désormais, il ne disparaît plus au rechargement.
+      sommeDossiersEncaisses(dossiers, factures, dansLeMois);
     const depensesMois =
       filterByPeriode(depensesAvecDate, annee, mois).reduce(
         (sum, d) => sum + d.montant,
@@ -84,5 +93,5 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
       caisseAvecDate,
       consolide,
     };
-  }, [ecrituresAvecDate, depensesAvecDate, caisseAvecDate, factures, annee, mois]);
+  }, [ecrituresAvecDate, depensesAvecDate, caisseAvecDate, factures, dossiers, annee, mois]);
 }
