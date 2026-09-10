@@ -8,10 +8,10 @@ import {
   type DossierStatut,
   type Dossier,
 } from "@/lib/domain-types";
-import { formatDateShort, formatFCFA, parseLocalDate } from "@/lib/format";
+import { formatDateShort, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
-import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
+import { exportToExcel, printDossiers } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
@@ -257,33 +257,28 @@ export function useDossiersListScreen() {
   }
 
   function handleExportPDF() {
-    const rowsHTML = filtered
-      .map(
-        (d) => `<tr>
-          <td>${htmlEscape(d.reference)}</td>
-          <td>${htmlEscape(d.clientNom)}</td>
-          <td>${htmlEscape(d.bl)}</td>
-          <td>${htmlEscape(d.camion)}</td>
-          <td>${htmlEscape(d.nature)}</td>
-          <td class="num">${formatFCFA(d.fraisPrestation, false)}</td>
-          <td class="num">${calculerEcart(d).toLocaleString("fr-FR")}</td>
-          <td><span class="badge" style="background:#dfeefa;color:#155a93">${htmlEscape(d.statut)}</span></td>
-        </tr>`,
-      )
-      .join("");
-    printHTML(
-      "Liste des dossiers de transit",
-      `
-      <h1>Dossiers de transit</h1>
-      <div class="subtitle">${filtered.length} dossier(s) · ${formatDateShort(new Date())}</div>
-      <table>
-        <thead><tr>
-          <th>Référence</th><th>Client</th><th>N° BL</th><th>Camion</th>
-          <th>Nature</th><th class="num">Prestation</th><th class="num">Marge</th><th>Statut</th>
-        </tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>
-    `,
+    if (filtered.length === 0) {
+      toastWarning(toast, { title: "Rien à exporter", description: UI.errors.exportEmpty });
+      return;
+    }
+    printDossiers(
+      filtered.map((d) => ({
+        reference: d.reference,
+        clientNom: d.clientNom,
+        bl: d.bl,
+        camion: d.camion,
+        nature: d.nature,
+        prestation: d.fraisPrestation,
+        marge: calculerEcart(d),
+        statut: d.statut,
+      })),
+      {
+        total: stats.total,
+        enCours: stats.enCours,
+        soldes: stats.soldes,
+        margeCumulee: stats.ecartTotal,
+      },
+      hasActiveFilters ? "Sélection filtrée" : undefined,
       resolveSlttBrand(societes),
     );
   }

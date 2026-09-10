@@ -20,6 +20,11 @@ export {
   type StockInventoryRow,
   type StockInventoryGroup,
 } from "./stock-inventory";
+export {
+  printDossiers,
+  type DossierPrintRow,
+  type DossierPrintTotals,
+} from "./dossiers";
 export { printClients } from "@/features/clients/services/client-print";
 export type { ClientPrintRow } from "@/features/clients/types";
 export { printTransporteurs, type TransporteurPrintRow } from "./transporteurs";
