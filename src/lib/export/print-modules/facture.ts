@@ -22,13 +22,11 @@ import { SIGNATORIES_BLOCK_CSS, buildSignatoriesBlockHTML } from "./signatories-
 
 /* ------------------------------------------------------------------ */
 /* printFactureModule — facture TVA (module Factures)                  */
-/* En-tête calqué sur le papier à en-tête officiel (identique à         */
-/* l'annuaire clients et au classeur) pour une identité visuelle        */
-/* cohérente entre tous les documents imprimés SLTT.                    */
-/* Modèle : facture commerciale réelle annexe Côte d'Ivoire (Facture   */
-/* N°X, lieu + date d'émission, bloc "Doit", référence, tableau avec   */
-/* compagnie/bordereau de livraison, montant en toutes lettres,        */
-/* signatures "Pour acquit" / "Directeur Général").                    */
+/* Corps du document calqué sur une facture commerciale réelle :       */
+/* type + numéro, lieu et date d'émission, bloc « Doit », tableau des  */
+/* prestations, décompte à droite, montant en toutes lettres,          */
+/* signatures officielles. L'en-tête (buildOfficialLetterheadHTML)     */
+/* reste strictement inchangé : seul le corps est mis en forme ici.    */
 /* ------------------------------------------------------------------ */
 
 export interface FactureModuleData {
@@ -82,16 +80,16 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
   const lignesHTML = data.lignes
     .map(
       (l, i) => `
-    <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
-      <td class="col-num">${i + 1}</td>
-      <td class="col-desc">${htmlEscape(l.description)}</td>
+    <tr>
+      <td class="t-num">${i + 1}</td>
+      <td class="t-desc">${htmlEscape(l.description)}</td>
       ${
         hasLignesDetails
-          ? `<td class="col-compagnie">${l.compagnie ? htmlEscape(l.compagnie) : "<span class='empty'>—</span>"}</td>
-      <td class="col-bordereau">${l.bordereauLivraison ? htmlEscape(l.bordereauLivraison) : "<span class='empty'>—</span>"}</td>`
+          ? `<td class="t-sub">${l.compagnie ? htmlEscape(l.compagnie) : "<span class='t-empty'>—</span>"}</td>
+      <td class="t-sub">${l.bordereauLivraison ? htmlEscape(l.bordereauLivraison) : "<span class='t-empty'>—</span>"}</td>`
           : ""
       }
-      <td class="col-amount">${fmtFCFAPlain(l.montantHT)}</td>
+      <td class="t-amount">${fmtFCFAPlain(l.montantHT)}</td>
     </tr>`,
     )
     .join("");
@@ -100,8 +98,8 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
   const paiementHTML =
     data.montantPaye > 0
       ? `
-    <div class="total-line total-line--credit"><span>Déjà payé</span><span>− ${fmtFCFA(data.montantPaye)}</span></div>
-    <div class="total-line total-line--warn"><span>Reste à payer</span><span>${fmtFCFA(reste)}</span></div>`
+      <div class="trow trow--credit"><span>Déjà réglé</span><span>− ${fmtFCFA(data.montantPaye)}</span></div>
+      <div class="trow trow--due"><span>Reste à payer</span><span>${fmtFCFA(reste)}</span></div>`
       : "";
 
   const win = acquirePrintTarget();
@@ -118,8 +116,9 @@ export function printFactureModule(data: FactureModuleData, societe?: SocieteBra
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: #fff;
-  color: #1f2937;
-  font-size: 12px;
+  color: #263041;
+  font-size: 11px;
+  line-height: 1.5;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -127,177 +126,192 @@ body {
 
 ${OFFICIAL_LETTERHEAD_CSS}
 
-/* Bandeau document */
-.doc-section { padding: 16px 28px 0; }
-.doc-head {
+/* ── Corps du document ─────────────────────────────────────────── */
+.doc { padding: 22px 32px 0; }
+
+/* Identité : type + numéro à gauche, émission à droite, filet navy */
+.doc-id {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 24px;
   padding-bottom: 12px;
+  border-bottom: 2px solid ${BRAND.navy};
 }
-.doc-eyebrow {
-  font-size: 8px;
+.doc-kind {
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: ${BRAND.red};
-  margin-bottom: 3px;
-}
-.doc-title {
-  font-size: 24px;
-  font-weight: 800;
+  letter-spacing: 0.16em;
   color: ${BRAND.navy};
-  letter-spacing: -0.02em;
-  line-height: 1.1;
 }
-.doc-meta { text-align: right; flex-shrink: 0; }
-.doc-lieu-date { font-size: 11px; color: #6b7280; }
-.statut-pill {
+.doc-no {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: ${BRAND.navy};
+  margin-top: 2px;
+}
+.doc-id-meta { text-align: right; flex-shrink: 0; font-size: 10.5px; color: #6b7280; }
+.doc-id-meta > * + * { margin-top: 3px; }
+.chip {
   display: inline-block;
-  margin-top: 6px;
+  margin-top: 5px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+.chip--ok { color: #1a7a43; }
+.chip--warn { color: #b45309; }
+.chip--off { color: #6b7280; }
+.chip--neutral { color: ${BRAND.navy}; }
+
+/* Destinataire */
+.bill-to { padding: 13px 0; border-bottom: 1px solid #e2e6ee; }
+.field-k {
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.03em;
   text-transform: uppercase;
-  padding: 3px 11px;
-  border-radius: 9999px;
-}
-.statut-pill--ok { color: #126a32; background: #e8f6ec; border: 1px solid #bfe3c9; }
-.statut-pill--warn { color: #b45309; background: #fdf3e3; border: 1px solid #f3d9ad; }
-.statut-pill--off { color: #6b7280; background: #f3f5f7; border: 1px solid #d2dbe9; }
-.statut-pill--neutral { color: ${BRAND.navy}; background: ${BRAND.primaryLight}; border: 1px solid #c7cbf0; }
-
-/* Bloc "Doit" */
-.client-section { padding: 12px 28px 0; }
-.client-box {
-  background: #fafbfc;
-  border: 1px solid #d2dbe9;
-  border-radius: 6px;
-  padding: 12px 16px;
-}
-.client-lbl {
-  font-size: 7.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #92a3ba;
+  letter-spacing: 0.12em;
+  color: #99a2b2;
   margin-bottom: 4px;
 }
-.client-name { font-size: 15px; font-weight: 800; color: ${BRAND.navy}; }
-.client-sub { font-size: 10.5px; color: #6b7280; margin-top: 4px; }
+.field-v { font-size: 15px; font-weight: 700; color: ${BRAND.navy}; }
+.field-note { font-size: 10px; color: #6b7280; margin-top: 4px; }
 
-/* Tableau des lignes */
-.table-caption {
-  padding: 0 1px 6px;
-  font-size: 8.5px;
-  color: #92a3ba;
-  font-style: italic;
-}
-.table-section { padding: 16px 28px 0; }
-.table-wrap {
-  border: 1px solid #d2dbe9;
-  border-radius: 6px;
-  overflow: hidden;
+/* Prestations */
+.lines { padding-top: 18px; }
+.lines-cap {
+  font-size: 9px;
+  color: #99a2b2;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 7px;
 }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-colgroup .c-num { width: 6%; }
-colgroup .c-desc { width: ${hasLignesDetails ? "38%" : "64%"}; }
+colgroup .c-num { width: 7%; }
+colgroup .c-desc { width: ${hasLignesDetails ? "37%" : "63%"}; }
 colgroup .c-compagnie { width: 16%; }
 colgroup .c-bordereau { width: 16%; }
-colgroup .c-amount { width: 24%; }
+colgroup .c-amount { width: ${hasLignesDetails ? "24%" : "30%"}; }
 thead th {
   background: ${BRAND.navy};
   color: #fff;
-  padding: 7px 10px;
-  font-size: 8px;
+  padding: 8px 11px;
+  font-size: 8.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-align: left;
   white-space: nowrap;
-  border-right: 1px solid rgba(255,255,255,0.18);
 }
-thead th:last-child { border-right: none; }
-thead th.head-num { text-align: center; }
-thead th.head-amount { text-align: right; }
+thead th.t-num { text-align: center; }
+thead th.t-amount { text-align: right; }
 tbody td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #eef1f5;
-  border-right: 1px solid #eef1f5;
-  vertical-align: middle;
+  padding: 9px 11px;
+  border-bottom: 1px solid #e8ebf1;
+  vertical-align: top;
   font-size: 10.5px;
 }
-tbody td:last-child { border-right: none; }
-.row-even { background: #fff; }
-.row-odd { background: #f9fafb; }
-.col-num { text-align: center; color: #92a3ba; font-variant-numeric: tabular-nums; }
-.col-desc { color: #1f2937; }
-.col-compagnie, .col-bordereau { color: #45556b; overflow-wrap: break-word; }
-.empty { color: #cdd4df; }
-/* Jamais d'ellipse/troncature sur un montant — quitte à passer sur 2 lignes
-   plutôt que masquer des chiffres. */
-.col-amount {
+tbody tr:last-child td { border-bottom: 1px solid #cfd6e2; }
+.t-num { text-align: center; color: #99a2b2; font-variant-numeric: tabular-nums; }
+.t-desc { color: #263041; }
+.t-sub { color: #55617a; overflow-wrap: break-word; }
+.t-empty { color: #c4cbd6; }
+/* Jamais d'ellipse sur un montant — quitte à passer sur deux lignes. */
+.t-amount {
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #1f2937;
+  color: #263041;
   white-space: normal;
   word-break: keep-all;
 }
 
-/* Totaux */
-.totals-section { padding: 16px 28px 0; display: flex; justify-content: flex-end; }
-.totals { width: 300px; border: 1px solid #d2dbe9; border-radius: 6px; overflow: hidden; }
-.total-line {
+/* Décompte, aligné à droite sous le tableau */
+.settle { display: flex; justify-content: flex-end; padding-top: 14px; }
+.totals { width: 340px; }
+.trow {
   display: flex;
   justify-content: space-between;
-  padding: 9px 14px;
-  font-size: 12px;
-  color: #45556b;
-  border-bottom: 1px solid #eef1f5;
+  gap: 16px;
+  padding: 7px 0;
+  font-size: 11px;
+  color: #55617a;
+  border-bottom: 1px solid #e8ebf1;
   font-variant-numeric: tabular-nums;
 }
-.total-line--credit { color: #126a32; }
-.total-line--warn { color: #b45309; font-weight: 700; }
-.total-main {
+.trow--credit { color: #1a7a43; }
+.trow--due { color: #b45309; font-weight: 700; }
+.trow--total {
+  margin-top: 5px;
+  padding: 10px 12px;
   background: ${BRAND.navy};
   color: #fff;
+  font-size: 13px;
   font-weight: 800;
-  font-size: 14px;
   border-bottom: none;
 }
-.total-main span:last-child { color: #fde68a; }
+.trow--total span:last-child { color: #fde68a; }
 
-.montant-lettres {
-  margin: 16px 28px 0;
-  padding: 12px 16px;
-  background: #fafbfc;
-  border: 1px solid #d2dbe9;
-  border-radius: 6px;
-  font-size: 11px;
+/* Montant en toutes lettres — mention légale, pleine largeur */
+.amount-words {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e6ee;
+  font-size: 10.5px;
   font-style: italic;
-  color: #354253;
+  color: #3d4759;
+}
+.amount-words b {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #99a2b2;
+  margin-bottom: 3px;
 }
 
-.notes-section { margin: 16px 28px 0; padding-top: 14px; border-top: 1px solid #d2dbe9; font-size: 11px; color: #6b7280; }
-.notes-lbl { font-weight: 700; color: #354253; text-transform: uppercase; font-size: 9px; letter-spacing: 0.08em; }
+.notes {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e6ee;
+  font-size: 10.5px;
+  color: #55617a;
+}
+.notes b {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #99a2b2;
+  margin-bottom: 4px;
+}
+.notes p { white-space: pre-wrap; }
 
-.sig-wrap { margin: 40px 28px 8px; }
+.sig-wrap { margin: 36px 0 8px; }
 ${SIGNATORIES_BLOCK_CSS}
 
-/* Pied de page */
 .footer {
-  padding: 14px 28px 16px;
-  margin-top: 20px;
-  border-top: 1px solid #d2dbe9;
+  margin-top: 22px;
+  padding: 12px 32px 16px;
+  border-top: 1px solid #e2e6ee;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  background: #fafbfc;
+  align-items: baseline;
+  gap: 20px;
+  color: #99a2b2;
 }
-.footer-note { font-size: 8.5px; color: #92a3ba; line-height: 1.5; }
-.footer-brand { font-size: 9.5px; font-weight: 800; color: ${BRAND.navy}; }
+.footer-note { font-size: 8.5px; line-height: 1.5; }
+.footer-brand { font-size: 9px; font-weight: 700; color: ${BRAND.navy}; white-space: nowrap; }
 
 .no-print {
   text-align: center;
@@ -310,7 +324,7 @@ ${SIGNATORIES_BLOCK_CSS}
   color: #fff;
   border: none;
   padding: 10px 28px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -319,7 +333,7 @@ ${SIGNATORIES_BLOCK_CSS}
 @media print {
   @page { size: A4 portrait; margin: 12mm 10mm; }
   .no-print { display: none !important; }
-  body { background: white; font-size: 10px; }
+  body { background: #fff; font-size: 10px; }
   tr { page-break-inside: avoid; }
   thead { display: table-header-group; }
 }
@@ -334,30 +348,27 @@ ${SIGNATORIES_BLOCK_CSS}
 
   ${letterheadHTML}
 
-  <section class="doc-section">
-    <div class="doc-head">
+  <main class="doc">
+    <header class="doc-id">
       <div>
-        <div class="doc-eyebrow">Facture</div>
-        <h1 class="doc-title">${htmlEscape(numeroAffiche)}</h1>
+        <div class="doc-kind">Facture</div>
+        <div class="doc-no">${htmlEscape(numeroAffiche)}</div>
       </div>
-      <div class="doc-meta">
-        <div class="doc-lieu-date">${data.villeSiege ? `${htmlEscape(data.villeSiege)}, le ${fmtDate(data.date)}` : `Le ${fmtDate(data.date)}`}</div>
-        <div class="statut-pill statut-pill--${statutTone(data.statut)}">${htmlEscape(data.statut)}</div>
+      <div class="doc-id-meta">
+        <div>${data.villeSiege ? `${htmlEscape(data.villeSiege)}, le ${fmtDate(data.date)}` : `Le ${fmtDate(data.date)}`}</div>
+        ${data.dateEcheance ? `<div>Échéance : ${fmtDate(data.dateEcheance)}</div>` : ""}
+        <div><span class="chip chip--${statutTone(data.statut)}">${htmlEscape(data.statut)}</span></div>
       </div>
-    </div>
-  </section>
+    </header>
 
-  <section class="client-section">
-    <div class="client-box">
-      <div class="client-lbl">Doit</div>
-      <div class="client-name">${htmlEscape(data.clientNom)}</div>
-      ${data.dossierReference ? `<div class="client-sub">Dossier lié : ${htmlEscape(data.dossierReference)}${data.dossierBl ? ` · BL ${htmlEscape(data.dossierBl)}` : ""}</div>` : ""}
-    </div>
-  </section>
+    <section class="bill-to">
+      <div class="field-k">Doit</div>
+      <div class="field-v">${htmlEscape(data.clientNom)}</div>
+      ${data.dossierReference ? `<div class="field-note">Dossier lié : ${htmlEscape(data.dossierReference)}${data.dossierBl ? ` · BL ${htmlEscape(data.dossierBl)}` : ""}</div>` : ""}
+    </section>
 
-  <section class="table-section">
-    <div class="table-caption">Montants en francs CFA (FCFA)</div>
-    <div class="table-wrap">
+    <section class="lines">
+      <div class="lines-cap">Montants en francs CFA (FCFA)</div>
       <table>
         <colgroup>
           <col class="c-num"><col class="c-desc">
@@ -366,31 +377,34 @@ ${SIGNATORIES_BLOCK_CSS}
         </colgroup>
         <thead>
           <tr>
-            <th class="head-num">N°</th>
+            <th class="t-num">N°</th>
             <th>Désignation</th>
             ${hasLignesDetails ? `<th>Compagnie</th><th>Bordereau de livraison</th>` : ""}
-            <th class="head-amount">Montant</th>
+            <th class="t-amount">Montant</th>
           </tr>
         </thead>
         <tbody>${lignesHTML}</tbody>
       </table>
+    </section>
+
+    <section class="settle">
+      <div class="totals">
+        <div class="trow"><span>Sous-total HT</span><span>${fmtFCFA(data.montantHT)}</span></div>
+        ${shouldShowTva(data.tauxTVA) ? `<div class="trow"><span>TVA ${data.tauxTVA}%</span><span>${fmtFCFA(data.montantTVA)}</span></div>` : ""}
+        <div class="trow trow--total"><span>Total à payer</span><span>${fmtFCFA(data.montantTTC)}</span></div>
+        ${paiementHTML}
+      </div>
+    </section>
+
+    <div class="amount-words">
+      <b>Arrêté de la facture</b>
+      Arrêtée la présente facture à la somme de : ${htmlEscape(montantEnLettresFCFA(data.montantTTC))}.
     </div>
-  </section>
 
-  <section class="totals-section">
-    <div class="totals">
-      <div class="total-line"><span>Sous-total HT</span><span>${fmtFCFA(data.montantHT)}</span></div>
-      ${shouldShowTva(data.tauxTVA) ? `<div class="total-line"><span>TVA ${data.tauxTVA}%</span><span>${fmtFCFA(data.montantTVA)}</span></div>` : ""}
-      <div class="total-line total-main"><span>TOTAL</span><span>${fmtFCFA(data.montantTTC)}</span></div>
-      ${paiementHTML}
-    </div>
-  </section>
+    ${data.notes ? `<div class="notes"><b>Notes</b><p>${htmlEscape(data.notes)}</p></div>` : ""}
 
-  <div class="montant-lettres">Arrêtée la présente facture à la somme de : ${htmlEscape(montantEnLettresFCFA(data.montantTTC))}.</div>
-
-  ${data.notes ? `<div class="notes-section"><span class="notes-lbl">Notes</span><p style="margin-top:6px;white-space:pre-wrap">${htmlEscape(data.notes)}</p></div>` : ""}
-
-  <div class="sig-wrap">${buildSignatoriesBlockHTML()}</div>
+    <div class="sig-wrap">${buildSignatoriesBlockHTML()}</div>
+  </main>
 
   <footer class="footer">
     <div class="footer-note">Facture générée · ${htmlEscape(data.genereParNom)} · ${fmtDate(new Date().toISOString())}<br>${platformFooterHTML(resolvedBrand.nom)}</div>

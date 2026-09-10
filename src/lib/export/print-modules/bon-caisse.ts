@@ -56,12 +56,12 @@ export function buildBonSortieCaisseHTML(data: BonSortieCaisseModuleData): strin
   const fmtD = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
-  const lignesHTML = data.lignes.map((l, i) => `
-    <tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"}">
-      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7">${fmtD(l.date)}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7">${htmlEscape(l.beneficiaire)}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7">${htmlEscape(l.motif)}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f3f5f7;text-align:right;font-variant-numeric:tabular-nums">${fmtFCFA(l.montant)}</td>
+  const lignesHTML = data.lignes.map((l) => `
+    <tr>
+      <td class="t-date">${fmtD(l.date)}</td>
+      <td class="t-name">${htmlEscape(l.beneficiaire)}</td>
+      <td class="t-motif">${htmlEscape(l.motif)}</td>
+      <td class="t-amount">${fmtFCFA(l.montant)}</td>
     </tr>`).join("");
 
   return `<!DOCTYPE html>
@@ -72,68 +72,160 @@ export function buildBonSortieCaisseHTML(data: BonSortieCaisseModuleData): strin
 <style>
 ${OFFICIAL_LETTERHEAD_CSS}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1f2937; }
-.wrap { max-width: 760px; margin: 0 auto; background: #fff; box-shadow: 0 0 0 1px #d2dbe9; }
-.doc-section { padding: 16px 40px 0; }
-.doc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; padding-bottom: 12px; }
-.doc-eyebrow { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #92a3ba; margin-bottom: 6px; }
-.doc-head-title { font-size: 22px; font-weight: 800; color: ${BRAND.navy}; letter-spacing: -1px; line-height: 1.1; }
-.doc-meta { text-align: right; flex-shrink: 0; }
-.doc-date { font-size: 11px; color: #6b7280; margin-top: 5px; }
-.body { padding: 28px 40px; }
-.doc-title { text-align: center; font-size: 16px; font-weight: 800; letter-spacing: .04em; margin-bottom: 22px; }
-.tbl-wrap { border: 1px solid #d2dbe9; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
-table { width: 100%; border-collapse: collapse; }
-.tbl-head { background: #155a93; }
-.tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-.total-line { display: flex; justify-content: flex-end; gap: 24px; padding: 10px 0; font-size: 14px; font-weight: 800; color: #1f2937; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #eef1f5;
+  color: #263041;
+  font-size: 11px;
+  line-height: 1.5;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.wrap { max-width: 780px; margin: 0 auto; background: #fff; box-shadow: 0 1px 4px rgba(31,41,55,0.12); }
+
+/* ── Corps du document ─────────────────────────────────────────── */
+.doc { padding: 22px 40px 0; }
+.doc-id {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid ${BRAND.navy};
+}
+.doc-kind {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: ${BRAND.navy};
+}
+.doc-no {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: ${BRAND.navy};
+  margin-top: 2px;
+}
+.doc-id-meta { text-align: right; flex-shrink: 0; font-size: 10.5px; color: #6b7280; }
+
+.lines { padding-top: 20px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+colgroup .c-date { width: 20%; }
+colgroup .c-name { width: 30%; }
+colgroup .c-motif { width: 28%; }
+colgroup .c-amount { width: 22%; }
+thead th {
+  background: ${BRAND.navy};
+  color: #fff;
+  padding: 8px 13px;
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  text-align: left;
+}
+thead th.t-amount { text-align: right; }
+tbody td {
+  padding: 10px 13px;
+  border-bottom: 1px solid #e8ebf1;
+  font-size: 10.5px;
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: 1px solid #cfd6e2; }
+.t-date { color: #55617a; font-variant-numeric: tabular-nums; }
+.t-name { color: #263041; font-weight: 600; }
+.t-motif { color: #55617a; overflow-wrap: break-word; }
+.t-amount {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #263041;
+  white-space: normal;
+  word-break: keep-all;
+}
+.t-none { padding: 16px; text-align: center; color: #99a2b2; }
+
+.settle { display: flex; justify-content: flex-end; padding-top: 12px; }
+.total-box {
+  width: 300px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 13px;
+  background: ${BRAND.navy};
+  color: #fff;
+}
+.total-box .lbl { font-size: 12px; font-weight: 700; }
+.total-box .amt { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; color: #fde68a; }
+
 ${SIGNATORIES_BLOCK_CSS}
-.signatories { margin-top: 56px; }
-.footer { padding: 12px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; font-size: 10px; color: #45556b; text-align: center; }
-.no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
-.btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.signatories { margin-top: 52px; padding-bottom: 8px; }
+
+.footer {
+  padding: 12px 40px 16px;
+  border-top: 1px solid #e2e6ee;
+  font-size: 9px;
+  color: #99a2b2;
+  text-align: center;
+}
+.no-print { text-align: center; padding: 16px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
+.btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
 @media print {
+  @page { size: A4 portrait; margin: 12mm 10mm; }
   .no-print { display: none !important; }
-  body { background: white; }
-  .wrap { box-shadow: none; }
+  body { background: #fff; font-size: 10px; }
+  .wrap { box-shadow: none; max-width: 100%; }
+  tr { page-break-inside: avoid; }
+  thead { display: table-header-group; }
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="no-print">
-    <button class="btn-print" onclick="window.print()">⬇ &nbsp;Imprimer / Enregistrer en PDF</button>
+    <button class="btn-print" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
   </div>
   ${letterheadHTML}
-  <section class="doc-section">
-    <div class="doc-head">
+  <main class="doc">
+    <header class="doc-id">
       <div>
-        <div class="doc-eyebrow">Bon de sortie de caisse</div>
-        <div class="doc-head-title">${htmlEscape(data.reference)}</div>
+        <div class="doc-kind">Bon de sortie de caisse</div>
+        <div class="doc-no">${htmlEscape(data.reference)}</div>
       </div>
-      <div class="doc-meta">
-        <div class="doc-date">Date : ${fmtD(data.date)}</div>
-      </div>
-    </div>
-  </section>
-  <div class="body">
-    <div class="doc-title">BON DE SORTIE DE CAISSE ${htmlEscape(data.reference)}</div>
-    <div class="tbl-wrap">
+      <div class="doc-id-meta">Établi le ${fmtD(data.date)}</div>
+    </header>
+
+    <section class="lines">
       <table>
-        <thead class="tbl-head">
-          <tr><th style="text-align:left">Dates</th><th style="text-align:left">Prénom et Nom</th><th style="text-align:left">Motif</th><th style="text-align:right">Montant</th></tr>
+        <colgroup><col class="c-date"><col class="c-name"><col class="c-motif"><col class="c-amount"></colgroup>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Prénom et nom</th>
+            <th>Motif</th>
+            <th class="t-amount">Montant</th>
+          </tr>
         </thead>
-        <tbody>${lignesHTML || `<tr><td colspan="4" style="padding:14px;text-align:center;color:#92a3ba">Aucune ligne</td></tr>`}</tbody>
+        <tbody>${lignesHTML || `<tr><td colspan="4" class="t-none">Aucune ligne</td></tr>`}</tbody>
       </table>
-    </div>
-    <div class="total-line"><span>Total</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTotal)}</span></div>
+    </section>
+
+    <section class="settle">
+      <div class="total-box">
+        <span class="lbl">Total décaissé</span>
+        <span class="amt">${fmtFCFA(data.montantTotal)}</span>
+      </div>
+    </section>
 
     ${buildSignatoriesBlockHTML({
       dg: data.signataireDg,
       receveur: data.signataireReceveur,
       pdg: data.signatairePdg,
     })}
-  </div>
+  </main>
   ${footerLegal ? `<div class="footer">${footerLegal}</div>` : ""}
 </div>
 </body>
