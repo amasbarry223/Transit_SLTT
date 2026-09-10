@@ -169,7 +169,6 @@ export function resolveDossierCoutLabels(annexeCode?: string | null): DossierCou
   return override ? { ...DEFAULT_DOSSIER_COUT_LABELS, ...override } : DEFAULT_DOSSIER_COUT_LABELS;
 }
 
-export const MISSING_SIGNATORY_LABEL = "Non renseigné";
 
 export function ensureSocieteBrand(brand?: SocieteBrand | null): SocieteBrand {
   if (brand?.nom?.trim()) return brand;

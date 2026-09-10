@@ -18,6 +18,7 @@ import {
   warnPopupBlocked,
 } from "../print-document";
 import { fmtDate, fmtFCFA, fmtFCFAPlain, shouldShowTva } from "./shared";
+import { SIGNATORIES_BLOCK_CSS, buildSignatoriesBlockHTML } from "./signatories-block";
 
 /* ------------------------------------------------------------------ */
 /* printFactureModule — facture TVA (module Factures)                  */
@@ -282,11 +283,8 @@ tbody td:last-child { border-right: none; }
 .notes-section { margin: 16px 28px 0; padding-top: 14px; border-top: 1px solid #d2dbe9; font-size: 11px; color: #6b7280; }
 .notes-lbl { font-weight: 700; color: #354253; text-transform: uppercase; font-size: 9px; letter-spacing: 0.08em; }
 
-.sig-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 40px 28px 8px; }
-.sig-box { text-align: center; }
-.sig-lbl { font-size: 9.5px; font-weight: 700; color: #354253; text-transform: uppercase; letter-spacing: 0.06em; }
-.sig-hint { font-size: 8.5px; color: #92a3ba; margin-top: 2px; font-style: italic; }
-.sig-space { margin-top: 44px; border-top: 1px solid #cdd4df; }
+.sig-wrap { margin: 40px 28px 8px; }
+${SIGNATORIES_BLOCK_CSS}
 
 /* Pied de page */
 .footer {
@@ -392,22 +390,7 @@ tbody td:last-child { border-right: none; }
 
   ${data.notes ? `<div class="notes-section"><span class="notes-lbl">Notes</span><p style="margin-top:6px;white-space:pre-wrap">${htmlEscape(data.notes)}</p></div>` : ""}
 
-  <div class="sig-row">
-    <div class="sig-box">
-      <div class="sig-space"></div>
-      <div class="sig-lbl">Pour acquit</div>
-      <div class="sig-hint">règlement reçu</div>
-    </div>
-    <div class="sig-box">
-      <div class="sig-space"></div>
-      <div class="sig-lbl">Receveur</div>
-      <div class="sig-hint">document remis en main propre</div>
-    </div>
-    <div class="sig-box">
-      <div class="sig-space"></div>
-      <div class="sig-lbl">Le Directeur Général</div>
-    </div>
-  </div>
+  <div class="sig-wrap">${buildSignatoriesBlockHTML()}</div>
 
   <footer class="footer">
     <div class="footer-note">Facture générée · ${htmlEscape(data.genereParNom)} · ${fmtDate(new Date().toISOString())}<br>${platformFooterHTML(resolvedBrand.nom)}</div>

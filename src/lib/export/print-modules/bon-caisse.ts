@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { ensureSocieteBrand, MISSING_SIGNATORY_LABEL, type SocieteBrand, type SocieteLegalInfo } from "@/lib/societe-brand";
+import { ensureSocieteBrand, type SocieteBrand, type SocieteLegalInfo } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
   acquirePrintTarget,
@@ -12,6 +12,7 @@ import {
   warnPopupBlocked,
 } from "../print-document";
 import { fmtFCFA } from "./shared";
+import { SIGNATORIES_BLOCK_CSS, buildSignatoriesBlockHTML } from "./signatories-block";
 
 /* ------------------------------------------------------------------ */
 /* BON DE SORTIE DE CAISSE (décaissement) — reproduit le vrai papier   */
@@ -33,6 +34,7 @@ export interface BonSortieCaisseModuleData {
   montantTotal: number;
   /** Noms des signataires (societes.signataire_dg / signataire_pdg) — repli sur les noms historiques si non renseignés. */
   signataireDg?: string;
+  signataireReceveur?: string;
   signatairePdg?: string;
 }
 
@@ -85,10 +87,8 @@ table { width: 100%; border-collapse: collapse; }
 .tbl-head { background: #155a93; }
 .tbl-head th { color: #fff; padding: 10px 14px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .total-line { display: flex; justify-content: flex-end; gap: 24px; padding: 10px 0; font-size: 14px; font-weight: 800; color: #1f2937; }
-.signatures { display: flex; justify-content: space-between; margin-top: 64px; }
-.sig-block { text-align: center; width: 220px; }
-.sig-label { font-size: 11.5px; font-weight: 700; color: #354253; margin-bottom: 48px; }
-.sig-name { font-size: 12px; color: #1f2937; border-top: 1px solid #cdd4df; padding-top: 6px; }
+${SIGNATORIES_BLOCK_CSS}
+.signatories { margin-top: 56px; }
 .footer { padding: 12px 40px; background: #f8fafc; border-top: 1px solid #d2dbe9; font-size: 10px; color: #45556b; text-align: center; }
 .no-print { text-align: center; padding: 18px; background: #f3f5f7; border-bottom: 1px solid #d2dbe9; }
 .btn-print { background: ${BRAND.navy}; color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -128,16 +128,11 @@ table { width: 100%; border-collapse: collapse; }
     </div>
     <div class="total-line"><span>Total</span><span style="font-variant-numeric:tabular-nums">${fmtFCFA(data.montantTotal)}</span></div>
 
-    <div class="signatures">
-      <div class="sig-block">
-        <div class="sig-label">Directeur Général</div>
-        <div class="sig-name">${htmlEscape(data.signataireDg || MISSING_SIGNATORY_LABEL)}</div>
-      </div>
-      <div class="sig-block">
-        <div class="sig-label">Visa du PDG</div>
-        <div class="sig-name">${htmlEscape(data.signatairePdg || MISSING_SIGNATORY_LABEL)}</div>
-      </div>
-    </div>
+    ${buildSignatoriesBlockHTML({
+      dg: data.signataireDg,
+      receveur: data.signataireReceveur,
+      pdg: data.signatairePdg,
+    })}
   </div>
   ${footerLegal ? `<div class="footer">${footerLegal}</div>` : ""}
 </div>

@@ -12,6 +12,10 @@ import {
   warnPopupBlocked,
 } from "@/lib/export/print-document";
 import { fmtFCFA } from "@/lib/export/print-modules/shared";
+import {
+  SIGNATORIES_BLOCK_CSS,
+  buildSignatoriesBlockHTML,
+} from "@/lib/export/print-modules/signatories-block";
 
 /* ------------------------------------------------------------------ */
 /* printDevis — Document devis/estimation avec en-tête officiel SLTT   */
@@ -206,10 +210,10 @@ table { width: 100%; border-collapse: collapse; }
 .notes-block { background: #fafafa; border: 1px solid #d2dbe9; border-radius: 8px; padding: 12px 16px; margin-top: 14px; }
 .notes-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #92a3ba; margin-bottom: 6px; }
 .notes-text { font-size: 11.5px; color: #45556b; line-height: 1.75; white-space: pre-wrap; }
-.sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
-.sig-box { border: 1.5px dashed #cdd4df; border-radius: 8px; padding: 16px 14px; min-height: 80px; }
-.sig-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #92a3ba; }
-.sig-note { font-size: 10px; color: #cdd4df; margin-top: 22px; }
+.sig-client { border: 1.5px dashed #cdd4df; border-radius: 8px; padding: 14px; min-height: 74px; margin-top: 24px; max-width: 320px; }
+.sig-client-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #92a3ba; }
+.sig-client-note { font-size: 10px; color: #cdd4df; margin-top: 20px; }
+${SIGNATORIES_BLOCK_CSS}
 .footer {
   padding: 10px 28px 16px;
   border-top: 1px solid #d2dbe9;
@@ -309,16 +313,12 @@ table { width: 100%; border-collapse: collapse; }
       <div class="notes-text">${htmlEscape(data.notes)}</div>
     </div>` : ""}
 
-    <div class="sig-row">
-      <div class="sig-box">
-        <div class="sig-lbl">Signature &amp; cachet du client</div>
-        <div class="sig-note">Lu et approuvé</div>
-      </div>
-      <div class="sig-box">
-        <div class="sig-lbl">Cachet &amp; signature ${htmlEscape(resolvedBrand.nom)}</div>
-        <div class="sig-note">Pour la direction</div>
-      </div>
+    <div class="sig-client">
+      <div class="sig-client-lbl">Signature &amp; cachet du client</div>
+      <div class="sig-client-note">Lu et approuvé — bon pour accord</div>
     </div>
+
+    ${buildSignatoriesBlockHTML()}
   </div>
 
   <footer class="footer">
