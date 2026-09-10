@@ -5,8 +5,9 @@ import {
   Building2,
   TrendingDown,
   TrendingUp,
-  AlertCircle,
-  Banknote,
+  Layers,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsContent } from "@/shared/components/ui/tabs";
@@ -54,24 +55,33 @@ export function FournisseursScreen() {
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Fournisseurs actifs" value={String(screen.actifs)} icon={Building2} tone="blue" />
+        <KpiCard
+          label="Fournisseurs actifs"
+          value={String(screen.actifs)}
+          icon={Building2}
+          tone="blue"
+          sublabel={`sur ${screen.counts.prestataires} au total`}
+        />
+        <KpiCard
+          label="Types couverts"
+          value={String(screen.nbTypes)}
+          icon={Layers}
+          tone="indigo"
+          sublabel="catégories de prestation"
+        />
+        <KpiCard
+          label="Avec tarif défini"
+          value={String(screen.avecTarif)}
+          icon={TrendingUp}
+          tone="amber"
+          sublabel="tarif contractuel renseigné"
+        />
         <KpiCard
           label="Total sous-traité"
           value={formatFCFA(screen.totalMontant)}
           icon={TrendingDown}
           tone="red"
-        />
-        <KpiCard
-          label="Budget alloué"
-          value={formatFCFA(screen.totalBudgete)}
-          icon={TrendingUp}
-          tone="indigo"
-        />
-        <KpiCard
-          label={screen.activeTab === "tarifs" ? "Avec tarif défini" : "Paiements en attente"}
-          value={screen.activeTab === "tarifs" ? String(screen.avecTarif) : String(screen.enAttente)}
-          icon={screen.activeTab === "tarifs" ? Banknote : AlertCircle}
-          tone="amber"
+          sublabel="montant réel sur dossiers"
         />
       </div>
 
@@ -93,6 +103,36 @@ export function FournisseursScreen() {
           chips={screen.chips}
           activeCount={screen.typeFilter ? 1 : 0}
           onClear={screen.clearTypeFilter}
+          actions={
+            screen.activeTab === "prestataires" ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 shrink-0"
+                  onClick={screen.handleExportPDF}
+                  disabled={screen.filtered.length === 0}
+                  aria-label="Imprimer / exporter en PDF"
+                  title="Imprimer / PDF"
+                >
+                  <FileText className="size-4" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 shrink-0"
+                  onClick={screen.handleExportExcel}
+                  disabled={screen.filtered.length === 0}
+                  aria-label="Exporter en Excel"
+                  title="Export Excel"
+                >
+                  <FileSpreadsheet className="size-4" />
+                  <span className="hidden sm:inline">Excel</span>
+                </Button>
+              </>
+            ) : undefined
+          }
         />
 
         <TabsContent value="prestataires" className="mt-0 space-y-4">

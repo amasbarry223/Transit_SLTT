@@ -18,6 +18,11 @@ import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
+import { exportToExcel, printFournisseurs } from "@/lib/export";
+import { resolveSlttBrand } from "@/lib/societe-brand";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import type { FilterChip } from "@/components/sltt/list-filters";
 import type { MetaTabItem } from "@/components/sltt/meta-tabs-list";
 import { TYPES, TYPE_META } from "./fournisseur-type-meta";
@@ -65,10 +70,12 @@ export const TAB_META: (MetaTabItem<FournisseurTab> & { description: string })[]
 
 export function useFournisseursScreen() {
   const { go } = useNav();
+  const { toast } = useToast();
   const canWrite = usePermission("fournisseurs:write");
   const allFournisseurs = useStore((s) => s.fournisseurs);
   const dossierFournisseurs = useStore((s) => s.dossierFournisseurs);
   const dossiers = useStore((s) => s.dossiers);
+  const societes = useStore((s) => s.societes);
   const removeFournisseur = useStore((s) => s.removeFournisseur);
   const { selectedAnnexeId } = useActiveAnnexe();
 
@@ -138,14 +145,16 @@ export function useFournisseursScreen() {
     () => liaisonsEnrichies.reduce((s, df) => s + df.montantBudgete, 0),
     [liaisonsEnrichies],
   );
-  const { actifs, avecTarif } = useMemo(() => {
+  const { actifs, avecTarif, nbTypes } = useMemo(() => {
     let actifs = 0;
     let avecTarif = 0;
+    const types = new Set<string>();
     for (const f of fournisseurs) {
       if (f.statut === "Actif") actifs++;
       if (f.tarifContractuel != null) avecTarif++;
+      types.add(f.type);
     }
-    return { actifs, avecTarif };
+    return { actifs, avecTarif, nbTypes: types.size };
   }, [fournisseurs]);
   const enAttente = useMemo(
     () => dossierFournisseurs.filter((df) => df.statut === "En attente").length,
@@ -203,6 +212,71 @@ export function useFournisseursScreen() {
     setTypeFilter(null);
   }
 
+  const filterLabel = [
+    typeFilter ? TYPE_META[typeFilter].short : "",
+    search.trim() ? `"${search.trim()}"` : "",
+  ].filter(Boolean).join(" · ");
+
+  function handleExportPDF() {
+    if (filtered.length === 0) {
+      toastWarning(toast, { title: "Rien à exporter", description: UI.errors.exportEmpty });
+      return;
+    }
+    printFournisseurs(
+      filtered.map((f) => ({
+        nom: f.nom,
+        type: f.type,
+        contact: f.contact,
+        telephone: f.telephone,
+        email: f.email,
+        adresse: f.adresse,
+        statut: f.statut,
+      })),
+      filterLabel ? `Filtre : ${filterLabel}` : undefined,
+      resolveSlttBrand(societes),
+    );
+  }
+
+  async function handleExportExcel() {
+    if (filtered.length === 0) {
+      toastWarning(toast, { title: "Rien à exporter", description: UI.errors.exportEmpty });
+      return;
+    }
+    try {
+      await exportToExcel(
+        "fournisseurs",
+        `fournisseurs-sltt-${new Date().toISOString().slice(0, 10)}`,
+        [
+          { header: "Nom", accessor: (f: Fournisseur) => f.nom },
+          { header: "Type", accessor: (f: Fournisseur) => f.type },
+          { header: "Contact", accessor: (f: Fournisseur) => f.contact },
+          { header: "Téléphone", accessor: (f: Fournisseur) => f.telephone },
+          { header: "E-mail", accessor: (f: Fournisseur) => f.email },
+          { header: "Adresse", accessor: (f: Fournisseur) => f.adresse },
+          {
+            header: "Tarif contractuel (FCFA)",
+            accessor: (f: Fournisseur) => (f.tarifContractuel != null ? f.tarifContractuel : ""),
+          },
+          { header: "Dossiers liés", accessor: (f: Fournisseur) => f.nbDossiers },
+          { header: "Cumul dossiers (FCFA)", accessor: (f: Fournisseur) => f.montantTotal },
+          { header: "Statut", accessor: (f: Fournisseur) => f.statut },
+        ],
+        filtered,
+        { module: "Fournisseurs" },
+      );
+    } catch (error) {
+      toastError(toast, error, {
+        title: "Impossible de générer l'export Excel",
+        fallback: UI.errors.exportFailed,
+      });
+      return;
+    }
+    toastSuccess(toast, {
+      title: "Export Excel généré",
+      description: `${filtered.length} fournisseur${filtered.length !== 1 ? "s" : ""} exporté${filtered.length !== 1 ? "s" : ""}.`,
+    });
+  }
+
   return {
     canWrite,
     activeTab,
@@ -228,15 +302,19 @@ export function useFournisseursScreen() {
     totalBudgete,
     actifs,
     avecTarif,
+    nbTypes,
     enAttente,
     counts,
     currentMeta,
     chips,
+    hasActiveFilters: Boolean(search.trim() || typeFilter),
     handleEdit,
     openCreateForm,
     closeForm,
     handleDeleteRequest,
     openDossier,
     clearTypeFilter,
+    handleExportPDF,
+    handleExportExcel,
   };
 }

@@ -28,6 +28,7 @@ export {
 export { printClients } from "@/features/clients/services/client-print";
 export type { ClientPrintRow } from "@/features/clients/types";
 export { printTransporteurs, type TransporteurPrintRow } from "./transporteurs";
+export { printFournisseurs, type FournisseurPrintRow } from "./fournisseurs";
 export {
   printClasseur,
   type ClasseurPrintRow,
