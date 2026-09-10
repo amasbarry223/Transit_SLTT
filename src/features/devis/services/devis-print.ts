@@ -214,6 +214,7 @@ table { width: 100%; border-collapse: collapse; }
 .sig-client-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #92a3ba; }
 .sig-client-note { font-size: 10px; color: #cdd4df; margin-top: 20px; }
 ${SIGNATORIES_BLOCK_CSS}
+.signatories { margin-top: 30px; }
 .footer {
   padding: 10px 28px 16px;
   border-top: 1px solid #d2dbe9;

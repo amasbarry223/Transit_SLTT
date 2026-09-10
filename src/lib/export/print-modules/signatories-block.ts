@@ -22,32 +22,44 @@ export interface SignatoriesOverrides {
   pdg?: string | null;
 }
 
+/**
+ * Rendu en <table> : trois colonnes strictement égales (33,33 %), libellés et
+ * noms sur des lignes parfaitement alignées quel que soit le moteur de rendu
+ * (un <table> s'imprime de façon identique partout, contrairement à un
+ * flex/grid qui peut se décaler si un libellé passe à la ligne).
+ */
 export const SIGNATORIES_BLOCK_CSS = `
 .signatories {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 34px;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
   page-break-inside: avoid;
 }
-.signatory { min-width: 0; }
-.signatory-role {
+.signatories td {
+  width: 33.333%;
+  padding: 0 10px 0 0;
+  vertical-align: top;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.signatories td:last-child { padding-right: 0; }
+.signatories .sig-role {
   font-size: 11px;
   font-weight: 700;
   color: #1f2937;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
-.signatory-gap { height: 78px; }
-.signatory-name {
+.signatories .sig-gap td { height: 66px; }
+.signatories .sig-name {
   font-size: 11px;
   font-weight: 700;
   color: #1f2937;
+  white-space: nowrap;
   border-top: 1px solid #cdd4df;
   padding-top: 6px;
-  display: inline-block;
-  min-width: 130px;
 }
-@media print { .signatories { break-inside: avoid; } }
+@media print { .signatories { page-break-inside: avoid; } }
 `;
 
 /** HTML du bloc 3 signatures. */
@@ -56,16 +68,17 @@ export function buildSignatoriesBlockHTML(overrides?: SignatoriesOverrides): str
   const receveur = overrides?.receveur?.trim() || SIGNATORY_DEFAULTS.receveur;
   const pdg = overrides?.pdg?.trim() || SIGNATORY_DEFAULTS.pdg;
 
-  const col = (role: string, name: string) => `
-    <div class="signatory">
-      <div class="signatory-role">${htmlEscape(role)}</div>
-      <div class="signatory-gap"></div>
-      <div class="signatory-name">${htmlEscape(name)}</div>
-    </div>`;
-
-  return `<div class="signatories">
-    ${col("Directeur Général", dg)}
-    ${col("Receveur", receveur)}
-    ${col("Visa du PDG", pdg)}
-  </div>`;
+  return `<table class="signatories">
+    <tr>
+      <td class="sig-role">Directeur Général</td>
+      <td class="sig-role">Receveur</td>
+      <td class="sig-role">Visa du PDG</td>
+    </tr>
+    <tr class="sig-gap"><td></td><td></td><td></td></tr>
+    <tr>
+      <td class="sig-name">${htmlEscape(dg)}</td>
+      <td class="sig-name">${htmlEscape(receveur)}</td>
+      <td class="sig-name">${htmlEscape(pdg)}</td>
+    </tr>
+  </table>`;
 }
