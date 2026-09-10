@@ -5,7 +5,8 @@ import { htmlEscape } from "../html-escape";
 /**
  * Bloc de signatures officielles imprimé en bas des documents SLTT
  * (facture, devis, bon de caisse) : trois colonnes — Directeur Général,
- * Receveur, Visa du PDG — libellé en haut, espace de signature, nom en bas.
+ * Receveur, Visa du PDG — libellé en haut, espace de signature, filet, puis
+ * nom du signataire en bas.
  *
  * Les noms par défaut sont ceux des dirigeants ; le bon de caisse peut les
  * surcharger avec les valeurs saisies dans Paramètres > Société.
@@ -23,17 +24,18 @@ export interface SignatoriesOverrides {
 }
 
 /**
- * Rendu en <table> à trois colonnes strictement égales (33,33 %) : un <table>
- * s'imprime de façon identique sur tous les moteurs, contrairement à un
- * flex/grid qui peut se décaler. Chaque colonne porte sa propre ligne de
- * signature (`.sig-line`) séparée des voisines par une gouttière de 36 px,
- * de sorte que les trois zones restent distinctes et régulièrement réparties
- * quelle que soit la marge du document conteneur.
+ * Rendu en <table> à trois colonnes strictement identiques : `border-collapse:
+ * separate` + `border-spacing` horizontal donne trois cellules de largeur
+ * rigoureusement égale, séparées par une gouttière constante. Chaque colonne
+ * porte donc son propre filet de signature (`.sig-line`), de même longueur et
+ * à la même hauteur que les deux autres — trois zones bien distinctes et
+ * régulièrement réparties, quel que soit le retrait du document conteneur.
  */
 export const SIGNATORIES_BLOCK_CSS = `
 .signatories {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 26px 0;
   table-layout: fixed;
   page-break-inside: avoid;
 }
@@ -41,12 +43,8 @@ export const SIGNATORIES_BLOCK_CSS = `
   width: 33.333%;
   padding: 0;
   vertical-align: top;
+  text-align: center;
 }
-.signatories .sig-col {
-  padding: 0 18px;
-}
-.signatories tr td:first-child .sig-col { padding-left: 0; }
-.signatories tr td:last-child .sig-col { padding-right: 0; }
 .signatories .sig-role {
   font-size: 10.5px;
   font-weight: 700;
@@ -55,8 +53,8 @@ export const SIGNATORIES_BLOCK_CSS = `
   white-space: nowrap;
 }
 .signatories .sig-line {
-  margin-top: 60px;
-  border-top: 1px solid #b9c1cf;
+  margin-top: 58px;
+  border-top: 1px solid #9aa4b2;
 }
 .signatories .sig-name {
   margin-top: 6px;
@@ -76,11 +74,11 @@ export function buildSignatoriesBlockHTML(overrides?: SignatoriesOverrides): str
   const receveur = overrides?.receveur?.trim() || SIGNATORY_DEFAULTS.receveur;
   const pdg = overrides?.pdg?.trim() || SIGNATORY_DEFAULTS.pdg;
 
-  const col = (role: string, name: string) => `<td><div class="sig-col">
+  const col = (role: string, name: string) => `<td>
         <div class="sig-role">${role}</div>
         <div class="sig-line"></div>
         <div class="sig-name">${htmlEscape(name)}</div>
-      </div></td>`;
+      </td>`;
 
   return `<table class="signatories">
     <tr>
