@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 /**
  * Recalcule HT / TVA / TTC d'un devis à partir de ses lignes.
@@ -32,9 +33,19 @@ function computeDevisTotals(lignes: any[]) {
 export class DevisService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(clientId?: string) {
+  /** Comme pour les clients, un devis sans annexe reste visible de tous —
+   *  seul un devis explicitement rattaché à une annexe est restreint. */
+  private buildAnnexeFilter(user: CurrentUserType) {
+    if (user.role === 'ADMIN') return {};
+    return { OR: [{ annexeId: null }, { annexeId: { in: user.annexeIds } }] };
+  }
+
+  async findAll(user: CurrentUserType, clientId?: string) {
     return this.prisma.devis.findMany({
-      where: clientId ? { clientId } : undefined,
+      where: {
+        ...this.buildAnnexeFilter(user),
+        ...(clientId ? { clientId } : {}),
+      },
       include: {
         client: { select: { id: true, nom: true, code: true } },
         annexe: { select: { id: true, nom: true, code: true } },
@@ -44,16 +55,25 @@ export class DevisService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user: CurrentUserType) {
     const devis = await this.prisma.devis.findUnique({
       where: { id },
       include: { client: true, annexe: true, lignes: true },
     });
     if (!devis) throw new NotFoundException(`Devis ${id} non trouvé`);
+
+    if (devis.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(devis.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce devis');
+    }
+
     return devis;
   }
 
-  async create(data: any) {
+  async create(user: CurrentUserType, data: any) {
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas créer de devis pour cette annexe');
+    }
+
     const existing = await this.prisma.devis.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro de devis ${data.numero} existe déjà`);
 
@@ -78,8 +98,11 @@ export class DevisService {
     });
   }
 
-  async update(id: string, data: any) {
-    const current = await this.findOne(id);
+  async update(id: string, user: CurrentUserType, data: any) {
+    const current = await this.findOne(id, user);
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas rattacher ce devis à cette annexe');
+    }
     const updateData: any = {};
 
     // Liste blanche : le front renvoie parfois l'entité mappée entière.
@@ -118,8 +141,8 @@ export class DevisService {
     });
   }
 
-  async delete(id: string) {
-    await this.findOne(id);
+  async delete(id: string, user: CurrentUserType) {
+    await this.findOne(id, user);
     return this.prisma.devis.delete({ where: { id } });
   }
 }

@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 /** Aligne la valeur reçue sur l'enum Prisma TypeClient (PARTICULIER | ENTREPRISE | ONG | GOUVERNEMENT). */
 function normalizeTypeClient(raw: unknown): 'PARTICULIER' | 'ENTREPRISE' | 'ONG' | 'GOUVERNEMENT' {
@@ -17,10 +18,19 @@ function normalizeTypeClient(raw: unknown): 'PARTICULIER' | 'ENTREPRISE' | 'ONG'
 export class ClientsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(search?: string) {
+  /** Un client sans annexe (jamais migré, cf. commentaire schema.prisma) reste
+   *  visible de tous — seul un client explicitement rattaché à une annexe
+   *  est restreint aux utilisateurs de cette annexe. */
+  private buildAnnexeFilter(user: CurrentUserType) {
+    if (user.role === 'ADMIN') return {};
+    return { OR: [{ annexeId: null }, { annexeId: { in: user.annexeIds } }] };
+  }
+
+  async findAll(user: CurrentUserType, search?: string) {
     return this.prisma.client.findMany({
       where: {
         actif: true,
+        ...this.buildAnnexeFilter(user),
         ...(search
           ? {
               OR: [
@@ -41,7 +51,7 @@ export class ClientsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user: CurrentUserType) {
     const client = await this.prisma.client.findUnique({
       where: { id },
       include: {
@@ -54,10 +64,19 @@ export class ClientsService {
       },
     });
     if (!client) throw new NotFoundException(`Client ${id} non trouvé`);
+
+    if (client.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(client.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce client');
+    }
+
     return client;
   }
 
-  async create(data: CreateClientDto) {
+  async create(user: CurrentUserType, data: CreateClientDto) {
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas créer de client pour cette annexe');
+    }
+
     const code = data.code || `CLT-${Date.now().toString(36).toUpperCase()}`;
     const existing = await this.prisma.client.findUnique({ where: { code } });
     if (existing) {
@@ -89,8 +108,11 @@ export class ClientsService {
     });
   }
 
-  async update(id: string, data: UpdateClientDto) {
-    await this.findOne(id);
+  async update(id: string, user: CurrentUserType, data: UpdateClientDto) {
+    await this.findOne(id, user);
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas rattacher ce client à cette annexe');
+    }
     // "Unchecked" : autorise d'assigner directement le champ scalaire
     // annexeId (clé étrangère) sans passer par la syntaxe relationnelle
     // `annexe: { connect / disconnect }` — cohérent avec le reste du
@@ -116,8 +138,8 @@ export class ClientsService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, user: CurrentUserType) {
+    await this.findOne(id, user);
     return this.prisma.client.update({ where: { id }, data: { actif: false } });
   }
 }

@@ -12,9 +12,10 @@ import {
 import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { RequirePermission } from '../../shared/decorators';
+import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -22,30 +23,34 @@ export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Get()
-  async findAll(@Query('search') search?: string) {
-    return this.clientsService.findAll(search);
+  async findAll(@CurrentUser() user: CurrentUserType, @Query('search') search?: string) {
+    return this.clientsService.findAll(user, search);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.clientsService.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.clientsService.findOne(id, user);
   }
 
   @Post()
   @RequirePermission('clients.creer')
-  async create(@Body() body: CreateClientDto) {
-    return this.clientsService.create(body);
+  async create(@CurrentUser() user: CurrentUserType, @Body() body: CreateClientDto) {
+    return this.clientsService.create(user, body);
   }
 
   @Put(':id')
   @RequirePermission('clients.modifier')
-  async update(@Param('id') id: string, @Body() body: UpdateClientDto) {
-    return this.clientsService.update(id, body);
+  async update(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+    @Body() body: UpdateClientDto,
+  ) {
+    return this.clientsService.update(id, user, body);
   }
 
   @Delete(':id')
   @RequirePermission('clients.supprimer')
-  async remove(@Param('id') id: string) {
-    return this.clientsService.remove(id);
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.clientsService.remove(id, user);
   }
 }
