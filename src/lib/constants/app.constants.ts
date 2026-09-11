@@ -21,3 +21,13 @@ export const DOSSIER_STATUT_SOLDE = "Soldé" as const;
 
 /** Longueur du suffixe numérique des références dossier (ex. SLTT-TR-2026-0001). */
 export const DOSSIER_REFERENCE_PAD_LENGTH = 4;
+
+/** Seuil d'alerte "stock faible" par défaut pour un nouvel article — repris
+ *  à l'identique dans new-item-dialog.tsx, edit-item-dialog.tsx et
+ *  stock-bulk-import-dialog.tsx avant centralisation ici. */
+export const DEFAULT_STOCK_SEUIL = 10;
+
+/** Déconnexion après cette durée d'inactivité. */
+export const IDLE_TIMEOUT = 30 * 60 * 1000;
+/** Délai d'avertissement avant la déconnexion pour inactivité. */
+export const IDLE_WARNING_BEFORE = 60 * 1000;

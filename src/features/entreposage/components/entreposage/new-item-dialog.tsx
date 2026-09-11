@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import type { Client, StockItemInput } from "@/lib/store";
 import type { Annexe } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
+import { DEFAULT_STOCK_SEUIL } from "@/lib/constants";
 import { FormField } from "@/components/sltt/form-field";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -76,7 +77,7 @@ export function NewItemDialog({
       marchandise,
       quantite: Math.max(0, Number(niQuantite) || 0),
       unite,
-      seuil: Math.max(0, Number(niSeuil) || 10),
+      seuil: Math.max(0, Number(niSeuil) || DEFAULT_STOCK_SEUIL),
       depositaire: niHotesse.trim() || "—",
       commercial: niCommercial.trim() || "—",
       sommePayee,

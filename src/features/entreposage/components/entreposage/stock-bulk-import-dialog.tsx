@@ -18,6 +18,7 @@ import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-hel
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { parseStockBulkXlsx, type StockBulkImportRow } from "@/lib/stock-bulk-import";
+import { DEFAULT_STOCK_SEUIL } from "@/lib/constants";
 import { getErrorMessage, cn } from "@/shared/utils/cn";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -177,7 +178,7 @@ export function StockBulkImportButton() {
           // éditable feuille par feuille ci-dessous si les noms diffèrent.
           marchandise: g.articleNomSuggere || defaultMarchandise,
           unite: defaultUnite,
-          seuil: "10",
+          seuil: String(DEFAULT_STOCK_SEUIL),
           rows: g.rows.map((r, ri) => {
             const dateValue = r.dateSuggested ?? r.date;
             return {

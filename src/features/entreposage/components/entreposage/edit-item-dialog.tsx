@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 import type { Client, StockItem, UpdateStockItemInput } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
+import { DEFAULT_STOCK_SEUIL } from "@/lib/constants";
 import { FormField } from "@/components/sltt/form-field";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -49,7 +50,7 @@ export function EditItemDialog({
   // fait déjà pour la création (`key={newItemKey}`).
   const [marchandise, setMarchandise] = useState(item?.marchandise ?? "");
   const [unite, setUnite] = useState(item?.unite ?? "");
-  const [seuil, setSeuil] = useState(String(item?.seuil ?? 10));
+  const [seuil, setSeuil] = useState(String(item?.seuil ?? DEFAULT_STOCK_SEUIL));
   const [depositaire, setDepositaire] = useState(item?.depositaire === "—" ? "" : (item?.depositaire ?? ""));
   const [commercial, setCommercial] = useState(item?.commercial === "—" ? "" : (item?.commercial ?? ""));
   const [clientId, setClientId] = useState(item?.clientId ?? "");
