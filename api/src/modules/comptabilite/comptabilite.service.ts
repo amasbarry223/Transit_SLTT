@@ -96,7 +96,10 @@ export class ComptabiliteService {
         modePaiement: data.modePaiement || 'Espèces',
         source: data.source || 'saisie',
         importRef: data.importRef || null,
-        creePar: data.creePar || null,
+        // Attribution fiable : le nom de l'auteur vient du JWT, jamais d'un
+        // champ texte libre fourni par le client (qui pouvait prétendre
+        // être n'importe qui dans le journal comptable).
+        creePar: user.nom,
       },
       include: { annexe: true },
     });
@@ -170,7 +173,7 @@ export class ComptabiliteService {
         soldeConstate,
         ecart,
         note: data.note || null,
-        cloturePar: data.cloturePar || null,
+        cloturePar: user.nom,
         clotureLe: data.clotureLe || new Date().toISOString(),
       },
       include: { annexe: true },

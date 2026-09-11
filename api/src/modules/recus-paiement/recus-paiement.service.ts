@@ -87,7 +87,9 @@ export class RecusPaiementService {
         montantPaye,
         reste,
         statut,
-        creePar: data.creePar || null,
+        // Attribution fiable : nom de l'auteur pris du JWT, jamais d'un
+        // champ texte libre fourni par le client.
+        creePar: user.nom,
       },
       include: { annexe: true },
     });

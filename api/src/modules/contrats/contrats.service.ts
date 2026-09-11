@@ -82,7 +82,9 @@ export class ContratsService {
         montant: Number(data.montant) || 0,
         statut: data.statut || 'Actif',
         notes: data.notes || undefined,
-        creePar: data.creePar || undefined,
+        // Attribution fiable : nom de l'auteur pris du JWT, jamais d'un
+        // champ texte libre fourni par le client.
+        creePar: user.nom,
       },
       include: {
         annexe: true,
@@ -113,7 +115,8 @@ export class ContratsService {
     if (data.montant !== undefined) updateData.montant = Number(data.montant) || 0;
     if (data.statut !== undefined) updateData.statut = data.statut;
     if (data.notes !== undefined) updateData.notes = data.notes;
-    if (data.creePar !== undefined) updateData.creePar = data.creePar;
+    // creePar n'est pas modifiable après création — c'est l'auteur
+    // d'origine, pas la personne qui édite le contrat aujourd'hui.
 
     return this.prisma.contrat.update({
       where: { id },

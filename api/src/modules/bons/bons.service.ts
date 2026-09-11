@@ -184,7 +184,9 @@ export class BonsService {
         date,
         annexeId: data.annexeId,
         montantTotal,
-        creePar: data.creePar || null,
+        // Attribution fiable : nom de l'auteur pris du JWT, jamais d'un
+        // champ texte libre fourni par le client.
+        creePar: user.nom,
         lignes: { create: lignes },
       },
       include: { annexe: true, lignes: true },
