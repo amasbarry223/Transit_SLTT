@@ -17,7 +17,7 @@ import * as path from 'path';
 import { DocumentsService } from './documents.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { RequirePermission } from '../../shared/decorators';
+import { Public, RequirePermission } from '../../shared/decorators';
 
 const storage = diskStorage({
   destination: (_req, _file, cb) => {
@@ -51,15 +51,20 @@ export class DocumentsController {
     return this.documentsService.saveFileMetadata(file, dossierId);
   }
 
-  // Pas de JwtAuthGuard ici volontairement : cette URL est utilisée en <img
-  // src> (logo société sur le papier à en-tête officiel de tous les
-  // documents imprimés — facture/devis/bon de caisse/classeur) et par un
-  // fetch() sans en-tête Authorization côté aperçu document. Un <img> ne
-  // peut pas envoyer de Bearer token ; garder ce guard casserait l'affichage
-  // du logo partout. Le nom de fichier (horodatage + suffixe aléatoire ~1e9)
-  // n'est pas énumérable et n'est jamais listé sans authentification
+  // @Public() nécessaire, pas juste l'absence de @UseGuards() : JwtAuthGuard
+  // est câblé en APP_GUARD global (voir app.module.ts) et s'applique donc à
+  // TOUTE route sans ce décorateur, malgré l'absence de @UseGuards() ici —
+  // vérifié empiriquement (401 sur cette route avant l'ajout de @Public()).
+  // Cette URL est utilisée en <img src> (logo société sur le papier à
+  // en-tête officiel de tous les documents imprimés — facture/devis/bon de
+  // caisse/reçu) et par un fetch() sans en-tête Authorization côté aperçu
+  // document (document-viewer.tsx::FetchedDocumentPreview) : un <img> ne
+  // peut pas envoyer de Bearer token, et les deux étaient cassés en silence
+  // avant ce correctif. Le nom de fichier (horodatage + suffixe aléatoire
+  // ~1e9) n'est pas énumérable et n'est jamais listé sans authentification
   // (findByDossier est guardé) : sécurité par obscurité assumée pour cette
   // seule route, comme pour un logo public.
+  @Public()
   @Get(':filename/download')
   async downloadFile(@Param('filename') filename: string, @Res() res: Response) {
     const { doc, fullPath } = await this.documentsService.getFilePath(filename);
