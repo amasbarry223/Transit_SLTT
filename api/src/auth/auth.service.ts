@@ -13,7 +13,6 @@ import type { JwtPayload, CurrentUserType } from './auth.types';
 import { jwtRefreshSecret, jwtRefreshExpiresIn } from './jwt.config';
 
 const BCRYPT_ROUNDS = 12;
-const REFRESH_TOKEN_DAYS = 7;
 
 /**
  * Seul le hash du refresh token part en base (colonne `token`, jamais
@@ -87,9 +86,15 @@ export class AuthService {
     );
 
     // La ligne en base doit expirer en même temps que le JWT lui-même,
-    // sinon l'un des deux invalide le refresh avant l'autre.
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_DAYS);
+    // sinon l'un des deux invalide le refresh avant l'autre. Un
+    // REFRESH_TOKEN_DAYS codé en dur ici, en plus de jwtRefreshExpiresIn()
+    // qui signe le token, se désynchronisait dès que JWT_REFRESH_EXPIRES_IN
+    // différait de 7 jours en .env (ex. 30d) : le JWT restait valide, mais
+    // la ligne en base expirait après 7 jours et rejetait un refresh encore
+    // cryptographiquement valide. On lit directement le `exp` du token que
+    // l'on vient de signer, seule source de vérité sur sa durée de vie.
+    const decodedRefresh = this.jwt.decode(refreshToken) as { exp: number };
+    const expiresAt = new Date(decodedRefresh.exp * 1000);
     const refreshTokenHash = hashRefreshToken(refreshToken);
     await this.prisma.refreshToken.upsert({
       where: { token: refreshTokenHash },
