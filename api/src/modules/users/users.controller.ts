@@ -13,6 +13,9 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../shared/decorators';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -33,23 +36,20 @@ export class UsersController {
 
   @Post()
   @Roles('ADMIN')
-  async create(@Body() body: any) {
-    // Le proxy Next.js envoie le mot de passe sous "motDePasse" ; sans cette
-    // normalisation le service prenait le mot de passe par défaut pour tous.
-    return this.usersService.create({ ...body, password: body.password ?? body.motDePasse });
+  async create(@Body() body: CreateUserDto) {
+    return this.usersService.create(body);
   }
 
   @Put(':id')
   @Roles('ADMIN')
-  async update(@Param('id') id: string, @Body() body: any) {
-    return this.usersService.update(id, { ...body, password: body.password ?? body.motDePasse });
+  async update(@Param('id') id: string, @Body() body: UpdateUserDto) {
+    return this.usersService.update(id, body);
   }
 
   @Patch(':id/password')
   @Roles('ADMIN')
-  async resetPassword(@Param('id') id: string, @Body() body: any) {
-    const pwd = body.motDePasse || body.password;
-    return this.usersService.resetPassword(id, pwd);
+  async resetPassword(@Param('id') id: string, @Body() body: ResetPasswordDto) {
+    return this.usersService.resetPassword(id, body.password ?? body.motDePasse);
   }
 
   @Delete(':id')

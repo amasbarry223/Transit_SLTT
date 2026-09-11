@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RoleUtilisateur } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import type { CreateUserDto } from './dto/create-user.dto';
+import type { UpdateUserDto } from './dto/update-user.dto';
 
 export function mapToPrismaRole(role: string): RoleUtilisateur {
   switch (role) {
@@ -40,6 +42,14 @@ export function mapToAppRole(role: RoleUtilisateur | string): string {
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Même seuil que authService.changePassword — jamais de repli implicite
+   *  sur un mot de passe par défaut quand ce champ est absent ou trop court. */
+  private assertStrongPassword(password: string | undefined): asserts password is string {
+    if (!password || password.length < 8) {
+      throw new BadRequestException('Le mot de passe doit contenir au moins 8 caractères');
+    }
+  }
 
   async findAll() {
     const profiles = await this.prisma.profile.findMany({
@@ -86,22 +96,15 @@ export class UsersService {
     };
   }
 
-  async create(data: {
-    email: string;
-    password?: string;
-    nom: string;
-    telephone?: string;
-    role?: any;
-    permissions?: string[];
-    annexeIds?: string[];
-  }) {
+  async create(data: CreateUserDto) {
     const email = data.email.toLowerCase().trim();
     const existing = await this.prisma.profile.findUnique({
       where: { email },
     });
     if (existing) throw new ConflictException(`L'email ${data.email} est déjà utilisé`);
 
-    const rawPassword = data.password || 'Transit2026!';
+    const rawPassword = data.password ?? data.motDePasse;
+    this.assertStrongPassword(rawPassword);
     const passwordHash = await bcrypt.hash(rawPassword, 12);
     const prismaRole = mapToPrismaRole(data.role || 'Magasinier');
 
@@ -135,18 +138,7 @@ export class UsersService {
     };
   }
 
-  async update(
-    id: string,
-    data: {
-      nom?: string;
-      telephone?: string;
-      role?: any;
-      permissions?: string[];
-      actif?: boolean;
-      annexeIds?: string[];
-      password?: string;
-    },
-  ) {
+  async update(id: string, data: UpdateUserDto) {
     await this.findOne(id);
 
     const updateData: any = {};
@@ -155,8 +147,10 @@ export class UsersService {
     if (data.role) updateData.role = mapToPrismaRole(data.role);
     if (data.permissions) updateData.permissions = data.permissions;
     if (data.actif !== undefined) updateData.actif = data.actif;
-    if (data.password) {
-      updateData.passwordHash = await bcrypt.hash(data.password, 12);
+    const rawPassword = data.password ?? data.motDePasse;
+    if (rawPassword !== undefined) {
+      this.assertStrongPassword(rawPassword);
+      updateData.passwordHash = await bcrypt.hash(rawPassword, 12);
     }
 
     if (data.annexeIds) {
@@ -186,8 +180,9 @@ export class UsersService {
     };
   }
 
-  async resetPassword(id: string, newPassword: string) {
+  async resetPassword(id: string, newPassword: string | undefined) {
     await this.findOne(id);
+    this.assertStrongPassword(newPassword);
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.prisma.profile.update({
       where: { id },
