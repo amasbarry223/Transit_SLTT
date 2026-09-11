@@ -1,9 +1,21 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
-const TAUX_TVA_DEVIS = 18;
-
-/** Recalcule HT / TVA / TTC d'un devis à partir de ses lignes (arrondi au centime). */
+/**
+ * Recalcule HT / TVA / TTC d'un devis à partir de ses lignes.
+ *
+ * Un devis SLTT est une estimation de 3 postes de coûts (droit de douane,
+ * frais de circuit, frais de prestation) — pas une facture taxable : le
+ * front (DevisInput/DevisData, formulaires, impression) n'a aucun champ ni
+ * aucune UI de TVA. Une ancienne version appliquait ici un taux de TVA de
+ * 18 % codé en dur, invisible du front : `montant_ttc` en base gonflait de
+ * 18 % par rapport au « Total estimé » affiché, et redescendait tel quel
+ * dans `devis.total` au rechargement de page (data-fetch-slice lit
+ * `montantTtc ?? montantHt`) — un devis affichant 2 900 000 FCFA à la
+ * création se retrouvait à 3 422 000 FCFA après un simple F5, et cette
+ * valeur gonflée se propageait ensuite au montant investi du dossier créé
+ * par conversion. montantTva reste à 0 et montantTtc == montantHt.
+ */
 function computeDevisTotals(lignes: any[]) {
   let montantHt = 0;
   const lignesFormatted = (lignes || []).map((l: any) => {
@@ -13,8 +25,7 @@ function computeDevisTotals(lignes: any[]) {
     montantHt += montantTotal;
     return { designation: l.designation, quantite, prixUnitaire, montantTotal };
   });
-  const montantTva = Math.round(((montantHt * TAUX_TVA_DEVIS) / 100) * 100) / 100;
-  return { montantHt, montantTva, montantTtc: montantHt + montantTva, lignesFormatted };
+  return { montantHt, montantTva: 0, montantTtc: montantHt, lignesFormatted };
 }
 
 @Injectable()
