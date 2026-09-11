@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { ArrowRight, CheckCircle2, FileOutput, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
+import { dossiersNonFactures } from "@/lib/client-stats";
 import { formatFCFA } from "@/lib/format";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -13,10 +14,18 @@ export function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "fa
   const factures = useStore((s) => s.factures);
   const dossiers = useStore((s) => s.dossiers);
 
-  const totalDu = useMemo(() => dossiers.reduce((sum, d) => sum + resteAPayer(d), 0), [dossiers]);
+  // Un dossier déjà facturé (compté à droite, dans "Factures en attente")
+  // n'est plus la source de vérité de son reste dû : sans cette exclusion,
+  // la même créance apparaissait deux fois — une fois ici avec le reste
+  // obsolète du dossier, une fois à droite avec le vrai reste de sa facture.
+  const dossiersSansFacture = useMemo(() => dossiersNonFactures(dossiers, factures), [dossiers, factures]);
+  const totalDu = useMemo(
+    () => dossiersSansFacture.reduce((sum, d) => sum + resteAPayer(d), 0),
+    [dossiersSansFacture],
+  );
   const nbImpayés = useMemo(
-    () => dossiers.filter((d) => resteAPayer(d) > 0).length,
-    [dossiers],
+    () => dossiersSansFacture.filter((d) => resteAPayer(d) > 0).length,
+    [dossiersSansFacture],
   );
   const dernières = useMemo(
     () => [...ecritures].sort((a, b) => (a.date > b.date ? -1 : 1)).slice(0, 5),

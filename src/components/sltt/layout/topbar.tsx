@@ -21,6 +21,7 @@ import {
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
+import { dossiersNonFactures } from "@/lib/client-stats";
 import { Bell, Calendar, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
@@ -155,9 +156,16 @@ export function Topbar() {
   const unpaidDossiers = useMemo(
     () =>
       canSeeDossiers
-        ? dossiers.filter((d) => resteAPayer(d) > 0 && !overdueDossiers.some((od) => od.id === d.id))
+        // Un dossier déjà facturé est exclu : son reste dû réel est compté
+        // dans unpaidFactures ci-dessous (sa propre facture) — sans cette
+        // exclusion, la même créance gonflait deux fois le badge d'alertes
+        // (ici avec le reste obsolète du dossier, plus bas avec celui,
+        // exact, de sa facture).
+        ? dossiersNonFactures(dossiers, factures).filter(
+            (d) => resteAPayer(d) > 0 && !overdueDossiers.some((od) => od.id === d.id),
+          )
         : [],
-    [canSeeDossiers, dossiers, overdueDossiers],
+    [canSeeDossiers, dossiers, factures, overdueDossiers],
   );
 
   const unpaidFactures = useMemo(
