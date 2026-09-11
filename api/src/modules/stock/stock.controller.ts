@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { StockService } from './stock.service';
-import { RequirePermission } from '../../shared/decorators';
+import { CurrentUser, RequirePermission } from '../../shared/decorators';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Controller('stock')
 export class StockController {
@@ -8,47 +9,49 @@ export class StockController {
 
   @Get('items')
   findAllItems(
+    @CurrentUser() user: CurrentUserType,
     @Query('search') search?: string,
     @Query('annexeId') annexeId?: string,
     @Query('clientId') clientId?: string,
   ) {
-    return this.stockService.findAllItems({ search, annexeId, clientId });
+    return this.stockService.findAllItems(user, { search, annexeId, clientId });
   }
 
   @Get('items/:id')
-  findOneItem(@Param('id') id: string) {
-    return this.stockService.findOneItem(id);
+  findOneItem(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.stockService.findOneItem(id, user);
   }
 
   @Post('items')
   @RequirePermission('stock:write')
-  createItem(@Body() body: any) {
-    return this.stockService.createItem(body);
+  createItem(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+    return this.stockService.createItem(user, body);
   }
 
   @Put('items/:id')
   @RequirePermission('stock:write')
-  updateItem(@Param('id') id: string, @Body() body: any) {
-    return this.stockService.updateItem(id, body);
+  updateItem(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
+    return this.stockService.updateItem(id, user, body);
   }
 
   @Delete('items/:id')
   @RequirePermission('stock:write')
-  deleteItem(@Param('id') id: string) {
-    return this.stockService.deleteItem(id);
+  deleteItem(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.stockService.deleteItem(id, user);
   }
 
   @Get('mouvements')
   findAllMouvements(
+    @CurrentUser() user: CurrentUserType,
     @Query('annexeId') annexeId?: string,
     @Query('stockId') stockId?: string,
   ) {
-    return this.stockService.findAllMouvements({ annexeId, stockId });
+    return this.stockService.findAllMouvements(user, { annexeId, stockId });
   }
 
   @Post('mouvements')
   @RequirePermission('stock:write')
-  createMouvement(@Body() body: any) {
-    return this.stockService.createMouvement(body);
+  createMouvement(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+    return this.stockService.createMouvement(user, body);
   }
 }

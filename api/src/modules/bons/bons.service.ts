@@ -1,15 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Injectable()
 export class BonsService {
   constructor(private prisma: PrismaService) {}
 
+  private buildAnnexeFilter(user: CurrentUserType) {
+    if (user.role === 'ADMIN') return {};
+    return { annexeId: { in: user.annexeIds } };
+  }
+
   // Bons de sortie stock
-  async findAllBons(params?: { annexeId?: string; clientId?: string }) {
-    const where: any = {};
-    if (params?.annexeId) where.annexeId = params.annexeId;
-    if (params?.clientId) where.clientId = params.clientId;
+  async findAllBons(user: CurrentUserType, params?: { annexeId?: string; clientId?: string }) {
+    if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
+    const where: any = {
+      ...this.buildAnnexeFilter(user),
+      ...(params?.annexeId ? { annexeId: params.annexeId } : {}),
+      ...(params?.clientId ? { clientId: params.clientId } : {}),
+    };
 
     return this.prisma.bonSortie.findMany({
       where,
@@ -22,16 +33,22 @@ export class BonsService {
     });
   }
 
-  async findOneBon(id: string) {
+  async findOneBon(id: string, user: CurrentUserType) {
     const bon = await this.prisma.bonSortie.findUnique({
       where: { id },
       include: { annexe: true, client: true, stock: true },
     });
     if (!bon) throw new NotFoundException(`Bon de sortie ${id} non trouvé`);
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce bon de sortie');
+    }
     return bon;
   }
 
-  async createBon(data: any) {
+  async createBon(user: CurrentUserType, data: any) {
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas créer de bon pour cette annexe');
+    }
     return this.prisma.bonSortie.create({
       data: {
         reference: data.reference,
@@ -51,8 +68,8 @@ export class BonsService {
     });
   }
 
-  async validateBon(id: string) {
-    const bon = await this.findOneBon(id);
+  async validateBon(id: string, user: CurrentUserType) {
+    const bon = await this.findOneBon(id, user);
     if (bon.statut === 'Validé') return bon;
 
     return this.prisma.$transaction(async (tx: any) => {
@@ -106,8 +123,8 @@ export class BonsService {
     });
   }
 
-  async deleteBon(id: string) {
-    const bon = await this.findOneBon(id);
+  async deleteBon(id: string, user: CurrentUserType) {
+    const bon = await this.findOneBon(id, user);
     if (bon.statut === 'Validé') {
       throw new BadRequestException(
         "Un bon de sortie validé ne peut pas être supprimé (le stock a déjà été mouvementé).",
@@ -118,9 +135,14 @@ export class BonsService {
   }
 
   // Bons de sortie caisse
-  async findAllBonsCaisse(params?: { annexeId?: string }) {
-    const where: any = {};
-    if (params?.annexeId) where.annexeId = params.annexeId;
+  async findAllBonsCaisse(user: CurrentUserType, params?: { annexeId?: string }) {
+    if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
+    const where: any = {
+      ...this.buildAnnexeFilter(user),
+      ...(params?.annexeId ? { annexeId: params.annexeId } : {}),
+    };
 
     return this.prisma.bonSortieCaisse.findMany({
       where,
@@ -132,7 +154,19 @@ export class BonsService {
     });
   }
 
-  async createBonCaisse(data: any) {
+  async findOneBonCaisse(id: string, user: CurrentUserType) {
+    const bon = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
+    if (!bon) throw new NotFoundException(`Bon de caisse ${id} non trouvé`);
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce bon de caisse');
+    }
+    return bon;
+  }
+
+  async createBonCaisse(user: CurrentUserType, data: any) {
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas créer de bon de caisse pour cette annexe');
+    }
     const date = data.date || new Date().toISOString().slice(0, 10);
     const lignes = (data.lignes || []).map((l: any) => ({
       date: l.date || date,
@@ -157,9 +191,8 @@ export class BonsService {
     });
   }
 
-  async deleteBonCaisse(id: string) {
-    const existing = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException(`Bon de caisse ${id} non trouvé`);
+  async deleteBonCaisse(id: string, user: CurrentUserType) {
+    await this.findOneBonCaisse(id, user);
     await this.prisma.bonSortieCaisse.delete({ where: { id } });
     return { id };
   }

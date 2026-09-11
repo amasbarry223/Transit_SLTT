@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ContratsService } from './contrats.service';
+import { CurrentUser } from '../../shared/decorators';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Controller('contrats')
 export class ContratsController {
@@ -7,30 +9,31 @@ export class ContratsController {
 
   @Get()
   findAll(
+    @CurrentUser() user: CurrentUserType,
     @Query('search') search?: string,
     @Query('annexeId') annexeId?: string,
     @Query('clientId') clientId?: string,
   ) {
-    return this.contratsService.findAll({ search, annexeId, clientId });
+    return this.contratsService.findAll(user, { search, annexeId, clientId });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.contratsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.contratsService.findOne(id, user);
   }
 
   @Post()
-  create(@Body() body: any) {
-    return this.contratsService.create(body);
+  create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+    return this.contratsService.create(user, body);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.contratsService.update(id, body);
+  update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
+    return this.contratsService.update(id, user, body);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.contratsService.delete(id);
+  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.contratsService.delete(id, user);
   }
 }

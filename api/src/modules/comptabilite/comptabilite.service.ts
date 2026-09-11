@@ -3,18 +3,34 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Injectable()
 export class ComptabiliteService {
   constructor(private prisma: PrismaService) {}
 
+  /** annexeId nullable (opération/clôture pas encore rattachée) : visible de
+   *  tous, comme pour clients/devis/transporteurs. */
+  private buildAnnexeFilter(user: CurrentUserType) {
+    if (user.role === 'ADMIN') return {};
+    return { OR: [{ annexeId: null }, { annexeId: { in: user.annexeIds } }] };
+  }
+
   // Opérations comptables
-  async findAllOperations(params?: { annexeId?: string; clientId?: string }) {
-    const where: any = {};
-    if (params?.annexeId) where.annexeId = params.annexeId;
-    if (params?.clientId) where.clientId = params.clientId;
+  async findAllOperations(user: CurrentUserType, params?: { annexeId?: string; clientId?: string }) {
+    if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
+    const where: any = {
+      AND: [
+        this.buildAnnexeFilter(user),
+        params?.annexeId ? { annexeId: params.annexeId } : {},
+        params?.clientId ? { clientId: params.clientId } : {},
+      ],
+    };
 
     return this.prisma.operationComptable.findMany({
       where,
@@ -45,7 +61,10 @@ export class ComptabiliteService {
     return `OPC-${Date.now()}`;
   }
 
-  async createOperation(data: any) {
+  async createOperation(user: CurrentUserType, data: any) {
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException("Vous ne pouvez pas créer d'opération pour cette annexe");
+    }
     const montant = Number(data.montant);
     if (!Number.isFinite(montant) || montant <= 0) {
       throw new BadRequestException("Le montant de l'opération doit être supérieur à 0.");
@@ -83,17 +102,27 @@ export class ComptabiliteService {
     });
   }
 
-  async deleteOperation(id: string) {
+  async deleteOperation(id: string, user: CurrentUserType) {
     const existing = await this.prisma.operationComptable.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Opération ${id} non trouvée`);
+    if (existing.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette opération');
+    }
     await this.prisma.operationComptable.delete({ where: { id } });
     return { id };
   }
 
   // Clôtures de caisse
-  async findAllClotures(params?: { annexeId?: string }) {
-    const where: any = {};
-    if (params?.annexeId) where.annexeId = params.annexeId;
+  async findAllClotures(user: CurrentUserType, params?: { annexeId?: string }) {
+    if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
+    const where: any = {
+      AND: [
+        this.buildAnnexeFilter(user),
+        params?.annexeId ? { annexeId: params.annexeId } : {},
+      ],
+    };
 
     return this.prisma.clotureCaisse.findMany({
       where,
@@ -104,7 +133,10 @@ export class ComptabiliteService {
     });
   }
 
-  async createCloture(data: any) {
+  async createCloture(user: CurrentUserType, data: any) {
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas créer de clôture pour cette annexe');
+    }
     const soldeTheorique = Number(data.soldeTheorique) || 0;
     const soldeConstate = Number(data.soldeConstate) || 0;
     const ecart = Math.round((soldeConstate - soldeTheorique) * 100) / 100;

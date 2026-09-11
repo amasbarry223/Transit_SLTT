@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 /** Statut d'un reçu à partir de la somme due et du montant payé, avec tolérance d'arrondi. */
 function statutRecu(somme: number, montantPaye: number): 'SOLDE' | 'PARTIEL' | 'EN_ATTENTE' {
@@ -12,17 +13,31 @@ function statutRecu(somme: number, montantPaye: number): 'SOLDE' | 'PARTIEL' | '
 export class RecusPaiementService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params?: { search?: string; annexeId?: string }) {
-    const where: any = {};
-    if (params?.annexeId) where.annexeId = params.annexeId;
-    if (params?.search) {
-      where.OR = [
-        { reference: { contains: params.search } },
-        { nom: { contains: params.search } },
-        { prenom: { contains: params.search } },
-        { motif: { contains: params.search } },
-      ];
+  private buildAnnexeFilter(user: CurrentUserType) {
+    if (user.role === 'ADMIN') return {};
+    return { annexeId: { in: user.annexeIds } };
+  }
+
+  async findAll(user: CurrentUserType, params?: { search?: string; annexeId?: string }) {
+    if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
     }
+    const where: any = {
+      AND: [
+        this.buildAnnexeFilter(user),
+        params?.annexeId ? { annexeId: params.annexeId } : {},
+        params?.search
+          ? {
+              OR: [
+                { reference: { contains: params.search } },
+                { nom: { contains: params.search } },
+                { prenom: { contains: params.search } },
+                { motif: { contains: params.search } },
+              ],
+            }
+          : {},
+      ],
+    };
     return this.prisma.recuPaiement.findMany({
       where,
       include: { annexe: { select: { id: true, nom: true, code: true } } },
@@ -30,16 +45,22 @@ export class RecusPaiementService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user: CurrentUserType) {
     const item = await this.prisma.recuPaiement.findUnique({
       where: { id },
       include: { annexe: true },
     });
     if (!item) throw new NotFoundException(`Reçu ${id} non trouvé`);
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(item.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce reçu');
+    }
     return item;
   }
 
-  async create(data: any) {
+  async create(user: CurrentUserType, data: any) {
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas créer de reçu pour cette annexe');
+    }
     const somme = Number(data.somme) || 0;
     const montantPaye = Number(data.montantPaye) || 0;
     const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
@@ -72,8 +93,11 @@ export class RecusPaiementService {
     });
   }
 
-  async update(id: string, data: any) {
-    const current = await this.findOne(id);
+  async update(id: string, user: CurrentUserType, data: any) {
+    const current = await this.findOne(id, user);
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas rattacher ce reçu à cette annexe');
+    }
     // Champs non modifiables directement (recalculés ou techniques).
     const { reste: _r, statut: _s, id: _id, createdAt: _c, updatedAt: _u, ...safe } = data;
     const updateData: any = { ...safe };
@@ -94,8 +118,8 @@ export class RecusPaiementService {
     });
   }
 
-  async delete(id: string) {
-    await this.findOne(id);
+  async delete(id: string, user: CurrentUserType) {
+    await this.findOne(id, user);
     return this.prisma.recuPaiement.delete({ where: { id } });
   }
 }

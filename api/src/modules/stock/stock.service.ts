@@ -1,21 +1,36 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Injectable()
 export class StockService {
   constructor(private prisma: PrismaService) {}
 
-  async findAllItems(params?: { search?: string; annexeId?: string; clientId?: string }) {
-    const where: any = {};
-    if (params?.annexeId) where.annexeId = params.annexeId;
-    if (params?.clientId) where.clientId = params.clientId;
-    if (params?.search) {
-      where.OR = [
-        { marchandise: { contains: params.search } },
-        { depositaire: { contains: params.search } },
-        { client: { nom: { contains: params.search } } },
-      ];
+  private buildAnnexeFilter(user: CurrentUserType) {
+    if (user.role === 'ADMIN') return {};
+    return { annexeId: { in: user.annexeIds } };
+  }
+
+  async findAllItems(user: CurrentUserType, params?: { search?: string; annexeId?: string; clientId?: string }) {
+    if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
     }
+    const where: any = {
+      AND: [
+        this.buildAnnexeFilter(user),
+        params?.annexeId ? { annexeId: params.annexeId } : {},
+        params?.clientId ? { clientId: params.clientId } : {},
+        params?.search
+          ? {
+              OR: [
+                { marchandise: { contains: params.search } },
+                { depositaire: { contains: params.search } },
+                { client: { nom: { contains: params.search } } },
+              ],
+            }
+          : {},
+      ],
+    };
     return this.prisma.stockItem.findMany({
       where,
       include: {
@@ -26,16 +41,22 @@ export class StockService {
     });
   }
 
-  async findOneItem(id: string) {
+  async findOneItem(id: string, user: CurrentUserType) {
     const item = await this.prisma.stockItem.findUnique({
       where: { id },
       include: { annexe: true, client: true, mouvements: true },
     });
     if (!item) throw new NotFoundException(`Article de stock ${id} non trouvé`);
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(item.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cet article de stock');
+    }
     return item;
   }
 
-  async createItem(data: any) {
+  async createItem(user: CurrentUserType, data: any) {
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException("Vous ne pouvez pas créer d'article pour cette annexe");
+    }
     return this.prisma.stockItem.create({
       data: {
         clientId: data.clientId || null,
@@ -54,8 +75,11 @@ export class StockService {
     });
   }
 
-  async updateItem(id: string, data: any) {
-    await this.findOneItem(id);
+  async updateItem(id: string, user: CurrentUserType, data: any) {
+    await this.findOneItem(id, user);
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas rattacher cet article à cette annexe');
+    }
     const updateData: any = { ...data };
     if (data.quantite !== undefined) updateData.quantite = Number(data.quantite);
     if (data.seuil !== undefined) updateData.seuil = Number(data.seuil);
@@ -69,16 +93,23 @@ export class StockService {
     });
   }
 
-  async deleteItem(id: string) {
-    await this.findOneItem(id);
+  async deleteItem(id: string, user: CurrentUserType) {
+    await this.findOneItem(id, user);
     return this.prisma.stockItem.delete({ where: { id } });
   }
 
   // Mouvements
-  async findAllMouvements(params?: { annexeId?: string; stockId?: string }) {
-    const where: any = {};
-    if (params?.annexeId) where.annexeId = params.annexeId;
-    if (params?.stockId) where.stockId = params.stockId;
+  async findAllMouvements(user: CurrentUserType, params?: { annexeId?: string; stockId?: string }) {
+    if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
+    const where: any = {
+      AND: [
+        this.buildAnnexeFilter(user),
+        params?.annexeId ? { annexeId: params.annexeId } : {},
+        params?.stockId ? { stockId: params.stockId } : {},
+      ],
+    };
 
     return this.prisma.mouvementStock.findMany({
       where,
@@ -90,7 +121,10 @@ export class StockService {
     });
   }
 
-  async createMouvement(data: any) {
+  async createMouvement(user: CurrentUserType, data: any) {
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas créer de mouvement pour cette annexe');
+    }
     const quantite = Number(data.quantite);
     if (!Number.isFinite(quantite) || quantite <= 0) {
       throw new BadRequestException('La quantité du mouvement doit être supérieure à 0');
