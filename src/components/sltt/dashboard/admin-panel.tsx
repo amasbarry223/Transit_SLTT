@@ -30,20 +30,17 @@ export function AdminPanel({
   );
 
   const recentUsers = useMemo(() => {
-    if (!users || users.length === 0) {
-      return [
-        { id: "u1", nom: "Amadou Traoré", role: "Administrateur", connexion: "Aujourd'hui 09:24", isOnline: true },
-        { id: "u2", nom: "Mariam Koné", role: "Gestionnaire", connexion: "Aujourd'hui 08:17", isOnline: true },
-        { id: "u3", nom: "Boubacar Diallo", role: "Agent", connexion: "Hier 16:42", isOnline: false },
-      ];
-    }
+    if (!users || users.length === 0) return [];
 
     return [...users]
       .sort((a, b) => (b.derniereConnexion ?? "").localeCompare(a.derniereConnexion ?? ""))
       .slice(0, 3)
-      .map((u, index) => {
-        let connLabel = "Aujourd'hui 09:15";
-        let isOnline = index < 2;
+      .map((u) => {
+        // Pas de dernière connexion réelle = jamais connecté, pas "aujourd'hui
+        // 09:15" ni "en ligne" par défaut (l'ancien code affichait ces deux
+        // valeurs inventées dès que derniereConnexion était absent).
+        let connLabel = "Jamais connecté";
+        let isOnline = false;
 
         if (u.derniereConnexion) {
           const d = new Date(u.derniereConnexion);
@@ -175,7 +172,9 @@ export function AdminPanel({
                 Utilisateurs récents
               </h3>
               <p className="text-xs text-muted-foreground">
-                3 utilisateurs ont accédé au système récemment
+                {recentUsers.length > 0
+                  ? `${recentUsers.length} utilisateur${recentUsers.length > 1 ? "s" : ""} affiché${recentUsers.length > 1 ? "s" : ""}`
+                  : "Aucun utilisateur pour l'instant"}
               </p>
             </div>
           </div>
@@ -191,6 +190,11 @@ export function AdminPanel({
         </div>
 
         {/* User Table matching reference */}
+        {recentUsers.length === 0 ? (
+          <p className="py-6 text-center text-xs text-muted-foreground">
+            Aucun utilisateur à afficher pour l&apos;instant.
+          </p>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead>
@@ -231,6 +235,7 @@ export function AdminPanel({
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </Card>
   );

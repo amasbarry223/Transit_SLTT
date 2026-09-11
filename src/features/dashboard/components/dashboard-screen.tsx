@@ -88,7 +88,7 @@ export function DashboardScreen() {
     return items.length > 0 ? items : alertes;
   }, [alertes, sections]);
 
-  const firstName = currentUserName ? currentUserName.split(" ")[0] : "Amadou";
+  const firstName = currentUserName ? currentUserName.split(" ")[0] : null;
 
   return (
     <div className="space-y-6 pb-6">
@@ -98,7 +98,8 @@ export function DashboardScreen() {
           Tableau de bord
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-muted-foreground font-medium">
-          Bienvenue, {firstName} ! Voici l&apos;ensemble de votre activité ce mois-ci.
+          {firstName ? `Bienvenue, ${firstName} !` : "Bienvenue !"} Voici l&apos;ensemble de votre
+          activité ce mois-ci.
         </p>
 
         {/* Filter bar directly below subtitle */}
