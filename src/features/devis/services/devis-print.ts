@@ -1,7 +1,13 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import {
+  DEFAULT_DOSSIER_COUT_LABELS,
+  ensureSocieteBrand,
+  requireSocieteBrand,
+  type DossierCoutLabels,
+  type SocieteBrand,
+} from "@/lib/societe-brand";
 import { htmlEscape } from "@/lib/export/html-escape";
 import {
   OFFICIAL_LETTERHEAD_CSS,
@@ -36,6 +42,11 @@ export interface DevisData {
   total: number;
   notes?: string;
   statut?: string;
+  /** Intitulés des 3 rubriques de coûts — dépend de l'annexe (Mali/Côte
+   * d'Ivoire) du client, ex. « Frais transit port » (manutention portuaire)
+   * remplace « Droits de douane » en Côte d'Ivoire. Repli sur les intitulés
+   * Mali si non fourni (résout {@link resolveDossierCoutLabels} en amont). */
+  coutLabels?: Pick<DossierCoutLabels, "droitDouane" | "fraisCircuit" | "fraisPrestation">;
 }
 
 export interface DevisListPrintRow {
@@ -129,10 +140,11 @@ export function printDevis(data: DevisData, societe?: SocieteBrand | null): void
   const letterheadHTML = buildOfficialLetterheadHTML(resolvedBrand);
   const prestataireNom = prestataireDisplayName(resolvedBrand);
 
+  const coutLabels = data.coutLabels ?? DEFAULT_DOSSIER_COUT_LABELS;
   const items = [
-    { label: "Droits de douane estimés", value: data.droitDouane },
-    { label: "Frais de circuit global", value: data.fraisCircuit },
-    { label: "Prestation transit", value: data.fraisPrestation },
+    { label: `${coutLabels.droitDouane} (estimé)`, value: data.droitDouane },
+    { label: coutLabels.fraisCircuit, value: data.fraisCircuit },
+    { label: coutLabels.fraisPrestation, value: data.fraisPrestation },
   ];
 
   const rowsHTML = items

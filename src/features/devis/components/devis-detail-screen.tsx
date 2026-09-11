@@ -8,7 +8,7 @@ import { usePermission } from "@/shared/hooks/use-permission";
 import type { DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printDevis } from "@/lib/export";
-import { resolveSlttBrand } from "@/lib/societe-brand";
+import { resolveDossierCoutLabels, resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useUnsavedChangesWarning } from "@/shared/hooks/use-unsaved-changes-warning";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
@@ -33,6 +33,7 @@ export function DevisDetailScreen() {
   const allDevis = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
+  const annexes = useStore((s) => s.annexes);
   const updateDevis = useStore((s) => s.updateDevis);
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
   const removeDevis = useStore((s) => s.removeDevis);
@@ -78,6 +79,11 @@ export function DevisDetailScreen() {
     );
   }
 
+  // L'annexe (Mali/Côte d'Ivoire) est fixée à la création du devis — les
+  // intitulés de rubrique en dépendent (ex. « Frais transit port » couvre la
+  // manutention portuaire en Côte d'Ivoire).
+  const annexeCode = annexes.find((a) => a.id === devis.annexeId)?.code;
+  const coutLabels = resolveDossierCoutLabels(annexeCode);
   const dd = parseAmount(fDroitDouane), fc = parseAmount(fFraisCircuit), fp = parseAmount(fFraisPrestation);
   const editTotal = dd + fc + fp;
   const canEditContent = canWrite && !devis.dossierId && devis.statut !== "Accepté";
@@ -148,7 +154,7 @@ export function DevisDetailScreen() {
       clientTelephone: client?.telephone, clientEmail: client?.email, nature: devis.nature,
       dateCreation: devis.dateCreation, dateValidite: devis.dateValidite, droitDouane: devis.droitDouane,
       fraisCircuit: devis.fraisCircuit, fraisPrestation: devis.fraisPrestation, total: devis.total,
-      notes: devis.notes, statut: devis.statut,
+      notes: devis.notes, statut: devis.statut, coutLabels,
     }, resolveSlttBrand(societes));
   };
   const handleDelete = async () => {
@@ -207,7 +213,7 @@ export function DevisDetailScreen() {
               <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
                 <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimation financière</h2>
               </div>
-              <FinancialBreakdown devis={devis} />
+              <FinancialBreakdown devis={devis} annexeCode={annexeCode} />
             </Card>
           </div>
         </div>
@@ -221,7 +227,7 @@ export function DevisDetailScreen() {
           setFFraisPrestation={setFFraisPrestation} fDateValidite={fDateValidite}
           setFDateValidite={setFDateValidite} fNotes={fNotes} setFNotes={setFNotes}
           editTotal={editTotal} handleCancelEdit={handleCancelEdit} handleSave={handleSave}
-          saving={savingEdit}
+          saving={savingEdit} annexeCode={annexeCode}
         />
       )}
       <ConvertDevisDialog

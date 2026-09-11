@@ -7,7 +7,7 @@ import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { exportToExcel, printDevis, printDevisList } from "@/lib/export";
-import { resolveSlttBrand } from "@/lib/societe-brand";
+import { resolveDossierCoutLabels, resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
@@ -43,6 +43,7 @@ export function DevisScreen() {
   const devisList = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
+  const annexes = useStore((s) => s.annexes);
   const addDevis = useStore((s) => s.addDevis);
   const updateDevis = useStore((s) => s.updateDevis);
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
@@ -157,6 +158,7 @@ export function DevisScreen() {
   }
   function handlePrintDevis(devis: Devis) {
     const client = clients.find((c) => c.id === devis.clientId);
+    const coutLabels = resolveDossierCoutLabels(annexes.find((a) => a.id === devis.annexeId)?.code);
     printDevis({
       reference: devis.reference,
       clientNom: devis.clientNom,
@@ -172,6 +174,7 @@ export function DevisScreen() {
       total: devis.total,
       notes: devis.notes,
       statut: devis.statut,
+      coutLabels,
     }, resolveSlttBrand(societes));
   }
   async function handleExportExcel() {

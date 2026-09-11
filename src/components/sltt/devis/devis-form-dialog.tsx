@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { Info } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { Devis, DevisInput } from "@/lib/store";
 import { formatFCFA, parseAmount } from "@/lib/format";
-import { resolveTransitSociete } from "@/lib/societe-brand";
+import { resolveDossierCoutLabels, resolveTransitSociete } from "@/lib/societe-brand";
 import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/shared/components/ui/dialog";
@@ -18,7 +20,7 @@ import {
 export interface DevisFormProps {
   open: boolean;
   devis: Devis | null;
-  clients: { id: string; nom: string }[];
+  clients: { id: string; nom: string; annexeId?: string }[];
   saving?: boolean;
   onClose: () => void;
   onSave: (input: DevisInput) => void;
@@ -33,6 +35,7 @@ export function DevisFormDialog({
   onSave,
 }: DevisFormProps) {
   const societes = useStore((s) => s.societes);
+  const annexes = useStore((s) => s.annexes);
   const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const [clientId, setClientId] = useState(devis?.clientId ?? "");
   const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
@@ -66,6 +69,12 @@ export function DevisFormDialog({
   const fp = parseAmount(fraisPrestation);
   const total = dd + fc + fp;
   const valid = !!clientId && !!nature.trim() && !!dateValidite;
+  // Le devis suit toujours l'annexe de son client (Mali/Côte d'Ivoire) — les
+  // intitulés de rubrique s'adaptent en conséquence (ex. « Frais transit
+  // port » couvre la manutention portuaire en Côte d'Ivoire).
+  const clientAnnexeId = clients.find((c) => c.id === clientId)?.annexeId;
+  const annexeCode = annexes.find((a) => a.id === clientAnnexeId)?.code;
+  const labels = resolveDossierCoutLabels(annexeCode);
 
   function handleClientChange(id: string) {
     setClientId(id);
@@ -130,33 +139,31 @@ export function DevisFormDialog({
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Droits douane (FCFA)</Label>
-              <Input
-                value={droitDouane}
-                onChange={(e) => setDroitDouane(e.target.value)}
-                placeholder={UI.placeholders.amountFCFA}
-                className="text-right tabular-nums"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Frais circuit (FCFA)</Label>
-              <Input
-                value={fraisCircuit}
-                onChange={(e) => setFraisCircuit(e.target.value)}
-                placeholder={UI.placeholders.amountFCFA}
-                className="text-right tabular-nums"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Prestation {societeNom} (FCFA)</Label>
-              <Input
-                value={fraisPrestation}
-                onChange={(e) => setFraisPrestation(e.target.value)}
-                placeholder={UI.placeholders.amountFCFA}
-                className="text-right tabular-nums"
-              />
-            </div>
+            {[
+              { label: labels.droitDouane, hint: labels.droitDouaneHint, val: droitDouane, set: setDroitDouane },
+              { label: labels.fraisCircuit, hint: labels.fraisCircuitHint, val: fraisCircuit, set: setFraisCircuit },
+              { label: `${labels.fraisPrestation} — ${societeNom}`, hint: labels.fraisPrestationHint, val: fraisPrestation, set: setFraisPrestation },
+            ].map((f) => (
+              <div key={f.label} className="space-y-2">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  {f.label}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                        <Info className="size-3.5" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">{f.hint}</TooltipContent>
+                  </Tooltip>
+                </Label>
+                <Input
+                  value={f.val}
+                  onChange={(e) => f.set(e.target.value)}
+                  placeholder={UI.placeholders.amountFCFA}
+                  className="text-right tabular-nums"
+                />
+              </div>
+            ))}
           </div>
 
           {total > 0 && (

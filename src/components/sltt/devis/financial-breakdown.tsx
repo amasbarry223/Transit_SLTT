@@ -2,13 +2,22 @@
 
 import type { Devis } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
+import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { cn } from "@/shared/utils/cn";
 
-export function FinancialBreakdown({ devis }: { devis: Devis }) {
+export function FinancialBreakdown({
+  devis,
+  annexeCode,
+}: {
+  devis: Devis;
+  /** Code annexe (ML/CI) du devis — détermine les intitulés des rubriques (ex. « Frais transit port » en Côte d'Ivoire). */
+  annexeCode?: string | null;
+}) {
+  const labels = resolveDossierCoutLabels(annexeCode);
   const items = [
-    { label: "Droits de douane",  value: devis.droitDouane,    bar: "bg-blue-500",   text: "text-blue-600 dark:text-blue-400" },
-    { label: "Frais de circuit",  value: devis.fraisCircuit,   bar: "bg-violet-500", text: "text-violet-600" },
-    { label: "Prestation SLTT",   value: devis.fraisPrestation, bar: "bg-orange-400", text: "text-orange-600" },
+    { label: labels.droitDouane,    value: devis.droitDouane,    bar: "bg-blue-500",   text: "text-blue-600 dark:text-blue-400" },
+    { label: labels.fraisCircuit,   value: devis.fraisCircuit,   bar: "bg-violet-500", text: "text-violet-600" },
+    { label: labels.fraisPrestation, value: devis.fraisPrestation, bar: "bg-orange-400", text: "text-orange-600" },
   ];
   return (
     <div className="p-5 space-y-3">

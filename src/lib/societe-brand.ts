@@ -134,7 +134,7 @@ export interface DossierCoutLabels {
   fraisPrestationHint: string;
 }
 
-const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
+export const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
   droitDouane: "Droit de douane",
   droitDouaneHint: "Taxe versée à la douane pour dédouaner la marchandise.",
   fraisCircuit: "Frais de circuit global",

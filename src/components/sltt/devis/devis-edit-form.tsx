@@ -1,11 +1,11 @@
 "use client";
 
-import { Pencil, Save, X } from "lucide-react";
+import { Info, Pencil, Save, X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useStore } from "@/lib/store";
 import type { Devis } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { resolveTransitSociete } from "@/lib/societe-brand";
+import { resolveDossierCoutLabels, resolveTransitSociete } from "@/lib/societe-brand";
 import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
@@ -13,15 +13,19 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
 export function DevisEditForm({
   devis, clients, fClientId, handleClientChange,
   fNature, setFNature, fDroitDouane, setFDroitDouane, fFraisCircuit, setFFraisCircuit,
   fFraisPrestation, setFFraisPrestation, fDateValidite, setFDateValidite, fNotes,
   setFNotes, editTotal, handleCancelEdit, handleSave, saving = false,
+  annexeCode,
 }: {
   devis: Devis;
   clients: { id: string; nom: string }[];
+  /** Code annexe (ML/CI) du devis — détermine les intitulés des rubriques (ex. « Frais transit port » en Côte d'Ivoire). */
+  annexeCode?: string | null;
   fClientId: string;
   handleClientChange: (id: string) => void;
   fNature: string;
@@ -43,6 +47,7 @@ export function DevisEditForm({
 }) {
   const societes = useStore((s) => s.societes);
   const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
+  const labels = resolveDossierCoutLabels(annexeCode);
   return (
         <Card className="border-primary/20 shadow-md overflow-hidden">
           <div className="border-b border-primary/20 bg-primary/5 px-5 py-4">
@@ -86,12 +91,22 @@ export function DevisEditForm({
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimation financière</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
-                  { label: "Droits de douane (FCFA)", val: fDroitDouane, set: setFDroitDouane },
-                  { label: "Frais de circuit (FCFA)",  val: fFraisCircuit, set: setFFraisCircuit },
-                  { label: `Prestation ${societeNom} (FCFA)`, val: fFraisPrestation, set: setFFraisPrestation },
+                  { label: labels.droitDouane, hint: labels.droitDouaneHint, val: fDroitDouane, set: setFDroitDouane },
+                  { label: labels.fraisCircuit, hint: labels.fraisCircuitHint, val: fFraisCircuit, set: setFFraisCircuit },
+                  { label: `${labels.fraisPrestation} — ${societeNom}`, hint: labels.fraisPrestationHint, val: fFraisPrestation, set: setFFraisPrestation },
                 ].map((f) => (
                   <div key={f.label} className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">{f.label}</Label>
+                    <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {f.label}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                            <Info className="size-3.5" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs">{f.hint}</TooltipContent>
+                      </Tooltip>
+                    </Label>
                     <Input value={f.val} onChange={(e) => f.set(e.target.value)}
                       placeholder={UI.placeholders.amountFCFA} className="h-10 text-right tabular-nums" />
                   </div>
