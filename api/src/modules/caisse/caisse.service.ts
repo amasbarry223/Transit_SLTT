@@ -18,6 +18,13 @@ export class CaisseService {
 
   async findAll(user: CurrentUserType, annexeId?: string) {
     const annexeFilter = this.buildAnnexeFilter(user);
+    // annexeId est un filtre supplémentaire DEMANDÉ, pas une autorisation :
+    // sans ce contrôle, ...annexeFilter puis ...{annexeId} écrasait la
+    // restriction { in: user.annexeIds } par la valeur fournie par le
+    // client, laissant un non-ADMIN cibler n'importe quelle annexe.
+    if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
     return this.prisma.caisse.findMany({
       where: {
         ...annexeFilter,

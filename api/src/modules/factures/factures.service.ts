@@ -34,6 +34,9 @@ export class FacturesService {
     const skip = (page - 1) * limit;
 
     const annexeFilter = this.buildAnnexeFilter(user);
+    if (query.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(query.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
 
     const where: any = {
       ...annexeFilter,
