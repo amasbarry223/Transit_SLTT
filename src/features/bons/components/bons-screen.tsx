@@ -8,7 +8,7 @@ import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { useToast } from "@/shared/hooks/use-toast";
-import { toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { usePermission } from "@/shared/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
 import { Button } from "@/shared/components/ui/button";
@@ -189,6 +189,11 @@ export function BonsScreen() {
           description: `${reference} n'a pas été validé : le stock disponible est inférieur à la quantité demandée.`,
         });
       }
+    } catch (err: unknown) {
+      toastError(toast, err, {
+        title: "Impossible de valider le bon",
+        fallback: "Impossible de valider le bon de sortie.",
+      });
     } finally {
       setValidatingIds((previous) => {
         const next = new Set(previous);
