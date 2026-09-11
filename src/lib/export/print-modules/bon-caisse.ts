@@ -4,12 +4,9 @@ import { BRAND } from "@/lib/brand-colors";
 import { ensureSocieteBrand, type SocieteBrand, type SocieteLegalInfo } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
-  acquirePrintTarget,
   buildLegalLine,
   buildOfficialLetterheadHTML,
   OFFICIAL_LETTERHEAD_CSS,
-  triggerPrint,
-  warnPopupBlocked,
 } from "../print-document";
 import { fmtFCFA } from "./shared";
 import { SIGNATORIES_BLOCK_CSS, buildSignatoriesBlockHTML } from "./signatories-block";
@@ -232,17 +229,3 @@ ${SIGNATORIES_BLOCK_CSS}
 </html>`;
 }
 
-/** Ouvre une fenêtre dédiée et déclenche l'impression (compat). Préférer l'aperçu intégré. */
-export function printBonSortieCaisseModule(data: BonSortieCaisseModuleData): boolean {
-  const html = buildBonSortieCaisseHTML(data);
-  const win = acquirePrintTarget();
-  if (!win) {
-    warnPopupBlocked();
-    return false;
-  }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  triggerPrint(win);
-  return true;
-}

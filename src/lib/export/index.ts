@@ -7,7 +7,6 @@ export { exportToExcel } from "./excel-export";
 export {
   buildBonSortieCaisseHTML,
   printBilan,
-  printBonSortieCaisseModule,
   printClasseur,
   printClients,
   printDevis,

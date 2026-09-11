@@ -14,9 +14,6 @@ export const CHART_MONTHS_COUNT = 6;
 /** Décalage mois pour construire la série (index 0 = il y a N-1 mois). */
 export const CHART_MONTHS_OFFSET = CHART_MONTHS_COUNT - 1;
 
-/** Mode de paiement par défaut (écritures, transitions dossier). */
-export const DEFAULT_PAIEMENT_MODE = "Virement" as const;
-
 /** Statuts dossier utilisés dans les transitions et la création. */
 export const DOSSIER_STATUT_EN_COURS = "En cours" as const;
 export const DOSSIER_STATUT_DEDOUANE = "Dédouané" as const;

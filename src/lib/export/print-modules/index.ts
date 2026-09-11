@@ -12,7 +12,6 @@ export {
 } from "./recu-paiement";
 export {
   buildBonSortieCaisseHTML,
-  printBonSortieCaisseModule,
   type BonSortieCaisseModuleData,
 } from "./bon-caisse";
 export {

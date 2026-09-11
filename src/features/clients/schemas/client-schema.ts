@@ -10,5 +10,3 @@ export const clientInputSchema = z.object({
   adresse: z.string(),
   annexeId: z.string(),
 });
-
-export type ClientInputValidated = z.infer<typeof clientInputSchema>;

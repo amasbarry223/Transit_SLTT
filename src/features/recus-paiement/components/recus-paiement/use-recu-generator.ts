@@ -6,7 +6,6 @@ import type { RecuPaiementModuleData } from "@/lib/export";
 import { printRecuPaiementModule } from "@/lib/export";
 import { parseAmount } from "@/lib/format";
 import { computeReste, computeStatut } from "@/lib/recus-paiement";
-import type { SocieteBrand } from "@/lib/societe-brand";
 import { useStore } from "@/lib/store";
 
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
@@ -222,5 +221,3 @@ export function useRecuGenerator() {
     resetForm: () => resetForm(),
   };
 }
-
-export type RecuGeneratorBrand = SocieteBrand | null;

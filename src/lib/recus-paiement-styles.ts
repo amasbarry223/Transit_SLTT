@@ -11,13 +11,9 @@ export const RECEIPT_LOGO_FALLBACK = "/logoV.png";
  */
 export const RECEIPT_WIDTH_MM = 195;
 export const RECEIPT_HEIGHT_MM = 82;
-export const RECEIPT_WIDTH_CM = 19.5;
-export const RECEIPT_HEIGHT_CM = 8.2;
-export const RECEIPT_ASPECT_RATIO = RECEIPT_WIDTH_MM / RECEIPT_HEIGHT_MM;
 
-/** Libellés affichés dans l'UI */
+/** Libellé affiché dans l'UI */
 export const RECEIPT_FORMAT_LABEL = "19,5 × 8,2 cm";
-export const RECEIPT_FORMAT_LABEL_MM = "195 × 82 mm";
 
 /** Iframe d'impression dédiée au reçu (dimensions ≠ A4). */
 export const RECEIPT_PRINT_FRAME_ID = "sltt-print-frame-recu";

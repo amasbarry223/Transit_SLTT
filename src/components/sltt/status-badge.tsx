@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/shared/utils/cn";
-import { BRAND, CHART_BRAND } from "@/lib/brand-colors";
 import { Badge } from "@/shared/components/ui/badge";
 import {
   DossierStatut,
@@ -97,13 +96,6 @@ export const DOSSIER_STATUT_DOT: Record<DossierStatut, string> = {
   Dédouané: dotClasses[DOSSIER_STATUT_TONE["Dédouané"]],
   Livré: dotClasses[DOSSIER_STATUT_TONE["Livré"]],
   Soldé: dotClasses[DOSSIER_STATUT_TONE["Soldé"]],
-};
-
-export const DOSSIER_STATUT_HEX: Record<DossierStatut, string> = {
-  "En cours": BRAND.primary,
-  Dédouané: "#4F46E5",
-  Livré: CHART_BRAND.amber,
-  Soldé: CHART_BRAND.emerald,
 };
 
 export function DossierStatutBadge({ statut }: { statut: DossierStatut }) {
