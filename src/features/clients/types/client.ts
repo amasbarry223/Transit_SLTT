@@ -12,6 +12,9 @@ export interface Client {
   nbDossiers: number;
   totalDu: number;
   totalPaye: number;
+  /** Total engagé (dossiers non facturés + factures actives), même
+   *  composition que totalDu/totalPaye — cf. syncClientStats. */
+  totalInvesti?: number;
   /** Date de création côté API (Prisma createdAt) — permet un calcul réel
    *  de variation mensuelle (nouveaux clients ce mois-ci vs le précédent). */
   createdAt?: string;

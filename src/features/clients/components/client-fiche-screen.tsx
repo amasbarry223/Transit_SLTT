@@ -153,21 +153,19 @@ export function ClientFicheScreen() {
       .slice(0, 25);
   }, [auditLogs, client]);
 
-  const { totalInvesti, totalPaye, totalDu } = useMemo(() => {
-    let investi = 0;
-    let paye = 0;
-    for (const e of classeurJournal) {
-      investi += e.debit;
-      paye += e.credit;
-    }
-    // Solde net global (investi − payé), pas une somme de max(0, …) par ligne :
-    // ce clamp par ligne ignorait un crédit qui dépasse le débit sur une même
-    // ligne (avance/versement) au lieu de le déduire du reste dû d'ailleurs —
-    // même formule que computeClasseurTotals (src/lib/classeur.ts), pour que
-    // ce total reste identique à celui de l'onglet Classeur sur les mêmes
-    // écritures non filtrées.
-    return { totalInvesti: investi, totalPaye: paye, totalDu: investi - paye };
-  }, [classeurJournal]);
+  // Source unique : client.totalDu/totalPaye/totalInvesti (syncClientStats),
+  // déjà utilisés par la liste clients, le tri et l'export PDF des créances.
+  // Un ancien recalcul local ici compensait investi/payé sur l'ensemble du
+  // classeur (solde NET, comme l'onglet Classeur) — pour un client avec un
+  // dossier en avance et un autre dossier dû, ce bandeau affichait un solde
+  // inférieur à celui de la liste clients et de l'export, pour la même
+  // dette. L'onglet Classeur (computeClasseurTotals) garde sa propre
+  // compensation nette : c'est un grand livre, où elle est la sémantique
+  // comptable correcte — seul ce bandeau de synthèse en tête de fiche
+  // devait s'aligner sur le reste de l'application.
+  const totalInvesti = client?.totalInvesti ?? 0;
+  const totalPaye = client?.totalPaye ?? 0;
+  const totalDu = client?.totalDu ?? 0;
 
   const pendingCount = useMemo(
     () => classeurJournal.filter((e) => e.debit - e.credit > 0).length,

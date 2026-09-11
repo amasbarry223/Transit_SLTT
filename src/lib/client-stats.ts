@@ -77,6 +77,7 @@ export function syncClientStats(
     const cdNonFactures = dossiersNonFactures(cd, factures);
     const cf = factures.filter((f) => f.clientId === c.id);
     const ce = ecritures.filter((e) => e.clientId === c.id && !e.dossierId);
+    const cfActives = cf.filter((f) => f.statut !== "Annulée");
     return {
       ...c,
       nbDossiers: cd.length,
@@ -87,9 +88,16 @@ export function syncClientStats(
       totalDu:
         cdNonFactures.reduce((s, d) => s + resteAPayer(d), 0) +
         ce.reduce((s, e) => s + resteAPayer(e), 0) +
-        cf
-          .filter((f) => f.statut !== "Annulée")
-          .reduce((s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }), 0),
+        cfActives.reduce((s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }), 0),
+      // Même composition que totalPaye/totalDu ci-dessus (dossiers non
+      // facturés + écritures sans dossier + factures actives) — ajouté pour
+      // que la fiche client affiche le total réellement engagé sans
+      // l'approximer en aval par totalPaye + totalDu (imprécis dès qu'un
+      // enregistrement est en trop-perçu).
+      totalInvesti:
+        cdNonFactures.reduce((s, d) => s + d.montantInvesti, 0) +
+        ce.reduce((s, e) => s + e.montantInvesti, 0) +
+        cfActives.reduce((s, f) => s + f.montantTTC, 0),
     };
   });
 }

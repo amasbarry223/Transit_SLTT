@@ -68,4 +68,21 @@ describe("syncClientStats", () => {
     expect(updated.nbDossiers).toBe(0);
     expect(updated.totalDu).toBe(1200);
   });
+
+  it("un dossier en avance ne compense pas un autre dossier dû (pas de solde net, une somme par enregistrement clampée à 0)", () => {
+    // Scénario Phase 5 : dossier d1 en avance (payé 200 de plus que dû),
+    // dossier d2 dû de 600 — client-fiche-screen.tsx recalculait auparavant
+    // un solde NET (investi - payé sur tout le classeur) qui aurait donné
+    // 400 ici (600 - 200), différent de la liste clients/export (600, somme
+    // de resteAPayer clampés à 0 par dossier — d1 ne peut pas passer sous 0).
+    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
+    const dossiers = [
+      { id: "d1", clientId: "c1", montantInvesti: 1000, montantPaye: 1200 }, // avance de 200
+      { id: "d2", clientId: "c1", montantInvesti: 600, montantPaye: 0 }, // dû de 600
+    ] as Dossier[];
+    const [updated] = syncClientStats(dossiers, [], [], clients);
+    expect(updated.totalDu).toBe(600);
+    expect(updated.totalPaye).toBe(1200);
+    expect(updated.totalInvesti).toBe(1600);
+  });
 });
