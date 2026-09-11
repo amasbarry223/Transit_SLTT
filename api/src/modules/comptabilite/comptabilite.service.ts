@@ -5,6 +5,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -82,27 +83,46 @@ export class ComptabiliteService {
         ? data.reference
         : await this.nextOperationReference();
 
-    return this.prisma.operationComptable.create({
-      data: {
-        reference,
-        annexeId: data.annexeId || null,
-        date: data.date || new Date().toISOString().slice(0, 10),
-        clientId: data.clientId || null,
-        dossierId: data.dossierId || null,
-        clientNom: data.clientNom || null,
-        nature: data.nature,
-        type: data.type,
-        montant,
-        modePaiement: data.modePaiement || 'Espèces',
-        source: data.source || 'saisie',
-        importRef: data.importRef || null,
-        // Attribution fiable : le nom de l'auteur vient du JWT, jamais d'un
-        // champ texte libre fourni par le client (qui pouvait prétendre
-        // être n'importe qui dans le journal comptable).
-        creePar: user.nom,
-      },
-      include: { annexe: true },
+    const buildData = (ref: string) => ({
+      reference: ref,
+      annexeId: data.annexeId || null,
+      date: data.date || new Date().toISOString().slice(0, 10),
+      clientId: data.clientId || null,
+      dossierId: data.dossierId || null,
+      clientNom: data.clientNom || null,
+      nature: data.nature,
+      type: data.type,
+      montant,
+      modePaiement: data.modePaiement || 'Espèces',
+      source: data.source || 'saisie',
+      importRef: data.importRef || null,
+      // Attribution fiable : le nom de l'auteur vient du JWT, jamais d'un
+      // champ texte libre fourni par le client (qui pouvait prétendre
+      // être n'importe qui dans le journal comptable).
+      creePar: user.nom,
     });
+
+    try {
+      return await this.prisma.operationComptable.create({
+        data: buildData(reference),
+        include: { annexe: true },
+      });
+    } catch (err) {
+      // nextOperationReference() vérifie puis choisit une référence en deux
+      // temps (pas de séquence atomique en base) : deux créations
+      // concurrentes peuvent choisir la même référence entre le check et le
+      // create. Plutôt que de renvoyer un 409 pour une collision purement
+      // interne (l'utilisateur n'a rien fait de mal), on retente une fois
+      // avec une référence fraîchement recalculée.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const retryReference = await this.nextOperationReference();
+        return this.prisma.operationComptable.create({
+          data: buildData(retryReference),
+          include: { annexe: true },
+        });
+      }
+      throw err;
+    }
   }
 
   async deleteOperation(id: string, user: CurrentUserType) {
