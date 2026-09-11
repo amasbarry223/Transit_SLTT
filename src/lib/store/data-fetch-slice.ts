@@ -7,7 +7,7 @@ import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
-import type { DossierStatut, FactureStatut, DevisStatut } from "@/lib/domain-types";
+import { DEFAULT_TVA_RATE, type DossierStatut, type FactureStatut, type DevisStatut } from "@/lib/domain-types";
 
 // Prisma StatutFacture (BROUILLON | ENVOYEE | PARTIELLEMENT_PAYEE | PAYEE | ANNULEE | RETARD)
 // -> FactureStatut du front. ENVOYEE et RETARD comptent comme "Envoyée" (facture émise,
@@ -205,7 +205,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           montantHT: Number(l.montantTotal ?? l.montantHT ?? 0),
         })),
         // Prisma renvoie montantHt / tauxTva / montantTva / montantTtc.
-        tauxTVA: Number(f.tauxTva ?? f.tauxTVA ?? 18),
+        tauxTVA: Number(f.tauxTva ?? f.tauxTVA ?? DEFAULT_TVA_RATE),
         montantHT: Number(f.montantHt ?? f.montantHT ?? 0),
         montantTVA: Number(f.montantTva ?? f.montantTVA ?? 0),
         montantTTC: Number(f.montantTtc ?? f.montantTTC ?? 0),
