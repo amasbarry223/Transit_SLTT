@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { computeBenefice } from "@/lib/benefice";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { parseLocalDate } from "@/lib/format";
-import { sommeDossiersEncaisses } from "@/lib/client-stats";
+import { sommeDossiersEncaisses, sommeFacturesEncaissees } from "@/lib/client-stats";
 import { useStore } from "@/lib/store";
 
 export type BeneficeMensuel = {
@@ -65,10 +65,11 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
         (sum, e) => sum + e.montantPaye,
         0,
       ) +
-      filterByPeriode(factures, annee, mois).reduce(
-        (sum, f) => sum + f.montantPaye,
-        0,
-      ) +
+      // sommeFacturesEncaissees exclut les factures Annulée — une facture
+      // encaissée puis annulée ne doit plus compter dans le bénéfice affiché
+      // (même règle que client-stats.ts / dashboard-metrics.ts). Un reduce
+      // local ici recomptait ce montant sans jamais l'exclure.
+      sommeFacturesEncaissees(filterByPeriode(factures, annee, mois)) +
       // Dossiers réglés directement (sans facture) : le montantPaye du dossier
       // persiste désormais, il ne disparaît plus au rechargement.
       sommeDossiersEncaisses(dossiers, factures, dansLeMois);

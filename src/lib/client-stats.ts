@@ -33,8 +33,17 @@ export function sommeDossiersEncaisses(
 
 /**
  * Recalcule les agrégats client à partir des dossiers, factures et écritures.
- * Les factures déjà rattachées à un dossier du client sont exclues pour éviter
- * le double comptage (le dossier porte déjà l'encours).
+ *
+ * Un dossier facturé est exclu du total (pas sa facture) : une fois qu'une
+ * facture est générée à partir d'un dossier, c'est elle qui devient la
+ * source de vérité de l'encaissement (elle peut inclure la TVA, avoir son
+ * propre historique de paiement) — même convention que sommeDossiersEncaisses
+ * et les Bilans (use-bilans-screen.ts). Avant ce correctif, c'était l'inverse
+ * (la facture était exclue, le dossier gardait son propre montantPaye) : un
+ * dossier réglé avant sa facturation, puis facturé et réglé une seconde fois
+ * via la facture, voyait les deux montants s'additionner sur la fiche client
+ * — ni le Dashboard ni les Bilans ne reproduisaient ce doublon, seule la
+ * fiche client (ce fichier) divergeait.
  */
 export function syncClientStats(
   dossiers: Dossier[],
@@ -44,20 +53,21 @@ export function syncClientStats(
 ): Client[] {
   return clients.map((c) => {
     const cd = dossiers.filter((d) => d.clientId === c.id);
-    const dossierIds = new Set(cd.map((d) => d.id));
-    const cf = factures.filter(
-      (f) => f.clientId === c.id && !(f.dossierId && dossierIds.has(f.dossierId)),
+    const facturedDossierIds = new Set(
+      factures.map((f) => f.dossierId).filter((x): x is string => Boolean(x)),
     );
+    const cdNonFactures = cd.filter((d) => !facturedDossierIds.has(d.id));
+    const cf = factures.filter((f) => f.clientId === c.id);
     const ce = ecritures.filter((e) => e.clientId === c.id && !e.dossierId);
     return {
       ...c,
       nbDossiers: cd.length,
       totalPaye:
-        cd.reduce((s, d) => s + d.montantPaye, 0) +
+        cdNonFactures.reduce((s, d) => s + d.montantPaye, 0) +
         sommeFacturesEncaissees(cf) +
         ce.reduce((s, e) => s + e.montantPaye, 0),
       totalDu:
-        cd.reduce((s, d) => s + resteAPayer(d), 0) +
+        cdNonFactures.reduce((s, d) => s + resteAPayer(d), 0) +
         ce.reduce((s, e) => s + resteAPayer(e), 0) +
         cf
           .filter((f) => f.statut !== "Annulée")

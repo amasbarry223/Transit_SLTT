@@ -34,19 +34,28 @@ export function useBilansScreen() {
   const periodeLabel = getPeriodeLabel(periode, mois);
 
   const combinedEcritures = useMemo(() => {
-    const fromFactures = factures.map((f) => ({
-      id: `fac-${f.id}`,
-      date: f.date,
-      datePaiement: f.date,
-      clientId: f.clientId,
-      clientNom: f.clientNom,
-      dossierId: f.dossierId || undefined,
-      annexeId: f.annexeId,
-      montantInvesti: Number(f.montantTTC || 0),
-      montantPaye: Number(f.montantPaye || 0),
-      modePaiement: "Virement" as const,
-      note: `Facture ${f.numero}`,
-    }));
+    // Une facture Annulée ne doit plus apparaître dans le récap ni les
+    // graphiques — même règle que sommeFacturesEncaissees (client-stats.ts)
+    // et beneficeAnnexe plus bas dans ce même fichier, qui l'excluent déjà.
+    // Sans ce filtre, une facture encaissée puis annulée continuait à
+    // gonfler "Investi"/"Encaissé" du récap client alors que le Bénéfice
+    // affiché juste au-dessus l'ignorait déjà — deux chiffres divergents
+    // sur le même écran pour la même donnée.
+    const fromFactures = factures
+      .filter((f) => f.statut !== "Annulée")
+      .map((f) => ({
+        id: `fac-${f.id}`,
+        date: f.date,
+        datePaiement: f.date,
+        clientId: f.clientId,
+        clientNom: f.clientNom,
+        dossierId: f.dossierId || undefined,
+        annexeId: f.annexeId,
+        montantInvesti: Number(f.montantTTC || 0),
+        montantPaye: Number(f.montantPaye || 0),
+        modePaiement: "Virement" as const,
+        note: `Facture ${f.numero}`,
+      }));
 
     // ecritures est un vestige toujours vide ; on ne garde que les non-liées
     // par prudence si une source future en réintroduit.

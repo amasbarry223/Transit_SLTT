@@ -3,8 +3,11 @@ import { syncClientStats, sommeDossiersEncaisses } from "./client-stats";
 import type { Client, Dossier, Facture, Ecriture } from "@/lib/store";
 
 describe("syncClientStats", () => {
-  it("additionne dossiers, factures autonomes et écritures sans double-compter les écritures liées", () => {
+  it("un dossier facturé cède la main à sa facture (pas de double comptage dossier + facture)", () => {
     const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
+    // d1 a déjà 400 réglés AVANT sa facturation — une fois facturé, c'est la
+    // facture (200/500) qui doit compter, plus son reste dû (300), pas les 400
+    // du dossier en plus.
     const dossiers = [{ id: "d1", clientId: "c1", montantInvesti: 1000, montantPaye: 400 }] as Dossier[];
     const factures = [
       { clientId: "c1", dossierId: "d1", statut: "Partielle", montantTTC: 500, montantPaye: 200 },
@@ -16,13 +19,13 @@ describe("syncClientStats", () => {
     ] as Ecriture[];
     const [updated] = syncClientStats(dossiers, factures, ecritures, clients);
     expect(updated.nbDossiers).toBe(1);
-    // dossier payé 400 + facture autonome 200 + écriture autonome 50 (facture liée au dossier exclue)
-    expect(updated.totalPaye).toBe(650);
-    // dossier restant (600) + écriture autonome restante (250) + facture autonome restante (300)
-    expect(updated.totalDu).toBe(1150);
+    // dossier d1 exclu (facturé) + facture liée 200 + facture autonome 200 + écriture autonome 50
+    expect(updated.totalPaye).toBe(450);
+    // dossier d1 exclu (facturé) + reste facture liée 300 + reste facture autonome 300 + reste écriture autonome 250
+    expect(updated.totalDu).toBe(850);
   });
 
-  it("exclut les factures rattachées à un dossier du client (anti double comptage)", () => {
+  it("exclut les dossiers rattachés à une facture du client (anti double comptage)", () => {
     const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
     const dossiers = [{ id: "d1", clientId: "c1", montantInvesti: 1000, montantPaye: 0 }] as Dossier[];
     const factures = [
