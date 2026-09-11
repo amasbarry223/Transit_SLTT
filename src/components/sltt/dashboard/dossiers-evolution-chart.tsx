@@ -20,21 +20,6 @@ interface DossierMoisPoint {
   traites?: number;
 }
 
-const DEFAULT_12_MONTHS = [
-  { mois: "Jan", crees: 220, traites: 120 },
-  { mois: "Fév", crees: 340, traites: 180 },
-  { mois: "Mar", crees: 460, traites: 240 },
-  { mois: "Avr", crees: 580, traites: 320 },
-  { mois: "Mai", crees: 620, traites: 390 },
-  { mois: "Juin", crees: 780, traites: 490 },
-  { mois: "Juil", crees: 920, traites: 610 },
-  { mois: "Août", crees: 1040, traites: 710 },
-  { mois: "Sep", crees: 1150, traites: 790 },
-  { mois: "Oct", crees: 1248, traites: 892 },
-  { mois: "Nov", crees: null, traites: null },
-  { mois: "Déc", crees: null, traites: null },
-];
-
 export function DossiersEvolutionChart({
   data,
   gridColor,
@@ -45,20 +30,17 @@ export function DossiersEvolutionChart({
   tickColor: string;
   barCursorFill?: string;
 }) {
-  const chartData = useMemo(() => {
-    if (!data || data.length < 3) {
-      return DEFAULT_12_MONTHS;
-    }
-    // Si des données dynamiques existent, on s'assure qu'on affiche 12 mois
-    if (data.length >= 6) {
-      return data.map((d) => ({
+  const chartData = useMemo(
+    () =>
+      (data || []).map((d) => ({
         mois: d.mois,
         crees: d.crees ?? d.valeur ?? 0,
-        traites: d.traites ?? Math.round((d.crees ?? d.valeur ?? 0) * 0.72),
-      }));
-    }
-    return DEFAULT_12_MONTHS;
-  }, [data]);
+        traites: d.traites ?? 0,
+      })),
+    [data],
+  );
+
+  const hasData = chartData.some((d) => d.crees > 0 || d.traites > 0);
 
   return (
     <Card className="rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
@@ -74,9 +56,12 @@ export function DossiersEvolutionChart({
             </h2>
           </div>
 
-          {/* Period selector dropdown matching reference image */}
+          {/* Period selector dropdown matching reference image — le nombre de
+              mois affichés suit la donnée réelle (CHART_MONTHS_COUNT), plus
+              un "12 derniers mois" figé qui n'a jamais correspondu à ce que
+              le graphique affiche réellement (6 mois). */}
           <div className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-slate-50/70 dark:bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-            <span>12 derniers mois</span>
+            <span>{chartData.length} derniers mois</span>
             <ChevronDown className="size-3.5" />
           </div>
         </div>
@@ -94,7 +79,15 @@ export function DossiersEvolutionChart({
         </div>
       </div>
 
-      {/* Line Chart */}
+      {!hasData ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
+          <p className="text-sm font-medium text-foreground/90">Aucun dossier sur cette période</p>
+          <p className="max-w-[240px] text-xs text-muted-foreground">
+            La courbe apparaît dès qu&apos;un dossier est créé ou traité au cours des {chartData.length}{" "}
+            derniers mois.
+          </p>
+        </div>
+      ) : (
       <div className="h-[210px] w-full min-w-0 pt-2">
         <ResponsiveContainer width="100%" height={210} minWidth={0}>
           <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -109,8 +102,7 @@ export function DossiersEvolutionChart({
               tick={{ fontSize: 10, fill: tickColor, fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
-              ticks={[0, 500, 1000, 1500]}
-              domain={[0, 1500]}
+              allowDecimals={false}
               width={34}
             />
             <Tooltip
@@ -156,6 +148,7 @@ export function DossiersEvolutionChart({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      )}
     </Card>
   );
 }
