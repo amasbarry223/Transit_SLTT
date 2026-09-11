@@ -101,14 +101,16 @@ export function useDossierFormState({
     [totalImportAmount, montantPaye],
   );
 
-  const selectedSociete = societes[0];
   const selectedAnnexe = annexes.find((item) => item.id === annexeId);
-  const referencePrefix =
-    selectedSociete?.nom?.trim() || resolveDossierReferencePrefix(societes);
+  // resolveDossierReferencePrefix() passe par resolveTransitSociete() — un
+  // societes[0] brut pouvait renvoyer une société différente de l'identité
+  // transit si plusieurs lignes existaient. computeDossierReference()
+  // n'utilise de toute façon jamais son 1er paramètre (typé `unknown`).
+  const referencePrefix = resolveDossierReferencePrefix(societes);
   const reference =
     existing?.reference ??
     computeDossierReference(
-      selectedSociete,
+      undefined,
       selectedAnnexe,
       referencePrefix,
       dossiers.map((d) => d.reference),

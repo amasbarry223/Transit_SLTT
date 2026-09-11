@@ -43,9 +43,12 @@ function resolveDossierReference(
   annexeId: string,
   year: number,
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
-  const societe = get().societes[0];
   const annexe = get().annexes.find((item) => item.id === annexeId);
-  const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
+  // resolveDossierReferencePrefix() passe par resolveTransitSociete() (priorité
+  // à l'UUID historique, puis à l'unique société active) — un societes[0] brut
+  // pouvait renvoyer une société différente de l'identité transit si plusieurs
+  // lignes existaient.
+  const prefix = resolveDossierReferencePrefix(get().societes);
   return computeDossierReference(
     undefined,
     annexe,
@@ -163,9 +166,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
   importDossierHistorique: async (input) => {
     const year = Number(input.date.slice(0, 4)) || new Date().getFullYear();
-    const societe = get().societes[0];
     const annexe = get().annexes.find((item) => item.id === input.annexeId);
-    const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
+    const prefix = resolveDossierReferencePrefix(get().societes);
     const { reference } = computeHistoricalDossierReference(
       undefined,
       annexe,

@@ -6,7 +6,7 @@ import type { BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { buildBonSortieCaisseHTML, type BonSortieCaisseModuleData } from "@/lib/export";
-import { requirePrintHTMLBrand, resolveSlttBrand } from "@/lib/societe-brand";
+import { requirePrintHTMLBrand, resolveTransitSociete } from "@/lib/societe-brand";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
@@ -93,7 +93,13 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
   }, [bonsSortieCaisse, caisseSearch]);
 
   function buildCaissePrintData(bon: BonSortieCaisse): BonSortieCaisseModuleData | null {
-    const societe = resolveSlttBrand(societes) ? societes[0] : undefined;
+    // resolveSlttBrand(societes) est TOUJOURS vérité (repli sur
+    // DEFAULT_TRANSIT_BRAND) : le ternaire `? societes[0] : undefined`
+    // renvoyait donc systématiquement societes[0], sans jamais passer par
+    // le résolveur — resolveTransitSociete() applique la même priorité
+    // (UUID historique puis société active unique) que le reste des
+    // impressions.
+    const societe = resolveTransitSociete(societes);
     const brand = societe
       ? {
           name: societe.nom,

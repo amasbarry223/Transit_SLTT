@@ -8,6 +8,7 @@ import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
 import { DEFAULT_TVA_RATE, type DossierStatut, type FactureStatut, type DevisStatut } from "@/lib/domain-types";
+import { DEFAULT_TRANSIT_BRAND, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-brand";
 
 // Prisma StatutFacture (BROUILLON | ENVOYEE | PARTIELLEMENT_PAYEE | PAYEE | ANNULEE | RETARD)
 // -> FactureStatut du front. ENVOYEE et RETARD comptent comme "Envoyée" (facture émise,
@@ -477,19 +478,24 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
       set((state) => {
         const nextContrats = syncContratStats(state.depenses, state.contratPrestations, mappedContrats);
 
-        const nomSoc = settingsMap.societe_nom || settingsMap.nom_societe || "Transit SLTT";
-        const raisonSoc = settingsMap.societe_raison_sociale || nomSoc;
+        // Repli dérivé de DEFAULT_TRANSIT_BRAND (societe-brand.ts), pas de
+        // valeurs dupliquées ici — avant ce commit, ce bloc affichait une
+        // identité société différente (nom, adresse, RCCM/NIF) de celle de
+        // societes-slice.ts::DEFAULT_SOCIETE selon que ce chargement avait
+        // ou non déjà eu lieu.
+        const nomSoc = settingsMap.societe_nom || settingsMap.nom_societe || DEFAULT_TRANSIT_BRAND.nom;
+        const raisonSoc = settingsMap.societe_raison_sociale || DEFAULT_TRANSIT_BRAND.raisonSociale || nomSoc;
         const mappedSocietes = [
           {
-            id: (state.societes && state.societes[0]?.id) || "22222222-2222-2222-2222-222222222222",
+            id: (state.societes && state.societes[0]?.id) || LEGACY_TRANSIT_SOCIETE_ID,
             nom: nomSoc,
             raisonSociale: raisonSoc,
             actif: true,
-            logoUrl: settingsMap.societe_logo_url || "/logoV.png",
-            adresse: settingsMap.societe_adresse || "Niaréla - Rue 516 porte C/63, Bamako, Mali",
-            telephone: settingsMap.societe_telephone || "+223 76 96 47 06 / 92 92 46 48",
-            rccm: settingsMap.societe_rccm || "Ma.Bko.2025 B.5897",
-            nif: settingsMap.societe_nif || "084151062H",
+            logoUrl: settingsMap.societe_logo_url || DEFAULT_TRANSIT_BRAND.logoUrl,
+            adresse: settingsMap.societe_adresse || DEFAULT_TRANSIT_BRAND.legal?.adresse,
+            telephone: settingsMap.societe_telephone || DEFAULT_TRANSIT_BRAND.legal?.telephone,
+            rccm: settingsMap.societe_rccm || DEFAULT_TRANSIT_BRAND.legal?.rccm,
+            nif: settingsMap.societe_nif || DEFAULT_TRANSIT_BRAND.legal?.nif,
             afficherNomAvecLogo: settingsMap.societe_afficher_nom_avec_logo !== "false",
             signataireDg: settingsMap.societe_signataire_dg || undefined,
             signatairePdg: settingsMap.societe_signataire_pdg || undefined,

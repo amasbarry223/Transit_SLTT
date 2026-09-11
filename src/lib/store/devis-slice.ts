@@ -6,6 +6,7 @@ import { canTransitionDevis } from "@/lib/status-flow";
 import type { Devis, DevisStatut, Dossier } from "@/lib/domain-types";
 import type { DevisInput, DossierInput, SLTTState } from "@/lib/store";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
+import { resolveTransitSociete } from "@/lib/societe-brand";
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
@@ -196,7 +197,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       throw new Error("Seul un devis Accepté peut être converti en dossier.");
     }
 
-    if (!get().societes[0]) {
+    if (!resolveTransitSociete(get().societes)) {
       throw new Error("Aucune société configurée. Renseignez-la dans Paramètres > Sociétés.");
     }
 

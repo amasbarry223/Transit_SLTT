@@ -40,6 +40,7 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { cn } from "@/shared/utils/cn";
 import { computeAnnexeScopedReference } from "@/lib/store/reference";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { BON_MOTIFS } from "./use-bon-filters";
 
 type BonFormDialogProps = {
@@ -96,6 +97,10 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
       setFormClientId("");
       setFormMotif("");
       setFormLignes([createEmptyLigne()]);
+      // saving n'est plus remis à false après un succès (voir handleValider/
+      // handleSaveDraft) : on le réarme ici pour ne pas laisser les boutons
+      // désactivés à la réouverture.
+      setSaving(false);
     }
   }
 
@@ -127,12 +132,18 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
   const totalMontant = lignesAnalysis.reduce((acc, l) => acc + l.montantNum, 0);
   const totalQuantite = lignesAnalysis.reduce((acc, l) => acc + l.quantiteNum, 0);
 
+  // Identité société pour l'aperçu imprimé — résolue (pas un societes[0]
+  // brut) pour rester cohérente avec le reste des impressions.
+  const selectedSociete = resolveSlttBrand(societes);
+
   // Stock principal / Annexe pour calcul de la référence
   const firstStockItem = lignesAnalysis.find((l) => l.stockItem)?.stockItem;
-  const selectedSociete = societes[0];
   const previewReference = firstStockItem
     ? computeAnnexeScopedReference(
-        selectedSociete,
+        // 1er paramètre jamais lu par computeAnnexeScopedReference (typé
+        // `unknown`) — un societes[0] brut était passé ici sans jamais
+        // influencer la référence calculée.
+        undefined,
         annexes.find((a) => a.id === firstStockItem.annexeId),
         "BS",
         bons.map((b) => b.reference),
@@ -194,6 +205,14 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
     };
   }
 
+  // Le dialog Radix reste monté et cliquable ~200ms pendant son animation de
+  // fermeture (data-[state=closed]:animate-out, duration-200). Si `saving`
+  // repassait à false dans un `finally` après un succès, un second clic
+  // pendant cette fenêtre resoumettait les MÊMES lignes (pas encore
+  // réinitialisées — ça ne se faisait qu'à la réouverture) et créait un vrai
+  // bon en double. On ne réarme donc `saving` que sur les branches qui ne
+  // ferment pas le dialog ; sur les branches de succès, on vide le formulaire
+  // avant de fermer pour qu'un clic résiduel ne puisse plus rejouer la saisie.
   async function handleValider() {
     if (!canWrite || !allLignesValid || !selectedClient || !formMotif) return;
     const payload = prepareBonPayload("Validé");
@@ -206,6 +225,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
         title: "Bon de sortie validé",
         description: `Bon de sortie validé — ${payload.lignes.length} article(s) décrémenté(s) du stock.`,
       });
+      setFormLignes([createEmptyLigne()]);
       onOpenChange(false);
     } catch (error: unknown) {
       const stockInsuffisant = error instanceof Error && error.message.includes("Stock insuffisant");
@@ -215,15 +235,15 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
           description:
             "Le stock disponible est inférieur à la quantité demandée sur un ou plusieurs articles. Le bon a été enregistré comme brouillon.",
         });
+        setFormLignes([createEmptyLigne()]);
         onOpenChange(false);
       } else {
         toastError(toast, error, {
           title: "Impossible d'enregistrer le bon de sortie",
           fallback: "Impossible d'enregistrer le bon de sortie.",
         });
+        setSaving(false);
       }
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -239,13 +259,13 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
         title: "Brouillon enregistré",
         description: "Le bon de sortie multi-articles a été sauvegardé comme brouillon.",
       });
+      setFormLignes([createEmptyLigne()]);
       onOpenChange(false);
     } catch (error: unknown) {
       toastError(toast, error, {
         title: "Impossible d'enregistrer le brouillon",
         fallback: "Impossible d'enregistrer le brouillon.",
       });
-    } finally {
       setSaving(false);
     }
   }

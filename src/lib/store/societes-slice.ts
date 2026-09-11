@@ -4,18 +4,24 @@ import { api } from "@/lib/api-client";
 import type { Societe, SocieteInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+import { DEFAULT_TRANSIT_BRAND, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-brand";
 
+/** Dérivé de DEFAULT_TRANSIT_BRAND (source unique de repli, societe-brand.ts)
+ *  plutôt que d'un jeu de valeurs dupliqué — avant ce commit, ce repli
+ *  ("Transit SLTT", Bamako Niaréla, RCCM Ma.Bko.2025 B.5897) et
+ *  DEFAULT_TRANSIT_BRAND ("TRAORE DE LOGISTIQUE", RCCM MA.BKO.2024.B.1234)
+ *  affichaient deux identités société différentes selon l'écran. */
 export const DEFAULT_SOCIETE: Societe = {
-  id: "22222222-2222-2222-2222-222222222222",
-  nom: "Transit SLTT",
-  raisonSociale: "Transit SLTT SARL",
+  id: LEGACY_TRANSIT_SOCIETE_ID,
+  nom: DEFAULT_TRANSIT_BRAND.nom,
+  raisonSociale: DEFAULT_TRANSIT_BRAND.raisonSociale,
   actif: true,
-  logoUrl: "/logoV.png",
-  adresse: "Niaréla - Rue 516 porte C/63, Bamako, Mali",
-  telephone: "+223 76 96 47 06 / 92 92 46 48",
-  rccm: "Ma.Bko.2025 B.5897",
-  nif: "084151062H",
-  afficherNomAvecLogo: true,
+  logoUrl: DEFAULT_TRANSIT_BRAND.logoUrl,
+  adresse: DEFAULT_TRANSIT_BRAND.legal?.adresse,
+  telephone: DEFAULT_TRANSIT_BRAND.legal?.telephone,
+  rccm: DEFAULT_TRANSIT_BRAND.legal?.rccm,
+  nif: DEFAULT_TRANSIT_BRAND.legal?.nif,
+  afficherNomAvecLogo: DEFAULT_TRANSIT_BRAND.afficherNomAvecLogo ?? true,
 };
 
 export interface SocietesSlice {
