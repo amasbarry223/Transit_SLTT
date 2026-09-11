@@ -124,8 +124,16 @@ export function DashboardKpiCard({
         <div className="mt-2.5 flex items-center gap-1.5 text-xs">
           {trend !== undefined ? (
             <>
-              <span className="inline-flex items-center gap-0.5 font-bold text-emerald-300">
-                <span>↗</span>
+              {/* La flèche et la couleur suivent le signe réel de la
+                  variation — jusqu'ici toujours vert/montante, même pour
+                  une baisse, parce que trend.value était figé positif. */}
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 font-bold",
+                  trend.value < 0 ? "text-red-300" : "text-emerald-300",
+                )}
+              >
+                <span>{trend.value < 0 ? "↘" : "↗"}</span>
                 <span>{trend.value > 0 ? `+${trend.value}%` : `${trend.value}%`}</span>
               </span>
               <span className="text-white/75 font-normal">

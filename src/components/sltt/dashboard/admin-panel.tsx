@@ -13,6 +13,9 @@ interface AdminPanelProps {
   alertes: LiveAlert[];
   dossiersCount: number;
   clientsCount: number;
+  /** Variation réelle (%) vs le mois précédent — cf. computeCountVariation. */
+  dossiersVariation?: number;
+  clientsVariation?: number;
   className?: string;
 }
 
@@ -22,6 +25,8 @@ export function AdminPanel({
   alertes,
   dossiersCount,
   clientsCount,
+  dossiersVariation,
+  clientsVariation,
   className,
 }: AdminPanelProps) {
   const critical = useMemo(
@@ -112,9 +117,19 @@ export function AdminPanel({
             <p className="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
               {dossiersCount.toLocaleString("fr-FR")}
             </p>
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              ↗ +12%
-            </p>
+            {dossiersVariation !== undefined && (
+              <p
+                className={cn(
+                  "text-xs font-bold mt-0.5",
+                  dossiersVariation < 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-emerald-600 dark:text-emerald-400",
+                )}
+              >
+                {dossiersVariation < 0 ? "↘" : "↗"}{" "}
+                {dossiersVariation > 0 ? `+${dossiersVariation}` : dossiersVariation}%
+              </p>
+            )}
           </div>
         </div>
 
@@ -135,13 +150,25 @@ export function AdminPanel({
             <p className="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
               {clientsCount.toLocaleString("fr-FR")}
             </p>
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              ↗ +8%
-            </p>
+            {clientsVariation !== undefined && (
+              <p
+                className={cn(
+                  "text-xs font-bold mt-0.5",
+                  clientsVariation < 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-emerald-600 dark:text-emerald-400",
+                )}
+              >
+                {clientsVariation < 0 ? "↘" : "↗"}{" "}
+                {clientsVariation > 0 ? `+${clientsVariation}` : clientsVariation}%
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Block 3: Alertes critiques */}
+        {/* Block 3: Alertes critiques — pas de variation mois/mois : un
+            décompte d'alertes actives est un état instantané, pas un flux
+            daté comparable (contrairement aux dossiers/clients créés). */}
         <div className="group flex items-center gap-3.5 rounded-2xl border border-slate-100 dark:border-border/50 bg-[#F8FAFC] dark:bg-muted/20 p-4 transition-all hover:bg-slate-100/80 dark:hover:bg-muted/40">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#10B981] text-white shadow-sm transition-transform group-hover:scale-105">
             <Bell className="size-5" />
@@ -152,9 +179,6 @@ export function AdminPanel({
             </p>
             <p className="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
               {critical.length}
-            </p>
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              - 100%
             </p>
           </div>
         </div>

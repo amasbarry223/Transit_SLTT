@@ -67,6 +67,41 @@ export function computeEncaisseVariation(
 }
 
 /**
+ * Généralisation de computeEncaisseVariation à un simple comptage
+ * d'éléments créés ce mois-ci vs le mois précédent (dossiers, clients,
+ * factures, bons…) — même règle de calcul, un accesseur de date au lieu
+ * d'un champ fixe puisque chaque entité nomme le sien différemment
+ * (`date` pour dossiers/factures/bons, `createdAt` pour clients).
+ *
+ * N'a de sens que pour un flux d'éléments CRÉÉS (comparable mois à mois) —
+ * pas pour un état instantané comme "dossiers en cours" ou "alertes
+ * critiques", qui n'ont pas de date de création propre à filtrer : pour
+ * ceux-là, ne pas appeler cette fonction plutôt que d'inventer un calcul.
+ */
+export function computeCountVariation<T>(
+  items: T[],
+  getDate: (item: T) => string | undefined,
+  anchorDate: Date,
+): number {
+  const curM = anchorDate.getMonth();
+  const curY = anchorDate.getFullYear();
+  const prevM = curM === 0 ? 11 : curM - 1;
+  const prevY = curM === 0 ? curY - 1 : curY;
+
+  const countSur = (year: number, month: number) =>
+    items.filter((item) => {
+      const raw = getDate(item);
+      if (!raw) return false;
+      const d = parseLocalDate(raw);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month;
+    }).length;
+
+  const current = countSur(curY, curM);
+  const prev = countSur(prevY, prevM);
+  return prev === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - prev) / prev) * 100);
+}
+
+/**
  * Restes à payer et dossiers non soldés → source : dossiers (pas les écritures).
  *
  * Exclut les dossiers déjà facturés (dossiersNonFactures) : un dossier

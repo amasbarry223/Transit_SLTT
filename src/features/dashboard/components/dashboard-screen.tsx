@@ -19,7 +19,7 @@ import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { getDashboardSections, type DashboardSection } from "@/lib/dashboard-config";
-import type { LiveAlert } from "@/lib/dashboard-metrics";
+import { computeCountVariation, type LiveAlert } from "@/lib/dashboard-metrics";
 import { useBeneficeParSociete } from "@/shared/hooks/use-benefice-par-societe";
 import { useCurrentUser } from "@/shared/hooks/use-permission";
 import { cn } from "@/shared/utils/cn";
@@ -77,6 +77,26 @@ export function DashboardScreen() {
     alertes,
   } = useDashboardMetrics({ dossiers, factures, stock, ecrituresAvecDate, anchorDate });
 
+  // "vs mois dernier" réel (créations ce mois-ci vs le précédent) — seulement
+  // pour les flux d'éléments créés, jamais pour un état instantané comme
+  // "Dossiers en cours" (aucune date de création à comparer n'a de sens ici).
+  const dossiersVariation = React.useMemo(
+    () => computeCountVariation(dossiers, (d) => d.date, anchorDate),
+    [dossiers, anchorDate],
+  );
+  const clientsVariation = React.useMemo(
+    () => computeCountVariation(clients, (c) => c.createdAt, anchorDate),
+    [clients, anchorDate],
+  );
+  const facturesVariation = React.useMemo(
+    () => computeCountVariation(factures, (f) => f.date, anchorDate),
+    [factures, anchorDate],
+  );
+  const bonsVariation = React.useMemo(
+    () => computeCountVariation(bons, (b) => b.date, anchorDate),
+    [bons, anchorDate],
+  );
+
   const filteredAlertes = React.useMemo(() => {
     const items: LiveAlert[] = [];
     if (hasSection("alertes_stock")) {
@@ -111,8 +131,15 @@ export function DashboardScreen() {
           </div>
 
           <div className="inline-flex items-center gap-1.5 text-xs">
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
-              <span>+12%</span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-bold",
+                dossiersVariation < 0
+                  ? "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400"
+                  : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400",
+              )}
+            >
+              <span>{dossiersVariation > 0 ? `+${dossiersVariation}%` : `${dossiersVariation}%`}</span>
             </span>
             <span className="text-muted-foreground font-normal">vs mois dernier</span>
           </div>
@@ -127,7 +154,7 @@ export function DashboardScreen() {
           value={dossiers.length}
           icon={Package}
           variant="royal"
-          trend={{ value: 12, label: "vs mois dernier", isPositive: true }}
+          trend={{ value: dossiersVariation, label: "vs mois dernier" }}
           onClick={() => go("dossiers")}
         />
 
@@ -137,7 +164,7 @@ export function DashboardScreen() {
           value={clients.length}
           icon={Users}
           variant="blue"
-          trend={{ value: 8, label: "vs mois dernier", isPositive: true }}
+          trend={{ value: clientsVariation, label: "vs mois dernier" }}
           onClick={() => go("clients")}
         />
 
@@ -147,7 +174,7 @@ export function DashboardScreen() {
           value={factures.length}
           icon={FileText}
           variant="red"
-          trend={{ value: 15, label: "vs mois dernier", isPositive: true }}
+          trend={{ value: facturesVariation, label: "vs mois dernier" }}
           onClick={() => go("factures")}
         />
 
@@ -157,17 +184,18 @@ export function DashboardScreen() {
           value={bons.length}
           icon={Ship}
           variant="navy"
-          trend={{ value: 10, label: "vs mois dernier", isPositive: true }}
+          trend={{ value: bonsVariation, label: "vs mois dernier" }}
           onClick={() => go("bons")}
         />
 
-        {/* Card 5: Dossiers en cours — Blue */}
+        {/* Card 5: Dossiers en cours — Blue. Pas de trend : "en cours" est un
+            état instantané (statut courant), pas un flux daté de créations
+            — comparer un mois à l'autre n'aurait pas de sens réel ici. */}
         <DashboardKpiCard
           label="Dossiers en cours"
           value={dossiersEnCours}
           icon={Truck}
           variant="blue"
-          trend={{ value: 6, label: "vs mois dernier", isPositive: true }}
           onClick={() => go("dossiers")}
         />
       </div>
@@ -183,6 +211,8 @@ export function DashboardScreen() {
               alertes={alertes}
               dossiersCount={dossiers.length}
               clientsCount={clients.length}
+              dossiersVariation={dossiersVariation}
+              clientsVariation={clientsVariation}
               className="h-full"
             />
           ) : currentRole === "Agent de transit" ? (
@@ -199,6 +229,8 @@ export function DashboardScreen() {
               alertes={alertes}
               dossiersCount={dossiers.length}
               clientsCount={clients.length}
+              dossiersVariation={dossiersVariation}
+              clientsVariation={clientsVariation}
               className="h-full"
             />
           )}

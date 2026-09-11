@@ -471,6 +471,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         nbDossiers: c._count?.dossiers ?? 0,
         totalDu: 0,
         totalPaye: 0,
+        createdAt: c.createdAt ?? undefined,
       }));
 
       set((state) => {
