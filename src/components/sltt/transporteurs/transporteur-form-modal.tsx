@@ -78,8 +78,14 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
     }
   };
 
+  // Le dialog Radix reste monté et cliquable ~200ms pendant son animation de
+  // fermeture. Si `saving` repassait à false dans un `finally` après un
+  // succès, un second clic pendant cette fenêtre resoumettait le MÊME
+  // formulaire (pas encore réinitialisé) et créait un vrai transporteur en
+  // double. On ne réarme donc `saving` que sur la branche d'échec.
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (saving) return;
     const nextErrors = validateTransporteurForm(form);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -104,7 +110,6 @@ export function TransporteurFormModal({ open, mode, target, onClose }: Transport
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Impossible d'enregistrer le transporteur";
       toastError(toast, err, { title: "Impossible d'enregistrer", fallback: message });
-    } finally {
       setSaving(false);
     }
   };

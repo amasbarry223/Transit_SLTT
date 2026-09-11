@@ -78,6 +78,17 @@ export function ContratsScreen() {
   const [open, setOpen] = useState(false);
   const [creatingContrat, setCreatingContrat] = useState(false);
 
+  // handleCreate ne réarme plus `creatingContrat` après un succès (le dialog
+  // Radix reste monté et cliquable ~200ms pendant sa fermeture — un second
+  // clic dans cette fenêtre resoumettait le même formulaire et créait un
+  // contrat en double). On le réarme donc ici à chaque ouverture, dans le
+  // handler qui déclenche l'ouverture (pas un useEffect sur `open` : un
+  // setState synchrone dans un effet déclenche un rendu en cascade évitable).
+  function openCreateDialog() {
+    setCreatingContrat(false);
+    setOpen(true);
+  }
+
   const scoped = useMemo(
     () => filterByAnnexe(contrats, selectedAnnexeId),
     [contrats, selectedAnnexeId],
@@ -131,7 +142,6 @@ export function ContratsScreen() {
       setOpen(false);
     } catch (e) {
       toastError(toast, e, { title: "Impossible de créer le contrat", fallback: "Impossible de créer le contrat." });
-    } finally {
       setCreatingContrat(false);
     }
   }
@@ -141,7 +151,7 @@ export function ContratsScreen() {
       <PageHeader title="Contrats" description="Contrats d'entreposage, dépenses et prestations optionnelles">
         {canWrite && (
           <Button
-            onClick={() => setOpen(true)}
+            onClick={openCreateDialog}
             className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
           >
             <Plus className="size-4" />
@@ -206,7 +216,7 @@ export function ContratsScreen() {
             description={scoped.length === 0 ? UI.empty.contrats.zero.description : UI.empty.contrats.filtered.description}
             primaryAction={
               canWrite && scoped.length === 0
-                ? { label: UI.empty.contrats.zero.action, onClick: () => setOpen(true), icon: Plus }
+                ? { label: UI.empty.contrats.zero.action, onClick: openCreateDialog, icon: Plus }
                 : undefined
             }
           />

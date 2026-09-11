@@ -62,6 +62,9 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
       setCaisseDate(todayIso);
       setCaisseAnnexeId(activeAnnexeId ?? "");
       setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
+      // saving n'est plus remis à false après un succès (voir handleCreateCaisse) :
+      // on le réarme ici pour ne pas laisser le bouton désactivé à la réouverture.
+      setSaving(false);
     }
   }
 
@@ -94,7 +97,15 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
   async function handleCreateCaisse() {
     // Garde-fou contre le double clic : sans lui, un double clic pendant
     // l'appel réseau ci-dessous pouvait créer deux bons de sortie de caisse
-    // (donc un double décaissement) pour une seule saisie.
+    // (donc un double décaissement) pour une seule saisie. Le dialog Radix
+    // reste monté et cliquable ~200ms pendant son animation de fermeture
+    // (data-[state=closed]:animate-out, duration-200) : si `saving` repassait
+    // à false dans un `finally` après succès, un second clic pendant cette
+    // fenêtre soumettait à nouveau les MÊMES lignes (pas encore réinitialisées,
+    // ça ne se faisait qu'à la réouverture) et créait un vrai doublon en base.
+    // On ne réarme donc le bouton qu'en cas d'échec — après succès, le dialog
+    // se ferme et les champs sont vidés immédiatement, donc un clic résiduel
+    // ne peut plus rejouer la même saisie.
     if (!caisseValid || saving) return;
     setSaving(true);
     try {
@@ -112,13 +123,13 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
         title: "Bon de sortie créé",
         description: `${bon.reference} — ${formatFCFA(bon.montantTotal)}`,
       });
+      setCaisseLignes([{ date: caisseDate, beneficiaire: "", motif: "", montant: "" }]);
       onOpenChange(false);
     } catch (error) {
       toastError(toast, error, {
         title: "Impossible de créer le bon de sortie",
         fallback: "Impossible de créer le bon de sortie.",
       });
-    } finally {
       setSaving(false);
     }
   }

@@ -1,4 +1,4 @@
-# Transit SLTT / Tonomi
+# Transit SLTT
 
 Application de gestion logistique, transit et transport avec persistance intégrale MySQL (XAMPP/MySQL) et architecture fullstack moderne :
 - **Frontend** : Next.js 15 (React 19), Tailwind CSS, Zustand

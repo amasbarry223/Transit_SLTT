@@ -66,10 +66,18 @@ export function DevisScreen() {
   const [pendingStatut, setPendingStatut] = useState<{ devis: Devis; statut: DevisStatut } | null>(null);
   const [savingDevis, setSavingDevis] = useState(false);
 
+  // handleSaveForm ne réarme plus `savingDevis` après un succès (le dialog
+  // Radix reste monté et cliquable ~200ms pendant sa fermeture — un second
+  // clic dans cette fenêtre resoumettait le même formulaire, pas encore
+  // réinitialisé, et créait un devis en double). On le réarme donc à chaque
+  // ouverture, à chacun des deux points d'entrée (bouton plus bas, deep-link
+  // ci-dessous) — pas via un useEffect sur `formOpen`, qui déclenchait un
+  // setState synchrone dans un effet (rendu en cascade évitable).
   useEffect(() => {
     if (selectedId === "new") {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur
       setEditDevis(null);
+      setSavingDevis(false);
       setFormOpen(true);
       go("devis");
     }
@@ -134,7 +142,6 @@ export function DevisScreen() {
         title: "Impossible de sauvegarder le devis",
         fallback: UI.errors.saveFailed,
       });
-    } finally {
       setSavingDevis(false);
     }
   }
@@ -235,7 +242,7 @@ export function DevisScreen() {
       <PageHeader title="Devis & Cotations" description="Estimations tarifaires, cotations et conversion en dossiers">
         {canWrite && (
           <Button
-            onClick={() => { setEditDevis(null); setFormOpen(true); }}
+            onClick={() => { setEditDevis(null); setSavingDevis(false); setFormOpen(true); }}
             className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="size-4 shrink-0 stroke-[3]" />

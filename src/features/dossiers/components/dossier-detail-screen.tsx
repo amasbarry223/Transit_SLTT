@@ -218,6 +218,10 @@ export function DossierDetailScreen() {
     setSubDossierName("");
     setSubDossierDescription("");
     setSubDossierDialogOpen(true);
+    // handleSaveSubDossier ne réarme plus `savingSubDossier` après un succès
+    // (le dialog reste monté et cliquable pendant son animation de fermeture) :
+    // on le réarme ici à chaque ouverture.
+    setSavingSubDossier(false);
   }
 
   function handleStartOcr(documentId: string) {
@@ -229,6 +233,7 @@ export function DossierDetailScreen() {
     setSubDossierName(subDossier.nom);
     setSubDossierDescription(subDossier.description ?? "");
     setSubDossierDialogOpen(true);
+    setSavingSubDossier(false);
   }
 
   async function handleSaveSubDossier() {
@@ -254,7 +259,6 @@ export function DossierDetailScreen() {
       setSubDossierDialogOpen(false);
     } catch (error) {
       toastError(toast, error, { title: "Impossible d'enregistrer le sous-dossier", fallback: "Impossible d'enregistrer le sous-dossier." });
-    } finally {
       setSavingSubDossier(false);
     }
   }
@@ -282,6 +286,10 @@ export function DossierDetailScreen() {
     setFournisseurStatut("En attente");
     setFournisseurDate(new Date().toISOString().slice(0, 10));
     setFournisseurDialogOpen(true);
+    // handleSaveDossierFournisseur ne réarme plus `savingFournisseur` après un
+    // succès (même fenêtre de double-soumission pendant l'animation de
+    // fermeture du dialog) : on le réarme ici à chaque ouverture.
+    setSavingFournisseur(false);
   }
 
   async function handleSaveDossierFournisseur() {
@@ -309,7 +317,6 @@ export function DossierDetailScreen() {
       toastSuccess(toast, { title: "Fournisseur lié au dossier", description: fournisseur.nom });
     } catch (error) {
       toastError(toast, error, { title: "Impossible de lier le fournisseur", fallback: "Impossible de lier le fournisseur." });
-    } finally {
       setSavingFournisseur(false);
     }
   }

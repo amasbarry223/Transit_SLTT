@@ -35,9 +35,23 @@ class ApiClient {
   /** Rafraîchissement en cours — partagé pour éviter que N requêtes 401
    *  simultanées ne déclenchent N appels /auth/refresh concurrents. */
   private refreshInFlight: Promise<boolean> | null = null;
+  /** Callback app-level appelé quand un refresh échoue vraiment (session
+   *  expirée/révoquée côté serveur) : sans lui, chaque requête en échec
+   *  retombe silencieusement dans le flux "chargement partiel" (data-fetch-slice)
+   *  et l'utilisateur voit un avertissement sur 18 ressources à la fois au lieu
+   *  d'être renvoyé à l'écran de connexion. */
+  private onSessionExpired: (() => void) | null = null;
+  /** Évite d'appeler onSessionExpired une fois par requête en échec (jusqu'à
+   *  18 en parallèle au chargement) : une seule notification par session perdue. */
+  private sessionExpiredNotified = false;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+  }
+
+  /** Enregistre le callback de déconnexion forcée (voir onSessionExpired). */
+  setOnSessionExpired(cb: () => void) {
+    this.onSessionExpired = cb;
   }
 
   // ---------------------------------------------------------------------------
@@ -73,6 +87,7 @@ class ApiClient {
     if (tokens.user) {
       localStorage.setItem(USER_KEY, JSON.stringify(tokens.user));
     }
+    this.sessionExpiredNotified = false;
   }
 
   clearSession() {
@@ -114,6 +129,10 @@ class ApiClient {
         return this.request<T>(endpoint, options, false);
       } else {
         this.clearSession();
+        if (!this.sessionExpiredNotified) {
+          this.sessionExpiredNotified = true;
+          this.onSessionExpired?.();
+        }
       }
     }
 

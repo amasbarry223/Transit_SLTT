@@ -99,6 +99,10 @@ export function UsersTab() {
     setEditingUserId(null);
     setFormInitial(emptyFormState("Agent de transit", activeAnnexeId ? [activeAnnexeId] : []));
     setFormOpen(true);
+    // handleCreate/handleEdit ne réarment plus `saving` après un succès (le
+    // dialog reste monté et cliquable pendant son animation de fermeture) :
+    // on le réarme ici à chaque ouverture.
+    setSaving(false);
   }
 
   function openEdit(id: string) {
@@ -118,6 +122,7 @@ export function UsersTab() {
       annexeIds: u.annexeIds,
     });
     setFormOpen(true);
+    setSaving(false);
   }
 
   async function handleCreate(state: UserFormState) {
@@ -163,7 +168,6 @@ export function UsersTab() {
         title: "Impossible de créer l'utilisateur",
         fallback: "Vérifiez les informations saisies et réessayez.",
       });
-    } finally {
       setSaving(false);
     }
   }

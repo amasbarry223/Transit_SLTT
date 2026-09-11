@@ -12,6 +12,7 @@ import { AppShell } from "@/components/sltt/layout/app-shell";
 import { Loader2 } from "lucide-react";
 import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
+import { toast } from "@/shared/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +76,18 @@ function AppRootInner() {
     logoutRef.current = logout;
     restoreRef.current = restoreSession;
   }, [logout, restoreSession]);
+
+  // Déconnexion forcée quand un refresh de token échoue vraiment (session
+  // expirée/révoquée côté serveur) : sans ça, l'utilisateur reste sur
+  // isAuthenticated=true (état mémoire non synchronisé avec le localStorage
+  // vidé par api-client) et voit le bandeau "chargement partiel" lister
+  // les 18 ressources en échec au lieu d'être renvoyé à l'écran de connexion.
+  useEffect(() => {
+    api.setOnSessionExpired(() => {
+      toast({ variant: "warning", description: UI.errors.session });
+      void logoutRef.current();
+    });
+  }, []);
 
   // Synchronisation de session avec l'API NestJS
   useEffect(() => {

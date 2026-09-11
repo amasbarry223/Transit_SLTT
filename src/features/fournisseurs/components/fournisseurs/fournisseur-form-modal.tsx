@@ -63,12 +63,20 @@ export function FournisseurFormModal({
       setAdresse(editing?.adresse ?? "");
       setTarif(editing?.tarifContractuel ? String(editing.tarifContractuel) : "");
       setStatut(editing?.statut ?? "Actif");
+      // saving n'est plus remis à false après un succès (voir handleSubmit) :
+      // on le réarme ici pour ne pas laisser le bouton désactivé à la réouverture.
+      setSaving(false);
     }
   }
 
+  // Le dialog Radix reste monté et cliquable ~200ms pendant son animation de
+  // fermeture. Si `saving` repassait à false dans un `finally` après un
+  // succès, un second clic pendant cette fenêtre resoumettait les MÊMES
+  // champs (pas encore réinitialisés) et créait un vrai fournisseur en
+  // double. On ne réarme donc `saving` que sur la branche d'échec.
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!nom.trim()) return;
+    if (!nom.trim() || saving) return;
     const input: FournisseurInput = {
       nom: nom.trim(),
       type,
@@ -92,7 +100,6 @@ export function FournisseurFormModal({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Impossible d'enregistrer le fournisseur";
       toastError(toast, err, { title: "Impossible d'enregistrer", fallback: message });
-    } finally {
       setSaving(false);
     }
   }
