@@ -8,6 +8,7 @@
  */
 import type { AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture } from "@/lib/domain-types";
+import { dossiersNonFactures } from "@/lib/client-stats";
 
 export type ClasseurType = "Dossier" | "Paiement" | "Facture";
 
@@ -40,7 +41,15 @@ export function buildClasseurJournal(
 ): ClasseurEntry[] {
   const unsorted: Omit<ClasseurEntry, "soldeCumule">[] = [];
 
-  for (const d of dossiers) {
+  // Un dossier déjà facturé cède sa ligne à sa facture (ci-dessous) : une
+  // fois qu'une facture est générée à partir d'un dossier, c'est elle qui
+  // porte le montant réel dû/encaissé (elle peut inclure la TVA, avoir son
+  // propre historique de paiement via enregistrerPaiement). Avant ce
+  // correctif, le classeur affichait TOUJOURS le dossier (montants figés au
+  // moment de la facturation) ET excluait sa facture — la TVA facturée et
+  // tout paiement encaissé sur la facture après coup restaient invisibles
+  // dans le grand-livre client.
+  for (const d of dossiersNonFactures(dossiers, factures)) {
     if (d.clientId !== clientId) continue;
     unsorted.push({
       id: `dossier-${d.id}`,
@@ -71,7 +80,7 @@ export function buildClasseurJournal(
   }
 
   for (const f of factures) {
-    if (f.clientId !== clientId || f.dossierId) continue;
+    if (f.clientId !== clientId) continue;
     const annulee = f.statut === "Annulée";
     unsorted.push({
       id: `facture-${f.id}`,
