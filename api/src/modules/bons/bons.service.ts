@@ -70,12 +70,18 @@ export class BonsService {
       }
 
       if (bon.stockId) {
-        const stock = await tx.stockItem.findUnique({ where: { id: bon.stockId } });
-        if (stock) {
-          await tx.stockItem.update({
-            where: { id: bon.stockId },
-            data: { quantite: Math.max(0, stock.quantite - bon.quantite) },
-          });
+        // Décrément atomique (même pattern que stock.service.ts) : évite
+        // qu'une validation concurrente d'un autre mouvement sur le même
+        // article n'écrase le résultat de l'autre (perte de mise à jour).
+        const claimed = await tx.stockItem.updateMany({
+          where: { id: bon.stockId },
+          data: { quantite: { decrement: bon.quantite } },
+        });
+        if (claimed.count > 0) {
+          const fresh = await tx.stockItem.findUnique({ where: { id: bon.stockId } });
+          if (fresh && fresh.quantite < 0) {
+            await tx.stockItem.update({ where: { id: bon.stockId }, data: { quantite: 0 } });
+          }
           await tx.mouvementStock.create({
             data: {
               stockId: bon.stockId,

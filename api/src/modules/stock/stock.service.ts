@@ -113,16 +113,22 @@ export class StockService {
         include: { annexe: true, stock: true },
       });
 
-      // Ajuste le stock lié de façon atomique (increment) : évite les pertes de
-      // mise à jour quand deux mouvements arrivent en même temps.
+      // Ajuste le stock lié de façon atomique (increment Prisma, pas
+      // lecture-puis-écriture) : deux mouvements concurrents sur le même
+      // article n'écrasent plus le résultat l'un de l'autre (perte de mise
+      // à jour). updateMany ne lève pas si stockId ne correspond à rien
+      // (comportement identique à l'ancien `if (stock)`).
       if (data.stockId) {
-        const stock = await tx.stockItem.findUnique({ where: { id: data.stockId } });
-        if (stock) {
-          const delta = data.type === 'Entrée' ? quantite : -quantite;
-          await tx.stockItem.update({
-            where: { id: data.stockId },
-            data: { quantite: Math.max(0, stock.quantite + delta) },
-          });
+        const delta = data.type === 'Entrée' ? quantite : -quantite;
+        const claimed = await tx.stockItem.updateMany({
+          where: { id: data.stockId },
+          data: { quantite: { increment: delta } },
+        });
+        if (claimed.count > 0) {
+          const fresh = await tx.stockItem.findUnique({ where: { id: data.stockId } });
+          if (fresh && fresh.quantite < 0) {
+            await tx.stockItem.update({ where: { id: data.stockId }, data: { quantite: 0 } });
+          }
         }
       }
 
