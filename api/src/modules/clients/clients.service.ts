@@ -1,5 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 
 /** Aligne la valeur reçue sur l'enum Prisma TypeClient (PARTICULIER | ENTREPRISE | ONG | GOUVERNEMENT). */
 function normalizeTypeClient(raw: unknown): 'PARTICULIER' | 'ENTREPRISE' | 'ONG' | 'GOUVERNEMENT' {
@@ -54,7 +57,7 @@ export class ClientsService {
     return client;
   }
 
-  async create(data: any) {
+  async create(data: CreateClientDto) {
     const code = data.code || `CLT-${Date.now().toString(36).toUpperCase()}`;
     const existing = await this.prisma.client.findUnique({ where: { code } });
     if (existing) {
@@ -86,9 +89,14 @@ export class ClientsService {
     });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: UpdateClientDto) {
     await this.findOne(id);
-    const updateData: any = {};
+    // "Unchecked" : autorise d'assigner directement le champ scalaire
+    // annexeId (clé étrangère) sans passer par la syntaxe relationnelle
+    // `annexe: { connect / disconnect }` — cohérent avec le reste du
+    // service, qui manipule déjà clientId/annexeId comme de simples
+    // colonnes partout ailleurs dans l'API.
+    const updateData: Prisma.ClientUncheckedUpdateInput = {};
     if (data.nom !== undefined) updateData.nom = data.nom;
     if (data.telephone !== undefined) updateData.telephone = data.telephone || null;
     if (data.email !== undefined) updateData.email = data.email || null;
