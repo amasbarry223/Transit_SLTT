@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { useCanView } from "@/shared/hooks/use-permission";
@@ -8,31 +9,111 @@ import { Topbar } from "./topbar";
 import { Button } from "@/shared/components/ui/button";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 
-import { ArchivesScreen } from "@/features/archives";
-import { BilansScreen } from "@/features/bilans";
-import { BonsScreen } from "@/features/bons";
-import { ClientFicheScreen, ClientsScreen } from "@/features/clients";
-import { ComptabiliteScreen } from "@/features/comptabilite";
-import { ContratDetailScreen, ContratsScreen } from "@/features/contrats";
-import { DashboardScreen } from "@/features/dashboard";
-import { DevisDetailScreen, DevisScreen } from "@/features/devis";
-import {
-  DossierDetailScreen,
-  DossierFormScreen,
-  DossierOcrReviewScreen,
-  DossiersListScreen,
-} from "@/features/dossiers";
-import { EntreposageScreen } from "@/features/entreposage";
-import { FactureDetailScreen, FacturesScreen } from "@/features/factures";
-import { FournisseursScreen } from "@/features/fournisseurs";
-import { ParametresScreen } from "@/features/parametres";
-import { RecusPaiementScreen } from "@/features/recus-paiement";
-import { TransporteursScreen } from "@/features/transporteurs";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
 import { BottomNav } from "./bottom-nav";
 import { cn } from "@/shared/utils/cn";
 import { UI } from "@/shared/utils/ui-messages";
+
+/**
+ * Écrans chargés à la demande (un seul est monté à la fois, selon `view`)
+ * plutôt qu'importés en dur : ce fichier est rendu pour TOUTE page de
+ * l'app (le routage réel se fait côté client via nav-store, pas par route
+ * Next.js), donc un import statique ici mettait le JS des 21 écrans — y
+ * compris les plus lourds (éditeur de tableur Univer pour l'import stock,
+ * l'aperçu OCR, l'import Excel en masse) — dans le bundle initial de
+ * n'importe quelle page, même le Dashboard seul. `ssr: false` : le choix
+ * de l'écran dépend de `view`, un état client (Zustand) non connu au
+ * moment du rendu serveur.
+ */
+const DashboardScreen = dynamic(
+  () => import("@/features/dashboard").then((m) => m.DashboardScreen),
+  { loading: () => <ScreenSkeleton view="dashboard" />, ssr: false },
+);
+const DossiersListScreen = dynamic(
+  () => import("@/features/dossiers").then((m) => m.DossiersListScreen),
+  { loading: () => <ScreenSkeleton view="dossiers" />, ssr: false },
+);
+const DossierFormScreen = dynamic(
+  () => import("@/features/dossiers").then((m) => m.DossierFormScreen),
+  { loading: () => <ScreenSkeleton view="dossier-form" />, ssr: false },
+);
+const DossierDetailScreen = dynamic(
+  () => import("@/features/dossiers").then((m) => m.DossierDetailScreen),
+  { loading: () => <ScreenSkeleton view="dossier-detail" />, ssr: false },
+);
+const DossierOcrReviewScreen = dynamic(
+  () => import("@/features/dossiers").then((m) => m.DossierOcrReviewScreen),
+  { loading: () => <ScreenSkeleton view="dossier-ocr-review" />, ssr: false },
+);
+const ComptabiliteScreen = dynamic(
+  () => import("@/features/comptabilite").then((m) => m.ComptabiliteScreen),
+  { loading: () => <ScreenSkeleton view="comptabilite" />, ssr: false },
+);
+const RecusPaiementScreen = dynamic(
+  () => import("@/features/recus-paiement").then((m) => m.RecusPaiementScreen),
+  { loading: () => <ScreenSkeleton view="recus-paiement" />, ssr: false },
+);
+const BilansScreen = dynamic(
+  () => import("@/features/bilans").then((m) => m.BilansScreen),
+  { loading: () => <ScreenSkeleton view="bilans" />, ssr: false },
+);
+const EntreposageScreen = dynamic(
+  () => import("@/features/entreposage").then((m) => m.EntreposageScreen),
+  { loading: () => <ScreenSkeleton view="entreposage" />, ssr: false },
+);
+const BonsScreen = dynamic(
+  () => import("@/features/bons").then((m) => m.BonsScreen),
+  { loading: () => <ScreenSkeleton view="bons" />, ssr: false },
+);
+const ContratsScreen = dynamic(
+  () => import("@/features/contrats").then((m) => m.ContratsScreen),
+  { loading: () => <ScreenSkeleton view="contrats" />, ssr: false },
+);
+const ContratDetailScreen = dynamic(
+  () => import("@/features/contrats").then((m) => m.ContratDetailScreen),
+  { loading: () => <ScreenSkeleton view="contrat-detail" />, ssr: false },
+);
+const ClientsScreen = dynamic(
+  () => import("@/features/clients").then((m) => m.ClientsScreen),
+  { loading: () => <ScreenSkeleton view="clients" />, ssr: false },
+);
+const ClientFicheScreen = dynamic(
+  () => import("@/features/clients").then((m) => m.ClientFicheScreen),
+  { loading: () => <ScreenSkeleton view="client-fiche" />, ssr: false },
+);
+const DevisScreen = dynamic(
+  () => import("@/features/devis").then((m) => m.DevisScreen),
+  { loading: () => <ScreenSkeleton view="devis" />, ssr: false },
+);
+const DevisDetailScreen = dynamic(
+  () => import("@/features/devis").then((m) => m.DevisDetailScreen),
+  { loading: () => <ScreenSkeleton view="devis-detail" />, ssr: false },
+);
+const TransporteursScreen = dynamic(
+  () => import("@/features/transporteurs").then((m) => m.TransporteursScreen),
+  { loading: () => <ScreenSkeleton view="transporteurs" />, ssr: false },
+);
+const FacturesScreen = dynamic(
+  () => import("@/features/factures").then((m) => m.FacturesScreen),
+  { loading: () => <ScreenSkeleton view="factures" />, ssr: false },
+);
+const FactureDetailScreen = dynamic(
+  () => import("@/features/factures").then((m) => m.FactureDetailScreen),
+  { loading: () => <ScreenSkeleton view="facture-detail" />, ssr: false },
+);
+const FournisseursScreen = dynamic(
+  () => import("@/features/fournisseurs").then((m) => m.FournisseursScreen),
+  { loading: () => <ScreenSkeleton view="fournisseurs" />, ssr: false },
+);
+const ArchivesScreen = dynamic(
+  () => import("@/features/archives").then((m) => m.ArchivesScreen),
+  { loading: () => <ScreenSkeleton view="archives" />, ssr: false },
+);
+const ParametresScreen = dynamic(
+  () => import("@/features/parametres").then((m) => m.ParametresScreen),
+  { loading: () => <ScreenSkeleton view="parametres" />, ssr: false },
+);
 
 export function AppShell() {
   const view = useNav((s) => s.view);
