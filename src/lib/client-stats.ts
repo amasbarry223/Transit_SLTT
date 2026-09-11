@@ -2,6 +2,30 @@ import { resteAPayer } from "@/lib/domain-types";
 import type { Client, Dossier, Ecriture, Facture } from "@/lib/store";
 
 /**
+ * Dossiers qui n'ont PAS (encore) été facturés. Une fois qu'une facture est
+ * générée à partir d'un dossier, c'est elle qui devient la source de vérité
+ * de l'encaissement et du reste dû (elle peut inclure la TVA, avoir son
+ * propre historique de paiement) — le dossier ne doit plus être compté à
+ * côté sous peine de double comptage ou de chiffre obsolète.
+ *
+ * Centralisé ici (au lieu d'un `!factures.some(f => f.dossierId === d.id)`
+ * réimplémenté à chaque écran) : cette règle a déjà divergé trois fois dans
+ * le projet faute d'un point d'entrée unique — syncClientStats comptait le
+ * dossier ET sa facture, et les KPI Dashboard (restes à payer, alertes
+ * "dossier non soldé") ignoraient complètement qu'un dossier facturé n'a
+ * plus vocation à porter son propre reste dû.
+ */
+export function dossiersNonFactures<T extends { id: string }>(
+  dossiers: readonly T[],
+  factures: readonly Pick<Facture, "dossierId">[],
+): T[] {
+  const facturedDossierIds = new Set(
+    factures.map((f) => f.dossierId).filter((x): x is string => Boolean(x)),
+  );
+  return dossiers.filter((d) => !facturedDossierIds.has(d.id));
+}
+
+/**
  * Somme des montants payés sur des factures actives — exclut les factures
  * `Annulée`, dont l'encaissement ne doit plus compter dans un total global
  * une fois la facture annulée. Fonction unique réutilisée par tout écran
@@ -22,11 +46,8 @@ export function sommeDossiersEncaisses(
   factures: Facture[],
   inPeriode?: (dateSolde: string) => boolean,
 ): number {
-  const facturedDossierIds = new Set(
-    factures.map((f) => f.dossierId).filter((x): x is string => Boolean(x)),
-  );
-  return dossiers
-    .filter((d) => !facturedDossierIds.has(d.id) && d.montantPaye > 0)
+  return dossiersNonFactures(dossiers, factures)
+    .filter((d) => d.montantPaye > 0)
     .filter((d) => !inPeriode || (d.dateSolde ? inPeriode(d.dateSolde) : false))
     .reduce((sum, d) => sum + d.montantPaye, 0);
 }
@@ -53,10 +74,7 @@ export function syncClientStats(
 ): Client[] {
   return clients.map((c) => {
     const cd = dossiers.filter((d) => d.clientId === c.id);
-    const facturedDossierIds = new Set(
-      factures.map((f) => f.dossierId).filter((x): x is string => Boolean(x)),
-    );
-    const cdNonFactures = cd.filter((d) => !facturedDossierIds.has(d.id));
+    const cdNonFactures = dossiersNonFactures(cd, factures);
     const cf = factures.filter((f) => f.clientId === c.id);
     const ce = ecritures.filter((e) => e.clientId === c.id && !e.dossierId);
     return {

@@ -2,7 +2,7 @@ import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { filterByPeriode } from "@/lib/benefice";
-import { sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
+import { dossiersNonFactures, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
 import {
   CHART_MONTHS_COUNT,
   CHART_MONTHS_OFFSET,
@@ -66,14 +66,22 @@ export function computeEncaisseVariation(
   return { chiffreEncaisse: current, variationEncaisse: variation };
 }
 
-/** Restes à payer et dossiers non soldés → source : dossiers (pas les écritures). */
-export function computeRestesAPayer(dossiers: Dossier[]): {
+/**
+ * Restes à payer et dossiers non soldés → source : dossiers (pas les écritures).
+ *
+ * Exclut les dossiers déjà facturés (dossiersNonFactures) : un dossier
+ * facturé n'est plus la source de vérité de son reste dû, c'est sa facture
+ * (qui peut avoir été réglée séparément, ou inclure la TVA). Sans ce filtre,
+ * le KPI "Restes à payer" du Dashboard restait bloqué sur le reste obsolète
+ * du dossier — devenu incorrect — même après que la facture ait été soldée.
+ */
+export function computeRestesAPayer(dossiers: Dossier[], factures: Facture[] = []): {
   totalRestesAPayer: number;
   nbDossiersNonSoldes: number;
 } {
   let total = 0;
   let count = 0;
-  for (const d of dossiers) {
+  for (const d of dossiersNonFactures(dossiers, factures)) {
     const reste = resteAPayer(d);
     if (reste > 0) {
       total += reste;
@@ -141,7 +149,7 @@ export function buildStockRepartition(
   return rows;
 }
 
-export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[]): LiveAlert[] {
+export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[], factures: Facture[] = []): LiveAlert[] {
   const todayMs = new Date().setHours(0, 0, 0, 0);
 
   const lowStockAlerts: LiveAlert[] = stock
@@ -179,7 +187,11 @@ export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[]): LiveA
       return acc;
     }, []);
 
-  const unpaid: LiveAlert[] = dossiers
+  // Un dossier facturé n'est plus la source de vérité de son reste dû (voir
+  // dossiersNonFactures) : sans ce filtre, un dossier soldé via sa facture
+  // continuait à déclencher une alerte "non soldé" basée sur son propre
+  // reste, resté obsolète depuis la facturation.
+  const unpaid: LiveAlert[] = dossiersNonFactures(dossiers, factures)
     .filter((d) => resteAPayer(d) > 0)
     .slice(0, 4)
     .map((d) => ({

@@ -6,7 +6,7 @@ import { parseLocalDate } from "@/lib/format";
 import { exportToExcel, printBilan } from "@/lib/export";
 import { resolveClasseurPrintBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
-import { sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
+import { dossiersNonFactures, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
@@ -61,8 +61,8 @@ export function useBilansScreen() {
     // par prudence si une source future en réintroduit.
     const direct = allEcritures.filter((e) => !e.dossierId);
 
-    const fromDossiers = dossiers
-      .filter((d) => (d.montantInvesti > 0 || d.montantPaye > 0) && !factures.some((f) => f.dossierId === d.id))
+    const fromDossiers = dossiersNonFactures(dossiers, factures)
+      .filter((d) => d.montantInvesti > 0 || d.montantPaye > 0)
       .map((d) => ({
         id: `dos-${d.id}`,
         date: d.dateSolde || d.date,

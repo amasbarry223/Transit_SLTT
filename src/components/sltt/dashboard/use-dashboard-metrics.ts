@@ -31,8 +31,8 @@ export function useDashboardMetrics({
   );
 
   const { totalRestesAPayer, nbDossiersNonSoldes } = useMemo(
-    () => computeRestesAPayer(dossiers),
-    [dossiers],
+    () => computeRestesAPayer(dossiers, factures),
+    [dossiers, factures],
   );
 
   const dossiersEnCours = useMemo(
@@ -65,7 +65,10 @@ export function useDashboardMetrics({
     [dossiers],
   );
 
-  const alertes = useMemo<LiveAlert[]>(() => buildLiveAlertes(stock, dossiers), [stock, dossiers]);
+  const alertes = useMemo<LiveAlert[]>(
+    () => buildLiveAlertes(stock, dossiers, factures),
+    [stock, dossiers, factures],
+  );
 
   return {
     chiffreEncaisse,
