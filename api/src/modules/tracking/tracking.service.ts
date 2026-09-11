@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Injectable()
 export class TrackingService {
@@ -53,7 +54,26 @@ export class TrackingService {
     return tracking;
   }
 
-  async updateTrackingPosition(dossierId: string, data: { dernierePosition?: string; statutAffiche?: string }) {
+  async updateTrackingPosition(
+    dossierId: string,
+    user: CurrentUserType,
+    data: { dernierePosition?: string; statutAffiche?: string },
+  ) {
+    // Le tracking public est exposé à quiconque connaît le code, mais sa
+    // mise à jour doit rester réservée aux utilisateurs de l'annexe du
+    // dossier concerné — sans ce contrôle, dossierId est accepté tel quel
+    // et n'importe quel utilisateur autorisé sur `dossiers.modifier`
+    // pouvait modifier le suivi affiché publiquement pour un dossier d'une
+    // autre annexe.
+    const dossier = await this.prisma.dossier.findUnique({
+      where: { id: dossierId },
+      select: { annexeId: true },
+    });
+    if (!dossier) throw new NotFoundException(`Dossier ${dossierId} non trouvé`);
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(dossier.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce dossier');
+    }
+
     return this.prisma.trackingPublic.upsert({
       where: { dossierId },
       create: {

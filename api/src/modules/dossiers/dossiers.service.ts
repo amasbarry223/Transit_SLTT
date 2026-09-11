@@ -288,6 +288,12 @@ export class DossiersService {
 
   async update(id: string, user: CurrentUserType, data: any) {
     const existing = await this.findOne(id, user);
+    // create() valide déjà l'annexe cible à la création ; il manquait le
+    // même contrôle ici, permettant de réaffecter un dossier existant vers
+    // une annexe hors du périmètre de l'utilisateur.
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas déplacer ce dossier vers cette annexe');
+    }
     const updateData = buildDossierPrismaData(data);
 
     const conteneurs = data.conteneurs ?? (data.noConteneur ? [{ numero: data.noConteneur }] : undefined);
