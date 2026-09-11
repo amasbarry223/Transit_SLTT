@@ -1,4 +1,3 @@
-import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type {
@@ -49,30 +48,27 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     const initialReference = `OPC-${seq}`;
     const creePar = getConnectedUserName();
 
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.comptabilite.createOperation({
-        reference: initialReference,
-        annexeId: input.annexeId,
-        date: input.date,
-        clientId: input.clientId,
-        dossierId: input.dossierId,
-        clientNom: input.clientNom,
-        nature: input.nature,
-        type: input.type,
-        montant: input.montant,
-        modePaiement: input.modePaiement ?? "Espèces",
-        source: input.source ?? "saisie",
-        importRef: input.importRef,
-        creePar,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      logWarn("api.comptabilite.createOperation (mode local)", e);
-    }
+    // Persistance obligatoire : une opération sans écriture serveur
+    // disparaissait silencieusement au rechargement, sans aucune erreur
+    // montrée à l'utilisateur.
+    const created = await api.comptabilite.createOperation({
+      reference: initialReference,
+      annexeId: input.annexeId,
+      date: input.date,
+      clientId: input.clientId,
+      dossierId: input.dossierId,
+      clientNom: input.clientNom,
+      nature: input.nature,
+      type: input.type,
+      montant: input.montant,
+      modePaiement: input.modePaiement ?? "Espèces",
+      source: input.source ?? "saisie",
+      importRef: input.importRef,
+      creePar,
+    });
 
     const newOperation: OperationComptable = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       reference: initialReference,
       entiteType: "annexe",
       annexeId: input.annexeId,
@@ -105,11 +101,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
   },
 
   removeOperationComptable: async (id) => {
-    try {
-      await api.comptabilite.deleteOperation(id);
-    } catch (e) {
-      logWarn("api.comptabilite.deleteOperation (mode local)", e);
-    }
+    await api.comptabilite.deleteOperation(id);
 
     const operation = get().operationsComptables.find((o) => o.id === id);
     set((s) => ({ operationsComptables: s.operationsComptables.filter((o) => o.id !== id) }));
@@ -129,25 +121,20 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     const creeLe = new Date().toISOString();
     const cloturePar = getConnectedUserName();
 
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.comptabilite.createCloture({
-        annexeId: input.annexeId,
-        periodeDebut: input.periodeDebut,
-        periodeFin: input.periodeFin,
-        soldeTheorique: input.soldeTheorique,
-        soldeConstate: input.soldeConstate,
-        note: input.note,
-        cloturePar,
-        clotureLe: creeLe,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      logWarn("api.comptabilite.createCloture (mode local)", e);
-    }
+    // Persistance obligatoire — voir addOperationComptable ci-dessus.
+    const created = await api.comptabilite.createCloture({
+      annexeId: input.annexeId,
+      periodeDebut: input.periodeDebut,
+      periodeFin: input.periodeFin,
+      soldeTheorique: input.soldeTheorique,
+      soldeConstate: input.soldeConstate,
+      note: input.note,
+      cloturePar,
+      clotureLe: creeLe,
+    });
 
     const cloture: ClotureCaisse = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       entiteType: "annexe",
       annexeId: input.annexeId,
       periodeDebut: input.periodeDebut,
