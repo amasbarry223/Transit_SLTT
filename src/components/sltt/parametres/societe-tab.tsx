@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { AlertTriangle, Building2, ImagePlus, Loader2, MapPin, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Building2, ImagePlus, Loader2, MapPin, Percent, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
+import { api } from "@/lib/api-client";
+import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import type { Annexe, AnnexeInput, Societe, SocieteInput } from "@/lib/domain-types";
 import { resolveTransitSociete } from "@/lib/societe-brand";
 import { Card } from "@/shared/components/ui/card";
@@ -13,6 +15,91 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
+
+const TVA_SETTING_KEY = "facturation_taux_tva";
+
+/** Taux de TVA par défaut appliqué aux nouvelles factures — pilote la même
+ *  clé Setting que factures.service.ts::getDefaultTauxTva (repli sur
+ *  DEFAULT_TVA_RATE tant que la clé n'existe pas encore en base). */
+function FacturationCard() {
+  const { toast } = useToast();
+  const [tauxTva, setTauxTva] = useState<string>(String(DEFAULT_TVA_RATE));
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const setting = await api.settings.getByKey(TVA_SETTING_KEY);
+        if (!cancelled && setting?.valeur !== undefined) {
+          setTauxTva(String(setting.valeur));
+        }
+      } catch {
+        // Clé pas encore créée ou API indisponible : on garde le repli affiché.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = Number(tauxTva);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      toastWarning(toast, { title: "Taux invalide", description: "Saisissez un pourcentage entre 0 et 100." });
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.settings.setKey(TVA_SETTING_KEY, String(parsed), "Taux de TVA appliqué par défaut aux nouvelles factures");
+      toastSuccess(toast, { title: "Taux de TVA mis à jour", description: `${parsed} % appliqué aux prochaines factures.` });
+    } catch (err: unknown) {
+      toastError(toast, err, { title: "Impossible d'enregistrer le taux de TVA", fallback: "Impossible d'enregistrer le taux de TVA." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-6 shadow-sm border-border/80">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <Percent className="size-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">Facturation</p>
+            <p className="text-xs text-muted-foreground">
+              Taux appliqué par défaut aux nouvelles factures (une facture peut toujours indiquer
+              un taux différent au cas par cas).
+            </p>
+          </div>
+        </div>
+        <div className="max-w-xs space-y-2">
+          <Label className="text-sm font-medium text-foreground/90">Taux de TVA par défaut (%)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step="0.01"
+            disabled={loading}
+            value={tauxTva}
+            onChange={(e) => setTauxTva(e.target.value)}
+          />
+        </div>
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={saving || loading}>
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
 
 const LOGO_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const LOGO_ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
@@ -446,6 +533,10 @@ export function SocietesTab() {
         {annexes.map((annexe) => (
           <AnnexeCard key={annexe.id} annexe={annexe} onSave={updateAnnexe} />
         ))}
+      </div>
+
+      <div className="space-y-5 border-t border-border/60 pt-8">
+        <FacturationCard />
       </div>
     </div>
   );

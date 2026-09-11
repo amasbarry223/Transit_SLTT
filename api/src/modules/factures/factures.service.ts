@@ -17,6 +17,19 @@ export class FacturesService {
     return { annexeId: { in: user.annexeIds } };
   }
 
+  /** Taux de TVA par défaut, piloté depuis Paramètres (modèle Setting
+   *  clé/valeur, même pattern que l'identité société) — 18 seulement si la
+   *  clé n'existe pas encore en base. computeTotals() reste synchrone : ce
+   *  taux est chargé en amont dans create()/update(), pas dans computeTotals
+   *  lui-même. */
+  private async getDefaultTauxTva(): Promise<number> {
+    const setting = await this.prisma.setting.findUnique({
+      where: { cle: 'facturation_taux_tva' },
+    });
+    const parsed = setting ? Number(setting.valeur) : NaN;
+    return Number.isFinite(parsed) ? parsed : 18;
+  }
+
   async findAll(
     user: CurrentUserType,
     query: {
@@ -129,6 +142,7 @@ export class FacturesService {
     const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(
       lignes,
       factureData.tauxTva,
+      await this.getDefaultTauxTva(),
     );
 
     const dateEmission = factureData.dateEmission ? new Date(factureData.dateEmission) : new Date();
@@ -155,7 +169,7 @@ export class FacturesService {
   /** Recalcule HT / TVA / TTC à partir des lignes.
    *  TVA arrondie à l'unité (FCFA sans décimale) — même règle que le front
    *  (computeInvoiceAmounts) pour que l'affichage ne bouge pas après reload. */
-  private computeTotals(lignes: any[], tauxTvaRaw: unknown) {
+  private computeTotals(lignes: any[], tauxTvaRaw: unknown, defaultTauxTva: number) {
     let montantHt = 0;
     const lignesFormatted = (lignes || []).map((l: any) => {
       const quantite = Number(l.quantite) || 1;
@@ -164,7 +178,7 @@ export class FacturesService {
       montantHt += montantTotal;
       return { designation: l.designation, quantite, prixUnitaire, montantTotal };
     });
-    const tauxTva = tauxTvaRaw !== undefined ? Number(tauxTvaRaw) : 18;
+    const tauxTva = tauxTvaRaw !== undefined ? Number(tauxTvaRaw) : defaultTauxTva;
     const montantTva = Math.round((montantHt * tauxTva) / 100);
     return { montantHt, tauxTva, montantTva, montantTtc: montantHt + montantTva, lignesFormatted };
   }
@@ -183,6 +197,7 @@ export class FacturesService {
     const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(
       data.lignes,
       data.tauxTva,
+      await this.getDefaultTauxTva(),
     );
 
     return this.prisma.$transaction(async (tx: any) => {
