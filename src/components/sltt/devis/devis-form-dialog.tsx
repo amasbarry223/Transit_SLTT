@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import type { Devis, DevisInput } from "@/lib/store";
 import { formatFCFA, parseAmount } from "@/lib/format";
 import { resolveDossierCoutLabels, resolveTransitSociete } from "@/lib/societe-brand";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -20,7 +21,7 @@ import {
 export interface DevisFormProps {
   open: boolean;
   devis: Devis | null;
-  clients: { id: string; nom: string; annexeId?: string }[];
+  clients: { id: string; nom: string }[];
   saving?: boolean;
   onClose: () => void;
   onSave: (input: DevisInput) => void;
@@ -36,6 +37,7 @@ export function DevisFormDialog({
 }: DevisFormProps) {
   const societes = useStore((s) => s.societes);
   const annexes = useStore((s) => s.annexes);
+  const { activeAnnexeId } = useActiveAnnexe();
   const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const [clientId, setClientId] = useState(devis?.clientId ?? "");
   const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
@@ -69,11 +71,14 @@ export function DevisFormDialog({
   const fp = parseAmount(fraisPrestation);
   const total = dd + fc + fp;
   const valid = !!clientId && !!nature.trim() && !!dateValidite;
-  // Le devis suit toujours l'annexe de son client (Mali/Côte d'Ivoire) — les
-  // intitulés de rubrique s'adaptent en conséquence (ex. « Frais transit
-  // port » couvre la manutention portuaire en Côte d'Ivoire).
-  const clientAnnexeId = clients.find((c) => c.id === clientId)?.annexeId;
-  const annexeCode = annexes.find((a) => a.id === clientAnnexeId)?.code;
+  // Le Client n'a pas d'annexe propre en base (répertoire partagé, comme les
+  // fournisseurs) : c'est l'annexe ACTIVE de l'utilisateur qui sera assignée
+  // au devis à la création (devis-slice.ts addDevis — client?.annexeId, qui
+  // n'existe pas côté API, retombe toujours sur l'annexe active). En édition,
+  // l'annexe reste celle déjà fixée à la création du devis. Les intitulés de
+  // rubrique s'adaptent en conséquence (ex. « Frais transit port » couvre la
+  // manutention portuaire en Côte d'Ivoire).
+  const annexeCode = annexes.find((a) => a.id === (devis?.annexeId ?? activeAnnexeId))?.code;
   const labels = resolveDossierCoutLabels(annexeCode);
 
   function handleClientChange(id: string) {

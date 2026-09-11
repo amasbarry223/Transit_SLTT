@@ -30,6 +30,7 @@ export class ClientsService {
       },
       orderBy: { nom: 'asc' },
       include: {
+        annexe: { select: { id: true, nom: true, code: true } },
         _count: {
           select: { dossiers: true, factures: true },
         },
@@ -41,6 +42,7 @@ export class ClientsService {
     const client = await this.prisma.client.findUnique({
       where: { id },
       include: {
+        annexe: { select: { id: true, nom: true, code: true } },
         dossiers: { take: 5, orderBy: { createdAt: 'desc' } },
         factures: { take: 5, orderBy: { createdAt: 'desc' } },
         _count: {
@@ -78,7 +80,9 @@ export class ClientsService {
         rccm: data.rccm || null,
         actif: data.actif ?? true,
         notes: data.notes || null,
+        annexeId: data.annexeId || null,
       },
+      include: { annexe: { select: { id: true, nom: true, code: true } } },
     });
   }
 
@@ -96,7 +100,12 @@ export class ClientsService {
     if (data.actif !== undefined) updateData.actif = data.actif;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
     if (data.type !== undefined) updateData.type = normalizeTypeClient(data.type);
-    return this.prisma.client.update({ where: { id }, data: updateData });
+    if (data.annexeId !== undefined) updateData.annexeId = data.annexeId || null;
+    return this.prisma.client.update({
+      where: { id },
+      data: updateData,
+      include: { annexe: { select: { id: true, nom: true, code: true } } },
+    });
   }
 
   async remove(id: string) {

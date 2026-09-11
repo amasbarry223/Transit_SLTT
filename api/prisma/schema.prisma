@@ -167,6 +167,7 @@ model Annexe {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   userAnnexes UserAnnexe[]
+  clients     Client[]
   dossiers    Dossier[]
   devis       Devis[]
   factures    Facture[]
@@ -215,9 +216,17 @@ model Client {
   rccm      String?
   actif     Boolean    @default(true)
   notes     String?
+  // Ajouté après coup : le formulaire client (front) affiche un sélecteur
+  // Annexe obligatoire depuis le début, mais rien ne le persistait ici —
+  // chaque annexe choisie à la création/modification d'un client était
+  // silencieusement perdue. Nullable pour ne pas casser les clients déjà
+  // créés sans cette colonne (annexeId = null jusqu'à leur prochaine
+  // modification).
+  annexeId  String?    @map("annexe_id")
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
+  annexe     Annexe?    @relation(fields: [annexeId], references: [id])
   dossiers   Dossier[]
   factures   Facture[]
   devis      Devis[]
@@ -226,6 +235,7 @@ model Client {
   stockItems StockItem[]
   bonsSortie BonSortie[]
 
+  @@index([annexeId])
   @@map("clients")
 }
 

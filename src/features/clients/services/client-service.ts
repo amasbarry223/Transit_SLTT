@@ -17,6 +17,7 @@ export async function createClient(input: ClientInput): Promise<Result<Client, A
       telephone: input.telephone,
       email: input.email,
       adresse: input.adresse,
+      annexeId: input.annexeId,
     });
     return ok({
       id: created.id,
@@ -25,8 +26,8 @@ export async function createClient(input: ClientInput): Promise<Result<Client, A
       telephone: created.telephone || "",
       email: created.email || "",
       adresse: created.adresse || "",
-      annexeId: input.annexeId,
-      annexeNom: "",
+      annexeId: created.annexeId || input.annexeId,
+      annexeNom: created.annexe?.nom || "",
       nbDossiers: 0,
       totalDu: 0,
       totalPaye: 0,
@@ -47,6 +48,7 @@ export async function updateClient(
       telephone: input.telephone,
       email: input.email,
       adresse: input.adresse,
+      annexeId: input.annexeId,
     });
     return ok(undefined);
   } catch (e) {
