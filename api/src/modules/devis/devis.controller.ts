@@ -12,6 +12,7 @@ import {
 import { DevisService } from './devis.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -31,12 +32,14 @@ export class DevisController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   @RequirePermission('devis.creer')
   async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.devisService.create(user, body);
   }
 
   @Put(':id')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('devis.creer')
   async update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.devisService.update(id, user, body);

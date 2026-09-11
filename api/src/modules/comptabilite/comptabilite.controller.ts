@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ComptabiliteService } from './comptabilite.service';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -17,6 +18,7 @@ export class ComptabiliteController {
   }
 
   @Post('operations')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('comptabilite:write')
   createOperation(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.service.createOperation(user, body);
@@ -34,6 +36,7 @@ export class ComptabiliteController {
   }
 
   @Post('clotures')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('comptabilite:write')
   createCloture(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.service.createCloture(user, body);

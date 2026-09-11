@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { RecusPaiementService } from './recus-paiement.service';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -22,12 +23,14 @@ export class RecusPaiementController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   @RequirePermission('recus-paiement:write')
   create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.service.create(user, body);
   }
 
   @Put(':id')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('recus-paiement:write')
   update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.service.update(id, user, body);

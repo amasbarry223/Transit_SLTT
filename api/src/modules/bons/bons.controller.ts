@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { BonsService } from './bons.service';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -17,6 +18,7 @@ export class BonsController {
   }
 
   @Post('sortie')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('bons:write')
   createBon(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.bonsService.createBon(user, body);
@@ -40,6 +42,7 @@ export class BonsController {
   }
 
   @Post('caisse')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('bons:write-caisse')
   createBonCaisse(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.bonsService.createBonCaisse(user, body);

@@ -12,6 +12,7 @@ import {
 import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -33,12 +34,14 @@ export class ClientsController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   @RequirePermission('clients.creer')
   async create(@CurrentUser() user: CurrentUserType, @Body() body: CreateClientDto) {
     return this.clientsService.create(user, body);
   }
 
   @Put(':id')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('clients.modifier')
   async update(
     @Param('id') id: string,

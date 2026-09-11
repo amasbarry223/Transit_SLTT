@@ -13,6 +13,7 @@ import {
 import { FacturesService } from './factures.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -41,6 +42,7 @@ export class FacturesController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   @RequirePermission('factures.creer')
   async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.facturesService.create(user, body);

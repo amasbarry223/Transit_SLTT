@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ContratsService } from './contrats.service';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -23,11 +24,13 @@ export class ContratsController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.contratsService.create(user, body);
   }
 
   @Put(':id')
+  @UseGuards(AnnexeGuard)
   update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.contratsService.update(id, user, body);
   }
