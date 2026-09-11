@@ -14,6 +14,16 @@ export class StatsService {
           : {}
         : { annexeId: { in: user.annexeIds } };
 
+    // Client.annexeId est nullable (répertoire partagé entre annexes, cf.
+    // clients.service.ts::buildAnnexeFilter) : un client sans annexe reste
+    // visible/compté par tous, contrairement aux dossiers/factures/caisses.
+    const clientAnnexeFilter =
+      user.role === 'ADMIN'
+        ? annexeId
+          ? { annexeId }
+          : {}
+        : { OR: [{ annexeId: null }, { annexeId: { in: user.annexeIds } }] };
+
     const [
       totalDossiers,
       dossiersEnCours,
@@ -26,7 +36,7 @@ export class StatsService {
       this.prisma.dossier.count({ where: annexeFilter }),
       this.prisma.dossier.count({ where: { ...annexeFilter, statut: 'EN_COURS' } }),
       this.prisma.dossier.count({ where: { ...annexeFilter, statut: 'EN_DEDOUANEMENT' } }),
-      this.prisma.client.count({ where: { actif: true } }),
+      this.prisma.client.count({ where: { actif: true, ...clientAnnexeFilter } }),
       this.prisma.facture.findMany({
         // CA et impayé = factures réellement émises : ni annulées, ni brouillons.
         where: { ...annexeFilter, statut: { notIn: ['ANNULEE', 'BROUILLON'] } },
@@ -47,7 +57,15 @@ export class StatsService {
     const chiffreAffairesTotal = factures.reduce((acc: number, f: any) => acc + f.montantTtc, 0);
     const montantTotalEncaisse = factures.reduce((acc: number, f: any) => acc + f.montantPaye, 0);
     const montantImpaye = chiffreAffairesTotal - montantTotalEncaisse;
-    const soldeTotalCaisse = caisses.reduce((acc: number, c: any) => acc + c.soldeActuel, 0);
+    // Une caisse a sa propre devise (champ libre, défaut 'FCFA') : sommer
+    // toutes les caisses sous un unique total avec une devise fixe ('GNF')
+    // était à la fois faux (aucune caisse n'est en GNF) et trompeur dès
+    // qu'une deuxième devise apparaît. On regroupe par devise réelle.
+    const soldesParDevise = caisses.reduce((acc: Record<string, number>, c: any) => {
+      const devise = c.devise || 'FCFA';
+      acc[devise] = (acc[devise] || 0) + c.soldeActuel;
+      return acc;
+    }, {} as Record<string, number>);
 
     return {
       dossiers: {
@@ -65,8 +83,7 @@ export class StatsService {
         chiffreAffairesTotal,
         montantTotalEncaisse,
         montantImpaye,
-        soldeTotalCaisse,
-        devise: 'GNF',
+        soldesParDevise,
       },
     };
   }
