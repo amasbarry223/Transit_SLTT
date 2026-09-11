@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -32,6 +33,13 @@ import { ComptabiliteModule } from './modules/comptabilite/comptabilite.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    // Défaut permissif (ne restreint aucune route par défaut, ThrottlerGuard
+    // n'est appliqué globalement nulle part) — sert de socle DI pour les
+    // limites resserrées posées route par route via @Throttle(), ex.
+    // /auth/login (brute force sur mot de passe).
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 100 }],
+    }),
     PrismaModule,
     AuthModule,
     AnnexesModule,

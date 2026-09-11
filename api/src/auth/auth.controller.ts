@@ -9,6 +9,7 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -19,9 +20,15 @@ import type { CurrentUserType } from './auth.types';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 5 tentatives / minute / IP : au-delà, 429 Too Many Requests. Limite
+  // resserrée uniquement sur les routes qui vérifient un secret (mot de
+  // passe, refresh token) — le reste de l'API garde le défaut permissif
+  // du ThrottlerModule (aucune restriction pratique sur l'usage normal).
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
   }
@@ -29,6 +36,8 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async refresh(@Body('refreshToken') refreshToken: string) {
     return this.authService.refreshAccessToken(refreshToken);
   }

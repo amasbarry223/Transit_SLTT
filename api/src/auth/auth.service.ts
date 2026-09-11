@@ -7,12 +7,26 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtPayload, CurrentUserType } from './auth.types';
 import { jwtRefreshSecret, jwtRefreshExpiresIn } from './jwt.config';
 
 const BCRYPT_ROUNDS = 12;
 const REFRESH_TOKEN_DAYS = 7;
+
+/**
+ * Seul le hash du refresh token part en base (colonne `token`, jamais
+ * renommée pour éviter une migration de schéma — mais elle ne contient
+ * plus de refresh token en clair depuis ce commit). Un accès en lecture à
+ * la table `refresh_tokens` (fuite de sauvegarde, dump, accès DB) ne
+ * suffit plus à réutiliser un token : il faut connaître le token brut,
+ * jamais persisté. Le client continue d'envoyer/recevoir le JWT signé en
+ * clair comme avant — seul ce qui est écrit en base change.
+ */
+function hashRefreshToken(rawToken: string): string {
+  return createHash('sha256').update(rawToken).digest('hex');
+}
 
 @Injectable()
 export class AuthService {
@@ -76,9 +90,10 @@ export class AuthService {
     // sinon l'un des deux invalide le refresh avant l'autre.
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_DAYS);
+    const refreshTokenHash = hashRefreshToken(refreshToken);
     await this.prisma.refreshToken.upsert({
-      where: { token: refreshToken },
-      create: { userId: profile.id, token: refreshToken, expiresAt },
+      where: { token: refreshTokenHash },
+      create: { userId: profile.id, token: refreshTokenHash, expiresAt },
       update: { expiresAt },
     });
 
@@ -108,7 +123,7 @@ export class AuthService {
     }
 
     const stored = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+      where: { token: hashRefreshToken(refreshToken) },
     });
 
     if (!stored || stored.expiresAt < new Date()) {
@@ -141,7 +156,7 @@ export class AuthService {
   /** Révoque un refresh token (logout) */
   async logout(refreshToken: string) {
     await this.prisma.refreshToken
-      .delete({ where: { token: refreshToken } })
+      .delete({ where: { token: hashRefreshToken(refreshToken) } })
       .catch(() => null); // Pas d'erreur si déjà révoqué
   }
 
