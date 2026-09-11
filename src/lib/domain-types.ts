@@ -622,6 +622,12 @@ export interface ContratPrestation {
   datePrevue?: string;
   dateRealisation?: string;
   creePar?: string;
+  /** Garde-fou déclaratif côté client contre la double facturation d'une
+   *  même prestation — pas une garantie serveur : ContratPrestation n'a
+   *  aucune persistance API (contrats-slice.ts::updateContratPrestation
+   *  reste un état 100% navigateur), donc cet indicateur ne survit pas
+   *  nécessairement à un F5 selon l'état du store au rechargement. */
+  facturee?: boolean;
 }
 
 export interface ContratPrestationInput {
@@ -632,6 +638,7 @@ export interface ContratPrestationInput {
   statut: ContratPrestationStatut;
   datePrevue?: string;
   dateRealisation?: string;
+  facturee?: boolean;
 }
 
 export interface User {

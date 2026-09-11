@@ -184,6 +184,11 @@ export function ContratDetailScreen() {
       description: `${contrat!.reference} — ${prestation.libelle}`,
       montant: prestation.montant,
     });
+    // Garde-fou déclaratif contre le double clic / une seconde facture pour
+    // la même prestation — état 100% navigateur (pas de persistance API sur
+    // ContratPrestation), donc pas une garantie serveur : un rechargement de
+    // page peut faire réapparaître le bouton selon l'état du store.
+    void updateContratPrestation(prestation.id, { facturee: true });
     go("factures");
     toastInfo(toast, { title: "Facture préremplie", description: "Complétez et enregistrez la facture." });
   }
@@ -502,16 +507,20 @@ export function ContratDetailScreen() {
                       </div>
                       {canWrite && (
                         <div className="mt-3 flex items-center justify-end gap-1 border-t border-border pt-3">
-                          {p.statut === "Réalisée" && p.montant != null && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-primary"
-                              onClick={() => handleFacturer(p)}
-                            >
-                              <Receipt className="size-3.5" />
-                              Facturer
-                            </Button>
+                          {p.facturee ? (
+                            <ToneBadge tone="blue">Facturée</ToneBadge>
+                          ) : (
+                            p.statut === "Réalisée" && p.montant != null && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-primary"
+                                onClick={() => handleFacturer(p)}
+                              >
+                                <Receipt className="size-3.5" />
+                                Facturer
+                              </Button>
+                            )
                           )}
                           <Button
                             variant="ghost"
@@ -571,16 +580,20 @@ export function ContratDetailScreen() {
                         {canWrite && (
                           <TableCell className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              {p.statut === "Réalisée" && p.montant != null && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-primary"
-                                  onClick={() => handleFacturer(p)}
-                                >
-                                  <Receipt className="size-3.5" />
-                                  Facturer
-                                </Button>
+                              {p.facturee ? (
+                                <ToneBadge tone="blue">Facturée</ToneBadge>
+                              ) : (
+                                p.statut === "Réalisée" && p.montant != null && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-primary"
+                                    onClick={() => handleFacturer(p)}
+                                  >
+                                    <Receipt className="size-3.5" />
+                                    Facturer
+                                  </Button>
+                                )
                               )}
                               <Button
                                 variant="ghost"
