@@ -673,27 +673,6 @@ class ApiClient {
   };
 
   // ---------------------------------------------------------------------------
-  // Statistiques & Dashboard
-  // ---------------------------------------------------------------------------
-  stats = {
-    getDashboardKpis: (annexeId?: string) => {
-      const qs = annexeId ? `?annexeId=${annexeId}` : '';
-      return this.request<any>(`/stats/dashboard${qs}`);
-    },
-  };
-
-  // ---------------------------------------------------------------------------
-  // Notifications
-  // ---------------------------------------------------------------------------
-  notifications = {
-    getMyNotifications: () => this.request<any[]>('/notifications'),
-    markAsRead: (id: string) =>
-      this.request<any>(`/notifications/${id}/read`, { method: 'PATCH' }),
-    markAllAsRead: () =>
-      this.request<any>('/notifications/read-all', { method: 'PATCH' }),
-  };
-
-  // ---------------------------------------------------------------------------
   // Sauvegarde, Export & Restauration (Backup)
   // ---------------------------------------------------------------------------
   backup = {

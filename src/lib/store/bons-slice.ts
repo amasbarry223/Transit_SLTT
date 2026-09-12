@@ -9,7 +9,7 @@ import {
   extractTrailingSeq,
 } from "@/lib/store/reference";
 
-export function findStockForBon(
+function findStockForBon(
   stock: StockItem[],
   ref: { stockId?: string; marchandise: string },
 ): StockItem | undefined {

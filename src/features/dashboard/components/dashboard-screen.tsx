@@ -73,7 +73,9 @@ export function DashboardScreen() {
     .replace(/^\w/, (c) => c.toUpperCase());
 
   const {
+    chiffreEncaisse,
     dossiersEnCours,
+    dossiersALivrer,
     valeurStock,
     totalRestesAPayer,
     nbDossiersNonSoldes,
@@ -143,23 +145,29 @@ export function DashboardScreen() {
   const firstName = currentUserName ? currentUserName.split(" ")[0] : null;
 
   // Une phrase, pas une bannière publicitaire : le fait le plus utile à
-  // savoir aujourd'hui, propre à ce que ce rôle gère réellement.
+  // savoir aujourd'hui, propre à ce que ce rôle gère réellement. chiffreEncaisse
+  // et dossiersALivrer étaient calculés par useDashboardMetrics mais jamais
+  // lus nulle part (audit du 12/09/2026) — ils alimentent enfin l'en-tête au
+  // lieu d'être recalculés à chaque rendu pour rien.
   const headline = React.useMemo(() => {
     if (currentRole === "Comptable") {
       return nbDossiersNonSoldes > 0
-        ? `${formatFCFA(totalRestesAPayer)} restent à recouvrer sur ${nbDossiersNonSoldes} dossier${nbDossiersNonSoldes > 1 ? "s" : ""}.`
-        : "Aucune créance en attente sur les dossiers non facturés.";
+        ? `${formatFCFA(chiffreEncaisse)} encaissés ce mois · ${formatFCFA(totalRestesAPayer)} restent à recouvrer sur ${nbDossiersNonSoldes} dossier${nbDossiersNonSoldes > 1 ? "s" : ""}.`
+        : `${formatFCFA(chiffreEncaisse)} encaissés ce mois · aucune créance en attente.`;
     }
     if (currentRole === "Agent de transit") {
-      return dossiersEnCours > 0
-        ? `${dossiersEnCours} dossier${dossiersEnCours > 1 ? "s" : ""} en cours de traitement.`
-        : "Aucun dossier en cours de traitement.";
+      if (dossiersEnCours === 0 && dossiersALivrer === 0) return "Aucun dossier en cours de traitement.";
+      const parts = [
+        dossiersEnCours > 0 && `${dossiersEnCours} dossier${dossiersEnCours > 1 ? "s" : ""} en cours`,
+        dossiersALivrer > 0 && `${dossiersALivrer} à livrer`,
+      ].filter(Boolean);
+      return `${parts.join(" · ")}.`;
     }
     if (currentRole === "Administrateur") {
-      return `${dossiersEnCours} dossier${dossiersEnCours > 1 ? "s" : ""} en cours · ${formatFCFA(totalRestesAPayer)} à recouvrer.`;
+      return `${dossiersEnCours} dossier${dossiersEnCours > 1 ? "s" : ""} en cours · ${formatFCFA(chiffreEncaisse)} encaissés ce mois · ${formatFCFA(totalRestesAPayer)} à recouvrer.`;
     }
     return "Voici l'activité de votre agence ce mois-ci.";
-  }, [currentRole, dossiersEnCours, nbDossiersNonSoldes, totalRestesAPayer]);
+  }, [currentRole, chiffreEncaisse, dossiersEnCours, dossiersALivrer, nbDossiersNonSoldes, totalRestesAPayer]);
 
   const stats: DashboardStat[] = [
     { key: "dossiers", label: "Dossiers", value: dossiers.length, icon: Package, trend: dossiersVariation, series: dossiersSeries, onClick: () => go("dossiers") },

@@ -51,5 +51,3 @@ export const CHART_BRAND = {
   amber: BRAND.warning,
 } as const;
 
-/** Alias historique — remplace SLTT_BLUE / #404089 */
-export const SLTT_BLUE = BRAND.primary;

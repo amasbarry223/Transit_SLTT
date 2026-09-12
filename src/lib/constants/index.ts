@@ -32,7 +32,6 @@ export {
 export {
   TOAST_COPY_RESET_MS,
   CHART_COLORS,
-  SLTT_BLUE,
   PAYMENT_RING_RADIUS_PX,
 } from "./ui.constants";
 

@@ -15,7 +15,7 @@ const ARCHIVES_ALLOWED_MIME = new Set([
 ]);
 
 /** Déduit un MIME fiable (certains navigateurs laissent file.type vide). */
-export function resolveArchiveMimeType(file: { name: string; type?: string }): string {
+function resolveArchiveMimeType(file: { name: string; type?: string }): string {
   if (file.type && file.type !== "application/octet-stream") return file.type;
   const ext = file.name.split(".").pop()?.toLowerCase();
   const byExt: Record<string, string> = {

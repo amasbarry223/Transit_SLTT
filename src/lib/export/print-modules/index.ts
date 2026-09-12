@@ -7,7 +7,6 @@ export {
 } from "@/features/devis/services/devis-print";
 export { printFactureModule, type FactureModuleData } from "./facture";
 export {
-  printRecuPaiementModule,
   printRecuPaiementBatch,
   type RecuPaiementModuleData,
 } from "./recu-paiement";
@@ -25,13 +24,11 @@ export {
   type DossierPrintRow,
   type DossierPrintTotals,
 } from "./dossiers";
-export {
-  printContrat,
-  type ContratPrintData,
-  type ContratPrestationPrintRow,
-  type ContratDepensePrintRow,
+export type {
+  ContratPrintData,
+  ContratPrestationPrintRow,
+  ContratDepensePrintRow,
 } from "@/features/contrats/services/contrat-print";
-export { printClients } from "@/features/clients/services/client-print";
 export type { ClientPrintRow } from "@/features/clients/types";
 export { printTransporteurs, type TransporteurPrintRow } from "./transporteurs";
 export { printFournisseurs, type FournisseurPrintRow } from "./fournisseurs";

@@ -10,7 +10,7 @@ import { DEFAULT_TRANSIT_BRAND, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-
  *  ("Transit SLTT", Bamako Niaréla, RCCM Ma.Bko.2025 B.5897) et
  *  DEFAULT_TRANSIT_BRAND ("TRAORE DE LOGISTIQUE", RCCM MA.BKO.2024.B.1234)
  *  affichaient deux identités société différentes selon l'écran. */
-export const DEFAULT_SOCIETE: Societe = {
+const DEFAULT_SOCIETE: Societe = {
   id: LEGACY_TRANSIT_SOCIETE_ID,
   nom: DEFAULT_TRANSIT_BRAND.nom,
   raisonSociale: DEFAULT_TRANSIT_BRAND.raisonSociale,

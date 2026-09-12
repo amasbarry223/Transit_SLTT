@@ -143,7 +143,11 @@ function buildRecuPaiementPrintHTML(data: RecuPaiementModuleData, brand: Societe
   return buildRecuPaiementHTML(data, brand, { includePrintToolbar: false });
 }
 
-export function printRecuPaiementModule(data: RecuPaiementModuleData, societe?: SocieteBrand | null): boolean {
+// Non exporté : seul printRecuPaiementBatch() (ci-dessous) l'appelle
+// désormais — plus aucun appelant externe depuis la refonte du carnet de
+// reçus vierges (use-recu-generator.ts imprime toujours via le batch, même
+// pour un seul reçu).
+function printRecuPaiementModule(data: RecuPaiementModuleData, societe?: SocieteBrand | null): boolean {
   const safeSociete = ensureSocieteBrand(societe);
 
   const html = buildRecuPaiementPrintHTML(data, safeSociete);

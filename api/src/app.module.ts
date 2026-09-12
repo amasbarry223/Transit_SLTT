@@ -16,10 +16,7 @@ import { CaisseModule } from './modules/caisse/caisse.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { DevisModule } from './modules/devis/devis.module';
-import { CotationsModule } from './modules/cotations/cotations.module';
 import { SettingsModule } from './modules/settings/settings.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
-import { StatsModule } from './modules/stats/stats.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { UsersModule } from './modules/users/users.module';
 import { BackupModule } from './modules/backup/backup.module';
@@ -52,10 +49,7 @@ import { ComptabiliteModule } from './modules/comptabilite/comptabilite.module';
     DocumentsModule,
     TrackingModule,
     DevisModule,
-    CotationsModule,
     SettingsModule,
-    NotificationsModule,
-    StatsModule,
     AuditLogsModule,
     UsersModule,
     BackupModule,
