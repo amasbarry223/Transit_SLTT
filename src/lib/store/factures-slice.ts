@@ -1,4 +1,3 @@
-import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import { syncClientStats } from "@/lib/client-stats";
@@ -88,27 +87,27 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       })),
     };
 
-    try {
-      const created = await api.factures.create({
-        numero,
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        dossierId: input.dossierId || undefined,
-        dateEmission: input.date,
-        dateEcheance: input.dateEcheance,
-        tauxTva: input.tauxTVA,
-        notes: input.notes,
-        lignes: input.lignes.map((l) => ({
-          designation: l.description,
-          quantite: l.quantite,
-          prixUnitaire: l.prixUnitaire,
-        })),
-      });
-      if (created?.id) {
-        newFacture.id = created.id;
-      }
-    } catch (e) {
-      logWarn("api.factures.create (mode local)", e);
+    // Persistance obligatoire : updateFacture/removeFacture (ci-dessous)
+    // propagent déjà l'erreur — addFacture avait été oublié lors de ce
+    // correctif et retombait toujours sur une facture locale fictive quand
+    // l'écriture serveur échouait, disparaissant sans trace au rechargement.
+    const created = await api.factures.create({
+      numero,
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      dossierId: input.dossierId || undefined,
+      dateEmission: input.date,
+      dateEcheance: input.dateEcheance,
+      tauxTva: input.tauxTVA,
+      notes: input.notes,
+      lignes: input.lignes.map((l) => ({
+        designation: l.description,
+        quantite: l.quantite,
+        prixUnitaire: l.prixUnitaire,
+      })),
+    });
+    if (created?.id) {
+      newFacture.id = created.id;
     }
 
     const finalSeq = extractTrailingSeq(numero) ?? get().factureSeq;
