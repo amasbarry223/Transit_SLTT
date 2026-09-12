@@ -61,9 +61,6 @@ export function printTransporteurs(
       <td class="col-contact">${htmlEscape(r.vehicule)}<br><span class="sub sub-mono">${htmlEscape(r.immatriculation)}</span></td>
       <td class="col-adresse">${htmlEscape(r.trajet)}</td>
       <td class="col-num">${r.capacite} t</td>
-      <td class="col-type">
-        <span class="type-badge type-badge--${r.statut === "Actif" ? "pro" : "part"}">${htmlEscape(r.statut)}</span>
-      </td>
     </tr>`,
     )
     .join("");
@@ -209,26 +206,6 @@ tbody td {
 .sub-mono { font-family: 'Courier New', monospace; }
 .col-num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 10px; }
 .empty { color: #cdd4df; }
-.type-badge {
-  display: inline-block;
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 1px 6px;
-  border-radius: 9999px;
-  white-space: nowrap;
-}
-.type-badge--pro {
-  color: #126a32;
-  background: #d3f8e1;
-  border: 1px solid #a7e8bf;
-}
-.type-badge--part {
-  color: #6b7280;
-  background: #f3f5f7;
-  border: 1px solid #d2dbe9;
-}
 tfoot td {
   background: ${BRAND.navy};
   color: #fff;
@@ -337,7 +314,6 @@ tfoot .total-num {
             <th>Véhicule</th>
             <th>Trajet</th>
             <th class="col-num-head">Capacité</th>
-            <th>Statut</th>
           </tr>
         </thead>
         <tbody>${rowsHTML}</tbody>
@@ -345,7 +321,6 @@ tfoot .total-num {
           <tr>
             <td colspan="4">Total — ${rows.length} transporteur${rows.length !== 1 ? "s" : ""}</td>
             <td class="total-num">${capaciteTotale} t</td>
-            <td></td>
           </tr>
         </tfoot>
       </table>

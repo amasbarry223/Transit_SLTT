@@ -73,8 +73,6 @@ function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
           ? Math.min(100, Math.round((r.quantite / Math.max(r.seuil, 1)) * 100))
           : 100;
       const barColor = faible ? "#dc2626" : fillPct >= 150 ? "#16853f" : "#2f91e1";
-      const statutBg = faible ? "#fef2f2" : "#ecfdf5";
-      const statutFg = faible ? "#991b1b" : "#065f46";
       const rowBg = faible ? "#fffbeb" : i % 2 === 0 ? "#ffffff" : "#f8fafc";
       const clientLine = r.clientNom
         ? `<div style="font-size:10px;color:#6b7280;margin-top:2px">${htmlEscape(r.clientNom)}</div>`
@@ -99,9 +97,6 @@ function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
       <td class="td-text">${htmlEscape(r.commercial || "—")}</td>
       <td class="td-num paid">${fmtFCFA(r.sommePayee)}</td>
       <td class="td-num ${r.resteAPayer > 0 ? "due" : "muted"}">${r.resteAPayer > 0 ? fmtFCFA(r.resteAPayer) : "—"}</td>
-      <td class="td-statut">
-        <span class="badge" style="background:${statutBg};color:${statutFg}">${faible ? "Sous seuil" : "OK"}</span>
-      </td>
     </tr>`;
     })
     .join("");
@@ -175,13 +170,12 @@ function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
             <th>Commercial</th>
             <th class="num">Payé</th>
             <th class="num">Reste</th>
-            <th>Statut</th>
           </tr>
         </thead>
         <tbody>
           ${
             rowsHTML ||
-            `<tr><td colspan="10" style="padding:28px;text-align:center;color:#92a3ba">Aucun article à inventorier</td></tr>`
+            `<tr><td colspan="9" style="padding:28px;text-align:center;color:#92a3ba">Aucun article à inventorier</td></tr>`
           }
         </tbody>
         <tfoot>
@@ -189,7 +183,6 @@ function buildSectionHTML(group: StockInventoryGroup, docRef: string): string {
             <td colspan="7">Total — ${sorted.length} article${sorted.length !== 1 ? "s" : ""}</td>
             <td class="amt">${fmtFCFA(sumPayee)}</td>
             <td class="amt">${fmtFCFA(sumReste)}</td>
-            <td></td>
           </tr>
         </tfoot>
       </table>
@@ -384,11 +377,6 @@ table { width: 100%; border-collapse: collapse; }
 .td-unit, .td-text {
   padding: 9px 12px; border-bottom: 1px solid #eef2f7;
   font-size: 11.5px; color: #45556b; vertical-align: middle;
-}
-.td-statut { padding: 9px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; }
-.badge {
-  display: inline-block; padding: 3px 8px; border-radius: 6px;
-  font-size: 10px; font-weight: 700; letter-spacing: .02em;
 }
 .paid { color: #047857; font-weight: 600; }
 .due { color: #b45309; font-weight: 600; }

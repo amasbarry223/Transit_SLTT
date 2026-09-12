@@ -59,7 +59,6 @@ export function printFournisseurs(
       <td class="col-contact">${htmlEscape(r.contact) || empty}</td>
       <td class="col-mono">${htmlEscape(r.telephone) || empty}</td>
       <td class="col-mail">${htmlEscape(r.email) || empty}</td>
-      <td class="col-statut"><span class="statut-badge statut-badge--${r.statut === "Actif" ? "on" : "off"}">${htmlEscape(r.statut)}</span></td>
     </tr>`,
     )
     .join("");
@@ -131,12 +130,11 @@ ${OFFICIAL_LETTERHEAD_CSS}
 .table-section { padding: 14px 28px 20px; }
 .table-wrap { border: 1px solid #d2dbe9; border-radius: 6px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-colgroup .c-nom { width: 26%; }
-colgroup .c-type { width: 14%; }
-colgroup .c-contact { width: 15%; }
-colgroup .c-tel { width: 14%; }
-colgroup .c-mail { width: 21%; }
-colgroup .c-statut { width: 10%; }
+colgroup .c-nom { width: 28%; }
+colgroup .c-type { width: 15%; }
+colgroup .c-contact { width: 16%; }
+colgroup .c-tel { width: 15%; }
+colgroup .c-mail { width: 26%; }
 thead th {
   background: ${BRAND.navy}; color: #fff; padding: 6px 8px;
   font-size: 7.5px; font-weight: 700; text-transform: uppercase;
@@ -159,12 +157,6 @@ tbody td {
   text-transform: uppercase; padding: 1px 6px; border-radius: 9999px;
   color: ${BRAND.navy}; background: #eef0fc; border: 1px solid #c7cbf0; white-space: nowrap;
 }
-.statut-badge {
-  display: inline-block; font-size: 7px; font-weight: 700; letter-spacing: 0.03em;
-  text-transform: uppercase; padding: 1px 6px; border-radius: 9999px; white-space: nowrap;
-}
-.statut-badge--on { color: #126a32; background: #d3f8e1; border: 1px solid #a7e8bf; }
-.statut-badge--off { color: #6b7280; background: #f3f5f7; border: 1px solid #d2dbe9; }
 tfoot td {
   background: ${BRAND.navy}; color: #fff; padding: 8px;
   font-weight: 700; font-size: 10px;
@@ -243,7 +235,7 @@ tfoot td {
       <table>
         <colgroup>
           <col class="c-nom"><col class="c-type"><col class="c-contact">
-          <col class="c-tel"><col class="c-mail"><col class="c-statut">
+          <col class="c-tel"><col class="c-mail">
         </colgroup>
         <thead>
           <tr>
@@ -252,12 +244,11 @@ tfoot td {
             <th>Contact</th>
             <th>Téléphone</th>
             <th>E-mail</th>
-            <th>Statut</th>
           </tr>
         </thead>
-        <tbody>${rowsHTML || `<tr><td colspan="6" style="padding:16px;text-align:center;color:#92a3ba">Aucun fournisseur</td></tr>`}</tbody>
+        <tbody>${rowsHTML || `<tr><td colspan="5" style="padding:16px;text-align:center;color:#92a3ba">Aucun fournisseur</td></tr>`}</tbody>
         <tfoot>
-          <tr><td colspan="6">Total — ${rows.length} fournisseur${rows.length !== 1 ? "s" : ""} · ${nbActifs} actif${nbActifs !== 1 ? "s" : ""}</td></tr>
+          <tr><td colspan="5">Total — ${rows.length} fournisseur${rows.length !== 1 ? "s" : ""} · ${nbActifs} actif${nbActifs !== 1 ? "s" : ""}</td></tr>
         </tfoot>
       </table>
     </div>

@@ -17,9 +17,9 @@ import { fmtDate, fmtFCFA, fmtFCFAPlain } from "./shared";
 /* ------------------------------------------------------------------ */
 /* printDossiers — liste des dossiers de transit (A4 paysage)          */
 /* Même identité visuelle que printClasseur : papier à en-tête         */
-/* officiel, bandeau navy, synthèse chiffrée, tableau rayé, badges.    */
-/* Paysage : 8 colonnes dont 2 montants ne tiennent pas en portrait    */
-/* sans que le client et le statut passent à la ligne.                 */
+/* officiel, bandeau navy, synthèse chiffrée, tableau rayé.            */
+/* Paysage : 7 colonnes dont 2 montants ne tiennent pas en portrait    */
+/* sans que le client passe à la ligne. Pas de colonne Statut (retirée). */
 /* ------------------------------------------------------------------ */
 
 export interface DossierPrintRow {
@@ -38,14 +38,6 @@ export interface DossierPrintTotals {
   enCours: number;
   soldes: number;
   margeCumulee: number;
-}
-
-/** Ton sémantique d'un statut dossier (avancement du cycle douanier). */
-function statutTone(statut: string): "ok" | "warn" | "progress" {
-  const s = statut.toLowerCase();
-  if (s.includes("sold")) return "ok";
-  if (s.includes("cours")) return "warn";
-  return "progress"; // Dédouané, Livré
 }
 
 export function printDossiers(
@@ -74,7 +66,6 @@ export function printDossiers(
       <td class="col-text">${htmlEscape(r.nature) || '<span class="empty">—</span>'}</td>
       <td class="cell-amount">${amount(r.prestation)}</td>
       <td class="cell-amount">${amount(r.marge, r.marge >= 0 ? "amount-pos" : "amount-neg")}</td>
-      <td class="col-statut"><span class="statut-badge statut-badge--${statutTone(r.statut)}">${htmlEscape(r.statut)}</span></td>
     </tr>`,
     )
     .join("");
@@ -152,13 +143,12 @@ ${OFFICIAL_LETTERHEAD_CSS}
 .table-caption { padding: 0 1px 6px; font-size: 8.5px; color: #92a3ba; font-style: italic; }
 .table-wrap { border: 1px solid #d2dbe9; border-radius: 6px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-colgroup .c-ref { width: 13%; }
-colgroup .c-client { width: 20%; }
-colgroup .c-bl { width: 11%; }
-colgroup .c-camion { width: 10%; }
-colgroup .c-nature { width: 20%; }
-colgroup .c-prest, colgroup .c-marge { width: 9%; }
-colgroup .c-statut { width: 8%; }
+colgroup .c-ref { width: 14%; }
+colgroup .c-client { width: 22%; }
+colgroup .c-bl { width: 12%; }
+colgroup .c-camion { width: 11%; }
+colgroup .c-nature { width: 22%; }
+colgroup .c-prest, colgroup .c-marge { width: 9.5%; }
 thead th {
   background: ${BRAND.navy}; color: #fff; padding: 6px 8px;
   font-size: 7.5px; font-weight: 700; text-transform: uppercase;
@@ -188,14 +178,6 @@ tbody td:last-child { border-right: none; }
 .amount-pos { color: #126a32; }
 .amount-neg { color: #b42318; }
 .empty { color: #cdd4df; font-weight: 400; }
-.col-statut { white-space: nowrap; }
-.statut-badge {
-  display: inline-block; font-size: 7px; font-weight: 700; letter-spacing: 0.03em;
-  text-transform: uppercase; padding: 1px 6px; border-radius: 9999px; white-space: nowrap;
-}
-.statut-badge--ok { color: #126a32; background: #e8f6ec; border: 1px solid #bfe3c9; }
-.statut-badge--warn { color: #b45309; background: #fdf3e3; border: 1px solid #f3d9ad; }
-.statut-badge--progress { color: ${BRAND.navy}; background: #eef0fc; border: 1px solid #c7cbf0; }
 tfoot td {
   background: ${BRAND.navy}; color: #fff; padding: 8px 8px;
   font-weight: 700; font-size: 10px; border-right: 1px solid rgba(255,255,255,0.18);
@@ -277,7 +259,7 @@ tfoot .total-amount { text-align: right; font-variant-numeric: tabular-nums; col
       <table>
         <colgroup>
           <col class="c-ref"><col class="c-client"><col class="c-bl"><col class="c-camion">
-          <col class="c-nature"><col class="c-prest"><col class="c-marge"><col class="c-statut">
+          <col class="c-nature"><col class="c-prest"><col class="c-marge">
         </colgroup>
         <thead>
           <tr>
@@ -288,16 +270,14 @@ tfoot .total-amount { text-align: right; font-variant-numeric: tabular-nums; col
             <th>Nature</th>
             <th class="head-amount">Prestation</th>
             <th class="head-amount">Marge</th>
-            <th>Statut</th>
           </tr>
         </thead>
-        <tbody>${rowsHTML || `<tr><td colspan="8" style="padding:16px;text-align:center;color:#92a3ba">Aucun dossier</td></tr>`}</tbody>
+        <tbody>${rowsHTML || `<tr><td colspan="7" style="padding:16px;text-align:center;color:#92a3ba">Aucun dossier</td></tr>`}</tbody>
         <tfoot>
           <tr>
             <td colspan="5">Total — ${rows.length} dossier${rows.length !== 1 ? "s" : ""}</td>
             <td class="total-amount">${fmtFCFAPlain(rows.reduce((s, r) => s + r.prestation, 0))}</td>
             <td class="total-amount">${fmtFCFAPlain(totals.margeCumulee)}</td>
-            <td></td>
           </tr>
         </tfoot>
       </table>
