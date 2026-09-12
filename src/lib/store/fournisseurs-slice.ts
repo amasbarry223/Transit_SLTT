@@ -1,4 +1,3 @@
-import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
@@ -44,23 +43,22 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       annexeId,
     };
 
-    try {
-      const created = await api.fournisseurs.create({
-        nom: input.nom,
-        type: input.type,
-        contact: input.contact,
-        telephone: input.telephone,
-        email: input.email,
-        adresse: input.adresse,
-        tarifContractuel: input.tarifContractuel,
-        statut: input.statut || "Actif",
-        annexeId,
-      });
-      if (created?.id) {
-        newFourn.id = created.id;
-      }
-    } catch (e) {
-      logWarn("api.fournisseurs.create (mode local)", e);
+    // Persistance obligatoire : un fournisseur sans écriture serveur
+    // disparaissait silencieusement au rechargement, sans aucune erreur
+    // montrée (même bug que removeFournisseur avant son correctif).
+    const created = await api.fournisseurs.create({
+      nom: input.nom,
+      type: input.type,
+      contact: input.contact,
+      telephone: input.telephone,
+      email: input.email,
+      adresse: input.adresse,
+      tarifContractuel: input.tarifContractuel,
+      statut: input.statut || "Actif",
+      annexeId,
+    });
+    if (created?.id) {
+      newFourn.id = created.id;
     }
 
     set((s) => ({
@@ -72,20 +70,16 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
   },
 
   updateFournisseur: async (id, input) => {
-    try {
-      await api.fournisseurs.update(id, {
-        nom: input.nom,
-        type: input.type,
-        contact: input.contact,
-        telephone: input.telephone,
-        email: input.email,
-        adresse: input.adresse,
-        tarifContractuel: input.tarifContractuel,
-        statut: input.statut,
-      });
-    } catch (e) {
-      logWarn("api.fournisseurs.update (mode local)", e);
-    }
+    await api.fournisseurs.update(id, {
+      nom: input.nom,
+      type: input.type,
+      contact: input.contact,
+      telephone: input.telephone,
+      email: input.email,
+      adresse: input.adresse,
+      tarifContractuel: input.tarifContractuel,
+      statut: input.statut,
+    });
 
     set((s) => ({
       fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
