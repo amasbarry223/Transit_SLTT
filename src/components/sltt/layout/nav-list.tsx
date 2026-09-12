@@ -1,5 +1,6 @@
 "use client";
 
+import { Home } from "lucide-react";
 import type { NavItem } from "@/lib/nav-items";
 import type { ComptaTab, ViewKey } from "@/lib/nav-store";
 import { cn, isNavActive } from "@/shared/utils/cn";
@@ -10,25 +11,16 @@ import {
   TooltipTrigger,
 } from "@/shared/components/ui/tooltip";
 
-function NavSectionLabel({ label, first, collapsed }: { label: string; first?: boolean; collapsed?: boolean }) {
-  if (collapsed) {
-    return <div className="my-2 h-px w-8 mx-auto bg-white/10" aria-hidden />;
-  }
-
-  return (
-    <div className={cn("flex items-center gap-2 px-3 pb-1.5", first ? "pt-0" : "pt-4")}>
-      <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-200/60">
-        {label}
-      </span>
-      <span
-        aria-hidden
-        className="h-px flex-1 bg-gradient-to-r from-white/15 to-transparent"
-      />
-    </div>
-  );
+/**
+ * Séparateur entre groupes métier — un simple filet, sans libellé de
+ * catégorie (Cycle commercial, Finance…) : la sidebar doit tenir dans la
+ * hauteur d'écran sans scroll, et ces intitulés n'apportaient qu'un
+ * repère textuel redondant avec l'ordre déjà logique des icônes.
+ */
+function NavSectionDivider({ first }: { first?: boolean }) {
+  if (first) return null;
+  return <div className="my-1.5 h-px w-full bg-white/10" aria-hidden />;
 }
-
-import { Home } from "lucide-react";
 
 export function NavList({
   items,
@@ -47,13 +39,13 @@ export function NavList({
 }) {
   return (
     <TooltipProvider delayDuration={150}>
-      <ul className={cn("space-y-1", className)}>
+      <ul className={cn("space-y-0.5", className)}>
         {items.map((item, i) => {
           const active = isNavActive(currentView, item.key, currentComptaTab, item.comptaTab);
           const isDashboard = item.key === "dashboard";
           const Icon = isDashboard ? Home : item.icon;
           const prevSection = items[i - 1]?.section;
-          const showSectionLabel = item.section && item.section !== prevSection;
+          const showSectionDivider = item.section && item.section !== prevSection;
 
           const buttonNode = (
             <button
@@ -65,7 +57,7 @@ export function NavList({
                 "transition-all duration-150 ease-out motion-reduce:transition-none",
                 collapsed
                   ? "size-10 justify-center mx-auto"
-                  : "w-full gap-3 px-3.5 py-2.5",
+                  : "w-full gap-3 px-3.5 py-2",
                 active
                   ? isDashboard
                     ? "bg-[#ED1C24] text-white shadow-md shadow-red-950/40 font-bold"
@@ -97,9 +89,7 @@ export function NavList({
 
           return (
             <li key={item.navId}>
-              {showSectionLabel && (
-                <NavSectionLabel label={item.section!} first={i === 0} collapsed={collapsed} />
-              )}
+              {showSectionDivider && <NavSectionDivider first={i === 0} />}
               {collapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>{buttonNode}</TooltipTrigger>
