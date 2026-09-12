@@ -126,6 +126,35 @@ export function computeRestesAPayer(dossiers: Dossier[], factures: Facture[] = [
   return { totalRestesAPayer: total, nbDossiersNonSoldes: count };
 }
 
+/**
+ * Série mensuelle générique (nombre d'éléments créés par mois, sur
+ * CHART_MONTHS_COUNT mois) — pour les mini-graphiques du registre
+ * d'activité. Même principe que computeCountVariation (un flux d'éléments
+ * CRÉÉS, comparable mois à mois) mais renvoie la série complète au lieu
+ * d'une seule variation en %.
+ */
+export function buildMonthlyCounts<T>(
+  items: T[],
+  getDate: (item: T) => string | undefined,
+  anchorDate: Date,
+): number[] {
+  return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
+    const chartDate = new Date(
+      anchorDate.getFullYear(),
+      anchorDate.getMonth() - (CHART_MONTHS_OFFSET - index),
+      1,
+    );
+    const monthIndex = chartDate.getMonth();
+    const year = chartDate.getFullYear();
+    return items.filter((item) => {
+      const raw = getDate(item);
+      if (!raw) return false;
+      const d = parseLocalDate(raw);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === monthIndex;
+    }).length;
+  });
+}
+
 export function buildDossiersParMois(
   dossiers: Dossier[],
   anchorDate: Date,

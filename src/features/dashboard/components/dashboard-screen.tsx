@@ -17,7 +17,7 @@ import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { getDashboardSections, type DashboardSection } from "@/lib/dashboard-config";
-import { computeCountVariation, type LiveAlert } from "@/lib/dashboard-metrics";
+import { buildMonthlyCounts, computeCountVariation, type LiveAlert } from "@/lib/dashboard-metrics";
 import { useBeneficeParSociete } from "@/shared/hooks/use-benefice-par-societe";
 import { useCurrentUser, usePermission } from "@/shared/hooks/use-permission";
 import { Button } from "@/shared/components/ui/button";
@@ -103,6 +103,26 @@ export function DashboardScreen() {
     [bons, anchorDate],
   );
 
+  // Historique mensuel pour les mini-graphiques du registre d'activité —
+  // même donnée que les variations ci-dessus, sous forme de série complète
+  // au lieu d'un seul pourcentage.
+  const dossiersSeries = React.useMemo(
+    () => buildMonthlyCounts(dossiers, (d) => d.date, anchorDate),
+    [dossiers, anchorDate],
+  );
+  const clientsSeries = React.useMemo(
+    () => buildMonthlyCounts(clients, (c) => c.createdAt, anchorDate),
+    [clients, anchorDate],
+  );
+  const facturesSeries = React.useMemo(
+    () => buildMonthlyCounts(factures, (f) => f.date, anchorDate),
+    [factures, anchorDate],
+  );
+  const bonsSeries = React.useMemo(
+    () => buildMonthlyCounts(bons, (b) => b.date, anchorDate),
+    [bons, anchorDate],
+  );
+
   // Le repli "return items.length > 0 ? items : alertes" réintroduisait
   // TOUTES les alertes (y compris hors permission) dès que la sélection
   // autorisée était vide — pas seulement quand l'utilisateur manquait des
@@ -142,11 +162,11 @@ export function DashboardScreen() {
   }, [currentRole, dossiersEnCours, nbDossiersNonSoldes, totalRestesAPayer]);
 
   const stats: DashboardStat[] = [
-    { key: "dossiers", label: "Dossiers", value: dossiers.length, icon: Package, trend: dossiersVariation, onClick: () => go("dossiers") },
+    { key: "dossiers", label: "Dossiers", value: dossiers.length, icon: Package, trend: dossiersVariation, series: dossiersSeries, onClick: () => go("dossiers") },
     { key: "en-cours", label: "En cours", value: dossiersEnCours, icon: Truck, onClick: () => go("dossiers") },
-    { key: "clients", label: "Clients", value: clients.length, icon: Users, trend: clientsVariation, onClick: () => go("clients") },
-    { key: "factures", label: "Factures", value: factures.length, icon: FileText, trend: facturesVariation, onClick: () => go("factures") },
-    { key: "bons", label: "Bons de sortie", value: bons.length, icon: Ship, trend: bonsVariation, onClick: () => go("bons") },
+    { key: "clients", label: "Clients", value: clients.length, icon: Users, trend: clientsVariation, series: clientsSeries, onClick: () => go("clients") },
+    { key: "factures", label: "Factures", value: factures.length, icon: FileText, trend: facturesVariation, series: facturesSeries, onClick: () => go("factures") },
+    { key: "bons", label: "Bons de sortie", value: bons.length, icon: Ship, trend: bonsVariation, series: bonsSeries, onClick: () => go("bons") },
   ];
 
   return (

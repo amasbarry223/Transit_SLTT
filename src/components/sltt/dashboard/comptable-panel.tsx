@@ -1,13 +1,54 @@
 "use client";
 
 import { useMemo } from "react";
-import { ArrowRight, CheckCircle2, FileOutput, Plus } from "lucide-react";
+import { ArrowRight, CheckCircle2, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
 import { dossiersNonFactures } from "@/lib/client-stats";
 import { formatFCFA } from "@/lib/format";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
+import { cn } from "@/shared/utils/cn";
+
+/** Barre proportionnelle payé/total — remplace une ligne de deux montants
+ *  bruts par la vraie donnée qui compte ici : quelle part est réglée. */
+function AmountProgressBar({
+  label,
+  sublabel,
+  paye,
+  total,
+  className,
+}: {
+  label: string;
+  sublabel: string;
+  paye: number;
+  total: number;
+  className?: string;
+}) {
+  const pct = total > 0 ? Math.min(100, Math.round((paye / total) * 100)) : 0;
+  const solde = total > 0 && paye >= total;
+
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold text-foreground">{label}</p>
+          <p className="truncate text-[11px] text-muted-foreground">{sublabel}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xs font-semibold tabular-nums text-foreground">{formatFCFA(paye)}</p>
+          <p className="text-[10px] tabular-nums text-muted-foreground">/ {formatFCFA(total)}</p>
+        </div>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn("h-full rounded-full transition-all", solde ? "bg-emerald-500" : "bg-amber-400")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "factures", opts?: { id?: string | null }) => void }) {
   const ecritures = useStore((s) => s.ecritures);
@@ -62,21 +103,17 @@ export function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "fa
           </Button>
         </div>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3.5">
         {dernières.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">Aucune écriture enregistrée.</p>
         ) : dernières.map((e) => (
-          <div key={e.id} className="flex items-center gap-3 rounded-lg border border-border/70 px-3 py-2.5">
-            <div className={`size-2 shrink-0 rounded-full ${e.montantPaye >= e.montantInvesti ? "bg-emerald-500" : "bg-amber-400"}`} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-foreground">{e.clientNom}</p>
-              <p className="text-xs text-muted-foreground">{e.date}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-semibold tabular-nums text-foreground">{formatFCFA(e.montantPaye)}</p>
-              <p className="text-[10px] text-muted-foreground">/ {formatFCFA(e.montantInvesti)}</p>
-            </div>
-          </div>
+          <AmountProgressBar
+            key={e.id}
+            label={e.clientNom}
+            sublabel={e.date}
+            paye={e.montantPaye}
+            total={e.montantInvesti}
+          />
         ))}
       </div>
     </Card>
@@ -91,25 +128,20 @@ export function ComptablePanel({ go }: { go: (v: "comptabilite" | "bilans" | "fa
           Factures <ArrowRight className="ml-1 size-3.5" />
         </Button>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3.5">
         {facturesImpayées.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <CheckCircle2 className="size-7 text-emerald-300" />
             <p className="mt-2 text-sm text-muted-foreground">Aucune facture en attente</p>
           </div>
         ) : facturesImpayées.slice(0, 5).map((f) => (
-          <div key={f.id} className="flex items-center gap-3 rounded-lg border border-border/70 px-3 py-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
-              <FileOutput className="size-3.5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-foreground">{f.numero} · {f.clientNom}</p>
-              <p className="text-xs text-muted-foreground">{f.statut}</p>
-            </div>
-            <span className="text-xs font-semibold tabular-nums text-foreground">
-              {formatFCFA(resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }))}
-            </span>
-          </div>
+          <AmountProgressBar
+            key={f.id}
+            label={`${f.numero} · ${f.clientNom}`}
+            sublabel={f.statut}
+            paye={f.montantPaye}
+            total={f.montantTTC}
+          />
         ))}
       </div>
     </Card>
