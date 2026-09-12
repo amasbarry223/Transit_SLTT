@@ -217,18 +217,6 @@ ${OFFICIAL_LETTERHEAD_CSS}
 }
 .doc-id-meta { text-align: right; flex-shrink: 0; font-size: 10.5px; color: #6b7280; }
 .doc-id-meta > * + * { margin-top: 3px; }
-.chip {
-  display: inline-block;
-  margin-top: 5px;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border: 1px solid ${BRAND.navy};
-  border-radius: 2px;
-  color: ${BRAND.navy};
-}
 
 .field-k {
   font-size: 9px;
@@ -371,7 +359,6 @@ ${SIGNATORIES_BLOCK_CSS}
       <div class="doc-id-meta">
         <div>Établi le ${fmtDevisDate(data.dateCreation)}</div>
         <div>Valable jusqu'au ${fmtDevisDate(data.dateValidite)}</div>
-        <div><span class="chip">${htmlEscape(data.statut ?? "Devis")}</span></div>
       </div>
     </header>
 
