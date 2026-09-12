@@ -16,6 +16,7 @@ export {
   printFournisseurs,
   printFactureModule,
   printRecuPaiementModule,
+  printRecuPaiementBatch,
   printStockInventory,
   printTransporteurs,
   shouldShowTva,

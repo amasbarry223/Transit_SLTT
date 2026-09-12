@@ -8,6 +8,7 @@ export {
 export { printFactureModule, type FactureModuleData } from "./facture";
 export {
   printRecuPaiementModule,
+  printRecuPaiementBatch,
   type RecuPaiementModuleData,
 } from "./recu-paiement";
 export {

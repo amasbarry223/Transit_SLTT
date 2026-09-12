@@ -9,8 +9,9 @@ const BLANK_MODULE_DATA = { reference: "" };
 
 /**
  * Carnet de reçus vierges — plus de saisie sur la plateforme : on réserve
- * juste le prochain numéro (auto-généré, jamais dupliqué) et on imprime un
- * reçu vierge à remplir au stylo. Voir use-recu-generator.ts.
+ * juste le(s) prochain(s) numéro(s) (auto-généré, jamais dupliqué, un seul
+ * clic peut en réserver plusieurs) et on imprime un carnet vierge à remplir
+ * au stylo. Voir use-recu-generator.ts.
  */
 export function RecusPaiementScreen() {
   const gen = useRecuGenerator();
@@ -21,8 +22,11 @@ export function RecusPaiementScreen() {
       <div className="hidden h-full min-h-0 lg:block">
         <RecuWorkspace
           current={gen.current}
+          batchSize={gen.batchSize}
           brand={gen.brand}
           canWrite={gen.canWrite}
+          count={gen.count}
+          onCountChange={gen.setCount}
           generating={gen.generating}
           printing={gen.printing}
           onGenerate={gen.handleGenerate}
@@ -38,11 +42,18 @@ export function RecusPaiementScreen() {
           reference={gen.current?.reference}
           className={gen.current ? undefined : "opacity-60"}
         />
+        {gen.batchSize > 1 && (
+          <p className="text-center text-[11px] text-muted-foreground">
+            Aperçu du dernier reçu du lot ({gen.batchSize} reçus identiques, numéros différents)
+          </p>
+        )}
 
         <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
           <RecuGeneratorActions
             canWrite={gen.canWrite}
             hasCurrent={!!gen.current}
+            count={gen.count}
+            onCountChange={gen.setCount}
             generating={gen.generating}
             printing={gen.printing}
             onGenerate={gen.handleGenerate}

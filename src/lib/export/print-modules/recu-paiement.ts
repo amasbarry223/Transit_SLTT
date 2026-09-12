@@ -3,6 +3,7 @@
 import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";
 import {
   buildReceiptPrintCSS,
+  buildReceiptBatchPrintCSS,
   RECEIPT_LOGO_FALLBACK,
   RECEIPT_PRINT_FRAME_ID,
   RECEIPT_WIDTH_MM,
@@ -146,6 +147,49 @@ export function printRecuPaiementModule(data: RecuPaiementModuleData, societe?: 
   const safeSociete = ensureSocieteBrand(societe);
 
   const html = buildRecuPaiementPrintHTML(data, safeSociete);
+  const win = acquirePrintTarget({
+    widthMm: RECEIPT_WIDTH_MM,
+    heightMm: RECEIPT_HEIGHT_MM,
+    frameId: RECEIPT_PRINT_FRAME_ID,
+  });
+  if (!win) {
+    warnPopupBlocked();
+    return false;
+  }
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  triggerPrint(win);
+  return true;
+}
+
+/** HTML complet du carnet — un .receipt-paper par reçu, chacun sur sa propre
+ *  page à l'impression (buildReceiptBatchPrintCSS), pour imprimer plusieurs
+ *  reçus vierges (numéros différents) en une seule action. */
+function buildRecuPaiementBatchHTML(dataList: RecuPaiementModuleData[], brand: SocieteBrand): string {
+  const receipts = dataList.map((data) => buildReceiptContentHTML(data, brand)).join("\n");
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reçus de paiement (${dataList.length})</title>
+<style>${buildReceiptBatchPrintCSS()}</style>
+</head>
+<body>
+${receipts}
+</body>
+</html>`;
+}
+
+/** Imprime plusieurs reçus vierges d'affilée, chacun avec son propre numéro
+ *  auto-généré — un par page, pour un carnet à découper ensuite au besoin. */
+export function printRecuPaiementBatch(dataList: RecuPaiementModuleData[], societe?: SocieteBrand | null): boolean {
+  if (dataList.length === 0) return false;
+  if (dataList.length === 1) return printRecuPaiementModule(dataList[0], societe);
+
+  const safeSociete = ensureSocieteBrand(societe);
+  const html = buildRecuPaiementBatchHTML(dataList, safeSociete);
   const win = acquirePrintTarget({
     widthMm: RECEIPT_WIDTH_MM,
     heightMm: RECEIPT_HEIGHT_MM,

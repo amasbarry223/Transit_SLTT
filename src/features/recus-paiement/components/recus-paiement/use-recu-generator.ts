@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import type { RecuPaiementModuleData } from "@/lib/export";
-import { printRecuPaiementModule } from "@/lib/export";
+import { printRecuPaiementBatch } from "@/lib/export";
 import { useStore } from "@/lib/store";
 
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
@@ -17,11 +17,16 @@ export interface GeneratedRecu {
   moduleData: RecuPaiementModuleData;
 }
 
+/** Un clic imprime un carnet entier, une génération par centaine serait
+ *  un abus manifeste (erreur de saisie) plutôt qu'un besoin réel. */
+const MAX_BATCH_COUNT = 100;
+
 /**
  * Un reçu se génère désormais VIERGE : plus de formulaire, seul le numéro
  * (RECU-0001…) est réservé côté serveur et pré-imprimé — le reste du carnet
  * (nom, motif, montants, date, signature) est rempli au stylo une fois
- * imprimé. Voir recus-paiement.service.ts::nextRecuReference.
+ * imprimé. Un même clic peut réserver et imprimer PLUSIEURS numéros
+ * d'affilée (carnet à découper). Voir recus-paiement.service.ts::nextRecuReference.
  */
 export function useRecuGenerator() {
   const { toast } = useToast();
@@ -31,16 +36,26 @@ export function useRecuGenerator() {
   const annexes = useStore((s) => s.annexes);
   const addRecuPaiement = useStore((s) => s.addRecuPaiement);
 
+  const [count, setCount] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const [current, setCurrent] = useState<GeneratedRecu | null>(null);
+  const [batch, setBatch] = useState<GeneratedRecu[]>([]);
 
   const brand = useMemo(
     () => resolveGeneratorBrand(societes, annexes, activeAnnexeId),
     [societes, annexes, activeAnnexeId],
   );
 
-  const handleGenerate = useCallback(async (): Promise<GeneratedRecu | null> => {
+  /** Le dernier reçu généré du lot — sert d'aperçu représentatif (tous les
+   *  reçus d'un même lot sont identiques hormis leur numéro). */
+  const current = batch.length > 0 ? batch[batch.length - 1] : null;
+
+  const updateCount = useCallback((value: number) => {
+    if (!Number.isFinite(value)) return;
+    setCount(Math.min(MAX_BATCH_COUNT, Math.max(1, Math.round(value))));
+  }, []);
+
+  const handleGenerate = useCallback(async (): Promise<GeneratedRecu[] | null> => {
     if (generating) return null;
     if (!canWrite) {
       toastWarning(toast, { title: "Permission insuffisante" });
@@ -52,24 +67,34 @@ export function useRecuGenerator() {
     }
     setGenerating(true);
     try {
-      const saved = await addRecuPaiement({ annexeId: activeAnnexeId });
-      const result: GeneratedRecu = {
-        reference: saved.reference,
-        moduleData: { reference: saved.reference },
-      };
-      setCurrent(result);
-      toastSuccess(toast, { title: "Reçu généré", description: `${saved.reference} — prêt à imprimer.` });
-      return result;
+      const results: GeneratedRecu[] = [];
+      // Séquentiel, pas Promise.all : chaque réservation de numéro dépend de
+      // l'état déjà persisté par la précédente (nextRecuReference() lit le
+      // dernier RECU- en base) — des appels parallèles multiplieraient les
+      // collisions et les retries côté serveur pour rien.
+      for (let i = 0; i < count; i++) {
+        const saved = await addRecuPaiement({ annexeId: activeAnnexeId });
+        results.push({ reference: saved.reference, moduleData: { reference: saved.reference } });
+      }
+      setBatch(results);
+      toastSuccess(toast, {
+        title: results.length > 1 ? `${results.length} reçus générés` : "Reçu généré",
+        description:
+          results.length > 1
+            ? `${results[0].reference} → ${results[results.length - 1].reference} — prêts à imprimer.`
+            : `${results[0].reference} — prêt à imprimer.`,
+      });
+      return results;
     } catch (err) {
       toastError(toast, err, { title: "Échec de la génération du reçu", fallback: "Réessayez." });
       return null;
     } finally {
       setGenerating(false);
     }
-  }, [generating, canWrite, activeAnnexeId, addRecuPaiement, toast]);
+  }, [generating, canWrite, activeAnnexeId, addRecuPaiement, count, toast]);
 
   const handlePrint = useCallback(async (): Promise<boolean> => {
-    if (!current) {
+    if (batch.length === 0) {
       toastWarning(toast, { title: "Générez d'abord un reçu avant de l'imprimer." });
       return false;
     }
@@ -79,27 +104,30 @@ export function useRecuGenerator() {
     }
     setPrinting(true);
     try {
-      const ok = printRecuPaiementModule(current.moduleData, brand);
+      const ok = printRecuPaiementBatch(batch.map((r) => r.moduleData), brand);
       if (!ok) {
         toastWarning(toast, { title: "Impression impossible", description: "Autorisez les fenêtres pop-up ou réessayez." });
         return false;
       }
       toastSuccess(toast, {
         title: "Enregistrer en PDF",
-        description: `Format ${RECEIPT_FORMAT_LABEL} paysage uniquement. Choisissez « Enregistrer au format PDF » — vérifiez que le format papier n'est pas A4.`,
+        description: `Format ${RECEIPT_FORMAT_LABEL} paysage uniquement (une page par reçu). Choisissez « Enregistrer au format PDF » — vérifiez que le format papier n'est pas A4.`,
       });
       return true;
     } finally {
       setPrinting(false);
     }
-  }, [current, brand, toast]);
+  }, [batch, brand, toast]);
 
   return {
     brand,
     canWrite,
+    count,
+    setCount: updateCount,
     generating,
     printing,
     current,
+    batchSize: batch.length,
     handleGenerate,
     handlePrint,
   };
