@@ -8,16 +8,23 @@ import {
   Wallet,
   CheckCircle2,
   ClipboardCheck,
+  Eye,
+  Pencil,
+  Trash2,
+  FileText,
 } from "lucide-react";
 
-import { useStore, type ContratInput, type ContratStatut } from "@/lib/store";
+import { useStore, type Contrat, type ContratInput, type ContratStatut } from "@/lib/store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { usePermission } from "@/shared/hooks/use-permission";
+import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
 import { useToast } from "@/shared/hooks/use-toast";
+import { resolveSlttBrand } from "@/lib/societe-brand";
+import { printContrat } from "@/features/contrats/services/contrat-print";
 
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
@@ -26,7 +33,12 @@ import { ListFilters, type FilterChip } from "@/components/sltt/list-filters";
 import { QuickClientButton } from "@/features/clients";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { CONTRAT_STATUTS, CONTRAT_STATUT_TONE } from "./contrat-detail";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
+import {
+  CONTRAT_STATUTS,
+  CONTRAT_STATUT_TONE,
+  ContratFormModal as ContratEditModal,
+} from "./contrat-detail";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 
@@ -67,7 +79,12 @@ export function ContratsScreen() {
 
   const contrats = useStore((s) => s.contrats);
   const clients = useStore((s) => s.clients);
+  const depenses = useStore((s) => s.depenses);
+  const contratPrestations = useStore((s) => s.contratPrestations);
+  const societes = useStore((s) => s.societes);
   const addContrat = useStore((s) => s.addContrat);
+  const updateContrat = useStore((s) => s.updateContrat);
+  const removeContrat = useStore((s) => s.removeContrat);
   const { selectedAnnexeId } = useActiveAnnexe();
   const canWrite = usePermission("contrats:write");
 
@@ -77,6 +94,10 @@ export function ContratsScreen() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [creatingContrat, setCreatingContrat] = useState(false);
+  const [editContrat, setEditContrat] = useState<Contrat | null>(null);
+  const { target: deleteTarget, setTarget: setDeleteTarget, confirm: handleDelete } = useDeleteConfirm<Contrat>(
+    removeContrat, (c) => c.id, (c) => c.reference, "Contrat supprimé", "Impossible de supprimer le contrat",
+  );
 
   // handleCreate ne réarme plus `creatingContrat` après un succès (le dialog
   // Radix reste monté et cliquable ~200ms pendant sa fermeture — un second
@@ -144,6 +165,51 @@ export function ContratsScreen() {
       toastError(toast, e, { title: "Impossible de créer le contrat", fallback: "Impossible de créer le contrat." });
       setCreatingContrat(false);
     }
+  }
+
+  async function handleUpdateContrat(input: ContratInput) {
+    if (!editContrat) return;
+    try {
+      await updateContrat(editContrat.id, input);
+      toastSuccess(toast, { title: "Contrat modifié", description: editContrat.reference });
+      setEditContrat(null);
+    } catch (e) {
+      toastError(toast, e, { title: "Impossible de modifier le contrat", fallback: UI.errors.saveFailed });
+    }
+  }
+
+  function handlePrintContrat(c: Contrat) {
+    const client = clients.find((cl) => cl.id === c.clientId);
+    const prestations = contratPrestations
+      .filter((p) => p.contratId === c.id)
+      .map((p) => ({ libelle: p.libelle, description: p.description, montant: p.montant, statut: p.statut }));
+    const contratDepenses = depenses
+      .filter((d) => d.contratId === c.id)
+      .map((d) => ({
+        libelle: d.libelle,
+        montant: d.montant,
+        dateDepense: d.dateDepense,
+        modePaiement: d.modePaiement,
+      }));
+    printContrat(
+      {
+        reference: c.reference,
+        clientNom: c.clientNom,
+        clientAdresse: client?.adresse,
+        clientTelephone: client?.telephone,
+        clientEmail: client?.email,
+        objet: c.objet,
+        dateDebut: c.dateDebut,
+        dateFin: c.dateFin,
+        montant: c.montant,
+        statut: c.statut,
+        notes: c.notes,
+        prestations,
+        depenses: contratDepenses,
+        totalDepenses: c.totalDepenses,
+      },
+      resolveSlttBrand(societes),
+    );
   }
 
   return (
@@ -252,6 +318,27 @@ export function ContratsScreen() {
                       <dd className="tabular-nums text-foreground/90">{formatDateShort(c.dateDebut)}</dd>
                     </div>
                   </dl>
+                  <div
+                    className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Voir" onClick={() => goToContrat(c.id)}>
+                      <Eye className="size-4" />
+                    </Button>
+                    {canWrite && (
+                      <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Modifier" onClick={() => setEditContrat(c)}>
+                        <Pencil className="size-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Imprimer le contrat" onClick={() => handlePrintContrat(c)}>
+                      <FileText className="size-4" />
+                    </Button>
+                    {canWrite && (
+                      <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-red-600" title="Supprimer" onClick={() => setDeleteTarget(c)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               ))}
             </div>
@@ -265,6 +352,7 @@ export function ContratsScreen() {
                     <TableHead className="hidden h-10 px-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:table-cell">Montant</TableHead>
                     <TableHead className="h-10 px-4 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Prestations</TableHead>
                     <TableHead className="h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Statut</TableHead>
+                    <TableHead className="h-10 px-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -295,6 +383,26 @@ export function ContratsScreen() {
                       <TableCell className="px-4 py-3.5">
                         <ToneBadge tone={CONTRAT_STATUT_TONE[c.statut]}>{c.statut}</ToneBadge>
                       </TableCell>
+                      <TableCell className="px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Voir" onClick={() => goToContrat(c.id)}>
+                            <Eye className="size-4" />
+                          </Button>
+                          {canWrite && (
+                            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Modifier" onClick={() => setEditContrat(c)}>
+                              <Pencil className="size-4" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Imprimer le contrat" onClick={() => handlePrintContrat(c)}>
+                            <FileText className="size-4" />
+                          </Button>
+                          {canWrite && (
+                            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-red-600" title="Supprimer" onClick={() => setDeleteTarget(c)}>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -319,6 +427,33 @@ export function ContratsScreen() {
         onOpenChange={setOpen}
         saving={creatingContrat}
         onSubmit={handleCreate}
+      />
+
+      {editContrat && (
+        <ContratEditModal
+          open={!!editContrat}
+          onOpenChange={(v) => !v && setEditContrat(null)}
+          initial={{
+            clientId: editContrat.clientId,
+            clientNom: editContrat.clientNom,
+            annexeId: editContrat.annexeId,
+            objet: editContrat.objet,
+            dateDebut: editContrat.dateDebut,
+            dateFin: editContrat.dateFin,
+            montant: editContrat.montant,
+            statut: editContrat.statut,
+            notes: editContrat.notes,
+          }}
+          onSubmit={handleUpdateContrat}
+        />
+      )}
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Supprimer ce contrat ?"
+        description={<>Le contrat {deleteTarget?.reference} sera définitivement supprimé. Cette action est irréversible.</>}
+        onConfirm={handleDelete}
       />
     </div>
   );

@@ -24,6 +24,12 @@ export {
   type DossierPrintRow,
   type DossierPrintTotals,
 } from "./dossiers";
+export {
+  printContrat,
+  type ContratPrintData,
+  type ContratPrestationPrintRow,
+  type ContratDepensePrintRow,
+} from "@/features/contrats/services/contrat-print";
 export { printClients } from "@/features/clients/services/client-print";
 export type { ClientPrintRow } from "@/features/clients/types";
 export { printTransporteurs, type TransporteurPrintRow } from "./transporteurs";
