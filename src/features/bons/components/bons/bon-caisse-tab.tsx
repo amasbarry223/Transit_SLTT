@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Plus, FileText, Search, Banknote, Wallet, Trash2, Loader2, AlertTriangle, Printer } from "lucide-react";
+import { Plus, Eye, Pencil, Search, Banknote, Wallet, Trash2, Loader2, AlertTriangle, Printer } from "lucide-react";
 import type { BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
@@ -39,6 +39,7 @@ type BonCaisseTabProps = {
   bons: BonSortieCaisse[];
   canWriteCaisse: boolean;
   onOpenCreateDialog: () => void;
+  onOpenEditDialog: (bon: BonSortieCaisse) => void;
 };
 
 type PreviewState =
@@ -53,7 +54,7 @@ function beneficiairesSummary(bon: BonSortieCaisse): string {
   return bon.lignes.length > 1 ? `${first} +${bon.lignes.length - 1}` : first;
 }
 
-export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCreateDialog }: BonCaisseTabProps) {
+export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCreateDialog, onOpenEditDialog }: BonCaisseTabProps) {
   const { toast } = useToast();
   const removeBonSortieCaisse = useStore((state) => state.removeBonSortieCaisse);
   const societes = useStore((state) => state.societes);
@@ -267,7 +268,8 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
                     key={bon.id}
                     bon={bon}
                     canWriteCaisse={canWriteCaisse}
-                    onPrint={handleOpenPreview}
+                    onView={handleOpenPreview}
+                    onEdit={onOpenEditDialog}
                     onDelete={setCaisseDeleteTarget}
                   />
                 ))}
@@ -302,7 +304,8 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
                         key={bon.id}
                         bon={bon}
                         canWriteCaisse={canWriteCaisse}
-                        onPrint={handleOpenPreview}
+                        onView={handleOpenPreview}
+                        onEdit={onOpenEditDialog}
                         onDelete={setCaisseDeleteTarget}
                       />
                     ))}
@@ -385,12 +388,14 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
 function CaisseMobileCard({
   bon,
   canWriteCaisse,
-  onPrint,
+  onView,
+  onEdit,
   onDelete,
 }: {
   bon: BonSortieCaisse;
   canWriteCaisse: boolean;
-  onPrint: (bon: BonSortieCaisse) => void;
+  onView: (bon: BonSortieCaisse) => void;
+  onEdit: (bon: BonSortieCaisse) => void;
   onDelete: (bon: BonSortieCaisse) => void;
 }) {
   return (
@@ -424,12 +429,24 @@ function CaisseMobileCard({
           variant="ghost"
           size="icon"
           className="size-11 text-muted-foreground hover:text-primary"
-          aria-label={`Aperçu PDF ${bon.reference}`}
-          title="PDF / Imprimer"
-          onClick={() => onPrint(bon)}
+          aria-label={`Voir l'aperçu de ${bon.reference}`}
+          title="Voir / Aperçu PDF"
+          onClick={() => onView(bon)}
         >
-          <FileText className="size-4" />
+          <Eye className="size-4" />
         </Button>
+        {canWriteCaisse && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11 text-muted-foreground hover:text-primary"
+            aria-label={`Modifier ${bon.reference}`}
+            title="Modifier"
+            onClick={() => onEdit(bon)}
+          >
+            <Pencil className="size-4" />
+          </Button>
+        )}
         {canWriteCaisse && (
           <Button
             variant="ghost"
@@ -450,12 +467,14 @@ function CaisseMobileCard({
 function CaisseTableRow({
   bon,
   canWriteCaisse,
-  onPrint,
+  onView,
+  onEdit,
   onDelete,
 }: {
   bon: BonSortieCaisse;
   canWriteCaisse: boolean;
-  onPrint: (bon: BonSortieCaisse) => void;
+  onView: (bon: BonSortieCaisse) => void;
+  onEdit: (bon: BonSortieCaisse) => void;
   onDelete: (bon: BonSortieCaisse) => void;
 }) {
   return (
@@ -483,12 +502,24 @@ function CaisseTableRow({
             variant="ghost"
             size="icon"
             className="size-11 text-muted-foreground hover:text-primary"
-            aria-label={`Aperçu PDF ${bon.reference}`}
-            title="PDF / Imprimer"
-            onClick={() => onPrint(bon)}
+            aria-label={`Voir l'aperçu de ${bon.reference}`}
+            title="Voir / Aperçu PDF"
+            onClick={() => onView(bon)}
           >
-            <FileText className="size-4" />
+            <Eye className="size-4" />
           </Button>
+          {canWriteCaisse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 text-muted-foreground hover:text-primary"
+              aria-label={`Modifier ${bon.reference}`}
+              title="Modifier"
+              onClick={() => onEdit(bon)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          )}
           {canWriteCaisse && (
             <Button
               variant="ghost"

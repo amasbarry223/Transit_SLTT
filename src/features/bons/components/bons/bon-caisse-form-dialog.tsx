@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 import { useStore } from "@/lib/store";
+import type { BonSortieCaisse } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
@@ -39,13 +40,17 @@ type BonCaisseFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   nextReference: string;
+  /** Bon à modifier — omis (ou null) pour une création. */
+  editing?: BonSortieCaisse | null;
 };
 
-export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCaisseFormDialogProps) {
+export function BonCaisseFormDialog({ open, onOpenChange, nextReference, editing = null }: BonCaisseFormDialogProps) {
   const { toast } = useToast();
   const addBonSortieCaisse = useStore((state) => state.addBonSortieCaisse);
+  const updateBonSortieCaisse = useStore((state) => state.updateBonSortieCaisse);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
+  const isEdit = !!editing;
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const [caisseDate, setCaisseDate] = useState(todayIso);
@@ -59,10 +64,23 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
   if (open !== prevDialogOpen) {
     setPrevDialogOpen(open);
     if (open) {
-      setCaisseDate(todayIso);
-      setCaisseAnnexeId(activeAnnexeId ?? "");
-      setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
-      // saving n'est plus remis à false après un succès (voir handleCreateCaisse) :
+      if (editing) {
+        setCaisseDate(editing.date);
+        setCaisseAnnexeId(editing.annexeId);
+        setCaisseLignes(
+          editing.lignes.map((ligne) => ({
+            date: ligne.date,
+            beneficiaire: ligne.beneficiaire,
+            motif: ligne.motif,
+            montant: String(ligne.montant),
+          })),
+        );
+      } else {
+        setCaisseDate(todayIso);
+        setCaisseAnnexeId(activeAnnexeId ?? "");
+        setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
+      }
+      // saving n'est plus remis à false après un succès (voir handleSubmitCaisse) :
       // on le réarme ici pour ne pas laisser le bouton désactivé à la réouverture.
       setSaving(false);
     }
@@ -94,41 +112,51 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
     );
   }
 
-  async function handleCreateCaisse() {
+  async function handleSubmitCaisse() {
     // Garde-fou contre le double clic : sans lui, un double clic pendant
-    // l'appel réseau ci-dessous pouvait créer deux bons de sortie de caisse
-    // (donc un double décaissement) pour une seule saisie. Le dialog Radix
-    // reste monté et cliquable ~200ms pendant son animation de fermeture
-    // (data-[state=closed]:animate-out, duration-200) : si `saving` repassait
-    // à false dans un `finally` après succès, un second clic pendant cette
-    // fenêtre soumettait à nouveau les MÊMES lignes (pas encore réinitialisées,
-    // ça ne se faisait qu'à la réouverture) et créait un vrai doublon en base.
-    // On ne réarme donc le bouton qu'en cas d'échec — après succès, le dialog
-    // se ferme et les champs sont vidés immédiatement, donc un clic résiduel
-    // ne peut plus rejouer la même saisie.
+    // l'appel réseau ci-dessous pouvait créer/modifier deux fois le même bon
+    // de sortie de caisse (donc un double décaissement) pour une seule
+    // saisie. Le dialog Radix reste monté et cliquable ~200ms pendant son
+    // animation de fermeture (data-[state=closed]:animate-out, duration-200) :
+    // si `saving` repassait à false dans un `finally` après succès, un
+    // second clic pendant cette fenêtre soumettait à nouveau les MÊMES
+    // lignes (pas encore réinitialisées, ça ne se faisait qu'à la
+    // réouverture) et créait un vrai doublon en base. On ne réarme donc le
+    // bouton qu'en cas d'échec — après succès, le dialog se ferme et les
+    // champs sont vidés immédiatement, donc un clic résiduel ne peut plus
+    // rejouer la même saisie.
     if (!caisseValid || saving) return;
     setSaving(true);
+    const input = {
+      date: caisseDate,
+      annexeId: resolvedCaisseAnnexeId,
+      lignes: caisseLignes.map((ligne) => ({
+        date: ligne.date,
+        beneficiaire: ligne.beneficiaire.trim(),
+        motif: ligne.motif.trim(),
+        montant: Number(ligne.montant) || 0,
+      })),
+    };
     try {
-      const bon = await addBonSortieCaisse({
-        date: caisseDate,
-        annexeId: resolvedCaisseAnnexeId,
-        lignes: caisseLignes.map((ligne) => ({
-          date: ligne.date,
-          beneficiaire: ligne.beneficiaire.trim(),
-          motif: ligne.motif.trim(),
-          montant: Number(ligne.montant) || 0,
-        })),
-      });
-      toastSuccess(toast, {
-        title: "Bon de sortie créé",
-        description: `${bon.reference} — ${formatFCFA(bon.montantTotal)}`,
-      });
+      if (editing) {
+        await updateBonSortieCaisse(editing.id, input);
+        toastSuccess(toast, {
+          title: "Bon de sortie modifié",
+          description: `${editing.reference} — ${formatFCFA(input.lignes.reduce((s, l) => s + l.montant, 0))}`,
+        });
+      } else {
+        const bon = await addBonSortieCaisse(input);
+        toastSuccess(toast, {
+          title: "Bon de sortie créé",
+          description: `${bon.reference} — ${formatFCFA(bon.montantTotal)}`,
+        });
+      }
       setCaisseLignes([{ date: caisseDate, beneficiaire: "", motif: "", montant: "" }]);
       onOpenChange(false);
     } catch (error) {
       toastError(toast, error, {
-        title: "Impossible de créer le bon de sortie",
-        fallback: "Impossible de créer le bon de sortie.",
+        title: editing ? "Impossible de modifier le bon de sortie" : "Impossible de créer le bon de sortie",
+        fallback: editing ? "Impossible de modifier le bon de sortie." : "Impossible de créer le bon de sortie.",
       });
       setSaving(false);
     }
@@ -139,12 +167,12 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-3">
-            <DialogTitle>Nouvelle sortie de caisse</DialogTitle>
+            <DialogTitle>{isEdit ? "Modifier la sortie de caisse" : "Nouvelle sortie de caisse"}</DialogTitle>
             <Badge
               variant="outline"
               className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-muted-foreground"
             >
-              {nextReference}
+              {isEdit ? editing!.reference : nextReference}
             </Badge>
           </div>
           <DialogDescription>Décaissement en espèces — indépendant de l’entreposage.</DialogDescription>
@@ -255,9 +283,9 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference }: BonCa
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={handleCreateCaisse} disabled={!caisseValid || saving}>
+          <Button onClick={handleSubmitCaisse} disabled={!caisseValid || saving}>
             <Check className="size-4" />
-            Enregistrer le bon
+            {isEdit ? "Enregistrer les modifications" : "Enregistrer le bon"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Package, Banknote } from "lucide-react";
-import type { BonLigne, BonMotif, BonSortie } from "@/lib/domain-types";
+import type { BonLigne, BonMotif, BonSortie, BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
@@ -50,9 +50,20 @@ export function BonsScreen() {
   const [activeTab, setActiveTab] = useState<"marchandise" | "caisse">("marchandise");
   const [marchandiseDialogOpen, setMarchandiseDialogOpen] = useState(false);
   const [caisseDialogOpen, setCaisseDialogOpen] = useState(false);
+  const [editingBonCaisse, setEditingBonCaisse] = useState<BonSortieCaisse | null>(null);
   const [validatingIds, setValidatingIds] = useState<Set<string>>(new Set());
   const [confirmValidate, setConfirmValidate] = useState<{ id: string; ref: string } | null>(null);
   const [deepLinkSearch, setDeepLinkSearch] = useState<string | undefined>(undefined);
+
+  function openCreateCaisseDialog() {
+    setEditingBonCaisse(null);
+    setCaisseDialogOpen(true);
+  }
+
+  function openEditCaisseDialog(bon: BonSortieCaisse) {
+    setEditingBonCaisse(bon);
+    setCaisseDialogOpen(true);
+  }
 
   const bons = useMemo(
     () => filterByAnnexe(allBons, selectedAnnexeId),
@@ -333,7 +344,12 @@ export function BonsScreen() {
           initialSearch={deepLinkSearch}
         />
 
-        <BonCaisseTab bons={bonsCaisse} canWriteCaisse={canWriteCaisse} onOpenCreateDialog={() => setCaisseDialogOpen(true)} />
+        <BonCaisseTab
+          bons={bonsCaisse}
+          canWriteCaisse={canWriteCaisse}
+          onOpenCreateDialog={openCreateCaisseDialog}
+          onOpenEditDialog={openEditCaisseDialog}
+        />
       </Tabs>
 
       <BonFormDialog
@@ -344,9 +360,11 @@ export function BonsScreen() {
       />
 
       <BonCaisseFormDialog
+        key={editingBonCaisse?.id ?? "new"}
         open={caisseDialogOpen}
         onOpenChange={setCaisseDialogOpen}
         nextReference={nextCaisseReference}
+        editing={editingBonCaisse}
       />
 
       <AlertDialog open={!!confirmValidate} onOpenChange={(open) => !open && setConfirmValidate(null)}>

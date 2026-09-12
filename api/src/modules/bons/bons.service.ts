@@ -193,6 +193,38 @@ export class BonsService {
     });
   }
 
+  async updateBonCaisse(id: string, user: CurrentUserType, data: any) {
+    const existing = await this.findOneBonCaisse(id, user);
+    if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Vous ne pouvez pas rattacher ce bon de caisse à cette annexe');
+    }
+    const date = data.date || existing.date;
+    const annexeId = data.annexeId || existing.annexeId;
+    const lignes = (data.lignes || []).map((l: any) => ({
+      date: l.date || date,
+      beneficiaire: l.beneficiaire,
+      motif: l.motif,
+      montant: Number(l.montant) || 0,
+    }));
+    // Même règle qu'à la création : le total est recalculé depuis les
+    // lignes, jamais une valeur fournie par le client.
+    const montantTotal = lignes.reduce((s: number, l: any) => s + l.montant, 0);
+
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.ligneBonSortieCaisse.deleteMany({ where: { bonSortieCaisseId: id } });
+      return tx.bonSortieCaisse.update({
+        where: { id },
+        data: {
+          date,
+          annexeId,
+          montantTotal,
+          lignes: { create: lignes },
+        },
+        include: { annexe: true, lignes: true },
+      });
+    });
+  }
+
   async deleteBonCaisse(id: string, user: CurrentUserType) {
     await this.findOneBonCaisse(id, user);
     await this.prisma.bonSortieCaisse.delete({ where: { id } });

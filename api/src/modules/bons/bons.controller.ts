@@ -48,6 +48,13 @@ export class BonsController {
     return this.bonsService.createBonCaisse(user, body);
   }
 
+  @Put('caisse/:id')
+  @UseGuards(AnnexeGuard)
+  @RequirePermission('bons:write-caisse')
+  updateBonCaisse(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
+    return this.bonsService.updateBonCaisse(id, user, body);
+  }
+
   @Delete('caisse/:id')
   @RequirePermission('bons:write-caisse')
   deleteBonCaisse(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {

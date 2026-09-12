@@ -25,6 +25,7 @@ export interface BonsSlice {
   addBon: (input: BonInput) => Promise<BonSortie>;
   validateBon: (id: string) => Promise<boolean>;
   addBonSortieCaisse: (input: BonSortieCaisseInput) => Promise<BonSortieCaisse>;
+  updateBonSortieCaisse: (id: string, input: BonSortieCaisseInput) => Promise<void>;
   removeBonSortieCaisse: (id: string) => Promise<void>;
 }
 
@@ -256,6 +257,51 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       `Bon de sortie caisse ${reference} créé — ${montantTotal.toLocaleString("fr-FR")} FCFA`,
     );
     return newBon;
+  },
+
+  updateBonSortieCaisse: async (id, input) => {
+    const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
+    // Persistance obligatoire — voir addBon ci-dessus pour la justification.
+    const updated = await api.bons.updateBonCaisse(id, {
+      date: input.date,
+      annexeId: input.annexeId,
+      lignes: input.lignes,
+    });
+
+    // Préfère les lignes confirmées par le serveur (ids réels) ; ne
+    // reconstruit des ids locaux jetables que si la réponse est absente.
+    const confirmedLignes: Array<{ id: string; date: string; beneficiaire: string; motif: string; montant: number }> =
+      updated?.lignes ?? input.lignes.map((ligne, idx) => ({ ...ligne, id: `BSCL-${idx + 1}` }));
+
+    set((s) => ({
+      bonsSortieCaisse: s.bonsSortieCaisse.map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              date: input.date,
+              annexeId: input.annexeId,
+              annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
+              montantTotal,
+              lignes: confirmedLignes.map((ligne) => ({
+                id: ligne.id,
+                date: ligne.date,
+                beneficiaire: ligne.beneficiaire,
+                motif: ligne.motif,
+                montant: Number(ligne.montant),
+              })),
+            }
+          : b,
+      ),
+    }));
+
+    const bon = get().bonsSortieCaisse.find((b) => b.id === id);
+    if (bon) {
+      await get().addAuditLog(
+        AUDIT_MODULE.Bons,
+        AUDIT_ACTION.Modification,
+        `Bon de sortie caisse ${bon.reference} modifié — ${montantTotal.toLocaleString("fr-FR")} FCFA`,
+      );
+    }
   },
 
   removeBonSortieCaisse: async (id) => {

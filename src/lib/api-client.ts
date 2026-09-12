@@ -558,6 +558,11 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    updateBonCaisse: (id: string, data: any) =>
+      this.request<any>(`/bons/caisse/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
     deleteBonCaisse: (id: string) =>
       this.request<any>(`/bons/caisse/${id}`, {
         method: 'DELETE',
