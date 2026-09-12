@@ -8,6 +8,7 @@ export type DashboardSection =
   | "kpi_benefice"
   | "chart_dossiers_evolution"
   | "chart_stock_repartition"
+  | "chart_tresorerie"
   | "alertes_stock"
   | "alertes_dossiers"
   | "derniers_dossiers"
@@ -22,6 +23,7 @@ const SECTION_PERMISSIONS: Record<DashboardSection, (user: PermissionUser) => bo
   kpi_benefice: (u) => hasPermission(u, "comptabilite:read"),
   chart_dossiers_evolution: (u) => hasPermission(u, "dossiers:read"),
   chart_stock_repartition: (u) => hasPermission(u, "stock:read"),
+  chart_tresorerie: (u) => hasPermission(u, "comptabilite:read"),
   alertes_stock: (u) => hasPermission(u, "stock:read"),
   alertes_dossiers: (u) => hasPermission(u, "dossiers:read"),
   derniers_dossiers: (u) => hasPermission(u, "dossiers:read"),

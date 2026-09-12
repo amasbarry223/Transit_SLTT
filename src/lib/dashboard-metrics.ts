@@ -1,4 +1,4 @@
-import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
+import type { Dossier, Ecriture, Facture, OperationComptable, StockItem } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { filterByPeriode } from "@/lib/benefice";
@@ -6,6 +6,8 @@ import { dossiersNonFactures, sommeFacturesEncaissees, sommeDossiersEncaisses } 
 import {
   CHART_MONTHS_COUNT,
   CHART_MONTHS_OFFSET,
+  TRESORERIE_CHART_MONTHS_COUNT,
+  TRESORERIE_CHART_MONTHS_OFFSET,
   ECHEANCE_IMMINENTE_JOURS,
   MS_PER_DAY,
 } from "@/lib/constants";
@@ -177,6 +179,41 @@ export function buildDossiersParMois(
       return created.getFullYear() === year && created.getMonth() === monthIndex && isTraite;
     }).length;
     return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur: crees, crees, traites };
+  });
+}
+
+/**
+ * Série mensuelle Entrées/Sorties comptables, sur TRESORERIE_CHART_MONTHS_COUNT
+ * mois (12 — un flux de trésorerie se lit sur un an, volontairement distinct
+ * de la fenêtre à 6 mois partagée par les autres graphiques dashboard).
+ * Agrégation globale (pas de filtre par annexe), cohérente avec
+ * computeEncaisseVariation qui est déjà entité-agnostique sur ce dashboard.
+ */
+export function buildTresorerieParMois(
+  operations: OperationComptable[],
+  anchorDate: Date,
+): { mois: string; entrees: number; sorties: number }[] {
+  return Array.from({ length: TRESORERIE_CHART_MONTHS_COUNT }, (_, index) => {
+    const chartDate = new Date(
+      anchorDate.getFullYear(),
+      anchorDate.getMonth() - (TRESORERIE_CHART_MONTHS_OFFSET - index),
+      1,
+    );
+    const monthIndex = chartDate.getMonth();
+    const year = chartDate.getFullYear();
+    const sommeSur = (type: OperationComptable["type"]) =>
+      operations
+        .filter((o) => {
+          if (o.type !== type) return false;
+          const d = parseLocalDate(o.date);
+          return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === monthIndex;
+        })
+        .reduce((sum, o) => sum + o.montant, 0);
+    return {
+      mois: DASHBOARD_CHART_MONTHS[monthIndex],
+      entrees: sommeSur("Entrée"),
+      sorties: sommeSur("Sortie"),
+    };
   });
 }
 

@@ -28,6 +28,7 @@ import { AgentPanel } from "@/components/sltt/dashboard/agent-panel";
 import { ComptablePanel } from "@/components/sltt/dashboard/comptable-panel";
 import { DossiersEvolutionChartLazy } from "@/components/sltt/dashboard/dossiers-evolution-chart-lazy";
 import { StockRepartitionChartLazy } from "@/components/sltt/dashboard/stock-repartition-chart-lazy";
+import { TresorerieChartLazy } from "@/components/sltt/dashboard/tresorerie-chart-lazy";
 import { DerniersDossiersCard } from "@/components/sltt/dashboard/derniers-dossiers-card";
 import { AlertesCard } from "@/components/sltt/dashboard/alertes-card";
 import { useDashboardMetrics } from "@/components/sltt/dashboard/use-dashboard-metrics";
@@ -50,6 +51,7 @@ export function DashboardScreen() {
   const stock = useStore((s) => s.stock);
   const bons = useStore((s) => s.bons);
   const clients = useStore((s) => s.clients);
+  const operationsComptables = useStore((s) => s.operationsComptables);
   const currentUser = useCurrentUser();
   // Pas de repli sur "Administrateur" ici : currentUser === null (session pas
   // encore hydratée / déconnecté) est géré explicitement plus bas (aucun
@@ -81,9 +83,10 @@ export function DashboardScreen() {
     nbDossiersNonSoldes,
     dossiersParMois,
     stockRepartition,
+    tresorerieParMois,
     derniersDossiers,
     alertes,
-  } = useDashboardMetrics({ dossiers, factures, stock, ecrituresAvecDate, anchorDate });
+  } = useDashboardMetrics({ dossiers, factures, stock, ecrituresAvecDate, operationsComptables, anchorDate });
 
   // "vs mois dernier" réel (créations ce mois-ci vs le précédent) — seulement
   // pour les flux d'éléments créés, jamais pour un état instantané comme
@@ -245,6 +248,10 @@ export function DashboardScreen() {
           />
         </div>
       </div>
+
+      {hasSection("chart_tresorerie") && (
+        <TresorerieChartLazy data={tresorerieParMois} gridColor={gridColor} tickColor={tickColor} />
+      )}
 
       {/* Activité récente & alertes */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:items-start">

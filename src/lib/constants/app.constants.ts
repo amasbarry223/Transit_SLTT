@@ -14,6 +14,14 @@ export const CHART_MONTHS_COUNT = 6;
 /** Décalage mois pour construire la série (index 0 = il y a N-1 mois). */
 export const CHART_MONTHS_OFFSET = CHART_MONTHS_COUNT - 1;
 
+/** Fenêtre du graphique de trésorerie (Entrées/Sorties) — 12 mois, un flux de
+ *  trésorerie se lit habituellement sur un an. Volontairement distinct de
+ *  CHART_MONTHS_COUNT (6, partagé par les autres graphiques dashboard) :
+ *  ne pas les fusionner sous peine de changer silencieusement la fenêtre des
+ *  sparklines si ce nombre est un jour ajusté. */
+export const TRESORERIE_CHART_MONTHS_COUNT = 12;
+export const TRESORERIE_CHART_MONTHS_OFFSET = TRESORERIE_CHART_MONTHS_COUNT - 1;
+
 /** Statuts dossier utilisés dans les transitions et la création. */
 export const DOSSIER_STATUT_EN_COURS = "En cours" as const;
 export const DOSSIER_STATUT_DEDOUANE = "Dédouané" as const;
