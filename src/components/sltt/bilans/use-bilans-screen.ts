@@ -7,6 +7,7 @@ import { exportToExcel, printBilan } from "@/lib/export";
 import { resolveClasseurPrintBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
 import { dossiersNonFactures, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
+import { resteAPayer } from "@/lib/domain-types";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
@@ -188,7 +189,15 @@ export function useBilansScreen() {
         const clientEcritures = filteredEcritures.filter((e) => e.clientId === c.id);
         const investi = clientEcritures.reduce((s, e) => s + e.montantInvesti, 0);
         const encaisse = clientEcritures.reduce((s, e) => s + e.montantPaye, 0);
-        const reste = Math.max(0, investi - encaisse);
+        // Somme des restes clampés à 0 PAR enregistrement (comme
+        // client.totalDu, syncClientStats) — pas Math.max(0, investi -
+        // encaisse) sur les totaux globaux, qui compense un dossier en
+        // avance avec un autre dossier dû et affiche un "Total dû" inférieur
+        // à celui de la liste clients/export pour le même client (même bug
+        // que client-fiche-screen.tsx avant son correctif — trouvé ici dans
+        // un écran distinct, "Total dû" étant explicitement le libellé de ce
+        // KPI, pas un solde de grand-livre comme l'onglet Classeur).
+        const reste = clientEcritures.reduce((s, e) => s + resteAPayer(e), 0);
         const ecart = encaisse - investi;
         return { client: c.nom, investi, encaisse, reste, ecart };
       })
