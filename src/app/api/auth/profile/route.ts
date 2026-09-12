@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
-import { AuthError, authErrorResponse, requireUser } from "@/lib/auth/require-admin";
+import { AuthError, authErrorResponse, extractCookieValue, requireUser } from "@/lib/auth/require-admin";
 import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { updateOwnProfileBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+// Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts.
+const CSRF_COOKIE_NAME = "transit_sltt_csrf";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -17,14 +19,19 @@ export async function PATCH(request: NextRequest) {
     const nom = parsed.data.nom.trim();
     const email = parsed.data.email.trim().toLowerCase();
 
-    const token = request.headers.get("authorization");
+    const cookieHeader = request.headers.get("cookie");
+    const csrfToken = extractCookieValue(cookieHeader, CSRF_COOKIE_NAME);
 
-    // Délégation à l'API NestJS
+    // Délégation à l'API NestJS — cookie de session ET jeton CSRF relayés
+    // explicitement (appel serveur-à-serveur, pas un fetch du navigateur :
+    // NestJS exige un en-tête X-CSRF-Token distinct du cookie sur toute
+    // requête d'état, cf. CsrfGuard).
     const res = await fetch(`${API_URL}/auth/profile`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: token } : {}),
+        ...(cookieHeader ? { cookie: cookieHeader } : {}),
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
       },
       body: JSON.stringify({ nom, email }),
     });
@@ -36,7 +43,7 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await res.json();
 
-    await insertAdminAuditLog(token, { id: user.id, nom }, {
+    await insertAdminAuditLog(cookieHeader, { id: user.id, nom }, {
       action: "Modification",
       detail: `Profil de ${nom} mis à jour`,
     });

@@ -27,6 +27,18 @@ export interface AuthenticatedProfile {
   actif: boolean;
 }
 
+/** Lit la valeur d'un cookie nommé dans un en-tête `Cookie` brut — utilisé
+ *  pour reconstituer le couple double-submit CSRF (cookie + en-tête) quand
+ *  Next.js relaie un appel vers NestJS pour le compte du navigateur. */
+export function extractCookieValue(cookieHeader: string | null, name: string): string | null {
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(";")) {
+    const [key, ...rest] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(rest.join("="));
+  }
+  return null;
+}
+
 /** Forme d'un utilisateur renvoyé par `/auth/me` ou reconstruit depuis les claims JWT. */
 interface NestUser {
   id: string;
@@ -47,19 +59,24 @@ async function getAuthenticatedProfile(request: Request): Promise<{
   profile: AuthenticatedProfile;
   isAdmin: boolean;
 }> {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new AuthError("Token d'authentification requis.", 401);
+  // Les tokens vivent en cookies httpOnly posés par NestJS sur sa propre
+  // origine : le navigateur les envoie à Next.js (même registrable domain
+  // que l'API en dev, cookie transporté tel quel), mais Next.js doit les
+  // relayer explicitement dans cet appel serveur-à-serveur — ce n'est pas
+  // un fetch du navigateur, aucun cookie jar n'attache quoi que ce soit
+  // automatiquement ici.
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) {
+    throw new AuthError("Session requise.", 401);
   }
 
-  const token = authHeader.slice(7);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
   let nestUser: NestUser | null = null;
 
   try {
     const res = await fetch(`${apiUrl}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { cookie: cookieHeader },
       cache: "no-store",
     });
 

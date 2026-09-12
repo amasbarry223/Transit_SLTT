@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
+import { CsrfGuard } from './auth/guards/csrf.guard';
 import { AnnexesModule } from './modules/annexes/annexes.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { DossiersModule } from './modules/dossiers/dossiers.module';
@@ -66,6 +67,10 @@ import { PortsModule } from './modules/ports/ports.module';
     // Authentification exigée par défaut sur toute route (sauf @Public()).
     // Ferme le trou où un contrôleur sans @UseGuards restait accessible sans token.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Double-submit CSRF sur toute requête d'état (sauf @SkipCsrf()) —
+    // nécessaire dès que l'authentification repose sur un cookie ambiant
+    // plutôt qu'un header Authorization porté explicitement par le client.
+    { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
 })

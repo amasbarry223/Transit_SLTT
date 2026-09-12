@@ -8,11 +8,12 @@ type ActorProfile = {
 
 /**
  * Journalise une action de gestion des comptes via l'API NestJS.
- * `authorization` = l'en-tête Authorization de la requête de l'appelant :
- * indispensable, `POST /audit-logs` exige désormais un token (garde global).
+ * `cookieHeader` = l'en-tête Cookie brut de la requête de l'appelant, relayé
+ * tel quel — appel serveur-à-serveur, la session vit en cookie httpOnly
+ * posé par NestJS, pas dans un en-tête Authorization.
  */
 export async function insertAdminAuditLog(
-  authorization: string | null,
+  cookieHeader: string | null,
   actor: ActorProfile,
   params: {
     action: AuditAction;
@@ -25,7 +26,7 @@ export async function insertAdminAuditLog(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(authorization ? { Authorization: authorization } : {}),
+        ...(cookieHeader ? { cookie: cookieHeader } : {}),
       },
       body: JSON.stringify({
         userName: actor.nom,

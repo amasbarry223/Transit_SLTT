@@ -1,16 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Requis pour lire les cookies httpOnly (access/refresh/CSRF) posés par
+  // AuthController — sans lui, req.cookies est toujours undefined.
+  app.use(cookieParser());
+
   // Prefix global
   const apiPrefix = process.env.API_PREFIX ?? 'api';
   app.setGlobalPrefix(apiPrefix);
 
-  // CORS
+  // CORS — credentials:true + origine exacte (jamais '*'/true, incompatible
+  // avec credentials selon la spec Fetch) : indispensable pour que le
+  // navigateur envoie/accepte les cookies httpOnly cross-origin.
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
     credentials: true,

@@ -57,7 +57,7 @@ const { requireUserManager, requireUser } = await import("@/lib/auth/require-adm
 
 function req(token?: string) {
   return new NextRequest("http://localhost/api/test", {
-    headers: token ? { authorization: `Bearer ${token}` } : {},
+    headers: token ? { cookie: `transit_sltt_at=${token}` } : {},
   });
 }
 
@@ -82,7 +82,7 @@ beforeEach(() => {
 });
 
 describe("getAuthenticatedProfile (via requireUser)", () => {
-  it("rejette sans en-tête Authorization", async () => {
+  it("rejette sans cookie de session", async () => {
     await expect(requireUser(req())).rejects.toMatchObject({ status: 401 });
   });
 

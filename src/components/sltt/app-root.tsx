@@ -96,11 +96,28 @@ function AppRootInner() {
     async function initSession() {
       try {
         await cleanupForeignServiceWorkers();
-        const user = api.getCurrentUser();
-        const token = api.getAccessToken();
-
-        if (user && token && !cancelled) {
-          restoreRef.current(normalizeRole(user.role), user.nom, user.id);
+        // Les tokens vivent en cookies httpOnly : plus lisibles en JS, donc
+        // plus de "token présent" à vérifier localement. Un `user` en cache
+        // restaure l'affichage optimistiquement (évite un flash de l'écran
+        // de connexion) uniquement s'il y a un indice de session précédente ;
+        // sans lui, un visiteur jamais connecté ne déclenche aucun appel
+        // réseau ni le toast "session expirée" pour rien. La confirmation
+        // serveur via /auth/me fait seule foi ensuite — son mécanisme de
+        // retry-401 (voir request()) gère déjà le rafraîchissement silencieux
+        // si seul l'access token a expiré, et onSessionExpired (déjà câblé
+        // ci-dessus) gère déjà l'échec réel (refresh aussi invalide).
+        const cachedUser = api.getCurrentUser();
+        if (cachedUser && !cancelled) {
+          restoreRef.current(normalizeRole(cachedUser.role), cachedUser.nom, cachedUser.id);
+          try {
+            const confirmed = await api.auth.me();
+            if (!cancelled) {
+              api.setSession({ user: confirmed });
+              restoreRef.current(normalizeRole(confirmed.role), confirmed.nom, confirmed.id);
+            }
+          } catch {
+            // Échec réel déjà géré par onSessionExpired (clearSession + toast + logout).
+          }
         }
       } catch (e) {
         if (process.env.NODE_ENV === "development") {

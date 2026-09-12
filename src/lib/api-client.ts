@@ -32,9 +32,13 @@ import type {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-const TOKEN_KEY = 'transit_sltt_access_token';
-const REFRESH_TOKEN_KEY = 'transit_sltt_refresh_token';
+// Non secret — mis en cache seulement pour l'hydratation UI (nom/rôle
+// affichés avant confirmation serveur). Les tokens, eux, vivent en cookies
+// httpOnly posés par NestJS : jamais lisibles ni stockés ici.
 const USER_KEY = 'transit_sltt_user';
+// Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts —
+// non-httpOnly par conception, lu ici pour l'écho double-submit.
+const CSRF_COOKIE_NAME = 'transit_sltt_csrf';
 
 export interface UserSession {
   id: string;
@@ -95,18 +99,8 @@ class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
-  // Gestion des Tokens
+  // Session (utilisateur en cache uniquement — les tokens sont en cookies)
   // ---------------------------------------------------------------------------
-  getAccessToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(TOKEN_KEY);
-  }
-
-  getRefreshToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
-  }
-
   getCurrentUser(): UserSession | null {
     if (typeof window === 'undefined') return null;
     const raw = localStorage.getItem(USER_KEY);
@@ -118,27 +112,29 @@ class ApiClient {
     }
   }
 
-  setSession(tokens: { accessToken: string; refreshToken?: string; user?: UserSession }) {
+  setSession(session: { user: UserSession }) {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(TOKEN_KEY, tokens.accessToken);
-    if (tokens.refreshToken) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-    }
-    if (tokens.user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(tokens.user));
-    }
+    localStorage.setItem(USER_KEY, JSON.stringify(session.user));
     this.sessionExpiredNotified = false;
   }
 
   clearSession() {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   }
 
+  /** Lit le cookie CSRF non-httpOnly pour l'échoter en en-tête X-CSRF-Token
+   *  (double-submit — voir CsrfGuard côté NestJS). */
+  private getCsrfToken(): string | null {
+    if (typeof document === 'undefined') return null;
+    const match = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${CSRF_COOKIE_NAME}=`));
+    return match ? decodeURIComponent(match.slice(CSRF_COOKIE_NAME.length + 1)) : null;
+  }
+
   // ---------------------------------------------------------------------------
-  // Requête HTTP générique avec injection Bearer et auto-refresh
+  // Requête HTTP générique — cookies httpOnly + double-submit CSRF + auto-refresh
   // ---------------------------------------------------------------------------
   private async request<T>(
     endpoint: string,
@@ -146,7 +142,6 @@ class ApiClient {
     retry = true,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-    const token = this.getAccessToken();
 
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
@@ -156,11 +151,13 @@ class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    const method = (options.method ?? 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') {
+      const csrfToken = this.getCsrfToken();
+      if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
     }
 
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { ...options, headers, credentials: 'include' });
 
     // Tentative de rafraîchissement si 401
     if (res.status === 401 && retry) {
@@ -207,20 +204,19 @@ class ApiClient {
   }
 
   private async doRefreshTokens(): Promise<boolean> {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) return false;
-
     try {
+      const csrfToken = this.getCsrfToken();
       const res = await fetch(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        },
       });
-
-      if (!res.ok) return false;
-      const data = await res.json();
-      this.setSession({ accessToken: data.accessToken });
-      return true;
+      // Le nouvel access token est posé directement en cookie par la
+      // réponse — rien à lire ni à stocker côté client.
+      return res.ok;
     } catch {
       return false;
     }
@@ -230,12 +226,10 @@ class ApiClient {
   // Authentification
   // ---------------------------------------------------------------------------
   auth = {
+    // Les tokens sont posés en cookies httpOnly par la réponse elle-même
+    // (Set-Cookie) — seul `user` revient dans le corps JSON, pour l'UI.
     login: async (email: string, password: string) => {
-      const res = await this.request<{
-        accessToken: string;
-        refreshToken: string;
-        user: UserSession;
-      }>('/auth/login', {
+      const res = await this.request<{ user: UserSession }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
@@ -244,16 +238,10 @@ class ApiClient {
     },
 
     logout: async () => {
-      const refreshToken = this.getRefreshToken();
-      if (refreshToken) {
-        try {
-          await this.request('/auth/logout', {
-            method: 'POST',
-            body: JSON.stringify({ refreshToken }),
-          });
-        } catch {
-          // Ignorer
-        }
+      try {
+        await this.request('/auth/logout', { method: 'POST' });
+      } catch {
+        // Ignorer — on efface la session locale quoi qu'il arrive.
       }
       this.clearSession();
     },
