@@ -47,27 +47,23 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       input.annexeId ??
       client?.annexeId ??
       requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? [], get().annexes);
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.contrats.create({
-        reference,
-        annexeId,
-        clientId: input.clientId,
-        objet: input.objet,
-        dateDebut: input.dateDebut,
-        dateFin: input.dateFin,
-        montant: input.montant,
-        statut: input.statut,
-        notes: input.notes,
-        creePar,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      logWarn("api.contrats.create (mode local)", e);
-    }
+    // Persistance obligatoire : un contrat sans écriture serveur disparaissait
+    // silencieusement au rechargement, sans aucune erreur montrée.
+    const created = await api.contrats.create({
+      reference,
+      annexeId,
+      clientId: input.clientId,
+      objet: input.objet,
+      dateDebut: input.dateDebut,
+      dateFin: input.dateFin,
+      montant: input.montant,
+      statut: input.statut,
+      notes: input.notes,
+      creePar,
+    });
 
     const newContrat: Contrat = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       reference,
       annexeId,
       annexeNom: annexeId ? get().annexes.find((a) => a.id === annexeId)?.nom : undefined,
@@ -103,11 +99,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       }
     }
 
-    try {
-      await api.contrats.update(id, input);
-    } catch (e) {
-      logWarn("api.contrats.update (mode local)", e);
-    }
+    await api.contrats.update(id, input);
 
     const existing = get().contrats.find((c) => c.id === id);
     set((s) => ({
@@ -142,11 +134,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       throw new Error(`Transition contrat invalide : ${existing.statut} → ${statut}`);
     }
 
-    try {
-      await api.contrats.update(id, { statut });
-    } catch (e) {
-      logWarn("api.contrats.updateStatut (mode local)", e);
-    }
+    await api.contrats.update(id, { statut });
 
     set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
     await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Contrat ${existing.reference} → ${statut}`);
@@ -164,11 +152,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       );
     }
 
-    try {
-      await api.contrats.delete(id);
-    } catch (e) {
-      logWarn("api.contrats.delete (mode local)", e);
-    }
+    await api.contrats.delete(id);
 
     set((s) => ({
       contrats: s.contrats.filter((c) => c.id !== id),
