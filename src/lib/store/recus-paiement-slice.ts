@@ -1,4 +1,3 @@
-import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { RecuPaiement, RecuPaiementInput } from "@/lib/domain-types";
@@ -33,25 +32,21 @@ export const createRecusPaiementSlice: StateCreator<
     const reste = Math.max(0, input.somme - input.montantPaye);
     const statut = reste === 0 ? "SOLDE" : input.montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
 
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.recusPaiement.create({
-        reference,
-        annexeId: input.annexeId,
-        nom: input.nom,
-        prenom: input.prenom,
-        somme: input.somme,
-        motif: input.motif,
-        montantPaye: input.montantPaye,
-        creePar,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      logWarn("api.recusPaiement.create (mode local)", e);
-    }
+    // Persistance obligatoire : un reçu sans écriture serveur disparaissait
+    // silencieusement au rechargement, sans aucune erreur montrée.
+    const created = await api.recusPaiement.create({
+      reference,
+      annexeId: input.annexeId,
+      nom: input.nom,
+      prenom: input.prenom,
+      somme: input.somme,
+      motif: input.motif,
+      montantPaye: input.montantPaye,
+      creePar,
+    });
 
     const newRecu: RecuPaiement = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       reference,
       annexeId: input.annexeId,
       annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
@@ -83,11 +78,7 @@ export const createRecusPaiementSlice: StateCreator<
     const reste = Math.max(0, input.somme - input.montantPaye);
     const statut = reste === 0 ? "SOLDE" : input.montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
 
-    try {
-      await api.recusPaiement.update(id, input);
-    } catch (e) {
-      logWarn("api.recusPaiement.update (mode local)", e);
-    }
+    await api.recusPaiement.update(id, input);
 
     const existing = get().recusPaiement.find((r) => r.id === id);
     set((s) => ({
@@ -120,11 +111,7 @@ export const createRecusPaiementSlice: StateCreator<
   },
 
   removeRecuPaiement: async (id) => {
-    try {
-      await api.recusPaiement.delete(id);
-    } catch (e) {
-      logWarn("api.recusPaiement.delete (mode local)", e);
-    }
+    await api.recusPaiement.delete(id);
 
     const recu = get().recusPaiement.find((r) => r.id === id);
     set((s) => ({ recusPaiement: s.recusPaiement.filter((r) => r.id !== id) }));
