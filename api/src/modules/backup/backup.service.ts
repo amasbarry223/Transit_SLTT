@@ -209,8 +209,14 @@ export class BackupService {
       ['factures', () => this.prisma.facture.createMany({ data: payload.factures as any, skipDuplicates: true })],
       ['lignes_facture', () => this.prisma.ligneFacture.createMany({ data: payload.lignes_facture as any, skipDuplicates: true })],
       ['caisses', () => this.prisma.caisse.createMany({ data: payload.caisses as any, skipDuplicates: true })],
-      ['transactions_caisse', () => this.prisma.transactionCaisse.createMany({ data: payload.transactions_caisse as any, skipDuplicates: true })],
+      // depenses DOIT précéder transactions_caisse : TransactionCaisse.depenseId
+      // est une FK vers Depense (schema.prisma). createMany({ skipDuplicates })
+      // traduit en INSERT IGNORE côté MySQL, qui avale aussi les violations de
+      // clé étrangère (pas seulement les doublons) — toute transaction liée à
+      // une dépense pas encore insérée aurait été silencieusement perdue
+      // (aucune erreur, juste un compte "restored" inférieur au backup réel).
       ['depenses', () => this.prisma.depense.createMany({ data: payload.depenses as any, skipDuplicates: true })],
+      ['transactions_caisse', () => this.prisma.transactionCaisse.createMany({ data: payload.transactions_caisse as any, skipDuplicates: true })],
       ['documents', () => this.prisma.document.createMany({ data: payload.documents as any, skipDuplicates: true })],
       // stock_items doit précéder bons_sortie/mouvements_stock (qui le référencent).
       ['stock_items', () => this.prisma.stockItem.createMany({ data: payload.stock_items as any, skipDuplicates: true })],
