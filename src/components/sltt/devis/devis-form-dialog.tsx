@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Info } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { Devis, DevisInput } from "@/lib/store";
@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { QuickPortButton } from "@/components/sltt/devis/quick-port-button";
 
 export interface DevisFormProps {
   open: boolean;
@@ -37,7 +38,8 @@ export function DevisFormDialog({
 }: DevisFormProps) {
   const societes = useStore((s) => s.societes);
   const annexes = useStore((s) => s.annexes);
-  const ports = useStore((s) => s.ports.filter((p) => p.actif));
+  const allPorts = useStore((s) => s.ports);
+  const ports = useMemo(() => allPorts.filter((p) => p.actif), [allPorts]);
   const { activeAnnexeId } = useActiveAnnexe();
   const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const [clientId, setClientId] = useState(devis?.clientId ?? "");
@@ -107,7 +109,7 @@ export function DevisFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Modifier le devis" : "Nouveau devis"}</DialogTitle>
           <DialogDescription>
@@ -117,90 +119,113 @@ export function DevisFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
-          <div className="space-y-2">
-            <Label>
-              Client <span className="text-red-500">*</span>
-            </Label>
-            <Select value={clientId} onValueChange={handleClientChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-5 py-1">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>
+                Client <span className="text-red-500">*</span>
+              </Label>
+              <Select value={clientId} onValueChange={handleClientChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label>
-              Nature de la marchandise <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              value={nature}
-              onChange={(e) => setNature(e.target.value)}
-              placeholder="ex. Matériaux de construction"
-            />
-          </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>
+                  Nature de la marchandise <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={nature}
+                  onChange={(e) => setNature(e.target.value)}
+                  placeholder="ex. Matériaux de construction"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label>Port d&apos;embarquement / de manutention</Label>
-            <Select value={portId || "__none"} onValueChange={(v) => setPortId(v === "__none" ? "" : v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Aucun" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">Aucun</SelectItem>
-                {ports.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nom}
-                    {p.ville ? ` — ${p.ville}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {[
-              { label: labels.droitDouane, hint: labels.droitDouaneHint, val: droitDouane, set: setDroitDouane },
-              { label: labels.fraisCircuit, hint: labels.fraisCircuitHint, val: fraisCircuit, set: setFraisCircuit },
-              { label: `${labels.fraisPrestation} — ${societeNom}`, hint: labels.fraisPrestationHint, val: fraisPrestation, set: setFraisPrestation },
-            ].map((f) => (
-              <div key={f.label} className="space-y-2">
-                <Label className="flex items-center gap-1.5 text-xs">
-                  {f.label}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  {labels.port}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                         <Info className="size-3.5" />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-xs">{f.hint}</TooltipContent>
+                    <TooltipContent side="top" className="max-w-xs text-xs">{labels.portHint}</TooltipContent>
                   </Tooltip>
                 </Label>
-                <Input
-                  value={f.val}
-                  onChange={(e) => f.set(e.target.value)}
-                  placeholder={UI.placeholders.amountFCFA}
-                  className="text-right tabular-nums"
-                />
+                <div className="flex gap-2">
+                  <Select
+                    value={portId || "__none"}
+                    onValueChange={(v) => setPortId(v === "__none" ? "" : v)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Aucun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">Aucun</SelectItem>
+                      {ports.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nom}
+                          {p.ville ? ` — ${p.ville}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <QuickPortButton onCreated={setPortId} />
+                </div>
               </div>
-            ))}
+            </div>
           </div>
 
-          {total > 0 && (
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm dark:bg-blue-950/40">
-              <span className="font-medium text-blue-700 dark:text-blue-300">Total estimé</span>
-              <span className="font-bold tabular-nums text-blue-900 dark:text-blue-200">
-                {formatFCFA(total)}
-              </span>
+          <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-3.5">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimation financière</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {[
+                { label: labels.droitDouane, hint: labels.droitDouaneHint, val: droitDouane, set: setDroitDouane },
+                { label: labels.fraisCircuit, hint: labels.fraisCircuitHint, val: fraisCircuit, set: setFraisCircuit },
+                { label: `${labels.fraisPrestation} — ${societeNom}`, hint: labels.fraisPrestationHint, val: fraisPrestation, set: setFraisPrestation },
+              ].map((f) => (
+                <div key={f.label} className="space-y-2">
+                  <Label className="flex items-center gap-1.5 text-xs">
+                    {f.label}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                          <Info className="size-3.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs">{f.hint}</TooltipContent>
+                    </Tooltip>
+                  </Label>
+                  <Input
+                    value={f.val}
+                    onChange={(e) => f.set(e.target.value)}
+                    placeholder={UI.placeholders.amountFCFA}
+                    className="bg-background text-right tabular-nums"
+                  />
+                </div>
+              ))}
             </div>
-          )}
+
+            {total > 0 && (
+              <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm dark:bg-blue-950/40">
+                <span className="font-medium text-blue-700 dark:text-blue-300">Total estimé</span>
+                <span className="font-bold tabular-nums text-blue-900 dark:text-blue-200">
+                  {formatFCFA(total)}
+                </span>
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2">
             <Label>

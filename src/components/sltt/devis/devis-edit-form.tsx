@@ -1,6 +1,7 @@
 "use client";
 
 import { Info, Pencil, Save, X } from "lucide-react";
+import { useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useStore } from "@/lib/store";
 import type { Devis } from "@/lib/store";
@@ -14,6 +15,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
+import { QuickPortButton } from "@/components/sltt/devis/quick-port-button";
 
 export function DevisEditForm({
   devis, clients, fClientId, handleClientChange,
@@ -49,7 +51,8 @@ export function DevisEditForm({
   saving?: boolean;
 }) {
   const societes = useStore((s) => s.societes);
-  const ports = useStore((s) => s.ports.filter((p) => p.actif));
+  const allPorts = useStore((s) => s.ports);
+  const ports = useMemo(() => allPorts.filter((p) => p.actif), [allPorts]);
   const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const labels = resolveDossierCoutLabels(annexeCode);
   return (
@@ -89,23 +92,37 @@ export function DevisEditForm({
                   placeholder="ex. Matériaux de construction" className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  Port d&apos;embarquement / de manutention
+                <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {labels.port}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0} className="cursor-help normal-case text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                        <Info className="size-3.5" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">{labels.portHint}</TooltipContent>
+                  </Tooltip>
                 </Label>
-                <Select value={fPortId || "__none"} onValueChange={(v) => setFPortId(v === "__none" ? "" : v)}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Aucun" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none">Aucun</SelectItem>
-                    {ports.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nom}
-                        {p.ville ? ` — ${p.ville}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={fPortId || "__none"}
+                    onValueChange={(v) => setFPortId(v === "__none" ? "" : v)}
+                  >
+                    <SelectTrigger className="h-10 flex-1">
+                      <SelectValue placeholder="Aucun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">Aucun</SelectItem>
+                      {ports.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nom}
+                          {p.ville ? ` — ${p.ville}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <QuickPortButton onCreated={setFPortId} className="h-10 w-10" />
+                </div>
               </div>
             </div>
 

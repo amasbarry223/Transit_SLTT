@@ -132,6 +132,8 @@ export interface DossierCoutLabels {
   fraisCircuitHint: string;
   fraisPrestation: string;
   fraisPrestationHint: string;
+  port: string;
+  portHint: string;
 }
 
 export const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
@@ -141,6 +143,8 @@ export const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
   fraisCircuitHint: "Frais de transit (manutention, transport local, formalités) hors droit de douane.",
   fraisPrestation: "Frais de prestation",
   fraisPrestationHint: "Rémunération de SLTT pour le service de transit — c'est elle qui détermine la marge du dossier.",
+  port: "Port d'embarquement",
+  portHint: "Port de chargement d'où provient la marchandise avant son transit vers le Mali.",
 };
 
 /**
@@ -148,6 +152,8 @@ export const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
  * prestation ; la Côte d'Ivoire facture par transit portuaire (cf. facture
  * CI type — conteneurs/compagnie/bordereau, sans droit de douane affiché) :
  * "Frais transit port" remplace la douane, "Dépenses" remplace le circuit.
+ * Le port lui-même change de sens : port de chargement lointain pour le
+ * Mali (enclavé), port ivoirien où s'effectue la manutention pour la CI.
  */
 const ANNEXE_DOSSIER_COUT_LABELS: Record<string, Partial<DossierCoutLabels>> = {
   CI: {
@@ -155,6 +161,8 @@ const ANNEXE_DOSSIER_COUT_LABELS: Record<string, Partial<DossierCoutLabels>> = {
     droitDouaneHint: "Frais de transit portuaire (manutention, passage port) — annexe Côte d'Ivoire.",
     fraisCircuit: "Dépenses",
     fraisCircuitHint: "Dépenses diverses engagées pour le dossier, hors frais de transit portuaire.",
+    port: "Port de manutention",
+    portHint: "Port ivoirien où s'effectue la manutention portuaire (Abidjan, San-Pédro...).",
   },
 };
 

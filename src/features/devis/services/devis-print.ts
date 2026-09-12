@@ -47,7 +47,7 @@ export interface DevisData {
    * d'Ivoire) du client, ex. « Frais transit port » (manutention portuaire)
    * remplace « Droits de douane » en Côte d'Ivoire. Repli sur les intitulés
    * Mali si non fourni (résout {@link resolveDossierCoutLabels} en amont). */
-  coutLabels?: Pick<DossierCoutLabels, "droitDouane" | "fraisCircuit" | "fraisPrestation">;
+  coutLabels?: Pick<DossierCoutLabels, "droitDouane" | "fraisCircuit" | "fraisPrestation" | "port">;
 }
 
 export interface DevisListPrintRow {
@@ -370,7 +370,7 @@ ${SIGNATORIES_BLOCK_CSS}
       </div>
       ${data.portNom ? `
       <div class="meta-cell">
-        <div class="field-k">Port d'embarquement</div>
+        <div class="field-k">${htmlEscape(data.coutLabels?.port ?? DEFAULT_DOSSIER_COUT_LABELS.port)}</div>
         <div class="meta-val">${htmlEscape(data.portNom)}</div>
       </div>` : ""}
     </section>

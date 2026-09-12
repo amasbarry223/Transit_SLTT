@@ -195,7 +195,7 @@ export function DevisDetailScreen() {
               </div>
               <div className="px-5">
                 <InfoRow icon={User} label="Client" value={devis.clientNom} />
-                {devis.portNom && <InfoRow icon={Package} label="Port d'embarquement" value={devis.portNom} />}
+                {devis.portNom && <InfoRow icon={Package} label={coutLabels.port} value={devis.portNom} />}
                 <InfoRow icon={Package} label="Nature de la marchandise" value={devis.nature} />
                 <InfoRow icon={CalendarDays} label="Date de création" value={formatDateShort(devis.dateCreation)} />
                 <InfoRow icon={CalendarDays} label="Valide jusqu'au" value={formatDateShort(devis.dateValidite)} />
