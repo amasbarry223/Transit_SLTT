@@ -52,7 +52,15 @@ export function DashboardScreen() {
   const users = useStore((s) => s.usersPublic);
   const clients = useStore((s) => s.clients);
   const currentUser = useCurrentUser();
-  const currentRole = currentUser?.role ?? "Administrateur";
+  // BUG-FIX (audit 2026-09-12) : un repli sur "Administrateur" ici affichait
+  // le panneau le plus privilégié (AdminPanel) pendant le bref instant où
+  // currentUser est encore null (session pas encore hydratée / déconnecté) —
+  // l'inverse du principe de moindre privilège. useCurrentUser() lui-même
+  // retombe sur le rôle le moins privilégié ("Agent de transit") dans son
+  // propre cas de repli — cf. use-permission.ts. Pas de rôle par défaut ici :
+  // currentUser === null est géré explicitement plus bas (aucun panneau tant
+  // que la session n'est pas résolue).
+  const currentRole = currentUser?.role;
 
   const sections = React.useMemo(
     () => getDashboardSections(currentUser),
@@ -97,6 +105,13 @@ export function DashboardScreen() {
     [bons, anchorDate],
   );
 
+  // BUG-FIX (audit 2026-09-12) : le repli "return items.length > 0 ? items :
+  // alertes" réintroduisait TOUTES les alertes (y compris hors permission) dès
+  // que la sélection autorisée était vide — pas seulement quand l'utilisateur
+  // manquait des deux permissions, mais aussi quand sa seule catégorie
+  // autorisée (ex. alertes_stock sans alertes_dossiers) n'avait simplement
+  // aucune alerte ce jour-là. Un rôle stock-only voyait alors les alertes
+  // dossiers. On ne retombe plus jamais sur la liste non filtrée.
   const filteredAlertes = React.useMemo(() => {
     const items: LiveAlert[] = [];
     if (hasSection("alertes_stock")) {
@@ -105,7 +120,7 @@ export function DashboardScreen() {
     if (hasSection("alertes_dossiers")) {
       items.push(...alertes.filter((a) => !a.id.startsWith("stock-")));
     }
-    return items.length > 0 ? items : alertes;
+    return items;
   }, [alertes, sections]);
 
   const firstName = currentUserName ? currentUserName.split(" ")[0] : null;
@@ -204,7 +219,7 @@ export function DashboardScreen() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* Left Column (58% width): Vue Administrateur */}
         <div className="lg:col-span-7 flex flex-col">
-          {currentRole === "Administrateur" ? (
+          {!currentUser ? null : currentRole === "Administrateur" ? (
             <AdminPanel
               go={go}
               users={users}
