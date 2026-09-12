@@ -106,43 +106,41 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       notes: input.notes,
     };
 
-    try {
-      const created = await api.dossiers.create({
-        numero: reference,
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        marchandise: input.nature,
-        valeurDouane: input.droitDouane,
-        fraisCircuit: input.fraisCircuit,
-        fraisPrestation: input.fraisPrestation,
-        montantInvesti: input.montantInvesti,
-        numeroBl: input.bl,
-        notes: input.notes,
-        voieTransport: input.modeTransport,
-        modeTransport: input.modeTransport,
-        poids: input.poidsTotal,
-        poidsTotal: input.poidsTotal,
-        navireVol: input.camion,
-        camion: input.camion,
-        portDestination: input.portEntree,
-        portEntree: input.portEntree,
-        dateDepart: input.date,
-        date: input.date,
-        dateArriveePrevue: input.dateEcheance,
-        dateEcheance: input.dateEcheance,
-        dateArriveeEffective: input.dateDedouanement,
-        dateDedouanement: input.dateDedouanement,
-        noConteneur: input.noConteneur,
-        conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
-        // Démarre "En cours", pas le défaut Prisma BROUILLON — sinon la 1re
-        // transition de statut échoue après rechargement (assertDossierTransition).
-        statut,
-      });
-      if (created?.id) {
-        newDossier.id = created.id;
-      }
-    } catch (e) {
-      logWarn("api.dossiers.create (mode local/déconnecté)", e);
+    // Persistance obligatoire : un dossier sans écriture serveur disparaissait
+    // silencieusement au rechargement, sans aucune erreur montrée.
+    const created = await api.dossiers.create({
+      numero: reference,
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      marchandise: input.nature,
+      valeurDouane: input.droitDouane,
+      fraisCircuit: input.fraisCircuit,
+      fraisPrestation: input.fraisPrestation,
+      montantInvesti: input.montantInvesti,
+      numeroBl: input.bl,
+      notes: input.notes,
+      voieTransport: input.modeTransport,
+      modeTransport: input.modeTransport,
+      poids: input.poidsTotal,
+      poidsTotal: input.poidsTotal,
+      navireVol: input.camion,
+      camion: input.camion,
+      portDestination: input.portEntree,
+      portEntree: input.portEntree,
+      dateDepart: input.date,
+      date: input.date,
+      dateArriveePrevue: input.dateEcheance,
+      dateEcheance: input.dateEcheance,
+      dateArriveeEffective: input.dateDedouanement,
+      dateDedouanement: input.dateDedouanement,
+      noConteneur: input.noConteneur,
+      conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
+      // Démarre "En cours", pas le défaut Prisma BROUILLON — sinon la 1re
+      // transition de statut échoue après rechargement (assertDossierTransition).
+      statut,
+    });
+    if (created?.id) {
+      newDossier.id = created.id;
     }
 
     const finalSeq = extractTrailingSeq(reference) ?? get().dossierSeq;
@@ -196,28 +194,25 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       notes: input.notes,
     };
 
-    try {
-      const created = await api.dossiers.create({
-        numero: reference,
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        marchandise: input.nature,
-        notes: input.notes,
-        // Un import historique conserve son statut, sa date ET ses montants
-        // d'origine : sans ça le dossier repassait "En cours" / daté
-        // d'aujourd'hui / à 0 FCFA au rechargement.
-        statut: input.statut,
-        dateDepart: input.date,
-        date: input.date,
-        fraisPrestation: input.montantInvesti,
-        montantInvesti: input.montantInvesti,
-        montantPaye: input.montantPaye,
-      });
-      if (created?.id) {
-        newDossier.id = created.id;
-      }
-    } catch (e) {
-      logWarn("api.dossiers.create historique (mode local)", e);
+    // Persistance obligatoire — voir addDossier ci-dessus pour la justification.
+    const created = await api.dossiers.create({
+      numero: reference,
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      marchandise: input.nature,
+      notes: input.notes,
+      // Un import historique conserve son statut, sa date ET ses montants
+      // d'origine : sans ça le dossier repassait "En cours" / daté
+      // d'aujourd'hui / à 0 FCFA au rechargement.
+      statut: input.statut,
+      dateDepart: input.date,
+      date: input.date,
+      fraisPrestation: input.montantInvesti,
+      montantInvesti: input.montantInvesti,
+      montantPaye: input.montantPaye,
+    });
+    if (created?.id) {
+      newDossier.id = created.id;
     }
 
     set((s) => {
@@ -250,37 +245,33 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       get().annexes.find((item) => item.id === input.annexeId)?.nom ||
       existing?.annexeNom;
 
-    try {
-      await api.dossiers.update(id, {
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        marchandise: input.nature,
-        valeurDouane: input.droitDouane,
-        fraisCircuit: input.fraisCircuit,
-        fraisPrestation: input.fraisPrestation,
-        montantInvesti: input.montantInvesti,
-        numeroBl: input.bl,
-        notes: input.notes,
-        voieTransport: input.modeTransport,
-        modeTransport: input.modeTransport,
-        poids: input.poidsTotal,
-        poidsTotal: input.poidsTotal,
-        navireVol: input.camion,
-        camion: input.camion,
-        portDestination: input.portEntree,
-        portEntree: input.portEntree,
-        dateDepart: input.date,
-        date: input.date,
-        dateArriveePrevue: input.dateEcheance,
-        dateEcheance: input.dateEcheance,
-        dateArriveeEffective: input.dateDedouanement,
-        dateDedouanement: input.dateDedouanement,
-        noConteneur: input.noConteneur,
-        conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
-      });
-    } catch (e) {
-      logWarn("api.dossiers.update (mode local)", e);
-    }
+    await api.dossiers.update(id, {
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      marchandise: input.nature,
+      valeurDouane: input.droitDouane,
+      fraisCircuit: input.fraisCircuit,
+      fraisPrestation: input.fraisPrestation,
+      montantInvesti: input.montantInvesti,
+      numeroBl: input.bl,
+      notes: input.notes,
+      voieTransport: input.modeTransport,
+      modeTransport: input.modeTransport,
+      poids: input.poidsTotal,
+      poidsTotal: input.poidsTotal,
+      navireVol: input.camion,
+      camion: input.camion,
+      portDestination: input.portEntree,
+      portEntree: input.portEntree,
+      dateDepart: input.date,
+      date: input.date,
+      dateArriveePrevue: input.dateEcheance,
+      dateEcheance: input.dateEcheance,
+      dateArriveeEffective: input.dateDedouanement,
+      dateDedouanement: input.dateDedouanement,
+      noConteneur: input.noConteneur,
+      conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
+    });
 
     set((s) => {
       const updatedDossiers = s.dossiers.map((dossier) =>
@@ -405,14 +396,15 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     // ancien statut au rechargement). Quand la transition s'accompagne d'un
     // encaissement, on passe par /paiements pour incrémenter montantPaye + dater
     // le règlement côté serveur en même temps ; sinon simple updateStatut.
-    try {
-      if (typeof montantRecu === "number" && montantRecu > 0) {
-        await api.dossiers.enregistrerPaiement(id, montantRecu, newStatut, resolvedDate);
-      } else {
-        await api.dossiers.updateStatut(id, newStatut);
-      }
-    } catch (e) {
-      logWarn("api.dossiers.updateStatut/paiement (mode local)", e);
+    // Le plus dangereux des "mode local" de ce fichier : un encaissement
+    // enregistré localement (montantPaye incrémenté, statut passé "Soldé")
+    // alors que l'appel serveur a échoué revient à comptabiliser un paiement
+    // jamais confirmé côté serveur — pas seulement une perte d'enregistrement,
+    // un désaccord argent réel/argent affiché.
+    if (typeof montantRecu === "number" && montantRecu > 0) {
+      await api.dossiers.enregistrerPaiement(id, montantRecu, newStatut, resolvedDate);
+    } else {
+      await api.dossiers.updateStatut(id, newStatut);
     }
 
     const applyPatch = (item: Dossier): Dossier =>
