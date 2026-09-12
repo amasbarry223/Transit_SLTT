@@ -45,33 +45,26 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
 
-    let createdId = crypto.randomUUID();
-    let createdNumero = initialReference;
-
-    try {
-      const created = await api.devis.create({
-        numero: initialReference,
-        clientId: input.clientId,
-        annexeId: annexeId ?? undefined,
-        nature: input.nature,
-        dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
-        notes: input.notes,
-        lignes: [
-          { designation: "Droit de douane", quantite: 1, prixUnitaire: input.droitDouane },
-          { designation: "Frais de circuit", quantite: 1, prixUnitaire: input.fraisCircuit },
-          { designation: "Frais de prestation", quantite: 1, prixUnitaire: input.fraisPrestation },
-        ],
-      });
-      if (created?.id) createdId = created.id;
-      if (created?.numero) createdNumero = created.numero;
-    } catch (e) {
-      logWarn("api.devis.create (mode local)", e);
-    }
+    // Persistance obligatoire : un devis sans écriture serveur disparaissait
+    // silencieusement au rechargement, sans aucune erreur montrée.
+    const created = await api.devis.create({
+      numero: initialReference,
+      clientId: input.clientId,
+      annexeId: annexeId ?? undefined,
+      nature: input.nature,
+      dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
+      notes: input.notes,
+      lignes: [
+        { designation: "Droit de douane", quantite: 1, prixUnitaire: input.droitDouane },
+        { designation: "Frais de circuit", quantite: 1, prixUnitaire: input.fraisCircuit },
+        { designation: "Frais de prestation", quantite: 1, prixUnitaire: input.fraisPrestation },
+      ],
+    });
 
     const clientNom = client?.nom ?? input.clientNom ?? "—";
     const newDevis: Devis = {
-      id: createdId,
-      reference: createdNumero,
+      id: created?.id ?? crypto.randomUUID(),
+      reference: created?.numero ?? initialReference,
       clientId: input.clientId,
       clientNom,
       annexeId: annexeId ?? "",
@@ -99,21 +92,17 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
     const existing = get().devis.find((d) => d.id === id);
 
-    try {
-      await api.devis.update(id, {
-        clientId: input.clientId,
-        nature: input.nature,
-        dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
-        notes: input.notes,
-        lignes: [
-          { designation: "Droit de douane", quantite: 1, prixUnitaire: input.droitDouane },
-          { designation: "Frais de circuit", quantite: 1, prixUnitaire: input.fraisCircuit },
-          { designation: "Frais de prestation", quantite: 1, prixUnitaire: input.fraisPrestation },
-        ],
-      });
-    } catch (e) {
-      logWarn("api.devis.update (mode local)", e);
-    }
+    await api.devis.update(id, {
+      clientId: input.clientId,
+      nature: input.nature,
+      dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
+      notes: input.notes,
+      lignes: [
+        { designation: "Droit de douane", quantite: 1, prixUnitaire: input.droitDouane },
+        { designation: "Frais de circuit", quantite: 1, prixUnitaire: input.fraisCircuit },
+        { designation: "Frais de prestation", quantite: 1, prixUnitaire: input.fraisPrestation },
+      ],
+    });
 
     set((s) => ({
       devis: s.devis.map((devisItem) =>
@@ -131,21 +120,17 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       throw new Error(`Transition non autorisée : ${existingBefore.statut} → ${statut}.`);
     }
 
-    try {
-      const dbStatut =
-        statut === "Accepté"
-          ? "ACCEPTE"
-          : statut === "Refusé"
-            ? "REFUSE"
-            : statut === "Expiré"
-              ? "EXPIRE"
-              : statut === "Envoyé"
-                ? "ENVOYE"
-                : "BROUILLON";
-      await api.devis.update(id, { statut: dbStatut });
-    } catch (e) {
-      logWarn("api.devis.update statut (mode local)", e);
-    }
+    const dbStatut =
+      statut === "Accepté"
+        ? "ACCEPTE"
+        : statut === "Refusé"
+          ? "REFUSE"
+          : statut === "Expiré"
+            ? "EXPIRE"
+            : statut === "Envoyé"
+              ? "ENVOYE"
+              : "BROUILLON";
+    await api.devis.update(id, { statut: dbStatut });
 
     const existing = get().devis.find((d) => d.id === id);
     set((s) => ({
@@ -169,13 +154,22 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     if (obsoletes.length === 0) return;
 
+    // Balayage automatique en arrière-plan (pas déclenché par un bouton) :
+    // pas de mutation locale pour un devis dont l'écriture serveur a échoué
+    // (sinon il repasse "Brouillon"/"Envoyé" au prochain rechargement sans
+    // explication) — on ne marque expirés localement que ceux confirmés.
+    const expiredIds: string[] = [];
     for (const d of obsoletes) {
       try {
         await api.devis.update(d.id, { statut: "EXPIRE" });
-      } catch {}
+        expiredIds.push(d.id);
+      } catch (e) {
+        logWarn(`api.devis.update statut EXPIRE (devis ${d.reference} ignoré)`, e);
+      }
     }
+    if (expiredIds.length === 0) return;
 
-    const obsoleteIds = new Set(obsoletes.map((d) => d.id));
+    const obsoleteIds = new Set(expiredIds);
     set((s) => ({
       devis: s.devis.map((devisItem) =>
         obsoleteIds.has(devisItem.id)
@@ -186,7 +180,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     await get().addAuditLog(
       AUDIT_MODULE.Devis,
       AUDIT_ACTION.Modification,
-      `${obsoletes.length} devis expiré${obsoletes.length !== 1 ? "s" : ""} automatiquement`,
+      `${expiredIds.length} devis expiré${expiredIds.length !== 1 ? "s" : ""} automatiquement`,
     );
   },
 
@@ -226,12 +220,16 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     const newDossier = await get().addDossier(inputDossier);
 
-    try {
-      // On persiste le lien devis -> dossier : sinon, après un rechargement,
-      // dev.dossierId redevient undefined et le même devis peut être reconverti
-      // (doublon de dossiers).
-      await api.devis.update(id, { statut: "ACCEPTE", dossierId: newDossier.id });
-    } catch {}
+    // On persiste le lien devis -> dossier : sinon, après un rechargement,
+    // dev.dossierId redevient undefined et le même devis peut être reconverti
+    // (doublon de dossiers). Le `catch {}` précédent avalait cet échec en
+    // silence — exactement le doublon que le commentaire dit vouloir éviter :
+    // le dossier venait d'être créé avec succès, mais le lien n'était pas
+    // persisté, laissant le devis reconvertible après un F5. On propage
+    // désormais l'erreur : le dossier existe déjà (pas de rollback), mais
+    // l'utilisateur est prévenu que la liaison a échoué plutôt que de croire
+    // la conversion pleinement réussie.
+    await api.devis.update(id, { statut: "ACCEPTE", dossierId: newDossier.id });
 
     set((s) => ({
       devis: s.devis.map((devisItem) =>
@@ -249,11 +247,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
   removeDevis: async (id) => {
     const existing = get().devis.find((d) => d.id === id);
 
-    try {
-      await api.devis.delete(id);
-    } catch (e) {
-      logWarn("api.devis.delete (mode local)", e);
-    }
+    await api.devis.delete(id);
 
     set((s) => ({
       devis: s.devis.filter((d) => d.id !== id),
