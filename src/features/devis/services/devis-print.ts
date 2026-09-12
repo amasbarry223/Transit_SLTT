@@ -305,15 +305,6 @@ tbody tr:last-child td { border-bottom: 1px solid #cfd6e2; }
 .note-line .field-k { margin-bottom: 4px; }
 .note-line p { white-space: pre-wrap; margin-top: 2px; }
 
-/* Zone de signature client */
-.sig-client {
-  margin-top: 22px;
-  max-width: 320px;
-  padding: 12px 14px 26px;
-  border: 1px dashed #b9c1cf;
-}
-.sig-client-note { font-size: 9.5px; color: #99a2b2; margin-top: 4px; }
-
 ${SIGNATORIES_BLOCK_CSS}
 .signatories { margin-top: 32px; }
 
@@ -412,11 +403,6 @@ ${SIGNATORIES_BLOCK_CSS}
     </div>
 
     ${data.notes ? `<div class="note-line"><div class="field-k">Notes &amp; conditions</div><p>${htmlEscape(data.notes)}</p></div>` : ""}
-
-    <div class="sig-client">
-      <div class="field-k">Signature &amp; cachet du client</div>
-      <div class="sig-client-note">Lu et approuvé — bon pour accord</div>
-    </div>
 
     ${buildSignatoriesBlockHTML()}
   </main>
