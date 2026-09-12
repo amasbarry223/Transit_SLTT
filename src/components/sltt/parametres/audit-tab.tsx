@@ -67,7 +67,19 @@ export function AuditTab() {
   }, []);
 
   useEffect(() => {
-    refreshLogs();
+    // refreshLogs() met à jour l'état (setLoading) dès sa première ligne,
+    // avant tout await — appelé directement ici, ce setState s'exécute de
+    // façon synchrone pendant l'effet lui-même (cascading render). On le
+    // déporte d'un micro-tick, comme le bouton "Actualiser" (ligne ~204) qui
+    // l'appelle lui aussi mais depuis un gestionnaire d'événement, jamais
+    // concerné par cette règle.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void refreshLogs();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [refreshLogs]);
 
   const modules = useMemo(

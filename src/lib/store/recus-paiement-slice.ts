@@ -48,7 +48,7 @@ export const createRecusPaiementSlice: StateCreator<
 
     const newRecu: RecuPaiement = {
       id: created?.id ?? crypto.randomUUID(),
-      reference: created.reference,
+      reference: created?.reference ?? "",
       annexeId: input.annexeId,
       annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
       nom: input.nom ?? "",

@@ -7,8 +7,43 @@ import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
-import { DEFAULT_TVA_RATE, type DossierStatut, type FactureStatut, type DevisStatut } from "@/lib/domain-types";
+import {
+  DEFAULT_TVA_RATE,
+  type DossierStatut,
+  type FactureStatut,
+  type DevisStatut,
+  type FournisseurType,
+  type FournisseurStatut,
+  type TypeVehicule,
+  type TransporteurStatut,
+  type ContratStatut,
+  type BonMotif,
+  type ModePaiement,
+  type OperationComptableType,
+  type OperationComptableSource,
+  type RecuPaiementStatut,
+} from "@/lib/domain-types";
 import { DEFAULT_TRANSIT_BRAND, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-brand";
+import type {
+  RawAnnexe,
+  RawBonSortie,
+  RawBonSortieCaisse,
+  RawClient,
+  RawClotureCaisse,
+  RawContrat,
+  RawDevis,
+  RawDossier,
+  RawFacture,
+  RawFournisseur,
+  RawMouvementStock,
+  RawOperationComptable,
+  RawPaginated,
+  RawPort,
+  RawRecuPaiement,
+  RawStockItem,
+  RawTransporteur,
+  RawUser,
+} from "@/lib/api-types";
 
 // Prisma StatutFacture (BROUILLON | ENVOYEE | PARTIELLEMENT_PAYEE | PAYEE | ANNULEE | RETARD)
 // -> FactureStatut du front. ENVOYEE et RETARD comptent comme "Envoyée" (facture émise,
@@ -83,30 +118,30 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         usersRes,
         auditLogsRes,
       ] = await Promise.all([
-        tracked("dossiers", api.dossiers.getAll(), { data: [], meta: {} } as any),
-        tracked("clients", api.clients.getAll(), [] as any),
-        tracked("annexes", api.annexes.getAll(), [] as any),
-        tracked("ports", api.ports.getAll(), [] as any),
-        tracked("factures", api.factures.getAll(), { data: [], meta: {} } as any),
-        tracked("devis", api.devis.getAll(), [] as any),
-        tracked("fournisseurs", api.fournisseurs.getAll(), [] as any),
-        tracked("contrats", api.contrats.getAll(), [] as any),
-        tracked("transporteurs", api.transporteurs.getAll(), [] as any),
-        tracked("stock", api.stock.getItems(), [] as any),
-        tracked("mouvements de stock", api.stock.getMouvements(), [] as any),
-        tracked("bons de sortie", api.bons.getBonsSortie(), [] as any),
-        tracked("bons de caisse", api.bons.getBonsCaisse(), [] as any),
-        tracked("reçus de paiement", api.recusPaiement.getAll(), [] as any),
-        tracked("opérations comptables", api.comptabilite.getOperations(), [] as any),
-        tracked("clôtures", api.comptabilite.getClotures(), [] as any),
-        tracked("paramètres", api.settings.getAll(), { list: [], map: {} } as any),
-        tracked("utilisateurs", api.users.getAll(), [] as any),
-        tracked("journal d'audit", api.auditLogs.getAll({ limit: 100 }), [] as any),
+        tracked("dossiers", api.dossiers.getAll(), { data: [], meta: {} }),
+        tracked("clients", api.clients.getAll(), []),
+        tracked("annexes", api.annexes.getAll(), []),
+        tracked("ports", api.ports.getAll(), []),
+        tracked("factures", api.factures.getAll(), { data: [], meta: {} }),
+        tracked("devis", api.devis.getAll(), []),
+        tracked("fournisseurs", api.fournisseurs.getAll(), []),
+        tracked("contrats", api.contrats.getAll(), []),
+        tracked("transporteurs", api.transporteurs.getAll(), []),
+        tracked("stock", api.stock.getItems(), []),
+        tracked("mouvements de stock", api.stock.getMouvements(), []),
+        tracked("bons de sortie", api.bons.getBonsSortie(), []),
+        tracked("bons de caisse", api.bons.getBonsCaisse(), []),
+        tracked("reçus de paiement", api.recusPaiement.getAll(), []),
+        tracked("opérations comptables", api.comptabilite.getOperations(), []),
+        tracked("clôtures", api.comptabilite.getClotures(), []),
+        tracked("paramètres", api.settings.getAll(), { list: [], map: {} }),
+        tracked("utilisateurs", api.users.getAll(), []),
+        tracked("journal d'audit", api.auditLogs.getAll({ limit: 100 }), []),
       ]);
 
       const currentUser = api.getCurrentUser();
       const fetchedUsers = Array.isArray(usersRes) ? usersRes : [];
-      let users = fetchedUsers.map((u: any) => ({
+      let users = fetchedUsers.map((u) => ({
         id: u.id,
         nom: u.nom,
         email: u.email,
@@ -114,7 +149,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         permissions: u.permissions || [],
         actif: u.actif ?? true,
         derniereConnexion: u.derniereConnexion ? new Date(u.derniereConnexion).toISOString() : "",
-        annexeIds: (u.userAnnexes || []).map((ua: any) => ua.annexe?.id || ua.annexeId),
+        annexeIds: (u.userAnnexes || []).map((ua) => ua.annexe?.id || ua.annexeId).filter((id): id is string => !!id),
       }));
 
       if (currentUser && !users.some((u) => u.id === currentUser.id)) {
@@ -130,12 +165,12 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         });
       }
 
-      const rawDossiers = Array.isArray(dossiersRes?.data)
+      const rawDossiers: RawDossier[] = Array.isArray(dossiersRes?.data)
         ? dossiersRes.data
         : Array.isArray(dossiersRes)
         ? dossiersRes
         : [];
-      const mappedDossiers = rawDossiers.map((d: any) => {
+      const mappedDossiers = rawDossiers.map((d) => {
         let modeTransport: "Maritime" | "Aérien" | "Routier" | "Ferroviaire" = "Maritime";
         const vt = String(d.voieTransport || "").toUpperCase();
         if (vt.includes("AER")) modeTransport = "Aérien";
@@ -185,14 +220,14 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         };
       });
 
-      const rawFactures = Array.isArray(facturesRes?.data)
+      const rawFactures: RawFacture[] = Array.isArray(facturesRes?.data)
         ? facturesRes.data
         : Array.isArray(facturesRes)
         ? facturesRes
         : [];
-      const mappedFactures = rawFactures.map((f: any) => ({
+      const mappedFactures = rawFactures.map((f) => ({
         id: f.id,
-        numero: f.numero,
+        numero: f.numero || "",
         dossierId: f.dossierId || null,
         clientId: f.clientId || "",
         clientNom: f.client?.nom || "—",
@@ -200,8 +235,8 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         date: f.dateEmission ? new Date(f.dateEmission).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
         dateEcheance: f.dateEcheance ? new Date(f.dateEcheance).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
         statut: mapFactureStatut(f.statut),
-        lignes: (f.lignes || []).map((l: any) => ({
-          id: l.id,
+        lignes: (f.lignes || []).map((l) => ({
+          id: l.id || "",
           description: l.designation ?? l.description ?? "",
           quantite: Number(l.quantite ?? 1),
           prixUnitaire: Number(l.prixUnitaire ?? 0),
@@ -218,23 +253,19 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         creeLe: f.createdAt ? new Date(f.createdAt).toISOString() : new Date().toISOString(),
       }));
 
-      const rawContrats = Array.isArray((contratsRes as any)?.data)
-        ? (contratsRes as any).data
-        : Array.isArray(contratsRes)
-        ? contratsRes
-        : [];
-      const mappedContrats = rawContrats.map((c: any) => ({
+      const rawContrats: RawContrat[] = Array.isArray(contratsRes) ? contratsRes : [];
+      const mappedContrats = rawContrats.map((c) => ({
         id: c.id,
-        reference: c.reference,
+        reference: c.reference || "",
         annexeId: c.annexeId || "",
-        annexeNom: c.annexe?.nom || (c.annexeId ? (annexes as any[])?.find((a) => a.id === c.annexeId)?.nom : undefined),
+        annexeNom: c.annexe?.nom || (c.annexeId ? annexes.find((a) => a.id === c.annexeId)?.nom : undefined),
         clientId: c.clientId || "",
-        clientNom: c.client?.nom || (c.clientId ? (clients as any[])?.find((cl) => cl.id === c.clientId)?.nom : "—"),
+        clientNom: c.client?.nom || (c.clientId ? clients.find((cl) => cl.id === c.clientId)?.nom : "—") || "—",
         objet: c.objet || "",
         dateDebut: c.dateDebut ? new Date(c.dateDebut).toISOString().split("T")[0] : "",
         dateFin: c.dateFin ? new Date(c.dateFin).toISOString().split("T")[0] : undefined,
         montant: Number(c.montant || 0),
-        statut: c.statut || "Actif",
+        statut: (c.statut || "Actif") as ContratStatut,
         notes: c.notes || undefined,
         nbPrestations: 0,
         nbPrestationsRealisees: 0,
@@ -243,23 +274,19 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         creeLe: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
       }));
 
-      const rawDevis = Array.isArray((devisRes as any)?.data)
-        ? (devisRes as any).data
-        : Array.isArray(devisRes)
-        ? devisRes
-        : [];
-      const mappedDevis = rawDevis.map((d: any) => {
+      const rawDevis: RawDevis[] = Array.isArray(devisRes) ? devisRes : [];
+      const mappedDevis = rawDevis.map((d) => {
         let droitDouane = 0;
         let fraisCircuit = 0;
         let fraisPrestation = 0;
-        (d.lignes || []).forEach((l: any) => {
+        (d.lignes || []).forEach((l) => {
           if (l.designation?.includes("douane")) droitDouane = Number(l.prixUnitaire || 0);
           else if (l.designation?.includes("circuit")) fraisCircuit = Number(l.prixUnitaire || 0);
           else if (l.designation?.includes("prestation")) fraisPrestation = Number(l.prixUnitaire || 0);
         });
         return {
           id: d.id,
-          reference: d.numero,
+          reference: d.numero || "",
           clientId: d.clientId || "",
           clientNom: d.client?.nom || "—",
           annexeId: d.annexeId || "",
@@ -279,11 +306,11 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         };
       });
 
-      const rawFournisseurs = Array.isArray(fournisseursRes) ? fournisseursRes : [];
-      const mappedFournisseurs = rawFournisseurs.map((f: any) => ({
+      const rawFournisseurs: RawFournisseur[] = Array.isArray(fournisseursRes) ? fournisseursRes : [];
+      const mappedFournisseurs = rawFournisseurs.map((f) => ({
         id: f.id,
         nom: f.nom,
-        type: (f.type || "Autre") as any,
+        type: (f.type || "Autre") as FournisseurType,
         contact: f.contact || "",
         telephone: f.telephone || "",
         email: f.email || "",
@@ -291,54 +318,54 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         tarifContractuel: f.tarifContractuel ? Number(f.tarifContractuel) : undefined,
         nbDossiers: f._count?.depenses || 0,
         montantTotal: 0,
-        statut: (f.actif === false || f.statut === "Inactif" ? "Inactif" : "Actif") as any,
+        statut: (f.actif === false || f.statut === "Inactif" ? "Inactif" : "Actif") as FournisseurStatut,
         annexeId: f.annexeId || "",
       }));
 
-      const rawTransporteurs = Array.isArray(transporteursRes) ? transporteursRes : [];
-      const mappedTransporteurs = rawTransporteurs.map((t: any) => ({
+      const rawTransporteurs: RawTransporteur[] = Array.isArray(transporteursRes) ? transporteursRes : [];
+      const mappedTransporteurs = rawTransporteurs.map((t) => ({
         id: t.id,
         nom: t.nom,
         contact: t.contact || "",
-        telephone: t.telephone,
+        telephone: t.telephone || "",
         email: t.email || undefined,
-        vehicule: t.vehicule,
-        immatriculation: t.immatriculation,
+        vehicule: (t.vehicule || "") as TypeVehicule,
+        immatriculation: t.immatriculation || "",
         trajet: t.trajet || "",
         capacite: Number(t.capacite || 0),
-        statut: t.statut,
+        statut: (t.statut || "Actif") as TransporteurStatut,
         nbDossiers: 0,
         dateCreation: t.dateCreation || (t.createdAt ? new Date(t.createdAt).toISOString().slice(0, 10) : ""),
         notes: t.notes || undefined,
         annexeId: t.annexeId || "",
       }));
 
-      const rawStock = Array.isArray(stockItemsRes) ? stockItemsRes : [];
-      const mappedStock = rawStock.map((s: any) => ({
+      const rawStock: RawStockItem[] = Array.isArray(stockItemsRes) ? stockItemsRes : [];
+      const mappedStock = rawStock.map((s) => ({
         id: s.id,
         clientId: s.clientId || undefined,
         clientNom: s.client?.nom || undefined,
-        annexeId: s.annexeId,
+        annexeId: s.annexeId || "",
         annexeNom: s.annexe?.nom || undefined,
         marchandise: s.marchandise,
         quantite: Number(s.quantite || 0),
         unite: s.unite || "kg",
         seuil: Number(s.seuil || 0),
-        depositaire: s.depositaire || undefined,
-        commercial: s.commercial || undefined,
+        depositaire: s.depositaire || "",
+        commercial: s.commercial || "",
         sommePayee: Number(s.sommePayee || 0),
         resteAPayer: Number(s.resteAPayer || 0),
         date: s.date || "",
       }));
 
-      const rawMouvements = Array.isArray(mouvementsRes) ? mouvementsRes : [];
-      const mappedMouvements = rawMouvements.map((m: any) => ({
+      const rawMouvements: RawMouvementStock[] = Array.isArray(mouvementsRes) ? mouvementsRes : [];
+      const mappedMouvements = rawMouvements.map((m) => ({
         id: m.id,
         stockId: m.stockId || undefined,
-        annexeId: m.annexeId,
+        annexeId: m.annexeId || "",
         annexeNom: m.annexe?.nom || undefined,
         date: m.date || (m.createdAt ? new Date(m.createdAt).toISOString() : ""),
-        type: m.type,
+        type: (m.type || "Sortie") as "Entrée" | "Sortie",
         marchandise: m.marchandise || m.stock?.marchandise || "",
         quantite: Number(m.quantite || 0),
         unite: m.unite || "",
@@ -347,86 +374,86 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         motif: m.motif || undefined,
       }));
 
-      const rawBons = Array.isArray(bonsSortieRes) ? bonsSortieRes : [];
-      const mappedBons = rawBons.map((b: any) => ({
+      const rawBons: RawBonSortie[] = Array.isArray(bonsSortieRes) ? bonsSortieRes : [];
+      const mappedBons = rawBons.map((b) => ({
         id: b.id,
-        reference: b.reference,
-        date: b.date,
-        clientId: b.clientId,
+        reference: b.reference || "",
+        date: b.date || "",
+        clientId: b.clientId || "",
         clientNom: b.client?.nom || b.clientNom || "",
-        annexeId: b.annexeId,
+        annexeId: b.annexeId || "",
         annexeNom: b.annexe?.nom || undefined,
         stockId: b.stockId || undefined,
-        marchandise: b.marchandise,
+        marchandise: b.marchandise || "",
         quantite: Number(b.quantite || 0),
-        unite: b.unite,
-        motif: b.motif,
+        unite: b.unite || "",
+        motif: (b.motif || "Vente") as BonMotif,
         montant: Number(b.montant || 0),
-        statut: b.statut,
+        statut: (b.statut || "Brouillon") as "Validé" | "Brouillon",
       }));
 
-      const rawBonsCaisse = Array.isArray(bonsCaisseRes) ? bonsCaisseRes : [];
-      const mappedBonsCaisse = rawBonsCaisse.map((bc: any) => ({
+      const rawBonsCaisse: RawBonSortieCaisse[] = Array.isArray(bonsCaisseRes) ? bonsCaisseRes : [];
+      const mappedBonsCaisse = rawBonsCaisse.map((bc) => ({
         id: bc.id,
-        reference: bc.reference,
-        date: bc.date,
-        annexeId: bc.annexeId,
+        reference: bc.reference || "",
+        date: bc.date || "",
+        annexeId: bc.annexeId || "",
         annexeNom: bc.annexe?.nom || undefined,
         montantTotal: Number(bc.montantTotal || 0),
         creePar: bc.creePar || undefined,
         creeLe: bc.createdAt ? new Date(bc.createdAt).toISOString() : new Date().toISOString(),
-        lignes: (bc.lignes || []).map((l: any) => ({
-          id: l.id,
-          date: l.date,
-          beneficiaire: l.beneficiaire,
-          motif: l.motif,
+        lignes: (bc.lignes || []).map((l) => ({
+          id: l.id || "",
+          date: l.date || "",
+          beneficiaire: l.beneficiaire || "",
+          motif: l.motif || "",
           montant: Number(l.montant || 0),
         })),
       }));
 
-      const rawRecus = Array.isArray(recusPaiementRes) ? recusPaiementRes : [];
-      const mappedRecus = rawRecus.map((r: any) => ({
+      const rawRecus: RawRecuPaiement[] = Array.isArray(recusPaiementRes) ? recusPaiementRes : [];
+      const mappedRecus = rawRecus.map((r) => ({
         id: r.id,
-        reference: r.reference,
-        annexeId: r.annexeId,
+        reference: r.reference || "",
+        annexeId: r.annexeId || "",
         annexeNom: r.annexe?.nom || undefined,
-        nom: r.nom,
-        prenom: r.prenom,
+        nom: r.nom || "",
+        prenom: r.prenom || "",
         somme: Number(r.somme || 0),
-        motif: r.motif,
+        motif: r.motif || "",
         montantPaye: Number(r.montantPaye || 0),
         reste: Number(r.reste || 0),
-        statut: r.statut,
+        statut: (r.statut || "EN_ATTENTE") as RecuPaiementStatut,
         creePar: r.creePar || undefined,
         createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
       }));
 
-      const rawOps = Array.isArray(operationsRes) ? operationsRes : [];
-      const mappedOps = rawOps.map((o: any) => ({
+      const rawOps: RawOperationComptable[] = Array.isArray(operationsRes) ? operationsRes : [];
+      const mappedOps = rawOps.map((o) => ({
         id: o.id,
-        reference: o.reference,
+        reference: o.reference || "",
         entiteType: "annexe" as const,
         annexeId: o.annexeId || undefined,
-        date: o.date,
+        date: o.date || "",
         clientId: o.clientId || undefined,
         dossierId: o.dossierId || undefined,
-        clientNom: o.clientNom || undefined,
-        nature: o.nature,
-        type: o.type,
+        clientNom: o.clientNom || "",
+        nature: o.nature || "",
+        type: (o.type || "Entrée") as OperationComptableType,
         montant: Number(o.montant || 0),
-        modePaiement: o.modePaiement || "Espèces",
-        source: o.source || "saisie",
+        modePaiement: (o.modePaiement || "Espèces") as ModePaiement,
+        source: (o.source || "saisie") as OperationComptableSource,
         importRef: o.importRef || undefined,
         creePar: o.creePar || undefined,
       }));
 
-      const rawClotures = Array.isArray(cloturesRes) ? cloturesRes : [];
-      const mappedClotures = rawClotures.map((c: any) => ({
+      const rawClotures: RawClotureCaisse[] = Array.isArray(cloturesRes) ? cloturesRes : [];
+      const mappedClotures = rawClotures.map((c) => ({
         id: c.id,
         entiteType: "annexe" as const,
         annexeId: c.annexeId || undefined,
-        periodeDebut: c.periodeDebut,
-        periodeFin: c.periodeFin,
+        periodeDebut: c.periodeDebut || "",
+        periodeFin: c.periodeFin || "",
         soldeTheorique: Number(c.soldeTheorique || 0),
         soldeConstate: Number(c.soldeConstate || 0),
         ecart: Number(c.ecart || 0),
@@ -436,15 +463,15 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
       }));
 
       const rawAuditLogs = Array.isArray(auditLogsRes) ? auditLogsRes : [];
-      const mappedAuditLogs = rawAuditLogs.map((log: any) => mapAuditLogFromDb(log));
+      const mappedAuditLogs = rawAuditLogs.map((log) => mapAuditLogFromDb(log));
 
-      const settingsMap = (settingsRes as any)?.map || {};
+      const settingsMap = settingsRes?.map || {};
 
       // L'API renvoie `ville` ; le front attend `villeSiege`. Sans ce mapping
       // toutes les annexes affichaient une ville vide. rccm/nif/devise n'ont
       // pas encore de colonne côté API (repli sur les paramètres société).
-      const rawAnnexes = Array.isArray(annexes) ? annexes : [];
-      const mappedAnnexes = rawAnnexes.map((a: any) => ({
+      const rawAnnexes: RawAnnexe[] = Array.isArray(annexes) ? annexes : [];
+      const mappedAnnexes = rawAnnexes.map((a) => ({
         id: a.id,
         nom: a.nom,
         code: a.code ?? "",
@@ -457,8 +484,8 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         actif: a.actif !== false,
       }));
 
-      const rawPorts = Array.isArray(portsRes) ? portsRes : [];
-      const mappedPorts = rawPorts.map((p: any) => ({
+      const rawPorts: RawPort[] = Array.isArray(portsRes) ? portsRes : [];
+      const mappedPorts = rawPorts.map((p) => ({
         id: p.id,
         code: p.code,
         nom: p.nom,
@@ -467,12 +494,8 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         actif: p.actif !== false,
       }));
 
-      const rawClients = Array.isArray((clients as any)?.data)
-        ? (clients as any).data
-        : Array.isArray(clients)
-        ? clients
-        : [];
-      const mappedClients = rawClients.map((c: any) => ({
+      const rawClients: RawClient[] = Array.isArray(clients) ? clients : [];
+      const mappedClients = rawClients.map((c) => ({
         id: c.id,
         nom: c.nom,
         type: (String(c.type || "").toUpperCase() === "PARTICULIER" ? "Particulier" : "Entreprise") as
@@ -518,32 +541,32 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
 
         const intermediateState = {
           ...state,
-          dossiers: mappedDossiers as any,
+          dossiers: mappedDossiers,
           clients: syncClientStats(
-            mappedDossiers as any,
-            mappedFactures as any,
+            mappedDossiers,
+            mappedFactures,
             state.ecritures,
-            mappedClients as any,
-          ) as any,
-          annexes: mappedAnnexes as any,
-          ports: mappedPorts as any,
-          factures: mappedFactures as any,
-          fournisseurs: mappedFournisseurs as any,
-          contrats: nextContrats as any,
-          devis: mappedDevis as any,
-          transporteurs: mappedTransporteurs as any,
-          stock: mappedStock as any,
-          mouvements: mappedMouvements as any,
-          bons: mappedBons as any,
-          bonsSortieCaisse: mappedBonsCaisse as any,
-          recusPaiement: mappedRecus as any,
-          operationsComptables: mappedOps as any,
-          cloturesCaisse: mappedClotures as any,
+            mappedClients,
+          ),
+          annexes: mappedAnnexes,
+          ports: mappedPorts,
+          factures: mappedFactures,
+          fournisseurs: mappedFournisseurs,
+          contrats: nextContrats,
+          devis: mappedDevis,
+          transporteurs: mappedTransporteurs,
+          stock: mappedStock,
+          mouvements: mappedMouvements,
+          bons: mappedBons,
+          bonsSortieCaisse: mappedBonsCaisse,
+          recusPaiement: mappedRecus,
+          operationsComptables: mappedOps,
+          cloturesCaisse: mappedClotures,
           societes: mappedSocietes,
-          users: (users.length > 0 ? users : state.users) as any,
-          auditLogs: (mappedAuditLogs.length > 0 ? mappedAuditLogs : state.auditLogs) as any,
+          users: users.length > 0 ? users : state.users,
+          auditLogs: mappedAuditLogs.length > 0 ? mappedAuditLogs : state.auditLogs,
         };
-        const updatedSequences = syncSequencesFromData(intermediateState as any);
+        const updatedSequences = syncSequencesFromData(intermediateState);
 
         return {
           ...intermediateState,

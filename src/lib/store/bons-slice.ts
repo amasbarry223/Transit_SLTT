@@ -271,7 +271,13 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     // Préfère les lignes confirmées par le serveur (ids réels) ; ne
     // reconstruit des ids locaux jetables que si la réponse est absente.
     const confirmedLignes: Array<{ id: string; date: string; beneficiaire: string; motif: string; montant: number }> =
-      updated?.lignes ?? input.lignes.map((ligne, idx) => ({ ...ligne, id: `BSCL-${idx + 1}` }));
+      updated?.lignes?.map((ligne, idx) => ({
+        id: ligne.id ?? `BSCL-${idx + 1}`,
+        date: ligne.date ?? "",
+        beneficiaire: ligne.beneficiaire ?? "",
+        motif: ligne.motif ?? "",
+        montant: Number(ligne.montant ?? 0),
+      })) ?? input.lignes.map((ligne, idx) => ({ ...ligne, id: `BSCL-${idx + 1}` }));
 
     set((s) => ({
       bonsSortieCaisse: s.bonsSortieCaisse.map((b) =>

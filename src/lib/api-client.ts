@@ -3,6 +3,32 @@
  * Remplace l'accès direct Supabase par des appels HTTP REST sécurisés et typés
  */
 
+import type {
+  RawAnnexe,
+  RawBonSortie,
+  RawBonSortieCaisse,
+  RawCaisse,
+  RawClient,
+  RawClotureCaisse,
+  RawContrat,
+  RawDepense,
+  RawDevis,
+  RawDocument,
+  RawDossier,
+  RawFacture,
+  RawFournisseur,
+  RawMouvementStock,
+  RawOperationComptable,
+  RawPaginated,
+  RawPort,
+  RawRecuPaiement,
+  RawSetting,
+  RawStockItem,
+  RawTrackingPublic,
+  RawTransporteur,
+  RawUser,
+} from "@/lib/api-types";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -23,7 +49,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
-    public data?: any,
+    public data?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -52,6 +78,20 @@ class ApiClient {
   /** Enregistre le callback de déconnexion forcée (voir onSessionExpired). */
   setOnSessionExpired(cb: () => void) {
     this.onSessionExpired = cb;
+  }
+
+  /** Sérialise un objet de paramètres de requête (filtre undefined/null,
+   *  convertit les nombres/booléens en string) en query string préfixée
+   *  d'un "?", ou "" si aucun paramètre fourni. */
+  private toQueryString(params?: Record<string, unknown>): string {
+    if (!params) return '';
+    const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null);
+    if (entries.length === 0) return '';
+    const search = new URLSearchParams();
+    for (const [key, value] of entries) {
+      search.set(key, String(value));
+    }
+    return '?' + search.toString();
   }
 
   // ---------------------------------------------------------------------------
@@ -137,7 +177,7 @@ class ApiClient {
     }
 
     if (!res.ok) {
-      let errData: any;
+      let errData: { message?: string } & Record<string, unknown>;
       try {
         errData = await res.json();
       } catch {
@@ -233,38 +273,37 @@ class ApiClient {
       page?: number;
       limit?: number;
     }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<{ data: any[]; meta: any }>(`/dossiers${qs}`);
+      return this.request<RawPaginated<RawDossier>>(`/dossiers${this.toQueryString(params)}`);
     },
 
-    getById: (id: string) => this.request<any>(`/dossiers/${id}`),
+    getById: (id: string) => this.request<RawDossier>(`/dossiers/${id}`),
 
-    create: (data: any) =>
-      this.request<any>('/dossiers', {
+    create: (data: object) =>
+      this.request<RawDossier>('/dossiers', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
-    update: (id: string, data: any) =>
-      this.request<any>(`/dossiers/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawDossier>(`/dossiers/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
 
     updateStatut: (id: string, statut: string) =>
-      this.request<any>(`/dossiers/${id}/statut`, {
+      this.request<RawDossier>(`/dossiers/${id}/statut`, {
         method: 'PATCH',
         body: JSON.stringify({ statut }),
       }),
 
     enregistrerPaiement: (id: string, montant: number, statut?: string, date?: string) =>
-      this.request<any>(`/dossiers/${id}/paiements`, {
+      this.request<RawDossier>(`/dossiers/${id}/paiements`, {
         method: 'POST',
         body: JSON.stringify({ montant, statut, date }),
       }),
 
     delete: (id: string) =>
-      this.request<any>(`/dossiers/${id}`, {
+      this.request<RawDossier>(`/dossiers/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -275,21 +314,21 @@ class ApiClient {
   clients = {
     getAll: (search?: string) => {
       const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-      return this.request<any[]>(`/clients${qs}`);
+      return this.request<RawClient[]>(`/clients${qs}`);
     },
-    getById: (id: string) => this.request<any>(`/clients/${id}`),
-    create: (data: any) =>
-      this.request<any>('/clients', {
+    getById: (id: string) => this.request<RawClient>(`/clients/${id}`),
+    create: (data: object) =>
+      this.request<RawClient>('/clients', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/clients/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawClient>(`/clients/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/clients/${id}`, {
+      this.request<RawClient>(`/clients/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -299,23 +338,21 @@ class ApiClient {
   // Contrats
   // ---------------------------------------------------------------------------
   contrats = {
-    getAll: (params?: { search?: string; annexeId?: string; clientId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/contrats${qs}`);
-    },
-    getById: (id: string) => this.request<any>(`/contrats/${id}`),
-    create: (data: any) =>
-      this.request<any>('/contrats', {
+    getAll: (params?: { search?: string; annexeId?: string; clientId?: string }) =>
+      this.request<RawContrat[]>(`/contrats${this.toQueryString(params)}`),
+    getById: (id: string) => this.request<RawContrat>(`/contrats/${id}`),
+    create: (data: object) =>
+      this.request<RawContrat>('/contrats', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/contrats/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawContrat>(`/contrats/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/contrats/${id}`, {
+      this.request<RawContrat>(`/contrats/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -326,21 +363,21 @@ class ApiClient {
   devis = {
     getAll: (clientId?: string) => {
       const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
-      return this.request<any[]>(`/devis${qs}`);
+      return this.request<RawDevis[]>(`/devis${qs}`);
     },
-    getById: (id: string) => this.request<any>(`/devis/${id}`),
-    create: (data: any) =>
-      this.request<any>('/devis', {
+    getById: (id: string) => this.request<RawDevis>(`/devis/${id}`),
+    create: (data: object) =>
+      this.request<RawDevis>('/devis', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/devis/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawDevis>(`/devis/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/devis/${id}`, {
+      this.request<RawDevis>(`/devis/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -349,32 +386,29 @@ class ApiClient {
   // Factures
   // ---------------------------------------------------------------------------
   factures = {
-    getAll: (params?: any) => {
-      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-      return this.request<{ data: any[]; meta: any }>(`/factures${qs}`);
-    },
-    getById: (id: string) => this.request<any>(`/factures/${id}`),
-    create: (data: any) =>
-      this.request<any>('/factures', {
+    getAll: () => this.request<RawPaginated<RawFacture>>('/factures'),
+    getById: (id: string) => this.request<RawFacture>(`/factures/${id}`),
+    create: (data: object) =>
+      this.request<RawFacture>('/factures', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/factures/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawFacture>(`/factures/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     updateStatut: (id: string, statut: string) =>
-      this.request<any>(`/factures/${id}/statut`, {
+      this.request<RawFacture>(`/factures/${id}/statut`, {
         method: 'PATCH',
         body: JSON.stringify({ statut }),
       }),
     delete: (id: string) =>
-      this.request<any>(`/factures/${id}`, {
+      this.request<RawFacture>(`/factures/${id}`, {
         method: 'DELETE',
       }),
     enregistrerPaiement: (id: string, data: { montant: number; caisseId: string; motif?: string }) =>
-      this.request<any>(`/factures/${id}/paiements`, {
+      this.request<RawFacture>(`/factures/${id}/paiements`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -386,11 +420,11 @@ class ApiClient {
   caisse = {
     getAll: (annexeId?: string) => {
       const qs = annexeId ? `?annexeId=${annexeId}` : '';
-      return this.request<any[]>(`/caisses${qs}`);
+      return this.request<RawCaisse[]>(`/caisses${qs}`);
     },
-    getById: (id: string) => this.request<any>(`/caisses/${id}`),
+    getById: (id: string) => this.request<RawCaisse>(`/caisses/${id}`),
     createTransaction: (id: string, data: { type: 'ENTREE' | 'SORTIE'; montant: number; motif: string }) =>
-      this.request<any>(`/caisses/${id}/transactions`, {
+      this.request<RawCaisse>(`/caisses/${id}/transactions`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -400,27 +434,24 @@ class ApiClient {
   // Dépenses & Fournisseurs
   // ---------------------------------------------------------------------------
   depenses = {
-    getAll: (params?: any) => {
-      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-      return this.request<{ data: any[]; meta: any }>(`/depenses${qs}`);
-    },
-    getById: (id: string) => this.request<any>(`/depenses/${id}`),
-    create: (data: any) =>
-      this.request<any>('/depenses', {
+    getAll: () => this.request<RawPaginated<RawDepense>>('/depenses'),
+    getById: (id: string) => this.request<RawDepense>(`/depenses/${id}`),
+    create: (data: object) =>
+      this.request<RawDepense>('/depenses', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     approuver: (id: string) =>
-      this.request<any>(`/depenses/${id}/approuver`, {
+      this.request<RawDepense>(`/depenses/${id}/approuver`, {
         method: 'PATCH',
       }),
     payer: (id: string, data: { caisseId: string; motif?: string }) =>
-      this.request<any>(`/depenses/${id}/payer`, {
+      this.request<RawDepense>(`/depenses/${id}/payer`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/depenses/${id}`, {
+      this.request<RawDepense>(`/depenses/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -428,21 +459,21 @@ class ApiClient {
   fournisseurs = {
     getAll: (search?: string) => {
       const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-      return this.request<any[]>(`/fournisseurs${qs}`);
+      return this.request<RawFournisseur[]>(`/fournisseurs${qs}`);
     },
-    getById: (id: string) => this.request<any>(`/fournisseurs/${id}`),
-    create: (data: any) =>
-      this.request<any>('/fournisseurs', {
+    getById: (id: string) => this.request<RawFournisseur>(`/fournisseurs/${id}`),
+    create: (data: object) =>
+      this.request<RawFournisseur>('/fournisseurs', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/fournisseurs/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawFournisseur>(`/fournisseurs/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/fournisseurs/${id}`, {
+      this.request<RawFournisseur>(`/fournisseurs/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -451,39 +482,39 @@ class ApiClient {
   // Annexes
   // ---------------------------------------------------------------------------
   annexes = {
-    getAll: () => this.request<any[]>('/annexes'),
-    getById: (id: string) => this.request<any>(`/annexes/${id}`),
-    create: (data: any) =>
-      this.request<any>('/annexes', {
+    getAll: () => this.request<RawAnnexe[]>('/annexes'),
+    getById: (id: string) => this.request<RawAnnexe>(`/annexes/${id}`),
+    create: (data: object) =>
+      this.request<RawAnnexe>('/annexes', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/annexes/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawAnnexe>(`/annexes/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/annexes/${id}`, {
+      this.request<RawAnnexe>(`/annexes/${id}`, {
         method: 'DELETE',
       }),
   };
 
   ports = {
-    getAll: () => this.request<any[]>('/ports'),
-    getById: (id: string) => this.request<any>(`/ports/${id}`),
-    create: (data: any) =>
-      this.request<any>('/ports', {
+    getAll: () => this.request<RawPort[]>('/ports'),
+    getById: (id: string) => this.request<RawPort>(`/ports/${id}`),
+    create: (data: object) =>
+      this.request<RawPort>('/ports', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/ports/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawPort>(`/ports/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/ports/${id}`, {
+      this.request<RawPort>(`/ports/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -492,23 +523,21 @@ class ApiClient {
   // Transporteurs
   // ---------------------------------------------------------------------------
   transporteurs = {
-    getAll: (params?: { search?: string; annexeId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/transporteurs${qs}`);
-    },
-    getById: (id: string) => this.request<any>(`/transporteurs/${id}`),
-    create: (data: any) =>
-      this.request<any>('/transporteurs', {
+    getAll: (params?: { search?: string; annexeId?: string }) =>
+      this.request<RawTransporteur[]>(`/transporteurs${this.toQueryString(params)}`),
+    getById: (id: string) => this.request<RawTransporteur>(`/transporteurs/${id}`),
+    create: (data: object) =>
+      this.request<RawTransporteur>('/transporteurs', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/transporteurs/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawTransporteur>(`/transporteurs/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/transporteurs/${id}`, {
+      this.request<RawTransporteur>(`/transporteurs/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -517,31 +546,27 @@ class ApiClient {
   // Stock & Mouvements (Entreposage / Magasin)
   // ---------------------------------------------------------------------------
   stock = {
-    getItems: (params?: { search?: string; annexeId?: string; clientId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/stock/items${qs}`);
-    },
-    getItemById: (id: string) => this.request<any>(`/stock/items/${id}`),
-    createItem: (data: any) =>
-      this.request<any>('/stock/items', {
+    getItems: (params?: { search?: string; annexeId?: string; clientId?: string }) =>
+      this.request<RawStockItem[]>(`/stock/items${this.toQueryString(params)}`),
+    getItemById: (id: string) => this.request<RawStockItem>(`/stock/items/${id}`),
+    createItem: (data: object) =>
+      this.request<RawStockItem>('/stock/items', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    updateItem: (id: string, data: any) =>
-      this.request<any>(`/stock/items/${id}`, {
+    updateItem: (id: string, data: object) =>
+      this.request<RawStockItem>(`/stock/items/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     deleteItem: (id: string) =>
-      this.request<any>(`/stock/items/${id}`, {
+      this.request<RawStockItem>(`/stock/items/${id}`, {
         method: 'DELETE',
       }),
-    getMouvements: (params?: { annexeId?: string; stockId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/stock/mouvements${qs}`);
-    },
-    createMouvement: (data: any) =>
-      this.request<any>('/stock/mouvements', {
+    getMouvements: (params?: { annexeId?: string; stockId?: string }) =>
+      this.request<RawMouvementStock[]>(`/stock/mouvements${this.toQueryString(params)}`),
+    createMouvement: (data: object) =>
+      this.request<RawMouvementStock>('/stock/mouvements', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -551,39 +576,35 @@ class ApiClient {
   // Bons de sortie (Stock & Caisse)
   // ---------------------------------------------------------------------------
   bons = {
-    getBonsSortie: (params?: { annexeId?: string; clientId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/bons/sortie${qs}`);
-    },
-    createBonSortie: (data: any) =>
-      this.request<any>('/bons/sortie', {
+    getBonsSortie: (params?: { annexeId?: string; clientId?: string }) =>
+      this.request<RawBonSortie[]>(`/bons/sortie${this.toQueryString(params)}`),
+    createBonSortie: (data: object) =>
+      this.request<RawBonSortie>('/bons/sortie', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     validateBonSortie: (id: string) =>
-      this.request<any>(`/bons/sortie/${id}/valider`, {
+      this.request<RawBonSortie>(`/bons/sortie/${id}/valider`, {
         method: 'PUT',
       }),
     deleteBonSortie: (id: string) =>
-      this.request<any>(`/bons/sortie/${id}`, {
+      this.request<RawBonSortie>(`/bons/sortie/${id}`, {
         method: 'DELETE',
       }),
-    getBonsCaisse: (params?: { annexeId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/bons/caisse${qs}`);
-    },
-    createBonCaisse: (data: any) =>
-      this.request<any>('/bons/caisse', {
+    getBonsCaisse: (params?: { annexeId?: string }) =>
+      this.request<RawBonSortieCaisse[]>(`/bons/caisse${this.toQueryString(params)}`),
+    createBonCaisse: (data: object) =>
+      this.request<RawBonSortieCaisse>('/bons/caisse', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    updateBonCaisse: (id: string, data: any) =>
-      this.request<any>(`/bons/caisse/${id}`, {
+    updateBonCaisse: (id: string, data: object) =>
+      this.request<RawBonSortieCaisse>(`/bons/caisse/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     deleteBonCaisse: (id: string) =>
-      this.request<any>(`/bons/caisse/${id}`, {
+      this.request<RawBonSortieCaisse>(`/bons/caisse/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -592,23 +613,21 @@ class ApiClient {
   // Reçus de Paiement
   // ---------------------------------------------------------------------------
   recusPaiement = {
-    getAll: (params?: { search?: string; annexeId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/recus-paiement${qs}`);
-    },
-    getById: (id: string) => this.request<any>(`/recus-paiement/${id}`),
-    create: (data: any) =>
-      this.request<any>('/recus-paiement', {
+    getAll: (params?: { search?: string; annexeId?: string }) =>
+      this.request<RawRecuPaiement[]>(`/recus-paiement${this.toQueryString(params)}`),
+    getById: (id: string) => this.request<RawRecuPaiement>(`/recus-paiement/${id}`),
+    create: (data: object) =>
+      this.request<RawRecuPaiement>('/recus-paiement', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/recus-paiement/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawRecuPaiement>(`/recus-paiement/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/recus-paiement/${id}`, {
+      this.request<RawRecuPaiement>(`/recus-paiement/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -617,25 +636,21 @@ class ApiClient {
   // Comptabilité Générale
   // ---------------------------------------------------------------------------
   comptabilite = {
-    getOperations: (params?: { annexeId?: string; clientId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/comptabilite/operations${qs}`);
-    },
-    createOperation: (data: any) =>
-      this.request<any>('/comptabilite/operations', {
+    getOperations: (params?: { annexeId?: string; clientId?: string }) =>
+      this.request<RawOperationComptable[]>(`/comptabilite/operations${this.toQueryString(params)}`),
+    createOperation: (data: object) =>
+      this.request<RawOperationComptable>('/comptabilite/operations', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     deleteOperation: (id: string) =>
-      this.request<any>(`/comptabilite/operations/${id}`, {
+      this.request<RawOperationComptable>(`/comptabilite/operations/${id}`, {
         method: 'DELETE',
       }),
-    getClotures: (params?: { annexeId?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/comptabilite/clotures${qs}`);
-    },
-    createCloture: (data: any) =>
-      this.request<any>('/comptabilite/clotures', {
+    getClotures: (params?: { annexeId?: string }) =>
+      this.request<RawClotureCaisse[]>(`/comptabilite/clotures${this.toQueryString(params)}`),
+    createCloture: (data: object) =>
+      this.request<RawClotureCaisse>('/comptabilite/clotures', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -645,9 +660,9 @@ class ApiClient {
   // Tracking Public & Privé
   // ---------------------------------------------------------------------------
   tracking = {
-    getPublic: (code: string) => this.request<any>(`/tracking/public/${code}`),
+    getPublic: (code: string) => this.request<RawTrackingPublic>(`/tracking/public/${code}`),
     updatePosition: (dossierId: string, data: { dernierePosition?: string; statutAffiche?: string }) =>
-      this.request<any>(`/tracking/dossier/${dossierId}`, {
+      this.request<RawTrackingPublic>(`/tracking/dossier/${dossierId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
@@ -657,18 +672,18 @@ class ApiClient {
   // Documents (Stockage local sur disque)
   // ---------------------------------------------------------------------------
   documents = {
-    getByDossier: (dossierId: string) => this.request<any[]>(`/documents/dossier/${dossierId}`),
+    getByDossier: (dossierId: string) => this.request<RawDocument[]>(`/documents/dossier/${dossierId}`),
     upload: async (file: File, dossierId?: string) => {
       const formData = new FormData();
       formData.append('file', file);
       const qs = dossierId ? `?dossierId=${dossierId}` : '';
-      return this.request<any>(`/documents/upload${qs}`, {
+      return this.request<RawDocument>(`/documents/upload${qs}`, {
         method: 'POST',
         body: formData,
       });
     },
     delete: (id: string) =>
-      this.request<any>(`/documents/${id}`, {
+      this.request<RawDocument>(`/documents/${id}`, {
         method: 'DELETE',
       }),
   };
@@ -677,15 +692,15 @@ class ApiClient {
   // Paramètres dynamiques (Dashboard Settings)
   // ---------------------------------------------------------------------------
   settings = {
-    getAll: () => this.request<{ list: any[]; map: Record<string, string> }>('/settings'),
-    getByKey: (cle: string) => this.request<any>(`/settings/${cle}`),
+    getAll: () => this.request<{ list: RawSetting[]; map: Record<string, string> }>('/settings'),
+    getByKey: (cle: string) => this.request<RawSetting>(`/settings/${cle}`),
     setMany: (settings: Record<string, string>) =>
-      this.request<any>('/settings', {
+      this.request<RawSetting>('/settings', {
         method: 'PUT',
         body: JSON.stringify(settings),
       }),
     setKey: (cle: string, valeur: string, description?: string) =>
-      this.request<any>(`/settings/${cle}`, {
+      this.request<RawSetting>(`/settings/${cle}`, {
         method: 'PUT',
         body: JSON.stringify({ valeur, description }),
       }),
@@ -719,10 +734,8 @@ class ApiClient {
   // Audit Logs & Traçabilité
   // ---------------------------------------------------------------------------
   auditLogs = {
-    getAll: (params?: { entite?: string; action?: string; limit?: number }) => {
-      const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<any[]>(`/audit-logs${qs}`);
-    },
+    getAll: (params?: { entite?: string; action?: string; limit?: number }) =>
+      this.request<Record<string, unknown>[]>(`/audit-logs${this.toQueryString(params)}`),
     log: (data: {
       userId?: string;
       action: string;
@@ -732,9 +745,9 @@ class ApiClient {
       detail?: string;
       userName?: string;
       ip?: string;
-      donnees?: any;
+      donnees?: Record<string, unknown>;
     }) =>
-      this.request<any>('/audit-logs', {
+      this.request<Record<string, unknown>>('/audit-logs', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -744,20 +757,20 @@ class ApiClient {
   // Utilisateurs
   // ---------------------------------------------------------------------------
   users = {
-    getAll: () => this.request<any[]>('/users'),
-    getById: (id: string) => this.request<any>(`/users/${id}`),
-    create: (data: any) =>
-      this.request<any>('/users', {
+    getAll: () => this.request<RawUser[]>('/users'),
+    getById: (id: string) => this.request<RawUser>(`/users/${id}`),
+    create: (data: object) =>
+      this.request<RawUser>('/users', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    update: (id: string, data: any) =>
-      this.request<any>(`/users/${id}`, {
+    update: (id: string, data: object) =>
+      this.request<RawUser>(`/users/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
     delete: (id: string) =>
-      this.request<any>(`/users/${id}`, {
+      this.request<RawUser>(`/users/${id}`, {
         method: 'DELETE',
       }),
   };
