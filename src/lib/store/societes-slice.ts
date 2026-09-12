@@ -1,4 +1,3 @@
-import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { api } from "@/lib/api-client";
 import type { Societe, SocieteInput } from "@/lib/domain-types";
@@ -35,21 +34,21 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
   societes: [DEFAULT_SOCIETE],
 
   updateSociete: async (id, input) => {
-    try {
-      await api.settings.setMany({
-        societe_nom: input.nom,
-        societe_logo_url: input.logoUrl || "",
-        societe_adresse: input.adresse || "",
-        societe_telephone: input.telephone || "",
-        societe_rccm: input.rccm || "",
-        societe_nif: input.nif || "",
-        societe_signataire_dg: input.signataireDg || "",
-        societe_signataire_pdg: input.signatairePdg || "",
-        societe_afficher_nom_avec_logo: String(input.afficherNomAvecLogo ?? true),
-      });
-    } catch (e) {
-      logWarn("api.settings.setMany a échoué (mode local)", e);
-    }
+    // Persistance obligatoire : sans elle, l'identité société affichée
+    // (nom, logo, adresse légale imprimée sur les documents officiels)
+    // divergeait silencieusement de ce qui est réellement enregistré, sans
+    // aucune erreur montrée à l'utilisateur.
+    await api.settings.setMany({
+      societe_nom: input.nom,
+      societe_logo_url: input.logoUrl || "",
+      societe_adresse: input.adresse || "",
+      societe_telephone: input.telephone || "",
+      societe_rccm: input.rccm || "",
+      societe_nif: input.nif || "",
+      societe_signataire_dg: input.signataireDg || "",
+      societe_signataire_pdg: input.signatairePdg || "",
+      societe_afficher_nom_avec_logo: String(input.afficherNomAvecLogo ?? true),
+    });
 
     set((s) => ({
       societes: s.societes.map((soc) =>
@@ -73,14 +72,16 @@ export const createSocietesSlice: StateCreator<SLTTState, [], [], SocietesSlice>
   },
 
   uploadSocieteLogo: async (_id, file) => {
-    try {
-      const res = await api.documents.upload(file);
-      if (res && res.url) {
-        return res.url;
-      }
-    } catch {
-      // repli en local si besoin
+    // Un échec d'upload renvoyait un blob: URL local en repli, accepté par
+    // l'appelant (societe-tab.tsx) comme une réussite ("Logo envoyé") — cette
+    // URL n'existe que dans cet onglet, ne survit même pas à un rechargement
+    // de page, et aurait été enregistrée telle quelle en base si l'utilisateur
+    // cliquait ensuite sur Enregistrer : un logo cassé pour tout le monde sauf
+    // l'auteur, jusqu'à son prochain F5. On propage l'erreur à la place.
+    const res = await api.documents.upload(file);
+    if (!res?.url) {
+      throw new Error("Le serveur n'a pas renvoyé d'URL pour ce fichier.");
     }
-    return URL.createObjectURL(file);
+    return res.url;
   },
 });
