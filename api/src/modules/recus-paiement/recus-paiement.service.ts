@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -57,42 +58,76 @@ export class RecusPaiementService {
     return item;
   }
 
+  /** Référence unique RECU-0000N, générée serveur (jamais celle proposée par
+   *  le client) — le carnet de reçus vierges à imprimer n'a de valeur que si
+   *  sa numérotation ne peut jamais se dupliquer entre deux générations
+   *  concurrentes. Même stratégie que ComptabiliteService.nextOperationReference. */
+  private async nextRecuReference(): Promise<string> {
+    const last = await this.prisma.recuPaiement.findFirst({
+      where: { reference: { startsWith: 'RECU-' } },
+      orderBy: { createdAt: 'desc' },
+      select: { reference: true },
+    });
+    const lastNum = Number(String(last?.reference ?? '').replace(/^RECU-/, '')) || 0;
+    for (let n = lastNum + 1; n < lastNum + 50; n++) {
+      const candidate = `RECU-${String(n).padStart(4, '0')}`;
+      const exists = await this.prisma.recuPaiement.findUnique({
+        where: { reference: candidate },
+        select: { id: true },
+      });
+      if (!exists) return candidate;
+    }
+    return `RECU-${Date.now()}`;
+  }
+
   async create(user: CurrentUserType, data: any) {
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas créer de reçu pour cette annexe');
     }
+    // nom/prenom/motif/somme/montantPaye sont optionnels : le carnet de reçus
+    // vierges (imprimé pour être rempli au stylo) ne transmet plus aucune de
+    // ces données — seule la réservation du numéro compte ici.
     const somme = Number(data.somme) || 0;
     const montantPaye = Number(data.montantPaye) || 0;
     const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
     const statut = statutRecu(somme, montantPaye);
 
-    if (data.reference) {
-      const existing = await this.prisma.recuPaiement.findUnique({
-        where: { reference: data.reference },
-        select: { id: true },
-      });
-      if (existing) {
-        throw new ConflictException(`Le reçu ${data.reference} existe déjà.`);
-      }
-    }
-
-    return this.prisma.recuPaiement.create({
-      data: {
-        reference: data.reference,
-        annexeId: data.annexeId,
-        nom: data.nom,
-        prenom: data.prenom,
-        somme,
-        motif: data.motif || '',
-        montantPaye,
-        reste,
-        statut,
-        // Attribution fiable : nom de l'auteur pris du JWT, jamais d'un
-        // champ texte libre fourni par le client.
-        creePar: user.nom,
-      },
-      include: { annexe: true },
+    const buildData = (reference: string) => ({
+      reference,
+      annexeId: data.annexeId,
+      nom: data.nom || '',
+      prenom: data.prenom || '',
+      somme,
+      motif: data.motif || '',
+      montantPaye,
+      reste,
+      statut,
+      // Attribution fiable : nom de l'auteur pris du JWT, jamais d'un
+      // champ texte libre fourni par le client.
+      creePar: user.nom,
     });
+
+    const reference = await this.nextRecuReference();
+    try {
+      return await this.prisma.recuPaiement.create({
+        data: buildData(reference),
+        include: { annexe: true },
+      });
+    } catch (err) {
+      // Même course qu'en comptabilité générale : nextRecuReference() vérifie
+      // puis choisit en deux temps (pas de séquence atomique en base) — deux
+      // générations concurrentes peuvent viser le même numéro. On retente une
+      // fois avec un numéro frais plutôt que de renvoyer une erreur pour une
+      // collision purement interne.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const retryReference = await this.nextRecuReference();
+        return this.prisma.recuPaiement.create({
+          data: buildData(retryReference),
+          include: { annexe: true },
+        });
+      }
+      throw err;
+    }
   }
 
   async update(id: string, user: CurrentUserType, data: any) {

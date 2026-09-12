@@ -4,220 +4,103 @@ import { useCallback, useMemo, useState } from "react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import type { RecuPaiementModuleData } from "@/lib/export";
 import { printRecuPaiementModule } from "@/lib/export";
-import { parseAmount } from "@/lib/format";
-import { computeReste, computeStatut } from "@/lib/recus-paiement";
 import { useStore } from "@/lib/store";
 
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
-import { formToModuleData, resolveGeneratorBrand } from "./shared";
+import { resolveGeneratorBrand } from "./shared";
 
-export interface RecuGeneratorFormState {
-  nom: string;
-  prenom: string;
-  somme: string;
-  motif: string;
-  montantPaye: string;
-  date: string;
-  signature: string | null;
-}
-
-export interface LastSavedRecu {
+export interface GeneratedRecu {
   reference: string;
-  montantPaye: number;
-  beneficiaire: string;
   moduleData: RecuPaiementModuleData;
 }
 
-export const DEFAULT_FORM_STATE: RecuGeneratorFormState = {
-  nom: "",
-  prenom: "",
-  somme: "",
-  motif: "Frais de prestation de transit",
-  montantPaye: "",
-  date: new Date().toISOString().slice(0, 10),
-  signature: null,
-};
-
-function toIsoDate(dateInput: string): string {
-  if (!dateInput) return new Date().toISOString();
-  if (dateInput.includes("T")) return dateInput;
-  return `${dateInput}T12:00:00.000Z`;
-}
-
+/**
+ * Un reçu se génère désormais VIERGE : plus de formulaire, seul le numéro
+ * (RECU-0001…) est réservé côté serveur et pré-imprimé — le reste du carnet
+ * (nom, motif, montants, date, signature) est rempli au stylo une fois
+ * imprimé. Voir recus-paiement.service.ts::nextRecuReference.
+ */
 export function useRecuGenerator() {
   const { toast } = useToast();
   const canWrite = usePermission("recus-paiement:write");
   const { activeAnnexeId } = useActiveAnnexe();
   const societes = useStore((s) => s.societes);
   const annexes = useStore((s) => s.annexes);
-  const recuPaiementSeq = useStore((s) => s.recuPaiementSeq);
   const addRecuPaiement = useStore((s) => s.addRecuPaiement);
 
-  const [form, setForm] = useState<RecuGeneratorFormState>(DEFAULT_FORM_STATE);
-  const [submitting, setSubmitting] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const [lastSaved, setLastSaved] = useState<LastSavedRecu | null>(null);
-
-  const previewReference = useMemo(() => `RECU-${recuPaiementSeq}`, [recuPaiementSeq]);
+  const [current, setCurrent] = useState<GeneratedRecu | null>(null);
 
   const brand = useMemo(
     () => resolveGeneratorBrand(societes, annexes, activeAnnexeId),
     [societes, annexes, activeAnnexeId],
   );
 
-  const somme = useMemo(() => parseAmount(form.somme), [form.somme]);
-  const montantPaye = useMemo(() => parseAmount(form.montantPaye), [form.montantPaye]);
-  const reste = useMemo(() => computeReste(somme, montantPaye), [somme, montantPaye]);
-  const statut = useMemo(() => computeStatut(somme, montantPaye), [somme, montantPaye]);
-  const montantPayeDepasseSomme = montantPaye > somme;
-
-  const moduleData: RecuPaiementModuleData = useMemo(
-    () =>
-      formToModuleData({
-        nom: form.nom.trim(),
-        prenom: form.prenom.trim(),
-        motif: form.motif.trim(),
-        somme,
-        montantPaye,
-        reste,
-        date: toIsoDate(form.date),
-        signature: form.signature ?? undefined,
-      }),
-    [form, somme, montantPaye, reste],
-  );
-
-  const updateField = useCallback(<K extends keyof RecuGeneratorFormState>(key: K, value: RecuGeneratorFormState[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const validate = useCallback((): string | null => {
-    if (!form.nom.trim() || !form.prenom.trim()) return "Nom et prénom requis.";
-    if (!form.motif.trim()) return "Motif requis.";
-    if (somme <= 0) return "La somme doit être supérieure à 0.";
-    if (montantPayeDepasseSomme) return "Le montant payé ne peut pas dépasser la somme.";
-    if (!activeAnnexeId) return "Aucune annexe active — assignez une annexe à votre compte.";
-    return null;
-  }, [form.nom, form.prenom, form.motif, somme, montantPayeDepasseSomme, activeAnnexeId]);
-
-  const printModuleData = useCallback(
-    async (data: RecuPaiementModuleData, asPdf = false) => {
-      if (!brand) {
-        toastWarning(toast, { title: "Aperçu indisponible", description: "Configurez l'entreprise dans Paramètres > Entreprise." });
-        return false;
-      }
-      setPrinting(true);
-      try {
-        const ok = printRecuPaiementModule(data, brand);
-        if (!ok) {
-          toastWarning(toast, {
-            title: asPdf ? "Export PDF impossible" : "Impression impossible",
-            description: "Autorisez les fenêtres pop-up ou réessayez.",
-          });
-          return false;
-        }
-        if (asPdf) {
-          toastSuccess(toast, {
-            title: "Enregistrer en PDF",
-            description: `Format ${RECEIPT_FORMAT_LABEL} paysage uniquement. Choisissez « Enregistrer au format PDF » — vérifiez que le format papier n'est pas A4.`,
-          });
-        }
-        return true;
-      } finally {
-        setPrinting(false);
-      }
-    },
-    [brand, toast],
-  );
-
-  const resetForm = useCallback((opts?: { keepMotif?: boolean }) => {
-    setForm({
-      ...DEFAULT_FORM_STATE,
-      motif: opts?.keepMotif ? form.motif : DEFAULT_FORM_STATE.motif,
-      date: new Date().toISOString().slice(0, 10),
-      signature: null,
-    });
-  }, [form.motif]);
-
-  const handleSave = useCallback(async (): Promise<LastSavedRecu | null> => {
-    const error = validate();
-    if (error) {
-      toastWarning(toast, { title: error });
-      return null;
-    }
+  const handleGenerate = useCallback(async (): Promise<GeneratedRecu | null> => {
+    if (generating) return null;
     if (!canWrite) {
       toastWarning(toast, { title: "Permission insuffisante" });
       return null;
     }
-
-    const savedModuleData = { ...moduleData };
-
-    setSubmitting(true);
+    if (!activeAnnexeId) {
+      toastWarning(toast, { title: "Aucune annexe active — assignez une annexe à votre compte." });
+      return null;
+    }
+    setGenerating(true);
     try {
-      const saved = await addRecuPaiement({
-        annexeId: activeAnnexeId!,
-        nom: form.nom.trim(),
-        prenom: form.prenom.trim(),
-        motif: form.motif.trim(),
-        somme,
-        montantPaye,
-      });
-
-      const beneficiaire = `${form.nom.trim()} ${form.prenom.trim()}`;
-      const result: LastSavedRecu = {
+      const saved = await addRecuPaiement({ annexeId: activeAnnexeId });
+      const result: GeneratedRecu = {
         reference: saved.reference,
-        montantPaye,
-        beneficiaire,
-        moduleData: savedModuleData,
+        moduleData: { reference: saved.reference },
       };
-      setLastSaved(result);
-      resetForm({ keepMotif: true });
+      setCurrent(result);
+      toastSuccess(toast, { title: "Reçu généré", description: `${saved.reference} — prêt à imprimer.` });
       return result;
     } catch (err) {
-      toastError(toast, err, { title: "Échec de l'enregistrement", fallback: "Réessayez." });
+      toastError(toast, err, { title: "Échec de la génération du reçu", fallback: "Réessayez." });
       return null;
     } finally {
-      setSubmitting(false);
+      setGenerating(false);
     }
-  }, [
-    validate,
-    canWrite,
-    addRecuPaiement,
-    activeAnnexeId,
-    form,
-    somme,
-    montantPaye,
-    moduleData,
-    toast,
-    resetForm,
-  ]);
+  }, [generating, canWrite, activeAnnexeId, addRecuPaiement, toast]);
 
-  const handlePrint = useCallback(async () => {
-    await printModuleData(moduleData, true);
-  }, [moduleData, printModuleData]);
+  const handlePrint = useCallback(async (): Promise<boolean> => {
+    if (!current) {
+      toastWarning(toast, { title: "Générez d'abord un reçu avant de l'imprimer." });
+      return false;
+    }
+    if (!brand) {
+      toastWarning(toast, { title: "Aperçu indisponible", description: "Configurez l'entreprise dans Paramètres > Entreprise." });
+      return false;
+    }
+    setPrinting(true);
+    try {
+      const ok = printRecuPaiementModule(current.moduleData, brand);
+      if (!ok) {
+        toastWarning(toast, { title: "Impression impossible", description: "Autorisez les fenêtres pop-up ou réessayez." });
+        return false;
+      }
+      toastSuccess(toast, {
+        title: "Enregistrer en PDF",
+        description: `Format ${RECEIPT_FORMAT_LABEL} paysage uniquement. Choisissez « Enregistrer au format PDF » — vérifiez que le format papier n'est pas A4.`,
+      });
+      return true;
+    } finally {
+      setPrinting(false);
+    }
+  }, [current, brand, toast]);
 
   return {
-    form,
-    updateField,
-    setSignature: (signature: string | null) => updateField("signature", signature),
-    previewReference,
     brand,
-    somme,
-    montantPaye,
-    reste,
-    statut,
-    montantPayeDepasseSomme,
-    moduleData,
     canWrite,
-    submitting,
+    generating,
     printing,
-    lastSaved,
-    handleSave,
+    current,
+    handleGenerate,
     handlePrint,
-    printModuleData,
-    resetForm: () => resetForm(),
   };
 }

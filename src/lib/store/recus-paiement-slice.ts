@@ -25,36 +25,37 @@ export const createRecusPaiementSlice: StateCreator<
 
   addRecuPaiement: async (input) => {
     const creePar = getConnectedUserName();
-    const seq = get().recuPaiementSeq;
-    const fallbackRef = `RECU-${String(seq).padStart(4, "0")}`;
-
-    const reference = fallbackRef;
-    const reste = Math.max(0, input.somme - input.montantPaye);
-    const statut = reste === 0 ? "SOLDE" : input.montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
+    const somme = input.somme ?? 0;
+    const montantPaye = input.montantPaye ?? 0;
+    const reste = Math.max(0, somme - montantPaye);
+    const statut = reste === 0 && somme > 0 ? "SOLDE" : montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
 
     // Persistance obligatoire : un reçu sans écriture serveur disparaissait
-    // silencieusement au rechargement, sans aucune erreur montrée.
+    // silencieusement au rechargement, sans aucune erreur montrée. La
+    // référence n'est plus calculée ici : un carnet de reçus vierges à
+    // imprimer n'a de valeur que si sa numérotation ne peut jamais se
+    // dupliquer entre deux générations concurrentes — le serveur réserve
+    // seul le numéro (recus-paiement.service.ts::nextRecuReference).
     const created = await api.recusPaiement.create({
-      reference,
       annexeId: input.annexeId,
-      nom: input.nom,
-      prenom: input.prenom,
-      somme: input.somme,
-      motif: input.motif,
-      montantPaye: input.montantPaye,
+      nom: input.nom ?? "",
+      prenom: input.prenom ?? "",
+      somme,
+      motif: input.motif ?? "",
+      montantPaye,
       creePar,
     });
 
     const newRecu: RecuPaiement = {
       id: created?.id ?? crypto.randomUUID(),
-      reference,
+      reference: created.reference,
       annexeId: input.annexeId,
       annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
-      nom: input.nom,
-      prenom: input.prenom,
-      somme: input.somme,
-      motif: input.motif,
-      montantPaye: input.montantPaye,
+      nom: input.nom ?? "",
+      prenom: input.prenom ?? "",
+      somme,
+      motif: input.motif ?? "",
+      montantPaye,
       reste,
       statut,
       creePar,
@@ -62,12 +63,12 @@ export const createRecusPaiementSlice: StateCreator<
     };
     set((s) => ({
       recusPaiement: [newRecu, ...s.recusPaiement],
-      recuPaiementSeq: seq + 1,
+      recuPaiementSeq: s.recuPaiementSeq + 1,
     }));
     await get().addAuditLog(
       AUDIT_MODULE.RecusPaiement,
       AUDIT_ACTION.Creation,
-      `Reçu ${reference} — ${newRecu.nom} ${newRecu.prenom} (${input.montantPaye.toLocaleString("fr-FR")} FCFA payés sur ${input.somme.toLocaleString("fr-FR")})`,
+      `Reçu ${newRecu.reference} généré (carnet vierge à imprimer)`,
       undefined,
       { sourceType: "recu_paiement", sourceId: newRecu.id },
     );
@@ -75,8 +76,10 @@ export const createRecusPaiementSlice: StateCreator<
   },
 
   updateRecuPaiement: async (id, input) => {
-    const reste = Math.max(0, input.somme - input.montantPaye);
-    const statut = reste === 0 ? "SOLDE" : input.montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
+    const somme = input.somme ?? 0;
+    const montantPaye = input.montantPaye ?? 0;
+    const reste = Math.max(0, somme - montantPaye);
+    const statut = reste === 0 && somme > 0 ? "SOLDE" : montantPaye > 0 ? "PARTIEL" : "EN_ATTENTE";
 
     await api.recusPaiement.update(id, input);
 
@@ -88,11 +91,11 @@ export const createRecusPaiementSlice: StateCreator<
               ...r,
               annexeId: input.annexeId,
               annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom ?? r.annexeNom,
-              nom: input.nom,
-              prenom: input.prenom,
-              somme: input.somme,
-              motif: input.motif,
-              montantPaye: input.montantPaye,
+              nom: input.nom ?? "",
+              prenom: input.prenom ?? "",
+              somme,
+              motif: input.motif ?? "",
+              montantPaye,
               reste,
               statut,
             }

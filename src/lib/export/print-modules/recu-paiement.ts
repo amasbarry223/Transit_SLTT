@@ -18,13 +18,16 @@ import { fmtDate, fmtFCFA } from "./shared";
 /* ------------------------------------------------------------------ */
 
 export interface RecuPaiementModuleData {
-  date: string;
-  nom: string;
-  prenom: string;
-  somme: number;
-  motif: string;
-  montantPaye: number;
-  reste: number;
+  /** Numéro auto-généré serveur (RECU-0001…) — seule donnée pré-imprimée,
+   *  le reste du reçu est vierge pour être rempli au stylo. */
+  reference: string;
+  date?: string;
+  nom?: string;
+  prenom?: string;
+  somme?: number;
+  motif?: string;
+  montantPaye?: number;
+  reste?: number;
   signature?: string;
 }
 
@@ -41,7 +44,7 @@ function buildHeaderLegalHTML(brand: SocieteBrand): string {
   return parts.map((line) => `<div class="header-legal-line">${line}</div>`).join("");
 }
 
-function buildFieldLine(label: string, value: string, className = ""): string {
+function buildFieldLine(label: string, value: string | undefined, className = ""): string {
   return `
     <div class="field-line ${className}">
       <span class="field-label">${htmlEscape(label)}</span>
@@ -56,11 +59,18 @@ function buildSignatureHTML(signature?: string): string {
   return `<div class="sig-label">Signature</div>`;
 }
 
+/** Un reçu vierge n'a ni montant ni date réels — "0 FCFA" ou une date
+ *  invalide sur un carnet à remplir au stylo serait pire qu'une ligne
+ *  blanche. Ne formate que les valeurs réellement fournies. */
+function blankAmount(n: number | undefined): string | undefined {
+  return n ? fmtFCFA(n) : undefined;
+}
+
 function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
   const logoUrl = resolveLogoUrl(brand.logoUrl) ?? RECEIPT_LOGO_FALLBACK;
   const logoImg = `<img src="${htmlEscape(logoUrl)}" alt="${htmlEscape(brand.nom)}" class="brand-logo" onerror="this.onerror=null;this.src='${htmlEscape(RECEIPT_LOGO_FALLBACK)}'">`;
   const showName = brand.afficherNomAvecLogo !== false;
-  const sommeLettres = htmlEscape(montantEnLettresFCFA(data.somme));
+  const sommeLettres = data.somme ? htmlEscape(montantEnLettresFCFA(data.somme)) : "";
 
   return `<div class="receipt-paper">
   <div class="header">
@@ -70,7 +80,10 @@ function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBra
       ${buildHeaderLegalHTML(brand)}
       <div class="doc-title">Reçu de paiement</div>
     </div>
-    <div class="header-spacer"></div>
+    <div class="header-ref">
+      <span class="header-ref-label">N°</span>
+      <span class="header-ref-value">${htmlEscape(data.reference)}</span>
+    </div>
   </div>
   <div class="body">
     <div class="field-row--split">
@@ -85,11 +98,11 @@ function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBra
       ${buildFieldLine("Motif :", data.motif)}
     </div>
     <div class="field-row--split">
-      ${buildFieldLine("Montant payé :", fmtFCFA(data.montantPaye))}
-      ${buildFieldLine("Reste :", fmtFCFA(data.reste))}
+      ${buildFieldLine("Montant payé :", blankAmount(data.montantPaye))}
+      ${buildFieldLine("Reste :", blankAmount(data.reste))}
     </div>
     <div class="field-row--footer">
-      ${buildFieldLine("Date, le", fmtDate(data.date))}
+      ${buildFieldLine("Date, le", data.date ? fmtDate(data.date) : undefined)}
       <div class="sig-box">
         ${buildSignatureHTML(data.signature)}
       </div>

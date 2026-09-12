@@ -11,10 +11,11 @@ import type { SocieteBrand } from "@/lib/societe-brand";
 
 interface RecuReceiptHeaderProps {
   brand: SocieteBrand;
+  reference?: string;
 }
 
-/** En-tête paysage — logo à gauche, identité société centrée, titre en bas. */
-export function RecuReceiptHeader({ brand }: RecuReceiptHeaderProps) {
+/** En-tête paysage — logo à gauche, identité société centrée, numéro à droite. */
+export function RecuReceiptHeader({ brand, reference }: RecuReceiptHeaderProps) {
   const logoUrl = resolveLogoUrl(brand.logoUrl) ?? RECEIPT_LOGO_FALLBACK;
   const showName = brand.afficherNomAvecLogo !== false;
 
@@ -59,8 +60,13 @@ export function RecuReceiptHeader({ brand }: RecuReceiptHeaderProps) {
         <div className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.14em]">Reçu de paiement</div>
       </div>
 
-      {/* Équilibre visuel — espace miroir du logo */}
-      <div className="shrink-0" style={{ width: `${RECEIPT_LOGO_COL_MM}mm` }} aria-hidden />
+      <div
+        className="flex shrink-0 flex-col items-end justify-start text-right leading-tight"
+        style={{ width: `${RECEIPT_LOGO_COL_MM}mm` }}
+      >
+        <span className="text-[6.5px] font-bold uppercase tracking-[0.08em] opacity-70">N°</span>
+        <span className="break-all text-[9px] font-extrabold">{reference || " "}</span>
+      </div>
     </header>
   );
 }

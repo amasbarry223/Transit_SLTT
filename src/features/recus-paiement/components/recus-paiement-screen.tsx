@@ -1,97 +1,52 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { formatFCFA } from "@/lib/format";
-import { Button } from "@/shared/components/ui/button";
-import { ToastAction } from "@/shared/components/ui/toast";
-import { useToast } from "@/shared/hooks/use-toast";
-import { cn } from "@/shared/utils/cn";
 import { RecuGeneratorActions } from "./recus-paiement/recu-generator-actions";
-import { RecuGeneratorForm } from "./recus-paiement/recu-generator-form";
 import { RecuReceiptPreview } from "./recus-paiement/recu-receipt-preview";
 import { RecuWorkspace } from "./recus-paiement/recu-workspace";
 import { useRecuGenerator } from "./recus-paiement/use-recu-generator";
 
+const BLANK_MODULE_DATA = { reference: "" };
+
+/**
+ * Carnet de reçus vierges — plus de saisie sur la plateforme : on réserve
+ * juste le prochain numéro (auto-généré, jamais dupliqué) et on imprime un
+ * reçu vierge à remplir au stylo. Voir use-recu-generator.ts.
+ */
 export function RecusPaiementScreen() {
   const gen = useRecuGenerator();
-  const { toast } = useToast();
-  const [showPreviewMobile, setShowPreviewMobile] = useState(true);
-
-  const handleSave = useCallback(async () => {
-    const saved = await gen.handleSave();
-    if (!saved) return;
-    toast({
-      title: "Reçu enregistré",
-      description: `${saved.reference} — ${saved.beneficiaire} (${formatFCFA(saved.montantPaye)})`,
-      variant: "success",
-      action: (
-        <ToastAction altText="Imprimer le reçu" onClick={() => void gen.printModuleData(saved.moduleData)}>
-          Imprimer
-        </ToastAction>
-      ),
-    });
-  }, [gen, toast]);
 
   return (
     <>
-      {/* Desktop: full viewport workspace, no scroll */}
+      {/* Desktop: workspace plein écran, sans scroll */}
       <div className="hidden h-full min-h-0 lg:block">
         <RecuWorkspace
-          form={gen.form}
-          previewReference={gen.previewReference}
-          reste={gen.reste}
-          statut={gen.statut}
-          somme={gen.somme}
-          montantPaye={gen.montantPaye}
-          montantPayeDepasseSomme={gen.montantPayeDepasseSomme}
-          moduleData={gen.moduleData}
+          current={gen.current}
           brand={gen.brand}
-          lastSaved={gen.lastSaved}
           canWrite={gen.canWrite}
-          submitting={gen.submitting}
+          generating={gen.generating}
           printing={gen.printing}
-          onFieldChange={gen.updateField}
-          onSignatureChange={gen.setSignature}
-          onSave={handleSave}
+          onGenerate={gen.handleGenerate}
           onPrint={gen.handlePrint}
-          onReset={gen.resetForm}
         />
       </div>
 
-      {/* Mobile: stacked scrollable layout */}
+      {/* Mobile: aperçu + actions empilés, page scrollable */}
       <div className="space-y-4 pb-8 lg:hidden">
-        <Button variant="outline" className="w-full justify-center gap-2" onClick={() => setShowPreviewMobile((v) => !v)}>
-          {showPreviewMobile ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          {showPreviewMobile ? "Masquer l'aperçu" : "Afficher l'aperçu du reçu"}
-        </Button>
-
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
-          <RecuGeneratorForm
-            form={gen.form}
-            previewReference={gen.previewReference}
-            reste={gen.reste}
-            statut={gen.statut}
-            somme={gen.somme}
-            montantPaye={gen.montantPaye}
-            montantPayeDepasseSomme={gen.montantPayeDepasseSomme}
-            onFieldChange={gen.updateField}
-            onSignatureChange={gen.setSignature}
-          />
-        </div>
-
-        <div className={cn(showPreviewMobile ? "block" : "hidden")}>
-          <RecuReceiptPreview data={gen.moduleData} brand={gen.brand} reference={gen.previewReference} />
-        </div>
+        <RecuReceiptPreview
+          data={gen.current?.moduleData ?? BLANK_MODULE_DATA}
+          brand={gen.brand}
+          reference={gen.current?.reference}
+          className={gen.current ? undefined : "opacity-60"}
+        />
 
         <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
           <RecuGeneratorActions
             canWrite={gen.canWrite}
-            submitting={gen.submitting}
+            hasCurrent={!!gen.current}
+            generating={gen.generating}
             printing={gen.printing}
-            onSave={handleSave}
+            onGenerate={gen.handleGenerate}
             onPrint={gen.handlePrint}
-            onReset={gen.resetForm}
           />
         </div>
       </div>

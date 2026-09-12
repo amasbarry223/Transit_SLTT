@@ -11,7 +11,7 @@ interface RecuReceiptBodyProps {
   className?: string;
 }
 
-function FieldLine({ label, value, className }: { label: string; value: string; className?: string }) {
+function FieldLine({ label, value, className }: { label: string; value?: string; className?: string }) {
   return (
     <div className={cn("flex min-w-0 flex-1 items-baseline gap-0.5", className)}>
       <span className="shrink-0 text-[9px] font-semibold whitespace-nowrap" style={{ color: RECEIPT_BLUE }}>
@@ -29,7 +29,12 @@ function FieldLine({ label, value, className }: { label: string; value: string; 
 
 /** Corps du reçu paysage — champs en lignes horizontales comme le carnet papier. */
 export function RecuReceiptBody({ data, className }: RecuReceiptBodyProps) {
-  const sommeLettres = montantEnLettresFCFA(data.somme);
+  // Reçu vierge : "0 FCFA" ou une date invalide sur un carnet à remplir au
+  // stylo serait pire qu'une ligne blanche — on ne formate que le réel.
+  const sommeLettres = data.somme ? montantEnLettresFCFA(data.somme) : "";
+  const montantPayeAffiche = data.montantPaye ? fmtFCFA(data.montantPaye) : undefined;
+  const resteAffiche = data.reste ? fmtFCFA(data.reste) : undefined;
+  const dateAffichee = data.date ? fmtDate(data.date) : undefined;
 
   return (
     <div className={cn("flex flex-col gap-1.5 text-[9px]", className)} style={{ color: RECEIPT_BLUE }}>
@@ -51,12 +56,12 @@ export function RecuReceiptBody({ data, className }: RecuReceiptBodyProps) {
       <FieldLine label="Motif :" value={data.motif} className="w-full flex-none [&_span:last-child]:whitespace-normal" />
 
       <div className="flex gap-4">
-        <FieldLine label="Montant payé :" value={fmtFCFA(data.montantPaye)} />
-        <FieldLine label="Reste :" value={fmtFCFA(data.reste)} />
+        <FieldLine label="Montant payé :" value={montantPayeAffiche} />
+        <FieldLine label="Reste :" value={resteAffiche} />
       </div>
 
       <div className="mt-0.5 flex items-end justify-between gap-3">
-        <FieldLine label="Date, le" value={fmtDate(data.date)} className="max-w-[55%] flex-none" />
+        <FieldLine label="Date, le" value={dateAffichee} className="max-w-[55%] flex-none" />
         <div
           className="flex shrink-0 items-end justify-center rounded-md border-[1.5px] p-1"
           style={{

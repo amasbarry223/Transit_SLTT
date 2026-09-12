@@ -420,13 +420,19 @@ export interface RecuPaiement {
   createdAt: string;
 }
 
+/**
+ * Un reçu se génère désormais VIERGE — carnet imprimé pour être rempli au
+ * stylo, plus de saisie numérique (nom/prénom/somme/motif/montant sont
+ * laissés au serveur avec des valeurs vides/nulles). Seul `annexeId` reste
+ * requis pour réserver le numéro sur le bon périmètre.
+ */
 export interface RecuPaiementInput {
   annexeId: string;
-  nom: string;
-  prenom: string;
-  somme: number;
-  motif: string;
-  montantPaye: number;
+  nom?: string;
+  prenom?: string;
+  somme?: number;
+  motif?: string;
+  montantPaye?: number;
 }
 
 /* ------------------------------------------------------------------ */

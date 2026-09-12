@@ -86,6 +86,29 @@ body {
   width: ${RECEIPT_LOGO_COL_MM}mm;
   flex-shrink: 0;
 }
+.header-ref {
+  width: ${RECEIPT_LOGO_COL_MM}mm;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  text-align: right;
+  line-height: 1.3;
+}
+.header-ref-label {
+  font-size: 6.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+.header-ref-value {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  word-break: break-all;
+}
 .header-text {
   flex: 1;
   min-width: 0;
