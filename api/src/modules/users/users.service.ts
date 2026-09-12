@@ -51,6 +51,24 @@ export class UsersService {
     }
   }
 
+  /** Bloque la suppression, désactivation ou rétrogradation du dernier
+   *  compte ADMIN actif du système — sans ce garde-fou, plus personne ne
+   *  peut accéder aux écrans réservés @Roles('ADMIN') (dont celui-ci) pour
+   *  réparer la situation, seule une intervention manuelle en base y remédie. */
+  private async assertNotLastActiveAdmin(id: string, wouldLoseAdminAccess: boolean) {
+    if (!wouldLoseAdminAccess) return;
+    const target = await this.prisma.profile.findUnique({ where: { id } });
+    if (!target || target.role !== RoleUtilisateur.ADMIN || !target.actif) return;
+    const otherActiveAdmins = await this.prisma.profile.count({
+      where: { role: RoleUtilisateur.ADMIN, actif: true, id: { not: id } },
+    });
+    if (otherActiveAdmins === 0) {
+      throw new BadRequestException(
+        "Impossible : c'est le dernier administrateur actif du système.",
+      );
+    }
+  }
+
   async findAll() {
     const profiles = await this.prisma.profile.findMany({
       select: {
@@ -141,6 +159,11 @@ export class UsersService {
   async update(id: string, data: UpdateUserDto) {
     await this.findOne(id);
 
+    // Perte d'accès ADMIN = désactivation, ou changement vers un rôle non-admin.
+    const wouldLoseAdminAccess =
+      data.actif === false || (!!data.role && mapToPrismaRole(data.role) !== RoleUtilisateur.ADMIN);
+    await this.assertNotLastActiveAdmin(id, wouldLoseAdminAccess);
+
     const updateData: any = {};
     if (data.nom) updateData.nom = data.nom;
     if (data.telephone !== undefined) updateData.telephone = data.telephone;
@@ -193,6 +216,7 @@ export class UsersService {
 
   async delete(id: string) {
     await this.findOne(id);
+    await this.assertNotLastActiveAdmin(id, true);
     return this.prisma.profile.delete({ where: { id } });
   }
 }

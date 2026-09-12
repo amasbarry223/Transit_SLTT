@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -30,6 +31,29 @@ const storage = diskStorage({
   },
 });
 
+// Même liste que DOC_ACCEPTED_EXTENSIONS côté front (src/lib/constants/validation.constants.ts)
+// — l'attribut `accept` d'un <input type="file"> n'est qu'une suggestion d'UI,
+// jamais une garantie serveur : sans ce filtre, n'importe quel type de fichier
+// (exécutable, script...) pouvait être uploadé, stocké sur le disque du
+// serveur et son `mimetype` déclaré tel quel (valeur client, falsifiable)
+// persisté et renvoyé au téléchargement.
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set([
+  '.pdf', '.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp',
+]);
+
+function documentFileFilter(
+  _req: unknown,
+  file: Express.Multer.File,
+  cb: (error: Error | null, acceptFile: boolean) => void,
+) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!ALLOWED_DOCUMENT_EXTENSIONS.has(ext)) {
+    cb(new BadRequestException(`Type de fichier non autorisé (${ext || 'sans extension'}).`), false);
+    return;
+  }
+  cb(null, true);
+}
+
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
@@ -43,11 +67,20 @@ export class DocumentsController {
   @Post('upload')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('documents.upload')
-  @UseInterceptors(FileInterceptor('file', { storage, limits: { fileSize: 25 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage,
+      limits: { fileSize: 25 * 1024 * 1024 },
+      fileFilter: documentFileFilter,
+    }),
+  )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Query('dossierId') dossierId?: string,
   ) {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier reçu, ou type de fichier refusé.');
+    }
     return this.documentsService.saveFileMetadata(file, dossierId);
   }
 
