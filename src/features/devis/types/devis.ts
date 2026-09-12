@@ -7,6 +7,8 @@ export interface Devis {
   clientNom: string;
   annexeId: string;
   annexeNom?: string;
+  portId?: string;
+  portNom?: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;
@@ -22,6 +24,7 @@ export interface Devis {
 export interface DevisInput {
   clientId: string;
   clientNom: string;
+  portId?: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;

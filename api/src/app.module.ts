@@ -26,6 +26,7 @@ import { StockModule } from './modules/stock/stock.module';
 import { BonsModule } from './modules/bons/bons.module';
 import { RecusPaiementModule } from './modules/recus-paiement/recus-paiement.module';
 import { ComptabiliteModule } from './modules/comptabilite/comptabilite.module';
+import { PortsModule } from './modules/ports/ports.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { ComptabiliteModule } from './modules/comptabilite/comptabilite.module';
     BonsModule,
     RecusPaiementModule,
     ComptabiliteModule,
+    PortsModule,
   ],
   providers: [
     // Authentification exigée par défaut sur toute route (sauf @Public()).

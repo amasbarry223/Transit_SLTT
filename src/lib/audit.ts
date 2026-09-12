@@ -26,6 +26,7 @@ export type AuditModule =
   | "Dépenses"
   | "Sociétés"
   | "Annexes"
+  | "Ports"
   | "Archives"
   | "Documents"
   | "Système";
@@ -43,6 +44,7 @@ export const AUDIT_MODULE = {
   Archives: "Archives",
   Bons: "Bons",
   Annexes: "Annexes",
+  Ports: "Ports",
   Contrats: "Contrats",
   Depenses: "Dépenses",
   Documents: "Documents",

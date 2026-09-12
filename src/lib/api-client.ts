@@ -469,6 +469,25 @@ class ApiClient {
       }),
   };
 
+  ports = {
+    getAll: () => this.request<any[]>('/ports'),
+    getById: (id: string) => this.request<any>(`/ports/${id}`),
+    create: (data: any) =>
+      this.request<any>('/ports', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      this.request<any>(`/ports/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      this.request<any>(`/ports/${id}`, {
+        method: 'DELETE',
+      }),
+  };
+
   // ---------------------------------------------------------------------------
   // Transporteurs
   // ---------------------------------------------------------------------------

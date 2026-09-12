@@ -291,6 +291,24 @@ export interface AnnexeInput {
   nif?: string;
 }
 
+/** Port d'embarquement / de manutention — table de référence gérée
+ *  depuis Paramètres, utilisée par le champ optionnel Devis.portId. */
+export interface Port {
+  id: string;
+  code: string;
+  nom: string;
+  ville?: string;
+  pays?: string;
+  actif: boolean;
+}
+
+export interface PortInput {
+  code: string;
+  nom: string;
+  ville?: string;
+  pays?: string;
+}
+
 /* ------------------------------------------------------------------ */
 /* SOCIÉTÉS (F1)                                                       */
 /* ------------------------------------------------------------------ */

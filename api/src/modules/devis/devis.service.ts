@@ -49,6 +49,7 @@ export class DevisService {
       include: {
         client: { select: { id: true, nom: true, code: true } },
         annexe: { select: { id: true, nom: true, code: true } },
+        port: { select: { id: true, nom: true, code: true } },
         lignes: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -58,7 +59,7 @@ export class DevisService {
   async findOne(id: string, user: CurrentUserType) {
     const devis = await this.prisma.devis.findUnique({
       where: { id },
-      include: { client: true, annexe: true, lignes: true },
+      include: { client: true, annexe: true, port: true, lignes: true },
     });
     if (!devis) throw new NotFoundException(`Devis ${id} non trouvé`);
 
@@ -85,6 +86,7 @@ export class DevisService {
         clientId: data.clientId,
         annexeId: data.annexeId || null,
         dossierId: data.dossierId || null,
+        portId: data.portId || null,
         nature: data.nature || null,
         dateEmission: data.dateEmission ? new Date(data.dateEmission) : new Date(),
         dateValidite: data.dateValidite ? new Date(data.dateValidite) : undefined,
@@ -94,7 +96,7 @@ export class DevisService {
         montantTtc,
         lignes: { create: lignesFormatted },
       },
-      include: { lignes: true, client: true, annexe: true },
+      include: { lignes: true, client: true, annexe: true, port: true },
     });
   }
 
@@ -115,6 +117,7 @@ export class DevisService {
       }
       updateData.dossierId = data.dossierId || null;
     }
+    if (data.portId !== undefined) updateData.portId = data.portId || null;
     if (data.nature !== undefined) updateData.nature = data.nature || null;
     if (data.notes !== undefined) updateData.notes = data.notes ?? null;
     if (data.statut !== undefined) updateData.statut = data.statut;
@@ -136,7 +139,7 @@ export class DevisService {
       return tx.devis.update({
         where: { id },
         data: updateData,
-        include: { lignes: true, client: true, annexe: true },
+        include: { lignes: true, client: true, annexe: true, port: true },
       });
     });
   }

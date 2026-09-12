@@ -27,6 +27,10 @@ import {
   type AnnexesSlice,
 } from "@/lib/store/annexes-slice";
 import {
+  createPortsSlice,
+  type PortsSlice,
+} from "@/lib/store/ports-slice";
+import {
   createUsersSlice,
   type UsersSlice,
 } from "@/lib/store/users-slice";
@@ -108,6 +112,8 @@ import {
   type Societe,
   type Annexe,
   type AnnexeInput,
+  type Port,
+  type PortInput,
   type Contrat,
   type ContratInput,
   type ContratStatut,
@@ -162,6 +168,8 @@ export type {
   Societe,
   Annexe,
   AnnexeInput,
+  Port,
+  PortInput,
   Contrat,
   ContratInput,
   ContratStatut,
@@ -350,7 +358,7 @@ export interface UserInput {
   annexeIds: string[];
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, PortsSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
   dossierSeq: number;
   auditSeq: number;
   ecritureSeq: number;
@@ -394,6 +402,7 @@ export const useStore = create<SLTTState>()((set, get, api) => ({
   ...createTransporteursSlice(set, get, api),
   ...createSocietesSlice(set, get, api),
   ...createAnnexesSlice(set, get, api),
+  ...createPortsSlice(set, get, api),
   ...createUsersSlice(set, get, api),
   ...createClientsSlice(set, get, api),
   ...createFournisseursSlice(set, get, api),

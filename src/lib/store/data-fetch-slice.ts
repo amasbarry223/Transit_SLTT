@@ -66,6 +66,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         dossiersRes,
         clients,
         annexes,
+        portsRes,
         facturesRes,
         devisRes,
         fournisseursRes,
@@ -85,6 +86,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         tracked("dossiers", api.dossiers.getAll(), { data: [], meta: {} } as any),
         tracked("clients", api.clients.getAll(), [] as any),
         tracked("annexes", api.annexes.getAll(), [] as any),
+        tracked("ports", api.ports.getAll(), [] as any),
         tracked("factures", api.factures.getAll(), { data: [], meta: {} } as any),
         tracked("devis", api.devis.getAll(), [] as any),
         tracked("fournisseurs", api.fournisseurs.getAll(), [] as any),
@@ -264,6 +266,8 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           annexeNom: d.annexe?.nom || "",
           nature: d.nature || "",
           dossierId: d.dossierId ?? undefined,
+          portId: d.portId ?? undefined,
+          portNom: d.port?.nom ?? undefined,
           droitDouane: droitDouane || Number(d.montantHt || 0),
           fraisCircuit,
           fraisPrestation,
@@ -453,6 +457,16 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         actif: a.actif !== false,
       }));
 
+      const rawPorts = Array.isArray(portsRes) ? portsRes : [];
+      const mappedPorts = rawPorts.map((p: any) => ({
+        id: p.id,
+        code: p.code,
+        nom: p.nom,
+        ville: p.ville ?? undefined,
+        pays: p.pays ?? undefined,
+        actif: p.actif !== false,
+      }));
+
       const rawClients = Array.isArray((clients as any)?.data)
         ? (clients as any).data
         : Array.isArray(clients)
@@ -512,6 +526,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
             mappedClients as any,
           ) as any,
           annexes: mappedAnnexes as any,
+          ports: mappedPorts as any,
           factures: mappedFactures as any,
           fournisseurs: mappedFournisseurs as any,
           contrats: nextContrats as any,

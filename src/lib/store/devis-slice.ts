@@ -51,6 +51,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       numero: initialReference,
       clientId: input.clientId,
       annexeId: annexeId ?? undefined,
+      portId: input.portId || undefined,
       nature: input.nature,
       dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
       notes: input.notes,
@@ -69,6 +70,8 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       clientNom,
       annexeId: annexeId ?? "",
       annexeNom: annexe?.nom ?? "",
+      portId: input.portId,
+      portNom: created?.port?.nom,
       nature: input.nature ?? "",
       droitDouane: Number(input.droitDouane),
       fraisCircuit: Number(input.fraisCircuit),
@@ -94,6 +97,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
 
     await api.devis.update(id, {
       clientId: input.clientId,
+      portId: input.portId || null,
       nature: input.nature,
       dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
       notes: input.notes,
@@ -104,9 +108,10 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       ],
     });
 
+    const portNom = input.portId ? get().ports.find((p) => p.id === input.portId)?.nom : undefined;
     set((s) => ({
       devis: s.devis.map((devisItem) =>
-        devisItem.id === id ? { ...devisItem, ...input, total } : devisItem
+        devisItem.id === id ? { ...devisItem, ...input, portNom, total } : devisItem
       ),
     }));
     if (existing) {

@@ -402,6 +402,7 @@ model Devis {
   clientId     String      @map("client_id")
   annexeId     String?     @map("annexe_id")
   dossierId    String?     @map("dossier_id")
+  portId       String?     @map("port_id")
   nature       String?
   dateEmission DateTime    @default(now()) @map("date_emission")
   dateValidite DateTime?   @map("date_validite")
@@ -417,11 +418,13 @@ model Devis {
   client  Client       @relation(fields: [clientId], references: [id])
   annexe  Annexe?      @relation(fields: [annexeId], references: [id])
   dossier Dossier?     @relation(fields: [dossierId], references: [id])
+  port    Port?        @relation(fields: [portId], references: [id])
   lignes  LigneDevis[]
 
   @@index([clientId])
   @@index([annexeId])
   @@index([dossierId])
+  @@index([portId])
   @@map("devis")
 }
 
@@ -475,6 +478,21 @@ model LigneCotation {
 // -----------------------------------------------------------------------------
 // Dépenses & Fournisseurs
 // -----------------------------------------------------------------------------
+model Port {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  nom       String
+  ville     String?
+  pays      String?
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  devis Devis[]
+
+  @@map("ports")
+}
+
 model Fournisseur {
   id        String   @id @default(uuid())
   code      String   @unique
