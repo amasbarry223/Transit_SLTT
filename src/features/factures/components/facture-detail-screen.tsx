@@ -154,7 +154,6 @@ export function FactureDetailScreen() {
       clientNom: facture.clientNom,
       date: facture.date,
       dateEcheance: facture.dateEcheance,
-      statut: facture.statut,
       lignes: facture.lignes,
       tauxTVA: facture.tauxTVA,
       montantHT: facture.montantHT,

@@ -38,7 +38,6 @@ export interface FactureModuleData {
   villeSiege?: string;
   date: string;
   dateEcheance: string;
-  statut: string;
   lignes: Array<{
     description: string;
     quantite: number;
@@ -59,15 +58,6 @@ export interface FactureModuleData {
   genereParNom: string;
   dossierReference?: string;
   dossierBl?: string;
-}
-
-/** Ton du badge de statut — mêmes règles que le classeur client, adaptées aux statuts facture. */
-function statutTone(statut: string): "ok" | "warn" | "off" | "neutral" {
-  const s = statut.toLowerCase();
-  if (/(sold|payé|payée)/.test(s)) return "ok";
-  if (/(attente|partiel|envoyée)/.test(s)) return "warn";
-  if (/(annul)/.test(s)) return "off";
-  return "neutral";
 }
 
 export function printFactureModule(data: FactureModuleData, societe?: SocieteBrand | null): void {
@@ -155,21 +145,6 @@ ${OFFICIAL_LETTERHEAD_CSS}
 }
 .doc-id-meta { text-align: right; flex-shrink: 0; font-size: 10.5px; color: #6b7280; }
 .doc-id-meta > * + * { margin-top: 3px; }
-.chip {
-  display: inline-block;
-  margin-top: 5px;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-}
-.chip--ok { color: #1a7a43; }
-.chip--warn { color: #b45309; }
-.chip--off { color: #6b7280; }
-.chip--neutral { color: ${BRAND.navy}; }
 
 /* Destinataire */
 .bill-to { padding: 13px 0; border-bottom: 1px solid #e2e6ee; }
@@ -357,7 +332,6 @@ ${SIGNATORIES_BLOCK_CSS}
       <div class="doc-id-meta">
         <div>${data.villeSiege ? `${htmlEscape(data.villeSiege)}, le ${fmtDate(data.date)}` : `Le ${fmtDate(data.date)}`}</div>
         ${data.dateEcheance ? `<div>Échéance : ${fmtDate(data.dateEcheance)}</div>` : ""}
-        <div><span class="chip chip--${statutTone(data.statut)}">${htmlEscape(data.statut)}</span></div>
       </div>
     </header>
 
