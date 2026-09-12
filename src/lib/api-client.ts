@@ -773,6 +773,11 @@ class ApiClient {
       this.request<RawUser>(`/users/${id}`, {
         method: 'DELETE',
       }),
+    resetPassword: (id: string, password: string) =>
+      this.request<RawUser>(`/users/${id}/password`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password }),
+      }),
   };
 }
 

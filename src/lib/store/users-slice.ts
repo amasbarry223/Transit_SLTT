@@ -132,12 +132,7 @@ export const createUsersSlice: StateCreator<SLTTState, [], [], UsersSlice> = (se
   },
 
   resetUserPassword: async (id, password) => {
-    const res = await fetchWithAuth(`/api/admin/users/${id}/password`, {
-      method: "POST",
-      body: JSON.stringify({ password }),
-    });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || "Impossible de réinitialiser le mot de passe.");
+    await api.users.resetPassword(id, password);
   },
 
   updateLastLogin: async (id) => {
