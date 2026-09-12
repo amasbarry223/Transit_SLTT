@@ -23,7 +23,9 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       | Prisma.PrismaClientValidationError,
     host: ArgumentsHost,
   ) {
-    const res = host.switchToHttp().getResponse<Response>();
+    const ctx = host.switchToHttp();
+    const res = ctx.getResponse<Response>();
+    const req = ctx.getRequest<{ method?: string }>();
 
     let status = HttpStatus.BAD_REQUEST;
     let message = 'Requête invalide.';
@@ -40,11 +42,20 @@ export class PrismaExceptionFilter implements ExceptionFilter {
           status = HttpStatus.NOT_FOUND;
           message = (exception.meta?.cause as string) ?? 'Ressource introuvable.';
           break;
-        case 'P2003':
+        case 'P2003': {
           status = HttpStatus.CONFLICT;
+          // Un même code Prisma (violation de clé étrangère) recouvre deux
+          // situations opposées : une suppression bloquée par des enfants qui
+          // la référencent (DELETE), ou une création/modification qui pointe
+          // vers un parent inexistant (POST/PUT/PATCH). Les confondre dans le
+          // même message trompe l'utilisateur sur la nature réelle du problème.
+          const method = (req.method ?? '').toUpperCase();
           message =
-            'Opération impossible : cet élément est référencé par d’autres données.';
+            method === 'DELETE'
+              ? 'Suppression impossible : cet élément est référencé par d’autres données.'
+              : 'Opération impossible : une référence fournie (id lié) n’existe pas.';
           break;
+        }
         case 'P2000':
           message = 'Une valeur fournie est trop longue.';
           break;

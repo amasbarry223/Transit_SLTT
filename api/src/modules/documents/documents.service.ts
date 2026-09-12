@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Injectable()
 export class DocumentsService {
@@ -64,9 +65,24 @@ export class DocumentsService {
     return { doc, fullPath };
   }
 
-  async deleteFile(id: string) {
-    const doc = await this.prisma.document.findUnique({ where: { id } });
+  async deleteFile(id: string, user: CurrentUserType) {
+    const doc = await this.prisma.document.findUnique({
+      where: { id },
+      include: { dossier: { select: { annexeId: true } } },
+    });
     if (!doc) throw new NotFoundException('Document non trouvé');
+
+    // Un document rattaché à un dossier hérite du périmètre annexe de ce
+    // dossier : sans ce contrôle, n'importe quel utilisateur disposant de la
+    // permission globale 'documents.supprimer' pouvait supprimer un document
+    // d'une annexe à laquelle il n'a pas accès.
+    if (
+      doc.dossier &&
+      user.role !== 'ADMIN' &&
+      !user.annexeIds.includes(doc.dossier.annexeId)
+    ) {
+      throw new ForbiddenException("Ce document n'appartient pas à votre annexe");
+    }
 
     // Le fichier disque ne doit être supprimé que s'il est bien sous uploads/ ;
     // sinon on retire seulement la ligne en base (pas de suppression sauvage).

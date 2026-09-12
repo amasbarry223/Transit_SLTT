@@ -11,6 +11,18 @@ export class BonsService {
     return { annexeId: { in: user.annexeIds } };
   }
 
+  // Sans ce contrôle, une ligne à montant négatif passait `Number(l.montant) || 0`
+  // sans être rejetée et venait diminuer silencieusement le montantTotal (recalculé
+  // en sommant les lignes), produisant un bon de caisse au total sous-évalué,
+  // voire négatif.
+  private toPositiveMontant(value: unknown): number {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) {
+      throw new BadRequestException('Le montant de chaque ligne doit être un nombre supérieur à 0.');
+    }
+    return n;
+  }
+
   // Bons de sortie stock
   async findAllBons(user: CurrentUserType, params?: { annexeId?: string; clientId?: string }) {
     if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
@@ -172,7 +184,7 @@ export class BonsService {
       date: l.date || date,
       beneficiaire: l.beneficiaire,
       motif: l.motif,
-      montant: Number(l.montant) || 0,
+      montant: this.toPositiveMontant(l.montant),
     }));
     // Le total est la somme des lignes, jamais une valeur fournie par le client
     // (sinon en-tête et détail peuvent diverger).
@@ -204,7 +216,7 @@ export class BonsService {
       date: l.date || date,
       beneficiaire: l.beneficiaire,
       motif: l.motif,
-      montant: Number(l.montant) || 0,
+      montant: this.toPositiveMontant(l.montant),
     }));
     // Même règle qu'à la création : le total est recalculé depuis les
     // lignes, jamais une valeur fournie par le client.

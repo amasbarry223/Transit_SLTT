@@ -303,6 +303,16 @@ export class FacturesService {
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(caisse.annexeId)) {
       throw new ForbiddenException("Cette caisse n'appartient pas à votre annexe.");
     }
+    // Le contrôle ci-dessus vérifie seulement que l'UTILISATEUR a accès à la
+    // caisse (utile pour un ADMIN ou un utilisateur multi-annexe), pas que la
+    // caisse correspond à l'annexe DE LA FACTURE : sans ce second contrôle,
+    // un encaissement pouvait être enregistré sur la caisse d'une autre
+    // annexe que celle de la facture, faussant la trésorerie des deux sites.
+    if (caisse.annexeId !== facture.annexeId) {
+      throw new BadRequestException(
+        "La caisse sélectionnée n'appartient pas à l'annexe de cette facture.",
+      );
+    }
     if (caisse.statut === 'FERMEE') {
       throw new BadRequestException('Cette caisse est fermée aux opérations.');
     }

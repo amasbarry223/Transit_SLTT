@@ -381,13 +381,15 @@ export class DossiersService {
 
   async remove(id: string, user: CurrentUserType) {
     await this.findOne(id, user);
-    // Facture.dossier / Depense.dossier n'ont pas de cascade (et ne doivent pas
-    // disparaître avec le dossier) : on les détache d'abord, sinon la suppression
-    // échoue en 500 (contrainte FK). Cohérent avec l'UI qui annonce
-    // "factures déconnectées du dossier (non supprimées)".
+    // Facture.dossier / Depense.dossier / Devis.dossier n'ont pas de cascade
+    // (et ne doivent pas disparaître avec le dossier) : on les détache
+    // d'abord, sinon la suppression échoue en 500 (contrainte FK). Cohérent
+    // avec l'UI qui annonce "factures/devis déconnectés du dossier (non
+    // supprimés)".
     return this.prisma.$transaction(async (tx: any) => {
       await tx.facture.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
       await tx.depense.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+      await tx.devis.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
       await tx.dossier.delete({ where: { id } });
       return { id };
     });

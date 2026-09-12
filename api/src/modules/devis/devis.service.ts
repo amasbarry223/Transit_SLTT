@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PortsService } from '../ports/ports.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
 /**
@@ -31,7 +32,21 @@ function computeDevisTotals(lignes: any[]) {
 
 @Injectable()
 export class DevisService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly portsService: PortsService,
+  ) {}
+
+  // Sans ce contrôle, un portId invalide ou désactivé n'était rejeté que par
+  // la contrainte FK Prisma (P2003), traduite en un message générique par le
+  // filtre global — pas une vraie erreur de validation métier ("port
+  // invalide/inactif").
+  private async assertPortUsable(portId: string) {
+    const port = await this.portsService.findOne(portId);
+    if (!port.actif) {
+      throw new BadRequestException(`Le port "${port.nom}" est désactivé et ne peut plus être sélectionné.`);
+    }
+  }
 
   /** Comme pour les clients, un devis sans annexe reste visible de tous —
    *  seul un devis explicitement rattaché à une annexe est restreint. */
@@ -78,6 +93,8 @@ export class DevisService {
     const existing = await this.prisma.devis.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro de devis ${data.numero} existe déjà`);
 
+    if (data.portId) await this.assertPortUsable(data.portId);
+
     const { montantHt, montantTva, montantTtc, lignesFormatted } = computeDevisTotals(data.lignes);
 
     return this.prisma.devis.create({
@@ -117,7 +134,10 @@ export class DevisService {
       }
       updateData.dossierId = data.dossierId || null;
     }
-    if (data.portId !== undefined) updateData.portId = data.portId || null;
+    if (data.portId !== undefined) {
+      if (data.portId) await this.assertPortUsable(data.portId);
+      updateData.portId = data.portId || null;
+    }
     if (data.nature !== undefined) updateData.nature = data.nature || null;
     if (data.notes !== undefined) updateData.notes = data.notes ?? null;
     if (data.statut !== undefined) updateData.statut = data.statut;

@@ -19,7 +19,21 @@ export class PortsService {
 
   async create(data: { code: string; nom: string; ville?: string; pays?: string }) {
     const existing = await this.prisma.port.findUnique({ where: { code: data.code } });
-    if (existing) throw new ConflictException(`Un port avec le code ${data.code} existe déjà`);
+    if (existing) {
+      // `code` porte une contrainte unique en base : un port désactivé
+      // (actif: false, remove() ne fait jamais de vraie suppression) occupe
+      // toujours son code, donc un simple re-create échouerait en conflit
+      // permanent. Recréer avec le même code = réactiver ce port existant
+      // plutôt que bloquer indéfiniment la réutilisation du code.
+      if (!existing.actif) {
+        const { nom, ville, pays } = data;
+        return this.prisma.port.update({
+          where: { id: existing.id },
+          data: { nom, ville, pays, actif: true },
+        });
+      }
+      throw new ConflictException(`Un port avec le code ${data.code} existe déjà`);
+    }
     const { code, nom, ville, pays } = data;
     return this.prisma.port.create({ data: { code, nom, ville, pays } });
   }

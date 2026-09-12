@@ -18,7 +18,8 @@ import * as path from 'path';
 import { DocumentsService } from './documents.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { Public, RequirePermission } from '../../shared/decorators';
+import { CurrentUser, Public, RequirePermission } from '../../shared/decorators';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 const storage = diskStorage({
   destination: (_req, _file, cb) => {
@@ -109,7 +110,7 @@ export class DocumentsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('documents.supprimer')
-  async deleteFile(@Param('id') id: string) {
-    return this.documentsService.deleteFile(id);
+  async deleteFile(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.documentsService.deleteFile(id, user);
   }
 }
