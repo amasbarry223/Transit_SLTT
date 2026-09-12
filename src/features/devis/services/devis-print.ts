@@ -215,9 +215,6 @@ ${OFFICIAL_LETTERHEAD_CSS}
   color: ${BRAND.navy};
   margin-top: 2px;
 }
-.doc-id-meta { text-align: right; flex-shrink: 0; font-size: 10.5px; color: #6b7280; }
-.doc-id-meta > * + * { margin-top: 3px; }
-
 .field-k {
   font-size: 9px;
   font-weight: 700;
@@ -347,10 +344,6 @@ ${SIGNATORIES_BLOCK_CSS}
         <div class="doc-kind">Devis</div>
         <div class="doc-no">${htmlEscape(data.reference)}</div>
       </div>
-      <div class="doc-id-meta">
-        <div>Établi le ${fmtDevisDate(data.dateCreation)}</div>
-        <div>Valable jusqu'au ${fmtDevisDate(data.dateValidite)}</div>
-      </div>
     </header>
 
     <section class="parties">
@@ -398,8 +391,7 @@ ${SIGNATORIES_BLOCK_CSS}
     </section>
 
     <div class="note-line">
-      Ce devis est valable jusqu'au <b>${fmtDevisDate(data.dateValidite)}</b>.
-      Passé ce délai, contactez-nous pour renouveler l'estimation.
+      Passé le délai de validité indiqué ci-dessus, contactez-nous pour renouveler l'estimation.
     </div>
 
     ${data.notes ? `<div class="note-line"><div class="field-k">Notes &amp; conditions</div><p>${htmlEscape(data.notes)}</p></div>` : ""}
