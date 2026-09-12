@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/
 
 export function DevisEditForm({
   devis, clients, fClientId, handleClientChange,
+  fPortId, setFPortId,
   fNature, setFNature, fDroitDouane, setFDroitDouane, fFraisCircuit, setFFraisCircuit,
   fFraisPrestation, setFFraisPrestation, fDateValidite, setFDateValidite, fNotes,
   setFNotes, editTotal, handleCancelEdit, handleSave, saving = false,
@@ -28,6 +29,8 @@ export function DevisEditForm({
   annexeCode?: string | null;
   fClientId: string;
   handleClientChange: (id: string) => void;
+  fPortId: string;
+  setFPortId: Dispatch<SetStateAction<string>>;
   fNature: string;
   setFNature: Dispatch<SetStateAction<string>>;
   fDroitDouane: string;
@@ -46,6 +49,7 @@ export function DevisEditForm({
   saving?: boolean;
 }) {
   const societes = useStore((s) => s.societes);
+  const ports = useStore((s) => s.ports.filter((p) => p.actif));
   const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const labels = resolveDossierCoutLabels(annexeCode);
   return (
@@ -60,8 +64,8 @@ export function DevisEditForm({
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Client + Nature */}
-            <div className="grid gap-5 sm:grid-cols-2">
+            {/* Client + Port + Nature */}
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   Client <span className="text-red-500 normal-case">*</span>
@@ -83,6 +87,25 @@ export function DevisEditForm({
                 </Label>
                 <Input value={fNature} onChange={(e) => setFNature(e.target.value)}
                   placeholder="ex. Matériaux de construction" className="h-10" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Port d&apos;embarquement / de manutention
+                </Label>
+                <Select value={fPortId || "__none"} onValueChange={(v) => setFPortId(v === "__none" ? "" : v)}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Aucun" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Aucun</SelectItem>
+                    {ports.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nom}
+                        {p.ville ? ` — ${p.ville}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

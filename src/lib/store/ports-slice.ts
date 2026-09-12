@@ -9,6 +9,7 @@ export interface PortsSlice {
   addPort: (input: PortInput) => Promise<Port>;
   updatePort: (id: string, input: PortInput) => Promise<void>;
   removePort: (id: string) => Promise<void>;
+  setPortActif: (id: string, actif: boolean) => Promise<void>;
 }
 
 export const createPortsSlice: StateCreator<SLTTState, [], [], PortsSlice> = (set, get) => ({
@@ -51,14 +52,22 @@ export const createPortsSlice: StateCreator<SLTTState, [], [], PortsSlice> = (se
   },
 
   removePort: async (id) => {
+    await get().setPortActif(id, false);
+  },
+
+  setPortActif: async (id, actif) => {
     const port = get().ports.find((p) => p.id === id);
-    await api.ports.update(id, { actif: false });
+    await api.ports.update(id, { actif });
 
     set((s) => ({
-      ports: s.ports.map((p) => (p.id === id ? { ...p, actif: false } : p)),
+      ports: s.ports.map((p) => (p.id === id ? { ...p, actif } : p)),
     }));
     if (port) {
-      await get().addAuditLog(AUDIT_MODULE.Ports, AUDIT_ACTION.Suppression, `Port ${port.nom} désactivé`);
+      await get().addAuditLog(
+        AUDIT_MODULE.Ports,
+        actif ? AUDIT_ACTION.Modification : AUDIT_ACTION.Suppression,
+        `Port ${port.nom} ${actif ? "réactivé" : "désactivé"}`,
+      );
     }
   },
 });

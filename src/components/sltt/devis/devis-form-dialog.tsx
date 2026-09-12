@@ -37,10 +37,12 @@ export function DevisFormDialog({
 }: DevisFormProps) {
   const societes = useStore((s) => s.societes);
   const annexes = useStore((s) => s.annexes);
+  const ports = useStore((s) => s.ports.filter((p) => p.actif));
   const { activeAnnexeId } = useActiveAnnexe();
   const societeNom = resolveTransitSociete(societes)?.nom || "Transit";
   const [clientId, setClientId] = useState(devis?.clientId ?? "");
   const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
+  const [portId, setPortId] = useState(devis?.portId ?? "");
   const [nature, setNature] = useState(devis?.nature ?? "");
   const [droitDouane, setDroitDouane] = useState(devis ? String(devis.droitDouane) : "");
   const [fraisCircuit, setFraisCircuit] = useState(devis ? String(devis.fraisCircuit) : "");
@@ -57,6 +59,7 @@ export function DevisFormDialog({
     if (openKey !== null) {
       setClientId(devis?.clientId ?? "");
       setClientNom(devis?.clientNom ?? "");
+      setPortId(devis?.portId ?? "");
       setNature(devis?.nature ?? "");
       setDroitDouane(devis ? String(devis.droitDouane) : "");
       setFraisCircuit(devis ? String(devis.fraisCircuit) : "");
@@ -92,6 +95,7 @@ export function DevisFormDialog({
     onSave({
       clientId,
       clientNom,
+      portId: portId || undefined,
       nature,
       droitDouane: dd,
       fraisCircuit: fc,
@@ -141,6 +145,24 @@ export function DevisFormDialog({
               onChange={(e) => setNature(e.target.value)}
               placeholder="ex. Matériaux de construction"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Port d&apos;embarquement / de manutention</Label>
+            <Select value={portId || "__none"} onValueChange={(v) => setPortId(v === "__none" ? "" : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Aucun" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">Aucun</SelectItem>
+                {ports.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nom}
+                    {p.ville ? ` — ${p.ville}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

@@ -34,6 +34,7 @@ export interface DevisData {
   clientTelephone?: string;
   clientEmail?: string;
   nature: string;
+  portNom?: string;
   dateCreation: string;
   dateValidite: string;
   droitDouane: number;
@@ -367,6 +368,11 @@ ${SIGNATORIES_BLOCK_CSS}
         <div class="field-k">Période de validité</div>
         <div class="meta-val">${fmtDevisDate(data.dateCreation)} → ${fmtDevisDate(data.dateValidite)}</div>
       </div>
+      ${data.portNom ? `
+      <div class="meta-cell">
+        <div class="field-k">Port d'embarquement</div>
+        <div class="meta-val">${htmlEscape(data.portNom)}</div>
+      </div>` : ""}
     </section>
 
     <section class="lines">

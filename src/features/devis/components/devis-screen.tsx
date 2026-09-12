@@ -173,6 +173,7 @@ export function DevisScreen() {
       clientTelephone: client?.telephone,
       clientEmail: client?.email,
       nature: devis.nature,
+      portNom: devis.portNom,
       dateCreation: devis.dateCreation,
       dateValidite: devis.dateValidite,
       droitDouane: devis.droitDouane,

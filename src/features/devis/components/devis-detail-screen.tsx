@@ -49,6 +49,7 @@ export function DevisDetailScreen() {
 
   const [fClientId, setFClientId] = useState("");
   const [fClientNom, setFClientNom] = useState("");
+  const [fPortId, setFPortId] = useState("");
   const [fNature, setFNature] = useState("");
   const [fDroitDouane, setFDroitDouane] = useState("");
   const [fFraisCircuit, setFFraisCircuit] = useState("");
@@ -61,6 +62,7 @@ export function DevisDetailScreen() {
     setPrevEditKey(editKey);
     if (editKey !== null && devis) {
       setFClientId(devis.clientId); setFClientNom(devis.clientNom);
+      setFPortId(devis.portId ?? "");
       setFNature(devis.nature); setFDroitDouane(String(devis.droitDouane));
       setFFraisCircuit(String(devis.fraisCircuit)); setFFraisPrestation(String(devis.fraisPrestation));
       setFDateValidite(devis.dateValidite); setFNotes(devis.notes ?? "");
@@ -113,7 +115,7 @@ export function DevisDetailScreen() {
     setSavingEdit(true);
     try {
       await updateDevis(devis.id, {
-        clientId: fClientId, clientNom: fClientNom, nature: fNature,
+        clientId: fClientId, clientNom: fClientNom, portId: fPortId || undefined, nature: fNature,
         droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp, dateValidite: fDateValidite,
         notes: fNotes.trim() || undefined,
       } satisfies DevisInput);
@@ -152,6 +154,7 @@ export function DevisDetailScreen() {
     printDevis({
       reference: devis.reference, clientNom: devis.clientNom, clientAdresse: client?.adresse,
       clientTelephone: client?.telephone, clientEmail: client?.email, nature: devis.nature,
+      portNom: devis.portNom,
       dateCreation: devis.dateCreation, dateValidite: devis.dateValidite, droitDouane: devis.droitDouane,
       fraisCircuit: devis.fraisCircuit, fraisPrestation: devis.fraisPrestation, total: devis.total,
       notes: devis.notes, statut: devis.statut, coutLabels,
@@ -192,6 +195,7 @@ export function DevisDetailScreen() {
               </div>
               <div className="px-5">
                 <InfoRow icon={User} label="Client" value={devis.clientNom} />
+                {devis.portNom && <InfoRow icon={Package} label="Port d'embarquement" value={devis.portNom} />}
                 <InfoRow icon={Package} label="Nature de la marchandise" value={devis.nature} />
                 <InfoRow icon={CalendarDays} label="Date de création" value={formatDateShort(devis.dateCreation)} />
                 <InfoRow icon={CalendarDays} label="Valide jusqu'au" value={formatDateShort(devis.dateValidite)} />
@@ -221,6 +225,7 @@ export function DevisDetailScreen() {
       {isEditing && (
         <DevisEditForm
           devis={devis} clients={clients} fClientId={fClientId} handleClientChange={handleClientChange}
+          fPortId={fPortId} setFPortId={setFPortId}
           fNature={fNature} setFNature={setFNature} fDroitDouane={fDroitDouane}
           setFDroitDouane={setFDroitDouane} fFraisCircuit={fFraisCircuit}
           setFFraisCircuit={setFFraisCircuit} fFraisPrestation={fFraisPrestation}
