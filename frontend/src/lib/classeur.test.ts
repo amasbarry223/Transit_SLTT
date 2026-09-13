@@ -5,23 +5,7 @@ import {
   filterClasseurJournal,
   hasClasseurPeriodFilter,
 } from "./classeur";
-import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
-
-const SLTT_ID = "22222222-2222-2222-2222-222222222222";
-
-const societes: Societe[] = [
-  {
-    id: SLTT_ID,
-    nom: "SLTT",
-    actif: true,
-    adresse: "Bamako",
-    telephone: "",
-    rccm: "",
-    nif: "",
-    logoUrl: "",
-    afficherNomAvecLogo: true,
-  },
-];
+import type { Dossier, Ecriture, Facture } from "@/lib/domain-types";
 
 describe("buildClasseurJournal", () => {
   it("trie chronologiquement et calcule le solde cumulé", () => {
@@ -50,7 +34,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Dossier[];
 
-    const journal = buildClasseurJournal("c1", dossiers, [], [], societes);
+    const journal = buildClasseurJournal("c1", dossiers, [], []);
     expect(journal).toHaveLength(2);
     expect(journal[0].reference).toBe("DOS-002");
     expect(journal[0].libelle).toBe("Dossier transit — Export · BL BL-99");
@@ -78,9 +62,48 @@ describe("buildClasseurJournal", () => {
       },
     ] as Ecriture[];
 
-    const journal = buildClasseurJournal("c1", [], ecritures, [], societes);
+    const journal = buildClasseurJournal("c1", [], ecritures, []);
     expect(journal).toHaveLength(1);
     expect(journal[0].type).toBe("Paiement");
+  });
+
+  it("un dossier facturé cède sa ligne à sa facture (pas de doublon, pas de disparition)", () => {
+    const dossiers = [
+      {
+        id: "d1",
+        clientId: "c1",
+        reference: "DOS-001",
+        date: "2026-01-10",
+        nature: "Import",
+        bl: "",
+        montantInvesti: 1000,
+        montantPaye: 400,
+        statut: "En cours",
+      },
+    ] as Dossier[];
+    const factures = [
+      {
+        id: "f1",
+        clientId: "c1",
+        dossierId: "d1",
+        numero: "FAC-001",
+        date: "2026-01-15",
+        statut: "Partielle",
+        montantTTC: 1180, // dossier + 18% TVA
+        montantPaye: 200,
+        lignes: [{ description: "Prestation" }],
+      },
+    ] as Facture[];
+
+    const journal = buildClasseurJournal("c1", dossiers, [], factures);
+    // Une seule ligne : la facture. Le dossier (montants figés à la
+    // facturation) n'apparaît plus à côté — sinon la TVA facturée (180) et
+    // le paiement encaissé sur la facture (200) resteraient invisibles
+    // tout en affichant en double le montant du dossier.
+    expect(journal).toHaveLength(1);
+    expect(journal[0].type).toBe("Facture");
+    expect(journal[0].debit).toBe(1180);
+    expect(journal[0].credit).toBe(200);
   });
 
   it("met à zéro débit/crédit pour une facture annulée", () => {
@@ -97,7 +120,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Facture[];
 
-    const journal = buildClasseurJournal("c1", [], [], factures, societes);
+    const journal = buildClasseurJournal("c1", [], [], factures);
     expect(journal[0].debit).toBe(0);
     expect(journal[0].credit).toBe(0);
   });
@@ -129,7 +152,6 @@ describe("filterClasseurJournal", () => {
       },
     ] as Ecriture[],
     [],
-    societes,
   );
 
   it("filtre par type et période", () => {
@@ -174,7 +196,6 @@ describe("computeClasseurTotals", () => {
         },
       ] as Ecriture[],
       [],
-      societes,
     );
 
     const filtered = filterClasseurJournal(full, { type: "Paiement" });
@@ -183,7 +204,6 @@ describe("computeClasseurTotals", () => {
     expect(totals.totalDebit).toBe(400);
     expect(totals.totalCredit).toBe(100);
     expect(totals.soldeNet).toBe(300);
-    expect(totals.parSociete).toEqual([{ societeNom: "SLTT", soldeNet: 300 }]);
   });
 });
 

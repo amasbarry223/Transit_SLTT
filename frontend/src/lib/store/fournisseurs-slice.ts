@@ -5,41 +5,7 @@ import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import type { DossierFournisseur, DossierFournisseurInput, Fournisseur, FournisseurInput } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
-import type { DossierFournisseurRow, FournisseurRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapFournisseurFromDb(row: FournisseurRow): Fournisseur {
-  return {
-    id: row.id,
-    nom: row.nom,
-    type: row.type,
-    contact: row.contact,
-    telephone: row.telephone,
-    email: row.email || "",
-    adresse: row.adresse || "",
-    tarifContractuel: row.tarif_contractuel ? Number(row.tarif_contractuel) : undefined,
-    nbDossiers: 0,
-    montantTotal: 0,
-    statut: row.statut,
-    annexeId: row.annexe_id,
-  };
-}
-
-export function mapDossierFournisseurFromDb(row: DossierFournisseurRow): DossierFournisseur {
-  return {
-    id: row.id,
-    dossierId: row.dossier_id,
-    dossierRef: row.dossiers?.reference || undefined,
-    fournisseurId: row.fournisseur_id,
-    fournisseurNom: row.fournisseurs?.nom || "",
-    type: row.fournisseurs?.type || ("Transport" as DossierFournisseur["type"]),
-    description: row.description,
-    montantBudgete: Number(row.montant_budgete),
-    montantReel: Number(row.montant_reel),
-    statut: row.statut,
-    date: row.date || new Date().toISOString().slice(0, 10),
-  };
-}
 
 export interface FournisseursSlice {
   fournisseurs: Fournisseur[];
@@ -77,23 +43,22 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       annexeId,
     };
 
-    try {
-      const created = await api.fournisseurs.create({
-        nom: input.nom,
-        type: input.type,
-        contact: input.contact,
-        telephone: input.telephone,
-        email: input.email,
-        adresse: input.adresse,
-        tarifContractuel: input.tarifContractuel,
-        statut: input.statut || "Actif",
-        annexeId,
-      });
-      if (created?.id) {
-        newFourn.id = created.id;
-      }
-    } catch (e) {
-      console.warn("api.fournisseurs.create (mode local) :", e);
+    // Persistance obligatoire : un fournisseur sans écriture serveur
+    // disparaissait silencieusement au rechargement, sans aucune erreur
+    // montrée (même bug que removeFournisseur avant son correctif).
+    const created = await api.fournisseurs.create({
+      nom: input.nom,
+      type: input.type,
+      contact: input.contact,
+      telephone: input.telephone,
+      email: input.email,
+      adresse: input.adresse,
+      tarifContractuel: input.tarifContractuel,
+      statut: input.statut || "Actif",
+      annexeId,
+    });
+    if (created?.id) {
+      newFourn.id = created.id;
     }
 
     set((s) => ({
@@ -105,20 +70,16 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
   },
 
   updateFournisseur: async (id, input) => {
-    try {
-      await api.fournisseurs.update(id, {
-        nom: input.nom,
-        type: input.type,
-        contact: input.contact,
-        telephone: input.telephone,
-        email: input.email,
-        adresse: input.adresse,
-        tarifContractuel: input.tarifContractuel,
-        statut: input.statut,
-      });
-    } catch (e) {
-      console.warn("api.fournisseurs.update (mode local) :", e);
-    }
+    await api.fournisseurs.update(id, {
+      nom: input.nom,
+      type: input.type,
+      contact: input.contact,
+      telephone: input.telephone,
+      email: input.email,
+      adresse: input.adresse,
+      tarifContractuel: input.tarifContractuel,
+      statut: input.statut,
+    });
 
     set((s) => ({
       fournisseurs: s.fournisseurs.map((f) => (f.id === id ? { ...f, ...input } : f)),
@@ -134,6 +95,8 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
         `Impossible de supprimer ${fourn?.nom ?? "ce fournisseur"} : il est lié à ${dossiersLies} dossier(s). Retirez-le d'abord de ces dossiers.`,
       );
     }
+
+    await api.fournisseurs.delete(id);
 
     set((s) => ({
       fournisseurs: s.fournisseurs.filter((f) => f.id !== id),

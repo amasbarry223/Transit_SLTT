@@ -1,26 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Receipt, X } from "lucide-react";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Plus, Receipt, X, Loader2 } from "lucide-react";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Switch } from "@/shared/components/ui/switch";
+import { Dialog, DialogContent } from "@/shared/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { useStore, type FactureInput } from "@/lib/store";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastWarning } from "@/lib/toast-helpers";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastWarning } from "@/shared/utils/toast-helpers";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
 import { resolveDossierCoutLabels } from "@/lib/societe-brand";
@@ -349,9 +349,16 @@ export function FactureFormModal({
 
           {/* Footer */}
           <div className="flex justify-end gap-2 px-6 py-4">
-            <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={!clientId || saving}>
-              <Receipt className="mr-1.5 size-3.5" /> Créer la facture
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={!clientId || saving} className="gap-1.5">
+              {saving ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Receipt className="size-3.5" />
+              )}
+              {saving ? "Création en cours…" : "Créer la facture"}
             </Button>
           </div>
         </form>

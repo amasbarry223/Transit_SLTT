@@ -10,17 +10,18 @@ import {
   MapPin,
   Pencil,
   Phone,
+  Trash2,
   UserPlus,
   Users,
 } from "lucide-react";
 import type { Client } from "@/features/clients/types";
 import { formatFCFA } from "@/lib/format";
-import { cn, getInitials } from "@/lib/utils";
-import { UI } from "@/lib/ui-messages";
+import { cn, getInitials } from "@/shared/utils/cn";
+import { UI } from "@/shared/utils/ui-messages";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import {
   Table,
   TableBody,
@@ -28,7 +29,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 import { ClientTypeBadge } from "./client-type-badge";
 import {
   avatarGradient,
@@ -50,6 +51,7 @@ type ClientsTableProps = {
   onPageChange: (page: number) => void;
   onOpenClient: (id: string) => void;
   onEditClient: (id: string, e: React.MouseEvent) => void;
+  onDeleteClient: (id: string, e: React.MouseEvent) => void;
   onCreateClient?: () => void;
 };
 
@@ -109,11 +111,13 @@ const ClientMobileCard = memo(function ClientMobileCard({
   canWrite,
   onOpenClient,
   onEditClient,
+  onDeleteClient,
 }: {
   client: Client;
   canWrite: boolean;
   onOpenClient: (id: string) => void;
   onEditClient: (id: string, e: React.MouseEvent) => void;
+  onDeleteClient: (id: string, e: React.MouseEvent) => void;
 }) {
   return (
     <Card
@@ -154,15 +158,26 @@ const ClientMobileCard = memo(function ClientMobileCard({
             <Eye className="size-4" />
           </Button>
           {canWrite && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
-              onClick={(e) => onEditClient(client.id, e)}
-              aria-label={`Modifier ${client.nom}`}
-            >
-              <Pencil className="size-4" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                onClick={(e) => onEditClient(client.id, e)}
+                aria-label={`Modifier ${client.nom}`}
+              >
+                <Pencil className="size-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-[#ED1C24] dark:hover:bg-red-950/40"
+                onClick={(e) => onDeleteClient(client.id, e)}
+                aria-label={`Supprimer ${client.nom}`}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -205,11 +220,13 @@ const ClientTableRow = memo(function ClientTableRow({
   canWrite,
   onOpenClient,
   onEditClient,
+  onDeleteClient,
 }: {
   client: Client;
   canWrite: boolean;
   onOpenClient: (id: string) => void;
   onEditClient: (id: string, e: React.MouseEvent) => void;
+  onDeleteClient: (id: string, e: React.MouseEvent) => void;
 }) {
   return (
     <TableRow
@@ -323,16 +340,28 @@ const ClientTableRow = memo(function ClientTableRow({
             <Eye className="size-4" />
           </Button>
           {canWrite && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-              onClick={(e) => onEditClient(client.id, e)}
-              aria-label={`Modifier ${client.nom}`}
-              title="Modifier le client"
-            >
-              <Pencil className="size-4" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                onClick={(e) => onEditClient(client.id, e)}
+                aria-label={`Modifier ${client.nom}`}
+                title="Modifier le client"
+              >
+                <Pencil className="size-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-[#ED1C24] dark:hover:bg-red-950/40 transition-colors"
+                onClick={(e) => onDeleteClient(client.id, e)}
+                aria-label={`Supprimer ${client.nom}`}
+                title="Supprimer le client"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </>
           )}
         </div>
       </TableCell>
@@ -354,6 +383,7 @@ export function ClientsTable({
   onPageChange,
   onOpenClient,
   onEditClient,
+  onDeleteClient,
   onCreateClient,
 }: ClientsTableProps) {
   if (filteredCount === 0) {
@@ -393,6 +423,7 @@ export function ClientsTable({
             canWrite={canWrite}
             onOpenClient={onOpenClient}
             onEditClient={onEditClient}
+            onDeleteClient={onDeleteClient}
           />
         ))}
       </div>
@@ -443,6 +474,7 @@ export function ClientsTable({
                 canWrite={canWrite}
                 onOpenClient={onOpenClient}
                 onEditClient={onEditClient}
+                onDeleteClient={onDeleteClient}
               />
             ))}
           </TableBody>

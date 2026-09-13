@@ -5,12 +5,12 @@ import { ShieldCheck, Truck, Banknote } from "lucide-react";
 import { useStore, type DossierStatut } from "@/lib/store";
 import { resteAPayer, type Dossier, type PaiementMode } from "@/lib/domain-types";
 import { formatFCFA, parseAmount } from "@/lib/format";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -18,15 +18,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn, getErrorMessage } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { cn, getErrorMessage } from "@/shared/utils/cn";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */

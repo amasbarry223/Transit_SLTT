@@ -10,8 +10,9 @@ import { LoginScreen } from "@/features/auth";
 import { logWarn } from "@/shared/logger";
 import { AppShell } from "@/components/sltt/layout/app-shell";
 import { Loader2 } from "lucide-react";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
+import { toast } from "@/shared/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 
 const ACTIVITY_EVENTS = ["mousemove", "keydown", "click", "scroll", "touchstart"] as const;
 const ACTIVITY_THROTTLE = 15 * 1000;
@@ -76,6 +77,18 @@ function AppRootInner() {
     restoreRef.current = restoreSession;
   }, [logout, restoreSession]);
 
+  // Déconnexion forcée quand un refresh de token échoue vraiment (session
+  // expirée/révoquée côté serveur) : sans ça, l'utilisateur reste sur
+  // isAuthenticated=true (état mémoire non synchronisé avec le localStorage
+  // vidé par api-client) et voit le bandeau "chargement partiel" lister
+  // les 18 ressources en échec au lieu d'être renvoyé à l'écran de connexion.
+  useEffect(() => {
+    api.setOnSessionExpired(() => {
+      toast({ variant: "warning", description: UI.errors.session });
+      void logoutRef.current();
+    });
+  }, []);
+
   // Synchronisation de session avec l'API NestJS
   useEffect(() => {
     let cancelled = false;
@@ -83,11 +96,28 @@ function AppRootInner() {
     async function initSession() {
       try {
         await cleanupForeignServiceWorkers();
-        const user = api.getCurrentUser();
-        const token = api.getAccessToken();
-
-        if (user && token && !cancelled) {
-          restoreRef.current(normalizeRole(user.role), user.nom, user.id);
+        // Les tokens vivent en cookies httpOnly : plus lisibles en JS, donc
+        // plus de "token présent" à vérifier localement. Un `user` en cache
+        // restaure l'affichage optimistiquement (évite un flash de l'écran
+        // de connexion) uniquement s'il y a un indice de session précédente ;
+        // sans lui, un visiteur jamais connecté ne déclenche aucun appel
+        // réseau ni le toast "session expirée" pour rien. La confirmation
+        // serveur via /auth/me fait seule foi ensuite — son mécanisme de
+        // retry-401 (voir request()) gère déjà le rafraîchissement silencieux
+        // si seul l'access token a expiré, et onSessionExpired (déjà câblé
+        // ci-dessus) gère déjà l'échec réel (refresh aussi invalide).
+        const cachedUser = api.getCurrentUser();
+        if (cachedUser && !cancelled) {
+          restoreRef.current(normalizeRole(cachedUser.role), cachedUser.nom, cachedUser.id);
+          try {
+            const confirmed = await api.auth.me();
+            if (!cancelled) {
+              api.setSession({ user: confirmed });
+              restoreRef.current(normalizeRole(confirmed.role), confirmed.nom, confirmed.id);
+            }
+          } catch {
+            // Échec réel déjà géré par onSessionExpired (clearSession + toast + logout).
+          }
         }
       } catch (e) {
         if (process.env.NODE_ENV === "development") {

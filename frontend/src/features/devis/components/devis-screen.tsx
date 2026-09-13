@@ -7,21 +7,21 @@ import { useStore } from "@/lib/store";
 import type { Devis, DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { exportToExcel, printDevis, printDevisList } from "@/lib/export";
-import { resolveSlttBrand } from "@/lib/classeur";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
+import { resolveDossierCoutLabels, resolveSlttBrand } from "@/lib/societe-brand";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
-import { usePermission } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { PageHeader } from "@/components/sltt/page-header";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import { devisStatutNeedsConfirm } from "@/lib/confirm-transitions";
 import { DevisFormDialog } from "@/components/sltt/devis/devis-form-dialog";
 import { NEXT_STATUT } from "@/components/sltt/devis/devis-statut-config";
@@ -43,6 +43,7 @@ export function DevisScreen() {
   const devisList = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
+  const annexes = useStore((s) => s.annexes);
   const addDevis = useStore((s) => s.addDevis);
   const updateDevis = useStore((s) => s.updateDevis);
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
@@ -65,10 +66,18 @@ export function DevisScreen() {
   const [pendingStatut, setPendingStatut] = useState<{ devis: Devis; statut: DevisStatut } | null>(null);
   const [savingDevis, setSavingDevis] = useState(false);
 
+  // handleSaveForm ne réarme plus `savingDevis` après un succès (le dialog
+  // Radix reste monté et cliquable ~200ms pendant sa fermeture — un second
+  // clic dans cette fenêtre resoumettait le même formulaire, pas encore
+  // réinitialisé, et créait un devis en double). On le réarme donc à chaque
+  // ouverture, à chacun des deux points d'entrée (bouton plus bas, deep-link
+  // ci-dessous) — pas via un useEffect sur `formOpen`, qui déclenchait un
+  // setState synchrone dans un effet (rendu en cascade évitable).
   useEffect(() => {
     if (selectedId === "new") {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur
       setEditDevis(null);
+      setSavingDevis(false);
       setFormOpen(true);
       go("devis");
     }
@@ -133,7 +142,6 @@ export function DevisScreen() {
         title: "Impossible de sauvegarder le devis",
         fallback: UI.errors.saveFailed,
       });
-    } finally {
       setSavingDevis(false);
     }
   }
@@ -157,6 +165,7 @@ export function DevisScreen() {
   }
   function handlePrintDevis(devis: Devis) {
     const client = clients.find((c) => c.id === devis.clientId);
+    const coutLabels = resolveDossierCoutLabels(annexes.find((a) => a.id === devis.annexeId)?.code);
     printDevis({
       reference: devis.reference,
       clientNom: devis.clientNom,
@@ -164,6 +173,7 @@ export function DevisScreen() {
       clientTelephone: client?.telephone,
       clientEmail: client?.email,
       nature: devis.nature,
+      portNom: devis.portNom,
       dateCreation: devis.dateCreation,
       dateValidite: devis.dateValidite,
       droitDouane: devis.droitDouane,
@@ -172,6 +182,7 @@ export function DevisScreen() {
       total: devis.total,
       notes: devis.notes,
       statut: devis.statut,
+      coutLabels,
     }, resolveSlttBrand(societes));
   }
   async function handleExportExcel() {
@@ -232,7 +243,7 @@ export function DevisScreen() {
       <PageHeader title="Devis & Cotations" description="Estimations tarifaires, cotations et conversion en dossiers">
         {canWrite && (
           <Button
-            onClick={() => { setEditDevis(null); setFormOpen(true); }}
+            onClick={() => { setEditDevis(null); setSavingDevis(false); setFormOpen(true); }}
             className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="size-4 shrink-0 stroke-[3]" />

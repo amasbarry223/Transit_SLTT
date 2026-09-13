@@ -1,7 +1,6 @@
 import type { StateCreator } from "zustand";
 import { useSession } from "@/lib/session/session-store";
 import type { Archive, TypeDocument } from "@/lib/domain-types";
-import type { ArchiveRow } from "@/lib/db-rows";
 import type { SLTTState } from "@/lib/store";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
@@ -16,7 +15,7 @@ const ARCHIVES_ALLOWED_MIME = new Set([
 ]);
 
 /** Déduit un MIME fiable (certains navigateurs laissent file.type vide). */
-export function resolveArchiveMimeType(file: { name: string; type?: string }): string {
+function resolveArchiveMimeType(file: { name: string; type?: string }): string {
   if (file.type && file.type !== "application/octet-stream") return file.type;
   const ext = file.name.split(".").pop()?.toLowerCase();
   const byExt: Record<string, string> = {
@@ -44,23 +43,6 @@ interface AddArchiveInput {
   clientId?: string;
 }
 
-export function mapArchiveFromDb(row: ArchiveRow): Archive {
-  return {
-    id: row.id,
-    nom: row.nom,
-    typeDocument: row.type_document,
-    taille: Number(row.taille),
-    type: row.mime_type,
-    storagePath: row.storage_path,
-    dossierId: row.dossier_id || undefined,
-    factureId: row.facture_id || undefined,
-    depenseId: row.depense_id || undefined,
-    clientId: row.client_id || undefined,
-    annexeId: row.annexe_id,
-    creePar: row.cree_par || "",
-    createdAt: row.created_at,
-  };
-}
 
 /**
  * Annexe d'une archive : héritée de l'entité liée (dossier/facture/dépense →

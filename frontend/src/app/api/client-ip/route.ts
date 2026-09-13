@@ -1,4 +1,4 @@
-import { toApiErrorResponse, apiSuccessResponse } from "@/lib/errors";
+import { toApiErrorResponse, apiSuccessResponse } from "@/shared/errors";
 import type { NextRequest } from "next/server";
 
 function extractClientIp(request: NextRequest): string {

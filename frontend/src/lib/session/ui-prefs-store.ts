@@ -69,11 +69,11 @@ function schedulePersist(patch: PrefsPatch) {
   }, 300);
 }
 
-export function isTheme(value: unknown): value is Theme {
+function isTheme(value: unknown): value is Theme {
   return value === "light" || value === "dark";
 }
 
-export function isDateFormat(value: unknown): value is DateFormat {
+function isDateFormat(value: unknown): value is DateFormat {
   return value === "dmy" || value === "mdy" || value === "ymd";
 }
 

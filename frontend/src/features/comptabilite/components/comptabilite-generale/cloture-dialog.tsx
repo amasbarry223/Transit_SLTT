@@ -8,12 +8,12 @@ import {
   filterOperationsByPeriode,
 } from "@/lib/comptabilite-generale";
 import { useStore } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { formatFCFA } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/utils/cn";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +21,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
 
 function today() {
   return new Date().toISOString().slice(0, 10);

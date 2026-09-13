@@ -4,19 +4,19 @@ import { useState } from "react";
 import { useStore, type ContratInput, type ContratStatut } from "@/lib/store";
 import { CONTRAT_ALLOWED_TRANSITIONS } from "@/lib/status-flow";
 import { parseAmount } from "@/lib/format";
-import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { QuickClientButton } from "@/features/clients";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 
 export function ContratFormModal({
   open,

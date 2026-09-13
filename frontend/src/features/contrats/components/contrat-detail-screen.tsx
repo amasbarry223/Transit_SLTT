@@ -10,6 +10,7 @@ import {
   FileSignature,
   Receipt,
   CheckCircle2,
+  Printer,
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
@@ -20,16 +21,18 @@ import {
   type ContratPrestationStatut,
 } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { usePermission } from "@/hooks/use-permission";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastInfo, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { printContrat } from "@/features/contrats/services/contrat-print";
+import { resolveSlttBrand } from "@/lib/societe-brand";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastInfo, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ToneBadge, TONE_CLASSES } from "@/components/sltt/status-badge";
 
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -37,15 +40,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { cn } from "@/shared/utils/cn";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { contratStatutNeedsConfirm } from "@/lib/confirm-transitions";
@@ -71,6 +74,8 @@ export function ContratDetailScreen() {
   const depenses = useStore((s) => s.depenses);
   const prestations = useStore((s) => s.contratPrestations);
   const contratFichiers = useStore((s) => s.contratFichiers);
+  const clients = useStore((s) => s.clients);
+  const societes = useStore((s) => s.societes);
 
   const updateContrat = useStore((s) => s.updateContrat);
   const updateContratStatut = useStore((s) => s.updateContratStatut);
@@ -184,8 +189,49 @@ export function ContratDetailScreen() {
       description: `${contrat!.reference} — ${prestation.libelle}`,
       montant: prestation.montant,
     });
+    // Garde-fou déclaratif contre le double clic / une seconde facture pour
+    // la même prestation — état 100% navigateur (pas de persistance API sur
+    // ContratPrestation), donc pas une garantie serveur : un rechargement de
+    // page peut faire réapparaître le bouton selon l'état du store.
+    void updateContratPrestation(prestation.id, { facturee: true });
     go("factures");
     toastInfo(toast, { title: "Facture préremplie", description: "Complétez et enregistrez la facture." });
+  }
+
+  function handlePrintContrat() {
+    if (!contrat) return;
+    const client = clients.find((cl) => cl.id === contrat.clientId);
+    const printPrestations = contratPrestations.map((p) => ({
+      libelle: p.libelle,
+      description: p.description,
+      montant: p.montant,
+      statut: p.statut,
+    }));
+    const printDepenses = contratDepenses.map((d) => ({
+      libelle: d.libelle,
+      montant: d.montant,
+      dateDepense: d.dateDepense,
+      modePaiement: d.modePaiement,
+    }));
+    printContrat(
+      {
+        reference: contrat.reference,
+        clientNom: contrat.clientNom,
+        clientAdresse: client?.adresse,
+        clientTelephone: client?.telephone,
+        clientEmail: client?.email,
+        objet: contrat.objet,
+        dateDebut: contrat.dateDebut,
+        dateFin: contrat.dateFin,
+        montant: contrat.montant,
+        statut: contrat.statut,
+        notes: contrat.notes,
+        prestations: printPrestations,
+        depenses: printDepenses,
+        totalDepenses: contrat.totalDepenses,
+      },
+      resolveSlttBrand(societes),
+    );
   }
 
   return (
@@ -262,25 +308,31 @@ export function ContratDetailScreen() {
               </div>
             </div>
 
-            {canWrite && (
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border/50 pt-4">
-                <Button size="sm" variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
-                  <Pencil className="size-4" />
-                  Modifier
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-2 text-red-600 hover:text-red-700 dark:text-red-400"
-                  disabled={nonVide}
-                  title={nonVide ? "Retirez d'abord les dépenses, prestations et documents liés" : undefined}
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  <Trash2 className="size-4" />
-                  Supprimer
-                </Button>
-              </div>
-            )}
+            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border/50 pt-4">
+              <Button size="sm" variant="outline" className="gap-2" onClick={handlePrintContrat}>
+                <Printer className="size-4" />
+                Imprimer le contrat
+              </Button>
+              {canWrite && (
+                <>
+                  <Button size="sm" variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
+                    <Pencil className="size-4" />
+                    Modifier
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 text-red-600 hover:text-red-700 dark:text-red-400"
+                    disabled={nonVide}
+                    title={nonVide ? "Retirez d'abord les dépenses, prestations et documents liés" : undefined}
+                    onClick={() => setDeleteOpen(true)}
+                  >
+                    <Trash2 className="size-4" />
+                    Supprimer
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </Card>
@@ -502,16 +554,20 @@ export function ContratDetailScreen() {
                       </div>
                       {canWrite && (
                         <div className="mt-3 flex items-center justify-end gap-1 border-t border-border pt-3">
-                          {p.statut === "Réalisée" && p.montant != null && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-primary"
-                              onClick={() => handleFacturer(p)}
-                            >
-                              <Receipt className="size-3.5" />
-                              Facturer
-                            </Button>
+                          {p.facturee ? (
+                            <ToneBadge tone="blue">Facturée</ToneBadge>
+                          ) : (
+                            p.statut === "Réalisée" && p.montant != null && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-primary"
+                                onClick={() => handleFacturer(p)}
+                              >
+                                <Receipt className="size-3.5" />
+                                Facturer
+                              </Button>
+                            )
                           )}
                           <Button
                             variant="ghost"
@@ -571,16 +627,20 @@ export function ContratDetailScreen() {
                         {canWrite && (
                           <TableCell className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              {p.statut === "Réalisée" && p.montant != null && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-primary"
-                                  onClick={() => handleFacturer(p)}
-                                >
-                                  <Receipt className="size-3.5" />
-                                  Facturer
-                                </Button>
+                              {p.facturee ? (
+                                <ToneBadge tone="blue">Facturée</ToneBadge>
+                              ) : (
+                                p.statut === "Réalisée" && p.montant != null && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-primary"
+                                    onClick={() => handleFacturer(p)}
+                                  >
+                                    <Receipt className="size-3.5" />
+                                    Facturer
+                                  </Button>
+                                )
                               )}
                               <Button
                                 variant="ghost"

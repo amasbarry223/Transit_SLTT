@@ -24,14 +24,22 @@ const AUTH_ERROR_MAP: Record<string, string> = {
     "Le nouveau mot de passe doit être différent de l'actuel.",
 };
 
-/** Messages bruts Supabase/Postgres (EN) → français. */
+/** Messages bruts Supabase/Postgres/NestJS → français. */
 const RAW_MESSAGE_MAP: Record<string, string> = {
   "Invalid login credentials":
     "L'adresse e-mail ou le mot de passe est incorrect. Vérifiez vos identifiants et réessayez.",
+  "Email ou mot de passe incorrect":
+    "L'adresse e-mail ou le mot de passe est incorrect. Vérifiez vos identifiants et réessayez.",
+  "Ce compte est désactivé":
+    "Ce compte utilisateur est désactivé. Contactez l'administrateur.",
   "Email not confirmed":
     "Votre adresse e-mail n'est pas encore confirmée. Consultez votre boîte mail.",
   "JWT expired":
     "Votre session a expiré pour des raisons de sécurité. Reconnectez-vous pour continuer.",
+  "ThrottlerException":
+    "Trop de tentatives de connexion. Veuillez patienter un instant avant de réessayer.",
+  "Too Many Requests":
+    "Trop de tentatives de connexion. Veuillez patienter un instant avant de réessayer.",
   "Network request failed":
     "Impossible de joindre le serveur. Vérifiez votre connexion internet et réessayez.",
   "Failed to fetch":
@@ -59,6 +67,14 @@ function extractErrorCode(e: unknown): string | undefined {
 
 function extractErrorMessage(e: unknown): string | undefined {
   if (typeof e === "string" && e.trim()) return e.trim();
+  // ApiError expose le corps de la réponse NestJS dans `data` (`{ message }`).
+  if (e && typeof e === "object" && "data" in e) {
+    const data = (e as { data?: unknown }).data;
+    if (data && typeof data === "object" && "message" in data) {
+      const msg = (data as { message?: unknown }).message;
+      if (typeof msg === "string" && msg.trim()) return msg.trim();
+    }
+  }
   if (e instanceof Error && e.message.trim()) return e.message.trim();
   if (e && typeof e === "object" && "message" in e) {
     const msg = (e as { message?: unknown }).message;
@@ -92,13 +108,21 @@ export function mapErrorToUserMessage(
     // Message déjà en français orienté utilisateur (contient accents ou mots métier)
     if (
       /[àâäéèêëïîôùûüç]/i.test(rawMessage) ||
-      /impossible|obligatoire|introuvable|vérifiez|réessayez/i.test(rawMessage)
+      /impossible|obligatoire|introuvable|vérifiez|réessayez|incorrect|invalide|inactif|désactivé|identifiant|mot de passe/i.test(rawMessage)
     ) {
       return rawMessage;
     }
   }
 
-  if (code === "401" || code === "403") return UI.errors.session;
+  if (code === "401" || code === "403") {
+    if (rawMessage && !/jwt|token|bearer|unauthorized/i.test(rawMessage)) {
+      return rawMessage;
+    }
+    return UI.errors.session;
+  }
+  if (code === "429") {
+    return "Trop de tentatives de connexion. Veuillez patienter un instant avant de réessayer.";
+  }
   if (code === "500" || code === "502" || code === "503") return UI.errors.generic;
 
   return fallback;

@@ -3,18 +3,25 @@
 import { Building2, User } from "lucide-react";
 import type { ClientInput } from "@/features/clients/types";
 import type { Annexe } from "@/lib/domain-types";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { cn } from "@/shared/utils/cn";
 
 const clientTypes: ClientInput["type"][] = ["Entreprise", "Particulier"];
+
+export interface ClientFormErrors {
+  nom?: string;
+  email?: string;
+  telephone?: string;
+  annexeId?: string;
+}
 
 interface ClientFormFieldsProps {
   values: ClientInput;
@@ -22,6 +29,9 @@ interface ClientFormFieldsProps {
   annexes: Annexe[];
   idPrefix?: string;
   autoFocusNom?: boolean;
+  errors?: ClientFormErrors;
+  touched?: Record<string, boolean>;
+  onBlur?: (field: keyof ClientFormErrors) => void;
 }
 
 export function emptyClientForm(defaultAnnexeId = ""): ClientInput {
@@ -35,31 +45,61 @@ export function emptyClientForm(defaultAnnexeId = ""): ClientInput {
   };
 }
 
-/** Champs partagés du formulaire client — utilisés par l'annuaire et par la fiche client. */
-export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", autoFocusNom }: ClientFormFieldsProps) {
+/** Champs partagés du formulaire client — validation au blur et retours visuels sous les champs. */
+export function ClientFormFields({
+  values,
+  onChange,
+  annexes,
+  idPrefix = "cl",
+  autoFocusNom,
+  errors,
+  touched,
+  onBlur,
+}: ClientFormFieldsProps) {
+  const showNomError = (touched?.nom || errors?.nom) && errors?.nom;
+  const showEmailError = (touched?.email || errors?.email) && errors?.email;
+  const showTelError = (touched?.telephone || errors?.telephone) && errors?.telephone;
+  const showAnnexeError = (touched?.annexeId || errors?.annexeId) && errors?.annexeId;
+
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor={`${idPrefix}-nom`} className="text-sm font-medium text-foreground/90">
           Nom / Raison sociale <span className="text-red-500">*</span>
         </Label>
         <Input
           id={`${idPrefix}-nom`}
-          value={values.nom}
+          value={values.nom ?? ""}
           onChange={(e) => onChange({ nom: e.target.value })}
+          onBlur={() => onBlur?.("nom")}
           placeholder="Ex. Société ABC Logistique"
-          className="h-10"
+          className={cn("h-10", showNomError && "border-red-500 focus-visible:ring-red-500/30")}
           autoFocus={autoFocusNom}
         />
+        {showNomError && (
+          <p role="alert" className="text-xs text-red-500 font-medium">
+            {errors?.nom}
+          </p>
+        )}
       </div>
 
       {annexes.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor={`${idPrefix}-annexe`} className="text-sm font-medium text-foreground/90">
             Annexe <span className="text-red-500">*</span>
           </Label>
-          <Select value={values.annexeId} onValueChange={(v) => onChange({ annexeId: v })}>
-            <SelectTrigger id={`${idPrefix}-annexe`} className="h-10 w-full" aria-label="Sélectionner une annexe">
+          <Select
+            value={values.annexeId || undefined}
+            onValueChange={(v) => {
+              onChange({ annexeId: v });
+              onBlur?.("annexeId");
+            }}
+          >
+            <SelectTrigger
+              id={`${idPrefix}-annexe`}
+              className={cn("h-10 w-full", showAnnexeError && "border-red-500")}
+              aria-label="Sélectionner une annexe"
+            >
               <SelectValue placeholder="Sélectionner une annexe" />
             </SelectTrigger>
             <SelectContent>
@@ -70,6 +110,11 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
               ))}
             </SelectContent>
           </Select>
+          {showAnnexeError && (
+            <p role="alert" className="text-xs text-red-500 font-medium">
+              {errors?.annexeId}
+            </p>
+          )}
         </div>
       )}
 
@@ -101,40 +146,52 @@ export function ClientFormFields({ values, onChange, annexes, idPrefix = "cl", a
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor={`${idPrefix}-tel`} className="text-sm font-medium text-foreground/90">
             Téléphone
           </Label>
           <Input
             id={`${idPrefix}-tel`}
-            value={values.telephone}
+            value={values.telephone ?? ""}
             onChange={(e) => onChange({ telephone: e.target.value })}
+            onBlur={() => onBlur?.("telephone")}
             placeholder="Ex. +223 70 00 00 00"
-            className="h-10"
+            className={cn("h-10", showTelError && "border-red-500")}
           />
+          {showTelError && (
+            <p role="alert" className="text-xs text-red-500 font-medium">
+              {errors?.telephone}
+            </p>
+          )}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor={`${idPrefix}-email`} className="text-sm font-medium text-foreground/90">
             E-mail
           </Label>
           <Input
             id={`${idPrefix}-email`}
             type="email"
-            value={values.email}
+            value={values.email ?? ""}
             onChange={(e) => onChange({ email: e.target.value })}
+            onBlur={() => onBlur?.("email")}
             placeholder="Ex. contact@exemple.com"
-            className="h-10"
+            className={cn("h-10", showEmailError && "border-red-500")}
           />
+          {showEmailError && (
+            <p role="alert" className="text-xs text-red-500 font-medium">
+              {errors?.email}
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor={`${idPrefix}-adresse`} className="text-sm font-medium text-foreground/90">
           Adresse
         </Label>
         <Input
           id={`${idPrefix}-adresse`}
-          value={values.adresse}
+          value={values.adresse ?? ""}
           onChange={(e) => onChange({ adresse: e.target.value })}
           placeholder="Ex. Quartier, ville"
           className="h-10"

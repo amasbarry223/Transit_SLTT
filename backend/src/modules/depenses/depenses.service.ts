@@ -1,21 +1,17 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
+import { parsePagination, buildPaginatedResponse } from '../../common/pagination.utils';
 
 @Injectable()
 export class DepensesService {
   constructor(private readonly prisma: PrismaService) {}
-
-  private buildAnnexeFilter(user: CurrentUserType) {
-    if (user.role === 'ADMIN') return {};
-    return { annexeId: { in: user.annexeIds } };
-  }
 
   async findAll(
     user: CurrentUserType,
@@ -29,14 +25,12 @@ export class DepensesService {
       limit?: number;
     },
   ) {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(query, 20);
 
-    const annexeFilter = this.buildAnnexeFilter(user);
+    assertAnnexeAccess(user, query.annexeId, 'cette annexe');
 
     const where: any = {
-      ...annexeFilter,
+      ...buildAnnexeScopeFilter(user),
       ...(query.annexeId ? { annexeId: query.annexeId } : {}),
       ...(query.statut ? { statut: query.statut } : {}),
       ...(query.categorie ? { categorie: query.categorie } : {}),
@@ -44,9 +38,9 @@ export class DepensesService {
       ...(query.search
         ? {
             OR: [
-              { numero: { contains: query.search, mode: 'insensitive' } },
-              { description: { contains: query.search, mode: 'insensitive' } },
-              { fournisseur: { nom: { contains: query.search, mode: 'insensitive' } } },
+              { numero: { contains: query.search } },
+              { description: { contains: query.search } },
+              { fournisseur: { nom: { contains: query.search } } },
             ],
           }
         : {}),
@@ -67,10 +61,7 @@ export class DepensesService {
       }),
     ]);
 
-    return {
-      data,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    };
+    return buildPaginatedResponse(data, total, { page, limit });
   }
 
   async findOne(id: string, user: CurrentUserType) {
@@ -88,24 +79,26 @@ export class DepensesService {
 
     if (!depense) throw new NotFoundException(`Dépense ${id} non trouvée`);
 
-    if (user.role !== 'ADMIN' && !user.annexeIds.includes(depense.annexeId)) {
-      throw new ForbiddenException("Accès non autorisé à cette dépense");
-    }
+    assertAnnexeAccess(user, depense.annexeId, 'cette dépense');
 
     return depense;
   }
 
   async create(user: CurrentUserType, data: any) {
-    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
-      throw new ForbiddenException("Vous ne pouvez pas créer de dépense pour cette annexe");
-    }
+    assertAnnexeAccess(user, data.annexeId, 'cette annexe');
 
     const existing = await this.prisma.depense.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro ${data.numero} existe déjà`);
 
+    // Une dépense démarre toujours EN_ATTENTE : le client ne peut pas s'auto-approuver
+    // ni marquer la dépense payée en contournant le workflow.
+    const { statut: _st, approuveParId: _ap, creeParId: _cp, id: _id, ...depenseData } = data;
+
     return this.prisma.depense.create({
       data: {
-        ...data,
+        ...depenseData,
+        montant: Number(depenseData.montant) || 0,
+        statut: 'EN_ATTENTE',
         creeParId: user.id,
       },
       include: { annexe: true, fournisseur: true },
@@ -115,7 +108,7 @@ export class DepensesService {
   async approuver(id: string, user: CurrentUserType) {
     const depense = await this.findOne(id, user);
     if (depense.statut !== 'EN_ATTENTE') {
-      throw new BadRequestException("Seule une dépense en attente peut être approuvée");
+      throw new BadRequestException('Seule une dépense en attente peut être approuvée');
     }
 
     return this.prisma.depense.update({
@@ -127,6 +120,17 @@ export class DepensesService {
     });
   }
 
+  async remove(id: string, user: CurrentUserType) {
+    const depense = await this.findOne(id, user);
+    if (depense.statut === 'PAYEE' || depense.transactions.length > 0) {
+      throw new BadRequestException(
+        'Impossible de supprimer une dépense déjà payée. Elle est liée à un mouvement de caisse.',
+      );
+    }
+    await this.prisma.depense.delete({ where: { id } });
+    return { id };
+  }
+
   async payerDepuisCaisse(
     id: string,
     user: CurrentUserType,
@@ -134,18 +138,34 @@ export class DepensesService {
   ) {
     const depense = await this.findOne(id, user);
 
-    const caisse = await this.prisma.caisse.findUnique({ where: { id: data.caisseId } });
-    if (!caisse) throw new NotFoundException("Caisse non trouvée");
+    if (depense.statut === 'PAYEE') {
+      throw new BadRequestException('Cette dépense est déjà payée.');
+    }
+    if (depense.statut !== 'APPROUVEE') {
+      throw new BadRequestException('La dépense doit être approuvée avant paiement.');
+    }
 
-    if (caisse.soldeActuel < depense.montant) {
-      throw new BadRequestException("Solde de caisse insuffisant");
+    const caisse = await this.prisma.caisse.findUnique({ where: { id: data.caisseId } });
+    if (!caisse) throw new NotFoundException('Caisse non trouvée');
+
+    assertAnnexeAccess(user, caisse.annexeId, "cette caisse");
+
+    if (caisse.statut === 'FERMEE') {
+      throw new BadRequestException('Cette caisse est fermée aux opérations.');
+    }
+    if (!(depense.montant > 0)) {
+      throw new BadRequestException('Le montant de la dépense est invalide.');
     }
 
     return this.prisma.$transaction(async (tx: any) => {
-      const updated = await tx.depense.update({
-        where: { id },
+      // "Claim" du paiement atomique pour éviter les doubles décaissements
+      const claimed = await tx.depense.updateMany({
+        where: { id, statut: 'APPROUVEE' },
         data: { statut: 'PAYEE' },
       });
+      if (claimed.count === 0) {
+        throw new BadRequestException('Cette dépense vient d’être payée par ailleurs.');
+      }
 
       await tx.transactionCaisse.create({
         data: {
@@ -158,12 +178,15 @@ export class DepensesService {
         },
       });
 
-      await tx.caisse.update({
+      const updatedCaisse = await tx.caisse.update({
         where: { id: data.caisseId },
         data: { soldeActuel: { decrement: depense.montant } },
       });
+      if (updatedCaisse.soldeActuel < 0) {
+        throw new BadRequestException('Solde de caisse insuffisant');
+      }
 
-      return updated;
+      return tx.depense.findUnique({ where: { id }, include: { annexe: true, fournisseur: true } });
     });
   }
 }

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { TableHead } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { TableHead } from "@/shared/components/ui/table";
+import { cn } from "@/shared/utils/cn";
 import type { SortDir, SortKey } from "./shared";
 
 export function SortableHead({

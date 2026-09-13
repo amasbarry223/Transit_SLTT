@@ -26,6 +26,7 @@ export type AuditModule =
   | "Dépenses"
   | "Sociétés"
   | "Annexes"
+  | "Ports"
   | "Archives"
   | "Documents"
   | "Système";
@@ -43,6 +44,7 @@ export const AUDIT_MODULE = {
   Archives: "Archives",
   Bons: "Bons",
   Annexes: "Annexes",
+  Ports: "Ports",
   Contrats: "Contrats",
   Depenses: "Dépenses",
   Documents: "Documents",
@@ -115,8 +117,8 @@ async function resolveClientIp(): Promise<string> {
 import { api } from "@/lib/api-client";
 
 export function mapAuditLogFromDb(row: Record<string, unknown>): AuditEntry {
-  const donnees = (row.donnees as Record<string, any>) || {};
-  const userObj = (row.user as Record<string, any>) || {};
+  const donnees = (row.donnees as Record<string, unknown>) || {};
+  const userObj = (row.user as Record<string, unknown>) || {};
   const userName = String(
     userObj.nom ||
     donnees.userName ||
@@ -173,7 +175,7 @@ export async function insertAuditLog(params: {
         source: params.source,
       },
     });
-    if (created?.id) dbId = created.id;
+    if (created?.id) dbId = String(created.id);
   } catch (err) {
     if (process.env.NODE_ENV === "development") {
       logWarn("[audit] Échec de persistance du log d'audit (mode local)", err);

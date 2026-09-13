@@ -4,17 +4,17 @@ import { useState } from "react";
 import { ArrowLeft, Banknote, CalendarDays, FolderKanban, Package, User } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { usePermission } from "@/hooks/use-permission";
+import { usePermission } from "@/shared/hooks/use-permission";
 import type { DevisInput, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort, parseAmount } from "@/lib/format";
 import { printDevis } from "@/lib/export";
-import { resolveSlttBrand } from "@/lib/classeur";
-import { useToast } from "@/hooks/use-toast";
-import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { resolveDossierCoutLabels, resolveSlttBrand } from "@/lib/societe-brand";
+import { useToast } from "@/shared/hooks/use-toast";
+import { useUnsavedChangesWarning } from "@/shared/hooks/use-unsaved-changes-warning";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import { ConvertDevisDialog } from "@/components/sltt/convert-devis-dialog";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
@@ -33,6 +33,7 @@ export function DevisDetailScreen() {
   const allDevis = useStore((s) => s.devis);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
+  const annexes = useStore((s) => s.annexes);
   const updateDevis = useStore((s) => s.updateDevis);
   const updateDevisStatut = useStore((s) => s.updateDevisStatut);
   const removeDevis = useStore((s) => s.removeDevis);
@@ -48,6 +49,7 @@ export function DevisDetailScreen() {
 
   const [fClientId, setFClientId] = useState("");
   const [fClientNom, setFClientNom] = useState("");
+  const [fPortId, setFPortId] = useState("");
   const [fNature, setFNature] = useState("");
   const [fDroitDouane, setFDroitDouane] = useState("");
   const [fFraisCircuit, setFFraisCircuit] = useState("");
@@ -60,6 +62,7 @@ export function DevisDetailScreen() {
     setPrevEditKey(editKey);
     if (editKey !== null && devis) {
       setFClientId(devis.clientId); setFClientNom(devis.clientNom);
+      setFPortId(devis.portId ?? "");
       setFNature(devis.nature); setFDroitDouane(String(devis.droitDouane));
       setFFraisCircuit(String(devis.fraisCircuit)); setFFraisPrestation(String(devis.fraisPrestation));
       setFDateValidite(devis.dateValidite); setFNotes(devis.notes ?? "");
@@ -78,9 +81,14 @@ export function DevisDetailScreen() {
     );
   }
 
+  // L'annexe (Mali/Côte d'Ivoire) est fixée à la création du devis — les
+  // intitulés de rubrique en dépendent (ex. « Frais transit port » couvre la
+  // manutention portuaire en Côte d'Ivoire).
+  const annexeCode = annexes.find((a) => a.id === devis.annexeId)?.code;
+  const coutLabels = resolveDossierCoutLabels(annexeCode);
   const dd = parseAmount(fDroitDouane), fc = parseAmount(fFraisCircuit), fp = parseAmount(fFraisPrestation);
   const editTotal = dd + fc + fp;
-  const canEditContent = canWrite && !devis.dossierId && devis.statut !== "Accepté";
+  const canEditContent = canWrite && !devis.dossierId;
   const editValid = !!fClientId && !!fNature.trim() && !!fDateValidite;
   const startEdit = () => { setIsEditing(true); setConfirmDelete(false); setConfirmConvert(false); };
   const requestConvert = () => { setConfirmConvert(true); setConfirmDelete(false); };
@@ -95,7 +103,7 @@ export function DevisDetailScreen() {
     if (!canEditContent) {
       toastWarning(toast, {
         title: "Modification impossible",
-        description: "Ce devis a été accepté ou converti en dossier entre-temps : il n'est plus modifiable.",
+        description: "Ce devis a été converti en dossier entre-temps : il n'est plus modifiable.",
       });
       setIsEditing(false);
       return;
@@ -107,7 +115,7 @@ export function DevisDetailScreen() {
     setSavingEdit(true);
     try {
       await updateDevis(devis.id, {
-        clientId: fClientId, clientNom: fClientNom, nature: fNature,
+        clientId: fClientId, clientNom: fClientNom, portId: fPortId || undefined, nature: fNature,
         droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp, dateValidite: fDateValidite,
         notes: fNotes.trim() || undefined,
       } satisfies DevisInput);
@@ -146,9 +154,10 @@ export function DevisDetailScreen() {
     printDevis({
       reference: devis.reference, clientNom: devis.clientNom, clientAdresse: client?.adresse,
       clientTelephone: client?.telephone, clientEmail: client?.email, nature: devis.nature,
+      portNom: devis.portNom,
       dateCreation: devis.dateCreation, dateValidite: devis.dateValidite, droitDouane: devis.droitDouane,
       fraisCircuit: devis.fraisCircuit, fraisPrestation: devis.fraisPrestation, total: devis.total,
-      notes: devis.notes, statut: devis.statut,
+      notes: devis.notes, statut: devis.statut, coutLabels,
     }, resolveSlttBrand(societes));
   };
   const handleDelete = async () => {
@@ -186,6 +195,7 @@ export function DevisDetailScreen() {
               </div>
               <div className="px-5">
                 <InfoRow icon={User} label="Client" value={devis.clientNom} />
+                {devis.portNom && <InfoRow icon={Package} label={coutLabels.port} value={devis.portNom} />}
                 <InfoRow icon={Package} label="Nature de la marchandise" value={devis.nature} />
                 <InfoRow icon={CalendarDays} label="Date de création" value={formatDateShort(devis.dateCreation)} />
                 <InfoRow icon={CalendarDays} label="Valide jusqu'au" value={formatDateShort(devis.dateValidite)} />
@@ -207,7 +217,7 @@ export function DevisDetailScreen() {
               <div className="border-b border-border/60 px-5 py-3 bg-muted/60">
                 <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Estimation financière</h2>
               </div>
-              <FinancialBreakdown devis={devis} />
+              <FinancialBreakdown devis={devis} annexeCode={annexeCode} />
             </Card>
           </div>
         </div>
@@ -215,13 +225,14 @@ export function DevisDetailScreen() {
       {isEditing && (
         <DevisEditForm
           devis={devis} clients={clients} fClientId={fClientId} handleClientChange={handleClientChange}
+          fPortId={fPortId} setFPortId={setFPortId}
           fNature={fNature} setFNature={setFNature} fDroitDouane={fDroitDouane}
           setFDroitDouane={setFDroitDouane} fFraisCircuit={fFraisCircuit}
           setFFraisCircuit={setFFraisCircuit} fFraisPrestation={fFraisPrestation}
           setFFraisPrestation={setFFraisPrestation} fDateValidite={fDateValidite}
           setFDateValidite={setFDateValidite} fNotes={fNotes} setFNotes={setFNotes}
           editTotal={editTotal} handleCancelEdit={handleCancelEdit} handleSave={handleSave}
-          saving={savingEdit}
+          saving={savingEdit} annexeCode={annexeCode}
         />
       )}
       <ConvertDevisDialog

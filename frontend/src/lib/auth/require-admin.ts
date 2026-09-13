@@ -1,4 +1,4 @@
-import { logError } from "@/shared/logger";
+import { logError, logWarn } from "@/shared/logger";
 
 export class AuthError extends Error {
   status: number;
@@ -27,18 +27,27 @@ export interface AuthenticatedProfile {
   actif: boolean;
 }
 
-/**
- * Extrait le payload d'un JWT de façon sécurisée côté serveur Next.js
- */
-function decodeJwtClaims(token: string): any | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const json = Buffer.from(parts[1], "base64url").toString("utf8");
-    return JSON.parse(json);
-  } catch {
-    return null;
+/** Lit la valeur d'un cookie nommé dans un en-tête `Cookie` brut — utilisé
+ *  pour reconstituer le couple double-submit CSRF (cookie + en-tête) quand
+ *  Next.js relaie un appel vers NestJS pour le compte du navigateur. */
+export function extractCookieValue(cookieHeader: string | null, name: string): string | null {
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(";")) {
+    const [key, ...rest] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(rest.join("="));
   }
+  return null;
+}
+
+/** Forme d'un utilisateur renvoyé par `/auth/me` ou reconstruit depuis les claims JWT. */
+interface NestUser {
+  id: string;
+  email?: string;
+  nom?: string;
+  role?: string;
+  permissions?: string[];
+  annexeIds?: string[];
+  actif?: boolean;
 }
 
 /**
@@ -50,50 +59,43 @@ async function getAuthenticatedProfile(request: Request): Promise<{
   profile: AuthenticatedProfile;
   isAdmin: boolean;
 }> {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new AuthError("Token d'authentification requis.", 401);
+  // Les tokens vivent en cookies httpOnly posés par NestJS sur sa propre
+  // origine : le navigateur les envoie à Next.js (même registrable domain
+  // que l'API en dev, cookie transporté tel quel), mais Next.js doit les
+  // relayer explicitement dans cet appel serveur-à-serveur — ce n'est pas
+  // un fetch du navigateur, aucun cookie jar n'attache quoi que ce soit
+  // automatiquement ici.
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) {
+    throw new AuthError("Session requise.", 401);
   }
 
-  const token = authHeader.slice(7);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-  let nestUser: any = null;
+  let nestUser: NestUser | null = null;
 
   try {
     const res = await fetch(`${apiUrl}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { cookie: cookieHeader },
       cache: "no-store",
     });
 
     if (res.ok) {
-      nestUser = await res.json();
-    } else if (res.status === 401 || res.status === 403) {
-      const errData = await res.json().catch(() => ({}));
+      nestUser = (await res.json()) as NestUser;
+    } else {
+      // Toute réponse non-OK (401, 403, 500…) échoue fermé en 401. On NE
+      // retombe PAS sur les claims du JWT : non vérifiés = forgeables. Seul
+      // NestJS, qui détient le secret, fait autorité sur l'identité.
+      const errData = (await res.json().catch(() => ({}))) as { message?: string };
       throw new AuthError(errData.message || "Profil introuvable ou inactif.", 401);
     }
   } catch (err) {
     if (err instanceof AuthError) throw err;
+    logWarn("[auth] /auth/me injoignable", err);
+    throw new AuthError("Session invalide ou expirée.", 401);
   }
 
-  // Si l'API NestJS n'a pas pu être interrogée via HTTP ou en fallback direct,
-  // on utilise les claims du JWT émis par NestJS
-  if (!nestUser) {
-    const claims = decodeJwtClaims(token);
-    if (claims && claims.sub) {
-      nestUser = {
-        id: claims.sub,
-        email: claims.email || "",
-        nom: claims.nom || "Utilisateur",
-        role: claims.role || "OPERATEUR",
-        permissions: claims.permissions || [],
-        annexeIds: claims.annexeIds || [],
-        actif: claims.actif !== false,
-      };
-    }
-  }
-
-  if (!nestUser) {
+  if (!nestUser?.id) {
     throw new AuthError("Session invalide ou expirée.", 401);
   }
 
@@ -101,10 +103,10 @@ async function getAuthenticatedProfile(request: Request): Promise<{
     throw new AuthError("Profil introuvable ou inactif.", 401);
   }
 
-  const role = nestUser.role === "ADMIN" ? "Administrateur" : nestUser.role;
-  const isAdmin = role === "Administrateur" || nestUser.role === "ADMIN";
-  const permissions =
-    (nestUser.permissions as string[]) || (isAdmin ? ["*"] : []);
+  const rawRole = nestUser.role ?? "OPERATEUR";
+  const role = rawRole === "ADMIN" ? "Administrateur" : rawRole;
+  const isAdmin = role === "Administrateur";
+  const permissions = nestUser.permissions ?? (isAdmin ? ["*"] : []);
 
   const profile: AuthenticatedProfile = {
     id: nestUser.id,
@@ -112,7 +114,8 @@ async function getAuthenticatedProfile(request: Request): Promise<{
     email: nestUser.email || "",
     role,
     permissions,
-    actif: nestUser.actif !== false,
+    // Un profil inactif a déjà levé une AuthError plus haut.
+    actif: true,
   };
 
   const user: AuthenticatedUser = {
@@ -128,8 +131,7 @@ async function getAuthenticatedProfile(request: Request): Promise<{
 }
 
 export async function requireUser(request: Request) {
-  const { user, profile, isAdmin } = await getAuthenticatedProfile(request);
-  return { user, profile, isAdmin, admin: null as any };
+  return getAuthenticatedProfile(request);
 }
 
 export async function requireUserManager(request: Request) {
@@ -143,7 +145,7 @@ export async function requireUserManager(request: Request) {
     throw new AuthError("Accès réservé à la gestion des utilisateurs.", 403);
   }
 
-  return { user, profile, admin: null as any, isAdmin };
+  return { user, profile, isAdmin };
 }
 
 export function authErrorResponse(error: unknown) {

@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Injectable()
 export class DocumentsService {
@@ -39,13 +40,23 @@ export class DocumentsService {
     });
   }
 
+  /** Résout le chemin disque en garantissant qu'il reste sous uploadBaseDir. */
+  private resolveInsideUploads(cheminRelatif: string): string {
+    const fullPath = path.resolve(cheminRelatif);
+    const base = this.uploadBaseDir + path.sep;
+    if (fullPath !== this.uploadBaseDir && !fullPath.startsWith(base)) {
+      throw new NotFoundException('Fichier hors du répertoire autorisé');
+    }
+    return fullPath;
+  }
+
   async getFilePath(filename: string) {
     const doc = await this.prisma.document.findFirst({
       where: { nomFichier: filename },
     });
 
     if (!doc) throw new NotFoundException('Fichier non trouvé');
-    const fullPath = path.resolve(doc.cheminRelatif);
+    const fullPath = this.resolveInsideUploads(doc.cheminRelatif);
 
     if (!fs.existsSync(fullPath)) {
       throw new NotFoundException('Fichier physique introuvable sur le disque');
@@ -54,17 +65,32 @@ export class DocumentsService {
     return { doc, fullPath };
   }
 
-  async deleteFile(id: string) {
-    const doc = await this.prisma.document.findUnique({ where: { id } });
+  async deleteFile(id: string, user: CurrentUserType) {
+    const doc = await this.prisma.document.findUnique({
+      where: { id },
+      include: { dossier: { select: { annexeId: true } } },
+    });
     if (!doc) throw new NotFoundException('Document non trouvé');
 
-    const fullPath = path.resolve(doc.cheminRelatif);
-    if (fs.existsSync(fullPath)) {
-      try {
-        fs.unlinkSync(fullPath);
-      } catch {
-        // Ignorer l'erreur physique
-      }
+    // Un document rattaché à un dossier hérite du périmètre annexe de ce
+    // dossier : sans ce contrôle, n'importe quel utilisateur disposant de la
+    // permission globale 'documents.supprimer' pouvait supprimer un document
+    // d'une annexe à laquelle il n'a pas accès.
+    if (
+      doc.dossier &&
+      user.role !== 'ADMIN' &&
+      !user.annexeIds.includes(doc.dossier.annexeId)
+    ) {
+      throw new ForbiddenException("Ce document n'appartient pas à votre annexe");
+    }
+
+    // Le fichier disque ne doit être supprimé que s'il est bien sous uploads/ ;
+    // sinon on retire seulement la ligne en base (pas de suppression sauvage).
+    try {
+      const fullPath = this.resolveInsideUploads(doc.cheminRelatif);
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    } catch {
+      // Chemin hors périmètre ou erreur d'I/O : on n'échoue pas la suppression logique.
     }
 
     return this.prisma.document.delete({ where: { id } });

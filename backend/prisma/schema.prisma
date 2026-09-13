@@ -159,13 +159,17 @@ model Annexe {
   pays      String   @default("Guinée")
   telephone String?
   email     String?
+  rccm      String?
+  nif       String?
   estSiege  Boolean  @default(false) @map("est_siege")
   actif     Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   userAnnexes UserAnnexe[]
+  clients     Client[]
   dossiers    Dossier[]
+  devis       Devis[]
   factures    Facture[]
   caisses     Caisse[]
   depenses    Depense[]
@@ -212,9 +216,17 @@ model Client {
   rccm      String?
   actif     Boolean    @default(true)
   notes     String?
+  // Ajouté après coup : le formulaire client (front) affiche un sélecteur
+  // Annexe obligatoire depuis le début, mais rien ne le persistait ici —
+  // chaque annexe choisie à la création/modification d'un client était
+  // silencieusement perdue. Nullable pour ne pas casser les clients déjà
+  // créés sans cette colonne (annexeId = null jusqu'à leur prochaine
+  // modification).
+  annexeId  String?    @map("annexe_id")
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
+  annexe     Annexe?    @relation(fields: [annexeId], references: [id])
   dossiers   Dossier[]
   factures   Facture[]
   devis      Devis[]
@@ -223,6 +235,7 @@ model Client {
   stockItems StockItem[]
   bonsSortie BonSortie[]
 
+  @@index([annexeId])
   @@map("clients")
 }
 
@@ -255,6 +268,11 @@ model Dossier {
   numeroDeclaration String?      @map("numero_declaration")
   dateDeclaration  DateTime?     @map("date_declaration")
   valeurDouane     Float?        @map("valeur_douane")
+  fraisCircuit     Float         @default(0) @map("frais_circuit")
+  fraisPrestation  Float         @default(0) @map("frais_prestation")
+  montantInvesti   Float         @default(0) @map("montant_investi")
+  montantPaye      Float         @default(0) @map("montant_paye")
+  dateSolde        DateTime?     @map("date_solde")
   notes            String?
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
@@ -265,6 +283,7 @@ model Dossier {
   conteneurs     Conteneur[]
   etapes         EtapeDossier[]
   factures       Facture[]
+  devis          Devis[]
   depenses       Depense[]
   documents      Document[]
   trackingPublic TrackingPublic?
@@ -343,7 +362,7 @@ model Facture {
   montantTva   Float         @default(0) @map("montant_tva")
   montantTtc   Float         @default(0) @map("montant_ttc")
   montantPaye  Float         @default(0) @map("montant_paye")
-  devise       String        @default("GNF")
+  devise       String        @default("FCFA")
   notes        String?
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
@@ -381,21 +400,31 @@ model Devis {
   id           String      @id @default(uuid())
   numero       String      @unique
   clientId     String      @map("client_id")
+  annexeId     String?     @map("annexe_id")
+  dossierId    String?     @map("dossier_id")
+  portId       String?     @map("port_id")
+  nature       String?
   dateEmission DateTime    @default(now()) @map("date_emission")
   dateValidite DateTime?   @map("date_validite")
   statut       StatutDevis @default(BROUILLON)
   montantHt    Float       @default(0) @map("montant_ht")
   montantTva   Float       @default(0) @map("montant_tva")
   montantTtc   Float       @default(0) @map("montant_ttc")
-  devise       String      @default("GNF")
+  devise       String      @default("FCFA")
   notes        String?
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
-  client Client       @relation(fields: [clientId], references: [id])
-  lignes LigneDevis[]
+  client  Client       @relation(fields: [clientId], references: [id])
+  annexe  Annexe?      @relation(fields: [annexeId], references: [id])
+  dossier Dossier?     @relation(fields: [dossierId], references: [id])
+  port    Port?        @relation(fields: [portId], references: [id])
+  lignes  LigneDevis[]
 
   @@index([clientId])
+  @@index([annexeId])
+  @@index([dossierId])
+  @@index([portId])
   @@map("devis")
 }
 
@@ -421,7 +450,7 @@ model Cotation {
   dateDemande  DateTime       @default(now()) @map("date_demande")
   statut       StatutCotation @default(BROUILLON)
   montantTotal Float          @default(0) @map("montant_total")
-  devise       String         @default("GNF")
+  devise       String         @default("FCFA")
   notes        String?
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
@@ -449,6 +478,21 @@ model LigneCotation {
 // -----------------------------------------------------------------------------
 // Dépenses & Fournisseurs
 // -----------------------------------------------------------------------------
+model Port {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  nom       String
+  ville     String?
+  pays      String?
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  devis Devis[]
+
+  @@map("ports")
+}
+
 model Fournisseur {
   id        String   @id @default(uuid())
   code      String   @unique
@@ -480,7 +524,7 @@ model Depense {
   categorie     CategorieDepense @default(DIVERS)
   statut        StatutDepense    @default(EN_ATTENTE)
   montant       Float
-  devise        String           @default("GNF")
+  devise        String           @default("FCFA")
   justificatif  String?
   description   String?
   dateDepense   DateTime         @default(now()) @map("date_depense")
@@ -509,7 +553,7 @@ model Caisse {
   nom          String
   annexeId     String       @map("annexe_id")
   soldeActuel  Float        @default(0) @map("solde_actuel")
-  devise       String       @default("GNF")
+  devise       String       @default("FCFA")
   statut       StatutCaisse @default(OUVERTE)
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")

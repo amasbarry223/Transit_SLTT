@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { DossierFichier, FichierInput, SubDossier } from "@/lib/store";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { FileDropZone } from "./file-drop-zone";
 
 export function SubDossierCard({

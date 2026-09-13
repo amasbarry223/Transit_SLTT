@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { ClientInput } from "@/features/clients/types";
 import { useToast } from "@/shared/hooks/use-toast";
@@ -95,9 +95,9 @@ export function QuickClientButton({ onCreated }: Props) {
             <Button variant="outline" onClick={() => { setOpen(false); reset(); }} disabled={saving}>
               Annuler
             </Button>
-            <Button onClick={handleCreate} disabled={!form.nom.trim() || saving}>
-              <UserPlus className="size-4" />
-              {saving ? "Création…" : "Créer le client"}
+            <Button onClick={handleCreate} disabled={!form.nom.trim() || saving} className="gap-2">
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+              {saving ? "Création en cours…" : "Créer le client"}
             </Button>
           </DialogFooter>
         </DialogContent>

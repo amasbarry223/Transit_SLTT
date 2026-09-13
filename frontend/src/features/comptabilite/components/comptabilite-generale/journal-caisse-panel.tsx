@@ -2,17 +2,17 @@
 
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ListFilters } from "@/components/sltt/list-filters";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/shared/components/ui/badge";
+import { Card } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/shared/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ClotureDialog } from "./cloture-dialog";
 import { EntitesConsolideesCard } from "./entites-consolidees-card";
 import { ImportAnyDialog } from "./import-any-dialog";
@@ -22,7 +22,7 @@ import { OperationsTable } from "./operations-table";
 import type { useComptabiliteGeneraleScreen } from "./use-comptabilite-generale-screen";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { formatDateShort, formatFCFA } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { PiggyBank } from "lucide-react";
 
 interface JournalCaissePanelProps {

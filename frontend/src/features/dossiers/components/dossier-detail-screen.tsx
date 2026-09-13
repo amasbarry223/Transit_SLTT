@@ -16,22 +16,22 @@ import {
 import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { usePermission } from "@/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +39,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/shared/components/ui/alert-dialog";
 import {
   TransitionDialog,
   getNextTransition,
@@ -218,6 +218,10 @@ export function DossierDetailScreen() {
     setSubDossierName("");
     setSubDossierDescription("");
     setSubDossierDialogOpen(true);
+    // handleSaveSubDossier ne réarme plus `savingSubDossier` après un succès
+    // (le dialog reste monté et cliquable pendant son animation de fermeture) :
+    // on le réarme ici à chaque ouverture.
+    setSavingSubDossier(false);
   }
 
   function handleStartOcr(documentId: string) {
@@ -229,6 +233,7 @@ export function DossierDetailScreen() {
     setSubDossierName(subDossier.nom);
     setSubDossierDescription(subDossier.description ?? "");
     setSubDossierDialogOpen(true);
+    setSavingSubDossier(false);
   }
 
   async function handleSaveSubDossier() {
@@ -254,7 +259,6 @@ export function DossierDetailScreen() {
       setSubDossierDialogOpen(false);
     } catch (error) {
       toastError(toast, error, { title: "Impossible d'enregistrer le sous-dossier", fallback: "Impossible d'enregistrer le sous-dossier." });
-    } finally {
       setSavingSubDossier(false);
     }
   }
@@ -282,6 +286,10 @@ export function DossierDetailScreen() {
     setFournisseurStatut("En attente");
     setFournisseurDate(new Date().toISOString().slice(0, 10));
     setFournisseurDialogOpen(true);
+    // handleSaveDossierFournisseur ne réarme plus `savingFournisseur` après un
+    // succès (même fenêtre de double-soumission pendant l'animation de
+    // fermeture du dialog) : on le réarme ici à chaque ouverture.
+    setSavingFournisseur(false);
   }
 
   async function handleSaveDossierFournisseur() {
@@ -309,7 +317,6 @@ export function DossierDetailScreen() {
       toastSuccess(toast, { title: "Fournisseur lié au dossier", description: fournisseur.nom });
     } catch (error) {
       toastError(toast, error, { title: "Impossible de lier le fournisseur", fallback: "Impossible de lier le fournisseur." });
-    } finally {
       setSavingFournisseur(false);
     }
   }

@@ -17,15 +17,15 @@ import type { SocieteBrand } from "@/lib/export";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
 import { FactureDocumentHeader } from "@/components/sltt/facture-document-header";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/dropdown-menu";
+import { cn } from "@/shared/utils/cn";
 
 export function FactureSummaryHeader({
   facture,

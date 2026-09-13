@@ -212,8 +212,24 @@ export interface PermissionUser {
   actif?: boolean;
 }
 
+/**
+ * Rôle applicatif ("Administrateur"/"Comptable"/"Agent de transit") à partir
+ * d'une valeur de rôle brute (venant du JWT/session — profile.role, la
+ * valeur brute de l'enum Prisma RoleUtilisateur, PAS mappée côté API avant
+ * d'être placée dans le payload, cf. auth.service.ts `login()`).
+ *
+ * Un rôle manquant ou non reconnu (ex. RoleUtilisateur.CLIENT, qu'aucun
+ * formulaire de création d'utilisateur ne produit aujourd'hui, ou une
+ * valeur corrompue/future) retombe sur le rôle le MOINS privilégié, jamais
+ * sur Administrateur — un défaut "ouvert" ici accorderait silencieusement
+ * tous les droits (hasPermission court-circuite tout check pour ce rôle) à
+ * quiconque porte un rôle que cette fonction ne reconnaît pas. Même choix
+ * de repli que mapToAppRole côté API (users.service.ts), qui retombe déjà
+ * sur 'Agent de transit' pour tout rôle non mappé — les deux couches
+ * doivent s'accorder sur le défaut le plus sûr, pas diverger.
+ */
 export function normalizeRole(role: string | null | undefined): UserRole {
-  if (!role) return "Administrateur";
+  if (!role) return "Agent de transit";
   const r = String(role).trim();
   switch (r) {
     case "ADMIN":
@@ -235,7 +251,7 @@ export function normalizeRole(role: string | null | undefined): UserRole {
     case "Comptable":
       return "Comptable";
     default:
-      return "Administrateur";
+      return "Agent de transit";
   }
 }
 

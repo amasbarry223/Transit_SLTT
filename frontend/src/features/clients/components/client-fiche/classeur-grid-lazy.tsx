@@ -20,7 +20,6 @@ const ClasseurGridImpl = dynamic(
 export function ClasseurGridLazy(props: {
   rows: ClasseurEntry[];
   onRowClick: (entry: ClasseurEntry) => void;
-  onDataChanged?: () => void;
   className?: string;
 }) {
   return <ClasseurGridImpl {...props} />;

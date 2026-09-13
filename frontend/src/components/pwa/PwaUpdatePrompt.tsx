@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { useSerwist } from "@serwist/next/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 
 export function PwaUpdatePrompt() {
   const { serwist } = useSerwist();

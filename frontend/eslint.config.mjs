@@ -73,6 +73,13 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "public/sw.js.map",
     "public/swe-worker-*",
     "graphify-out/**",
+    // Backend NestJS package : linté séparément par sa propre config oxlint
+    // (api/oxlint.json, `npm run lint` depuis api/). "eslint ." depuis la
+    // racine y appliquait par erreur les règles strictes Next.js/frontend
+    // (no-explicit-any notamment, inadaptée aux DTO Prisma), et surtout
+    // scannait api/dist (sortie de build générée, gitignorée, jamais censée
+    // être lintée ni éditée).
+    "api/**",
   ]
 }];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { setupCanvasPrintReplacements } from "@/shared/hooks/usePrint";
+import { setupCanvasPrintReplacements } from "@/shared/utils/print-canvas";
 
 /**
  * Effets globaux d'impression pour l'ensemble de l'application Transit SLTT :

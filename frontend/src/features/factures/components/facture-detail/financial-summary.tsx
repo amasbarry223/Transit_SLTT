@@ -2,7 +2,7 @@
 
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export function FinancialSummary({
   montantHT,

@@ -3,14 +3,14 @@
 import { useMemo, useState } from "react";
 import { FileSpreadsheet, FileText, Package, PackageMinus, PackagePlus, Plus, Search } from "lucide-react";
 import type { StockItem } from "@/lib/store";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { StockRow, StockCard } from "./stock-row-card";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
 
 const PAGE_SIZE = 8;
 

@@ -1,20 +1,19 @@
 export { htmlEscape } from "./html-escape";
 
-export { printHTML, printHtmlDocument } from "./print-document";
+export { printHTML } from "./print-document";
 
 export { exportToExcel } from "./excel-export";
 
 export {
   buildBonSortieCaisseHTML,
   printBilan,
-  printBonSortieCaisseModule,
   printClasseur,
-  printClients,
   printDevis,
+  printDossiers,
   printDevisList,
+  printFournisseurs,
   printFactureModule,
-  buildRecuPaiementHTML,
-  printRecuPaiementModule,
+  printRecuPaiementBatch,
   printStockInventory,
   printTransporteurs,
   shouldShowTva,
@@ -23,7 +22,13 @@ export {
   type BonSortieCaisseModuleData,
   type ClasseurPrintRow,
   type ClientPrintRow,
+  type ContratPrintData,
+  type ContratPrestationPrintRow,
+  type ContratDepensePrintRow,
   type DevisData,
+  type DossierPrintRow,
+  type DossierPrintTotals,
+  type FournisseurPrintRow,
   type DevisListPrintRow,
   type FactureModuleData,
   type RecuPaiementModuleData,

@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { EntiteComptable, OperationComptableType } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { formatDateShort, formatFCFA } from "@/lib/format";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,16 +15,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { NATURE_SUGGESTIONS } from "./shared";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -77,6 +77,10 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
     setType("Sortie");
     setModePaiement("Espèces");
     setMontant("");
+    // handleSubmit ne réarme plus `submitting` après un succès (le dialog
+    // reste monté et cliquable pendant son animation de fermeture) : on le
+    // réarme ici à chaque ouverture.
+    setSubmitting(false);
   }, [open]);
 
   const montantEffectif = Number(montant.replace(/\s/g, "")) || 0;
@@ -143,7 +147,6 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
       onOpenChange(false);
     } catch (error) {
       toastError(toast, error, { title: "Échec de l'enregistrement", fallback: "Réessayez." });
-    } finally {
       setSubmitting(false);
     }
   }

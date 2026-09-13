@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,13 +11,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { UI } from "@/lib/ui-messages";
+} from "@/shared/components/ui/alert-dialog";
 
 /**
- * Dialogue de confirmation de suppression partagé — standardise les 8 implémentations
- * divergentes (AlertDialog vs Dialog vs window.confirm, couleurs bg-red-600 vs
- * bg-destructive, absence de conséquences affichées) sur un seul composant.
+ * Dialogue de confirmation de suppression standardisé :
+ * - Intitulés explicites avec verbes d'action
+ * - Conséquences affichées avant validation
+ * - Boutons désactivés et spinner actif pendant l'opération
+ * - Maintien du dialogue ouvert en cas d'échec serveur pour éviter toute confusion
  */
 export function ConfirmDeleteDialog({
   open,
@@ -24,8 +26,8 @@ export function ConfirmDeleteDialog({
   title,
   description,
   consequences,
-  confirmLabel = UI.buttons.confirmDelete,
-  cancelLabel = UI.buttons.cancel,
+  confirmLabel = "Oui, supprimer définitivement",
+  cancelLabel = "Non, annuler",
   onConfirm,
 }: {
   open: boolean;
@@ -44,9 +46,12 @@ export function ConfirmDeleteDialog({
     setLoading(true);
     try {
       await onConfirm();
+      onOpenChange(false);
+    } catch {
+      // En cas d'échec (toast levé par onConfirm), on ne ferme pas la modale
+      // pour que l'utilisateur comprenne que l'opération n'a pas abouti.
     } finally {
       setLoading(false);
-      onOpenChange(false);
     }
   }
 
@@ -69,13 +74,14 @@ export function ConfirmDeleteDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
             disabled={loading}
             onClick={(e) => {
               e.preventDefault();
               void handleConfirm();
             }}
           >
+            {loading && <Loader2 className="size-4 animate-spin" />}
             {loading ? "Suppression en cours…" : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

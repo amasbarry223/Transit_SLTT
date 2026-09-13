@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { useStore } from "@/lib/store";
-import { useVisibleNavItems } from "@/hooks/use-visible-nav-items";
+import { useVisibleNavItems } from "@/shared/hooks/use-visible-nav-items";
 import {
   CommandDialog,
   CommandEmpty,
@@ -12,8 +12,8 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command";
-import { UI } from "@/lib/ui-messages";
+} from "@/shared/components/ui/command";
+import { UI } from "@/shared/utils/ui-messages";
 import {
   Search,
   User as UserIcon,
@@ -26,7 +26,7 @@ import {
   ScrollText,
   FolderKanban,
 } from "lucide-react";
-import { usePermission, useCanView } from "@/hooks/use-permission";
+import { usePermission, useCanView } from "@/shared/hooks/use-permission";
 import type { NavItem } from "@/lib/nav-items";
 
 type QuickAction = {

@@ -1,18 +1,19 @@
-import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
-import { resteAPayer, calculerEcart } from "@/lib/domain-types";
+import type { Dossier, Ecriture, Facture, OperationComptable, StockItem } from "@/lib/domain-types";
+import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { filterByPeriode } from "@/lib/benefice";
-import { sommeFacturesEncaissees } from "@/lib/client-stats";
+import { dossiersNonFactures, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
 import {
   CHART_MONTHS_COUNT,
   CHART_MONTHS_OFFSET,
+  TRESORERIE_CHART_MONTHS_COUNT,
+  TRESORERIE_CHART_MONTHS_OFFSET,
   ECHEANCE_IMMINENTE_JOURS,
   MS_PER_DAY,
 } from "@/lib/constants";
-import { DOSSIER_STATUT_HEX } from "@/components/sltt/status-badge";
 import { CHART_BRAND } from "@/lib/brand-colors";
 
-export const DASHBOARD_CHART_MONTHS = [
+const DASHBOARD_CHART_MONTHS = [
   "Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
 ];
 
@@ -37,6 +38,7 @@ export function computeEncaisseVariation(
   ecrituresAvecDate: Ecriture[],
   factures: Facture[],
   anchorDate: Date,
+  dossiers: Dossier[] = [],
 ): { chiffreEncaisse: number; variationEncaisse: number } {
   const curM = anchorDate.getMonth();
   const curY = anchorDate.getFullYear();
@@ -51,7 +53,12 @@ export function computeEncaisseVariation(
     // Annulée (cf. sommeFacturesEncaissees) pour rester cohérent avec le
     // totalPaye affiché sur la fiche client (client-stats.ts).
     const fromFactures = sommeFacturesEncaissees(filterByPeriode(factures, year, month));
-    return fromEcritures + fromFactures;
+    // Dossiers réglés directement (sans facture), datés par dateSolde.
+    const fromDossiers = sommeDossiersEncaisses(dossiers, factures, (iso) => {
+      const d = parseLocalDate(iso);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month;
+    });
+    return fromEcritures + fromFactures + fromDossiers;
   };
 
   const current = encaisseSur(curY, curM);
@@ -61,14 +68,57 @@ export function computeEncaisseVariation(
   return { chiffreEncaisse: current, variationEncaisse: variation };
 }
 
-/** Restes à payer et dossiers non soldés → source : dossiers (pas les écritures). */
-export function computeRestesAPayer(dossiers: Dossier[]): {
+/**
+ * Généralisation de computeEncaisseVariation à un simple comptage
+ * d'éléments créés ce mois-ci vs le mois précédent (dossiers, clients,
+ * factures, bons…) — même règle de calcul, un accesseur de date au lieu
+ * d'un champ fixe puisque chaque entité nomme le sien différemment
+ * (`date` pour dossiers/factures/bons, `createdAt` pour clients).
+ *
+ * N'a de sens que pour un flux d'éléments CRÉÉS (comparable mois à mois) —
+ * pas pour un état instantané comme "dossiers en cours" ou "alertes
+ * critiques", qui n'ont pas de date de création propre à filtrer : pour
+ * ceux-là, ne pas appeler cette fonction plutôt que d'inventer un calcul.
+ */
+export function computeCountVariation<T>(
+  items: T[],
+  getDate: (item: T) => string | undefined,
+  anchorDate: Date,
+): number {
+  const curM = anchorDate.getMonth();
+  const curY = anchorDate.getFullYear();
+  const prevM = curM === 0 ? 11 : curM - 1;
+  const prevY = curM === 0 ? curY - 1 : curY;
+
+  const countSur = (year: number, month: number) =>
+    items.filter((item) => {
+      const raw = getDate(item);
+      if (!raw) return false;
+      const d = parseLocalDate(raw);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month;
+    }).length;
+
+  const current = countSur(curY, curM);
+  const prev = countSur(prevY, prevM);
+  return prev === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - prev) / prev) * 100);
+}
+
+/**
+ * Restes à payer et dossiers non soldés → source : dossiers (pas les écritures).
+ *
+ * Exclut les dossiers déjà facturés (dossiersNonFactures) : un dossier
+ * facturé n'est plus la source de vérité de son reste dû, c'est sa facture
+ * (qui peut avoir été réglée séparément, ou inclure la TVA). Sans ce filtre,
+ * le KPI "Restes à payer" du Dashboard restait bloqué sur le reste obsolète
+ * du dossier — devenu incorrect — même après que la facture ait été soldée.
+ */
+export function computeRestesAPayer(dossiers: Dossier[], factures: Facture[] = []): {
   totalRestesAPayer: number;
   nbDossiersNonSoldes: number;
 } {
   let total = 0;
   let count = 0;
-  for (const d of dossiers) {
+  for (const d of dossiersNonFactures(dossiers, factures)) {
     const reste = resteAPayer(d);
     if (reste > 0) {
       total += reste;
@@ -78,10 +128,18 @@ export function computeRestesAPayer(dossiers: Dossier[]): {
   return { totalRestesAPayer: total, nbDossiersNonSoldes: count };
 }
 
-export function buildEncaissementsParMois(
-  ecrituresAvecDate: Ecriture[],
+/**
+ * Série mensuelle générique (nombre d'éléments créés par mois, sur
+ * CHART_MONTHS_COUNT mois) — pour les mini-graphiques du registre
+ * d'activité. Même principe que computeCountVariation (un flux d'éléments
+ * CRÉÉS, comparable mois à mois) mais renvoie la série complète au lieu
+ * d'une seule variation en %.
+ */
+export function buildMonthlyCounts<T>(
+  items: T[],
+  getDate: (item: T) => string | undefined,
   anchorDate: Date,
-): { mois: string; valeur: number }[] {
+): number[] {
   return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
     const chartDate = new Date(
       anchorDate.getFullYear(),
@@ -90,9 +148,12 @@ export function buildEncaissementsParMois(
     );
     const monthIndex = chartDate.getMonth();
     const year = chartDate.getFullYear();
-    const valeur = filterByPeriode(ecrituresAvecDate, year, monthIndex)
-      .reduce((sum, ecriture) => sum + ecriture.montantPaye, 0);
-    return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur };
+    return items.filter((item) => {
+      const raw = getDate(item);
+      if (!raw) return false;
+      const d = parseLocalDate(raw);
+      return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === monthIndex;
+    }).length;
   });
 }
 
@@ -118,6 +179,41 @@ export function buildDossiersParMois(
       return created.getFullYear() === year && created.getMonth() === monthIndex && isTraite;
     }).length;
     return { mois: DASHBOARD_CHART_MONTHS[monthIndex], valeur: crees, crees, traites };
+  });
+}
+
+/**
+ * Série mensuelle Entrées/Sorties comptables, sur TRESORERIE_CHART_MONTHS_COUNT
+ * mois (12 — un flux de trésorerie se lit sur un an, volontairement distinct
+ * de la fenêtre à 6 mois partagée par les autres graphiques dashboard).
+ * Agrégation globale (pas de filtre par annexe), cohérente avec
+ * computeEncaisseVariation qui est déjà entité-agnostique sur ce dashboard.
+ */
+export function buildTresorerieParMois(
+  operations: OperationComptable[],
+  anchorDate: Date,
+): { mois: string; entrees: number; sorties: number }[] {
+  return Array.from({ length: TRESORERIE_CHART_MONTHS_COUNT }, (_, index) => {
+    const chartDate = new Date(
+      anchorDate.getFullYear(),
+      anchorDate.getMonth() - (TRESORERIE_CHART_MONTHS_OFFSET - index),
+      1,
+    );
+    const monthIndex = chartDate.getMonth();
+    const year = chartDate.getFullYear();
+    const sommeSur = (type: OperationComptable["type"]) =>
+      operations
+        .filter((o) => {
+          if (o.type !== type) return false;
+          const d = parseLocalDate(o.date);
+          return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === monthIndex;
+        })
+        .reduce((sum, o) => sum + o.montant, 0);
+    return {
+      mois: DASHBOARD_CHART_MONTHS[monthIndex],
+      entrees: sommeSur("Entrée"),
+      sorties: sommeSur("Sortie"),
+    };
   });
 }
 
@@ -154,43 +250,7 @@ export function buildStockRepartition(
   return rows;
 }
 
-export function buildEcartsParPeriode(
-  dossiers: Dossier[],
-  anchorDate: Date,
-): { periode: string; ecart: number }[] {
-  return Array.from({ length: CHART_MONTHS_COUNT }, (_, index) => {
-    const chartDate = new Date(
-      anchorDate.getFullYear(),
-      anchorDate.getMonth() - (CHART_MONTHS_OFFSET - index),
-      1,
-    );
-    const monthIndex = chartDate.getMonth();
-    const year = chartDate.getFullYear();
-    const ecart = filterByPeriode(dossiers, year, monthIndex)
-      .reduce((sum, dossier) => sum + calculerEcart(dossier), 0);
-    return { periode: DASHBOARD_CHART_MONTHS[monthIndex], ecart };
-  });
-}
-
-/**
- * Uses DOSSIER_STATUT_HEX (status-badge.tsx) so the donut always agrees with
- * the DossierStatutBadge shown everywhere else — see LOGIC-04 in the audit.
- */
-export function buildStatutDonutData(
-  dossiers: Dossier[],
-): { name: string; value: number; color: string }[] {
-  const counts: Record<string, number> = {};
-  for (const d of dossiers) {
-    counts[d.statut] = (counts[d.statut] ?? 0) + 1;
-  }
-  return Object.entries(counts).map(([name, value]) => ({
-    name,
-    value,
-    color: DOSSIER_STATUT_HEX[name as keyof typeof DOSSIER_STATUT_HEX] ?? "#92A3BA",
-  }));
-}
-
-export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[]): LiveAlert[] {
+export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[], factures: Facture[] = []): LiveAlert[] {
   const todayMs = new Date().setHours(0, 0, 0, 0);
 
   const lowStockAlerts: LiveAlert[] = stock
@@ -228,7 +288,11 @@ export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[]): LiveA
       return acc;
     }, []);
 
-  const unpaid: LiveAlert[] = dossiers
+  // Un dossier facturé n'est plus la source de vérité de son reste dû (voir
+  // dossiersNonFactures) : sans ce filtre, un dossier soldé via sa facture
+  // continuait à déclencher une alerte "non soldé" basée sur son propre
+  // reste, resté obsolète depuis la facturation.
+  const unpaid: LiveAlert[] = dossiersNonFactures(dossiers, factures)
     .filter((d) => resteAPayer(d) > 0)
     .slice(0, 4)
     .map((d) => ({

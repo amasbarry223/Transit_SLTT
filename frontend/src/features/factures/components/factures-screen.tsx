@@ -2,9 +2,9 @@
 
 import { useCallback } from "react";
 import { Plus, Receipt, Search, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
 import { PageHeader } from "@/components/sltt/page-header";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { InfoCallout } from "@/components/sltt/info-callout";
@@ -19,7 +19,8 @@ import { FACTURE_TABS } from "./factures/shared";
 
 export function FacturesScreen() {
   const screen = useFacturesScreen();
-  const handleView = useCallback((f: Facture) => screen.go("facture-detail", { id: f.id }), [screen.go]);
+  const handleView = useCallback((f: Facture) => screen.openFactureDetail(f.id, false), [screen.openFactureDetail]);
+  const handleEdit = useCallback((f: Facture) => screen.openFactureDetail(f.id, true), [screen.openFactureDetail]);
   const handleMarkEnvoyee = useCallback((f: Facture) => screen.setEnvoyeeTarget(f), [screen.setEnvoyeeTarget]);
   const handleDelete = useCallback((f: Facture) => screen.setDeleteTarget(f), [screen.setDeleteTarget]);
 
@@ -160,6 +161,7 @@ export function FacturesScreen() {
           totalPages={screen.totalPages}
           onPageChange={screen.setPage}
           onView={handleView}
+          onEdit={handleEdit}
           onMarkEnvoyee={handleMarkEnvoyee}
           onDelete={handleDelete}
           onCreate={() => screen.setShowForm(true)}

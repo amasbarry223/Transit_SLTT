@@ -6,8 +6,20 @@ import { NextResponse, type NextRequest } from "next/server";
  * pour le streaming RSC (self.__next_f.push(...)), dont le contenu diffère à
  * chaque requête — impossible à couvrir par un hash statique.
  */
+// Dérivée de NEXT_PUBLIC_API_URL plutôt que codée en dur : une CSP figée sur
+// localhost:3001 bloquerait silencieusement (au niveau du navigateur, pas
+// visible côté serveur) tous les appels vers la vraie API en production.
+function resolveApiOrigin(): string {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api").origin;
+  } catch {
+    return "http://localhost:3001";
+  }
+}
+
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const apiOrigin = resolveApiOrigin();
 
   // En dev, le HMR webpack de `next dev` évalue du code via eval() pour les
   // source maps, et les scripts injectés par la toolchain dev ne portent pas le nonce.
@@ -20,12 +32,12 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: http://localhost:3001",
+    `img-src 'self' data: blob: ${apiOrigin}`,
     "font-src 'self' data:",
-    "connect-src 'self' http://localhost:3001 ws://localhost:3001 blob:",
+    `connect-src 'self' ${apiOrigin} blob:`,
     "manifest-src 'self'",
     "worker-src 'self' blob:",
-    "frame-src 'self' blob: http://localhost:3001",
+    `frame-src 'self' blob: ${apiOrigin}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

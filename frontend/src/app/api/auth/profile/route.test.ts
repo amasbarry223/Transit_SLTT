@@ -71,7 +71,7 @@ function req(body: unknown, withAuth = true) {
     method: "PATCH",
     headers: {
       "content-type": "application/json",
-      ...(withAuth ? { authorization: "Bearer tok" } : {}),
+      ...(withAuth ? { cookie: "transit_sltt_at=tok" } : {}),
     },
     body: JSON.stringify(body),
   });

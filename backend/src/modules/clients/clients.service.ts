@@ -1,23 +1,42 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
+import type { CurrentUserType } from '../../auth/auth.types';
+import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
+
+/** Aligne la valeur reçue sur l'enum Prisma TypeClient (PARTICULIER | ENTREPRISE | ONG | GOUVERNEMENT). */
+function normalizeTypeClient(raw: unknown): 'PARTICULIER' | 'ENTREPRISE' | 'ONG' | 'GOUVERNEMENT' {
+  const upper = String(raw ?? '').toUpperCase();
+  if (upper === 'PARTICULIER') return 'PARTICULIER';
+  if (upper === 'ONG') return 'ONG';
+  if (upper === 'ETAT' || upper === 'GOUVERNEMENT') return 'GOUVERNEMENT';
+  return 'ENTREPRISE';
+}
 
 @Injectable()
 export class ClientsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(search?: string) {
+  async findAll(user: CurrentUserType, search?: string) {
     return this.prisma.client.findMany({
-      where: search
-        ? {
-            OR: [
-              { nom: { contains: search, mode: 'insensitive' } },
-              { code: { contains: search, mode: 'insensitive' } },
-              { email: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
+      where: {
+        actif: true,
+        ...buildAnnexeScopeFilter(user, { allowUnassigned: true }),
+        ...(search
+          ? {
+              OR: [
+                { nom: { contains: search } },
+                { code: { contains: search } },
+                { email: { contains: search } },
+              ],
+            }
+          : {}),
+      },
       orderBy: { nom: 'asc' },
       include: {
+        annexe: { select: { id: true, nom: true, code: true } },
         _count: {
           select: { dossiers: true, factures: true },
         },
@@ -25,10 +44,11 @@ export class ClientsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user: CurrentUserType) {
     const client = await this.prisma.client.findUnique({
       where: { id },
       include: {
+        annexe: { select: { id: true, nom: true, code: true } },
         dossiers: { take: 5, orderBy: { createdAt: 'desc' } },
         factures: { take: 5, orderBy: { createdAt: 'desc' } },
         _count: {
@@ -37,31 +57,24 @@ export class ClientsService {
       },
     });
     if (!client) throw new NotFoundException(`Client ${id} non trouvé`);
+
+    assertAnnexeAccess(user, client.annexeId, 'ce client');
+
     return client;
   }
 
-  async create(data: any) {
-    const code = data.code || `CLT-${Date.now().toString(36).toUpperCase()}`;
-    const existing = await this.prisma.client.findUnique({ where: { code } });
-    if (existing) {
-      const altCode = `CLT-${Math.floor(1000 + Math.random() * 9000)}`;
-      data.code = altCode;
-    } else {
-      data.code = code;
-    }
+  async create(user: CurrentUserType, data: CreateClientDto) {
+    assertAnnexeAccess(user, data.annexeId, 'cette annexe');
 
-    let type = data.type || 'ENTREPRISE';
-    if (typeof type === 'string') {
-      const upper = type.toUpperCase();
-      if (upper === 'PARTICULIER') type = 'PARTICULIER';
-      else if (upper === 'ONG') type = 'ONG';
-      else if (upper === 'ETAT') type = 'ETAT';
-      else type = 'ENTREPRISE';
-    }
+    const baseCode = data.code || `CLT-${Date.now().toString(36).toUpperCase()}`;
+    const existing = await this.prisma.client.findUnique({ where: { code: baseCode } });
+    const code = existing ? `CLT-${Math.floor(1000 + Math.random() * 9000)}` : baseCode;
+
+    const type = normalizeTypeClient(data.type);
 
     return this.prisma.client.create({
       data: {
-        code: data.code,
+        code,
         nom: data.nom,
         type,
         email: data.email || null,
@@ -73,13 +86,17 @@ export class ClientsService {
         rccm: data.rccm || null,
         actif: data.actif ?? true,
         notes: data.notes || null,
+        annexeId: data.annexeId || null,
       },
+      include: { annexe: { select: { id: true, nom: true, code: true } } },
     });
   }
 
-  async update(id: string, data: any) {
-    await this.findOne(id);
-    const updateData: any = {};
+  async update(id: string, user: CurrentUserType, data: UpdateClientDto) {
+    await this.findOne(id, user);
+    assertAnnexeAccess(user, data.annexeId, 'cette annexe');
+
+    const updateData: Prisma.ClientUncheckedUpdateInput = {};
     if (data.nom !== undefined) updateData.nom = data.nom;
     if (data.telephone !== undefined) updateData.telephone = data.telephone || null;
     if (data.email !== undefined) updateData.email = data.email || null;
@@ -90,18 +107,18 @@ export class ClientsService {
     if (data.rccm !== undefined) updateData.rccm = data.rccm || null;
     if (data.actif !== undefined) updateData.actif = data.actif;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
-    if (data.type !== undefined) {
-      const upper = String(data.type).toUpperCase();
-      if (upper === 'PARTICULIER') updateData.type = 'PARTICULIER';
-      else if (upper === 'ONG') updateData.type = 'ONG';
-      else if (upper === 'ETAT') updateData.type = 'ETAT';
-      else updateData.type = 'ENTREPRISE';
-    }
-    return this.prisma.client.update({ where: { id }, data: updateData });
+    if (data.type !== undefined) updateData.type = normalizeTypeClient(data.type);
+    if (data.annexeId !== undefined) updateData.annexeId = data.annexeId || null;
+
+    return this.prisma.client.update({
+      where: { id },
+      data: updateData,
+      include: { annexe: { select: { id: true, nom: true, code: true } } },
+    });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, user: CurrentUserType) {
+    await this.findOne(id, user);
     return this.prisma.client.update({ where: { id }, data: { actif: false } });
   }
 }

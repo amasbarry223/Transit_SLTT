@@ -5,7 +5,7 @@ import type { AuditEntry } from "@/lib/audit";
 import type { ClasseurEntry } from "@/lib/classeur";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import { classeurStatutTone } from "./shared";
 
 type ClasseurSuiviDialogProps = {

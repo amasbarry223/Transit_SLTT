@@ -57,7 +57,7 @@ const { requireUserManager, requireUser } = await import("@/lib/auth/require-adm
 
 function req(token?: string) {
   return new NextRequest("http://localhost/api/test", {
-    headers: token ? { authorization: `Bearer ${token}` } : {},
+    headers: token ? { cookie: `transit_sltt_at=${token}` } : {},
   });
 }
 
@@ -82,7 +82,7 @@ beforeEach(() => {
 });
 
 describe("getAuthenticatedProfile (via requireUser)", () => {
-  it("rejette sans en-tête Authorization", async () => {
+  it("rejette sans cookie de session", async () => {
     await expect(requireUser(req())).rejects.toMatchObject({ status: 401 });
   });
 
@@ -135,10 +135,17 @@ describe("requireUserManager", () => {
 });
 
 describe("configuration manquante", () => {
-  it("renvoie 500 si le réseau est inaccessible (crash fetch)", async () => {
+  it("échoue fermé en 401 si /auth/me est injoignable (pas de repli sur des claims non vérifiés)", async () => {
     fakeState.networkError = true;
-    // Avec network error, on fallback sur le JWT decode — mais le token "tok" n'est pas un vrai JWT
-    // donc nestUser sera null → AuthError 401
     await expect(requireUser(req("tok"))).rejects.toMatchObject({ status: 401 });
+  });
+
+  it("rejette un JWT forgé avec des claims admin quand /auth/me ne confirme pas", async () => {
+    fakeState.networkError = true;
+    const forgedPayload = Buffer.from(
+      JSON.stringify({ sub: "attacker", role: "ADMIN", permissions: ["*"] }),
+    ).toString("base64url");
+    const forgedToken = `eyJhbGciOiJIUzI1NiJ9.${forgedPayload}.not-a-real-signature`;
+    await expect(requireUserManager(req(forgedToken))).rejects.toMatchObject({ status: 401 });
   });
 });

@@ -5,16 +5,17 @@ import { ChevronLeft, ChevronRight, RefreshCw, ScrollText, Search } from "lucide
 import { useStore } from "@/lib/store";
 import type { AuditAction } from "@/lib/store";
 import { formatDateTime } from "@/lib/format";
+import { logError } from "@/shared/logger";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -22,8 +23,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from "@/shared/components/ui/table";
+import { Button } from "@/shared/components/ui/button";
 import { api } from "@/lib/api-client";
 import { mapAuditLogFromDb } from "@/lib/audit";
 
@@ -59,14 +60,26 @@ export function AuditTab() {
         useStore.setState({ auditLogs: mapped });
       }
     } catch (e) {
-      console.error("Erreur chargement audit logs:", e);
+      logError("Erreur chargement audit logs", e);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    refreshLogs();
+    // refreshLogs() met à jour l'état (setLoading) dès sa première ligne,
+    // avant tout await — appelé directement ici, ce setState s'exécute de
+    // façon synchrone pendant l'effet lui-même (cascading render). On le
+    // déporte d'un micro-tick, comme le bouton "Actualiser" (ligne ~204) qui
+    // l'appelle lui aussi mais depuis un gestionnaire d'événement, jamais
+    // concerné par cette règle.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void refreshLogs();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [refreshLogs]);
 
   const modules = useMemo(

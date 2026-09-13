@@ -4,7 +4,6 @@ import {
   FETCH_ENTITY_SOFT_CAPS,
   getRecoveryRateColor,
   RECOVERY_RATE_THRESHOLDS,
-  SIGNED_URL_TTL_SEC,
 } from "@/lib/constants/business";
 
 describe("domain calculations", () => {
@@ -21,9 +20,8 @@ describe("domain calculations", () => {
 });
 
 describe("business constants", () => {
-  it("exposes fetch soft caps and signed URL TTL", () => {
+  it("exposes fetch soft caps", () => {
     expect(FETCH_ENTITY_SOFT_CAPS.default).toBe(2000);
-    expect(SIGNED_URL_TTL_SEC).toBe(3600);
   });
 
   it("maps recovery rate to color tokens", () => {

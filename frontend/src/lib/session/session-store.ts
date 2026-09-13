@@ -3,11 +3,11 @@
 import { create } from "zustand";
 import type { UserRole } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
+import { IDLE_TIMEOUT, IDLE_WARNING_BEFORE } from "@/lib/constants";
 
-/** Déconnexion après cette durée d'inactivité. */
-export const IDLE_TIMEOUT = 30 * 60 * 1000;
-/** Délai d'avertissement avant la déconnexion pour inactivité */
-export const IDLE_WARNING_BEFORE = 60 * 1000;
+// Ré-exportés depuis @/lib/constants (app-root.tsx les importe d'ici) —
+// centralisés avec les autres constantes de durée/seuil du projet.
+export { IDLE_TIMEOUT, IDLE_WARNING_BEFORE };
 
 interface SessionState {
   isAuthenticated: boolean;

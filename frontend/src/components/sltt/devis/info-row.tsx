@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export function InfoRow({ icon: Icon, label, value, mono }: {
   icon: ComponentType<{ className?: string }>;

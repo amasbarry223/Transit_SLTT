@@ -2,8 +2,8 @@
 
 import { useId, isValidElement, cloneElement, type ReactElement, type ReactNode } from "react";
 import { Info } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Label } from "@/shared/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
 export function FormField({
   id,

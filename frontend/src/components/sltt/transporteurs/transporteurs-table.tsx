@@ -21,16 +21,16 @@ import { VEHICULES } from "@/components/sltt/transporteur-form-fields";
 import { ActifStatutBadge } from "@/components/sltt/status-badge";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Table,
   TableBody,
@@ -38,15 +38,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/dropdown-menu";
+import { cn } from "@/shared/utils/cn";
 import { SORT_OPTIONS, type SortKey } from "./use-transporteurs-screen";
 
 interface TransporteursTableProps {

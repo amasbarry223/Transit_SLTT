@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { UserPlus } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useCurrentUser } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useCurrentUser } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import {
   normalizePermissions,
   permissionsToSelection,
@@ -12,10 +12,10 @@ import {
 import { permissionsFromSelection } from "@/components/sltt/permission-matrix";
 import type { User as UserAccount, UserInput } from "@/lib/store";
 import { matchesQuery } from "@/lib/search-filter";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { UserFormModal } from "./users/user-form-modal";
@@ -99,6 +99,10 @@ export function UsersTab() {
     setEditingUserId(null);
     setFormInitial(emptyFormState("Agent de transit", activeAnnexeId ? [activeAnnexeId] : []));
     setFormOpen(true);
+    // handleCreate/handleEdit ne réarment plus `saving` après un succès (le
+    // dialog reste monté et cliquable pendant son animation de fermeture) :
+    // on le réarme ici à chaque ouverture.
+    setSaving(false);
   }
 
   function openEdit(id: string) {
@@ -118,6 +122,7 @@ export function UsersTab() {
       annexeIds: u.annexeIds,
     });
     setFormOpen(true);
+    setSaving(false);
   }
 
   async function handleCreate(state: UserFormState) {
@@ -163,7 +168,6 @@ export function UsersTab() {
         title: "Impossible de créer l'utilisateur",
         fallback: "Vérifiez les informations saisies et réessayez.",
       });
-    } finally {
       setSaving(false);
     }
   }

@@ -10,9 +10,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
-import { UI } from "@/lib/ui-messages";
+} from "@/shared/components/ui/alert-dialog";
+import { cn } from "@/shared/utils/cn";
+import { UI } from "@/shared/utils/ui-messages";
 
 /**
  * Dialogue de confirmation générique pour les actions non-suppression

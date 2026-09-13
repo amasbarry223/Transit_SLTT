@@ -3,17 +3,28 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
+import { parsePagination, buildPaginatedResponse } from '../../common/pagination.utils';
 
 @Injectable()
 export class FacturesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private buildAnnexeFilter(user: CurrentUserType) {
-    if (user.role === 'ADMIN') return {};
-    return { annexeId: { in: user.annexeIds } };
+  /** Taux de TVA par défaut, piloté depuis Paramètres (modèle Setting
+   *  clé/valeur, même pattern que l'identité société) — 18 seulement si la
+   *  clé n'existe pas encore en base. computeTotals() reste synchrone : ce
+   *  taux est chargé en amont dans create()/update(), pas dans computeTotals
+   *  lui-même. */
+  private async getDefaultTauxTva(): Promise<number> {
+    const setting = await this.prisma.setting.findUnique({
+      where: { cle: 'facturation_taux_tva' },
+    });
+    const parsed = setting ? Number(setting.valeur) : NaN;
+    return Number.isFinite(parsed) ? parsed : 18;
   }
 
   async findAll(
@@ -28,14 +39,12 @@ export class FacturesService {
       limit?: number;
     },
   ) {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(query, 20);
 
-    const annexeFilter = this.buildAnnexeFilter(user);
+    assertAnnexeAccess(user, query.annexeId, 'cette annexe');
 
     const where: any = {
-      ...annexeFilter,
+      ...buildAnnexeScopeFilter(user),
       ...(query.annexeId ? { annexeId: query.annexeId } : {}),
       ...(query.statut ? { statut: query.statut } : {}),
       ...(query.clientId ? { clientId: query.clientId } : {}),
@@ -43,8 +52,8 @@ export class FacturesService {
       ...(query.search
         ? {
             OR: [
-              { numero: { contains: query.search, mode: 'insensitive' } },
-              { client: { nom: { contains: query.search, mode: 'insensitive' } } },
+              { numero: { contains: query.search } },
+              { client: { nom: { contains: query.search } } },
             ],
           }
         : {}),
@@ -66,15 +75,7 @@ export class FacturesService {
       }),
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return buildPaginatedResponse(data, total, { page, limit });
   }
 
   async findOne(id: string, user: CurrentUserType) {
@@ -92,39 +93,37 @@ export class FacturesService {
 
     if (!facture) throw new NotFoundException(`Facture ${id} non trouvée`);
 
-    if (user.role !== 'ADMIN' && !user.annexeIds.includes(facture.annexeId)) {
-      throw new ForbiddenException("Accès non autorisé à cette facture");
-    }
+    assertAnnexeAccess(user, facture.annexeId, 'cette facture');
 
     return facture;
   }
 
   async create(user: CurrentUserType, data: any) {
-    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
-      throw new ForbiddenException("Vous ne pouvez pas émettre de facture pour cette annexe");
-    }
+    assertAnnexeAccess(user, data.annexeId, 'cette annexe');
 
     const existing = await this.prisma.facture.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro de facture ${data.numero} existe déjà`);
 
-    const { lignes, ...factureData } = data;
+    // On ne laisse pas le client fixer lui-même l'état financier de la facture.
+    const {
+      lignes,
+      montantPaye: _mp,
+      montantHt: _mht,
+      montantTva: _mtva,
+      montantTtc: _mttc,
+      statut: _st,
+      creeParId: _cp,
+      id: _id,
+      createdAt: _ca,
+      updatedAt: _ua,
+      ...factureData
+    } = data;
 
-    // Calcul automatique des totaux si lignes fournies
-    let montantHt = 0;
-    const lignesFormatted = (lignes || []).map((l: any) => {
-      const total = (Number(l.quantite) || 1) * (Number(l.prixUnitaire) || 0);
-      montantHt += total;
-      return {
-        designation: l.designation,
-        quantite: Number(l.quantite) || 1,
-        prixUnitaire: Number(l.prixUnitaire) || 0,
-        montantTotal: total,
-      };
-    });
-
-    const tauxTva = factureData.tauxTva !== undefined ? Number(factureData.tauxTva) : 18;
-    const montantTva = (montantHt * tauxTva) / 100;
-    const montantTtc = montantHt + montantTva;
+    const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(
+      lignes,
+      factureData.tauxTva,
+      await this.getDefaultTauxTva(),
+    );
 
     const dateEmission = factureData.dateEmission ? new Date(factureData.dateEmission) : new Date();
     const dateEcheance = factureData.dateEcheance ? new Date(factureData.dateEcheance) : undefined;
@@ -147,19 +146,173 @@ export class FacturesService {
     });
   }
 
+  /** Recalcule HT / TVA / TTC à partir des lignes.
+   *  TVA arrondie à l'unité (FCFA sans décimale) — même règle que le front
+   *  (computeInvoiceAmounts) pour que l'affichage ne bouge pas après reload. */
+  private computeTotals(lignes: any[], tauxTvaRaw: unknown, defaultTauxTva: number) {
+    let montantHt = 0;
+    const lignesFormatted = (lignes || []).map((l: any) => {
+      const quantite = Number(l.quantite) || 1;
+      const prixUnitaire = Number(l.prixUnitaire) || 0;
+      const montantTotal = quantite * prixUnitaire;
+      montantHt += montantTotal;
+      return { designation: l.designation, quantite, prixUnitaire, montantTotal };
+    });
+    const tauxTva = tauxTvaRaw !== undefined ? Number(tauxTvaRaw) : defaultTauxTva;
+    const montantTva = Math.round((montantHt * tauxTva) / 100);
+    return { montantHt, tauxTva, montantTva, montantTtc: montantHt + montantTva, lignesFormatted };
+  }
+
+  async update(id: string, user: CurrentUserType, data: any) {
+    const facture = await this.findOne(id, user);
+    if (facture.montantPaye > 0 || facture.statut === 'PAYEE' || facture.statut === 'PARTIELLEMENT_PAYEE') {
+      throw new BadRequestException(
+        'Une facture déjà encaissée ne peut plus être modifiée.',
+      );
+    }
+    if (facture.statut === 'ANNULEE') {
+      throw new BadRequestException('Une facture annulée ne peut plus être modifiée.');
+    }
+
+    const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(
+      data.lignes,
+      data.tauxTva,
+      await this.getDefaultTauxTva(),
+    );
+
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.ligneFacture.deleteMany({ where: { factureId: id } });
+      return tx.facture.update({
+        where: { id },
+        data: {
+          clientId: data.clientId ?? facture.clientId,
+          dossierId: data.dossierId ?? null,
+          dateEmission: data.dateEmission ? new Date(data.dateEmission) : facture.dateEmission,
+          dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : null,
+          notes: data.notes ?? null,
+          montantHt,
+          tauxTva,
+          montantTva,
+          montantTtc,
+          lignes: { create: lignesFormatted },
+        },
+        include: { lignes: true, client: true },
+      });
+    });
+  }
+
+  /** Transitions de statut manuelles (émission, annulation). Le passage à
+   *  PAYEE / PARTIELLEMENT_PAYEE ne se fait QUE via enregistrerPaiement. */
+  private static readonly STATUT_TRANSITIONS: Record<string, string[]> = {
+    BROUILLON: ['ENVOYEE', 'ANNULEE'],
+    ENVOYEE: ['ANNULEE', 'BROUILLON'],
+    RETARD: ['ANNULEE'],
+    PARTIELLEMENT_PAYEE: ['ANNULEE'],
+    PAYEE: ['ANNULEE'],
+    ANNULEE: [],
+  };
+
+  private static readonly FR_TO_PRISMA_STATUT: Record<string, string> = {
+    Brouillon: 'BROUILLON',
+    'Envoyée': 'ENVOYEE',
+    Partielle: 'PARTIELLEMENT_PAYEE',
+    'Soldée': 'PAYEE',
+    'Annulée': 'ANNULEE',
+  };
+
+  async updateStatut(id: string, user: CurrentUserType, statutRaw: string) {
+    const facture = await this.findOne(id, user);
+    const target = FacturesService.FR_TO_PRISMA_STATUT[statutRaw] ?? String(statutRaw).toUpperCase();
+
+    if (target === 'PAYEE' || target === 'PARTIELLEMENT_PAYEE') {
+      throw new BadRequestException(
+        'Pour solder une facture, enregistrez un encaissement.',
+      );
+    }
+    const allowed = FacturesService.STATUT_TRANSITIONS[facture.statut] ?? [];
+    if (facture.statut !== target && !allowed.includes(target)) {
+      throw new BadRequestException(
+        `Transition de statut interdite : ${facture.statut} → ${target}.`,
+      );
+    }
+    if (target === 'BROUILLON' && facture.montantPaye > 0) {
+      throw new BadRequestException(
+        'Une facture déjà encaissée ne peut pas repasser en brouillon.',
+      );
+    }
+
+    return this.prisma.facture.update({
+      where: { id },
+      data: { statut: target as any },
+      include: { lignes: true, client: true },
+    });
+  }
+
+  async remove(id: string, user: CurrentUserType) {
+    const facture = await this.findOne(id, user);
+    if (facture.montantPaye > 0 || facture.transactions.length > 0) {
+      throw new BadRequestException(
+        'Impossible de supprimer une facture avec des encaissements. Annulez-la plutôt.',
+      );
+    }
+    await this.prisma.facture.delete({ where: { id } });
+    return { id };
+  }
+
   async enregistrerPaiement(id: string, user: CurrentUserType, data: { montant: number; caisseId: string; motif?: string }) {
     const facture = await this.findOne(id, user);
 
-    return this.prisma.$transaction(async (tx: any) => {
-      const nouveauMontantPaye = facture.montantPaye + data.montant;
-      const statut = nouveauMontantPaye >= facture.montantTtc ? 'PAYEE' : 'PARTIELLEMENT_PAYEE';
+    const montant = Number(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new BadRequestException('Le montant du paiement doit être supérieur à 0.');
+    }
+    if (facture.statut === 'BROUILLON' || facture.statut === 'ANNULEE') {
+      throw new BadRequestException(
+        `Impossible d'encaisser sur une facture ${facture.statut === 'BROUILLON' ? 'brouillon' : 'annulée'}.`,
+      );
+    }
+    const reste = facture.montantTtc - facture.montantPaye;
+    if (montant > reste + 0.5) {
+      throw new BadRequestException(
+        `Le montant dépasse le reste dû (${reste.toLocaleString('fr-FR')}).`,
+      );
+    }
 
+    const caisse = await this.prisma.caisse.findUnique({ where: { id: data.caisseId } });
+    if (!caisse) throw new NotFoundException('Caisse introuvable.');
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(caisse.annexeId)) {
+      throw new ForbiddenException("Cette caisse n'appartient pas à votre annexe.");
+    }
+    // Le contrôle ci-dessus vérifie seulement que l'UTILISATEUR a accès à la
+    // caisse (utile pour un ADMIN ou un utilisateur multi-annexe), pas que la
+    // caisse correspond à l'annexe DE LA FACTURE : sans ce second contrôle,
+    // un encaissement pouvait être enregistré sur la caisse d'une autre
+    // annexe que celle de la facture, faussant la trésorerie des deux sites.
+    if (caisse.annexeId !== facture.annexeId) {
+      throw new BadRequestException(
+        "La caisse sélectionnée n'appartient pas à l'annexe de cette facture.",
+      );
+    }
+    if (caisse.statut === 'FERMEE') {
+      throw new BadRequestException('Cette caisse est fermée aux opérations.');
+    }
+
+    return this.prisma.$transaction(async (tx: any) => {
+      // Incrément atomique : deux encaissements simultanés ne s'écrasent pas.
+      const incremented = await tx.facture.update({
+        where: { id },
+        data: { montantPaye: { increment: montant } },
+      });
+      // Contrôle du dépassement sur la valeur RÉELLE post-écriture : deux
+      // paiements concurrents du reste dû ne peuvent plus surpayer la facture.
+      if (incremented.montantPaye > incremented.montantTtc + 0.5) {
+        throw new BadRequestException('Le montant dépasse le reste dû.');
+      }
+      const statut =
+        incremented.montantPaye >= facture.montantTtc - 0.5 ? 'PAYEE' : 'PARTIELLEMENT_PAYEE';
       const updatedFacture = await tx.facture.update({
         where: { id },
-        data: {
-          montantPaye: nouveauMontantPaye,
-          statut,
-        },
+        data: { statut },
       });
 
       // Créer la transaction de caisse
@@ -167,7 +320,7 @@ export class FacturesService {
         data: {
           caisseId: data.caisseId,
           type: 'ENTREE',
-          montant: data.montant,
+          montant,
           motif: data.motif || `Paiement facture ${facture.numero}`,
           factureId: facture.id,
           effectueParId: user.id,
@@ -177,7 +330,7 @@ export class FacturesService {
       // Mettre à jour le solde de la caisse
       await tx.caisse.update({
         where: { id: data.caisseId },
-        data: { soldeActuel: { increment: data.montant } },
+        data: { soldeActuel: { increment: montant } },
       });
 
       return updatedFacture;

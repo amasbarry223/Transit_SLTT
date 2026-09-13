@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { AuditEntry } from "@/lib/audit";
 import {
   ArrowLeft,
@@ -9,7 +9,6 @@ import {
   Copy,
   MessageCircle,
   Check,
-  FolderKanban,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
@@ -22,10 +21,8 @@ import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import {
   buildClasseurJournal,
-  fetchClasseurMouvements,
   filterClasseurJournal,
   computeClasseurTotals,
-  fetchMouvementSuivi,
   classeurEntrySourceType,
   hasClasseurPeriodFilter,
   type ClasseurEntry,
@@ -34,7 +31,6 @@ import {
 import { resolveSlttBrand, resolveTransitSociete } from "@/lib/societe-brand";
 import { TOAST_COPY_RESET_MS } from "@/lib/constants";
 import { exportToExcel, printClasseur } from "@/lib/export";
-import { PageHeader } from "@/components/sltt/page-header";
 import { ClientFormFields, emptyClientForm } from "@/features/clients/components/client-form-fields";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -50,8 +46,8 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { cn } from "@/shared/utils/cn";
 import { ClientProfileCard } from "@/features/clients/components/client-fiche/client-profile-card";
+import { FinancialSummary } from "@/features/clients/components/client-fiche/financial-summary";
 import { ClasseurTab } from "@/features/clients/components/client-fiche/classeur-tab";
-import { ClasseurImportDialog } from "@/features/clients/components/client-fiche/classeur-import-dialog";
 import { ClasseurSuiviDialog } from "@/features/clients/components/client-fiche/classeur-suivi-dialog";
 import { DossiersTab } from "@/features/clients/components/client-fiche/dossiers-tab";
 import { FacturesTab } from "@/features/clients/components/client-fiche/factures-tab";
@@ -67,9 +63,7 @@ export function ClientFicheScreen() {
   // rôle comme Agent de transit qui n'a que clients:read ne doit pas y
   // accéder via la fiche client.
   const canSeeCompta = usePermission("comptabilite:read");
-  const canWriteCompta = usePermission("comptabilite:write");
   const canWriteDossiers = usePermission("dossiers:write");
-  const canWriteFactures = usePermission("factures:write");
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
   const allEcritures = useStore((s) => s.ecritures);
@@ -101,7 +95,6 @@ export function ClientFicheScreen() {
   const [suiviEntry, setSuiviEntry] = useState<ClasseurEntry | null>(null);
   const [suiviLogs, setSuiviLogs] = useState<AuditEntry[]>([]);
   const [suiviLoading, setSuiviLoading] = useState(false);
-  const [classeurImportOpen, setClasseurImportOpen] = useState(false);
 
   const client = useMemo(
     () => clients.find((c) => c.id === selectedId),
@@ -130,47 +123,15 @@ export function ClientFicheScreen() {
     [allMouvements, stockIds],
   );
 
-  const clientSideJournal = useMemo(
+  // Classeur : vue calculée en lecture seule du grand livre client
+  // (dossiers + écritures + factures du store). Pas de source SQL dédiée.
+  const classeurJournal = useMemo(
     () =>
       selectedId
-        ? buildClasseurJournal(selectedId, allDossiers, allEcritures, allFactures, societes)
+        ? buildClasseurJournal(selectedId, allDossiers, allEcritures, allFactures)
         : [],
-    [selectedId, allDossiers, allEcritures, allFactures, societes],
+    [selectedId, allDossiers, allEcritures, allFactures],
   );
-  const [sqlJournal, setSqlJournal] = useState<{ clientId: string; rows: ClasseurEntry[] } | null>(
-    null,
-  );
-  useEffect(() => {
-    if (!selectedId) return;
-    let cancelled = false;
-    // Repli silencieux : en cas d'échec, sqlJournal reste null et
-    // classeurJournal retombe déjà sur clientSideJournal (cf. plus bas) —
-    // pas de toast nécessaire pour ce rafraîchissement best-effort, juste
-    // éviter une rejection de promesse non gérée.
-    fetchClasseurMouvements(selectedId)
-      .then((rows) => {
-        if (!cancelled && rows) setSqlJournal({ clientId: selectedId, rows });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId]);
-
-  function refreshClasseurSql() {
-    if (!selectedId) return;
-    // Invalide le cache SQL pour retomber sur le journal client (à jour via store)
-    // puis recharger la vue.
-    setSqlJournal(null);
-    fetchClasseurMouvements(selectedId)
-      .then((rows) => {
-        if (rows) setSqlJournal({ clientId: selectedId, rows });
-      })
-      .catch(() => {});
-  }
-
-  const classeurJournal =
-    sqlJournal?.clientId === selectedId ? sqlJournal.rows : clientSideJournal;
   const classeurFiltered = useMemo(
     () => filterClasseurJournal(classeurJournal, classeurFilters),
     [classeurJournal, classeurFilters],
@@ -192,21 +153,19 @@ export function ClientFicheScreen() {
       .slice(0, 25);
   }, [auditLogs, client]);
 
-  const { totalInvesti, totalPaye, totalDu } = useMemo(() => {
-    let investi = 0;
-    let paye = 0;
-    for (const e of classeurJournal) {
-      investi += e.debit;
-      paye += e.credit;
-    }
-    // Solde net global (investi − payé), pas une somme de max(0, …) par ligne :
-    // ce clamp par ligne ignorait un crédit qui dépasse le débit sur une même
-    // ligne (avance/versement) au lieu de le déduire du reste dû d'ailleurs —
-    // même formule que computeClasseurTotals (src/lib/classeur.ts), pour que
-    // ce total reste identique à celui de l'onglet Classeur sur les mêmes
-    // écritures non filtrées.
-    return { totalInvesti: investi, totalPaye: paye, totalDu: investi - paye };
-  }, [classeurJournal]);
+  // Source unique : client.totalDu/totalPaye/totalInvesti (syncClientStats),
+  // déjà utilisés par la liste clients, le tri et l'export PDF des créances.
+  // Un ancien recalcul local ici compensait investi/payé sur l'ensemble du
+  // classeur (solde NET, comme l'onglet Classeur) — pour un client avec un
+  // dossier en avance et un autre dossier dû, ce bandeau affichait un solde
+  // inférieur à celui de la liste clients et de l'export, pour la même
+  // dette. L'onglet Classeur (computeClasseurTotals) garde sa propre
+  // compensation nette : c'est un grand livre, où elle est la sémantique
+  // comptable correcte — seul ce bandeau de synthèse en tête de fiche
+  // devait s'aligner sur le reste de l'application.
+  const totalInvesti = client?.totalInvesti ?? 0;
+  const totalPaye = client?.totalPaye ?? 0;
+  const totalDu = client?.totalDu ?? 0;
 
   const pendingCount = useMemo(
     () => classeurJournal.filter((e) => e.debit - e.credit > 0).length,
@@ -317,24 +276,18 @@ export function ClientFicheScreen() {
     );
   }
 
-  async function openClasseurSuivi(entry: ClasseurEntry) {
+  function openClasseurSuivi(entry: ClasseurEntry) {
     setSuiviEntry(entry);
-    setSuiviLoading(true);
-    setSuiviLogs([]);
+    setSuiviLoading(false);
 
     const sourceType = classeurEntrySourceType(entry);
-    const remote = await fetchMouvementSuivi(sourceType, entry.sourceId);
-    const local = auditLogs.filter(
-      (log) => log.sourceType === sourceType && log.sourceId === entry.sourceId,
-    );
-    const merged = new Map<string, AuditEntry>();
-    for (const log of [...remote, ...local]) merged.set(log.id, log);
     setSuiviLogs(
-      Array.from(merged.values()).sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-      ),
+      auditLogs
+        .filter(
+          (log) => log.sourceType === sourceType && log.sourceId === entry.sourceId,
+        )
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     );
-    setSuiviLoading(false);
   }
 
   function closeClasseurSuivi() {
@@ -421,82 +374,38 @@ export function ClientFicheScreen() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <Button
-          variant="ghost"
-          onClick={() => go("clients")}
-          className="-ml-2 w-fit text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
-        >
-          <ArrowLeft className="size-4" />
-          Retour aux clients
-        </Button>
-        <PageHeader title="Fiche client" description="Vue consolidée du client" />
-      </div>
+    <div className="space-y-5">
+      <Button
+        variant="ghost"
+        onClick={() => go("clients")}
+        className="-ml-2 h-8 w-fit text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Clients
+      </Button>
 
       <ClientProfileCard
         client={client}
-        totalDu={totalDu}
         onEdit={canWrite ? openEditDialog : undefined}
-        onRelance={openRelanceDialog}
+        onNewDossier={canWriteDossiers ? () => openDossier(null, "create") : undefined}
       />
 
-      <div className="sticky top-16 z-20 -mx-4 border-y border-border/80 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
-            {/* Total non filtré, sur tout l'historique — le Classeur (onglet) affiche
-                les mêmes libellés (Investi / Total payé / Reste à payer) mais sur sa
-                sélection filtrée, d'où "(historique)" ici pour distinguer les deux. */}
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Reste à payer (historique)</p>
-              <p className={cn("text-lg font-bold tabular-nums", totalDu > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
-                {formatFCFA(totalDu)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total payé (historique)</p>
-              <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatFCFA(totalPaye)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Investi (historique)</p>
-              <p className="text-lg font-bold tabular-nums text-foreground">{formatFCFA(totalInvesti)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Prochaine action</p>
-              {totalDu > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("classeur")}
-                  className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
-                >
-                  {pendingCount} solde{pendingCount !== 1 ? "s" : ""} ouvert{pendingCount !== 1 ? "s" : ""} — voir le Classeur
-                </button>
-              ) : (
-                <p className="text-sm font-medium text-foreground/90">Compte à jour</p>
-              )}
-            </div>
-          </div>
-          {canWriteDossiers && (
-            <Button className="shrink-0" onClick={() => openDossier(null, "create")}>
-              <FolderKanban className="size-4" />
-              Nouveau dossier
-            </Button>
-          )}
-        </div>
-      </div>
+      <FinancialSummary
+        totalDu={totalDu}
+        totalPaye={totalPaye}
+        totalInvesti={totalInvesti}
+        pendingCount={pendingCount}
+        onSeeClasseur={canSeeCompta ? () => setActiveTab("classeur") : undefined}
+        onRelance={openRelanceDialog}
+      />
 
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as FicheTab)}
         className="gap-0"
       >
-        <div
-          className={cn(
-            "sticky top-0 z-10 -mx-4 border-b border-border bg-background/95 backdrop-blur sm:-mx-6 lg:-mx-8",
-            "supports-[backdrop-filter]:bg-background/80",
-          )}
-        >
-          <TabsList className="flex h-12 w-full items-stretch rounded-none p-0 bg-muted/80">
+        <div className="sticky top-16 z-10 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <TabsList className="flex h-12 w-full items-stretch gap-1 rounded-none bg-transparent p-0">
             {visibleFicheTabs.map((t) => {
               const Icon = t.icon;
               const count =
@@ -512,23 +421,22 @@ export function ClientFicheScreen() {
                   key={t.key}
                   value={t.key}
                   className={cn(
-                    "relative flex flex-1 items-center justify-center gap-2 rounded-none",
-                    "border-0 border-b-2 border-transparent bg-transparent px-2 py-0",
-                    "text-sm font-medium text-slate-500 shadow-none transition-colors dark:text-slate-400",
-                    "hover:bg-white/60 hover:text-slate-900 dark:hover:text-slate-100",
-                    "data-[state=active]:border-primary data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900",
-                    "data-[state=active]:text-primary data-[state=active]:shadow-none",
+                    "relative flex flex-1 items-center justify-center gap-1.5 rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-0 min-w-0",
+                    "text-sm font-medium text-muted-foreground shadow-none transition-colors",
+                    "hover:text-foreground",
+                    "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none",
                     "focus-visible:ring-0 focus-visible:ring-offset-0",
                     "[&[data-state=active]_svg]:text-primary",
-                    "min-w-0",
                   )}
                 >
-                  <Icon className="size-4 shrink-0 text-muted-foreground" />
+                  <Icon className="size-4 shrink-0" />
                   <span className="hidden truncate sm:inline">{t.label}</span>
                   <span className="truncate sm:hidden">{t.shortLabel}</span>
-                  <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
-                    {count}
-                  </span>
+                  {count > 0 && (
+                    <span className="ml-0.5 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground data-[state=active]:bg-primary/10">
+                      {count}
+                    </span>
+                  )}
                 </TabsTrigger>
               );
             })}
@@ -537,20 +445,15 @@ export function ClientFicheScreen() {
 
         {canSeeCompta && (
         <ClasseurTab
-          journalEntries={classeurJournal}
           classeurFilters={classeurFilters}
           onFiltersChange={setClasseurFilters}
           classeurFiltered={classeurFiltered}
           classeurTotals={classeurTotals}
-          isSyncing={sqlJournal?.clientId !== selectedId}
           classeurPeriodFiltered={classeurPeriodFiltered}
           clientAuditHistory={clientAuditHistory}
           onExportExcel={handleExportClasseurExcel}
-          onOpenImport={() => setClasseurImportOpen(true)}
           onPrint={handlePrintClasseur}
           onRowClick={openClasseurSuivi}
-          onGridDataChanged={refreshClasseurSql}
-          canImport={canWriteCompta || canWriteDossiers || canWriteFactures}
         />
         )}
 
@@ -665,17 +568,6 @@ export function ClientFicheScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <ClasseurImportDialog
-        open={classeurImportOpen}
-        onOpenChange={setClasseurImportOpen}
-        client={client ?? null}
-        journalEntries={classeurJournal}
-        canWriteDossiers={canWriteDossiers}
-        canWriteCompta={canWriteCompta}
-        canWriteFactures={canWriteFactures}
-        onApplied={refreshClasseurSql}
-      />
     </div>
   );
 }

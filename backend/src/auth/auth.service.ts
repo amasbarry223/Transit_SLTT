@@ -7,10 +7,25 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtPayload, CurrentUserType } from './auth.types';
+import { jwtRefreshSecret, jwtRefreshExpiresIn } from './jwt.config';
 
 const BCRYPT_ROUNDS = 12;
+
+/**
+ * Seul le hash du refresh token part en base (colonne `token`, jamais
+ * renommée pour éviter une migration de schéma — mais elle ne contient
+ * plus de refresh token en clair depuis ce commit). Un accès en lecture à
+ * la table `refresh_tokens` (fuite de sauvegarde, dump, accès DB) ne
+ * suffit plus à réutiliser un token : il faut connaître le token brut,
+ * jamais persisté. Le client continue d'envoyer/recevoir le JWT signé en
+ * clair comme avant — seul ce qui est écrit en base change.
+ */
+function hashRefreshToken(rawToken: string): string {
+  return createHash('sha256').update(rawToken).digest('hex');
+}
 
 @Injectable()
 export class AuthService {
@@ -62,21 +77,28 @@ export class AuthService {
 
     const accessToken = this.jwt.sign(payload);
 
-    // Refresh token (7j)
     const refreshToken = this.jwt.sign(
       { sub: profile.id },
       {
-        secret: process.env.JWT_REFRESH_SECRET || 'transit_sltt_super_secret_refresh_key_dev_2025',
-        expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as any,
+        secret: jwtRefreshSecret(),
+        expiresIn: jwtRefreshExpiresIn() as any,
       },
     );
 
-    // Persister le refresh token
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    // La ligne en base doit expirer en même temps que le JWT lui-même,
+    // sinon l'un des deux invalide le refresh avant l'autre. Un
+    // REFRESH_TOKEN_DAYS codé en dur ici, en plus de jwtRefreshExpiresIn()
+    // qui signe le token, se désynchronisait dès que JWT_REFRESH_EXPIRES_IN
+    // différait de 7 jours en .env (ex. 30d) : le JWT restait valide, mais
+    // la ligne en base expirait après 7 jours et rejetait un refresh encore
+    // cryptographiquement valide. On lit directement le `exp` du token que
+    // l'on vient de signer, seule source de vérité sur sa durée de vie.
+    const decodedRefresh = this.jwt.decode(refreshToken) as { exp: number };
+    const expiresAt = new Date(decodedRefresh.exp * 1000);
+    const refreshTokenHash = hashRefreshToken(refreshToken);
     await this.prisma.refreshToken.upsert({
-      where: { token: refreshToken },
-      create: { userId: profile.id, token: refreshToken, expiresAt },
+      where: { token: refreshTokenHash },
+      create: { userId: profile.id, token: refreshTokenHash, expiresAt },
       update: { expiresAt },
     });
 
@@ -99,14 +121,14 @@ export class AuthService {
     let payload: { sub: string };
     try {
       payload = this.jwt.verify<{ sub: string }>(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: jwtRefreshSecret(),
       });
     } catch {
       throw new UnauthorizedException('Refresh token invalide ou expiré');
     }
 
     const stored = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+      where: { token: hashRefreshToken(refreshToken) },
     });
 
     if (!stored || stored.expiresAt < new Date()) {
@@ -139,7 +161,7 @@ export class AuthService {
   /** Révoque un refresh token (logout) */
   async logout(refreshToken: string) {
     await this.prisma.refreshToken
-      .delete({ where: { token: refreshToken } })
+      .delete({ where: { token: hashRefreshToken(refreshToken) } })
       .catch(() => null); // Pas d'erreur si déjà révoqué
   }
 

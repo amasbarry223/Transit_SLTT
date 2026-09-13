@@ -9,13 +9,13 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { pathForView } from "@/lib/app-navigation";
-import { cn, getErrorMessage } from "@/lib/utils";
-import { mapErrorToUserMessage } from "@/lib/error-messages";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { cn } from "@/shared/utils/cn";
+import { mapErrorToUserMessage } from "@/shared/utils/error-messages";
+import { UI } from "@/shared/utils/ui-messages";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Separator } from "@/shared/components/ui/separator";
 import { prefsFromProfile, useUiPrefs } from "@/lib/session/ui-prefs-store";
 import {
   Eye,
@@ -24,6 +24,7 @@ import {
   Mail,
   ShieldCheck,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { InstallPWA } from "@/components/pwa/InstallPWA";
 
@@ -85,10 +86,39 @@ export function LoginScreen() {
 
       const role = mapRole(user.role);
       loginNav(role, user.nom, user.id);
-      router.replace(pathForView("dashboard"));
+
+      // Redirection intelligente vers la page cible demandée initialement
+      let destination = pathForView("dashboard");
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get("returnUrl") || urlParams.get("redirect");
+        if (returnUrl && returnUrl.startsWith("/")) {
+          destination = returnUrl;
+        } else if (
+          window.location.pathname &&
+          window.location.pathname !== "/" &&
+          window.location.pathname !== "/login"
+        ) {
+          destination = window.location.pathname + window.location.search;
+        }
+      }
+
+      router.replace(destination);
     } catch (e: any) {
-      const msg = e?.data?.message || e?.message || "Connexion impossible. Vérifiez que le serveur backend tourne.";
-      setError(msg);
+      if (e?.status === 401) {
+        setError(
+          e?.data?.message ||
+          e?.message ||
+          "Identifiants incorrects. Vérifiez votre email et mot de passe.",
+        );
+      } else {
+        setError(
+          mapErrorToUserMessage(
+            e,
+            "Connexion impossible. Vérifiez que le serveur backend tourne.",
+          ),
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -214,9 +244,10 @@ export function LoginScreen() {
 
               <Button
                 type="submit"
-                className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/25 transition-all duration-200 active:scale-[0.99]"
-                disabled={loading}
+                className="h-11 w-full text-sm font-semibold shadow-md shadow-primary/25 transition-all duration-200 active:scale-[0.99] gap-2"
+                disabled={loading || !email.trim() || !password}
               >
+                {loading && <Loader2 className="size-4 animate-spin" />}
                 {loading ? UI.loading.verifying : "Se connecter"}
               </Button>
 

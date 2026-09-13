@@ -8,22 +8,22 @@ import {
   Truck,
 } from "lucide-react";
 import type { Annexe, Client, DossierStatut } from "@/lib/domain-types";
-import { UI } from "@/lib/ui-messages";
-import { QuickClientButton } from "@/components/sltt/quick-client-dialog";
+import { UI } from "@/shared/utils/ui-messages";
+import { QuickClientButton } from "@/features/clients";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { TRANSITION_META, type TransitionType } from "@/components/sltt/dossier-transition-dialog";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { cn } from "@/shared/utils/cn";
 import { WIZARD_STEPS, type DossierFormErrors } from "./use-dossier-form-state";
 import { CollapsibleSection, FormField, SectionTitle } from "./dossier-form-ui";
 

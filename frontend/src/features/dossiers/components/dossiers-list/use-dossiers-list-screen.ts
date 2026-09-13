@@ -8,17 +8,29 @@ import {
   type DossierStatut,
   type Dossier,
 } from "@/lib/domain-types";
-import { formatDateShort, formatFCFA, parseLocalDate } from "@/lib/format";
+import { formatDateShort, parseLocalDate } from "@/lib/format";
 import { matchesQuery } from "@/lib/search-filter";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
-import { exportToExcel, printHTML, htmlEscape } from "@/lib/export";
+import { exportToExcel, printDossiers } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/societe-brand";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 
 export const PAGE_SIZE = 8;
+
+export type DossiersViewMode = "grid" | "list";
+const VIEW_MODE_KEY = "sltt.dossiers.viewMode";
+
+function readViewMode(): DossiersViewMode {
+  if (typeof window === "undefined") return "grid";
+  try {
+    return localStorage.getItem(VIEW_MODE_KEY) === "list" ? "list" : "grid";
+  } catch {
+    return "grid";
+  }
+}
 
 export const STATUT_OPTIONS: (DossierStatut | "Tous")[] = [
   "Tous",
@@ -55,6 +67,24 @@ export function useDossiersListScreen() {
   const dossiers = useStore((s) => s.dossiers);
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
+  const factures = useStore((s) => s.factures);
+  const fichiers = useStore((s) => s.fichiers);
+  const subDossiers = useStore((s) => s.subDossiers);
+  const devis = useStore((s) => s.devis);
+
+  /** Nb de pièces rattachées à chaque dossier (factures + fichiers + devis + sous-dossiers). */
+  const countsByDossier = useMemo(() => {
+    const map = new Map<string, number>();
+    const bump = (id: string | null | undefined) => {
+      if (!id) return;
+      map.set(id, (map.get(id) ?? 0) + 1);
+    };
+    factures.forEach((f) => bump(f.dossierId));
+    fichiers.forEach((f) => bump(f.dossierId));
+    subDossiers.forEach((s) => bump(s.dossierId));
+    devis.forEach((d) => bump(d.dossierId));
+    return map;
+  }, [factures, fichiers, subDossiers, devis]);
 
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
@@ -65,6 +95,16 @@ export function useDossiersListScreen() {
   const [sortBy, setSortBy] = useState<SortKey>("date-desc");
   const [page, setPage] = useState(1);
   const [transitionDossier, setTransitionDossier] = useState<Dossier | null>(null);
+  const [viewMode, setViewModeState] = useState<DossiersViewMode>(readViewMode);
+
+  const setViewMode = (mode: DossiersViewMode) => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, mode);
+    } catch {
+      /* stockage indisponible (navigation privée) — préférence non mémorisée */
+    }
+  };
 
   // Mémoïsé sur la clé jour (pas sur getDashboardAnchorDate() en dep directe,
   // qui renvoie un nouveau Date à chaque appel et casserait le useMemo de
@@ -217,33 +257,28 @@ export function useDossiersListScreen() {
   }
 
   function handleExportPDF() {
-    const rowsHTML = filtered
-      .map(
-        (d) => `<tr>
-          <td>${htmlEscape(d.reference)}</td>
-          <td>${htmlEscape(d.clientNom)}</td>
-          <td>${htmlEscape(d.bl)}</td>
-          <td>${htmlEscape(d.camion)}</td>
-          <td>${htmlEscape(d.nature)}</td>
-          <td class="num">${formatFCFA(d.fraisPrestation, false)}</td>
-          <td class="num">${calculerEcart(d).toLocaleString("fr-FR")}</td>
-          <td><span class="badge" style="background:#dfeefa;color:#155a93">${htmlEscape(d.statut)}</span></td>
-        </tr>`,
-      )
-      .join("");
-    printHTML(
-      "Liste des dossiers de transit",
-      `
-      <h1>Dossiers de transit</h1>
-      <div class="subtitle">${filtered.length} dossier(s) · ${formatDateShort(new Date())}</div>
-      <table>
-        <thead><tr>
-          <th>Référence</th><th>Client</th><th>N° BL</th><th>Camion</th>
-          <th>Nature</th><th class="num">Prestation</th><th class="num">Marge</th><th>Statut</th>
-        </tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>
-    `,
+    if (filtered.length === 0) {
+      toastWarning(toast, { title: "Rien à exporter", description: UI.errors.exportEmpty });
+      return;
+    }
+    printDossiers(
+      filtered.map((d) => ({
+        reference: d.reference,
+        clientNom: d.clientNom,
+        bl: d.bl,
+        camion: d.camion,
+        nature: d.nature,
+        prestation: d.fraisPrestation,
+        marge: calculerEcart(d),
+        statut: d.statut,
+      })),
+      {
+        total: stats.total,
+        enCours: stats.enCours,
+        soldes: stats.soldes,
+        margeCumulee: stats.ecartTotal,
+      },
+      hasActiveFilters ? "Sélection filtrée" : undefined,
       resolveSlttBrand(societes),
     );
   }
@@ -268,6 +303,9 @@ export function useDossiersListScreen() {
     setPage,
     transitionDossier,
     setTransitionDossier,
+    viewMode,
+    setViewMode,
+    countsByDossier,
     availableYears,
     filtered,
     stats,

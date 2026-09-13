@@ -7,45 +7,12 @@ import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { Facture, FactureLigne, FactureStatut } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
 import type { FactureInput, SLTTState } from "@/lib/store";
-import type { FactureRow } from "@/lib/db-rows";
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
   insertWithReferenceRetry,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapFactureFromDb(row: FactureRow): Facture {
-  return {
-    id: row.id,
-    numero: row.numero,
-    dossierId: row.dossier_id,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || "—",
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    date: row.date,
-    dateEcheance: row.date_echeance,
-    statut: row.statut,
-    tauxTVA: Number(row.taux_tva),
-    montantHT: Number(row.montant_ht),
-    montantTVA: Number(row.montant_tva),
-    montantTTC: Number(row.montant_ttc),
-    montantPaye: Number(row.montant_paye),
-    notes: row.notes,
-    creePar: row.cree_par,
-    creeLe: row.cree_le ?? row.created_at,
-    lignes: (row.facture_lignes || []).map((ligne) => ({
-      id: ligne.id,
-      description: ligne.description,
-      quantite: Number(ligne.quantite),
-      prixUnitaire: Number(ligne.prix_unitaire),
-      montantHT: Number(ligne.montant_ht),
-      compagnie: ligne.compagnie || undefined,
-      bordereauLivraison: ligne.bordereau_livraison || undefined,
-    })),
-  };
-}
 
 export interface FacturesSlice {
   factures: Facture[];
@@ -55,7 +22,6 @@ export interface FacturesSlice {
   removeFacture: (id: string) => Promise<void>;
   updateFactureStatut: (id: string, statut: FactureStatut) => Promise<void>;
   recordFacturePaiement: (id: string, montant: number) => Promise<void>;
-  patchFactureMontantPaye: (id: string, montantPaye: number) => Promise<void>;
 }
 
 function computeInvoiceAmounts(
@@ -121,27 +87,27 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       })),
     };
 
-    try {
-      const created = await api.factures.create({
-        numero,
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        dossierId: input.dossierId || undefined,
-        dateEmission: input.date,
-        dateEcheance: input.dateEcheance,
-        tauxTva: input.tauxTVA,
-        notes: input.notes,
-        lignes: input.lignes.map((l) => ({
-          designation: l.description,
-          quantite: l.quantite,
-          prixUnitaire: l.prixUnitaire,
-        })),
-      });
-      if (created?.id) {
-        newFacture.id = created.id;
-      }
-    } catch (e) {
-      console.warn("api.factures.create (mode local) :", e);
+    // Persistance obligatoire : updateFacture/removeFacture (ci-dessous)
+    // propagent déjà l'erreur — addFacture avait été oublié lors de ce
+    // correctif et retombait toujours sur une facture locale fictive quand
+    // l'écriture serveur échouait, disparaissant sans trace au rechargement.
+    const created = await api.factures.create({
+      numero,
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      dossierId: input.dossierId || undefined,
+      dateEmission: input.date,
+      dateEcheance: input.dateEcheance,
+      tauxTva: input.tauxTVA,
+      notes: input.notes,
+      lignes: input.lignes.map((l) => ({
+        designation: l.description,
+        quantite: l.quantite,
+        prixUnitaire: l.prixUnitaire,
+      })),
+    });
+    if (created?.id) {
+      newFacture.id = created.id;
     }
 
     const finalSeq = extractTrailingSeq(numero) ?? get().factureSeq;
@@ -169,6 +135,22 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       input.lignes,
       input.tauxTVA,
     );
+
+    // Persistance obligatoire : une facture sans écriture serveur repartait à
+    // zéro au rechargement. On propage l'erreur pour que l'UI la signale.
+    await api.factures.update(id, {
+      clientId: input.clientId,
+      dossierId: input.dossierId || undefined,
+      dateEmission: input.date,
+      dateEcheance: input.dateEcheance,
+      tauxTva: input.tauxTVA,
+      notes: input.notes,
+      lignes: input.lignes.map((l) => ({
+        designation: l.description,
+        quantite: l.quantite,
+        prixUnitaire: l.prixUnitaire,
+      })),
+    });
 
     set((s) => {
       const updatedFactures = s.factures.map((fact) => {
@@ -211,6 +193,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
   removeFacture: async (id) => {
     const fact = get().factures.find((f) => f.id === id);
 
+    await api.factures.delete(id);
+
     set((s) => {
       const updatedFactures = s.factures.filter((f) => f.id !== id);
       return {
@@ -236,13 +220,17 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     if (!canTransitionFacture(facture.statut, statut)) {
       throw new Error(`Transition non autorisée : ${facture.statut} → ${statut}.`);
     }
-    // Soldée ne peut résulter que d'un encaissement (RPC record_facture_paiement)
-    // — jamais d'un PATCH statut qui force montant_paye = TTC hors journal.
+    // Soldée ne peut résulter que d'un encaissement, jamais d'un changement
+    // de statut qui forcerait montantPaye = TTC hors journal de caisse.
     if (statut === "Soldée") {
       throw new Error(
         "Pour solder une facture, enregistrez un paiement (encaissement) couvrant le reste dû.",
       );
     }
+
+    // Persistance : sans ça, "Envoyée" / "Annulée" repartaient en "Brouillon"
+    // au rechargement (et bloquaient ensuite l'encaissement).
+    await api.factures.updateStatut(id, statut);
 
     set((s) => {
       const updatedFactures = s.factures.map((item) =>
@@ -273,17 +261,29 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     const reste = resteAPayer({ montantInvesti: fact.montantTTC, montantPaye: fact.montantPaye });
     const effective = validatePaymentAmount(montant, reste);
 
-    const caisseId = (get() as any).caisses?.[0]?.id;
-    if (caisseId) {
-      try {
-        await api.factures.enregistrerPaiement(id, { montant: effective, caisseId });
-      } catch (e) {
-        console.warn("api.factures.enregistrerPaiement (mode local) :", e);
-      }
+    // L'encaissement crée une transaction de caisse côté serveur : il faut une
+    // caisse de la MÊME annexe que la facture (avant, on prenait caisses[0]
+    // — souvent inexistant — et le paiement n'était jamais persisté).
+    const caissesResp = await api.caisse.getAll(fact.annexeId).catch(() => []);
+    const caisses: Array<{ id?: string; annexeId?: string; statut?: string }> = Array.isArray(
+      caissesResp,
+    )
+      ? caissesResp
+      : [];
+    const caisse =
+      caisses.find((c) => c.annexeId === fact.annexeId && c.statut !== "FERMEE") ??
+      caisses.find((c) => c.statut !== "FERMEE");
+    if (!caisse?.id) {
+      throw new Error(
+        "Aucune caisse ouverte pour cette annexe. Ouvrez-en une avant d'encaisser une facture.",
+      );
     }
+    await api.factures.enregistrerPaiement(id, { montant: effective, caisseId: caisse.id });
 
     const newPaye = fact.montantPaye + effective;
-    const newStatut: FactureStatut = newPaye >= fact.montantTTC ? "Soldée" : "Partielle";
+    // Même tolérance d'arrondi que le backend (factures.service) pour ne pas
+    // afficher "Partielle" alors que l'API a déjà passé la facture à PAYEE.
+    const newStatut: FactureStatut = newPaye >= fact.montantTTC - 0.5 ? "Soldée" : "Partielle";
     set((s) => {
       const updatedFactures = s.factures.map((f) =>
         f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f,
@@ -300,33 +300,6 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       `Encaissement de ${effective.toLocaleString("fr-FR")} FCFA sur la facture ${fact.numero}`,
       fact.clientId,
       { sourceType: "facture", sourceId: fact.id },
-    );
-  },
-
-  patchFactureMontantPaye: async (id, montantPaye) => {
-    const fact = get().factures.find((f) => f.id === id);
-    if (!fact) throw new Error("Facture introuvable");
-    if (fact.statut === "Annulée" || fact.statut === "Brouillon" || fact.statut === "Soldée") {
-      throw new Error(`Impossible de modifier le paiement d'une facture ${fact.statut}.`);
-    }
-
-    const newStatut: FactureStatut = montantPaye >= fact.montantTTC ? "Soldée" : montantPaye > 0 ? "Partielle" : "Envoyée";
-    set((s) => {
-      const updatedFactures = s.factures.map((f) =>
-        f.id === id ? { ...f, montantPaye, statut: newStatut } : f,
-      );
-      return {
-        factures: updatedFactures,
-        clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
-      };
-    });
-
-    await get().addAuditLog(
-      AUDIT_MODULE.Factures,
-      AUDIT_ACTION.Modification,
-      `Paiement facture ${fact.numero} ajusté (classeur) → ${montantPaye.toLocaleString("fr-FR")} FCFA`,
-      fact.clientId,
-      { sourceType: "facture", sourceId: id },
     );
   },
 });

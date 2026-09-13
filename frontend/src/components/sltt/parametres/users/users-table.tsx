@@ -5,17 +5,17 @@ import type { User as UserAccount } from "@/lib/store";
 import { getModuleSummary } from "@/lib/permissions";
 import { formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Switch } from "@/shared/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -23,8 +23,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
-import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/lib/utils";
+} from "@/shared/components/ui/table";
+import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/shared/utils/cn";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { UsersEmptyState } from "./users-empty-state";
 import {

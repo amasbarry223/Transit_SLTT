@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Building2, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Building2, Check, Loader2 } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Dialog, DialogContent } from "@/shared/components/ui/dialog";
 import {
   useStore,
   type Fournisseur,
@@ -13,16 +13,17 @@ import {
   type FournisseurType,
   type FournisseurStatut,
 } from "@/lib/store";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
+import { cn } from "@/shared/utils/cn";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
+} from "@/shared/components/ui/select";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { TYPES } from "./fournisseur-type-meta";
 
 export function FournisseurFormModal({
@@ -50,6 +51,10 @@ export function FournisseurFormModal({
   const [statut, setStatut] = React.useState<FournisseurStatut>(editing?.statut ?? "Actif");
   const [saving, setSaving] = React.useState(false);
 
+  const [nomError, setNomError] = React.useState<string | undefined>();
+  const [emailError, setEmailError] = React.useState<string | undefined>();
+  const [touched, setTouched] = React.useState<{ nom?: boolean; email?: boolean }>({});
+
   const resetKey = open ? (editing?.id ?? "new") : null;
   const [prevResetKey, setPrevResetKey] = React.useState(resetKey);
   if (resetKey !== prevResetKey) {
@@ -63,12 +68,55 @@ export function FournisseurFormModal({
       setAdresse(editing?.adresse ?? "");
       setTarif(editing?.tarifContractuel ? String(editing.tarifContractuel) : "");
       setStatut(editing?.statut ?? "Actif");
+      setNomError(undefined);
+      setEmailError(undefined);
+      setTouched({});
+      // saving n'est plus remis à false après un succès (voir handleSubmit) :
+      // on le réarme ici pour ne pas laisser le bouton désactivé à la réouverture.
+      setSaving(false);
     }
   }
 
+  function validateNom(val: string) {
+    return !val.trim() ? "La raison sociale du prestataire est obligatoire." : undefined;
+  }
+
+  function validateEmail(val: string) {
+    const trimmed = val.trim();
+    if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return "Format d'adresse e-mail invalide (ex: contact@societe.com).";
+    }
+    return undefined;
+  }
+
+  function handleBlur(field: "nom" | "email") {
+    setTouched((p) => ({ ...p, [field]: true }));
+    if (field === "nom") setNomError(validateNom(nom));
+    if (field === "email") setEmailError(validateEmail(email));
+  }
+
+  // Le dialog Radix reste monté et cliquable ~200ms pendant son animation de
+  // fermeture. Si `saving` repassait à false dans un `finally` après un
+  // succès, un second clic pendant cette fenêtre resoumettait les MÊMES
+  // champs (pas encore réinitialisés) et créait un vrai fournisseur en
+  // double. On ne réarme donc `saving` que sur la branche d'échec.
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!nom.trim()) return;
+    const nErr = validateNom(nom);
+    const eErr = validateEmail(email);
+    setTouched({ nom: true, email: true });
+    setNomError(nErr);
+    setEmailError(eErr);
+
+    if (nErr || eErr) {
+      toastWarning(toast, {
+        title: "Champs invalides",
+        description: "Veuillez corriger les erreurs indiquées avant d'enregistrer.",
+      });
+      return;
+    }
+    if (saving) return;
+
     const input: FournisseurInput = {
       nom: nom.trim(),
       type,
@@ -92,7 +140,6 @@ export function FournisseurFormModal({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Impossible d'enregistrer le fournisseur";
       toastError(toast, err, { title: "Impossible d'enregistrer", fallback: message });
-    } finally {
       setSaving(false);
     }
   }
@@ -119,11 +166,20 @@ export function FournisseurFormModal({
               </Label>
               <Input
                 value={nom}
-                onChange={(e) => setNom(e.target.value)}
+                onChange={(e) => {
+                  setNom(e.target.value);
+                  if (touched.nom) setNomError(validateNom(e.target.value));
+                }}
+                onBlur={() => handleBlur("nom")}
                 placeholder="Nom du prestataire"
-                className="h-10"
+                className={cn("h-10", touched.nom && nomError && "border-red-500")}
                 autoFocus
               />
+              {touched.nom && nomError && (
+                <p role="alert" className="text-xs text-red-500 font-medium">
+                  {nomError}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Type de prestataire</Label>
@@ -175,10 +231,19 @@ export function FournisseurFormModal({
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (touched.email) setEmailError(validateEmail(e.target.value));
+                }}
+                onBlur={() => handleBlur("email")}
                 placeholder="contact@..."
-                className="h-10"
+                className={cn("h-10", touched.email && emailError && "border-red-500")}
               />
+              {touched.email && emailError && (
+                <p role="alert" className="text-xs text-red-500 font-medium">
+                  {emailError}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Tarif contractuel (FCFA)</Label>
@@ -201,12 +266,16 @@ export function FournisseurFormModal({
             </div>
           </div>
           <div className="flex justify-end gap-3 border-t border-border pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!nom.trim() || saving}>
-              <Check className="size-4" />
-              {editing ? "Enregistrer" : "Créer"}
+            <Button type="submit" disabled={!nom.trim() || saving} className="gap-2">
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+              {saving
+                ? "Enregistrement en cours…"
+                : editing
+                  ? "Enregistrer les modifications"
+                  : "Créer le prestataire"}
             </Button>
           </div>
         </form>

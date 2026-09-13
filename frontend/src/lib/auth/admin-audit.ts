@@ -8,10 +8,12 @@ type ActorProfile = {
 
 /**
  * Journalise une action de gestion des comptes via l'API NestJS.
- * Remplace l'ancien insertAdminAuditLog qui utilisait le client Supabase service_role.
+ * `cookieHeader` = l'en-tête Cookie brut de la requête de l'appelant, relayé
+ * tel quel — appel serveur-à-serveur, la session vit en cookie httpOnly
+ * posé par NestJS, pas dans un en-tête Authorization.
  */
 export async function insertAdminAuditLog(
-  _admin: null,
+  cookieHeader: string | null,
   actor: ActorProfile,
   params: {
     action: AuditAction;
@@ -22,14 +24,15 @@ export async function insertAdminAuditLog(
   try {
     await fetch(`${apiUrl}/audit-logs`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookieHeader ? { cookie: cookieHeader } : {}),
+      },
       body: JSON.stringify({
-        userId: actor.id,
         userName: actor.nom,
         module: "Utilisateurs",
         action: params.action,
         detail: params.detail,
-        ip: "N/A",
       }),
     });
   } catch (error) {

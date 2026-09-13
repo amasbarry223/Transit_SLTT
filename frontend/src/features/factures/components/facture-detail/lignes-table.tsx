@@ -3,7 +3,7 @@
 import { FileText } from "lucide-react";
 import type { Facture } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export function LignesTable({ lignes }: { lignes: Facture["lignes"] }) {
   if (lignes.length === 0) {

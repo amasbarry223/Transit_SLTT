@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Download, MonitorSmartphone, Share } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/shared/components/ui/tooltip";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;

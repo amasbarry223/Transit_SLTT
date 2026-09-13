@@ -7,10 +7,10 @@ import { formatFCFA, formatDateShort } from "@/lib/format";
 import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { usePermission } from "@/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
 
 import type { useDossierFormState } from "./use-dossier-form-state";
 

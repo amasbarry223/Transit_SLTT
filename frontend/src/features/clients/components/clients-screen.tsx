@@ -11,13 +11,14 @@ import {
   Wallet,
   Printer,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { ClientInput } from "@/features/clients/types";
 import { formatFCFA } from "@/lib/format";
 import { printClients } from "@/features/clients/services/client-print";
-import { resolveSlttBrand } from "@/lib/classeur";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastWarning, toastSuccess } from "@/shared/utils/toast-helpers";
 import { usePermission } from "@/shared/hooks/use-permission";
@@ -31,17 +32,21 @@ import {
   type ClientSortKey,
   type ClientTypeFilter,
 } from "@/features/clients/components";
-import { ClientFormFields, emptyClientForm } from "@/features/clients/components/client-form-fields";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  ClientFormFields,
+  emptyClientForm,
+  type ClientFormErrors,
+} from "@/features/clients/components/client-form-fields";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +54,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 
 export function ClientsScreen() {
   const { toast } = useToast();
@@ -59,6 +65,7 @@ export function ClientsScreen() {
   const societes = useStore((s) => s.societes);
   const addClient = useStore((s) => s.addClient);
   const updateClient = useStore((s) => s.updateClient);
+  const deleteClient = useStore((s) => s.deleteClient);
   const { annexes, activeAnnexeId, selectedAnnexeId } = useActiveAnnexe();
   const scopedClients = useMemo(
     () => filterByAnnexe(clients, selectedAnnexeId),
@@ -74,9 +81,12 @@ export function ClientsScreen() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [savingClient, setSavingClient] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<ClientInput>(
     emptyClientForm(activeAnnexeId ?? ""),
   );
+  const [formErrors, setFormErrors] = useState<ClientFormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const isEdit = editingId !== null;
 
@@ -120,8 +130,57 @@ export function ClientsScreen() {
 
   const hasActiveFilters = query.trim() !== "" || typeFilter !== "all";
 
+  function validateClientField(field: keyof ClientFormErrors, val: string, annexe?: string) {
+    if (field === "nom") {
+      return !val.trim() ? "Le nom ou la raison sociale est obligatoire." : undefined;
+    }
+    if (field === "email") {
+      const emailTrim = val.trim();
+      if (emailTrim && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+        return "Format d'adresse e-mail invalide (ex: contact@societe.com).";
+      }
+      return undefined;
+    }
+    if (field === "telephone") {
+      const telTrim = val.trim();
+      if (telTrim && telTrim.replace(/\D/g, "").length < 6) {
+        return "Numéro de téléphone incomplet (au moins 6 chiffres).";
+      }
+      return undefined;
+    }
+    if (field === "annexeId") {
+      return !annexe ? "L'annexe est obligatoire." : undefined;
+    }
+    return undefined;
+  }
+
+  function handleBlur(field: keyof ClientFormErrors) {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const errorMsg = validateClientField(
+      field,
+      field === "nom" ? formValues.nom : field === "email" ? formValues.email : formValues.telephone,
+      formValues.annexeId,
+    );
+    setFormErrors((prev) => ({ ...prev, [field]: errorMsg }));
+  }
+
+  function validateAll() {
+    const errs: ClientFormErrors = {};
+    const nomErr = validateClientField("nom", formValues.nom);
+    if (nomErr) errs.nom = nomErr;
+    const emailErr = validateClientField("email", formValues.email);
+    if (emailErr) errs.email = emailErr;
+    const telErr = validateClientField("telephone", formValues.telephone);
+    if (telErr) errs.telephone = telErr;
+    setFormErrors(errs);
+    setTouched({ nom: true, email: true, telephone: true, annexeId: true });
+    return Object.keys(errs).length === 0;
+  }
+
   function resetForm() {
     setFormValues(emptyClientForm(activeAnnexeId ?? ""));
+    setFormErrors({});
+    setTouched({});
     setEditingId(null);
   }
 
@@ -144,10 +203,33 @@ export function ClientsScreen() {
         adresse: c.adresse,
         annexeId: c.annexeId,
       });
+      setFormErrors({});
+      setTouched({});
       setDialogOpen(true);
     },
     [clients],
   );
+
+  const openDeleteDialog = useCallback((id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDeletingId(id);
+  }, []);
+
+  const clientToDelete = useMemo(
+    () => clients.find((c) => c.id === deletingId) ?? null,
+    [clients, deletingId],
+  );
+
+  async function handleDelete() {
+    if (!deletingId) return;
+    const nom = clientToDelete?.nom ?? "Le client";
+    try {
+      await deleteClient(deletingId);
+      toastSuccess(toast, { title: "Client supprimé", description: `${nom} a été retiré de l'annuaire.` });
+    } catch (err: unknown) {
+      toastError(toast, err, { title: "Impossible de supprimer le client", fallback: "Impossible de supprimer le client." });
+    }
+  }
 
   function handleSortChange(key: ClientSortKey) {
     setSortBy(key);
@@ -157,11 +239,11 @@ export function ClientsScreen() {
   async function handleSave(e?: React.FormEvent) {
     e?.preventDefault();
     if (savingClient) return;
-    const trimmedNom = formValues.nom.trim();
-    if (!trimmedNom) {
-      toastWarning(toast, { title: "Champ requis", description: "Veuillez saisir le nom ou la raison sociale du client." });
+    if (!validateAll()) {
+      toastWarning(toast, { title: "Champs invalides", description: "Veuillez corriger les champs en rouge avant d'enregistrer." });
       return;
     }
+    const trimmedNom = formValues.nom.trim();
     const input: ClientInput = {
       nom: trimmedNom,
       type: formValues.type,
@@ -377,6 +459,7 @@ export function ClientsScreen() {
           onPageChange={setPage}
           onOpenClient={openClient}
           onEditClient={openEditDialog}
+          onDeleteClient={openDeleteDialog}
           onCreateClient={openCreateDialog}
         />
       </Card>
@@ -407,6 +490,9 @@ export function ClientsScreen() {
               onChange={(patch) => setFormValues((v) => ({ ...v, ...patch }))}
               annexes={annexes}
               autoFocusNom
+              errors={formErrors}
+              touched={touched}
+              onBlur={handleBlur}
             />
 
             <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border/60">
@@ -415,20 +501,53 @@ export function ClientsScreen() {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
                 className="rounded-xl h-10 font-semibold"
+                disabled={savingClient}
               >
                 Annuler
               </Button>
               <Button
                 type="submit"
                 disabled={!formValues.nom.trim() || savingClient}
-                className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold h-10 px-5 rounded-xl shadow-md shadow-red-600/20"
+                className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold h-10 px-5 rounded-xl shadow-md shadow-red-600/20 gap-2"
               >
-                {isEdit ? "Enregistrer les modifications" : "Créer le client"}
+                {savingClient && <Loader2 className="size-4 animate-spin" />}
+                {savingClient
+                  ? "Enregistrement en cours…"
+                  : isEdit
+                    ? "Enregistrer les modifications"
+                    : "Créer le client"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* 6. Confirmation de suppression d'un client */}
+      <ConfirmDeleteDialog
+        open={deletingId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingId(null);
+        }}
+        title="Supprimer ce client ?"
+        description={
+          clientToDelete ? (
+            <>
+              <span className="font-semibold text-foreground">{clientToDelete.nom}</span> sera retiré de
+              l&apos;annuaire commercial. Cette action est irréversible.
+            </>
+          ) : (
+            "Cette action est irréversible."
+          )
+        }
+        consequences={
+          clientToDelete && clientToDelete.nbDossiers > 0
+            ? [
+                `${clientToDelete.nbDossiers} dossier(s) rattaché(s) — leur historique reste conservé mais n'est plus lié à ce client`,
+              ]
+            : undefined
+        }
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

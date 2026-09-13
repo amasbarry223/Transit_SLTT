@@ -40,6 +40,9 @@ const pwaHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Icône/bulle Next.js affichée en dev (contexte de route) — masquée à la
+  // demande. Les erreurs de compilation/exécution restent affichées malgré tout.
+  devIndicators: false,
   images: {
     remotePatterns: [
       {

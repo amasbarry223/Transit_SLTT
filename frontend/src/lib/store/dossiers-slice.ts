@@ -1,5 +1,6 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncFournisseurStats } from "@/lib/fournisseur-stats";
 import { assertDossierTransition } from "@/lib/dossier-flow";
@@ -11,11 +12,6 @@ import {
 } from "@/lib/constants";
 import { resteAPayer, type Dossier, type DossierStatut, type PaiementMode } from "@/lib/domain-types";
 import type { DossierInput, ImportDossierHistoriqueInput, SLTTState } from "@/lib/store";
-import type { DossierRow } from "@/lib/db-rows";
-import {
-  shouldSyncEcritureOnDossierSolde,
-  syncEcritureWhenDossierSolde,
-} from "@/lib/store/sync-helpers";
 import {
   computeDossierReference,
   computeHistoricalDossierReference,
@@ -23,34 +19,6 @@ import {
   bumpTrailingSeq,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapDossierFromDb(row: DossierRow): Dossier {
-  return {
-    id: row.id,
-    reference: row.reference,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || "—",
-    bl: row.bl,
-    camion: row.camion,
-    nature: row.nature,
-    droitDouane: Number(row.droit_douane),
-    fraisCircuit: Number(row.frais_circuit),
-    fraisPrestation: Number(row.frais_prestation),
-    montantInvesti: Number(row.montant_investi),
-    montantPaye: Number(row.montant_paye),
-    statut: row.statut,
-    date: row.date,
-    dateEcheance: row.date_echeance ?? undefined,
-    dateDedouanement: row.date_dedouanement ?? undefined,
-    modeTransport: row.mode_transport ?? undefined,
-    noConteneur: row.no_conteneur ?? undefined,
-    portEntree: row.port_entree ?? undefined,
-    poidsTotal: row.poids_total ? Number(row.poids_total) : undefined,
-    notes: row.notes ?? undefined,
-  };
-}
 
 export interface DossiersSlice {
   dossiers: Dossier[];
@@ -75,9 +43,12 @@ function resolveDossierReference(
   annexeId: string,
   year: number,
 ): { reference: string; useAnnexeNumbering: boolean; seq: number } {
-  const societe = get().societes[0];
   const annexe = get().annexes.find((item) => item.id === annexeId);
-  const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
+  // resolveDossierReferencePrefix() passe par resolveTransitSociete() (priorité
+  // à l'UUID historique, puis à l'unique société active) — un societes[0] brut
+  // pouvait renvoyer une société différente de l'identité transit si plusieurs
+  // lignes existaient.
+  const prefix = resolveDossierReferencePrefix(get().societes);
   return computeDossierReference(
     undefined,
     annexe,
@@ -135,37 +106,41 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       notes: input.notes,
     };
 
-    try {
-      const created = await api.dossiers.create({
-        numero: reference,
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        marchandise: input.nature,
-        valeurDouane: input.droitDouane,
-        numeroBl: input.bl,
-        notes: input.notes,
-        voieTransport: input.modeTransport,
-        modeTransport: input.modeTransport,
-        poids: input.poidsTotal,
-        poidsTotal: input.poidsTotal,
-        navireVol: input.camion,
-        camion: input.camion,
-        portDestination: input.portEntree,
-        portEntree: input.portEntree,
-        dateDepart: input.date,
-        date: input.date,
-        dateArriveePrevue: input.dateEcheance,
-        dateEcheance: input.dateEcheance,
-        dateArriveeEffective: input.dateDedouanement,
-        dateDedouanement: input.dateDedouanement,
-        noConteneur: input.noConteneur,
-        conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
-      });
-      if (created?.id) {
-        newDossier.id = created.id;
-      }
-    } catch (e) {
-      console.warn("api.dossiers.create (mode local/déconnecté) :", e);
+    // Persistance obligatoire : un dossier sans écriture serveur disparaissait
+    // silencieusement au rechargement, sans aucune erreur montrée.
+    const created = await api.dossiers.create({
+      numero: reference,
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      marchandise: input.nature,
+      valeurDouane: input.droitDouane,
+      fraisCircuit: input.fraisCircuit,
+      fraisPrestation: input.fraisPrestation,
+      montantInvesti: input.montantInvesti,
+      numeroBl: input.bl,
+      notes: input.notes,
+      voieTransport: input.modeTransport,
+      modeTransport: input.modeTransport,
+      poids: input.poidsTotal,
+      poidsTotal: input.poidsTotal,
+      navireVol: input.camion,
+      camion: input.camion,
+      portDestination: input.portEntree,
+      portEntree: input.portEntree,
+      dateDepart: input.date,
+      date: input.date,
+      dateArriveePrevue: input.dateEcheance,
+      dateEcheance: input.dateEcheance,
+      dateArriveeEffective: input.dateDedouanement,
+      dateDedouanement: input.dateDedouanement,
+      noConteneur: input.noConteneur,
+      conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
+      // Démarre "En cours", pas le défaut Prisma BROUILLON — sinon la 1re
+      // transition de statut échoue après rechargement (assertDossierTransition).
+      statut,
+    });
+    if (created?.id) {
+      newDossier.id = created.id;
     }
 
     const finalSeq = extractTrailingSeq(reference) ?? get().dossierSeq;
@@ -189,9 +164,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
   importDossierHistorique: async (input) => {
     const year = Number(input.date.slice(0, 4)) || new Date().getFullYear();
-    const societe = get().societes[0];
     const annexe = get().annexes.find((item) => item.id === input.annexeId);
-    const prefix = societe?.nom?.trim() || resolveDossierReferencePrefix(get().societes);
+    const prefix = resolveDossierReferencePrefix(get().societes);
     const { reference } = computeHistoricalDossierReference(
       undefined,
       annexe,
@@ -220,19 +194,25 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       notes: input.notes,
     };
 
-    try {
-      const created = await api.dossiers.create({
-        numero: reference,
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        marchandise: input.nature,
-        notes: input.notes,
-      });
-      if (created?.id) {
-        newDossier.id = created.id;
-      }
-    } catch (e) {
-      console.warn("api.dossiers.create historique (mode local) :", e);
+    // Persistance obligatoire — voir addDossier ci-dessus pour la justification.
+    const created = await api.dossiers.create({
+      numero: reference,
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      marchandise: input.nature,
+      notes: input.notes,
+      // Un import historique conserve son statut, sa date ET ses montants
+      // d'origine : sans ça le dossier repassait "En cours" / daté
+      // d'aujourd'hui / à 0 FCFA au rechargement.
+      statut: input.statut,
+      dateDepart: input.date,
+      date: input.date,
+      fraisPrestation: input.montantInvesti,
+      montantInvesti: input.montantInvesti,
+      montantPaye: input.montantPaye,
+    });
+    if (created?.id) {
+      newDossier.id = created.id;
     }
 
     set((s) => {
@@ -265,34 +245,33 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       get().annexes.find((item) => item.id === input.annexeId)?.nom ||
       existing?.annexeNom;
 
-    try {
-      await api.dossiers.update(id, {
-        annexeId: input.annexeId,
-        clientId: input.clientId,
-        marchandise: input.nature,
-        valeurDouane: input.droitDouane,
-        numeroBl: input.bl,
-        notes: input.notes,
-        voieTransport: input.modeTransport,
-        modeTransport: input.modeTransport,
-        poids: input.poidsTotal,
-        poidsTotal: input.poidsTotal,
-        navireVol: input.camion,
-        camion: input.camion,
-        portDestination: input.portEntree,
-        portEntree: input.portEntree,
-        dateDepart: input.date,
-        date: input.date,
-        dateArriveePrevue: input.dateEcheance,
-        dateEcheance: input.dateEcheance,
-        dateArriveeEffective: input.dateDedouanement,
-        dateDedouanement: input.dateDedouanement,
-        noConteneur: input.noConteneur,
-        conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
-      });
-    } catch (e) {
-      console.warn("api.dossiers.update (mode local) :", e);
-    }
+    await api.dossiers.update(id, {
+      annexeId: input.annexeId,
+      clientId: input.clientId,
+      marchandise: input.nature,
+      valeurDouane: input.droitDouane,
+      fraisCircuit: input.fraisCircuit,
+      fraisPrestation: input.fraisPrestation,
+      montantInvesti: input.montantInvesti,
+      numeroBl: input.bl,
+      notes: input.notes,
+      voieTransport: input.modeTransport,
+      modeTransport: input.modeTransport,
+      poids: input.poidsTotal,
+      poidsTotal: input.poidsTotal,
+      navireVol: input.camion,
+      camion: input.camion,
+      portDestination: input.portEntree,
+      portEntree: input.portEntree,
+      dateDepart: input.date,
+      date: input.date,
+      dateArriveePrevue: input.dateEcheance,
+      dateEcheance: input.dateEcheance,
+      dateArriveeEffective: input.dateDedouanement,
+      dateDedouanement: input.dateDedouanement,
+      noConteneur: input.noConteneur,
+      conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
+    });
 
     set((s) => {
       const updatedDossiers = s.dossiers.map((dossier) =>
@@ -321,7 +300,14 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     try {
       await api.dossiers.delete(id);
     } catch (e) {
-      console.warn("api.dossiers.delete (mode local) :", e);
+      // Un refus métier explicite (400 validation, 403 hors périmètre, 409
+      // conflit) doit remonter à l'utilisateur. Un 404 (déjà supprimé), un 401
+      // (session expirée, gérée globalement) ou une panne réseau/serveur
+      // laissent la suppression locale se poursuivre.
+      if (e instanceof ApiError && [400, 403, 409, 422].includes(e.status)) {
+        throw e;
+      }
+      logWarn("api.dossiers.delete (mode local)", e);
     }
 
     set((s) => {
@@ -395,47 +381,50 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const dateDedouanement =
       newStatut === DOSSIER_STATUT_DEDOUANE ? resolvedDate : dossier.dateDedouanement;
 
+    // montantPaye du dossier = incrément borné à l'assiette due — cohérent avec
+    // le backend /paiements. Plus d'écriture locale jetable (le dossier.montantPaye
+    // persiste désormais et sert de source unique aux bilans / au classeur).
     let updatedMontantPaye = dossier.montantPaye;
-    let ecriturePatch: Awaited<ReturnType<typeof syncEcritureWhenDossierSolde>> | undefined;
-
-    if (shouldSyncEcritureOnDossierSolde(newStatut, montantRecu)) {
-      // Solde + encaissement atomiques côté DB (verrou + cumul en Postgres) —
-      // le statut est mis à "Soldé" par le RPC lui-même, pas de .update() séparé ici.
-      ecriturePatch = await syncEcritureWhenDossierSolde(dossier, get().ecritures, get().ecritureSeq, {
-        montantRecu,
-        modePaiement,
-        transitionNote,
-        resolvedDate,
-        today,
-      });
-      updatedMontantPaye = ecriturePatch.dossierMontantPaye;
-    } else {
-      try {
-        await api.dossiers.updateStatut(id, newStatut);
-      } catch (e) {
-        console.warn("api.dossiers.updateStatut (mode local) :", e);
-      }
+    let updatedDateSolde = dossier.dateSolde;
+    if (typeof montantRecu === "number" && montantRecu > 0) {
+      const plafond = dossier.montantInvesti > 0 ? dossier.montantInvesti : Number.POSITIVE_INFINITY;
+      updatedMontantPaye = Math.min(plafond, dossier.montantPaye + montantRecu);
+      updatedDateSolde = dossier.dateSolde || resolvedDate;
     }
 
-    set((s) => ({
-      dossiers: s.dossiers.map((item) =>
-        item.id === id
-          ? { ...item, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
-          : item,
-      ),
-      ecritures: ecriturePatch?.ecritures ?? s.ecritures,
-      ecritureSeq: ecriturePatch?.ecritureSeq ?? s.ecritureSeq,
-      clients: syncClientStats(
-        s.dossiers.map((item) =>
-          item.id === id
-            ? { ...item, statut: newStatut, montantPaye: updatedMontantPaye, dateDedouanement }
-            : item,
-        ),
-        s.factures,
-        ecriturePatch?.ecritures ?? s.ecritures,
-        s.clients,
-      ),
-    }));
+    // Le changement de statut DOIT être poussé (sinon le dossier repasse à son
+    // ancien statut au rechargement). Quand la transition s'accompagne d'un
+    // encaissement, on passe par /paiements pour incrémenter montantPaye + dater
+    // le règlement côté serveur en même temps ; sinon simple updateStatut.
+    // Le plus dangereux des "mode local" de ce fichier : un encaissement
+    // enregistré localement (montantPaye incrémenté, statut passé "Soldé")
+    // alors que l'appel serveur a échoué revient à comptabiliser un paiement
+    // jamais confirmé côté serveur — pas seulement une perte d'enregistrement,
+    // un désaccord argent réel/argent affiché.
+    if (typeof montantRecu === "number" && montantRecu > 0) {
+      await api.dossiers.enregistrerPaiement(id, montantRecu, newStatut, resolvedDate);
+    } else {
+      await api.dossiers.updateStatut(id, newStatut);
+    }
+
+    const applyPatch = (item: Dossier): Dossier =>
+      item.id === id
+        ? {
+            ...item,
+            statut: newStatut,
+            montantPaye: updatedMontantPaye,
+            dateDedouanement,
+            dateSolde: updatedDateSolde,
+          }
+        : item;
+
+    set((s) => {
+      const updatedDossiers = s.dossiers.map(applyPatch);
+      return {
+        dossiers: updatedDossiers,
+        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+      };
+    });
 
     await get().addAuditLog(
       AUDIT_MODULE.Dossiers,

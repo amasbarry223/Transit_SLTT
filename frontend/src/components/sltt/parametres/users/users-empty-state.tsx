@@ -1,7 +1,7 @@
 "use client";
 
 import { UserPlus, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 
 export function UsersEmptyState({ hasFilters, onCreate }: { hasFilters: boolean; onCreate: () => void }) {
   return (

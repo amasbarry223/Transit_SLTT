@@ -1,29 +1,9 @@
 import type { StateCreator } from "zustand";
 import type { Transporteur, TransporteurStatut } from "@/lib/domain-types";
 import type { TransporteurInput, SLTTState } from "@/lib/store";
-import type { TransporteurRow } from "@/lib/db-rows";
 import { requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapTransporteurFromDb(row: TransporteurRow): Transporteur {
-  return {
-    id: row.id,
-    nom: row.nom,
-    contact: row.contact || "",
-    telephone: row.telephone,
-    email: row.email || undefined,
-    vehicule: row.vehicule,
-    immatriculation: row.immatriculation,
-    trajet: row.trajet || "",
-    capacite: row.capacite ? Number(row.capacite) : 0,
-    statut: row.statut,
-    nbDossiers: 0,
-    dateCreation: row.date_creation || new Date().toISOString().slice(0, 10),
-    notes: row.notes || undefined,
-    annexeId: row.annexe_id,
-  };
-}
 
 export interface TransporteursSlice {
   transporteurs: Transporteur[];
@@ -44,28 +24,25 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
     const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
     const annexeId = requireActiveAnnexeId(userAnnexeIds, get().annexes);
 
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.transporteurs.create({
-        nom: input.nom,
-        contact: input.contact,
-        telephone: input.telephone,
-        email: input.email,
-        vehicule: input.vehicule,
-        immatriculation: input.immatriculation,
-        trajet: input.trajet,
-        capacite: input.capacite,
-        statut: input.statut,
-        notes: input.notes,
-        annexeId,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      console.warn("api.transporteurs.create (mode local) :", e);
-    }
+    // Persistance obligatoire : un transporteur sans écriture serveur
+    // disparaissait silencieusement au rechargement, sans aucune erreur
+    // montrée.
+    const created = await api.transporteurs.create({
+      nom: input.nom,
+      contact: input.contact,
+      telephone: input.telephone,
+      email: input.email,
+      vehicule: input.vehicule,
+      immatriculation: input.immatriculation,
+      trajet: input.trajet,
+      capacite: input.capacite,
+      statut: input.statut,
+      notes: input.notes,
+      annexeId,
+    });
 
     const newTr: Transporteur = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       nom: input.nom,
       contact: input.contact || "",
       telephone: input.telephone,
@@ -89,11 +66,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   updateTransporteur: async (id, input) => {
-    try {
-      await api.transporteurs.update(id, input);
-    } catch (e) {
-      console.warn("api.transporteurs.update (mode local) :", e);
-    }
+    await api.transporteurs.update(id, input);
 
     set((s) => ({
       transporteurs: s.transporteurs.map((t) => (t.id === id ? { ...t, ...input } : t)),
@@ -102,11 +75,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   updateTransporteurStatut: async (id, statut) => {
-    try {
-      await api.transporteurs.update(id, { statut });
-    } catch (e) {
-      console.warn("api.transporteurs.update statut (mode local) :", e);
-    }
+    await api.transporteurs.update(id, { statut });
 
     const transporteur = get().transporteurs.find((t) => t.id === id);
     set((s) => ({
@@ -118,11 +87,7 @@ export const createTransporteursSlice: StateCreator<SLTTState, [], [], Transport
   },
 
   removeTransporteur: async (id) => {
-    try {
-      await api.transporteurs.delete(id);
-    } catch (e) {
-      console.warn("api.transporteurs.delete (mode local) :", e);
-    }
+    await api.transporteurs.delete(id);
 
     const trans = get().transporteurs.find((t) => t.id === id);
     set((s) => ({

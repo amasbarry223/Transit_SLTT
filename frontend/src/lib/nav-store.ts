@@ -40,6 +40,7 @@ interface NavState {
   selectedId: string | null;
   dossierFormMode: "create" | "edit";
   devisEditMode: boolean;
+  factureEditMode: boolean;
   /** Sous-onglet actif de l'écran Comptabilité (écritures dossiers vs journal de caisse). */
   comptaTab: ComptaTab;
   /** Canal transitoire (non persisté) pour préremplir une facture depuis une prestation optionnelle F6. */
@@ -52,6 +53,7 @@ interface NavState {
   openDossierDetail: (id: string) => void;
   openDossierOcrReview: (documentId: string) => void;
   openDevisDetail: (id: string, edit?: boolean) => void;
+  openFactureDetail: (id: string, edit?: boolean) => void;
   openClient: (id: string | null) => void;
   openContratDetail: (id: string) => void;
   setPendingFacturePrefill: (p: PendingFacturePrefill) => void;
@@ -64,6 +66,7 @@ export const useNav = create<NavState>()((set) => ({
   selectedId: null,
   dossierFormMode: "create",
   devisEditMode: false,
+  factureEditMode: false,
   comptaTab: "ecritures",
   pendingFacturePrefill: null,
   mobileMenuOpen: false,
@@ -73,6 +76,7 @@ export const useNav = create<NavState>()((set) => ({
     set({
       view,
       selectedId: opts?.id ?? null,
+      factureEditMode: false,
       mobileMenuOpen: false,
       ...(opts?.comptaTab ? { comptaTab: opts.comptaTab } : {}),
     }),
@@ -84,6 +88,8 @@ export const useNav = create<NavState>()((set) => ({
     set({ view: "dossier-ocr-review", selectedId: documentId, mobileMenuOpen: false }),
   openDevisDetail: (id, edit = false) =>
     set({ view: "devis-detail", selectedId: id, devisEditMode: edit, mobileMenuOpen: false }),
+  openFactureDetail: (id, edit = false) =>
+    set({ view: "facture-detail", selectedId: id, factureEditMode: edit, mobileMenuOpen: false }),
   openClient: (id) => set({ view: "client-fiche", selectedId: id, mobileMenuOpen: false }),
   openContratDetail: (id) => set({ view: "contrat-detail", selectedId: id, mobileMenuOpen: false }),
   setPendingFacturePrefill: (p) => set({ pendingFacturePrefill: p }),
@@ -93,6 +99,7 @@ export const useNav = create<NavState>()((set) => ({
       selectedId: null,
       dossierFormMode: "create",
       devisEditMode: false,
+      factureEditMode: false,
       comptaTab: "ecritures",
       pendingFacturePrefill: null,
       mobileMenuOpen: false,

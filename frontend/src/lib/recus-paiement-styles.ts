@@ -11,13 +11,9 @@ export const RECEIPT_LOGO_FALLBACK = "/logoV.png";
  */
 export const RECEIPT_WIDTH_MM = 195;
 export const RECEIPT_HEIGHT_MM = 82;
-export const RECEIPT_WIDTH_CM = 19.5;
-export const RECEIPT_HEIGHT_CM = 8.2;
-export const RECEIPT_ASPECT_RATIO = RECEIPT_WIDTH_MM / RECEIPT_HEIGHT_MM;
 
-/** Libellés affichés dans l'UI */
+/** Libellé affiché dans l'UI */
 export const RECEIPT_FORMAT_LABEL = "19,5 × 8,2 cm";
-export const RECEIPT_FORMAT_LABEL_MM = "195 × 82 mm";
 
 /** Iframe d'impression dédiée au reçu (dimensions ≠ A4). */
 export const RECEIPT_PRINT_FRAME_ID = "sltt-print-frame-recu";
@@ -31,29 +27,13 @@ export const RECEIPT_SIG_WIDTH_MM = 31;
 export const RECEIPT_SIG_HEIGHT_MM = 14.5;
 
 /**
- * CSS strict — une seule page ${RECEIPT_WIDTH_MM}×${RECEIPT_HEIGHT_MM} mm (19,5×8,2 cm).
- * Le document HTML d'impression ne contient QUE le reçu (pas de toolbar, pas de marge A4).
+ * Règles de contenu partagées entre l'impression d'un seul reçu et le
+ * carnet de plusieurs reçus (batch) — tout sauf le cadrage de page
+ * (dimensions html/body, position du .receipt-paper, sauts de page), qui
+ * diffère radicalement entre les deux modes.
  */
-export function buildReceiptPrintCSS(options?: { includeScreenToolbar?: boolean }): string {
-  const includeToolbar = options?.includeScreenToolbar ?? false;
-
+function buildReceiptContentCSS(): string {
   return `
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html {
-  width: ${RECEIPT_WIDTH_MM}mm;
-  height: ${RECEIPT_HEIGHT_MM}mm;
-  overflow: hidden;
-}
-body {
-  width: ${RECEIPT_WIDTH_MM}mm;
-  height: ${RECEIPT_HEIGHT_MM}mm;
-  overflow: hidden;
-  font-family: Arial, Helvetica, sans-serif;
-  background: ${RECEIPT_PAPER};
-  color: ${RECEIPT_BLUE};
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
 .receipt-paper {
   width: ${RECEIPT_WIDTH_MM}mm;
   height: ${RECEIPT_HEIGHT_MM}mm;
@@ -89,6 +69,29 @@ body {
 .header-spacer {
   width: ${RECEIPT_LOGO_COL_MM}mm;
   flex-shrink: 0;
+}
+.header-ref {
+  width: ${RECEIPT_LOGO_COL_MM}mm;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  text-align: right;
+  line-height: 1.3;
+}
+.header-ref-label {
+  font-size: 6.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+.header-ref-value {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  word-break: break-all;
 }
 .header-text {
   flex: 1;
@@ -196,7 +199,34 @@ body {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}`;
 }
+
+/**
+ * CSS strict — une seule page ${RECEIPT_WIDTH_MM}×${RECEIPT_HEIGHT_MM} mm (19,5×8,2 cm).
+ * Le document HTML d'impression ne contient QUE le reçu (pas de toolbar, pas de marge A4).
+ */
+export function buildReceiptPrintCSS(options?: { includeScreenToolbar?: boolean }): string {
+  const includeToolbar = options?.includeScreenToolbar ?? false;
+
+  return `
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  width: ${RECEIPT_WIDTH_MM}mm;
+  height: ${RECEIPT_HEIGHT_MM}mm;
+  overflow: hidden;
+}
+body {
+  width: ${RECEIPT_WIDTH_MM}mm;
+  height: ${RECEIPT_HEIGHT_MM}mm;
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+  background: ${RECEIPT_PAPER};
+  color: ${RECEIPT_BLUE};
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+${buildReceiptContentCSS()}
 ${
   includeToolbar
     ? `
@@ -252,8 +282,58 @@ ${
 }`;
 }
 
+/**
+ * CSS carnet — plusieurs reçus, chacun sur sa PROPRE page
+ * ${RECEIPT_WIDTH_MM}×${RECEIPT_HEIGHT_MM} mm. Contrairement à
+ * buildReceiptPrintCSS (verrouillé à un seul .receipt-paper en
+ * position: fixed), ici chaque .receipt-paper doit s'enchaîner sur une
+ * nouvelle page — sans ça, N reçus se superposeraient tous au même
+ * endroit (position: fixed) au lieu de s'imprimer sur N feuilles.
+ */
+export function buildReceiptBatchPrintCSS(): string {
+  return `
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  width: ${RECEIPT_WIDTH_MM}mm;
+}
+body {
+  width: ${RECEIPT_WIDTH_MM}mm;
+  font-family: Arial, Helvetica, sans-serif;
+  background: ${RECEIPT_PAPER};
+  color: ${RECEIPT_BLUE};
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+${buildReceiptContentCSS()}
+.receipt-paper {
+  margin: 0 auto 4mm;
+}
+@media print {
+  @page {
+    size: ${RECEIPT_WIDTH_MM}mm ${RECEIPT_HEIGHT_MM}mm;
+    margin: 0;
+  }
+  body {
+    background: ${RECEIPT_PAPER} !important;
+  }
+  .receipt-paper {
+    width: ${RECEIPT_WIDTH_MM}mm !important;
+    height: ${RECEIPT_HEIGHT_MM}mm !important;
+    margin: 0 !important;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid !important;
+  }
+  .receipt-paper:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+}`;
+}
+
 /** Répartit un texte long sur N lignes (équilibré par mots). */
 export function splitTextIntoLines(text: string, lineCount: number): string[] {
+  if (lineCount <= 0) return [];
   const words = text.trim().split(/\s+/);
   if (words.length === 0) return Array.from({ length: lineCount }, () => "");
   if (words.length <= lineCount) {

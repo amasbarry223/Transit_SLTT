@@ -1,6 +1,6 @@
 import { type LucideIcon } from "lucide-react";
-import { TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { cn } from "@/shared/utils/cn";
 
 export interface MetaTabItem<K extends string> {
   key: K;

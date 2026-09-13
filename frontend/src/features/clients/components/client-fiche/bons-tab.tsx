@@ -4,7 +4,7 @@ import type { BonSortie } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { ToneBadge } from "@/components/sltt/status-badge";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -12,8 +12,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
-import { TabsContent } from "@/components/ui/tabs";
+} from "@/shared/components/ui/table";
+import { TabsContent } from "@/shared/components/ui/tabs";
 import { BON_MOTIF_TONE, PAGE_SIZE, TabEmptyState, bonStatutTone } from "./shared";
 
 type BonsTabProps = {

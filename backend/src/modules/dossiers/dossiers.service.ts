@@ -1,11 +1,13 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
+import { parsePagination, buildPaginatedResponse } from '../../common/pagination.utils';
 
 function normalizeVoieTransport(val?: string): 'MARITIME' | 'AERIEN' | 'TERRESTRE' | undefined {
   if (!val) return undefined;
@@ -97,6 +99,11 @@ function buildDossierPrismaData(data: any): Record<string, any> {
   const vd = data.valeurDouane ?? data.droitDouane;
   if (vd !== undefined) res.valeurDouane = vd !== null && vd !== '' ? Number(vd) : null;
 
+  const num = (v: any) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  if (data.fraisCircuit !== undefined) res.fraisCircuit = num(data.fraisCircuit);
+  if (data.fraisPrestation !== undefined) res.fraisPrestation = num(data.fraisPrestation);
+  if (data.montantInvesti !== undefined) res.montantInvesti = num(data.montantInvesti);
+
   if (data.notes !== undefined) res.notes = data.notes || null;
 
   return res;
@@ -105,12 +112,6 @@ function buildDossierPrismaData(data: any): Record<string, any> {
 @Injectable()
 export class DossiersService {
   constructor(private readonly prisma: PrismaService) {}
-
-  /** Filtre par annexe selon les droits de l'utilisateur */
-  private buildAnnexeFilter(user: CurrentUserType) {
-    if (user.role === 'ADMIN') return {};
-    return { annexeId: { in: user.annexeIds } };
-  }
 
   async findAll(
     user: CurrentUserType,
@@ -123,19 +124,12 @@ export class DossiersService {
       limit?: number;
     },
   ) {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(query, 20);
 
-    const annexeFilter = this.buildAnnexeFilter(user);
-    if (query.annexeId) {
-      if (user.role !== 'ADMIN' && !user.annexeIds.includes(query.annexeId)) {
-        throw new ForbiddenException("Accès non autorisé à cette annexe");
-      }
-    }
+    assertAnnexeAccess(user, query.annexeId, 'cette annexe');
 
     const where: any = {
-      ...annexeFilter,
+      ...buildAnnexeScopeFilter(user),
       ...(query.annexeId ? { annexeId: query.annexeId } : {}),
       ...(query.statut ? { statut: query.statut } : {}),
       ...(query.type ? { type: query.type } : {}),
@@ -167,15 +161,7 @@ export class DossiersService {
       }),
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return buildPaginatedResponse(data, total, { page, limit });
   }
 
   async findOne(id: string, user: CurrentUserType) {
@@ -196,17 +182,13 @@ export class DossiersService {
 
     if (!dossier) throw new NotFoundException(`Dossier ${id} non trouvé`);
 
-    if (user.role !== 'ADMIN' && !user.annexeIds.includes(dossier.annexeId)) {
-      throw new ForbiddenException("Accès non autorisé à ce dossier");
-    }
+    assertAnnexeAccess(user, dossier.annexeId, 'ce dossier');
 
     return dossier;
   }
 
   async create(user: CurrentUserType, data: any) {
-    if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
-      throw new ForbiddenException("Vous ne pouvez pas créer de dossier dans cette annexe");
-    }
+    assertAnnexeAccess(user, data.annexeId, 'cette annexe');
 
     // Vérifier l'unicité du numéro seulement si fourni
     if (data.numero && typeof data.numero === 'string') {
@@ -227,6 +209,14 @@ export class DossiersService {
           annexeId: data.annexeId,
           clientId: data.clientId,
           statut: prismaData.statut ?? 'EN_COURS',
+          montantPaye:
+            data.montantPaye !== undefined && Number.isFinite(Number(data.montantPaye))
+              ? Number(data.montantPaye)
+              : 0,
+          dateSolde:
+            Number(data.montantPaye) > 0
+              ? parseDossierDate(data.dateSolde ?? data.date ?? data.dateDepart) ?? new Date()
+              : null,
           creeParId: user.id,
           conteneurs: conteneurs?.length
             ? {
@@ -272,6 +262,8 @@ export class DossiersService {
 
   async update(id: string, user: CurrentUserType, data: any) {
     const existing = await this.findOne(id, user);
+    assertAnnexeAccess(user, data.annexeId, 'cette annexe');
+
     const updateData = buildDossierPrismaData(data);
 
     const conteneurs = data.conteneurs ?? (data.noConteneur ? [{ numero: data.noConteneur }] : undefined);
@@ -302,24 +294,70 @@ export class DossiersService {
 
   async updateStatut(id: string, user: CurrentUserType, statut: any) {
     await this.findOne(id, user);
-    const normalizedStatut = normalizeStatutDossier(statut) || 'EN_COURS';
-
+    const normalized = normalizeStatutDossier(statut);
     const updated = await this.prisma.dossier.update({
       where: { id },
-      data: { statut: normalizedStatut as any },
+      data: { statut: normalized as any },
+      include: { client: true, annexe: true },
     });
-
-    // Mettre à jour le statut affiché sur le tracking public
-    await this.prisma.trackingPublic.updateMany({
-      where: { dossierId: id },
-      data: { statutAffiche: normalizedStatut as any },
-    });
+    // Synchroniser le tracking public si existant
+    await this.prisma.trackingPublic
+      .updateMany({
+        where: { dossierId: id },
+        data: { statutAffiche: normalized as any },
+      })
+      .catch(() => null);
 
     return updated;
   }
 
+  /** Enregistre un règlement client sur le dossier (incrément atomique de
+   *  montantPaye, borné à montantInvesti). Optionnellement change le statut. */
+  async enregistrerPaiement(
+    id: string,
+    user: CurrentUserType,
+    data: { montant: number; statut?: string; date?: string },
+  ) {
+    const dossier = await this.findOne(id, user);
+    const montant = Number(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new BadRequestException('Le montant du règlement doit être supérieur à 0.');
+    }
+    const datePaiement = data.date ? new Date(data.date) : new Date();
+
+    return this.prisma.$transaction(async (tx: any) => {
+      const incremented = await tx.dossier.update({
+        where: { id },
+        data: {
+          montantPaye: { increment: montant },
+          dateSolde: Number.isNaN(datePaiement.getTime()) ? new Date() : datePaiement,
+        },
+      });
+      // Ne jamais dépasser l'assiette due (paiements concurrents).
+      const plafond = incremented.montantInvesti || dossier.montantInvesti || 0;
+      if (plafond > 0 && incremented.montantPaye > plafond + 0.5) {
+        await tx.dossier.update({ where: { id }, data: { montantPaye: plafond } });
+      }
+      if (data.statut) {
+        const normalized = normalizeStatutDossier(data.statut) || dossier.statut;
+        await tx.dossier.update({ where: { id }, data: { statut: normalized as any } });
+        await tx.trackingPublic.updateMany({
+          where: { dossierId: id },
+          data: { statutAffiche: normalized as any },
+        });
+      }
+      return tx.dossier.findUnique({ where: { id }, include: { client: true, annexe: true } });
+    });
+  }
+
   async remove(id: string, user: CurrentUserType) {
     await this.findOne(id, user);
-    return this.prisma.dossier.delete({ where: { id } });
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.facture.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+      await tx.depense.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+      await tx.devis.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+      await tx.dossier.delete({ where: { id } });
+      return { id };
+    });
   }
 }

@@ -12,7 +12,7 @@ import {
   RECEIPT_WIDTH_MM,
 } from "@/lib/recus-paiement-styles";
 import type { SocieteBrand } from "@/lib/societe-brand";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { RecuReceiptBody } from "./recu-receipt-body";
 import { RecuReceiptHeader } from "./recu-receipt-header";
 
@@ -71,7 +71,7 @@ function ReceiptPaper({
         className="pointer-events-none absolute inset-y-0 left-0 w-[3mm] border-r border-dashed border-[#1e4a8a]/15"
         aria-hidden
       />
-      <RecuReceiptHeader brand={brand} />
+      <RecuReceiptHeader brand={brand} reference={data.reference} />
       <RecuReceiptBody data={data} className="flex-1" />
     </div>
   );

@@ -23,10 +23,6 @@ function writeLog(level: LogLevel, message: string, payload?: LogPayload): void 
   console.info(JSON.stringify(entry));
 }
 
-export function logInfo(message: string, payload?: LogPayload): void {
-  writeLog("info", message, payload);
-}
-
 export function logWarn(message: string, error?: unknown, payload?: LogPayload): void {
   writeLog("warn", message, {
     ...payload,

@@ -5,13 +5,13 @@ import { useStore, type Transporteur, type TransporteurStatut } from "@/lib/stor
 import { formatDateShort } from "@/lib/format";
 import { exportToExcel, printTransporteurs } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/societe-brand";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { usePermission } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
-import { useDeleteConfirm } from "@/hooks/use-delete-confirm";
+import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
 import { matchesQuery } from "@/lib/search-filter";
 
 export const PAGE_SIZE = 8;

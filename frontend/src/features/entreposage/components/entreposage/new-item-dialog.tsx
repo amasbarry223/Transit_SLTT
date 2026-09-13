@@ -5,10 +5,11 @@ import { Plus } from "lucide-react";
 import type { Client, StockItemInput } from "@/lib/store";
 import type { Annexe } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
+import { DEFAULT_STOCK_SEUIL } from "@/lib/constants";
 import { FormField } from "@/components/sltt/form-field";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -16,14 +17,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 
 /**
  * Formulaire à une seule étape (pas d'assistant) — même convention que les
@@ -76,7 +77,7 @@ export function NewItemDialog({
       marchandise,
       quantite: Math.max(0, Number(niQuantite) || 0),
       unite,
-      seuil: Math.max(0, Number(niSeuil) || 10),
+      seuil: Math.max(0, Number(niSeuil) || DEFAULT_STOCK_SEUIL),
       depositaire: niHotesse.trim() || "—",
       commercial: niCommercial.trim() || "—",
       sommePayee,

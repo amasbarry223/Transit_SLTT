@@ -2,7 +2,6 @@ import type { StateCreator } from "zustand";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { BonLigne, BonSortie, BonSortieCaisse, BonSortieCaisseInput, Mouvement, StockItem } from "@/lib/domain-types";
 import type { BonInput, SLTTState } from "@/lib/store";
-import type { BonSortieCaisseRow, BonSortieRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 import {
@@ -10,46 +9,7 @@ import {
   extractTrailingSeq,
 } from "@/lib/store/reference";
 
-export function mapBonFromDb(row: BonSortieRow): BonSortie {
-  return {
-    id: row.id,
-    reference: row.reference,
-    date: row.date,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || row.client_nom || "",
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    stockId: row.stock_id || undefined,
-    marchandise: row.marchandise,
-    quantite: Number(row.quantite),
-    unite: row.unite,
-    motif: row.motif,
-    montant: Number(row.montant),
-    statut: row.statut,
-  };
-}
-
-export function mapBonSortieCaisseFromDb(row: BonSortieCaisseRow): BonSortieCaisse {
-  return {
-    id: row.id,
-    reference: row.reference,
-    date: row.date,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    montantTotal: Number(row.montant_total),
-    creePar: row.cree_par || undefined,
-    creeLe: row.created_at,
-    lignes: (row.bons_sortie_caisse_lignes || []).map((ligne) => ({
-      id: ligne.id,
-      date: ligne.date,
-      beneficiaire: ligne.beneficiaire,
-      motif: ligne.motif,
-      montant: Number(ligne.montant),
-    })),
-  };
-}
-
-export function findStockForBon(
+function findStockForBon(
   stock: StockItem[],
   ref: { stockId?: string; marchandise: string },
 ): StockItem | undefined {
@@ -65,6 +25,7 @@ export interface BonsSlice {
   addBon: (input: BonInput) => Promise<BonSortie>;
   validateBon: (id: string) => Promise<boolean>;
   addBonSortieCaisse: (input: BonSortieCaisseInput) => Promise<BonSortieCaisse>;
+  updateBonSortieCaisse: (id: string, input: BonSortieCaisseInput) => Promise<void>;
   removeBonSortieCaisse: (id: string) => Promise<void>;
 }
 
@@ -102,29 +63,27 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const unite = hasLignes ? lignes[0]?.unite || input.unite : input.unite;
     const stockId = hasLignes ? lignes[0]?.stockId || input.stockId : input.stockId;
 
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.bons.createBonSortie({
-        reference: numero,
-        date: input.date,
-        clientId: input.clientId,
-        clientNom: client?.nom || "",
-        annexeId: input.annexeId,
-        stockId,
-        marchandise,
-        quantite: totalQuantite,
-        unite,
-        motif: input.motif,
-        montant: totalMontant,
-        statut: input.statut || "Brouillon",
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      console.warn("api.bons.createBonSortie (mode local) :", e);
-    }
+    // Persistance obligatoire : un bon sans écriture serveur disparaissait
+    // silencieusement au rechargement (aucune erreur montrée, l'utilisateur
+    // croyait le bon créé). On propage l'erreur pour que l'UI la signale,
+    // et on n'ajoute rien au store local tant que le serveur n'a pas confirmé.
+    const created = await api.bons.createBonSortie({
+      reference: numero,
+      date: input.date,
+      clientId: input.clientId,
+      clientNom: client?.nom || "",
+      annexeId: input.annexeId,
+      stockId,
+      marchandise,
+      quantite: totalQuantite,
+      unite,
+      motif: input.motif,
+      montant: totalMontant,
+      statut: input.statut || "Brouillon",
+    });
 
     const newBon: BonSortie = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       reference: numero,
       date: input.date,
       clientId: input.clientId,
@@ -180,11 +139,11 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
         }
       }
 
-      try {
-        await api.bons.validateBonSortie(id);
-      } catch (e) {
-        console.warn("api.bons.validateBonSortie (mode local) :", e);
-      }
+      // Cet appel décrémente réellement le stock côté serveur : le laisser
+      // échouer en silence marquerait le bon "Validé" localement sans que le
+      // stock ait bougé en base — désynchronisation physique/logique, pas
+      // seulement une perte d'enregistrement.
+      await api.bons.validateBonSortie(id);
 
       let updatedStock = [...get().stock];
       const newMouvements: Mouvement[] = [];
@@ -225,11 +184,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       return false;
     }
 
-    try {
-      await api.bons.validateBonSortie(id);
-    } catch (e) {
-      console.warn("api.bons.validateBonSortie (mode local) :", e);
-    }
+    // Même raison que ci-dessus : ne pas laisser cet échec en silence.
+    await api.bons.validateBonSortie(id);
 
     const newStockQty = stockItem ? stockItem.quantite - bon.quantite : 0;
     set((s) => ({
@@ -264,23 +220,18 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
 
     const reference = initialReference;
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.bons.createBonCaisse({
-        reference,
-        date: input.date,
-        annexeId: input.annexeId,
-        montantTotal,
-        creePar,
-        lignes: input.lignes,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      console.warn("api.bons.createBonCaisse (mode local) :", e);
-    }
+    // Persistance obligatoire — voir addBon ci-dessus pour la justification.
+    const created = await api.bons.createBonCaisse({
+      reference,
+      date: input.date,
+      annexeId: input.annexeId,
+      montantTotal,
+      creePar,
+      lignes: input.lignes,
+    });
 
     const newBon: BonSortieCaisse = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       reference,
       date: input.date,
       annexeId: input.annexeId,
@@ -308,12 +259,60 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     return newBon;
   },
 
-  removeBonSortieCaisse: async (id) => {
-    try {
-      await api.bons.deleteBonCaisse(id);
-    } catch (e) {
-      console.warn("api.bons.deleteBonCaisse (mode local) :", e);
+  updateBonSortieCaisse: async (id, input) => {
+    const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
+    // Persistance obligatoire — voir addBon ci-dessus pour la justification.
+    const updated = await api.bons.updateBonCaisse(id, {
+      date: input.date,
+      annexeId: input.annexeId,
+      lignes: input.lignes,
+    });
+
+    // Préfère les lignes confirmées par le serveur (ids réels) ; ne
+    // reconstruit des ids locaux jetables que si la réponse est absente.
+    const confirmedLignes: Array<{ id: string; date: string; beneficiaire: string; motif: string; montant: number }> =
+      updated?.lignes?.map((ligne, idx) => ({
+        id: ligne.id ?? `BSCL-${idx + 1}`,
+        date: ligne.date ?? "",
+        beneficiaire: ligne.beneficiaire ?? "",
+        motif: ligne.motif ?? "",
+        montant: Number(ligne.montant ?? 0),
+      })) ?? input.lignes.map((ligne, idx) => ({ ...ligne, id: `BSCL-${idx + 1}` }));
+
+    set((s) => ({
+      bonsSortieCaisse: s.bonsSortieCaisse.map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              date: input.date,
+              annexeId: input.annexeId,
+              annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
+              montantTotal,
+              lignes: confirmedLignes.map((ligne) => ({
+                id: ligne.id,
+                date: ligne.date,
+                beneficiaire: ligne.beneficiaire,
+                motif: ligne.motif,
+                montant: Number(ligne.montant),
+              })),
+            }
+          : b,
+      ),
+    }));
+
+    const bon = get().bonsSortieCaisse.find((b) => b.id === id);
+    if (bon) {
+      await get().addAuditLog(
+        AUDIT_MODULE.Bons,
+        AUDIT_ACTION.Modification,
+        `Bon de sortie caisse ${bon.reference} modifié — ${montantTotal.toLocaleString("fr-FR")} FCFA`,
+      );
     }
+  },
+
+  removeBonSortieCaisse: async (id) => {
+    // Persistance obligatoire — voir addBon ci-dessus pour la justification.
+    await api.bons.deleteBonCaisse(id);
 
     const bon = get().bonsSortieCaisse.find((b) => b.id === id);
     set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));

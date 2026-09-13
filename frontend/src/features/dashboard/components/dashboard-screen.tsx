@@ -9,26 +9,26 @@ import {
   FileText,
   Ship,
   Truck,
-  Calendar,
-  ChevronDown,
+  Plus,
 } from "lucide-react";
 
-import { DashboardKpiCard } from "@/components/sltt/dashboard/dashboard-kpi-card";
-import { PromoActionCard } from "@/components/sltt/dashboard/promo-action-card";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
+import { formatFCFA } from "@/lib/format";
 import { getDashboardAnchorDate, getDashboardAnchorDayKey } from "@/lib/calendar-anchor";
 import { getDashboardSections, type DashboardSection } from "@/lib/dashboard-config";
-import type { LiveAlert } from "@/lib/dashboard-metrics";
-import { useBeneficeParSociete } from "@/hooks/use-benefice-par-societe";
-import { useCurrentUser } from "@/hooks/use-permission";
-import { cn } from "@/lib/utils";
+import { buildMonthlyCounts, computeCountVariation, type LiveAlert } from "@/lib/dashboard-metrics";
+import { useBeneficeParSociete } from "@/shared/hooks/use-benefice-par-societe";
+import { useCurrentUser, usePermission } from "@/shared/hooks/use-permission";
+import { Button } from "@/shared/components/ui/button";
+import { cn } from "@/shared/utils/cn";
 
+import { DashboardStatStrip, type DashboardStat } from "@/components/sltt/dashboard/dashboard-stat-strip";
 import { AgentPanel } from "@/components/sltt/dashboard/agent-panel";
 import { ComptablePanel } from "@/components/sltt/dashboard/comptable-panel";
-import { AdminPanel } from "@/components/sltt/dashboard/admin-panel";
 import { DossiersEvolutionChartLazy } from "@/components/sltt/dashboard/dossiers-evolution-chart-lazy";
 import { StockRepartitionChartLazy } from "@/components/sltt/dashboard/stock-repartition-chart-lazy";
+import { TresorerieChartLazy } from "@/components/sltt/dashboard/tresorerie-chart-lazy";
 import { DerniersDossiersCard } from "@/components/sltt/dashboard/derniers-dossiers-card";
 import { AlertesCard } from "@/components/sltt/dashboard/alertes-card";
 import { useDashboardMetrics } from "@/components/sltt/dashboard/use-dashboard-metrics";
@@ -39,6 +39,7 @@ export function DashboardScreen() {
   const go = useNav((s) => s.go);
   const openDossier = useNav((s) => s.openDossier);
   const currentUserName = useSession((s) => s.currentUserName);
+  const canCreateDossier = usePermission("dossiers:write");
   const theme = useUiPrefs((s) => s.theme);
   const isDark = theme === "dark";
   const gridColor = isDark ? "#27283F" : SLTT_GRID;
@@ -49,10 +50,15 @@ export function DashboardScreen() {
   const factures = useStore((s) => s.factures);
   const stock = useStore((s) => s.stock);
   const bons = useStore((s) => s.bons);
-  const users = useStore((s) => s.usersPublic);
   const clients = useStore((s) => s.clients);
+  const operationsComptables = useStore((s) => s.operationsComptables);
   const currentUser = useCurrentUser();
-  const currentRole = currentUser?.role ?? "Administrateur";
+  // Pas de repli sur "Administrateur" ici : currentUser === null (session pas
+  // encore hydratée / déconnecté) est géré explicitement plus bas (aucun
+  // panneau de rôle tant que la session n'est pas résolue) — un repli sur le
+  // rôle le plus privilégié afficherait un instant le panneau admin à
+  // quiconque, l'inverse du principe de moindre privilège.
+  const currentRole = currentUser?.role;
 
   const sections = React.useMemo(
     () => getDashboardSections(currentUser),
@@ -69,14 +75,65 @@ export function DashboardScreen() {
     .replace(/^\w/, (c) => c.toUpperCase());
 
   const {
+    chiffreEncaisse,
     dossiersEnCours,
+    dossiersALivrer,
     valeurStock,
+    totalRestesAPayer,
+    nbDossiersNonSoldes,
     dossiersParMois,
     stockRepartition,
+    tresorerieParMois,
     derniersDossiers,
     alertes,
-  } = useDashboardMetrics({ dossiers, factures, stock, ecrituresAvecDate, anchorDate });
+  } = useDashboardMetrics({ dossiers, factures, stock, ecrituresAvecDate, operationsComptables, anchorDate });
 
+  // "vs mois dernier" réel (créations ce mois-ci vs le précédent) — seulement
+  // pour les flux d'éléments créés, jamais pour un état instantané comme
+  // "Dossiers en cours" (aucune date de création à comparer n'a de sens ici).
+  const dossiersVariation = React.useMemo(
+    () => computeCountVariation(dossiers, (d) => d.date, anchorDate),
+    [dossiers, anchorDate],
+  );
+  const clientsVariation = React.useMemo(
+    () => computeCountVariation(clients, (c) => c.createdAt, anchorDate),
+    [clients, anchorDate],
+  );
+  const facturesVariation = React.useMemo(
+    () => computeCountVariation(factures, (f) => f.date, anchorDate),
+    [factures, anchorDate],
+  );
+  const bonsVariation = React.useMemo(
+    () => computeCountVariation(bons, (b) => b.date, anchorDate),
+    [bons, anchorDate],
+  );
+
+  // Historique mensuel pour les mini-graphiques du registre d'activité —
+  // même donnée que les variations ci-dessus, sous forme de série complète
+  // au lieu d'un seul pourcentage.
+  const dossiersSeries = React.useMemo(
+    () => buildMonthlyCounts(dossiers, (d) => d.date, anchorDate),
+    [dossiers, anchorDate],
+  );
+  const clientsSeries = React.useMemo(
+    () => buildMonthlyCounts(clients, (c) => c.createdAt, anchorDate),
+    [clients, anchorDate],
+  );
+  const facturesSeries = React.useMemo(
+    () => buildMonthlyCounts(factures, (f) => f.date, anchorDate),
+    [factures, anchorDate],
+  );
+  const bonsSeries = React.useMemo(
+    () => buildMonthlyCounts(bons, (b) => b.date, anchorDate),
+    [bons, anchorDate],
+  );
+
+  // Le repli "return items.length > 0 ? items : alertes" réintroduisait
+  // TOUTES les alertes (y compris hors permission) dès que la sélection
+  // autorisée était vide — pas seulement quand l'utilisateur manquait des
+  // deux permissions, mais aussi quand sa seule catégorie autorisée n'avait
+  // simplement aucune alerte ce jour-là. On ne retombe jamais sur la liste
+  // non filtrée.
   const filteredAlertes = React.useMemo(() => {
     const items: LiveAlert[] = [];
     if (hasSection("alertes_stock")) {
@@ -85,106 +142,76 @@ export function DashboardScreen() {
     if (hasSection("alertes_dossiers")) {
       items.push(...alertes.filter((a) => !a.id.startsWith("stock-")));
     }
-    return items.length > 0 ? items : alertes;
+    return items;
   }, [alertes, sections]);
 
-  const firstName = currentUserName ? currentUserName.split(" ")[0] : "Amadou";
+  const firstName = currentUserName ? currentUserName.split(" ")[0] : null;
+
+  // Une phrase, pas une bannière publicitaire : le fait le plus utile à
+  // savoir aujourd'hui, propre à ce que ce rôle gère réellement. chiffreEncaisse
+  // et dossiersALivrer étaient calculés par useDashboardMetrics mais jamais
+  // lus nulle part (audit du 12/09/2026) — ils alimentent enfin l'en-tête au
+  // lieu d'être recalculés à chaque rendu pour rien.
+  const headline = React.useMemo(() => {
+    if (currentRole === "Comptable") {
+      return nbDossiersNonSoldes > 0
+        ? `${formatFCFA(chiffreEncaisse)} encaissés ce mois · ${formatFCFA(totalRestesAPayer)} restent à recouvrer sur ${nbDossiersNonSoldes} dossier${nbDossiersNonSoldes > 1 ? "s" : ""}.`
+        : `${formatFCFA(chiffreEncaisse)} encaissés ce mois · aucune créance en attente.`;
+    }
+    if (currentRole === "Agent de transit") {
+      if (dossiersEnCours === 0 && dossiersALivrer === 0) return "Aucun dossier en cours de traitement.";
+      const parts = [
+        dossiersEnCours > 0 && `${dossiersEnCours} dossier${dossiersEnCours > 1 ? "s" : ""} en cours`,
+        dossiersALivrer > 0 && `${dossiersALivrer} à livrer`,
+      ].filter(Boolean);
+      return `${parts.join(" · ")}.`;
+    }
+    if (currentRole === "Administrateur") {
+      return `${dossiersEnCours} dossier${dossiersEnCours > 1 ? "s" : ""} en cours · ${formatFCFA(chiffreEncaisse)} encaissés ce mois · ${formatFCFA(totalRestesAPayer)} à recouvrer.`;
+    }
+    return "Voici l'activité de votre agence ce mois-ci.";
+  }, [currentRole, chiffreEncaisse, dossiersEnCours, dossiersALivrer, nbDossiersNonSoldes, totalRestesAPayer]);
+
+  const stats: DashboardStat[] = [
+    { key: "dossiers", label: "Dossiers", value: dossiers.length, icon: Package, trend: dossiersVariation, series: dossiersSeries, onClick: () => go("dossiers") },
+    { key: "en-cours", label: "En cours", value: dossiersEnCours, icon: Truck, onClick: () => go("dossiers") },
+    { key: "clients", label: "Clients", value: clients.length, icon: Users, trend: clientsVariation, series: clientsSeries, onClick: () => go("clients") },
+    { key: "factures", label: "Factures", value: factures.length, icon: FileText, trend: facturesVariation, series: facturesSeries, onClick: () => go("factures") },
+    { key: "bons", label: "Bons de sortie", value: bons.length, icon: Ship, trend: bonsVariation, series: bonsSeries, onClick: () => go("bons") },
+  ];
 
   return (
-    <div className="space-y-6 pb-6">
-      {/* 1. Header Dashboard matching reference image */}
-      <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-          Tableau de bord
-        </h1>
-        <p className="mt-1 text-xs sm:text-sm text-muted-foreground font-medium">
-          Bienvenue, {firstName} ! Voici l&apos;ensemble de votre activité ce mois-ci.
-        </p>
-
-        {/* Filter bar directly below subtitle */}
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-white dark:bg-card px-3.5 py-1.5 text-xs font-semibold shadow-2xs">
-            <Calendar className="size-3.5 text-slate-500" />
-            <span className="text-foreground font-bold">{periodeLabel}</span>
-            <ChevronDown className="size-3.5 text-slate-400" />
+    <div className="space-y-5 pb-6">
+      {/* En-tête — un fait réel plutôt qu'une bannière : le seul accent
+          appuyé de la page, tout le reste reste sobre. */}
+      <div className="overflow-hidden rounded-2xl bg-[#0B2A78] text-white shadow-md">
+        <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:py-6">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-blue-300/70">{periodeLabel}</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+              {firstName ? `Bonjour, ${firstName}` : "Tableau de bord"}
+            </h1>
+            <p className="mt-1.5 max-w-lg text-sm text-blue-100/90">{headline}</p>
           </div>
-
-          <div className="inline-flex items-center gap-1.5 text-xs">
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
-              <span>+12%</span>
-            </span>
-            <span className="text-muted-foreground font-normal">vs mois dernier</span>
-          </div>
+          {canCreateDossier && (
+            <Button
+              onClick={() => openDossier(null, "create")}
+              className="shrink-0 gap-2 rounded-xl border border-red-500/40 bg-[#ED1C24] px-5 font-bold text-white shadow-lg shadow-red-950/30 transition-all hover:bg-[#D9161E]"
+            >
+              <Plus className="size-4 shrink-0 stroke-[3]" />
+              Nouveau dossier
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* 2. 5 Vibrant Solid Colored KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Total dossiers — Royal Blue */}
-        <DashboardKpiCard
-          label="Total dossiers"
-          value={dossiers.length}
-          icon={Package}
-          variant="royal"
-          trend={{ value: 12, label: "vs mois dernier", isPositive: true }}
-          onClick={() => go("dossiers")}
-        />
+      {/* Registre d'activité — un bandeau, pas cinq tuiles publicitaires. */}
+      <DashboardStatStrip stats={stats} />
 
-        {/* Card 2: Clients — Blue */}
-        <DashboardKpiCard
-          label="Clients"
-          value={clients.length}
-          icon={Users}
-          variant="blue"
-          trend={{ value: 8, label: "vs mois dernier", isPositive: true }}
-          onClick={() => go("clients")}
-        />
-
-        {/* Card 3: Factures — Vibrant Red */}
-        <DashboardKpiCard
-          label="Factures"
-          value={factures.length}
-          icon={FileText}
-          variant="red"
-          trend={{ value: 15, label: "vs mois dernier", isPositive: true }}
-          onClick={() => go("factures")}
-        />
-
-        {/* Card 4: Bons de sortie — Deep Navy */}
-        <DashboardKpiCard
-          label="Bons de sortie"
-          value={bons.length}
-          icon={Ship}
-          variant="navy"
-          trend={{ value: 10, label: "vs mois dernier", isPositive: true }}
-          onClick={() => go("bons")}
-        />
-
-        {/* Card 5: Dossiers en cours — Blue */}
-        <DashboardKpiCard
-          label="Dossiers en cours"
-          value={dossiersEnCours}
-          icon={Truck}
-          variant="blue"
-          trend={{ value: 6, label: "vs mois dernier", isPositive: true }}
-          onClick={() => go("dossiers")}
-        />
-      </div>
-
-      {/* 3. Main Two-Column Layout matching reference image */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        {/* Left Column (58% width): Vue Administrateur */}
-        <div className="lg:col-span-7 flex flex-col">
-          {currentRole === "Administrateur" ? (
-            <AdminPanel
-              go={go}
-              users={users}
-              alertes={alertes}
-              dossiersCount={dossiers.length}
-              clientsCount={clients.length}
-              className="h-full"
-            />
-          ) : currentRole === "Agent de transit" ? (
+      {/* Module métier du rôle + analyses */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
+        <div className="flex flex-col gap-4 lg:col-span-7">
+          {!currentUser ? null : currentRole === "Agent de transit" ? (
             <AgentPanel
               go={go as (v: "dossiers" | "devis", opts?: { id?: string | null }) => void}
               openDossier={openDossier}
@@ -192,42 +219,42 @@ export function DashboardScreen() {
           ) : currentRole === "Comptable" ? (
             <ComptablePanel go={go as (v: "comptabilite" | "bilans" | "factures", opts?: { id?: string | null }) => void} />
           ) : (
-            <AdminPanel
-              go={go}
-              users={users}
-              alertes={alertes}
-              dossiersCount={dossiers.length}
-              clientsCount={clients.length}
-              className="h-full"
-            />
+            // Administrateur (et tout rôle non explicitement géré) voit la
+            // synthèse combinée : à la fois le pipeline opérationnel et
+            // l'état des créances, puisqu'il a la visibilité des deux —
+            // pas un annuaire des utilisateurs déjà consultable depuis
+            // Paramètres, ni des compteurs déjà présents dans le registre
+            // au-dessus.
+            <>
+              <AgentPanel
+                go={go as (v: "dossiers" | "devis", opts?: { id?: string | null }) => void}
+                openDossier={openDossier}
+              />
+              <ComptablePanel go={go as (v: "comptabilite" | "bilans" | "factures", opts?: { id?: string | null }) => void} />
+            </>
           )}
         </div>
 
-        {/* Right Column (42% width): Promo Card + 2 Analytics Charts */}
-        <div className="lg:col-span-5 flex flex-col gap-5">
-          {/* Top: Logistics Promo Banner */}
-          <PromoActionCard
-            onNewDossier={() => openDossier(null, "create")}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-5">
+          <DossiersEvolutionChartLazy
+            data={dossiersParMois}
+            gridColor={gridColor}
+            tickColor={tickColor}
+            barCursorFill={barCursorFill}
           />
-
-          {/* Bottom: 2 Analytics Cards side-by-side */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-            <DossiersEvolutionChartLazy
-              data={dossiersParMois}
-              gridColor={gridColor}
-              tickColor={tickColor}
-              barCursorFill={barCursorFill}
-            />
-            <StockRepartitionChartLazy
-              data={stockRepartition}
-              totalValue={valeurStock}
-            />
-          </div>
+          <StockRepartitionChartLazy
+            data={stockRepartition}
+            totalValue={valeurStock}
+          />
         </div>
       </div>
 
-      {/* 4. Activités Récentes & Alertes (Secondary / scroll) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start pt-2">
+      {hasSection("chart_tresorerie") && (
+        <TresorerieChartLazy data={tresorerieParMois} gridColor={gridColor} tickColor={tickColor} />
+      )}
+
+      {/* Activité récente & alertes */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:items-start">
         <div className={cn(filteredAlertes.length > 0 ? "lg:col-span-2" : "lg:col-span-3")}>
           <DerniersDossiersCard
             dossiers={derniersDossiers}

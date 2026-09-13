@@ -1,1 +1,1 @@
-export { logInfo, logWarn, logError } from "./logger";
+export { logWarn, logError } from "./logger";

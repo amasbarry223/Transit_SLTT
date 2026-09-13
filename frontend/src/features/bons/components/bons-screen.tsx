@@ -2,17 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Package, Banknote } from "lucide-react";
-import type { BonLigne, BonMotif, BonSortie } from "@/lib/domain-types";
+import type { BonLigne, BonMotif, BonSortie, BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { useToast } from "@/hooks/use-toast";
-import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { usePermission } from "@/hooks/use-permission";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { usePermission } from "@/shared/hooks/use-permission";
 import { PageHeader } from "@/components/sltt/page-header";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/shared/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,11 +22,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/alert-dialog";
+import { cn } from "@/shared/utils/cn";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { resolveSlttBrand } from "@/lib/societe-brand";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { BonMarchandiseTab } from "./bons/bon-marchandise-tab";
 import { BonCaisseTab } from "./bons/bon-caisse-tab";
 import { BonFormDialog } from "./bons/bon-form-dialog";
@@ -50,9 +50,20 @@ export function BonsScreen() {
   const [activeTab, setActiveTab] = useState<"marchandise" | "caisse">("marchandise");
   const [marchandiseDialogOpen, setMarchandiseDialogOpen] = useState(false);
   const [caisseDialogOpen, setCaisseDialogOpen] = useState(false);
+  const [editingBonCaisse, setEditingBonCaisse] = useState<BonSortieCaisse | null>(null);
   const [validatingIds, setValidatingIds] = useState<Set<string>>(new Set());
   const [confirmValidate, setConfirmValidate] = useState<{ id: string; ref: string } | null>(null);
   const [deepLinkSearch, setDeepLinkSearch] = useState<string | undefined>(undefined);
+
+  function openCreateCaisseDialog() {
+    setEditingBonCaisse(null);
+    setCaisseDialogOpen(true);
+  }
+
+  function openEditCaisseDialog(bon: BonSortieCaisse) {
+    setEditingBonCaisse(bon);
+    setCaisseDialogOpen(true);
+  }
 
   const bons = useMemo(
     () => filterByAnnexe(allBons, selectedAnnexeId),
@@ -189,6 +200,11 @@ export function BonsScreen() {
           description: `${reference} n'a pas été validé : le stock disponible est inférieur à la quantité demandée.`,
         });
       }
+    } catch (err: unknown) {
+      toastError(toast, err, {
+        title: "Impossible de valider le bon",
+        fallback: "Impossible de valider le bon de sortie.",
+      });
     } finally {
       setValidatingIds((previous) => {
         const next = new Set(previous);
@@ -328,7 +344,12 @@ export function BonsScreen() {
           initialSearch={deepLinkSearch}
         />
 
-        <BonCaisseTab bons={bonsCaisse} canWriteCaisse={canWriteCaisse} onOpenCreateDialog={() => setCaisseDialogOpen(true)} />
+        <BonCaisseTab
+          bons={bonsCaisse}
+          canWriteCaisse={canWriteCaisse}
+          onOpenCreateDialog={openCreateCaisseDialog}
+          onOpenEditDialog={openEditCaisseDialog}
+        />
       </Tabs>
 
       <BonFormDialog
@@ -339,9 +360,11 @@ export function BonsScreen() {
       />
 
       <BonCaisseFormDialog
+        key={editingBonCaisse?.id ?? "new"}
         open={caisseDialogOpen}
         onOpenChange={setCaisseDialogOpen}
         nextReference={nextCaisseReference}
+        editing={editingBonCaisse}
       />
 
       <AlertDialog open={!!confirmValidate} onOpenChange={(open) => !open && setConfirmValidate(null)}>

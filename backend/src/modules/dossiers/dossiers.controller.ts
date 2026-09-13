@@ -13,6 +13,7 @@ import {
 import { DossiersService } from './dossiers.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -40,12 +41,14 @@ export class DossiersController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   @RequirePermission('dossiers.creer')
   async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.dossiersService.create(user, body);
   }
 
   @Put(':id')
+  @UseGuards(AnnexeGuard)
   @RequirePermission('dossiers.modifier')
   async update(
     @Param('id') id: string,
@@ -63,6 +66,16 @@ export class DossiersController {
     @Body('statut') statut: any,
   ) {
     return this.dossiersService.updateStatut(id, user, statut);
+  }
+
+  @Post(':id/paiements')
+  @RequirePermission('dossiers.modifier')
+  async enregistrerPaiement(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+    @Body() body: { montant: number; statut?: string; date?: string },
+  ) {
+    return this.dossiersService.enregistrerPaiement(id, user, body);
   }
 
   @Delete(':id')

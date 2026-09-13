@@ -10,6 +10,7 @@ import {
 import { CaisseService } from './caisse.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -19,6 +20,7 @@ export class CaisseController {
   constructor(private readonly caisseService: CaisseService) {}
 
   @Get()
+  @UseGuards(AnnexeGuard)
   async findAll(@CurrentUser() user: CurrentUserType, @Query('annexeId') annexeId?: string) {
     return this.caisseService.findAll(user, annexeId);
   }

@@ -2,12 +2,12 @@ import { memo } from "react";
 import { Plus, Trash2, Wallet } from "lucide-react";
 import type { OperationComptable } from "@/lib/domain-types";
 import { formatDateShort, formatFCFA } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,7 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 
 const SOURCE_LABEL: Record<OperationComptable["source"], string> = {
   saisie: "Saisie manuelle",

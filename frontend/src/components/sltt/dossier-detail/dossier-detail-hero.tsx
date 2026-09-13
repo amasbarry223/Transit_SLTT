@@ -16,15 +16,15 @@ import {
 import type { Dossier } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { GLOSSARY } from "@/lib/glossary";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import {
@@ -32,7 +32,7 @@ import {
   type TransitionType,
 } from "@/components/sltt/dossier-transition-dialog";
 import { DossierDetailStepper } from "./dossier-detail-stepper";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export function DossierDetailHero({
   dossier,

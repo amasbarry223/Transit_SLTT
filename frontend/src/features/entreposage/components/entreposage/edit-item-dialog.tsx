@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 import type { Client, StockItem, UpdateStockItemInput } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
+import { DEFAULT_STOCK_SEUIL } from "@/lib/constants";
 import { FormField } from "@/components/sltt/form-field";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -15,14 +16,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 
 /**
  * Édition d'un article de stock existant — formulaire à une étape (pas
@@ -49,7 +50,7 @@ export function EditItemDialog({
   // fait déjà pour la création (`key={newItemKey}`).
   const [marchandise, setMarchandise] = useState(item?.marchandise ?? "");
   const [unite, setUnite] = useState(item?.unite ?? "");
-  const [seuil, setSeuil] = useState(String(item?.seuil ?? 10));
+  const [seuil, setSeuil] = useState(String(item?.seuil ?? DEFAULT_STOCK_SEUIL));
   const [depositaire, setDepositaire] = useState(item?.depositaire === "—" ? "" : (item?.depositaire ?? ""));
   const [commercial, setCommercial] = useState(item?.commercial === "—" ? "" : (item?.commercial ?? ""));
   const [clientId, setClientId] = useState(item?.clientId ?? "");

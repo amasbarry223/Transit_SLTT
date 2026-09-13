@@ -4,9 +4,9 @@ import { Building2 } from "lucide-react";
 import type { EntiteComptable } from "@/lib/domain-types";
 import type { OperationsTotals } from "@/lib/comptabilite-generale";
 import { formatFCFA } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/shared/utils/cn";
+import { Card } from "@/shared/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 
 export interface EntiteTotal {
   entite: EntiteComptable;

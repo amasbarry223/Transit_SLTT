@@ -4,10 +4,10 @@ import { AlertTriangle, History, PackageMinus, PackagePlus, Pencil } from "lucid
 import type { StockItem } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { StockStatutBadge } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { TableCell, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { TableCell, TableRow } from "@/shared/components/ui/table";
+import { cn } from "@/shared/utils/cn";
 
 export function StockRow({
   item,

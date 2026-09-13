@@ -2,7 +2,7 @@
 
 import type { Facture } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { PaymentRing } from "./payment-ring";
 
 export function SuiviPaiementCard({

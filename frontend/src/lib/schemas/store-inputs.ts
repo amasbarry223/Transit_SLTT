@@ -10,8 +10,6 @@ export const backupRestoreSchema = z.object({
   data: z.record(z.string(), z.array(z.record(z.string(), z.unknown()))),
 });
 
-export type BackupRestorePayload = z.infer<typeof backupRestoreSchema>;
-
 export const operationImportRowSchema = z.object({
   rowNumber: z.number().int().positive(),
   date: z.string().nullable(),
@@ -26,5 +24,3 @@ export const operationImportRowSchema = z.object({
 });
 
 export const operationImportRowsSchema = z.array(operationImportRowSchema);
-
-export type OperationImportRowValidated = z.infer<typeof operationImportRowSchema>;

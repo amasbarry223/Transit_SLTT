@@ -39,6 +39,8 @@ export interface Dossier {
   dateEcheance?: string;
   /** Date réelle de dédouanement (remplie quand statut → Dédouané). */
   dateDedouanement?: string;
+  /** Date du règlement client (remplie au 1er encaissement sur le dossier). */
+  dateSolde?: string;
   /** Mode de transport principal. */
   modeTransport?: "Maritime" | "Aérien" | "Routier" | "Ferroviaire";
   /** Numéro de conteneur (si Maritime). */
@@ -289,6 +291,24 @@ export interface AnnexeInput {
   nif?: string;
 }
 
+/** Port d'embarquement / de manutention — table de référence gérée
+ *  depuis Paramètres, utilisée par le champ optionnel Devis.portId. */
+export interface Port {
+  id: string;
+  code: string;
+  nom: string;
+  ville?: string;
+  pays?: string;
+  actif: boolean;
+}
+
+export interface PortInput {
+  code: string;
+  nom: string;
+  ville?: string;
+  pays?: string;
+}
+
 /* ------------------------------------------------------------------ */
 /* SOCIÉTÉS (F1)                                                       */
 /* ------------------------------------------------------------------ */
@@ -418,13 +438,19 @@ export interface RecuPaiement {
   createdAt: string;
 }
 
+/**
+ * Un reçu se génère désormais VIERGE — carnet imprimé pour être rempli au
+ * stylo, plus de saisie numérique (nom/prénom/somme/motif/montant sont
+ * laissés au serveur avec des valeurs vides/nulles). Seul `annexeId` reste
+ * requis pour réserver le numéro sur le bon périmètre.
+ */
 export interface RecuPaiementInput {
   annexeId: string;
-  nom: string;
-  prenom: string;
-  somme: number;
-  motif: string;
-  montantPaye: number;
+  nom?: string;
+  prenom?: string;
+  somme?: number;
+  motif?: string;
+  montantPaye?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -620,6 +646,12 @@ export interface ContratPrestation {
   datePrevue?: string;
   dateRealisation?: string;
   creePar?: string;
+  /** Garde-fou déclaratif côté client contre la double facturation d'une
+   *  même prestation — pas une garantie serveur : ContratPrestation n'a
+   *  aucune persistance API (contrats-slice.ts::updateContratPrestation
+   *  reste un état 100% navigateur), donc cet indicateur ne survit pas
+   *  nécessairement à un F5 selon l'état du store au rechargement. */
+  facturee?: boolean;
 }
 
 export interface ContratPrestationInput {
@@ -630,6 +662,7 @@ export interface ContratPrestationInput {
   statut: ContratPrestationStatut;
   datePrevue?: string;
   dateRealisation?: string;
+  facturee?: boolean;
 }
 
 export interface User {

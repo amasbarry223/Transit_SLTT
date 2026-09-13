@@ -1,8 +1,9 @@
+import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { syncContratStats } from "@/lib/contrat-stats";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import type {
   Contrat,
   ContratInput,
@@ -12,58 +13,8 @@ import type {
   Depense,
 } from "@/lib/domain-types";
 import type { AddDepenseInput, SLTTState } from "@/lib/store";
-import type { ContratPrestationRow, ContratRow, DepenseRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 import { nextYearlyReference } from "@/lib/store/reference";
-
-export function mapContratFromDb(
-  row: ContratRow,
-): Omit<Contrat, "nbPrestations" | "nbPrestationsRealisees" | "totalDepenses"> {
-  return {
-    id: row.id,
-    reference: row.reference,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    clientId: row.client_id,
-    clientNom: row.clients?.nom || "—",
-    objet: row.objet,
-    dateDebut: row.date_debut,
-    dateFin: row.date_fin || undefined,
-    montant: Number(row.montant),
-    statut: row.statut,
-    notes: row.notes || undefined,
-    creePar: row.cree_par || undefined,
-    creeLe: row.created_at,
-  };
-}
-
-export function mapDepenseFromDb(row: DepenseRow): Depense {
-  return {
-    id: row.id,
-    contratId: row.contrat_id,
-    libelle: row.libelle,
-    montant: Number(row.montant),
-    dateDepense: row.date_depense,
-    modePaiement: row.mode_paiement,
-    justificatifPath: row.justificatif_path || undefined,
-    note: row.note || undefined,
-    creePar: row.cree_par || undefined,
-  };
-}
-
-export function mapContratPrestationFromDb(row: ContratPrestationRow): ContratPrestation {
-  return {
-    id: row.id,
-    contratId: row.contrat_id,
-    libelle: row.libelle,
-    description: row.description || undefined,
-    montant: row.montant != null ? Number(row.montant) : undefined,
-    statut: row.statut,
-    datePrevue: row.date_prevue || undefined,
-    dateRealisation: row.date_realisation || undefined,
-    creePar: row.cree_par || undefined,
-  };
-}
 
 export interface ContratsSlice {
   contrats: Contrat[];
@@ -96,27 +47,23 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       input.annexeId ??
       client?.annexeId ??
       requireActiveAnnexeId(get().users.find((u) => u.id === userId)?.annexeIds ?? [], get().annexes);
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.contrats.create({
-        reference,
-        annexeId,
-        clientId: input.clientId,
-        objet: input.objet,
-        dateDebut: input.dateDebut,
-        dateFin: input.dateFin,
-        montant: input.montant,
-        statut: input.statut,
-        notes: input.notes,
-        creePar,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      console.warn("api.contrats.create (mode local) :", e);
-    }
+    // Persistance obligatoire : un contrat sans écriture serveur disparaissait
+    // silencieusement au rechargement, sans aucune erreur montrée.
+    const created = await api.contrats.create({
+      reference,
+      annexeId,
+      clientId: input.clientId,
+      objet: input.objet,
+      dateDebut: input.dateDebut,
+      dateFin: input.dateFin,
+      montant: input.montant,
+      statut: input.statut,
+      notes: input.notes,
+      creePar,
+    });
 
     const newContrat: Contrat = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       reference,
       annexeId,
       annexeNom: annexeId ? get().annexes.find((a) => a.id === annexeId)?.nom : undefined,
@@ -152,11 +99,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       }
     }
 
-    try {
-      await api.contrats.update(id, input);
-    } catch (e) {
-      console.warn("api.contrats.update (mode local) :", e);
-    }
+    await api.contrats.update(id, input);
 
     const existing = get().contrats.find((c) => c.id === id);
     set((s) => ({
@@ -191,11 +134,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       throw new Error(`Transition contrat invalide : ${existing.statut} → ${statut}`);
     }
 
-    try {
-      await api.contrats.update(id, { statut });
-    } catch (e) {
-      console.warn("api.contrats.updateStatut (mode local) :", e);
-    }
+    await api.contrats.update(id, { statut });
 
     set((s) => ({ contrats: s.contrats.map((c) => (c.id === id ? { ...c, statut } : c)) }));
     await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Contrat ${existing.reference} → ${statut}`);
@@ -213,11 +152,7 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       );
     }
 
-    try {
-      await api.contrats.delete(id);
-    } catch (e) {
-      console.warn("api.contrats.delete (mode local) :", e);
-    }
+    await api.contrats.delete(id);
 
     set((s) => ({
       contrats: s.contrats.filter((c) => c.id !== id),
@@ -263,6 +198,15 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
 
   removeDepense: async (id) => {
     const depense = get().depenses.find((d) => d.id === id);
+
+    // Les dépenses de contrat ne sont pour l'instant pas persistées côté API :
+    // un 404 signifie simplement "jamais enregistrée", on poursuit la suppression locale.
+    try {
+      await api.depenses.delete(id);
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 404) throw e;
+      logWarn("removeDepense: dépense absente de l'API (mode local), suppression locale seule", { id });
+    }
 
     set((s) => {
       const updatedDepenses = s.depenses.filter((d) => d.id !== id);

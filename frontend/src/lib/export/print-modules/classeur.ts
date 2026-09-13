@@ -46,16 +46,6 @@ function typeBadgeClass(type: string): string {
   return "type-badge--autre";
 }
 
-/** Ton sémantique du statut (positif/attention/négatif) — détection par mots-clés,
- *  les libellés de statut variant selon la source (dossier, écriture, facture). */
-function statutTone(statut: string): "ok" | "warn" | "off" | "neutral" {
-  const s = statut.toLowerCase();
-  if (/(sold|payé|payée|dédouané|livré|validé)/.test(s)) return "ok";
-  if (/(attente|partiel|en cours|brouillon)/.test(s)) return "warn";
-  if (/(annul)/.test(s)) return "off";
-  return "neutral";
-}
-
 export function printClasseur(
   clientNom: string,
   rows: ClasseurPrintRow[],
@@ -78,7 +68,6 @@ export function printClasseur(
       <td class="col-amount">${r.debit > 0 ? fmtFCFAPlain(r.debit) : "<span class='empty'>—</span>"}</td>
       <td class="col-amount amount-credit">${r.credit > 0 ? fmtFCFAPlain(r.credit) : "<span class='empty'>—</span>"}</td>
       <td class="col-amount col-solde ${r.soldeCumule > 0 ? "amount-due" : "amount-clear"}">${fmtFCFAPlain(r.soldeCumule)}</td>
-      <td class="col-statut"><span class="statut-badge statut-badge--${statutTone(r.statut)}">${htmlEscape(r.statut)}</span></td>
     </tr>`,
     )
     .join("");
@@ -206,11 +195,10 @@ table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 colgroup .c-date { width: 11%; }
 colgroup .c-type { width: 9%; }
 colgroup .c-ref { width: 10%; }
-colgroup .c-libelle { width: 22%; }
+colgroup .c-libelle { width: 27%; }
 colgroup .c-debit,
-colgroup .c-credit { width: 12%; }
+colgroup .c-credit { width: 15%; }
 colgroup .c-solde { width: 13%; }
-colgroup .c-statut { width: 11%; }
 thead th {
   background: ${BRAND.navy};
   color: #fff;
@@ -259,7 +247,7 @@ tbody td:last-child { border-right: none; }
 .amount-due { color: #b45309; }
 .amount-clear { color: #126a32; }
 .empty { color: #cdd4df; font-weight: 400; }
-.type-badge, .statut-badge {
+.type-badge {
   display: inline-block;
   font-size: 7px;
   font-weight: 700;
@@ -273,10 +261,6 @@ tbody td:last-child { border-right: none; }
 .type-badge--paiement { color: #126a32; background: #e8f6ec; border: 1px solid #bfe3c9; }
 .type-badge--facture { color: #155a93; background: #e9f3fb; border: 1px solid #c6e1f7; }
 .type-badge--autre { color: #6b7280; background: #f3f5f7; border: 1px solid #d2dbe9; }
-.statut-badge--ok { color: #126a32; background: #e8f6ec; border: 1px solid #bfe3c9; }
-.statut-badge--warn { color: #b45309; background: #fdf3e3; border: 1px solid #f3d9ad; }
-.statut-badge--off { color: #6b7280; background: #f3f5f7; border: 1px solid #d2dbe9; }
-.statut-badge--neutral { color: ${BRAND.navy}; background: #eef0fc; border: 1px solid #c7cbf0; }
 tfoot td {
   background: ${BRAND.navy};
   color: #fff;
@@ -383,7 +367,7 @@ tfoot .total-amount {
       <table>
         <colgroup>
           <col class="c-date"><col class="c-type"><col class="c-ref">
-          <col class="c-libelle"><col class="c-debit"><col class="c-credit"><col class="c-solde"><col class="c-statut">
+          <col class="c-libelle"><col class="c-debit"><col class="c-credit"><col class="c-solde">
         </colgroup>
         <thead>
           <tr>
@@ -394,17 +378,15 @@ tfoot .total-amount {
             <th class="head-amount">Débit</th>
             <th class="head-amount">Crédit</th>
             <th class="head-amount">Solde</th>
-            <th>Statut</th>
           </tr>
         </thead>
-        <tbody>${rowsHTML || `<tr><td colspan="8" style="padding:16px;text-align:center;color:#92a3ba">Aucun mouvement</td></tr>`}</tbody>
+        <tbody>${rowsHTML || `<tr><td colspan="7" style="padding:16px;text-align:center;color:#92a3ba">Aucun mouvement</td></tr>`}</tbody>
         <tfoot>
           <tr>
             <td colspan="4">Total — ${rows.length} mouvement${rows.length !== 1 ? "s" : ""}</td>
             <td class="total-amount">${fmtFCFAPlain(totals.totalDebit)}</td>
             <td class="total-amount">${fmtFCFAPlain(totals.totalCredit)}</td>
             <td class="total-amount">${fmtFCFAPlain(totals.soldeNet)}</td>
-            <td></td>
           </tr>
         </tfoot>
       </table>

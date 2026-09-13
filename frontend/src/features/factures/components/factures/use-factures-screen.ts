@@ -4,11 +4,11 @@ import * as React from "react";
 import { useStore, type Facture, type FactureInput, type FactureStatut } from "@/lib/store";
 import type { Annexe, Dossier } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
-import { usePermission } from "@/hooks/use-permission";
-import { useActiveAnnexe } from "@/hooks/use-active-annexe";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
+import { usePermission } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { matchesQuery } from "@/lib/search-filter";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { resolveDossierCoutLabels } from "@/lib/societe-brand";
@@ -45,6 +45,7 @@ export function useFacturesScreen() {
   const removeFacture       = useStore((s) => s.removeFacture);
   const updateFactureStatut = useStore((s) => s.updateFactureStatut);
   const go                  = useNav((s) => s.go);
+  const openFactureDetail   = useNav((s) => s.openFactureDetail);
   const { toast }           = useToast();
   const selectedId          = useNav((s) => s.selectedId);
   const pendingFacturePrefill    = useNav((s) => s.pendingFacturePrefill);
@@ -178,6 +179,7 @@ export function useFacturesScreen() {
     factures,
     annexesAll,
     go,
+    openFactureDetail,
     search,
     changeSearch,
     activeTab,

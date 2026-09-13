@@ -9,6 +9,7 @@ export const EXPORT_MODULES = [
   "stock",
   "contrats",
   "transporteurs",
+  "fournisseurs",
   "bilans",
 ] as const;
 
@@ -24,5 +25,6 @@ export const EXPORT_MODULE_PERMISSIONS: Record<ExportModule, string> = {
   stock: "stock:read",
   contrats: "contrats:read",
   transporteurs: "transporteurs:read",
+  fournisseurs: "fournisseurs:read",
   bilans: "rapports:read",
 };

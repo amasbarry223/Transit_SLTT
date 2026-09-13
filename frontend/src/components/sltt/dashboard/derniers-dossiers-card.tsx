@@ -4,8 +4,8 @@ import { ArrowRight, ClipboardList } from "lucide-react";
 import type { Dossier } from "@/lib/domain-types";
 import { formatFCFACompact } from "@/lib/format";
 import { DossierStatutBadge, DOSSIER_STATUT_DOT } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Card } from "@/shared/components/ui/card";
+import { cn } from "@/shared/utils/cn";
 
 export function DerniersDossiersCard({
   dossiers,

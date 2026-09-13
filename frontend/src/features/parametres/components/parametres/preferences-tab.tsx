@@ -4,19 +4,19 @@ import { useState } from "react";
 import { AlertTriangle, Calendar, Moon, RotateCcw, Sun } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useUiPrefs, type DateFormat } from "@/lib/session/ui-prefs-store";
-import { useToast } from "@/hooks/use-toast";
-import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Label } from "@/shared/components/ui/label";
+import { Switch } from "@/shared/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 
 export function PreferencesTab() {

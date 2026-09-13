@@ -5,8 +5,8 @@ import type { Dossier } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { TablePagination } from "@/components/sltt/table-pagination";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import {
   Table,
   TableHeader,
@@ -14,8 +14,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
-import { TabsContent } from "@/components/ui/tabs";
+} from "@/shared/components/ui/table";
+import { TabsContent } from "@/shared/components/ui/tabs";
 import { PAGE_SIZE, TabEmptyState } from "./shared";
 
 type DossiersTabProps = {

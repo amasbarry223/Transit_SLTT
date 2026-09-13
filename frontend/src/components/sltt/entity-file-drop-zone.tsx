@@ -4,12 +4,12 @@ import { useRef, useState, type ReactNode } from "react";
 import { Download, Trash2, Upload } from "lucide-react";
 import { formatDateShort } from "@/lib/format";
 import { formatFileSize, getFileIconComponent } from "@/lib/file-utils";
-import { useToast } from "@/hooks/use-toast";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { UI } from "@/lib/ui-messages";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { UI } from "@/shared/utils/ui-messages";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/shared/components/ui/button";
+import { cn } from "@/shared/utils/cn";
 
 export type EntityFileItem = {
   id: string;

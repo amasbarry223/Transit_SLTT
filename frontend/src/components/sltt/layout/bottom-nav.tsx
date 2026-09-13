@@ -1,9 +1,9 @@
 "use client";
 
 import { useNav, type ViewKey } from "@/lib/nav-store";
-import { useCanView } from "@/hooks/use-permission";
+import { useCanView } from "@/shared/hooks/use-permission";
 import { useAppNavigation } from "@/lib/app-navigation";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import {
   FolderKanban,
   LayoutDashboard,

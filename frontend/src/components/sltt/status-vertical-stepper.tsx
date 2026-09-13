@@ -2,7 +2,7 @@
 
 import type { ComponentType, ReactNode } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export type StatusStepConfig = {
   icon: ComponentType<{ className?: string }>;

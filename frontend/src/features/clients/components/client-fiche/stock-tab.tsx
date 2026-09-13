@@ -3,8 +3,8 @@
 import { Warehouse } from "lucide-react";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import {
   Table,
   TableHeader,
@@ -12,8 +12,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
-import { TabsContent } from "@/components/ui/tabs";
+} from "@/shared/components/ui/table";
+import { TabsContent } from "@/shared/components/ui/tabs";
 import { TabEmptyState } from "./shared";
 
 type StockTabProps = {

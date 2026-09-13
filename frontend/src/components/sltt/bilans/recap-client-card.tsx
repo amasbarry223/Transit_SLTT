@@ -1,5 +1,5 @@
 import { Users } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/shared/components/ui/table";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { EcartValue } from "@/components/sltt/status-badge";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";

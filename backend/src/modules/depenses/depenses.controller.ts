@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -11,6 +12,7 @@ import {
 import { DepensesService } from './depenses.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -47,6 +49,7 @@ export class DepensesController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   @RequirePermission('depenses.creer')
   async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.depensesService.create(user, body);
@@ -66,5 +69,11 @@ export class DepensesController {
     @Body() body: { caisseId: string; motif?: string },
   ) {
     return this.depensesService.payerDepuisCaisse(id, user, body);
+  }
+
+  @Delete(':id')
+  @RequirePermission('depenses.supprimer')
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.depensesService.remove(id, user);
   }
 }

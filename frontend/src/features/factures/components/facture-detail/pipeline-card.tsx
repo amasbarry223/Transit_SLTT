@@ -1,7 +1,7 @@
 "use client";
 
 import type { Facture, FactureStatut } from "@/lib/store";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { VerticalStepper } from "./vertical-stepper";
 
 export function PipelineCard({

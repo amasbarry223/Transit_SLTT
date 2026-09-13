@@ -2,13 +2,13 @@
 
 import { Info, Wallet } from "lucide-react";
 import { formatFCFA } from "@/lib/format";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
 import { resolveDossierCoutLabels } from "@/lib/societe-brand";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Card } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
+import { cn } from "@/shared/utils/cn";
 import { SectionTitle } from "./dossier-form-ui";
 
 type DossierAmountsSectionProps = {

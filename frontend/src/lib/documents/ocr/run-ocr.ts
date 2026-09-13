@@ -1,6 +1,5 @@
 import { getDefaultOcrProvider } from "./tesseract-provider";
 import type { OcrExtractResult, OcrFieldMapper } from "./provider";
-import { getSignedDocumentUrl } from "@/lib/documents/storage";
 
 /** Télécharge une version document et lance l'OCR (client-side). */
 export async function runOcrOnStoragePath(
@@ -10,8 +9,7 @@ export async function runOcrOnStoragePath(
   signal?: AbortSignal,
 ): Promise<OcrExtractResult> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-  const url = await getSignedDocumentUrl(storagePath);
-  const res = await fetch(url, { signal });
+  const res = await fetch(storagePath, { signal });
   if (!res.ok) throw new Error("Téléchargement du document impossible pour l'OCR");
   const blob = await res.blob();
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");

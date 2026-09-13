@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Dossier, Ecriture, Facture, StockItem } from "@/lib/domain-types";
+import type { Dossier, Ecriture, Facture, OperationComptable, StockItem } from "@/lib/domain-types";
 import {
   buildDossiersParMois,
   buildLiveAlertes,
   buildStockRepartition,
+  buildTresorerieParMois,
   computeEncaisseVariation,
   computeRestesAPayer,
   type LiveAlert,
@@ -17,22 +18,24 @@ export function useDashboardMetrics({
   factures,
   stock,
   ecrituresAvecDate,
+  operationsComptables,
   anchorDate,
 }: {
   dossiers: Dossier[];
   factures: Facture[];
   stock: StockItem[];
   ecrituresAvecDate: Ecriture[];
+  operationsComptables: OperationComptable[];
   anchorDate: Date;
 }) {
   const { chiffreEncaisse, variationEncaisse } = useMemo(
-    () => computeEncaisseVariation(ecrituresAvecDate, factures, anchorDate),
-    [ecrituresAvecDate, factures, anchorDate],
+    () => computeEncaisseVariation(ecrituresAvecDate, factures, anchorDate, dossiers),
+    [ecrituresAvecDate, factures, anchorDate, dossiers],
   );
 
   const { totalRestesAPayer, nbDossiersNonSoldes } = useMemo(
-    () => computeRestesAPayer(dossiers),
-    [dossiers],
+    () => computeRestesAPayer(dossiers, factures),
+    [dossiers, factures],
   );
 
   const dossiersEnCours = useMemo(
@@ -57,6 +60,11 @@ export function useDashboardMetrics({
 
   const stockRepartition = useMemo(() => buildStockRepartition(stock), [stock]);
 
+  const tresorerieParMois = useMemo(
+    () => buildTresorerieParMois(operationsComptables, anchorDate),
+    [operationsComptables, anchorDate],
+  );
+
   const derniersDossiers = useMemo(
     () =>
       [...dossiers]
@@ -65,7 +73,10 @@ export function useDashboardMetrics({
     [dossiers],
   );
 
-  const alertes = useMemo<LiveAlert[]>(() => buildLiveAlertes(stock, dossiers), [stock, dossiers]);
+  const alertes = useMemo<LiveAlert[]>(
+    () => buildLiveAlertes(stock, dossiers, factures),
+    [stock, dossiers, factures],
+  );
 
   return {
     chiffreEncaisse,
@@ -77,6 +88,7 @@ export function useDashboardMetrics({
     valeurStock,
     dossiersParMois,
     stockRepartition,
+    tresorerieParMois,
     derniersDossiers,
     alertes,
   };

@@ -1,44 +1,7 @@
 import type { StateCreator } from "zustand";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
 import type { ImportStockHistoriqueInput, SLTTState, StockItemInput, UpdateStockItemInput } from "@/lib/store";
-import type { MouvementRow, StockItemRow } from "@/lib/db-rows";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-
-export function mapStockItemFromDb(row: StockItemRow): StockItem {
-  return {
-    id: row.id,
-    clientId: row.client_id || undefined,
-    clientNom: row.clients?.nom || undefined,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    marchandise: row.marchandise,
-    quantite: Number(row.quantite),
-    unite: row.unite,
-    seuil: Number(row.seuil),
-    depositaire: row.depositaire,
-    commercial: row.commercial,
-    sommePayee: Number(row.somme_payee),
-    resteAPayer: Number(row.reste_a_payer),
-    date: row.date,
-  };
-}
-
-export function mapMouvementFromDb(row: MouvementRow): Mouvement {
-  return {
-    id: row.id,
-    stockId: row.stock_id || undefined,
-    annexeId: row.annexe_id,
-    annexeNom: row.annexes?.nom,
-    date: row.date,
-    type: row.type,
-    marchandise: row.marchandise || "",
-    quantite: Number(row.quantite),
-    unite: row.unite || "",
-    responsable: row.responsable || "",
-    bonRef: row.bon_ref || undefined,
-    motif: row.motif || undefined,
-  };
-}
 
 export interface StockSlice {
   stock: StockItem[];
@@ -71,28 +34,24 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const client = get().clients.find((c) => c.id === input.clientId);
     const annexe = get().annexes.find((a) => a.id === input.annexeId);
 
-    let dbId = crypto.randomUUID();
-    try {
-      const created = await api.stock.createItem({
-        clientId: input.clientId,
-        annexeId: input.annexeId,
-        marchandise: input.marchandise,
-        quantite: input.quantite,
-        unite: input.unite,
-        seuil: input.seuil,
-        depositaire: input.depositaire,
-        commercial: input.commercial,
-        sommePayee: input.sommePayee,
-        resteAPayer: input.resteAPayer,
-        date: input.date,
-      });
-      if (created?.id) dbId = created.id;
-    } catch (e) {
-      console.warn("api.stock.createItem (mode local) :", e);
-    }
+    // Persistance obligatoire : un article sans écriture serveur disparaissait
+    // silencieusement au rechargement, sans aucune erreur montrée.
+    const created = await api.stock.createItem({
+      clientId: input.clientId,
+      annexeId: input.annexeId,
+      marchandise: input.marchandise,
+      quantite: input.quantite,
+      unite: input.unite,
+      seuil: input.seuil,
+      depositaire: input.depositaire,
+      commercial: input.commercial,
+      sommePayee: input.sommePayee,
+      resteAPayer: input.resteAPayer,
+      date: input.date,
+    });
 
     const newItem: StockItem = {
-      id: dbId,
+      id: created?.id ?? crypto.randomUUID(),
       marchandise: input.marchandise,
       quantite: input.quantite,
       unite: input.unite,
@@ -120,25 +79,23 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     if (!stockItem) return;
 
     const newQty = stockItem.quantite + quantite;
-    let dbMvtId = crypto.randomUUID();
-    try {
-      const created = await api.stock.createMouvement({
-        stockId,
-        annexeId: stockItem.annexeId,
-        date: new Date().toISOString().slice(0, 10),
-        type: "Entrée",
-        marchandise: stockItem.marchandise,
-        quantite,
-        unite: stockItem.unite,
-        responsable,
-      });
-      if (created?.id) dbMvtId = created.id;
-    } catch (e) {
-      console.warn("api.stock.createMouvement (mode local) :", e);
-    }
+    // Persistance obligatoire : sans elle, la quantité en stock était
+    // incrémentée localement alors que le mouvement n'a jamais été
+    // enregistré côté serveur — désynchronisation stock physique/logique
+    // silencieuse, même famille de bug que bons-slice.ts::validateBon.
+    const created = await api.stock.createMouvement({
+      stockId,
+      annexeId: stockItem.annexeId,
+      date: new Date().toISOString().slice(0, 10),
+      type: "Entrée",
+      marchandise: stockItem.marchandise,
+      quantite,
+      unite: stockItem.unite,
+      responsable,
+    });
 
     const newMouvement: Mouvement = {
-      id: dbMvtId,
+      id: created?.id ?? crypto.randomUUID(),
       annexeId: stockItem.annexeId,
       annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
@@ -168,27 +125,22 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       throw new Error("Quantité supérieure au stock disponible.");
     }
     const newQty = stockItem.quantite - quantite;
-    let dbMvtId = crypto.randomUUID();
-    try {
-      const created = await api.stock.createMouvement({
-        stockId,
-        annexeId: stockItem.annexeId,
-        date: new Date().toISOString().slice(0, 10),
-        type: "Sortie",
-        marchandise: stockItem.marchandise,
-        quantite,
-        unite: stockItem.unite,
-        responsable,
-        bonRef,
-        motif,
-      });
-      if (created?.id) dbMvtId = created.id;
-    } catch (e) {
-      console.warn("api.stock.createMouvement exit (mode local) :", e);
-    }
+    // Persistance obligatoire — même raison que addStockEntry ci-dessus.
+    const created = await api.stock.createMouvement({
+      stockId,
+      annexeId: stockItem.annexeId,
+      date: new Date().toISOString().slice(0, 10),
+      type: "Sortie",
+      marchandise: stockItem.marchandise,
+      quantite,
+      unite: stockItem.unite,
+      responsable,
+      bonRef,
+      motif,
+    });
 
     const newMouvement: Mouvement = {
-      id: dbMvtId,
+      id: created?.id ?? crypto.randomUUID(),
       annexeId: stockItem.annexeId,
       annexeNom: stockItem.annexeNom,
       date: new Date().toISOString(),
@@ -295,21 +247,17 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const existing = get().stock.find((s) => s.id === id);
     const client = input.clientId ? get().clients.find((c) => c.id === input.clientId) : undefined;
 
-    try {
-      await api.stock.updateItem(id, {
-        marchandise,
-        unite,
-        seuil: input.seuil,
-        depositaire: input.depositaire?.trim() || "—",
-        commercial: input.commercial?.trim() || "—",
-        sommePayee: input.sommePayee,
-        resteAPayer: input.resteAPayer,
-        date: input.date,
-        clientId: input.clientId,
-      });
-    } catch (e) {
-      console.warn("api.stock.updateItem (mode local) :", e);
-    }
+    await api.stock.updateItem(id, {
+      marchandise,
+      unite,
+      seuil: input.seuil,
+      depositaire: input.depositaire?.trim() || "—",
+      commercial: input.commercial?.trim() || "—",
+      sommePayee: input.sommePayee,
+      resteAPayer: input.resteAPayer,
+      date: input.date,
+      clientId: input.clientId,
+    });
 
     const updated: StockItem = {
       id,

@@ -2,14 +2,13 @@
  * Classeur client (retour client V1, section 3) — journal chronologique
  * unifié de tous les mouvements d'un client, toutes activités confondues
  * (dossiers de transit SLTT, écritures/bons de paiement, factures).
+ *
+ * Vue calculée en lecture seule : construite à partir du store, non
+ * persistée telle quelle. Les montants se modifient depuis leur source.
  */
-import type { AuditEntry } from "@/lib/audit";
-import { mapAuditLogFromDb, type AuditSourceType } from "@/lib/audit";
-import type { Dossier, Ecriture, Facture, Societe } from "@/lib/domain-types";
-import { logWarn } from "@/shared/logger";
-import { resolveSlttBrand } from "@/lib/societe-brand";
-
-export { resolveSlttBrand };
+import type { AuditSourceType } from "@/lib/audit";
+import type { Dossier, Ecriture, Facture } from "@/lib/domain-types";
+import { dossiersNonFactures } from "@/lib/client-stats";
 
 export type ClasseurType = "Dossier" | "Paiement" | "Facture";
 
@@ -33,23 +32,24 @@ function buildDossierLibelle(d: Dossier): string {
   return `Dossier transit — ${d.nature}${bl ? ` · BL ${bl}` : ""}`;
 }
 
-/** Identité imprimée du classeur — société unique SLTT (branding). */
-export function resolveClasseurBrandNom(societes: Societe[]): string {
-  return resolveSlttBrand(societes)?.nom || societes[0]?.nom || "SLTT";
-}
-
 /** Construit le journal complet (non filtré), trié chronologiquement, avec solde cumulé réel. */
 export function buildClasseurJournal(
   clientId: string,
   dossiers: Dossier[],
   ecritures: Ecriture[],
   factures: Facture[],
-  societes: Societe[],
 ): ClasseurEntry[] {
-  void resolveClasseurBrandNom(societes);
   const unsorted: Omit<ClasseurEntry, "soldeCumule">[] = [];
 
-  for (const d of dossiers) {
+  // Un dossier déjà facturé cède sa ligne à sa facture (ci-dessous) : une
+  // fois qu'une facture est générée à partir d'un dossier, c'est elle qui
+  // porte le montant réel dû/encaissé (elle peut inclure la TVA, avoir son
+  // propre historique de paiement via enregistrerPaiement). Avant ce
+  // correctif, le classeur affichait TOUJOURS le dossier (montants figés au
+  // moment de la facturation) ET excluait sa facture — la TVA facturée et
+  // tout paiement encaissé sur la facture après coup restaient invisibles
+  // dans le grand-livre client.
+  for (const d of dossiersNonFactures(dossiers, factures)) {
     if (d.clientId !== clientId) continue;
     unsorted.push({
       id: `dossier-${d.id}`,
@@ -80,7 +80,7 @@ export function buildClasseurJournal(
   }
 
   for (const f of factures) {
-    if (f.clientId !== clientId || f.dossierId) continue;
+    if (f.clientId !== clientId) continue;
     const annulee = f.statut === "Annulée";
     unsorted.push({
       id: `facture-${f.id}`,
@@ -102,39 +102,6 @@ export function buildClasseurJournal(
     running += entry.debit - entry.credit;
     return { ...entry, soldeCumule: running };
   });
-}
-
-interface ClasseurMouvementRow {
-  id: string;
-  source_id: string;
-  date: string;
-  type: ClasseurType;
-  reference: string;
-  libelle: string;
-  debit: number | string;
-  credit: number | string;
-  statut: string;
-  solde_cumule: number | string;
-}
-
-function mapClasseurRowFromDb(row: ClasseurMouvementRow): ClasseurEntry {
-  return {
-    id: row.id,
-    sourceId: row.source_id,
-    date: row.date,
-    type: row.type,
-    reference: row.reference,
-    libelle: row.libelle,
-    debit: Number(row.debit),
-    credit: Number(row.credit),
-    statut: row.statut,
-    soldeCumule: Number(row.solde_cumule),
-  };
-}
-
-export async function fetchClasseurMouvements(_clientId: string): Promise<ClasseurEntry[] | null> {
-  // Calcul dynamique côté client à partir des dossiers, factures et écritures
-  return null;
 }
 
 export interface ClasseurFilters {
@@ -163,35 +130,16 @@ export interface ClasseurTotals {
   totalDebit: number;
   totalCredit: number;
   soldeNet: number;
-  parSociete: Array<{ societeNom: string; soldeNet: number }>;
 }
 
-export function computeClasseurTotals(
-  filteredEntries: ClasseurEntry[],
-  brandNom = "SLTT",
-): ClasseurTotals {
+export function computeClasseurTotals(filteredEntries: ClasseurEntry[]): ClasseurTotals {
   const totalDebit = filteredEntries.reduce((s, e) => s + e.debit, 0);
   const totalCredit = filteredEntries.reduce((s, e) => s + e.credit, 0);
-  const soldeNet = totalDebit - totalCredit;
-
-  return {
-    totalDebit,
-    totalCredit,
-    soldeNet,
-    parSociete: [{ societeNom: brandNom, soldeNet }],
-  };
+  return { totalDebit, totalCredit, soldeNet: totalDebit - totalCredit };
 }
 
 export function classeurEntrySourceType(entry: ClasseurEntry): MouvementSourceType {
   if (entry.type === "Dossier") return "dossier";
   if (entry.type === "Paiement") return "ecriture";
   return "facture";
-}
-
-/** Suivi horodaté d'un mouvement (audit lié à source_type / source_id). */
-export async function fetchMouvementSuivi(
-  _sourceType: MouvementSourceType,
-  _sourceId: string,
-): Promise<AuditEntry[]> {
-  return [];
 }

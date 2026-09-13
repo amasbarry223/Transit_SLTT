@@ -2,7 +2,7 @@
 
 import { Package } from "lucide-react";
 import type { BonSortie, Mouvement, StockItem } from "@/lib/domain-types";
-import { TabsContent } from "@/components/ui/tabs";
+import { TabsContent } from "@/shared/components/ui/tabs";
 import { StockTab } from "./stock-tab";
 import { BonsTab } from "./bons-tab";
 

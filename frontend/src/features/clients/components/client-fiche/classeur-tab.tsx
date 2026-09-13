@@ -1,58 +1,48 @@
 "use client";
 
-import { FileSpreadsheet, Printer, History, TrendingUp, Wallet, Clock, Upload } from "lucide-react";
+import { FileSpreadsheet, Printer, History, TrendingUp, Wallet, Clock } from "lucide-react";
 import type { AuditEntry } from "@/lib/audit";
 import type { ClasseurEntry, ClasseurFilters, ClasseurTotals } from "@/lib/classeur";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { ToneBadge } from "@/components/sltt/status-badge";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { TabsContent } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+} from "@/shared/components/ui/select";
+import { TabsContent } from "@/shared/components/ui/tabs";
+import { cn } from "@/shared/utils/cn";
 import { TabEmptyState, classeurStatutTone } from "./shared";
 import { ClasseurGridLazy } from "./classeur-grid-lazy";
 
 type ClasseurTabProps = {
-  journalEntries: ClasseurEntry[];
   classeurFilters: ClasseurFilters;
   onFiltersChange: (updater: (prev: ClasseurFilters) => ClasseurFilters) => void;
   classeurFiltered: ClasseurEntry[];
   classeurTotals: ClasseurTotals;
   classeurPeriodFiltered?: boolean;
-  isSyncing?: boolean;
   clientAuditHistory: AuditEntry[];
   onExportExcel: () => void;
-  onOpenImport?: () => void;
   onPrint: () => void;
   onRowClick: (entry: ClasseurEntry) => void;
-  onGridDataChanged?: () => void;
-  canImport?: boolean;
 };
 
 export function ClasseurTab({
-  journalEntries,
   classeurFilters,
   onFiltersChange,
   classeurFiltered,
   classeurTotals,
   classeurPeriodFiltered = false,
-  isSyncing = false,
   clientAuditHistory,
   onExportExcel,
-  onOpenImport,
   onPrint,
   onRowClick,
-  onGridDataChanged,
-  canImport = false,
 }: ClasseurTabProps) {
   return (
     <TabsContent value="classeur" className="mt-6 space-y-4 focus-visible:outline-none">
@@ -95,18 +85,6 @@ export function ClasseurTab({
           />
         </div>
         <div className="flex gap-2 sm:ml-auto">
-          {canImport && onOpenImport && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10"
-              onClick={onOpenImport}
-              title="Importer un Excel"
-            >
-              <Upload className="size-4" />
-              <span className="hidden sm:inline">Importer Excel</span>
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"
@@ -131,10 +109,6 @@ export function ClasseurTab({
           </Button>
         </div>
       </div>
-
-      {isSyncing && (
-        <p className="text-xs text-muted-foreground">Synchronisation…</p>
-      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {/* Mêmes libellés que la barre sticky en haut de la fiche (Investi / Total
@@ -239,7 +213,6 @@ export function ClasseurTab({
               <ClasseurGridLazy
                 rows={classeurFiltered}
                 onRowClick={onRowClick}
-                onDataChanged={onGridDataChanged}
               />
             </div>
           </>

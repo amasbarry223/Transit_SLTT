@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export function InfoCallout({
   children,

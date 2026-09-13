@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { FileUp, UploadCloud } from "lucide-react";
 import type { EntiteComptable } from "@/lib/domain-types";
 import { entiteKeyOf } from "@/lib/comptabilite-generale";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,14 +13,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { ComptabiliteGeneraleImportDialog } from "./import-dialog";
 
 // Charge tesseract.js/pdfjs-dist (via run-ocr) uniquement quand la route OCR

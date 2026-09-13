@@ -11,10 +11,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { UI } from "@/lib/ui-messages";
+} from "@/shared/components/ui/alert-dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { UI } from "@/shared/utils/ui-messages";
 
 /**
  * Confirmation renforcée pour les actions destructives à fort impact

@@ -9,16 +9,16 @@ import { ResponsiveDataList } from "@/components/sltt/responsive-data-list";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { MetaTabsList } from "@/components/sltt/meta-tabs-list";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs } from "@/components/ui/tabs";
+} from "@/shared/components/ui/select";
+import { Tabs } from "@/shared/components/ui/tabs";
 import { ArchiveUploadDialog, ARCHIVE_COLUMNS, FOLDER_ICON_SRC, TAB_META, type ArchiveTab } from "./archives";
 import { useArchivesScreen } from "./archives/use-archives-screen";
 

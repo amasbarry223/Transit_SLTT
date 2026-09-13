@@ -17,22 +17,23 @@ export async function createClient(input: ClientInput): Promise<Result<Client, A
       telephone: input.telephone,
       email: input.email,
       adresse: input.adresse,
+      annexeId: input.annexeId,
     });
     return ok({
       id: created.id,
       nom: created.nom,
-      type: (created.type === "PARTICULIER" ? "Particulier" : "Entreprise") as any,
+      type: created.type === "PARTICULIER" ? "Particulier" : "Entreprise",
       telephone: created.telephone || "",
       email: created.email || "",
       adresse: created.adresse || "",
-      annexeId: input.annexeId,
-      annexeNom: "",
+      annexeId: created.annexeId || input.annexeId,
+      annexeNom: created.annexe?.nom || "",
       nbDossiers: 0,
       totalDu: 0,
       totalPaye: 0,
     });
-  } catch (e: any) {
-    return err(toAppError(e, e?.message || "Impossible de créer le client."));
+  } catch (e) {
+    return err(toAppError(e, "Impossible de créer le client."));
   }
 }
 
@@ -47,15 +48,26 @@ export async function updateClient(
       telephone: input.telephone,
       email: input.email,
       adresse: input.adresse,
+      annexeId: input.annexeId,
     });
     return ok(undefined);
-  } catch (e: any) {
-    return err(toAppError(e, e?.message || "Impossible de mettre à jour le client."));
+  } catch (e) {
+    return err(toAppError(e, "Impossible de mettre à jour le client."));
+  }
+}
+
+export async function deleteClient(id: string): Promise<Result<void, AppError>> {
+  try {
+    await api.clients.delete(id);
+    return ok(undefined);
+  } catch (e) {
+    return err(toAppError(e, "Impossible de supprimer le client."));
   }
 }
 
 export const clientService = {
   create: createClient,
   update: updateClient,
+  delete: deleteClient,
 };
 

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { importWithRetry } from "@/lib/import-with-retry";
 
 const DossiersEvolutionChartImpl = dynamic(

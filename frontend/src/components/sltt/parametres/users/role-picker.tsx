@@ -1,7 +1,7 @@
 "use client";
 
 import type { UserRole } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { allRoles, roleMeta } from "./shared";
 
 export function RolePicker({

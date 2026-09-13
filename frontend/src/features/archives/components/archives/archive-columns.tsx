@@ -1,7 +1,7 @@
 import type { ResponsiveColumn } from "@/components/sltt/responsive-data-list";
 import { formatDateShort } from "@/lib/format";
 import { formatFileSize, getFileIconMeta } from "@/lib/file-utils";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { TAB_META, TYPE_DOC_BADGE, type UnifiedDoc } from "./shared";
 
 export const ARCHIVE_COLUMNS: ResponsiveColumn<UnifiedDoc>[] = [

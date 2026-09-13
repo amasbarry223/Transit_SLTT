@@ -7,10 +7,10 @@ import { runOcrOnBlob } from "@/lib/documents/ocr/run-ocr";
 import { mapOperationComptableFieldsFromText } from "@/lib/documents/ocr/mappers/operation-comptable-mapper";
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { useStore } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
-import { toastSuccess, toastWarning } from "@/lib/toast-helpers";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
+import { cn } from "@/shared/utils/cn";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -18,16 +18,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 
 type FormState = {
   date: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import { useToast } from "@/hooks/use-toast";
-import { toastWarning } from "@/lib/toast-helpers";
+import { useToast } from "@/shared/hooks/use-toast";
+import { toastWarning } from "@/shared/utils/toast-helpers";
 import { EntityFileDropZone } from "@/components/sltt/entity-file-drop-zone";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo (aligné sur la limite du bucket contrat-fichiers)

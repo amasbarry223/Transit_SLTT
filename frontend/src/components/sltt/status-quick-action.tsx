@@ -1,7 +1,7 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 /**
  * Pastille de statut suivant — pattern identique dupliqué entre dossiers-list.tsx

@@ -9,11 +9,11 @@ import {
   TRANSITION_META,
   type TransitionType,
 } from "@/components/sltt/dossier-transition-dialog";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/shared/components/ui/card";
+import { Separator } from "@/shared/components/ui/separator";
 import { EcartValue } from "@/components/sltt/status-badge";
 import { DossierInfoGrid } from "./dossier-info-grid";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 function AmountRow({
   label,

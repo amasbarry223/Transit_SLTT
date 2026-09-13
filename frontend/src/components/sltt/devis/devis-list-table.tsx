@@ -4,15 +4,15 @@ import { ClipboardList, ExternalLink, Eye, FileText, FolderKanban, MoreHorizonta
 import type { Dispatch, SetStateAction } from "react";
 import type { Devis, DevisStatut } from "@/lib/store";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/shared/utils/cn";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/sltt/empty-state";
-import { UI } from "@/lib/ui-messages";
+import { UI } from "@/shared/utils/ui-messages";
 import { DevisStatutBadge } from "@/components/sltt/status-badge";
 import { StatusQuickAction } from "@/components/sltt/status-quick-action";
 import { TablePagination } from "@/components/sltt/table-pagination";
@@ -127,8 +127,18 @@ export function DevisListTable({
                       <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Voir" onClick={() => handleOpenDevis(d)}>
                         <Eye className="size-4" />
                       </Button>
-                      {canWrite && !d.dossierId && d.statut !== "Accepté" && (
-                        <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" title="Modifier" onClick={() => handleOpenEdit(d)}>
+                      {canWrite && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "size-8 text-muted-foreground hover:text-primary",
+                            d.dossierId && "opacity-40 cursor-not-allowed hover:text-muted-foreground"
+                          )}
+                          title={d.dossierId ? "Ce devis est déjà converti en dossier" : "Modifier"}
+                          disabled={Boolean(d.dossierId)}
+                          onClick={() => handleOpenEdit(d)}
+                        >
                           <Pencil className="size-4" />
                         </Button>
                       )}
@@ -142,6 +152,14 @@ export function DevisListTable({
                           <DropdownMenuItem onClick={() => handleOpenDevis(d)}>
                             <ExternalLink className="mr-2 size-3.5" /> Ouvrir la fiche
                           </DropdownMenuItem>
+                          {canWrite && (
+                            <DropdownMenuItem
+                              disabled={Boolean(d.dossierId)}
+                              onClick={() => handleOpenEdit(d)}
+                            >
+                              <Pencil className="mr-2 size-3.5" /> Modifier le devis
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => handlePrintDevis(d)}>
                             <FileText className="mr-2 size-3.5" /> Imprimer le devis
                           </DropdownMenuItem>
@@ -263,10 +281,17 @@ export function DevisListTable({
                             >
                               <Eye className="size-4" />
                             </Button>
-                            {canWrite && !d.dossierId && d.statut !== "Accepté" && (
+                            {canWrite && (
                               <Button
-                                variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary"
-                                title="Modifier" onClick={() => handleOpenEdit(d)}
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "size-8 text-muted-foreground hover:text-primary",
+                                  d.dossierId && "opacity-40 cursor-not-allowed hover:text-muted-foreground"
+                                )}
+                                title={d.dossierId ? "Ce devis est déjà converti en dossier" : "Modifier"}
+                                disabled={Boolean(d.dossierId)}
+                                onClick={() => handleOpenEdit(d)}
                               >
                                 <Pencil className="size-4" />
                               </Button>
@@ -281,6 +306,14 @@ export function DevisListTable({
                                 <DropdownMenuItem onClick={() => handleOpenDevis(d)}>
                                   <ExternalLink className="mr-2 size-3.5" /> Ouvrir la fiche
                                 </DropdownMenuItem>
+                                {canWrite && (
+                                  <DropdownMenuItem
+                                    disabled={Boolean(d.dossierId)}
+                                    onClick={() => handleOpenEdit(d)}
+                                  >
+                                    <Pencil className="mr-2 size-3.5" /> Modifier le devis
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => handlePrintDevis(d)}>
                                   <FileText className="mr-2 size-3.5" /> Imprimer le devis
                                 </DropdownMenuItem>

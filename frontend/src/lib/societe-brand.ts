@@ -45,15 +45,6 @@ export function resolveTransitSociete(societes: Societe[]): Societe | undefined 
   return societes[0];
 }
 
-/** Afficher le sélecteur d'annexe dès qu'il y a plus d'une implantation. */
-export function shouldShowAnnexeForSociete(
-  _societeId: string,
-  _societes: Societe[],
-  annexes: Annexe[],
-): boolean {
-  return annexes.length > 1;
-}
-
 /**
  * Préfixe des références dossier — dérivé du nom (éditable) de la société
  * transit, avec repli si aucune société n'est encore configurée (compte
@@ -64,39 +55,11 @@ export function resolveDossierReferencePrefix(societes: Societe[]): string {
 }
 
 /** Libellé affiché uniforme (Classeur, badges, exports) — toujours le nom en base, éditable depuis Paramètres. */
-export function resolveSocieteDisplayName(societe: Pick<Societe, "nom">): string {
-  return societe.nom;
-}
-
-export function resolveSocieteDisplayNameById(
-  societes: Societe[],
-  societeId: string,
-  fallback = "Non affecté",
-): string {
-  const societe = societes.find((item) => item.id === societeId);
-  if (!societe) return fallback;
-  return resolveSocieteDisplayName(societe);
-}
-
-export function societeToBrand(s: Societe): SocieteBrand {
+function societeToBrand(s: Societe): SocieteBrand {
   return {
     nom: s.nom,
     raisonSociale: s.raisonSociale,
     logoUrl: s.logoUrl,
-    afficherNomAvecLogo: s.afficherNomAvecLogo,
-    legal: {
-      adresse: s.adresse,
-      telephone: s.telephone,
-      rccm: s.rccm,
-      nif: s.nif,
-    },
-  };
-}
-
-export function societeToPrintHTMLBrand(s: Societe): PrintHTMLBrand {
-  return {
-    logoUrl: s.logoUrl,
-    name: s.nom,
     afficherNomAvecLogo: s.afficherNomAvecLogo,
     legal: {
       adresse: s.adresse,
@@ -120,18 +83,6 @@ export const DEFAULT_TRANSIT_BRAND: SocieteBrand = {
   },
 };
 
-export const DEFAULT_PRINT_HTML_BRAND: PrintHTMLBrand = {
-  name: "TRAORE DE LOGISTIQUE",
-  logoUrl: "/logoV.png",
-  afficherNomAvecLogo: true,
-  legal: {
-    adresse: "Bamako, Mali / Abidjan, Côte d'Ivoire",
-    telephone: "+223 00 00 00 00 / +225 00 00 00 00",
-    rccm: "MA.BKO.2024.B.1234",
-    nif: "0812345678",
-  },
-};
-
 /** Branding dynamique pour l'impression du classeur (identité SLTT unique). */
 export function resolveClasseurPrintBrand(societes: Societe[]): SocieteBrand {
   return resolveSlttBrand(societes);
@@ -139,12 +90,7 @@ export function resolveClasseurPrintBrand(societes: Societe[]): SocieteBrand {
 /** Identité transit pour impressions (devis, classeur, listes…). */
 export function resolveSlttBrand(societes: Societe[]): SocieteBrand {
   const s = resolveTransitSociete(societes);
-  return s ? { ...societeToBrand(s), nom: resolveSocieteDisplayName(s) } : DEFAULT_TRANSIT_BRAND;
-}
-
-export function resolvePrintHTMLBrand(societes: Societe[]): PrintHTMLBrand {
-  const s = resolveTransitSociete(societes);
-  return s ? societeToPrintHTMLBrand(s) : DEFAULT_PRINT_HTML_BRAND;
+  return s ? societeToBrand(s) : DEFAULT_TRANSIT_BRAND;
 }
 
 /** Branding shell (topbar, login) — nom + logo depuis la société transit. */
@@ -186,15 +132,19 @@ export interface DossierCoutLabels {
   fraisCircuitHint: string;
   fraisPrestation: string;
   fraisPrestationHint: string;
+  port: string;
+  portHint: string;
 }
 
-const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
+export const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
   droitDouane: "Droit de douane",
   droitDouaneHint: "Taxe versée à la douane pour dédouaner la marchandise.",
   fraisCircuit: "Frais de circuit global",
   fraisCircuitHint: "Frais de transit (manutention, transport local, formalités) hors droit de douane.",
   fraisPrestation: "Frais de prestation",
   fraisPrestationHint: "Rémunération de SLTT pour le service de transit — c'est elle qui détermine la marge du dossier.",
+  port: "Port d'embarquement",
+  portHint: "Port de chargement d'où provient la marchandise avant son transit vers le Mali.",
 };
 
 /**
@@ -202,6 +152,8 @@ const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
  * prestation ; la Côte d'Ivoire facture par transit portuaire (cf. facture
  * CI type — conteneurs/compagnie/bordereau, sans droit de douane affiché) :
  * "Frais transit port" remplace la douane, "Dépenses" remplace le circuit.
+ * Le port lui-même change de sens : port de chargement lointain pour le
+ * Mali (enclavé), port ivoirien où s'effectue la manutention pour la CI.
  */
 const ANNEXE_DOSSIER_COUT_LABELS: Record<string, Partial<DossierCoutLabels>> = {
   CI: {
@@ -209,6 +161,8 @@ const ANNEXE_DOSSIER_COUT_LABELS: Record<string, Partial<DossierCoutLabels>> = {
     droitDouaneHint: "Frais de transit portuaire (manutention, passage port) — annexe Côte d'Ivoire.",
     fraisCircuit: "Dépenses",
     fraisCircuitHint: "Dépenses diverses engagées pour le dossier, hors frais de transit portuaire.",
+    port: "Port de manutention",
+    portHint: "Port ivoirien où s'effectue la manutention portuaire (Abidjan, San-Pédro...).",
   },
 };
 
@@ -223,12 +177,6 @@ export function resolveDossierCoutLabels(annexeCode?: string | null): DossierCou
   return override ? { ...DEFAULT_DOSSIER_COUT_LABELS, ...override } : DEFAULT_DOSSIER_COUT_LABELS;
 }
 
-export const MISSING_SIGNATORY_LABEL = "Non renseigné";
-
-export function warnMissingBrand(context: string): boolean {
-  console.warn(`Branding entreprise non configuré pour ${context}, utilisation des coordonnées par défaut.`);
-  return true;
-}
 
 export function ensureSocieteBrand(brand?: SocieteBrand | null): SocieteBrand {
   if (brand?.nom?.trim()) return brand;

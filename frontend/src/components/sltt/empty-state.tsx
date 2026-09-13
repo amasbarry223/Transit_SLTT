@@ -1,8 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { UI } from "@/lib/ui-messages";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/utils/cn";
+import { Button } from "@/shared/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle } from "lucide-react";
 
@@ -96,29 +95,5 @@ export function EmptyState({
       )}
       {actionButtons}
     </div>
-  );
-}
-
-/** Empty state d'erreur de chargement avec bouton Réessayer. */
-export function LoadErrorState({
-  onRetry,
-  className,
-}: {
-  onRetry?: () => void;
-  className?: string;
-}) {
-  const cfg = UI.empty.loadError;
-  return (
-    <EmptyState
-      variant="error"
-      title={cfg.title}
-      description={cfg.description}
-      primaryAction={
-        onRetry
-          ? { label: cfg.action, onClick: onRetry }
-          : undefined
-      }
-      className={className}
-    />
   );
 }

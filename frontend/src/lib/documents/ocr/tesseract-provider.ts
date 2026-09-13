@@ -65,7 +65,9 @@ async function recognizeWithAbort(
   });
 }
 
-export class TesseractOcrProvider implements OcrProvider {
+// Non exporté : instanciée seulement via le singleton getDefaultOcrProvider()
+// ci-dessous — aucun appelant externe n'a besoin de la classe elle-même.
+class TesseractOcrProvider implements OcrProvider {
   readonly name = "tesseract";
 
   async extract(

@@ -18,6 +18,13 @@ export class CaisseService {
 
   async findAll(user: CurrentUserType, annexeId?: string) {
     const annexeFilter = this.buildAnnexeFilter(user);
+    // annexeId est un filtre supplémentaire DEMANDÉ, pas une autorisation :
+    // sans ce contrôle, ...annexeFilter puis ...{annexeId} écrasait la
+    // restriction { in: user.annexeIds } par la valeur fournie par le
+    // client, laissant un non-ADMIN cibler n'importe quelle annexe.
+    if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
     return this.prisma.caisse.findMany({
       where: {
         ...annexeFilter,
@@ -72,8 +79,12 @@ export class CaisseService {
       throw new BadRequestException("Cette caisse est fermée aux opérations");
     }
 
-    if (data.type === 'SORTIE' && caisse.soldeActuel < data.montant) {
-      throw new BadRequestException("Solde insuffisant dans la caisse");
+    const montant = Number(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new BadRequestException("Le montant doit être supérieur à 0");
+    }
+    if (data.type !== 'ENTREE' && data.type !== 'SORTIE') {
+      throw new BadRequestException("Type de transaction invalide");
     }
 
     return this.prisma.$transaction(async (tx: any) => {
@@ -81,17 +92,23 @@ export class CaisseService {
         data: {
           caisseId,
           type: data.type,
-          montant: data.montant,
-          motif: data.motif,
+          montant,
+          motif: data.motif || 'Opération de caisse',
           effectueParId: user.id,
         },
       });
 
-      const increment = data.type === 'ENTREE' ? data.montant : -data.montant;
+      const increment = data.type === 'ENTREE' ? montant : -montant;
+      // Increment atomique puis contrôle sur la valeur RÉELLE post-écriture :
+      // si le solde devient négatif (sorties concurrentes), on throw et toute
+      // la transaction est annulée.
       const updatedCaisse = await tx.caisse.update({
         where: { id: caisseId },
         data: { soldeActuel: { increment } },
       });
+      if (updatedCaisse.soldeActuel < 0) {
+        throw new BadRequestException('Solde insuffisant dans la caisse');
+      }
 
       return { transaction, soldeActuel: updatedCaisse.soldeActuel };
     });

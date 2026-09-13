@@ -2,6 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -10,6 +13,7 @@ import {
 import { FacturesService } from './factures.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -38,9 +42,36 @@ export class FacturesController {
   }
 
   @Post()
+  @UseGuards(AnnexeGuard)
   @RequirePermission('factures.creer')
   async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
     return this.facturesService.create(user, body);
+  }
+
+  @Put(':id')
+  @RequirePermission('factures.modifier')
+  async update(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+    @Body() body: any,
+  ) {
+    return this.facturesService.update(id, user, body);
+  }
+
+  @Patch(':id/statut')
+  @RequirePermission('factures.modifier')
+  async updateStatut(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+    @Body('statut') statut: string,
+  ) {
+    return this.facturesService.updateStatut(id, user, statut);
+  }
+
+  @Delete(':id')
+  @RequirePermission('factures.supprimer')
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.facturesService.remove(id, user);
   }
 
   @Post(':id/paiements')

@@ -3,6 +3,7 @@
 import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";
 import {
   buildReceiptPrintCSS,
+  buildReceiptBatchPrintCSS,
   RECEIPT_LOGO_FALLBACK,
   RECEIPT_PRINT_FRAME_ID,
   RECEIPT_WIDTH_MM,
@@ -18,13 +19,16 @@ import { fmtDate, fmtFCFA } from "./shared";
 /* ------------------------------------------------------------------ */
 
 export interface RecuPaiementModuleData {
-  date: string;
-  nom: string;
-  prenom: string;
-  somme: number;
-  motif: string;
-  montantPaye: number;
-  reste: number;
+  /** Numéro auto-généré serveur (RECU-0001…) — seule donnée pré-imprimée,
+   *  le reste du reçu est vierge pour être rempli au stylo. */
+  reference: string;
+  date?: string;
+  nom?: string;
+  prenom?: string;
+  somme?: number;
+  motif?: string;
+  montantPaye?: number;
+  reste?: number;
   signature?: string;
 }
 
@@ -41,7 +45,7 @@ function buildHeaderLegalHTML(brand: SocieteBrand): string {
   return parts.map((line) => `<div class="header-legal-line">${line}</div>`).join("");
 }
 
-function buildFieldLine(label: string, value: string, className = ""): string {
+function buildFieldLine(label: string, value: string | undefined, className = ""): string {
   return `
     <div class="field-line ${className}">
       <span class="field-label">${htmlEscape(label)}</span>
@@ -56,11 +60,18 @@ function buildSignatureHTML(signature?: string): string {
   return `<div class="sig-label">Signature</div>`;
 }
 
+/** Un reçu vierge n'a ni montant ni date réels — "0 FCFA" ou une date
+ *  invalide sur un carnet à remplir au stylo serait pire qu'une ligne
+ *  blanche. Ne formate que les valeurs réellement fournies. */
+function blankAmount(n: number | undefined): string | undefined {
+  return n ? fmtFCFA(n) : undefined;
+}
+
 function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
   const logoUrl = resolveLogoUrl(brand.logoUrl) ?? RECEIPT_LOGO_FALLBACK;
   const logoImg = `<img src="${htmlEscape(logoUrl)}" alt="${htmlEscape(brand.nom)}" class="brand-logo" onerror="this.onerror=null;this.src='${htmlEscape(RECEIPT_LOGO_FALLBACK)}'">`;
   const showName = brand.afficherNomAvecLogo !== false;
-  const sommeLettres = htmlEscape(montantEnLettresFCFA(data.somme));
+  const sommeLettres = data.somme ? htmlEscape(montantEnLettresFCFA(data.somme)) : "";
 
   return `<div class="receipt-paper">
   <div class="header">
@@ -70,7 +81,10 @@ function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBra
       ${buildHeaderLegalHTML(brand)}
       <div class="doc-title">Reçu de paiement</div>
     </div>
-    <div class="header-spacer"></div>
+    <div class="header-ref">
+      <span class="header-ref-label">N°</span>
+      <span class="header-ref-value">${htmlEscape(data.reference)}</span>
+    </div>
   </div>
   <div class="body">
     <div class="field-row--split">
@@ -85,11 +99,11 @@ function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBra
       ${buildFieldLine("Motif :", data.motif)}
     </div>
     <div class="field-row--split">
-      ${buildFieldLine("Montant payé :", fmtFCFA(data.montantPaye))}
-      ${buildFieldLine("Reste :", fmtFCFA(data.reste))}
+      ${buildFieldLine("Montant payé :", blankAmount(data.montantPaye))}
+      ${buildFieldLine("Reste :", blankAmount(data.reste))}
     </div>
     <div class="field-row--footer">
-      ${buildFieldLine("Date, le", fmtDate(data.date))}
+      ${buildFieldLine("Date, le", data.date ? fmtDate(data.date) : undefined)}
       <div class="sig-box">
         ${buildSignatureHTML(data.signature)}
       </div>
@@ -99,7 +113,7 @@ function buildReceiptContentHTML(data: RecuPaiementModuleData, brand: SocieteBra
 }
 
 /** Construit le HTML complet du reçu (aperçu ou impression). */
-export function buildRecuPaiementHTML(
+function buildRecuPaiementHTML(
   data: RecuPaiementModuleData,
   brand: SocieteBrand,
   options?: BuildRecuPaiementHTMLOptions,
@@ -125,14 +139,61 @@ ${toolbar}${buildReceiptContentHTML(data, brand)}
 }
 
 /** HTML minimal pour impression — uniquement le reçu, format verrouillé 19,5×8,2 cm. */
-export function buildRecuPaiementPrintHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
+function buildRecuPaiementPrintHTML(data: RecuPaiementModuleData, brand: SocieteBrand): string {
   return buildRecuPaiementHTML(data, brand, { includePrintToolbar: false });
 }
 
-export function printRecuPaiementModule(data: RecuPaiementModuleData, societe?: SocieteBrand | null): boolean {
+// Non exporté : seul printRecuPaiementBatch() (ci-dessous) l'appelle
+// désormais — plus aucun appelant externe depuis la refonte du carnet de
+// reçus vierges (use-recu-generator.ts imprime toujours via le batch, même
+// pour un seul reçu).
+function printRecuPaiementModule(data: RecuPaiementModuleData, societe?: SocieteBrand | null): boolean {
   const safeSociete = ensureSocieteBrand(societe);
 
   const html = buildRecuPaiementPrintHTML(data, safeSociete);
+  const win = acquirePrintTarget({
+    widthMm: RECEIPT_WIDTH_MM,
+    heightMm: RECEIPT_HEIGHT_MM,
+    frameId: RECEIPT_PRINT_FRAME_ID,
+  });
+  if (!win) {
+    warnPopupBlocked();
+    return false;
+  }
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  triggerPrint(win);
+  return true;
+}
+
+/** HTML complet du carnet — un .receipt-paper par reçu, chacun sur sa propre
+ *  page à l'impression (buildReceiptBatchPrintCSS), pour imprimer plusieurs
+ *  reçus vierges (numéros différents) en une seule action. */
+function buildRecuPaiementBatchHTML(dataList: RecuPaiementModuleData[], brand: SocieteBrand): string {
+  const receipts = dataList.map((data) => buildReceiptContentHTML(data, brand)).join("\n");
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reçus de paiement (${dataList.length})</title>
+<style>${buildReceiptBatchPrintCSS()}</style>
+</head>
+<body>
+${receipts}
+</body>
+</html>`;
+}
+
+/** Imprime plusieurs reçus vierges d'affilée, chacun avec son propre numéro
+ *  auto-généré — un par page, pour un carnet à découper ensuite au besoin. */
+export function printRecuPaiementBatch(dataList: RecuPaiementModuleData[], societe?: SocieteBrand | null): boolean {
+  if (dataList.length === 0) return false;
+  if (dataList.length === 1) return printRecuPaiementModule(dataList[0], societe);
+
+  const safeSociete = ensureSocieteBrand(societe);
+  const html = buildRecuPaiementBatchHTML(dataList, safeSociete);
   const win = acquirePrintTarget({
     widthMm: RECEIPT_WIDTH_MM,
     heightMm: RECEIPT_HEIGHT_MM,
