@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import type { JwtPayload, CurrentUserType } from './auth.types';
+import type { JwtPayload } from './auth.types';
 import { jwtRefreshSecret, jwtRefreshExpiresIn } from './jwt.config';
 
 const BCRYPT_ROUNDS = 12;

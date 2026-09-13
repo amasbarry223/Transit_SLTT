@@ -14,5 +14,26 @@ export function ThemeEffect({ nonce: _nonce }: { nonce?: string }) {
     meta?.setAttribute("content", theme === "dark" ? BRAND.darkBg : BRAND.background);
   }, [theme]);
 
+  // Supprime l'icône de développement Next.js (le badge N) dès qu'il est injecté dans le DOM
+  useEffect(() => {
+    const hideNextDevTools = () => {
+      const targets = document.querySelectorAll(
+        "nextjs-portal, [data-nextjs-dev-tools-button], [data-indicator-status], #nextjs-dev-tools",
+      );
+      targets.forEach((el) => {
+        const h = el as HTMLElement;
+        h.style.setProperty("display", "none", "important");
+        h.style.setProperty("visibility", "hidden", "important");
+        h.style.setProperty("opacity", "0", "important");
+        h.style.setProperty("pointer-events", "none", "important");
+      });
+    };
+
+    hideNextDevTools();
+    const observer = new MutationObserver(hideNextDevTools);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   return null;
 }

@@ -3,7 +3,6 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import type { CurrentUserType } from '../auth.types';
 

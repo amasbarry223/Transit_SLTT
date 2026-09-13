@@ -10,6 +10,7 @@ import {
   Globe,
   DatabaseBackup,
   Anchor,
+  Sliders,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCanManageUsers, usePermission } from "@/shared/hooks/use-permission";
@@ -22,10 +23,11 @@ import { SocietesTab } from "@/components/sltt/parametres/societe-tab";
 import { SecurityTab } from "@/components/sltt/parametres/security-tab";
 import { AuditTab } from "@/components/sltt/parametres/audit-tab";
 import { PreferencesTab } from "@/features/parametres/components/parametres/preferences-tab";
+import { ConfigurationTab } from "@/features/parametres/components/parametres/configuration-tab";
 import { BackupTab } from "@/components/sltt/parametres/backup-tab";
 import { PortsTab } from "@/components/sltt/parametres/ports-tab";
 
-type ParamTab = "users" | "societes" | "ports" | "profile" | "security" | "audit" | "preferences" | "backup";
+type ParamTab = "users" | "societes" | "ports" | "configuration" | "profile" | "security" | "audit" | "preferences" | "backup";
 
 const tabs: {
   key: ParamTab;
@@ -36,6 +38,7 @@ const tabs: {
   { key: "users", label: "Utilisateurs & rôles", shortLabel: "Utilisateurs", icon: Users },
   { key: "societes", label: "Entreprise", shortLabel: "Entreprise", icon: Building2 },
   { key: "ports", label: "Ports", shortLabel: "Ports", icon: Anchor },
+  { key: "configuration", label: "Configuration", shortLabel: "Config", icon: Sliders },
   { key: "profile", label: "Mon profil", shortLabel: "Profil", icon: User },
   { key: "security", label: "Sécurité", shortLabel: "Sécurité", icon: Shield },
   { key: "audit", label: "Audit & traçabilité", shortLabel: "Audit", icon: ScrollText },
@@ -75,6 +78,7 @@ export function ParametresScreen() {
       if (prev === "audit" && !canViewAudit) return "profile";
       if (prev === "societes" && !canManageSocietes) return "profile";
       if (prev === "ports" && !canManageSocietes) return "profile";
+      if (prev === "configuration" && !canManageSocietes) return "profile";
       if (prev === "backup" && !canBackup) return "profile";
       return prev;
     });
@@ -109,7 +113,8 @@ export function ParametresScreen() {
               if (t.key === "users") return canManageUsers;
               if (t.key === "audit") return canViewAudit;
               if (t.key === "societes") return canManageSocietes;
-      if (t.key === "ports") return canManageSocietes;
+              if (t.key === "ports") return canManageSocietes;
+              if (t.key === "configuration") return canManageSocietes;
               if (t.key === "backup") return canBackup;
               return true;
             }).map((t) => {
@@ -153,6 +158,11 @@ export function ParametresScreen() {
         {canManageSocietes && (
           <TabsContent value="ports" className="mt-6 focus-visible:outline-none">
             <PortsTab />
+          </TabsContent>
+        )}
+        {canManageSocietes && (
+          <TabsContent value="configuration" className="mt-6 focus-visible:outline-none">
+            <ConfigurationTab />
           </TabsContent>
         )}
         <TabsContent value="profile" className="mt-6 focus-visible:outline-none">

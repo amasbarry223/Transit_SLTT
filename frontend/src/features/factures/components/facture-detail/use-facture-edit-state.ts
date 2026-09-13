@@ -4,7 +4,12 @@ import * as React from "react";
 import type { Facture, FactureInput } from "@/lib/store";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 
+import { useConfigValue } from "@/shared/hooks/useConfig";
+
 export function useFactureEditState(facture: Facture | undefined, isEditing: boolean) {
+  const defaultTva = useConfigValue<number>("taux_tva_defaut", DEFAULT_TVA_RATE);
+  const activeTvaRate = (facture?.tauxTVA && facture.tauxTVA > 0) ? facture.tauxTVA : defaultTva;
+
   const [editDate, setEditDate] = React.useState("");
   const [editDateEcheance, setEditDateEcheance] = React.useState("");
   const [editTvaOn, setEditTvaOn] = React.useState(true);
@@ -46,7 +51,7 @@ export function useFactureEditState(facture: Facture | undefined, isEditing: boo
     (s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
     0,
   );
-  const editTVA = editTvaOn ? DEFAULT_TVA_RATE : 0;
+  const editTVA = editTvaOn ? activeTvaRate : 0;
   const editTTC = editMontantHT + Math.round(editMontantHT * (editTVA / 100));
 
   function buildFactureInput(): FactureInput | null {
@@ -67,7 +72,7 @@ export function useFactureEditState(facture: Facture | undefined, isEditing: boo
       annexeId: facture.annexeId,
       date: editDate,
       dateEcheance: editDateEcheance,
-      tauxTVA: editTvaOn ? DEFAULT_TVA_RATE : 0,
+      tauxTVA: editTvaOn ? activeTvaRate : 0,
       notes: editNotes,
       lignes,
     };

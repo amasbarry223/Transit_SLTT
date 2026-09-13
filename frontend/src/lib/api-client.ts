@@ -678,22 +678,45 @@ class ApiClient {
   };
 
   // ---------------------------------------------------------------------------
-  // Paramètres dynamiques (Dashboard Settings)
+  // Paramètres dynamiques & Configurations globales
   // ---------------------------------------------------------------------------
   settings = {
-    getAll: () => this.request<{ list: RawSetting[]; map: Record<string, string> }>('/settings'),
+    getPublic: () => this.request<Record<string, any>>('/settings/public'),
+    getAll: () => this.request<{ list: RawSetting[]; map: Record<string, string>; parsedMap?: Record<string, any>; groups?: Record<string, any[]> }>('/settings'),
     getByKey: (cle: string) => this.request<RawSetting>(`/settings/${cle}`),
-    setMany: (settings: Record<string, string>) =>
+    setMany: (settings: Record<string, string | object>) =>
       this.request<RawSetting>('/settings', {
         method: 'PUT',
         body: JSON.stringify(settings),
       }),
-    setKey: (cle: string, valeur: string, description?: string) =>
+    setKey: (cle: string, valeur: string, description?: string, type?: string, isPublic?: boolean, groupName?: string) =>
       this.request<RawSetting>(`/settings/${cle}`, {
         method: 'PUT',
-        body: JSON.stringify({ valeur, description }),
+        body: JSON.stringify({ valeur, description, type, isPublic, groupName }),
       }),
   };
+
+  config = {
+    getPublic: () => this.request<{ data: Record<string, any> }>('/config'),
+    getStatuses: (type?: string) =>
+      this.request<{ data: Array<{ id: string; entityType: string; value: string; label: string; color?: string; icon?: string; orderIndex: number }> }>(
+        `/config/statuses${type ? `?type=${encodeURIComponent(type)}` : ''}`,
+      ),
+    getOptions: (type?: string) =>
+      this.request<{ data: Array<{ id: string; entityType: string; value: string; label: string; color?: string; icon?: string; orderIndex: number }> }>(
+        `/config/options${type ? `?type=${encodeURIComponent(type)}` : ''}`,
+      ),
+    updateConfig: (data: { key: string; value: string; description?: string; type?: string; isPublic?: boolean; groupName?: string }) =>
+      this.request<{ success: boolean }>('/config', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+  };
+
+  dashboard = {
+    getAnalytics: () => this.request<{ data: any }>('/analytics/dashboard'),
+  };
+
 
   // ---------------------------------------------------------------------------
   // Sauvegarde, Export & Restauration (Backup)

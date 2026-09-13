@@ -242,24 +242,111 @@ async function main() {
     },
   });
 
-  // 7. Paramètres dynamiques (dashboard settings)
+  // 7. Paramètres dynamiques (app settings)
   const defaultSettings = [
-    { cle: 'nom_societe', valeur: 'Transit SLTT', description: 'Raison sociale' },
-    { cle: 'devise_principale', valeur: 'FCFA', description: 'Devise par défaut' },
-    { cle: 'taux_tva_defaut', valeur: '18', description: 'Taux TVA standard (%)' },
-    { cle: 'delai_echeance_jours', valeur: '30', description: 'Délai de paiement factures' },
-    { cle: 'email_contact', valeur: 'contact@transit-sltt.com', description: 'Email support' },
+    { cle: 'nom_societe', valeur: 'Transit SLTT', description: 'Raison sociale', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'societe_nom', valeur: 'Transit SLTT', description: 'Nom de la société', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'societe_raison_sociale', valeur: 'Société Logistique Transit Transport', description: 'Raison sociale légale', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'societe_adresse', valeur: 'Faladié SEMA, Bamako, Mali', description: 'Adresse du siège social', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'societe_telephone', valeur: '+223 76 96 47 06', description: 'Téléphone principal', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'support_email', valeur: 'support@transit-sltt.com', description: 'Email support technique', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'email_contact', valeur: 'contact@transit-sltt.com', description: 'Email de contact général', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'company_phone', valeur: '+223 76 96 47 06', description: 'Numéro de téléphone d\'assistance', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'app_title', valeur: 'Transit SLTT', description: 'Titre de l\'application', type: 'string', isPublic: true, groupName: 'application' },
+    { cle: 'app_subtitle', valeur: 'Société Logistique Transit Transport', description: 'Sous-titre', type: 'string', isPublic: true, groupName: 'application' },
+    { cle: 'welcome_message', valeur: 'Bienvenue sur la plateforme Transit SLTT', description: 'Message de bienvenue', type: 'string', isPublic: true, groupName: 'application' },
+    { cle: 'maintenance_mode', valeur: 'false', description: 'Mode maintenance applicatif', type: 'boolean', isPublic: true, groupName: 'application' },
+    { cle: 'devise_principale', valeur: 'FCFA', description: 'Devise par défaut de facturation', type: 'string', isPublic: true, groupName: 'facturation' },
+    { cle: 'taux_tva_defaut', valeur: '18', description: 'Taux TVA standard (%)', type: 'number', isPublic: true, groupName: 'facturation' },
+    { cle: 'facturation_taux_tva', valeur: '18', description: 'Taux TVA pour factures émises (%)', type: 'number', isPublic: true, groupName: 'facturation' },
+    { cle: 'delai_echeance_jours', valeur: '30', description: 'Délai d\'échéance des factures (jours)', type: 'number', isPublic: false, groupName: 'facturation' },
+    { cle: 'commission_rate', valeur: '0.05', description: 'Taux de commission standard', type: 'number', isPublic: false, groupName: 'facturation' },
+    { cle: 'session_timeout_min', valeur: '30', description: 'Délai d\'inactivité avant déconnexion (min)', type: 'number', isPublic: false, groupName: 'securite' },
+    { cle: 'default_stock_seuil', valeur: '10', description: 'Seuil d\'alerte stock faible par défaut', type: 'number', isPublic: false, groupName: 'entrepot' },
+    { cle: 'max_upload_size_mb', valeur: '10', description: 'Taille maximale des fichiers téléversés (Mo)', type: 'number', isPublic: false, groupName: 'fichiers' },
   ];
 
   for (const s of defaultSettings) {
     await prisma.setting.upsert({
       where: { cle: s.cle },
       create: s,
-      update: { valeur: s.valeur },
+      update: {
+        valeur: s.valeur,
+        description: s.description,
+        type: s.type,
+        isPublic: s.isPublic,
+        groupName: s.groupName,
+      },
     });
   }
 
-  console.log('✅ Paramètres sauvegardés');
+  // 8. Statuts et typologies dynamiques (status_configs)
+  const defaultStatusConfigs = [
+    // Dossier
+    { entityType: 'dossier', value: 'EN_COURS', label: 'En cours', color: 'blue', orderIndex: 1 },
+    { entityType: 'dossier', value: 'DEDOUANE', label: 'Dédouané', color: 'amber', orderIndex: 2 },
+    { entityType: 'dossier', value: 'LIVRE', label: 'Livré', color: 'purple', orderIndex: 3 },
+    { entityType: 'dossier', value: 'SOLDE', label: 'Soldé', color: 'green', orderIndex: 4 },
+    // Facture
+    { entityType: 'facture', value: 'BROUILLON', label: 'Brouillon', color: 'gray', orderIndex: 1 },
+    { entityType: 'facture', value: 'ENVOYEE', label: 'Envoyée', color: 'blue', orderIndex: 2 },
+    { entityType: 'facture', value: 'PARTIELLEMENT_PAYEE', label: 'Partielle', color: 'amber', orderIndex: 3 },
+    { entityType: 'facture', value: 'PAYEE', label: 'Soldée', color: 'green', orderIndex: 4 },
+    { entityType: 'facture', value: 'ANNULEE', label: 'Annulée', color: 'red', orderIndex: 5 },
+    // Devis
+    { entityType: 'devis', value: 'BROUILLON', label: 'Brouillon', color: 'gray', orderIndex: 1 },
+    { entityType: 'devis', value: 'ENVOYE', label: 'Envoyé', color: 'blue', orderIndex: 2 },
+    { entityType: 'devis', value: 'ACCEPTE', label: 'Accepté', color: 'green', orderIndex: 3 },
+    { entityType: 'devis', value: 'REFUSE', label: 'Refusé', color: 'red', orderIndex: 4 },
+    { entityType: 'devis', value: 'EXPIRE', label: 'Expiré', color: 'amber', orderIndex: 5 },
+    // Client Type
+    { entityType: 'client_type', value: 'ENTREPRISE', label: 'Entreprise', color: 'blue', orderIndex: 1 },
+    { entityType: 'client_type', value: 'PARTICULIER', label: 'Particulier', color: 'emerald', orderIndex: 2 },
+    // Mode de Paiement
+    { entityType: 'paiement_mode', value: 'ESPECES', label: 'Espèces', color: 'emerald', orderIndex: 1 },
+    { entityType: 'paiement_mode', value: 'VIREMENT', label: 'Virement', color: 'blue', orderIndex: 2 },
+    { entityType: 'paiement_mode', value: 'MOBILE_MONEY', label: 'Mobile Money', color: 'amber', orderIndex: 3 },
+    { entityType: 'paiement_mode', value: 'CHEQUE', label: 'Chèque', color: 'purple', orderIndex: 4 },
+    // Fournisseur Type
+    { entityType: 'fournisseur_type', value: 'TRANSPORTEUR', label: 'Transporteur', color: 'blue', orderIndex: 1 },
+    { entityType: 'fournisseur_type', value: 'MANUTENTIONNAIRE', label: 'Manutentionnaire', color: 'amber', orderIndex: 2 },
+    { entityType: 'fournisseur_type', value: 'COMMISSIONNAIRE', label: 'Commissionnaire en douane', color: 'emerald', orderIndex: 3 },
+    { entityType: 'fournisseur_type', value: 'LOUEUR', label: 'Loueur', color: 'indigo', orderIndex: 4 },
+    { entityType: 'fournisseur_type', value: 'AUTRE', label: 'Autre', color: 'slate', orderIndex: 5 },
+    // Contrat Statut
+    { entityType: 'contrat', value: 'ACTIF', label: 'Actif', color: 'green', orderIndex: 1 },
+    { entityType: 'contrat', value: 'SUSPENDU', label: 'Suspendu', color: 'amber', orderIndex: 2 },
+    { entityType: 'contrat', value: 'CLOTURE', label: 'Clôturé', color: 'gray', orderIndex: 3 },
+    // Véhicule Type
+    { entityType: 'vehicule_type', value: 'CAMION', label: 'Camion', color: 'blue', orderIndex: 1 },
+    { entityType: 'vehicule_type', value: 'REMORQUE', label: 'Remorque', color: 'cyan', orderIndex: 2 },
+    { entityType: 'vehicule_type', value: 'SEMI_REMORQUE', label: 'Semi-remorque', color: 'indigo', orderIndex: 3 },
+    { entityType: 'vehicule_type', value: 'BENNE', label: 'Benne', color: 'amber', orderIndex: 4 },
+    { entityType: 'vehicule_type', value: 'FOURGON', label: 'Fourgon', color: 'teal', orderIndex: 5 },
+    // Document Type
+    { entityType: 'document_type', value: 'BL', label: 'Connaissement (BL)', color: 'blue', orderIndex: 1 },
+    { entityType: 'document_type', value: 'DAU', label: 'Déclaration (DAU)', color: 'purple', orderIndex: 2 },
+    { entityType: 'document_type', value: 'FACTURE', label: 'Facture commerciale', color: 'emerald', orderIndex: 3 },
+    { entityType: 'document_type', value: 'RECU', label: 'Quittance / Reçu', color: 'amber', orderIndex: 4 },
+    { entityType: 'document_type', value: 'SYDONIA', label: 'Sydonia / ASYCUDA', color: 'rose', orderIndex: 5 },
+    { entityType: 'document_type', value: 'CONTRAT', label: 'Contrat de transport', color: 'indigo', orderIndex: 6 },
+    { entityType: 'document_type', value: 'AUTRE', label: 'Autre document', color: 'slate', orderIndex: 7 },
+  ];
+
+  for (const item of defaultStatusConfigs) {
+    await prisma.statusConfig.upsert({
+      where: {
+        entityType_value: {
+          entityType: item.entityType,
+          value: item.value,
+        },
+      },
+      create: item,
+      update: item,
+    });
+  }
+
+  console.log('✅ Paramètres et statuts dynamiques sauvegardés');
   console.log('✨ Seed terminé avec succès !');
 }
 

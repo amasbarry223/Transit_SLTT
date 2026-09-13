@@ -24,7 +24,7 @@ import { toastError, toastWarning, toastSuccess } from "@/shared/utils/toast-hel
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
-import { DashboardKpiCard } from "@/components/sltt/dashboard/dashboard-kpi-card";
+import { DashboardKpiCard } from "@/components/sltt/dashboard-kpi-card";
 import {
   ClientsTable,
   CLIENT_TYPES,

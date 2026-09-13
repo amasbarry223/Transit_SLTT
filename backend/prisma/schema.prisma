@@ -613,10 +613,34 @@ model Setting {
   id          String   @id @default(uuid())
   cle         String   @unique
   valeur      String
+  type        String   @default("string")
   description String?
+  isPublic    Boolean  @default(false) @map("is_public")
+  groupName   String   @default("general") @map("group_name")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([cle])
+  @@index([groupName])
+  @@index([isPublic])
   @@map("settings")
+}
+
+model StatusConfig {
+  id          String   @id @default(uuid())
+  entityType  String   @map("entity_type")
+  value       String
+  label       String
+  color       String?
+  icon        String?
+  orderIndex  Int      @default(0) @map("order_index")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([entityType, value])
+  @@index([entityType])
+  @@index([isActive])
+  @@map("status_configs")
 }
 
 model Notification {

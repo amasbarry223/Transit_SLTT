@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/prisma-exception.filter';
@@ -41,7 +41,8 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 3001;
   await app.listen(port);
-  console.log(`🚀 API Transit SLTT démarrée sur http://localhost:${port}/${apiPrefix}`);
+  const logger = new Logger('Bootstrap');
+  logger.log(`🚀 API Transit SLTT démarrée sur http://localhost:${port}/${apiPrefix}`);
 }
 
 bootstrap();

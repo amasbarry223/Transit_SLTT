@@ -7,7 +7,7 @@ import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
 
-export function mapToPrismaRole(role: string): RoleUtilisateur {
+function mapToPrismaRole(role: string): RoleUtilisateur {
   switch (role) {
     case 'Administrateur':
     case 'ADMIN':
@@ -24,7 +24,7 @@ export function mapToPrismaRole(role: string): RoleUtilisateur {
   }
 }
 
-export function mapToAppRole(role: RoleUtilisateur | string): string {
+function mapToAppRole(role: RoleUtilisateur | string): string {
   switch (role) {
     case RoleUtilisateur.ADMIN:
     case 'ADMIN':
@@ -170,7 +170,7 @@ export class UsersService {
       },
     });
     if (!user) throw new NotFoundException(`Utilisateur ${id} non trouvé`);
-    const { passwordHash, ...safeUser } = user;
+    const { passwordHash: _passwordHash, ...safeUser } = user;
     return {
       ...safeUser,
       role: mapToAppRole(safeUser.role),

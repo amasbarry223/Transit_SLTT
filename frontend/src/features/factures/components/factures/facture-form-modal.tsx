@@ -17,6 +17,7 @@ import {
 } from "@/shared/components/ui/select";
 import { useStore, type FactureInput } from "@/lib/store";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
+import { useConfigValue } from "@/shared/hooks/useConfig";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastWarning } from "@/shared/utils/toast-helpers";
@@ -24,34 +25,44 @@ import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
 import { resolveDossierCoutLabels } from "@/lib/societe-brand";
-import { FACTURE_ECHEANCE_JOURS, MS_PER_DAY } from "@/lib/constants";
 
-interface LigneForm { description: string; quantite: string; prixUnitaire: string; }
+interface FactureFormModalProps {
+  open: boolean;
+  onClose: () => void;
+  prefill?: Partial<FactureInput>;
+  onCreated?: (factureId: string) => void;
+}
 
-const EMPTY_LIGNE: LigneForm = { description: "", quantite: "1", prixUnitaire: "" };
+interface LigneForm {
+  description: string;
+  quantite: string;
+  prixUnitaire: string;
+}
+
+const EMPTY_LIGNE: LigneForm = { description: "", quantite: "1", prixUnitaire: "0" };
 
 export function FactureFormModal({
   open,
   onClose,
   prefill,
-}: {
-  open: boolean;
-  onClose: () => void;
-  prefill?: Partial<FactureInput>;
-}) {
-  const clients    = useStore((s) => s.clients);
-  const dossiers   = useStore((s) => s.dossiers);
+  onCreated,
+}: FactureFormModalProps) {
+  const { toast } = useToast();
+  const clients = useStore((s) => s.clients);
+  const dossiers = useStore((s) => s.dossiers);
+  const societes = useStore((s) => s.societes);
   const addFacture = useStore((s) => s.addFacture);
-  const go         = useNav((s) => s.go);
-  const { toast }  = useToast();
+  const go = useNav((s) => s.go);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
 
-  const today    = new Date().toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultDueDays = useConfigValue<number>("delai_echeance_jours", 30);
   const defaultDueDate = new Date(
-    Date.now() + FACTURE_ECHEANCE_JOURS * MS_PER_DAY,
+    Date.now() + defaultDueDays * 86400000,
   )
     .toISOString()
     .slice(0, 10);
+  const defaultTva = useConfigValue<number>("taux_tva_defaut", DEFAULT_TVA_RATE);
 
   const [clientId,     setClientId]     = React.useState(prefill?.clientId ?? "");
   const [clientNom,    setClientNom]    = React.useState(prefill?.clientNom ?? "");
@@ -59,10 +70,10 @@ export function FactureFormModal({
   const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
   const [date,         setDate]         = React.useState(prefill?.date ?? today);
   const [dateEcheance, setDateEcheance] = React.useState(prefill?.dateEcheance ?? defaultDueDate);
-  const [tvaOn,        setTvaOn]        = React.useState((prefill?.tauxTVA ?? DEFAULT_TVA_RATE) > 0);
+  const [tvaOn,        setTvaOn]        = React.useState((prefill?.tauxTVA ?? defaultTva) > 0);
   const [notes,        setNotes]        = React.useState(prefill?.notes ?? "");
   const [saving,       setSaving]       = React.useState(false);
-  const tauxTVA = tvaOn ? String(DEFAULT_TVA_RATE) : "0";
+  const tauxTVA = tvaOn ? String(defaultTva) : "0";
   const [lignes,       setLignes]       = React.useState<LigneForm[]>(
     prefill?.lignes?.map((l) => ({
       description: l.description,
@@ -311,7 +322,7 @@ export function FactureFormModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
                 <Label htmlFor="tva-switch" className="text-xs font-medium text-muted-foreground">
-                  Appliquer la TVA ({DEFAULT_TVA_RATE} %)
+                  Appliquer la TVA ({defaultTva} %)
                 </Label>
                 <Switch id="tva-switch" checked={tvaOn} onCheckedChange={setTvaOn} />
               </div>
