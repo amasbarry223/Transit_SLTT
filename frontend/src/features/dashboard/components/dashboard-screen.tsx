@@ -14,23 +14,16 @@ import {
   KPIGrid,
   TransitActivityChart,
   DossierStatusChart,
-  QuickActions,
   CashFlowChart,
   RevenueChart,
   ReceivablesChart,
   TransitPipeline,
   OperationalAlerts,
-  WarehouseOverview,
   RecentOperations,
-  TransitPerformance,
-  CorridorTrackingMap,
 } from "@/components/dashboard";
 
 import { useDashboardData } from "@/shared/hooks/useDashboardData";
 import {
-  MOCK_WAREHOUSE_STATS,
-  MOCK_TRANSIT_PERFORMANCE,
-  type DashboardKPI,
   type OperationalAlert,
   type RecentOperation,
 } from "@/mock/dashboard";
@@ -64,31 +57,6 @@ export function DashboardScreen() {
     else if (targetView === "factures") go("factures");
     else if (targetView === "comptabilite") go("comptabilite");
     else if (targetView === "entreposage") go("entreposage");
-  };
-
-  const handleQuickAction = (key: string) => {
-    switch (key) {
-      case "nouveau-dossier":
-        openDossier(null, "create");
-        break;
-      case "nouveau-debours":
-        go("comptabilite", { comptaTab: "journal" });
-        break;
-      case "nouvelle-facture":
-        go("factures");
-        break;
-      case "nouveau-devis":
-        go("devis");
-        break;
-      case "gestion-stock":
-        go("entreposage");
-        break;
-      case "comptabilite":
-        go("comptabilite");
-        break;
-      default:
-        break;
-    }
   };
 
   const handleOperationClick = (op: RecentOperation) => {
@@ -126,7 +94,7 @@ export function DashboardScreen() {
       {/* 2. 6 KPI PRINCIPAUX DYNAMIQUES DEPUIS LA DB */}
       <KPIGrid kpis={liveData.kpis} onKpiClick={handleKpiClick} />
 
-      {/* 3. GRAPHIQUE PRINCIPAL & RÉPARTITION STATUT DYNAMIQUES */}
+      {/* 3. ACTIVITÉ TRANSIT MENSUELLE (8 COLS) & RÉPARTITION STATUT DOUANE (4 COLS) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-8">
           <TransitActivityChart stats={liveData.transitStats} isDark={isDark} />
@@ -139,23 +107,16 @@ export function DashboardScreen() {
         </div>
       </div>
 
-      {/* 4. PIPELINE HORIZONTAL DES DOSSIERS DE TRANSIT */}
+      {/* 4. PIPELINE HORIZONTAL DU CORRIDOR DE TRANSIT (12 COLS) */}
       <TransitPipeline
         steps={liveData.pipeline}
         onSelectStep={() => go("dossiers")}
       />
 
-      {/* 5. TRÉSORERIE & ACTIONS RAPIDES */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch">
-        <div className="lg:col-span-8">
-          <CashFlowChart stats={liveData.cashFlowStats} isDark={isDark} />
-        </div>
-        <div className="lg:col-span-4">
-          <QuickActions onAction={handleQuickAction} />
-        </div>
-      </div>
+      {/* 5. TRÉSORERIE & FLUX DE DÉBOURS (12 COLS - GRAPHIQUE + INDICATEURS AVANCES DOUANE) */}
+      <CashFlowChart stats={liveData.cashFlowStats} isDark={isDark} />
 
-      {/* 6. FACTURATION & CRÉANCES CLIENTS */}
+      {/* 6. FACTURATION (6 COLS) & CRÉANCES CLIENTS / RECOUVREMENT (6 COLS) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-6">
           <RevenueChart stats={liveData.invoiceStats} isDark={isDark} />
@@ -170,45 +131,20 @@ export function DashboardScreen() {
         </div>
       </div>
 
-      {/* 7. OPÉRATIONS RÉCENTES, STOCKS ET ALERTES */}
+      {/* 7. OPÉRATIONS RÉCENTES (8 COLS) & ALERTES OPÉRATIONNELLES ET DOUANE (4 COLS) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch">
-        {/* Dernières opérations (5 cols) */}
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-8">
           <RecentOperations
             operations={liveData.recentOperations}
             onSelectOperation={handleOperationClick}
             onViewAll={() => go("dossiers")}
           />
         </div>
-
-        {/* Occupation des entrepôts (4 cols) */}
-        <div className="lg:col-span-4">
-          <WarehouseOverview
-            stats={liveData.warehouseStats}
-            onGoToWarehouse={() => go("entreposage")}
-          />
-        </div>
-
-        {/* Alertes à traiter (3 cols) */}
-        <div id="alertes-a-traiter" className="lg:col-span-3">
+        <div id="alertes-a-traiter" className="lg:col-span-4">
           <OperationalAlerts
             alerts={liveData.operationalAlerts}
             onAlertClick={handleAlertClick}
           />
-        </div>
-      </div>
-
-      {/* 8. PERFORMANCE DOUANIÈRE & SUIVI GÉOGRAPHIQUE DU CORRIDOR */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch">
-        <div className="lg:col-span-6">
-          <TransitPerformance
-            performance={liveData.transitPerformance}
-            onViewDossiersBloques={() => go("dossiers")}
-            onViewConteneurs={() => go("dossiers")}
-          />
-        </div>
-        <div className="lg:col-span-6">
-          <CorridorTrackingMap />
         </div>
       </div>
 

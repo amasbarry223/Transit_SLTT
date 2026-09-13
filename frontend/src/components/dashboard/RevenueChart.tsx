@@ -51,7 +51,7 @@ export function RevenueChart({ stats, isDark = false }: RevenueChartProps) {
       </div>
 
       {/* Cartes de synthèse financière */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-2 2xl:grid-cols-4 gap-2.5 mb-4">
         {/* 1. CA Prestations HT */}
         <div className="rounded-xl p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40">
           <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 block">
