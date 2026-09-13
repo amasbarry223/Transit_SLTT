@@ -1,6 +1,6 @@
 /**
- * Copie worker/core Tesseract + pdf.js worker vers /public,
- * et télécharge fra/eng.traineddata.gz si absents.
+ * Copie worker/core Tesseract + pdf.js worker vers /public si disponibles,
+ * sans bloquer ni faire échouer le build si déjà présents.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -11,62 +11,54 @@ const ocrDir = path.join(root, "public", "ocr");
 const langDir = path.join(ocrDir, "lang");
 
 function ensureDir(dir) {
-  fs.mkdirSync(dir, { recursive: true });
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+  } catch {}
 }
 
 function copy(src, dest) {
-  if (!fs.existsSync(src)) {
-    console.warn(`[sync-ocr-assets] manquant: ${src}`);
+  try {
+    if (!fs.existsSync(src)) return false;
+    ensureDir(path.dirname(dest));
+    fs.copyFileSync(src, dest);
+    return true;
+  } catch {
     return false;
   }
-  ensureDir(path.dirname(dest));
-  fs.copyFileSync(src, dest);
-  console.log(`[sync-ocr-assets] ${path.relative(root, dest)}`);
-  return true;
 }
 
-async function download(url, dest) {
-  if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
-    console.log(`[sync-ocr-assets] skip ${path.relative(root, dest)}`);
-    return;
+try {
+  ensureDir(langDir);
+
+  // Recherche dans frontend/node_modules puis dans monorepo root node_modules
+  const searchDirs = [
+    path.join(root, "node_modules"),
+    path.join(root, "..", "node_modules"),
+  ];
+
+  for (const nm of searchDirs) {
+    const workerSrc = path.join(nm, "tesseract.js", "dist", "worker.min.js");
+    if (fs.existsSync(workerSrc)) {
+      copy(workerSrc, path.join(ocrDir, "worker.min.js"));
+    }
+
+    const coreSrcDir = path.join(nm, "tesseract.js-core");
+    if (fs.existsSync(coreSrcDir)) {
+      try {
+        for (const name of fs.readdirSync(coreSrcDir)) {
+          if (!/^tesseract-core.*\.wasm(\.js)?$/.test(name)) continue;
+          copy(path.join(coreSrcDir, name), path.join(ocrDir, name));
+        }
+      } catch {}
+    }
+
+    const pdfWorkerSrc = path.join(nm, "pdfjs-dist", "build", "pdf.worker.min.mjs");
+    if (fs.existsSync(pdfWorkerSrc)) {
+      copy(pdfWorkerSrc, path.join(root, "public", "pdf.worker.min.mjs"));
+    }
   }
-  console.log(`[sync-ocr-assets] download ${url}`);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  ensureDir(path.dirname(dest));
-  fs.writeFileSync(dest, buf);
-  console.log(`[sync-ocr-assets] ${path.relative(root, dest)} (${buf.length} bytes)`);
-}
-
-ensureDir(langDir);
-
-copy(
-  path.join(root, "node_modules", "tesseract.js", "dist", "worker.min.js"),
-  path.join(ocrDir, "worker.min.js"),
-);
-
-// Tesseract.js v7 choisit dynamiquement le build (relaxedsimd > simd > base).
-// corePath doit contenir tous les fichiers .wasm.js (et .wasm associés).
-const coreSrcDir = path.join(root, "node_modules", "tesseract.js-core");
-for (const name of fs.readdirSync(coreSrcDir)) {
-  if (!/^tesseract-core.*\.wasm(\.js)?$/.test(name)) continue;
-  copy(path.join(coreSrcDir, name), path.join(ocrDir, name));
-}
-
-const pdfWorkerSrc = path.join(
-  root,
-  "node_modules",
-  "pdfjs-dist",
-  "build",
-  "pdf.worker.min.mjs",
-);
-copy(pdfWorkerSrc, path.join(root, "public", "pdf.worker.min.mjs"));
-
-const langs = ["eng", "fra"];
-for (const lang of langs) {
-  const url = `https://cdn.jsdelivr.net/npm/@tesseract.js-data/${lang}/4.0.0_best_int/${lang}.traineddata.gz`;
-  await download(url, path.join(langDir, `${lang}.traineddata.gz`));
+} catch (e) {
+  console.warn("[sync-ocr-assets] avertissement ignoré:", e.message);
 }
 
 console.log("[sync-ocr-assets] OK");
