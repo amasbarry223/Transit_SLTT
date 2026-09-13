@@ -91,9 +91,9 @@ export function ReceivablesChart({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Graphique de balance âgée horizontal (col 6) */}
-        <div className="lg:col-span-6 h-56 w-full">
+        <div className="xl:col-span-6 h-56 w-full">
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
             Balance âgée par tranche
           </span>
@@ -142,7 +142,7 @@ export function ReceivablesChart({
         </div>
 
         {/* Tableau : Top clients à risque (col 6) */}
-        <div className="lg:col-span-6 space-y-2">
+        <div className="xl:col-span-6 space-y-2">
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
             Top clients à risque & échéances dépassées
           </span>
