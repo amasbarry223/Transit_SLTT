@@ -124,23 +124,6 @@ export function Sidebar() {
         />
       </nav>
 
-      {/* Indicateur de système en ligne & version */}
-      {!sidebarCollapsed ? (
-        <div className="border-t border-white/10 px-4 py-2.5 flex items-center justify-between text-[11px] text-blue-200/80">
-          <div className="flex items-center gap-2">
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-            </span>
-            <span className="font-medium text-white/90">Système en ligne</span>
-          </div>
-          <span className="text-[10px] text-blue-300/60 font-mono font-medium">v1.0.0 | SLTT</span>
-        </div>
-      ) : (
-        <div className="border-t border-white/10 py-2 flex justify-center">
-          <span className="size-2 rounded-full bg-emerald-400 animate-pulse" title="Système en ligne — v1.0.0" />
-        </div>
-      )}
 
       {/* Bouton de réduction / agrandissement du menu */}
       <div className="border-t border-white/10 p-2">
