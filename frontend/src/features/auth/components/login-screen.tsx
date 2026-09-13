@@ -104,11 +104,12 @@ export function LoginScreen() {
       }
 
       router.replace(destination);
-    } catch (e: any) {
-      if (e?.status === 401) {
+    } catch (e: unknown) {
+      const err = e as { status?: number; data?: { message?: string }; message?: string };
+      if (err?.status === 401) {
         setError(
-          e?.data?.message ||
-          e?.message ||
+          err?.data?.message ||
+          err?.message ||
           "Identifiants incorrects. Vérifiez votre email et mot de passe.",
         );
       } else {

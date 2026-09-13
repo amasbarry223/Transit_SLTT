@@ -1,6 +1,6 @@
 "use client";
 
-import { Home } from "lucide-react";
+import { Home, ChevronRight } from "lucide-react";
 import type { NavItem } from "@/lib/nav-items";
 import type { ComptaTab, ViewKey } from "@/lib/nav-store";
 import { cn, isNavActive } from "@/shared/utils/cn";
@@ -75,14 +75,19 @@ export function NavList({
                 )}
               />
               {!collapsed && (
-                <span
-                  className={cn(
-                    "truncate transition-transform duration-150 ease-out motion-reduce:transform-none",
-                    !active && "group-hover:translate-x-0.5",
+                <>
+                  <span
+                    className={cn(
+                      "truncate transition-transform duration-150 ease-out motion-reduce:transform-none",
+                      !active && "group-hover:translate-x-0.5",
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                  {!active && (
+                    <ChevronRight className="ml-auto size-3.5 text-blue-300/40 group-hover:text-white/80 group-hover:translate-x-0.5 transition-all" />
                   )}
-                >
-                  {item.label}
-                </span>
+                </>
               )}
             </button>
           );

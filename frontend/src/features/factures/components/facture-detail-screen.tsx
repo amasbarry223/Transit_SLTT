@@ -71,11 +71,13 @@ export function FactureDetailScreen() {
   const [confirmSolde, setConfirmSolde] = React.useState(false);
   const [confirmAnnuler, setConfirmAnnuler] = React.useState(false);
 
-  React.useEffect(() => {
-    if (factureEditMode && facture?.statut === "Brouillon" && canWrite) {
+  const [prevEditMode, setPrevEditMode] = React.useState(factureEditMode);
+  if (factureEditMode !== prevEditMode) {
+    setPrevEditMode(factureEditMode);
+    if (factureEditMode && facture?.statut === "Brouillon" && canWrite && !isEditing) {
       setIsEditing(true);
     }
-  }, [factureEditMode, facture?.statut, canWrite]);
+  }
 
   const editState = useFactureEditState(facture, isEditing);
 

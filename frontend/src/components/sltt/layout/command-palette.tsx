@@ -154,10 +154,13 @@ export function CommandPalette() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="hidden sm:flex items-center gap-2.5 h-10 w-64 md:w-80 lg:w-96 rounded-xl border border-slate-200/80 bg-[#F1F5F9] dark:bg-muted/50 px-3.5 text-xs sm:text-sm text-slate-500 hover:bg-slate-200/60 dark:hover:bg-muted transition-colors shadow-none"
+        className="hidden sm:flex items-center gap-2.5 h-10 w-72 md:w-88 lg:w-[420px] rounded-xl border border-slate-200/80 bg-[#F1F5F9] dark:bg-muted/50 px-3.5 text-xs sm:text-sm text-slate-500 hover:bg-slate-200/60 dark:hover:bg-muted transition-colors shadow-none cursor-pointer"
       >
         <Search className="size-4 text-slate-400 shrink-0" />
-        <span className="truncate">Rechercher un dossier, un client, une facture...</span>
+        <span className="truncate">Rechercher un dossier, client, facture, B/L...</span>
+        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-slate-300/80 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 shadow-2xs">
+          Ctrl + K
+        </kbd>
       </button>
       <button
         onClick={() => setOpen(true)}
