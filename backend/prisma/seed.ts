@@ -244,7 +244,7 @@ async function main() {
 
   // 7. Paramètres dynamiques (dashboard settings)
   const defaultSettings = [
-    { cle: 'nom_societe', valeur: 'Tonomi - Transit SLTT', description: 'Raison sociale' },
+    { cle: 'nom_societe', valeur: 'Transit SLTT', description: 'Raison sociale' },
     { cle: 'devise_principale', valeur: 'FCFA', description: 'Devise par défaut' },
     { cle: 'taux_tva_defaut', valeur: '18', description: 'Taux TVA standard (%)' },
     { cle: 'delai_echeance_jours', valeur: '30', description: 'Délai de paiement factures' },

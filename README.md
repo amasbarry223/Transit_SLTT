@@ -1,120 +1,234 @@
-# Transit SLTT / Tonomi
+# Transit SLTT
 
-Application de gestion logistique, transit et transport avec persistance intégrale MySQL (XAMPP/MySQL) et architecture fullstack moderne :
+Application de gestion logistique, transit et transport avec persistance intégrale MySQL et architecture fullstack moderne :
 - **Frontend** : Next.js 15 (React 19), Tailwind CSS, Zustand
-- **Backend** : NestJS, Prisma ORM, MySQL, JWT Auth
+- **Backend** : NestJS 11, Prisma ORM, MySQL, JWT Auth
+- **Déploiement** : Prêt pour Hostinger (PM2, Nginx, Node.js 20+)
+
+---
+
+## 🛠️ Architecture du Monorepo
+
+```text
+Transit_SLTT/
+├── backend/               # API NestJS 11 (Prisma ORM, MySQL, Authentification JWT)
+│   ├── prisma/            # Schéma Prisma et scripts de seed
+│   ├── src/               # Modules métier (dossiers, factures, transporteurs, stock, devis, etc.)
+│   └── uploads/           # Fichiers et pièces jointes stockés
+├── frontend/              # Application Web Next.js 15 (React 19)
+│   ├── src/               # Routes Next.js, features métiers, store Zustand
+│   └── public/            # Assets statiques, logos, icônes PWA
+├── ecosystem.config.js    # Configuration PM2 multi-processus pour Hostinger
+├── package.json           # Orchestrateur monorepo (npm workspaces)
+└── README.md
+```
 
 ---
 
 ## 📋 Prérequis
 
-Avant de commencer, assurez-vous d'avoir installé sur votre machine :
-1. **Node.js** (version 18 ou supérieure, idéalement v20+) : [https://nodejs.org](https://nodejs.org)
+1. **Node.js** (version 20+ recommandée) : [https://nodejs.org](https://nodejs.org)
 2. **Git** : [https://git-scm.com](https://git-scm.com)
-3. **Un serveur MySQL** :
-   - Sur Windows : **XAMPP** (démarrer le module MySQL sur le port 3306), **Laragon** ou **WampServer**.
-   - Sur macOS / Linux : MySQL Server ou MariaDB.
+3. **Un serveur MySQL** (Local : XAMPP / Laragon ; En ligne : MySQL Hostinger ou Docker)
 
 ---
 
-## 🚀 Guide d'Installation Rapide (Pas à Pas)
+## 🚀 Développement Local (Pas à Pas)
 
-### 1. Cloner le dépôt
-
-Ouvrez votre terminal et exécutez :
+### 1. Cloner le dépôt et installer les dépendances
 ```bash
+git clone https://github.com/amasbarry223/Transit_SLTT.git
+cd Transit_SLTT
+
+# Installer les dépendances du backend
+cd backend
+npm install
+cp .env.example .env
+# Adapter DATABASE_URL si besoin (par défaut XAMPP : mysql://root:@localhost:3306/transit_sltt)
+npx prisma db push
+npm run db:seed
+
+# Installer les dépendances du frontend
+cd ../frontend
+npm install
+cp .env.example .env.local
+```
+
+### 2. Démarrer les serveurs
+Depuis la racine du projet (`Transit_SLTT`) :
+
+```bash
+# Lancer le backend NestJS (port 3001)
+npm run dev:backend
+
+# Lancer le frontend Next.js (port 3000) dans un autre terminal
+npm run dev:frontend
+```
+
+---
+
+## ☁️ Guide de Déploiement sur Hostinger (VPS / Cloud)
+
+Ce projet est optimisé pour être déployé sur un **VPS Hostinger** (Ubuntu 22.04 / 24.04) avec **PM2** et **Nginx**.
+
+### Étape 1 : Préparation du serveur VPS Hostinger
+Connectez-vous à votre VPS en SSH :
+```bash
+ssh root@IP_DE_VOTRE_VPS
+```
+
+Installez Node.js 20, Git, PM2 et Nginx :
+```bash
+# Mettre à jour les paquets
+apt update && apt upgrade -y
+
+# Installer Node.js 20.x
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs nginx git mysql-server
+
+# Installer PM2 globalement
+npm install -g pm2
+```
+
+---
+
+### Étape 2 : Cloner le projet sur le serveur
+```bash
+cd /var/www
 git clone https://github.com/amasbarry223/Transit_SLTT.git
 cd Transit_SLTT
 ```
 
 ---
 
-### 2. Créer la base de données MySQL
-
-1. Lancez **XAMPP** et cliquez sur **Start** en face de **MySQL** (et Apache si vous utilisez phpMyAdmin).
-2. Ouvrez **phpMyAdmin** (`http://localhost/phpmyadmin`) ou un client SQL (DBeaver, MySQL Workbench, ligne de commande).
-3. Créez une nouvelle base de données nommée :
-   ```sql
-   CREATE DATABASE transit_sltt CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-
----
-
-### 3. Configurer et lancer le Backend (NestJS)
-
-Ouvrez un premier terminal à la racine du projet :
-
+### Étape 3 : Configurer et Compiler le Backend
 ```bash
-# Se placer dans le dossier de l'API
-cd api
+cd /var/www/Transit_SLTT/backend
 
 # Installer les dépendances
 npm install
 
-# Créer le fichier d'environnement .env (ou copier depuis .env.example)
-# Vérifiez que DATABASE_URL correspond à vos identifiants MySQL (par défaut sous XAMPP : user 'root' sans mot de passe)
+# Configurer les variables d'environnement de production
 cp .env.example .env
-
-# Générer le client Prisma et déployer le schéma dans MySQL
-npx prisma db push
-
-# (Optionnel) Peupler la base avec les données de démarrage (Admin, annexes, clients de test)
-npm run db:seed
-
-# Lancer le serveur NestJS en mode développement
-npm run start:dev
+nano .env
 ```
-> Le serveur backend démarrera sur : `http://localhost:3001/api`
+*Renseignez vos identifiants réels :*
+```env
+DATABASE_URL="mysql://utilisateur_mysql:mot_de_passe@localhost:3306/transit_sltt"
+PORT=3001
+JWT_SECRET="CLE_SECRETE_ALEATOIRE_LONGUE_POUR_LA_PROD"
+JWT_REFRESH_SECRET="CLE_SECRETE_REFRESH_ALEATOIRE_LONGUE_POUR_LA_PROD"
+CORS_ORIGIN="https://votredomaine.com"
+UPLOAD_DIR="./uploads"
+```
+
+Appliquer la base de données et compiler :
+```bash
+npx prisma db push
+npm run db:seed
+npm run build
+```
 
 ---
 
-### 4. Configurer et lancer le Frontend (Next.js)
-
-Ouvrez un **deuxième terminal** à la racine du projet :
-
+### Étape 4 : Configurer et Compiler le Frontend
 ```bash
-# Installer les dépendances du frontend
+cd /var/www/Transit_SLTT/frontend
+
+# Installer les dépendances
 npm install
 
-# Créer le fichier d'environnement local
-cp .env.example .env.local
-
-# Lancer le serveur frontend
-npm run dev
+# Configurer l'URL de l'API
+nano .env.local
 ```
-> L'application web démarrera sur : `http://localhost:3000`
+*Ajoutez :*
+```env
+NEXT_PUBLIC_API_URL="https://votredomaine.com/api"
+```
+
+Compiler pour la production :
+```bash
+npm run build
+```
 
 ---
 
-## 🔑 Identifiants de Connexion par Défaut (après le Seed)
+### Étape 5 : Lancer l'application avec PM2
+Revenez à la racine du projet :
+```bash
+cd /var/www/Transit_SLTT
 
-Les deux implantations physiques (annexes) gérées sont :
-* **Mali** : Siège Central (Bamako)
-* **Côte d'Ivoire** : Agence Portuaire / Transit (Abidjan)
+# Démarrer les deux applications via le fichier ecosystem
+pm2 start ecosystem.config.js
 
-Si vous avez exécuté `npm run db:seed` dans le dossier `api/` :
+# Enregistrer pour redémarrer automatiquement en cas de reboot du VPS
+pm2 save
+pm2 startup
+```
 
-| Rôle | Email | Mot de passe | Annexe rattachée |
+Vérifiez que les deux applications tournent :
+```bash
+pm2 status
+```
+
+---
+
+### Étape 6 : Configurer Nginx comme Reverse Proxy
+Éditez la configuration Nginx de votre site :
+```bash
+nano /etc/nginx/sites-available/transit-sltt
+```
+
+Collez la configuration suivante :
+```nginx
+server {
+    server_name votredomaine.com www.votredomaine.com;
+
+    # Frontend Next.js (port 3000)
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Backend NestJS API (port 3001)
+    location /api {
+        proxy_pass http://127.0.0.1:3001/api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 50M;
+    }
+}
+```
+
+Activez le site et rechargez Nginx :
+```bash
+ln -s /etc/nginx/sites-available/transit-sltt /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
+```
+
+Activez le certificat HTTPS gratuit avec Certbot :
+```bash
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d votredomaine.com -d www.votredomaine.com
+```
+
+---
+
+## 🔑 Identifiants par Défaut (après le Seed)
+
+| Rôle | Email | Mot de passe | Annexe |
 | :--- | :--- | :--- | :--- |
 | **Administrateur** | `amadou.traore@sltt.ml` | `sltt2026` | Mali & Côte d'Ivoire (Global) |
 | **Agent Transit Mali** | `ibrahim.keita@sltt.ml` | `transit2026` | Mali (Bamako) |
 | **Agent Transit CI** | `moussa.camara@sltt.ci` | `transit2026` | Côte d'Ivoire (Abidjan) |
 | **Comptable** | `fatoumata.diallo@sltt.ml` | `compta2026` | Mali (Bamako) |
-
----
-
-## 🛠️ Structure du Projet
-
-```text
-Transit_SLTT/
-├── api/                   # Backend NestJS (Prisma ORM, MySQL, Authentification JWT)
-│   ├── prisma/            # Schéma Prisma et scripts de seed
-│   ├── src/               # Modules métier (dossiers, factures, transporteurs, stock, devis, etc.)
-│   └── uploads/           # Fichiers et pièces jointes stockés
-├── src/                   # Frontend Next.js
-│   ├── app/               # Routes et pages Next.js
-│   ├── features/          # Composants métier par onglet (factures, dossiers, stock, etc.)
-│   └── lib/               # Client API, store Zustand, utilitaires d'impression
-├── .env.example           # Variables d'environnement frontend
-└── README.md
-```
