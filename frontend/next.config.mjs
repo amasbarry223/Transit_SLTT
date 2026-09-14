@@ -89,6 +89,14 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://goldenrod-newt-273291.hostingersite.com/api/:path*",
+      },
+    ];
+  },
 };
 
 export default withBundleAnalyzer(withSerwist(nextConfig));

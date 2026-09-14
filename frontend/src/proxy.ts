@@ -10,8 +10,12 @@ import { NextResponse, type NextRequest } from "next/server";
 // localhost:3001 bloquerait silencieusement (au niveau du navigateur, pas
 // visible côté serveur) tous les appels vers la vraie API en production.
 function resolveApiOrigin(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!envUrl || envUrl.startsWith("/")) {
+    return "";
+  }
   try {
-    return new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api").origin;
+    return new URL(envUrl).origin;
   } catch {
     return "http://localhost:3001";
   }
@@ -20,6 +24,7 @@ function resolveApiOrigin(): string {
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const apiOrigin = resolveApiOrigin();
+  const apiTarget = apiOrigin ? ` ${apiOrigin}` : "";
 
   // En dev, le HMR webpack de `next dev` évalue du code via eval() pour les
   // source maps, et les scripts injectés par la toolchain dev ne portent pas le nonce.
@@ -32,12 +37,12 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: ${apiOrigin}`,
+    `img-src 'self' data: blob:${apiTarget}`,
     "font-src 'self' data:",
-    `connect-src 'self' ${apiOrigin} blob:`,
+    `connect-src 'self'${apiTarget} blob:`,
     "manifest-src 'self'",
     "worker-src 'self' blob:",
-    `frame-src 'self' blob: ${apiOrigin}`,
+    `frame-src 'self' blob:${apiTarget}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
