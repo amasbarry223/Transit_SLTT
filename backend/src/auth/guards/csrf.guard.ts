@@ -13,10 +13,14 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * avec les cookies de la victime ne peut pas lire ce cookie (autre origine)
  * pour le recopier dans l'en-tête.
  *
- * Distinct de @Public() : /auth/refresh et /auth/logout sont publics vis-à-vis
- * du JWT mais reposent sur le cookie de refresh ambiant, donc restent
- * protégés ici. Seul /auth/login (@SkipCsrf()) n'autorise rien sur la base
- * d'un cookie existant.
+ * Distinct de @Public() : /auth/login, /auth/refresh et /auth/logout sont
+ * publics vis-à-vis du JWT mais restent, par défaut, protégés ici. Ces trois
+ * routes sont en pratique @SkipCsrf() : /auth/login et /auth/logout parce
+ * qu'aucun cookie CSRF n'existe encore (ou ne doit être exigé) à ce stade, et
+ * /auth/refresh parce qu'elle est justement le mécanisme qui réémet le cookie
+ * CSRF pour une session qui en est dépourvue (voir setCsrfCookie() dans
+ * AuthController) — l'exiger ici créerait une dépendance circulaire où la
+ * session concernée ne peut jamais se rétablir.
  */
 @Injectable()
 export class CsrfGuard implements CanActivate {

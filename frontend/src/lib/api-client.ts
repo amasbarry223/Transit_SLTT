@@ -28,6 +28,7 @@ import type {
   RawTransporteur,
   RawUser,
 } from "@/lib/api-types";
+import { CSRF_COOKIE_NAME } from "@/lib/auth/csrf-cookie";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -36,9 +37,6 @@ const API_BASE_URL =
 // affichés avant confirmation serveur). Les tokens, eux, vivent en cookies
 // httpOnly posés par NestJS : jamais lisibles ni stockés ici.
 const USER_KEY = 'transit_sltt_user';
-// Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts —
-// non-httpOnly par conception, lu ici pour l'écho double-submit.
-const CSRF_COOKIE_NAME = 'transit_sltt_csrf';
 // Doit correspondre au message levé par CsrfGuard (api/src/auth/guards/csrf.guard.ts)
 // — distingue un 403 "cookie CSRF absent/désynchronisé" (récupérable par un
 // refresh, qui en réémet un neuf) d'un 403 "permission refusée" (non récupérable).
@@ -184,7 +182,12 @@ class ApiClient {
       const refreshed = await this.refreshTokens();
       if (refreshed) {
         return this.request<T>(endpoint, options, false);
-      } else if (res.status === 401) {
+      } else {
+        // Le refresh a échoué (401/403/réseau) quelle que soit la raison du
+        // déclenchement initial (401 ou 403 CSRF) : la session n'est de toute
+        // façon plus récupérable automatiquement — inutile de distinguer sur
+        // le statut d'origine, qui vaut 403 sur le chemin CSRF et masquerait
+        // sinon cette notification.
         this.clearSession();
         if (!this.sessionExpiredNotified) {
           this.sessionExpiredNotified = true;

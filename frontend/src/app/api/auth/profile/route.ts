@@ -3,10 +3,9 @@ import { AuthError, authErrorResponse, extractCookieValue, requireUser } from "@
 import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { updateOwnProfileBodySchema, zodErrorMessage } from "@/lib/api/schemas";
 import { resolveServerApiUrl } from "@/lib/api/server-api-url";
+import { CSRF_COOKIE_NAME } from "@/lib/auth/csrf-cookie";
 
 const API_URL = resolveServerApiUrl();
-// Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts.
-const CSRF_COOKIE_NAME = "transit_sltt_csrf";
 
 export async function PATCH(request: NextRequest) {
   try {

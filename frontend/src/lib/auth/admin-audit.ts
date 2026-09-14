@@ -2,9 +2,7 @@ import { logError } from "@/shared/logger";
 import type { AuditAction } from "@/lib/audit";
 import { resolveServerApiUrl } from "@/lib/api/server-api-url";
 import { extractCookieValue } from "@/lib/auth/require-admin";
-
-// Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts.
-const CSRF_COOKIE_NAME = "transit_sltt_csrf";
+import { CSRF_COOKIE_NAME } from "@/lib/auth/csrf-cookie";
 
 type ActorProfile = {
   id: string;
