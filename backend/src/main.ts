@@ -15,11 +15,33 @@ async function bootstrap() {
   const apiPrefix = process.env.API_PREFIX ?? 'api';
   app.setGlobalPrefix(apiPrefix);
 
-  // CORS — credentials:true + origine exacte (jamais '*'/true, incompatible
-  // avec credentials selon la spec Fetch) : indispensable pour que le
-  // navigateur envoie/accepte les cookies httpOnly cross-origin.
+  // CORS — credentials:true + support multi-origines (apex + sous-domaine www)
+  const rawCors = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
+  const allowedOrigins = rawCors
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Autoriser les requêtes sans origine (curl, tests internes, Postman)
+      if (!origin) {
+        return callback(null, true);
+      }
+      // Vérifier correspondance exacte ou avec/sans www
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (allowed === origin) return true;
+        const cleanAllowed = allowed.replace(/^https?:\/\/(www\.)?/, '');
+        const cleanOrigin = origin.replace(/^https?:\/\/(www\.)?/, '');
+        return cleanAllowed === cleanOrigin;
+      });
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origine ${origin} non autorisée par CORS`));
+      }
+    },
     credentials: true,
   });
 
