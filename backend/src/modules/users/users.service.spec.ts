@@ -179,3 +179,57 @@ describe('UsersService — garde-fous de délégation', () => {
     expect(auditLogs.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'Modification' }), tx);
   });
 });
+
+describe('UsersService — scoping par annexe de findAll/findOne pour un délégué non-ADMIN', () => {
+  it('findAll() filtre sur les annexes du délégué (pas de fuite cross-annexe)', async () => {
+    const { prisma } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findMany.mockResolvedValue([]);
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await service.findAll(delegate({ annexeIds: ['annexe-ml'] }));
+
+    expect(prisma.profile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userAnnexes: { some: { annexeId: { in: ['annexe-ml'] } } } },
+      }),
+    );
+  });
+
+  it('findAll() ne filtre pas pour un ADMIN (accès total)', async () => {
+    const { prisma } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findMany.mockResolvedValue([]);
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await service.findAll(admin());
+
+    expect(prisma.profile.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: undefined }));
+  });
+
+  it("findOne() refuse un délégué sur un utilisateur d'une autre annexe", async () => {
+    const { prisma } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(
+      targetProfile({ userAnnexes: [{ annexeId: 'annexe-autre' }] }),
+    );
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await expect(
+      service.findOne('target-1', delegate({ annexeIds: ['annexe-ml'] })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it("findOne() autorise un délégué sur un utilisateur de sa propre annexe", async () => {
+    const { prisma } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(
+      targetProfile({ userAnnexes: [{ annexeId: 'annexe-ml' }] }),
+    );
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await expect(
+      service.findOne('target-1', delegate({ annexeIds: ['annexe-ml'] })),
+    ).resolves.toMatchObject({ id: 'target-1' });
+  });
+});

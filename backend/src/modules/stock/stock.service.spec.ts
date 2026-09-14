@@ -21,6 +21,42 @@ function createFakePrisma(stockItem: { id: string; quantite: number }) {
   return { prisma, tx, stockItem };
 }
 
+describe('StockService.createItem / updateItem', () => {
+  function createFakeItemPrisma(existing?: Record<string, unknown>) {
+    const prisma = {
+      stockItem: {
+        create: vi.fn((args: any) => ({ id: 'new-item', ...args.data })),
+        update: vi.fn((args: any) => ({ id: existing?.id, ...args.data })),
+        findUnique: vi.fn().mockResolvedValue(existing),
+      },
+    };
+    return { prisma };
+  }
+
+  it('rejette une quantité négative à la création mais accepte zéro', async () => {
+    const { prisma } = createFakeItemPrisma();
+    const service = new StockService(prisma as any);
+
+    await expect(
+      service.createItem(admin(), { annexeId: 'annexe-1', marchandise: 'Riz', quantite: -5 }),
+    ).rejects.toThrow(BadRequestException);
+
+    await expect(
+      service.createItem(admin(), { annexeId: 'annexe-1', marchandise: 'Riz', quantite: 0 }),
+    ).resolves.toMatchObject({ quantite: 0 });
+  });
+
+  it("updateItem() n'accepte plus de forcer la quantité à une valeur négative", async () => {
+    const existing = { id: 'stock-1', annexeId: 'annexe-1', quantite: 10 };
+    const { prisma } = createFakeItemPrisma(existing);
+    const service = new StockService(prisma as any);
+
+    await expect(
+      service.updateItem('stock-1', admin(), { quantite: -1 }),
+    ).rejects.toThrow(BadRequestException);
+  });
+});
+
 describe('StockService.createMouvement', () => {
   it("rejette une sortie qui ferait passer le stock sous zéro — le mouvement n'est PAS créé (transaction annulée)", async () => {
     const { prisma, tx } = createFakePrisma({ id: 'stock-1', quantite: -70 });

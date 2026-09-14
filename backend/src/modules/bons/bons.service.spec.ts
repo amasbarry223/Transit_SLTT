@@ -110,6 +110,45 @@ function createFakeBonSortiePrisma(bon: ReturnType<typeof baseBonSortie>, stockA
   return { prisma, tx };
 }
 
+function createFakeCreateBonPrisma() {
+  const created: Record<string, unknown>[] = [];
+  const prisma = {
+    bonSortie: {
+      create: vi.fn((args: any) => {
+        created.push(args.data);
+        return { id: 'new-bon', ...args.data };
+      }),
+    },
+  };
+  return { prisma, created };
+}
+
+describe('BonsService.createBon', () => {
+  it('rejette une quantité négative ou nulle (fabrication de stock via decrement négatif à la validation)', async () => {
+    const { prisma } = createFakeCreateBonPrisma();
+    const service = new BonsService(prisma as any);
+
+    await expect(
+      service.createBon(admin(), { ...baseBonSortie(), quantite: -1000, montant: 100 }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.createBon(admin(), { ...baseBonSortie(), quantite: 0, montant: 100 }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejette un montant négatif mais accepte un montant nul (BonSortie.montant est purement informatif, @default(0))', async () => {
+    const { prisma, created } = createFakeCreateBonPrisma();
+    const service = new BonsService(prisma as any);
+
+    await expect(
+      service.createBon(admin(), { ...baseBonSortie(), quantite: 10, montant: -50 }),
+    ).rejects.toThrow(BadRequestException);
+
+    await service.createBon(admin(), { ...baseBonSortie(), quantite: 10, montant: 0 });
+    expect(created[0]).toMatchObject({ quantite: 10, montant: 0 });
+  });
+});
+
 describe('BonsService.validateBon', () => {
   it("rejette la validation d'un bon dont la quantité dépasse le stock disponible — pas de mouvement créé, le bon reste NON validé", async () => {
     const bon = baseBonSortie({ quantite: 100 });

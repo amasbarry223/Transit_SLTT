@@ -37,6 +37,18 @@ export class BonsService {
     return n;
   }
 
+  // `BonSortie.montant` est `@default(0)` en base et purement informatif (les
+  // bons de sortie marchandise n'ont pas systématiquement de valeur associée,
+  // contrairement aux lignes de bon de caisse via toPositiveMontant) — seul un
+  // montant négatif doit être rejeté, pas un montant nul.
+  private toNonNegativeMontant(value: unknown): number {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n) || n < 0) {
+      throw new BadRequestException('Le montant du bon ne peut pas être négatif.');
+    }
+    return n;
+  }
+
   // Bons de sortie stock
   async findAllBons(user: CurrentUserType, params?: { annexeId?: string; clientId?: string }) {
     if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
@@ -87,7 +99,7 @@ export class BonsService {
         quantite: this.toPositiveQuantite(data.quantite),
         unite: data.unite || 'colis',
         motif: data.motif || '',
-        montant: this.toPositiveMontant(data.montant),
+        montant: this.toNonNegativeMontant(data.montant),
         statut: data.statut || 'En attente',
       },
       include: { annexe: true, client: true, stock: true },
