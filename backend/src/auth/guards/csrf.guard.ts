@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { SKIP_CSRF_KEY } from '../../shared/decorators';
+import { SKIP_CSRF_KEY, SKIP_CSRF_IF_NO_COOKIE_KEY } from '../../shared/decorators';
 import { CSRF_COOKIE } from '../cookie.config';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -14,13 +14,15 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * pour le recopier dans l'en-tête.
  *
  * Distinct de @Public() : /auth/login, /auth/refresh et /auth/logout sont
- * publics vis-à-vis du JWT mais restent, par défaut, protégés ici. Ces trois
- * routes sont en pratique @SkipCsrf() : /auth/login et /auth/logout parce
- * qu'aucun cookie CSRF n'existe encore (ou ne doit être exigé) à ce stade, et
- * /auth/refresh parce qu'elle est justement le mécanisme qui réémet le cookie
- * CSRF pour une session qui en est dépourvue (voir setCsrfCookie() dans
- * AuthController) — l'exiger ici créerait une dépendance circulaire où la
- * session concernée ne peut jamais se rétablir.
+ * publics vis-à-vis du JWT mais restent, par défaut, protégés ici.
+ * /auth/login et /auth/logout sont en @SkipCsrf() inconditionnel ; voir
+ * shared/decorators/index.ts pour la justification. /auth/refresh est en
+ * @SkipCsrfIfNoCookie() : seules les sessions SANS cookie CSRF passent sans
+ * vérification (le refresh leur en réémet un — voir setCsrfCookie() dans
+ * AuthController) ; dès qu'un cookie CSRF existe, le double-submit normal
+ * redevient obligatoire — sans quoi une page tierce pourrait déclencher des
+ * refresh à volonté pour un compte déjà connecté (nuisance : épuisement du
+ * throttle 10/min sur ce endpoint).
  */
 @Injectable()
 export class CsrfGuard implements CanActivate {
@@ -38,6 +40,13 @@ export class CsrfGuard implements CanActivate {
     if (skip) return true;
 
     const cookieToken = request.cookies?.[CSRF_COOKIE];
+
+    const skipIfNoCookie = this.reflector.getAllAndOverride<boolean>(SKIP_CSRF_IF_NO_COOKIE_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (skipIfNoCookie && !cookieToken) return true;
+
     const headerToken = request.headers['x-csrf-token'];
 
     if (!cookieToken || !headerToken || cookieToken !== headerToken) {

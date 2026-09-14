@@ -27,12 +27,25 @@ export const IS_PUBLIC_KEY = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 /**
- * Exempte une route du CSRFGuard (double-submit). Distinct de @Public() :
- * /auth/refresh et /auth/logout sont @Public() (aucun access token requis)
- * mais reposent sur le cookie de refresh ambiant, donc restent protégés par
- * CSRF — seul /auth/login n'autorise rien sur la base d'un cookie existant
- * (il en établit un nouveau après vérification du mot de passe) et peut
- * légitimement s'en passer.
+ * Exempte une route du CsrfGuard (double-submit) inconditionnellement.
+ * Réservé à /auth/login (aucun cookie CSRF n'existe encore) et /auth/logout
+ * (déconnexion volontaire : doit fonctionner même avec un cookie CSRF
+ * absent/désynchronisé, pour permettre une réinitialisation de session
+ * propre). Pour /auth/refresh, voir @SkipCsrfIfNoCookie() ci-dessous — un
+ * skip inconditionnel y rouvrirait un CSRF exploitable sur les sessions qui
+ * ont déjà un cookie CSRF valide.
  */
 export const SKIP_CSRF_KEY = 'skipCsrf';
 export const SkipCsrf = () => SetMetadata(SKIP_CSRF_KEY, true);
+
+/**
+ * Exempte une route du CsrfGuard UNIQUEMENT quand le cookie CSRF est absent
+ * de la requête — utilisé par /auth/refresh, qui réémet ce cookie
+ * (setCsrfCookie() dans AuthController) pour une session qui en est
+ * dépourvue (ouverte avant l'ajout de cette protection, cookie effacé
+ * isolément…). Un @SkipCsrf() inconditionnel y créerait un CSRF exploitable
+ * sur les sessions qui ont déjà un cookie CSRF valide : dès qu'il existe, le
+ * double-submit normal (cookie + en-tête) redevient obligatoire.
+ */
+export const SKIP_CSRF_IF_NO_COOKIE_KEY = 'skipCsrfIfNoCookie';
+export const SkipCsrfIfNoCookie = () => SetMetadata(SKIP_CSRF_IF_NO_COOKIE_KEY, true);

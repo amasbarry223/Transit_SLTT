@@ -18,7 +18,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CurrentUser, Public, SkipCsrf } from '../shared/decorators';
+import { CurrentUser, Public, SkipCsrf, SkipCsrfIfNoCookie } from '../shared/decorators';
 import type { CurrentUserType } from './auth.types';
 import {
   ACCESS_TOKEN_COOKIE,
@@ -90,7 +90,7 @@ export class AuthController {
   }
 
   @Public()
-  @SkipCsrf()
+  @SkipCsrfIfNoCookie()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @UseGuards(ThrottlerGuard)
