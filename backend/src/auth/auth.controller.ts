@@ -50,6 +50,14 @@ export class AuthController {
     });
     // Non-httpOnly par conception : le front le lit et l'échote en en-tête
     // X-CSRF-Token (double-submit) sur chaque requête d'état — voir csrf.guard.ts.
+    this.setCsrfCookie(res);
+  }
+
+  /** Réémet le cookie CSRF seul — utilisé au refresh pour qu'une session dont
+   *  le cookie CSRF est absent/expiré (ex. ouverte avant l'ajout de cette
+   *  protection, ou effacé isolément) se rétablisse au prochain refresh
+   *  silencieux plutôt que de rester bloquée jusqu'à une reconnexion manuelle. */
+  private setCsrfCookie(res: Response) {
     res.cookie(CSRF_COOKIE, randomBytes(32).toString('hex'), {
       ...csrfCookieOptions(),
       maxAge: refreshCookieMaxAge(),
@@ -96,6 +104,9 @@ export class AuthController {
       ...accessCookieOptions(),
       maxAge: accessCookieMaxAge(),
     });
+    // Réémis à chaque refresh (voir setCsrfCookie) : rattrape les sessions
+    // dont le cookie CSRF est absent sans attendre une reconnexion manuelle.
+    this.setCsrfCookie(res);
     return { success: true };
   }
 

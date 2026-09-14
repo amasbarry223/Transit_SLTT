@@ -56,7 +56,7 @@ describe('AuthController', () => {
     expect(res.cookies[CSRF_COOKIE].options.httpOnly).toBe(false);
   });
 
-  it('refresh lit le cookie refresh (pas le corps) et re-pose seulement le cookie access', async () => {
+  it('refresh lit le cookie refresh (pas le corps), re-pose le cookie access et réémet le cookie CSRF', async () => {
     (service.refreshAccessToken as any).mockResolvedValue({ accessToken: 'NEW_AT' });
     const res = fakeResponse();
     const req = { cookies: { [REFRESH_TOKEN_COOKIE]: 'RT' } } as any;
@@ -65,6 +65,11 @@ describe('AuthController', () => {
 
     expect(service.refreshAccessToken).toHaveBeenCalledWith('RT');
     expect(res.cookies[ACCESS_TOKEN_COOKIE].value).toBe('NEW_AT');
+    // Réémis à chaque refresh pour rattraper une session dont le cookie CSRF
+    // est absent/désynchronisé (ex. ouverte avant l'ajout de cette protection).
+    expect(res.cookies[CSRF_COOKIE]).toBeDefined();
+    expect(res.cookies[CSRF_COOKIE].options.httpOnly).toBe(false);
+    expect(res.cookies[REFRESH_TOKEN_COOKIE]).toBeUndefined();
   });
 
   it('refresh rejette si le cookie refresh est absent', async () => {

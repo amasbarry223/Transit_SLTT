@@ -39,6 +39,10 @@ const USER_KEY = 'transit_sltt_user';
 // Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts —
 // non-httpOnly par conception, lu ici pour l'écho double-submit.
 const CSRF_COOKIE_NAME = 'transit_sltt_csrf';
+// Doit correspondre au message levé par CsrfGuard (api/src/auth/guards/csrf.guard.ts)
+// — distingue un 403 "cookie CSRF absent/désynchronisé" (récupérable par un
+// refresh, qui en réémet un neuf) d'un 403 "permission refusée" (non récupérable).
+const CSRF_ERROR_MESSAGE = 'Jeton CSRF manquant ou invalide.';
 
 export interface UserSession {
   id: string;
@@ -159,13 +163,28 @@ class ApiClient {
 
     const res = await fetch(url, { ...options, headers, credentials: 'include' });
 
-    // Tentative de rafraîchissement si 401 (jamais sur /auth/login ni /auth/refresh)
+    // Tentative de rafraîchissement si 401, ou si 403 pour cookie CSRF absent/
+    // désynchronisé (ex. session ouverte avant l'ajout de cette protection, ou
+    // cookie CSRF effacé isolément) — le refresh en réémet un neuf côté serveur
+    // (voir setCsrfCookie dans AuthController), donc un seul retry suffit à
+    // rétablir la session sans reconnexion manuelle. Jamais sur /auth/login ni
+    // /auth/refresh pour éviter une boucle.
     const isAuthRoute = endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh');
-    if (res.status === 401 && retry && !isAuthRoute) {
+    let isCsrfError = false;
+    if (res.status === 403 && !isAuthRoute) {
+      try {
+        const peek = await res.clone().json();
+        isCsrfError = peek?.message === CSRF_ERROR_MESSAGE;
+      } catch {
+        // Corps non-JSON ou illisible — traité comme un 403 ordinaire ci-dessous.
+      }
+    }
+
+    if ((res.status === 401 || isCsrfError) && retry && !isAuthRoute) {
       const refreshed = await this.refreshTokens();
       if (refreshed) {
         return this.request<T>(endpoint, options, false);
-      } else {
+      } else if (res.status === 401) {
         this.clearSession();
         if (!this.sessionExpiredNotified) {
           this.sessionExpiredNotified = true;
