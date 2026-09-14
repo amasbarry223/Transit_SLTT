@@ -100,6 +100,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
