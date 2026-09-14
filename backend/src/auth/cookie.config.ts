@@ -15,12 +15,15 @@ export const CSRF_COOKIE = 'transit_sltt_csrf';
  */
 function sameSite(): 'lax' | 'strict' | 'none' {
   const value = process.env.COOKIE_SAME_SITE?.toLowerCase();
-  if (value === 'strict' || value === 'none') return value;
-  return 'lax';
+  if (value === 'strict' || value === 'lax') return value;
+  return 'none';
 }
 
 function domain(): string | undefined {
-  return process.env.COOKIE_DOMAIN || undefined;
+  const d = process.env.COOKIE_DOMAIN?.trim();
+  // Ne pas poser de Domain si vide ou si différent du domaine de l'API
+  if (!d || d === '' || d === 'undefined') return undefined;
+  return d;
 }
 
 const isProd = process.env.NODE_ENV === 'production';
