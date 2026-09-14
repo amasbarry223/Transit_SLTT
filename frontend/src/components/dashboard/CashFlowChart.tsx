@@ -11,7 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Coins, ArrowUpRight, TrendingUp, AlertCircle, Clock } from "lucide-react";
+import { Coins, ArrowUpRight, ArrowDownRight, TrendingUp, AlertCircle, Clock } from "lucide-react";
 import type { CashFlowStats } from "@/mock/dashboard";
 import { formatFCFA } from "@/lib/format";
 
@@ -43,9 +43,22 @@ export function CashFlowChart({ stats, isDark = false }: CashFlowChartProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/40 self-start sm:self-auto">
-          <ArrowUpRight className="size-3.5" />
-          <span>+{stats.variationMois}% vs mois dernier</span>
+        <div
+          className={`flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full border self-start sm:self-auto ${
+            stats.variationMois >= 0
+              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/40"
+              : "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border-rose-200/60 dark:border-rose-800/40"
+          }`}
+        >
+          {stats.variationMois >= 0 ? (
+            <ArrowUpRight className="size-3.5" />
+          ) : (
+            <ArrowDownRight className="size-3.5" />
+          )}
+          <span>
+            {stats.variationMois >= 0 ? "+" : ""}
+            {stats.variationMois}% vs mois dernier
+          </span>
         </div>
       </div>
 

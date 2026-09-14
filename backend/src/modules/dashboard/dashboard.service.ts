@@ -303,10 +303,10 @@ export class DashboardService {
       period7Days.push({
         date: dateStr,
         displayDate,
-        maritime: maritime || (i % 3 === 0 ? 1 : 0),
-        terrestre: terrestre || (i % 2 === 0 ? 1 : 0),
+        maritime,
+        terrestre,
         aerien,
-        total: matching.length || 1,
+        total: matching.length,
       });
     }
 
@@ -363,19 +363,43 @@ export class DashboardService {
       monthlyHistoryCashFlow.push({
         month: monthFull,
         monthShort,
-        entrees: entrees || 15000000 + m * 1200000,
-        sorties: sorties || 12000000 + m * 900000,
-        soldeNet: (entrees || 15000000) - (sorties || 12000000),
+        entrees,
+        sorties,
+        soldeNet: entrees - sorties,
       });
 
       monthlyHistoryInvoices.push({
         month: monthShort,
-        prestationsHT: prestationsHT || 12000000 + m * 800000,
-        tvaCollectee: tvaCollectee || Math.round((prestationsHT || 12000000) * 0.18),
-        deboursRefactures: Math.round((prestationsHT || 12000000) * 2),
-        totalFactureTTC: totalFactureTTC || Math.round((prestationsHT || 12000000) * 1.18),
+        prestationsHT,
+        tvaCollectee,
+        // Pas de source "débours refacturés" câblée dans ce calcul (les
+        // dépenses ne sont pas chargées dans cette méthode) — 0 plutôt
+        // qu'un multiple inventé de prestationsHT.
+        deboursRefactures: 0,
+        totalFactureTTC,
       });
     }
+
+    // Variation en % entre le dernier mois complet et le précédent, à partir
+    // des séries réelles calculées ci-dessus (jusqu'ici des constantes
+    // inventées — 5.4/12.5 — affichées comme si elles reflétaient une vraie
+    // tendance : "+{variationMois}% vs mois dernier" dans CashFlowChart.tsx).
+    // `Math.abs(previous)` au dénominateur garde un signe cohérent même si le
+    // mois précédent était négatif (sorties > entrées).
+    const computeVariationPct = (current: number, previous: number): number => {
+      if (previous === 0) return current === 0 ? 0 : 100;
+      return Math.round(((current - previous) / Math.abs(previous)) * 1000) / 10;
+    };
+    const lastCashFlow = monthlyHistoryCashFlow[monthlyHistoryCashFlow.length - 1];
+    const prevCashFlow = monthlyHistoryCashFlow[monthlyHistoryCashFlow.length - 2];
+    const variationMois = lastCashFlow && prevCashFlow
+      ? computeVariationPct(lastCashFlow.soldeNet, prevCashFlow.soldeNet)
+      : 0;
+    const lastInvoices = monthlyHistoryInvoices[monthlyHistoryInvoices.length - 1];
+    const prevInvoices = monthlyHistoryInvoices[monthlyHistoryInvoices.length - 2];
+    const variationPrestations = lastInvoices && prevInvoices
+      ? computeVariationPct(lastInvoices.prestationsHT, prevInvoices.prestationsHT)
+      : 0;
 
     // Alertes opérationnelles réelles
     const operationalAlerts: Array<{
@@ -488,8 +512,12 @@ export class DashboardService {
       cashFlowStats: {
         soldeDisponible: tresorerieTotal,
         deboursARecuperer: deboursTotal,
+        // Aucun statut "en attente" n'existe sur BonSortieCaisse (voir
+        // schema.prisma) — pas de distinction pending/validé pour ce type de
+        // bon, donc rien à sommer honnêtement ici tant que ce concept
+        // n'existe pas en base (0 assumé, pas une valeur inventée).
         bonsEnAttente: 0,
-        variationMois: 5.4,
+        variationMois,
         monthlyHistory: monthlyHistoryCashFlow,
       },
       invoiceStats: {
@@ -498,7 +526,7 @@ export class DashboardService {
           tvaCollectee: monthlyHistoryInvoices.reduce((acc, m) => acc + m.tvaCollectee, 0),
           deboursRefactures: monthlyHistoryInvoices.reduce((acc, m) => acc + m.deboursRefactures, 0),
           totalFactureTTC: monthlyHistoryInvoices.reduce((acc, m) => acc + m.totalFactureTTC, 0),
-          variationPrestations: 12.5,
+          variationPrestations,
         },
         monthlyHistory: monthlyHistoryInvoices,
       },

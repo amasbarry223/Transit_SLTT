@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { CurrentUserType } from '../../auth/auth.types';
+import { assertAnnexeAccess } from '../../common/annexe-filter.utils';
 
 @Injectable()
 export class DocumentsService {
@@ -33,7 +34,20 @@ export class DocumentsService {
     return document;
   }
 
-  async findByDossier(dossierId: string) {
+  async findByDossier(dossierId: string, user: CurrentUserType) {
+    // Sans ce contrôle, n'importe quel utilisateur authentifié (quel que
+    // soit son périmètre d'annexe) pouvait lister les documents de N'IMPORTE
+    // QUEL dossier en connaissant/devinant son id — seul JwtAuthGuard
+    // s'appliquait ici, aucun @RequirePermission ni filtre par annexe
+    // (contrairement à dossiers.service.findOne, qui inclut déjà ces mêmes
+    // documents en étant, lui, correctement cloisonné).
+    const dossier = await this.prisma.dossier.findUnique({
+      where: { id: dossierId },
+      select: { annexeId: true },
+    });
+    if (!dossier) throw new NotFoundException(`Dossier ${dossierId} non trouvé`);
+    assertAnnexeAccess(user, dossier.annexeId, 'ce dossier');
+
     return this.prisma.document.findMany({
       where: { dossierId },
       orderBy: { createdAt: 'desc' },

@@ -304,6 +304,59 @@ export function selectionToPermissions(selection: Record<string, boolean>): stri
   return ALL_PERMISSION_KEYS.filter((key) => selection[key]);
 }
 
+// Vocabulaire backend/seed "module.verbe" (dossiers.creer, caisse.encaisser…
+// — voir prisma/seed.ts et @RequirePermission côté API). Même table d'alias
+// et de verbes que canonicalPermission() dans
+// backend/src/auth/guards/permissions.guard.ts : les deux couches doivent
+// s'accorder sur ce qu'un "module.verbe" signifie, sinon un compte que le
+// backend autorise déjà (seed, ou provisionné hors UI admin) se retrouve
+// avec une UI vide — normalizePermissions() ne reconnaissant ni le format
+// "module.verbe" ni les libellés du legacyMap ci-dessous, chaque entrée est
+// silencieusement ignorée.
+const BACKEND_MODULE_ALIAS: Record<string, string> = {
+  caisse: "comptabilite",
+  depenses: "comptabilite",
+  annexes: "parametres",
+  settings: "parametres",
+  cotations: "devis",
+  tracking: "dossiers",
+};
+
+const BACKEND_VERB_TO_ACTION: Record<string, "read" | "write"> = {
+  read: "read",
+  lire: "read",
+  consulter: "read",
+  voir: "read",
+  list: "read",
+  creer: "write",
+  modifier: "write",
+  supprimer: "write",
+  valider: "write",
+  encaisser: "write",
+  decaisser: "write",
+  gerer: "write",
+  upload: "write",
+  transition: "write",
+  write: "write",
+};
+
+/** Traduit un "module.verbe" backend/seed en clé(s) "module:action" front —
+ *  l'écriture implique la visibilité en lecture du même module. */
+function fromBackendVocabulary(perm: string): string[] {
+  if (!perm.includes(".")) return [];
+  const [rawModule, rawVerb = "read"] = perm.split(".");
+  const mod = BACKEND_MODULE_ALIAS[rawModule] ?? rawModule;
+  const action = BACKEND_VERB_TO_ACTION[rawVerb] ?? (rawVerb.includes("write") ? "write" : "read");
+  const keys: string[] = [];
+  if (action === "write" && ALL_PERMISSION_KEYS.includes(`${mod}:write`)) {
+    keys.push(`${mod}:write`);
+  }
+  if (ALL_PERMISSION_KEYS.includes(`${mod}:read`)) {
+    keys.push(`${mod}:read`);
+  }
+  return keys;
+}
+
 export function normalizePermissions(permissions: string[]): string[] {
   const legacyMap: Record<string, string[]> = {
     Dossiers: ["dossiers:read", "dossiers:write", "dossiers:transition"],
@@ -320,6 +373,8 @@ export function normalizePermissions(permissions: string[]): string[] {
       result.add(perm);
     } else if (legacyMap[perm]) {
       legacyMap[perm].forEach((p) => result.add(p));
+    } else {
+      fromBackendVocabulary(perm).forEach((p) => result.add(p));
     }
   }
   return [...result];

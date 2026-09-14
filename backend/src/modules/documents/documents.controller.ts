@@ -75,8 +75,11 @@ export class DocumentsController {
 
   @Get('dossier/:dossierId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  async findByDossier(@Param('dossierId') dossierId: string) {
-    return this.documentsService.findByDossier(dossierId);
+  async findByDossier(
+    @Param('dossierId') dossierId: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.documentsService.findByDossier(dossierId, user);
   }
 
   @Post('upload')

@@ -174,14 +174,21 @@ export class FacturesService {
       throw new BadRequestException('Une facture annulée ne peut plus être modifiée.');
     }
 
-    const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(
-      data.lignes,
-      data.tauxTva,
-      await this.getDefaultTauxTva(),
-    );
+    // Comme devis.service.ts (update) : les montants/lignes ne sont
+    // recalculés QUE si `lignes` est explicitement fourni dans le payload.
+    // Avant ce correctif, computeTotals(undefined, …) retombait sur un
+    // tableau vide via `lignes || []` et un simple `PATCH /factures/:id`
+    // sans le champ `lignes` remettait silencieusement HT/TVA/TTC à 0 ET
+    // supprimait toutes les LigneFacture existantes (deleteMany inconditionnel).
+    const hasLignes = Array.isArray(data.lignes);
+    const totals = hasLignes
+      ? this.computeTotals(data.lignes, data.tauxTva, await this.getDefaultTauxTva())
+      : null;
 
     return this.prisma.$transaction(async (tx: any) => {
-      await tx.ligneFacture.deleteMany({ where: { factureId: id } });
+      if (hasLignes) {
+        await tx.ligneFacture.deleteMany({ where: { factureId: id } });
+      }
       return tx.facture.update({
         where: { id },
         data: {
@@ -190,11 +197,15 @@ export class FacturesService {
           dateEmission: data.dateEmission ? new Date(data.dateEmission) : facture.dateEmission,
           dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : null,
           notes: data.notes ?? null,
-          montantHt,
-          tauxTva,
-          montantTva,
-          montantTtc,
-          lignes: { create: lignesFormatted },
+          ...(totals
+            ? {
+                montantHt: totals.montantHt,
+                tauxTva: totals.tauxTva,
+                montantTva: totals.montantTva,
+                montantTtc: totals.montantTtc,
+                lignes: { create: totals.lignesFormatted },
+              }
+            : {}),
         },
         include: { lignes: true, client: true },
       });

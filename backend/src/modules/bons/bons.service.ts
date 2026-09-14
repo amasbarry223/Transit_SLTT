@@ -212,25 +212,34 @@ export class BonsService {
     }
     const date = data.date || existing.date;
     const annexeId = data.annexeId || existing.annexeId;
-    const lignes = (data.lignes || []).map((l: any) => ({
-      date: l.date || date,
-      beneficiaire: l.beneficiaire,
-      motif: l.motif,
-      montant: this.toPositiveMontant(l.montant),
-    }));
+    // Comme factures.service.ts/devis.service.ts (update) : `lignes` n'est
+    // recalculé/remplacé que s'il est explicitement fourni — sans ce garde,
+    // un payload qui omet `lignes` retombait sur `[]` (via `data.lignes ||
+    // []`) et un `PUT /bons/caisse/:id` de simple correction (date, annexe)
+    // vidait silencieusement toutes les lignes ET remettait montantTotal à 0.
+    const hasLignes = Array.isArray(data.lignes);
+    const lignes = hasLignes
+      ? data.lignes.map((l: any) => ({
+          date: l.date || date,
+          beneficiaire: l.beneficiaire,
+          motif: l.motif,
+          montant: this.toPositiveMontant(l.montant),
+        }))
+      : null;
     // Même règle qu'à la création : le total est recalculé depuis les
     // lignes, jamais une valeur fournie par le client.
-    const montantTotal = lignes.reduce((s: number, l: any) => s + l.montant, 0);
+    const montantTotal = lignes ? lignes.reduce((s: number, l: any) => s + l.montant, 0) : undefined;
 
     return this.prisma.$transaction(async (tx: any) => {
-      await tx.ligneBonSortieCaisse.deleteMany({ where: { bonSortieCaisseId: id } });
+      if (hasLignes) {
+        await tx.ligneBonSortieCaisse.deleteMany({ where: { bonSortieCaisseId: id } });
+      }
       return tx.bonSortieCaisse.update({
         where: { id },
         data: {
           date,
           annexeId,
-          montantTotal,
-          lignes: { create: lignes },
+          ...(lignes ? { montantTotal, lignes: { create: lignes } } : {}),
         },
         include: { annexe: true, lignes: true },
       });

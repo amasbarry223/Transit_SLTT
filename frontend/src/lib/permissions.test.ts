@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasPermission, normalizeRole, type PermissionUser } from "./permissions";
+import { hasPermission, normalizePermissions, normalizeRole, type PermissionUser } from "./permissions";
 import type { UserRole } from "@/lib/domain-types";
 
 describe("normalizeRole", () => {
@@ -40,5 +40,40 @@ describe("hasPermission", () => {
     expect(
       hasPermission({ role: "ADMIN" as UserRole, permissions: [], actif: false }, "dashboard:read"),
     ).toBe(false);
+  });
+});
+
+describe("normalizePermissions — vocabulaire backend/seed \"module.verbe\"", () => {
+  // prisma/seed.ts provisionne des comptes de démo avec ce format
+  // ("dossiers.creer", "caisse.encaisser"…) — voir canonicalPermission() côté
+  // API (backend/src/auth/guards/permissions.guard.ts), déjà satisfait par
+  // ce même format. Sans traduction ici, ces comptes voient une UI vide alors
+  // que le backend les autorise déjà.
+  it("traduit les permissions seed de l'agent de transit (dossiers.creer, dossiers.modifier, documents.upload)", () => {
+    const result = normalizePermissions(["dossiers.creer", "dossiers.modifier", "documents.upload"]);
+    expect(result).toEqual(
+      expect.arrayContaining(["dossiers:write", "dossiers:read", "documents:write", "documents:read"]),
+    );
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it("traduit les permissions seed du comptable (factures.creer, caisse.encaisser, caisse.decaisser, depenses.valider) via l'alias caisse/depenses -> comptabilite", () => {
+    const result = normalizePermissions([
+      "factures.creer",
+      "caisse.encaisser",
+      "caisse.decaisser",
+      "depenses.valider",
+    ]);
+    expect(result).toEqual(
+      expect.arrayContaining(["factures:write", "factures:read", "comptabilite:write", "comptabilite:read"]),
+    );
+  });
+
+  it("un verbe de lecture ('lire'/'consulter') ne donne pas l'écriture", () => {
+    expect(normalizePermissions(["clients.lire"])).toEqual(["clients:read"]);
+  });
+
+  it("une clé totalement inconnue reste ignorée (pas de faux positif)", () => {
+    expect(normalizePermissions(["module-fantome.action-inconnue"])).toEqual([]);
   });
 });
