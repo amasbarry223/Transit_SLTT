@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import { AuthError, authErrorResponse, extractCookieValue, requireUser } from "@/lib/auth/require-admin";
 import { insertAdminAuditLog } from "@/lib/auth/admin-audit";
 import { updateOwnProfileBodySchema, zodErrorMessage } from "@/lib/api/schemas";
+import { resolveServerApiUrl } from "@/lib/api/server-api-url";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+const API_URL = resolveServerApiUrl();
 // Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts.
 const CSRF_COOKIE_NAME = "transit_sltt_csrf";
 

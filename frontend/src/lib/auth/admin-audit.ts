@@ -1,5 +1,10 @@
 import { logError } from "@/shared/logger";
 import type { AuditAction } from "@/lib/audit";
+import { resolveServerApiUrl } from "@/lib/api/server-api-url";
+import { extractCookieValue } from "@/lib/auth/require-admin";
+
+// Doit correspondre à CSRF_COOKIE dans api/src/auth/cookie.config.ts.
+const CSRF_COOKIE_NAME = "transit_sltt_csrf";
 
 type ActorProfile = {
   id: string;
@@ -20,13 +25,19 @@ export async function insertAdminAuditLog(
     detail: string;
   },
 ): Promise<void> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  const apiUrl = resolveServerApiUrl();
+  // POST /audit-logs est protégé par CsrfGuard côté NestJS comme toute autre
+  // requête d'état — sans cet en-tête, l'écriture échoue en 403 et est
+  // avalée silencieusement par le catch ci-dessous (voir profile/route.ts
+  // pour la même justification côté cookie+CSRF relayés explicitement).
+  const csrfToken = extractCookieValue(cookieHeader, CSRF_COOKIE_NAME);
   try {
     await fetch(`${apiUrl}/audit-logs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(cookieHeader ? { cookie: cookieHeader } : {}),
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
       },
       body: JSON.stringify({
         userName: actor.nom,

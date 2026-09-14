@@ -1,4 +1,5 @@
 import { logError, logWarn } from "@/shared/logger";
+import { resolveServerApiUrl } from "@/lib/api/server-api-url";
 
 export class AuthError extends Error {
   status: number;
@@ -70,7 +71,7 @@ async function getAuthenticatedProfile(request: Request): Promise<{
     throw new AuthError("Session requise.", 401);
   }
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  const apiUrl = resolveServerApiUrl();
 
   let nestUser: NestUser | null = null;
 

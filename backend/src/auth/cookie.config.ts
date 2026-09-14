@@ -15,8 +15,8 @@ export const CSRF_COOKIE = 'transit_sltt_csrf';
  */
 function sameSite(): 'lax' | 'strict' | 'none' {
   const value = process.env.COOKIE_SAME_SITE?.toLowerCase();
-  if (value === 'strict' || value === 'lax') return value;
-  return 'none';
+  if (value === 'strict' || value === 'none') return value;
+  return 'lax';
 }
 
 function domain(): string | undefined {
@@ -29,10 +29,15 @@ function domain(): string | undefined {
 const isProd = process.env.NODE_ENV === 'production';
 
 function baseOptions() {
+  const site = sameSite();
   return {
     httpOnly: true,
-    secure: isProd,
-    sameSite: sameSite(),
+    // SameSite=None exige l'attribut Secure (sinon le navigateur rejette
+    // silencieusement le cookie, spec RFC 6265bis) — indépendant de isProd :
+    // un déploiement cross-origin par nature (COOKIE_SAME_SITE=none) tourne
+    // toujours en HTTPS, même hors "production" au sens NODE_ENV.
+    secure: isProd || site === 'none',
+    sameSite: site,
     domain: domain(),
   };
 }

@@ -11,11 +11,16 @@ import { NextResponse, type NextRequest } from "next/server";
 // visible côté serveur) tous les appels vers la vraie API en production.
 function resolveApiOrigin(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!envUrl || envUrl.startsWith("/")) {
+  // Relatif ("/api") : le navigateur appelle sa propre origine (rewrite
+  // proxy de next.config.mjs) — rien à ajouter à la CSP, 'self' suffit déjà.
+  // Non défini : ne PAS traiter comme relatif, sinon la CSP se retrouve
+  // silencieusement restreinte à 'self' alors que le code retombe, lui, sur
+  // l'URL absolue par défaut ci-dessous (api-client.ts, server-api-url.ts).
+  if (envUrl && envUrl.startsWith("/")) {
     return "";
   }
   try {
-    return new URL(envUrl).origin;
+    return new URL(envUrl ?? "http://localhost:3001/api").origin;
   } catch {
     return "http://localhost:3001";
   }

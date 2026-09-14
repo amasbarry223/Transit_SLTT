@@ -90,10 +90,15 @@ const nextConfig = {
     ];
   },
   async rewrites() {
+    // Cible du proxy same-origin (résout le problème de cookies cross-origin
+    // en dev : le navigateur ne voit que l'origine du front, Next.js relaie
+    // vers le backend réel côté serveur). Configurable via INTERNAL_API_URL —
+    // doit rester en phase avec la même variable dans server-api-url.ts.
+    const apiTarget = (process.env.INTERNAL_API_URL || "https://goldenrod-newt-273291.hostingersite.com/api").replace(/\/$/, "");
     return [
       {
         source: "/api/:path*",
-        destination: "https://goldenrod-newt-273291.hostingersite.com/api/:path*",
+        destination: `${apiTarget}/:path*`,
       },
     ];
   },
