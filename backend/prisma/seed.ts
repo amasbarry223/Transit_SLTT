@@ -247,7 +247,7 @@ async function main() {
     { cle: 'nom_societe', valeur: 'Transit SLTT', description: 'Raison sociale', type: 'string', isPublic: true, groupName: 'contact' },
     { cle: 'societe_nom', valeur: 'Transit SLTT', description: 'Nom de la société', type: 'string', isPublic: true, groupName: 'contact' },
     { cle: 'societe_raison_sociale', valeur: 'Société Logistique Transit Transport', description: 'Raison sociale légale', type: 'string', isPublic: true, groupName: 'contact' },
-    { cle: 'societe_adresse', valeur: 'Faladié SEMA, Bamako, Mali', description: 'Adresse du siège social', type: 'string', isPublic: true, groupName: 'contact' },
+    { cle: 'societe_adresse', valeur: '', description: 'Adresse du siège social', type: 'string', isPublic: true, groupName: 'contact' },
     { cle: 'societe_telephone', valeur: '+223 76 96 47 06', description: 'Téléphone principal', type: 'string', isPublic: true, groupName: 'contact' },
     { cle: 'support_email', valeur: 'support@transit-sltt.com', description: 'Email support technique', type: 'string', isPublic: true, groupName: 'contact' },
     { cle: 'email_contact', valeur: 'contact@transit-sltt.com', description: 'Email de contact général', type: 'string', isPublic: true, groupName: 'contact' },

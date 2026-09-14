@@ -529,7 +529,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
             raisonSociale: raisonSoc,
             actif: true,
             logoUrl: settingsMap.societe_logo_url || DEFAULT_TRANSIT_BRAND.logoUrl,
-            adresse: settingsMap.societe_adresse || DEFAULT_TRANSIT_BRAND.legal?.adresse,
+            adresse: settingsMap.societe_adresse ?? DEFAULT_TRANSIT_BRAND.legal?.adresse,
             telephone: settingsMap.societe_telephone || DEFAULT_TRANSIT_BRAND.legal?.telephone,
             rccm: settingsMap.societe_rccm || DEFAULT_TRANSIT_BRAND.legal?.rccm,
             nif: settingsMap.societe_nif || DEFAULT_TRANSIT_BRAND.legal?.nif,
