@@ -5,18 +5,31 @@ export const ACCESS_TOKEN_COOKIE = 'transit_sltt_at';
 export const REFRESH_TOKEN_COOKIE = 'transit_sltt_rt';
 export const CSRF_COOKIE = 'transit_sltt_csrf';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 /**
  * `sameSite`/`domain` dépendent d'une topologie de déploiement (front/API
  * sur le même domaine racine ou non) que ce dépôt ne fige pas — configurables
- * par env plutôt que codés en dur, avec un défaut ('lax', pas de domain) qui
- * fonctionne pour le cas le plus courant (sous-domaines partagés ou même
- * origine en dev). Le CSRF double-submit (voir csrf.guard.ts) reste actif
- * dans tous les cas, indépendamment de ce choix.
+ * par env plutôt que codés en dur. Le CSRF double-submit (voir csrf.guard.ts)
+ * reste actif dans tous les cas, indépendamment de ce choix.
+ *
+ * Défaut par environnement (quand COOKIE_SAME_SITE n'est pas posée) :
+ *  - hors production : 'lax' — fonctionne en dev (même "site" localhost) et
+ *    ne nécessite pas HTTPS (indispensable : 'none' y échouerait, voir
+ *    baseOptions()).
+ *  - en production : 'none' — un cookie SameSite=None est envoyé dans TOUS
+ *    les cas (same-site ET cross-site), donc ce choix reste correct que le
+ *    rewrite proxy Next.js soit effectivement engagé ou non. Avant ce
+ *    correctif, le défaut était 'lax' même en production : si le proxy
+ *    n'était pas actif (front et API réellement cross-origin du point de vue
+ *    du navigateur), le cookie posé au login n'était jamais renvoyé par le
+ *    navigateur sur la requête suivante — l'utilisateur se voyait déconnecté
+ *    ("session expirée") immédiatement après une connexion pourtant réussie.
  */
 function sameSite(): 'lax' | 'strict' | 'none' {
   const value = process.env.COOKIE_SAME_SITE?.toLowerCase();
-  if (value === 'strict' || value === 'none') return value;
-  return 'lax';
+  if (value === 'strict' || value === 'none' || value === 'lax') return value;
+  return isProd ? 'none' : 'lax';
 }
 
 function domain(): string | undefined {
@@ -25,8 +38,6 @@ function domain(): string | undefined {
   if (!d || d === '' || d === 'undefined') return undefined;
   return d;
 }
-
-const isProd = process.env.NODE_ENV === 'production';
 
 function baseOptions() {
   const site = sameSite();

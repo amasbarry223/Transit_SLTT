@@ -28,18 +28,26 @@ describe('cookie.config', () => {
     expect(opts.secure).toBe(true);
   });
 
-  it('en production, secure=true quel que soit sameSite', async () => {
+  it("par défaut en production (COOKIE_SAME_SITE non défini) : sameSite=none et secure=true — envoyé que le rewrite proxy Next.js soit engagé ou non (front/API réellement cross-origin ou non), contrairement à 'lax' qui cassait la session immédiatement après un login réussi si le proxy n'était pas actif", async () => {
     process.env.NODE_ENV = 'production';
     delete process.env.COOKIE_SAME_SITE;
     const { accessCookieOptions } = await loadConfig();
     const opts = accessCookieOptions();
-    expect(opts.sameSite).toBe('lax');
+    expect(opts.sameSite).toBe('none');
     expect(opts.secure).toBe(true);
   });
 
-  it('COOKIE_SAME_SITE=strict est respecté', async () => {
+  it('COOKIE_SAME_SITE=strict est respecté (y compris en production)', async () => {
     process.env.COOKIE_SAME_SITE = 'strict';
+    process.env.NODE_ENV = 'production';
     const { accessCookieOptions } = await loadConfig();
     expect(accessCookieOptions().sameSite).toBe('strict');
+  });
+
+  it('COOKIE_SAME_SITE=lax est respecté même en production (override manuel explicite)', async () => {
+    process.env.COOKIE_SAME_SITE = 'lax';
+    process.env.NODE_ENV = 'production';
+    const { accessCookieOptions } = await loadConfig();
+    expect(accessCookieOptions().sameSite).toBe('lax');
   });
 });
