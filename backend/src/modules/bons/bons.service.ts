@@ -23,6 +23,20 @@ export class BonsService {
     return n;
   }
 
+  // Sans ce contrôle, une quantité négative passait `Number(data.quantite || 0)`
+  // sans être rejetée. À la validation du bon, `decrement: bon.quantite` avec
+  // une valeur négative AUGMENTE le stock au lieu de le diminuer : le garde-fou
+  // anti-stock-négatif ne se déclenche jamais puisque le stock ne fait
+  // qu'augmenter, ce qui permettait de fabriquer du stock via un faux bon de
+  // sortie à quantité négative.
+  private toPositiveQuantite(value: unknown): number {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) {
+      throw new BadRequestException('La quantité du bon doit être un nombre supérieur à 0.');
+    }
+    return n;
+  }
+
   // Bons de sortie stock
   async findAllBons(user: CurrentUserType, params?: { annexeId?: string; clientId?: string }) {
     if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
@@ -70,10 +84,10 @@ export class BonsService {
         annexeId: data.annexeId,
         stockId: data.stockId || null,
         marchandise: data.marchandise,
-        quantite: Number(data.quantite || 0),
+        quantite: this.toPositiveQuantite(data.quantite),
         unite: data.unite || 'colis',
         motif: data.motif || '',
-        montant: Number(data.montant || 0),
+        montant: this.toPositiveMontant(data.montant),
         statut: data.statut || 'En attente',
       },
       include: { annexe: true, client: true, stock: true },

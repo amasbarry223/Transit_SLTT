@@ -7,7 +7,11 @@ describe('canonicalPermission', () => {
     expect(canonicalPermission('dossiers.supprimer')).toBe('dossiers:write');
     expect(canonicalPermission('dossiers:write')).toBe('dossiers:write');
     expect(canonicalPermission('factures:read')).toBe('factures:read');
-    expect(canonicalPermission('bons:write-caisse')).toBe('bons:write');
+  });
+
+  it('ne confond pas "write-caisse" avec "write" (permissions distinctes)', () => {
+    expect(canonicalPermission('bons:write-caisse')).toBe('bons:write-caisse');
+    expect(canonicalPermission('bons:write')).toBe('bons:write');
   });
 
   it('applique les alias de module backend -> front', () => {
@@ -38,5 +42,14 @@ describe('userSatisfiesPermission', () => {
 
   it('accepte un droit accordé au niveau du module entier', () => {
     expect(userSatisfiesPermission(['dossiers'], 'dossiers.supprimer')).toBe(true);
+  });
+
+  it('ne laisse pas "bons:write-caisse" et "bons:write" s’octroyer mutuellement (pas d’escalade croisée)', () => {
+    expect(userSatisfiesPermission(['bons:write-caisse'], 'bons:write')).toBe(false);
+    expect(userSatisfiesPermission(['bons:write'], 'bons:write-caisse')).toBe(false);
+    // Chacun reste valide pour lui-même et implique la lecture du module.
+    expect(userSatisfiesPermission(['bons:write-caisse'], 'bons:write-caisse')).toBe(true);
+    expect(userSatisfiesPermission(['bons:write-caisse'], 'bons:read')).toBe(true);
+    expect(userSatisfiesPermission(['bons:write'], 'bons:read')).toBe(true);
   });
 });

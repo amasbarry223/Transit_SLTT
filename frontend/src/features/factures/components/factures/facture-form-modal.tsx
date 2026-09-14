@@ -173,6 +173,7 @@ export function FactureFormModal({
         tauxTVA: parseFloat(tauxTVA) || 0,
         notes,
       });
+      onCreated?.(f.id);
       onClose();
       go("facture-detail", { id: f.id });
     } catch (err) {

@@ -132,8 +132,16 @@ export class UsersService {
     }
   }
 
-  async findAll() {
+  // `utilisateurs:manage` peut être délégué à un responsable d'annexe non-ADMIN
+  // (cf. assertAnnexeCeiling pour create/update) : sans ce filtre, un tel
+  // délégué voyait la liste ET la fiche complètes de TOUS les utilisateurs de
+  // TOUTES les annexes (email, téléphone, rôle, permissions), pas seulement
+  // ceux de son propre périmètre.
+  async findAll(actor: CurrentUserType) {
     const profiles = await this.prisma.profile.findMany({
+      where: isActorAdmin(actor)
+        ? undefined
+        : { userAnnexes: { some: { annexeId: { in: actor.annexeIds ?? [] } } } },
       select: {
         id: true,
         email: true,
@@ -160,7 +168,7 @@ export class UsersService {
     }));
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, actor: CurrentUserType) {
     const user = await this.prisma.profile.findUnique({
       where: { id },
       include: {
@@ -170,6 +178,13 @@ export class UsersService {
       },
     });
     if (!user) throw new NotFoundException(`Utilisateur ${id} non trouvé`);
+    if (!isActorAdmin(actor)) {
+      const targetAnnexeIds = user.userAnnexes.map((ua) => ua.annexeId);
+      const allowed = new Set(actor.annexeIds ?? []);
+      if (!targetAnnexeIds.some((aid) => allowed.has(aid))) {
+        throw new ForbiddenException('Accès non autorisé à cet utilisateur');
+      }
+    }
     const { passwordHash: _passwordHash, ...safeUser } = user;
     return {
       ...safeUser,
@@ -240,7 +255,7 @@ export class UsersService {
   }
 
   async update(id: string, data: UpdateUserDto, actor: CurrentUserType) {
-    const target = await this.findOne(id);
+    const target = await this.findOne(id, actor);
 
     this.assertNotSelfDeactivation(actor.id, id, data.actif);
     this.assertRoleEscalationAllowed(actor, data.role);
@@ -311,7 +326,7 @@ export class UsersService {
   }
 
   async resetPassword(id: string, newPassword: string | undefined, actor: CurrentUserType) {
-    const target = await this.findOne(id);
+    const target = await this.findOne(id, actor);
     this.assertCanTouchAdminTarget(actor, target);
     this.assertStrongPassword(newPassword);
     const passwordHash = await bcrypt.hash(newPassword, 12);
@@ -334,7 +349,7 @@ export class UsersService {
   }
 
   async delete(id: string, actor: CurrentUserType) {
-    const target = await this.findOne(id);
+    const target = await this.findOne(id, actor);
     this.assertNotSelfDelete(actor.id, id);
     this.assertCanTouchAdminTarget(actor, target);
     await this.assertNotLastActiveAdmin(id, true);

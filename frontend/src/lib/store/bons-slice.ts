@@ -187,11 +187,16 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     // Même raison que ci-dessus : ne pas laisser cet échec en silence.
     await api.bons.validateBonSortie(id);
 
-    const newStockQty = stockItem ? stockItem.quantite - bon.quantite : 0;
+    // `stockItem.quantite` a été lu avant l'`await` ci-dessus : comme pour la
+    // branche multi-lignes, on relit l'état frais dans le updater `set()`
+    // plutôt que de réutiliser cette valeur capturée (perte de mise à jour
+    // en cas de mouvement concurrent sur le même article).
     set((s) => ({
       bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" as const } : b)),
       stock: stockItem
-        ? s.stock.map((item) => (item.id === stockItem.id ? { ...item, quantite: newStockQty } : item))
+        ? s.stock.map((item) =>
+            item.id === stockItem.id ? { ...item, quantite: item.quantite - bon.quantite } : item,
+          )
         : s.stock,
       mouvements: [
         {

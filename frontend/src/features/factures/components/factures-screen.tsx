@@ -31,6 +31,7 @@ export function FacturesScreen() {
         open={screen.showForm}
         onClose={screen.closeForm}
         prefill={screen.formPrefill}
+        onCreated={screen.handleFactureCreated}
       />
 
       <PageHeader

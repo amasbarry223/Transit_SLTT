@@ -46,6 +46,12 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
     // Persistance obligatoire : un fournisseur sans écriture serveur
     // disparaissait silencieusement au rechargement, sans aucune erreur
     // montrée (même bug que removeFournisseur avant son correctif).
+    // Le modèle Prisma Fournisseur n'a pas de colonne `statut`, uniquement
+    // `actif: boolean` — le backend ignore silencieusement `statut` (voir
+    // fournisseurs.service.ts::update, qui ne lit que `data.actif`). Sans
+    // cette dérivation, un fournisseur passé "Inactif" ici réapparaissait
+    // "Actif" au prochain fetchData() car le mapper recalcule `statut`
+    // depuis `actif` (resté à `true` côté serveur).
     const created = await api.fournisseurs.create({
       nom: input.nom,
       type: input.type,
@@ -55,6 +61,7 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       adresse: input.adresse,
       tarifContractuel: input.tarifContractuel,
       statut: input.statut || "Actif",
+      actif: (input.statut || "Actif") !== "Inactif",
       annexeId,
     });
     if (created?.id) {
@@ -79,6 +86,8 @@ export const createFournisseursSlice: StateCreator<SLTTState, [], [], Fournisseu
       adresse: input.adresse,
       tarifContractuel: input.tarifContractuel,
       statut: input.statut,
+      // Voir addFournisseur : le backend ignore `statut`, seul `actif` compte.
+      ...(input.statut !== undefined ? { actif: input.statut !== "Inactif" } : {}),
     });
 
     set((s) => ({

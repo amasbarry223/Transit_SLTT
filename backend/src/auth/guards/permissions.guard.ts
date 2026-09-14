@@ -16,7 +16,7 @@ import type { CurrentUserType } from '../auth.types';
  * un accès qui passait déjà (correspondance exacte toujours acceptée).
  */
 
-const VERB_TO_ACTION: Record<string, 'read' | 'write'> = {
+const VERB_TO_ACTION: Record<string, string> = {
   read: 'read',
   lire: 'read',
   consulter: 'read',
@@ -32,6 +32,13 @@ const VERB_TO_ACTION: Record<string, 'read' | 'write'> = {
   upload: 'write',
   transition: 'write',
   write: 'write',
+  // Action distincte de "write" : un compte n'ayant que "bons:write-caisse"
+  // (décaissement de caisse) ne doit PAS pouvoir agir sur les bons de sortie
+  // marchandise (qui exigent "bons:write"), et inversement. Sans cette entrée
+  // explicite, le fallback `.includes('write')` ci-dessous les confondait
+  // tous les deux en "write", ce qui permettait à chaque rôle d'effectuer les
+  // actions réservées à l'autre (escalade de privilège croisée).
+  'write-caisse': 'write-caisse',
 };
 
 // Modules backend sans équivalent 1:1 côté front.
@@ -63,7 +70,13 @@ export function userSatisfiesPermission(userPerms: string[], required: string): 
   const heldCanon = new Set(userPerms.map(canonicalPermission));
   const need = canonicalPermission(required);
   if (heldCanon.has(need)) return true;
-  if (need.endsWith(':read') && heldCanon.has(need.replace(':read', ':write'))) return true;
+  // N'importe quelle permission d'écriture sur le module (write ou
+  // write-caisse) implique la lecture de ce module — mais "write" et
+  // "write-caisse" n'impliquent jamais l'un l'autre.
+  if (need.endsWith(':read')) {
+    const mod = need.slice(0, -':read'.length);
+    if (heldCanon.has(`${mod}:write`) || heldCanon.has(`${mod}:write-caisse`)) return true;
+  }
   if (held.has(need.split(':')[0])) return true;
   return false;
 }

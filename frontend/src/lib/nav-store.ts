@@ -33,6 +33,10 @@ export type PendingFacturePrefill = {
   clientNom: string;
   description: string;
   montant: number;
+  /** Prestation de contrat à l'origine du pont "Facturer" — permet de ne la
+   *  marquer "Facturée" qu'après la création réelle de la facture (voir
+   *  use-factures-screen.ts), pas de façon optimiste avant. */
+  sourcePrestationId?: string;
 } | null;
 
 interface NavState {

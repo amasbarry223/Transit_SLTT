@@ -78,7 +78,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     const stockItem = get().stock.find((s) => s.id === stockId);
     if (!stockItem) return;
 
-    const newQty = stockItem.quantite + quantite;
     // Persistance obligatoire : sans elle, la quantité en stock était
     // incrémentée localement alors que le mouvement n'a jamais été
     // enregistré côté serveur — désynchronisation stock physique/logique
@@ -106,8 +105,13 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       responsable,
     };
 
+    // `stockItem.quantite` capturé avant les `await` ci-dessus : recalculer
+    // ici perdrait un mouvement concurrent sur le même article déjà appliqué
+    // par un autre appel. On relit l'état frais dans le updater `set()`.
     set((s) => ({
-      stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
+      stock: s.stock.map((item) =>
+        item.id === stockId ? { ...item, quantite: item.quantite + quantite } : item,
+      ),
       mouvements: [newMouvement, ...s.mouvements],
     }));
     await get().addAuditLog(
@@ -124,7 +128,6 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
     if (stockItem.quantite < quantite) {
       throw new Error("Quantité supérieure au stock disponible.");
     }
-    const newQty = stockItem.quantite - quantite;
     // Persistance obligatoire — même raison que addStockEntry ci-dessus.
     const created = await api.stock.createMouvement({
       stockId,
@@ -153,8 +156,12 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       motif,
     };
 
+    // Même raison que addStockEntry : relire l'état frais dans le updater
+    // plutôt que réutiliser `stockItem.quantite` capturé avant les `await`.
     set((s) => ({
-      stock: s.stock.map((item) => (item.id === stockId ? { ...item, quantite: newQty } : item)),
+      stock: s.stock.map((item) =>
+        item.id === stockId ? { ...item, quantite: item.quantite - quantite } : item,
+      ),
       mouvements: [newMouvement, ...s.mouvements],
     }));
     await get().addAuditLog(
@@ -259,27 +266,49 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
       clientId: input.clientId,
     });
 
-    const updated: StockItem = {
-      id,
-      marchandise,
-      unite,
-      seuil: input.seuil,
-      depositaire: input.depositaire?.trim() || "—",
-      commercial: input.commercial?.trim() || "—",
-      sommePayee: input.sommePayee,
-      resteAPayer: input.resteAPayer,
-      date: input.date,
-      clientId: input.clientId,
-      clientNom: client?.nom ?? existing?.clientNom,
-      annexeId: existing?.annexeId ?? "",
-      annexeNom: existing?.annexeNom,
-      quantite: existing?.quantite ?? 0,
-    };
-
+    // `existing` a été lu avant `await api.stock.updateItem(...)` : reconstruire
+    // l'objet entier avec ses champs (notamment `quantite`) écraserait un
+    // mouvement de stock survenu entretemps (entrée/sortie/validation de bon)
+    // avec l'ancienne valeur. On ne fusionne que les champs édités par ce
+    // formulaire sur l'item courant, lu dans le updater `set()`.
+    let updated: StockItem | undefined;
     set((s) => ({
-      stock: s.stock.map((item) => (item.id === id ? updated : item)),
+      stock: s.stock.map((item) => {
+        if (item.id !== id) return item;
+        updated = {
+          ...item,
+          marchandise,
+          unite,
+          seuil: input.seuil,
+          depositaire: input.depositaire?.trim() || "—",
+          commercial: input.commercial?.trim() || "—",
+          sommePayee: input.sommePayee,
+          resteAPayer: input.resteAPayer,
+          date: input.date,
+          clientId: input.clientId,
+          clientNom: client?.nom ?? existing?.clientNom,
+        };
+        return updated;
+      }),
     }));
     await get().addAuditLog(AUDIT_MODULE.Stock, AUDIT_ACTION.Modification, `Article de stock modifié : ${marchandise}`);
-    return updated;
+    return (
+      updated ?? {
+        id,
+        marchandise,
+        unite,
+        seuil: input.seuil,
+        depositaire: input.depositaire?.trim() || "—",
+        commercial: input.commercial?.trim() || "—",
+        sommePayee: input.sommePayee,
+        resteAPayer: input.resteAPayer,
+        date: input.date,
+        clientId: input.clientId,
+        clientNom: client?.nom ?? existing?.clientNom,
+        annexeId: existing?.annexeId ?? "",
+        annexeNom: existing?.annexeNom,
+        quantite: existing?.quantite ?? 0,
+      }
+    );
   },
 });

@@ -183,17 +183,18 @@ export function ContratDetailScreen() {
 
   function handleFacturer(prestation: (typeof contratPrestations)[number]) {
     if (prestation.montant == null) return;
+    // La prestation n'est marquée "Facturée" qu'après la création réelle de
+    // la facture (voir use-factures-screen.ts, callback onCreated) : la
+    // marquer ici de façon optimiste laissait la prestation bloquée
+    // "Facturée" pour toujours si l'utilisateur annulait le formulaire ou
+    // le fermait sans enregistrer, sans qu'aucune facture n'existe.
     setPendingFacturePrefill({
       clientId: contrat!.clientId,
       clientNom: contrat!.clientNom,
       description: `${contrat!.reference} — ${prestation.libelle}`,
       montant: prestation.montant,
+      sourcePrestationId: prestation.id,
     });
-    // Garde-fou déclaratif contre le double clic / une seconde facture pour
-    // la même prestation — état 100% navigateur (pas de persistance API sur
-    // ContratPrestation), donc pas une garantie serveur : un rechargement de
-    // page peut faire réapparaître le bouton selon l'état du store.
-    void updateContratPrestation(prestation.id, { facturee: true });
     go("factures");
     toastInfo(toast, { title: "Facture préremplie", description: "Complétez et enregistrez la facture." });
   }

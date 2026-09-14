@@ -53,6 +53,14 @@ export class StockService {
     return item;
   }
 
+  private toNonNegativeQuantite(value: unknown): number {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n) || n < 0) {
+      throw new BadRequestException('La quantité en stock ne peut pas être négative.');
+    }
+    return n;
+  }
+
   async createItem(user: CurrentUserType, data: any) {
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException("Vous ne pouvez pas créer d'article pour cette annexe");
@@ -62,7 +70,7 @@ export class StockService {
         clientId: data.clientId || null,
         annexeId: data.annexeId,
         marchandise: data.marchandise,
-        quantite: Number(data.quantite || 0),
+        quantite: this.toNonNegativeQuantite(data.quantite),
         unite: data.unite || 'kg',
         seuil: Number(data.seuil || 0),
         depositaire: data.depositaire || null,
@@ -81,7 +89,11 @@ export class StockService {
       throw new ForbiddenException('Vous ne pouvez pas rattacher cet article à cette annexe');
     }
     const updateData: any = { ...data };
-    if (data.quantite !== undefined) updateData.quantite = Number(data.quantite);
+    // Les mouvements de stock (entrée/sortie/validation de bon) passent par des
+    // décréments/incréments atomiques contrôlés ; cette route générique
+    // d'édition de fiche ne doit pas pouvoir écraser la quantité avec une
+    // valeur négative, ce qui contournerait ces garde-fous.
+    if (data.quantite !== undefined) updateData.quantite = this.toNonNegativeQuantite(data.quantite);
     if (data.seuil !== undefined) updateData.seuil = Number(data.seuil);
     if (data.sommePayee !== undefined) updateData.sommePayee = Number(data.sommePayee);
     if (data.resteAPayer !== undefined) updateData.resteAPayer = Number(data.resteAPayer);

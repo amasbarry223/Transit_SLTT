@@ -280,14 +280,19 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     }
     await api.factures.enregistrerPaiement(id, { montant: effective, caisseId: caisse.id });
 
-    const newPaye = fact.montantPaye + effective;
-    // Même tolérance d'arrondi que le backend (factures.service) pour ne pas
-    // afficher "Partielle" alors que l'API a déjà passé la facture à PAYEE.
-    const newStatut: FactureStatut = newPaye >= fact.montantTTC - 0.5 ? "Soldée" : "Partielle";
+    // `fact` a été lu avant les `await` ci-dessus : recalculer `montantPaye`
+    // ici sur l'état capturé perdrait un paiement concurrent (double-clic ou
+    // deux encaissements presque simultanés) déjà appliqué par l'autre appel.
+    // On relit l'état frais à l'intérieur du updater `set()`.
     set((s) => {
-      const updatedFactures = s.factures.map((f) =>
-        f.id === id ? { ...f, montantPaye: newPaye, statut: newStatut } : f,
-      );
+      const updatedFactures = s.factures.map((f) => {
+        if (f.id !== id) return f;
+        const newPaye = f.montantPaye + effective;
+        // Même tolérance d'arrondi que le backend (factures.service) pour ne
+        // pas afficher "Partielle" alors que l'API a déjà passé la facture à PAYEE.
+        const newStatut: FactureStatut = newPaye >= f.montantTTC - 0.5 ? "Soldée" : "Partielle";
+        return { ...f, montantPaye: newPaye, statut: newStatut };
+      });
       return {
         factures: updatedFactures,
         clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),

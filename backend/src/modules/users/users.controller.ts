@@ -25,14 +25,14 @@ export class UsersController {
 
   @Get()
   @RequirePermission('utilisateurs:manage')
-  async findAll() {
-    return this.usersService.findAll();
+  async findAll(@CurrentUser() actor: CurrentUserType) {
+    return this.usersService.findAll(actor);
   }
 
   @Get(':id')
   @RequirePermission('utilisateurs:manage')
-  async findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() actor: CurrentUserType) {
+    return this.usersService.findOne(id, actor);
   }
 
   @Post()

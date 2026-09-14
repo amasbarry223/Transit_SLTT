@@ -50,6 +50,7 @@ export function useFacturesScreen() {
   const selectedId          = useNav((s) => s.selectedId);
   const pendingFacturePrefill    = useNav((s) => s.pendingFacturePrefill);
   const setPendingFacturePrefill = useNav((s) => s.setPendingFacturePrefill);
+  const updateContratPrestation  = useStore((s) => s.updateContratPrestation);
   const { annexes, selectedAnnexeId } = useActiveAnnexe();
 
   const [search,     setSearch]     = React.useState("");
@@ -143,6 +144,17 @@ export function useFacturesScreen() {
     setPendingFacturePrefill(null);
   }
 
+  // Ne marque la prestation d'origine "Facturée" qu'une fois la facture
+  // réellement créée — jamais de façon optimiste avant (voir handleFacturer
+  // dans contrat-detail-screen.tsx), sinon un formulaire annulé/fermé sans
+  // enregistrer laissait la prestation bloquée "Facturée" sans qu'aucune
+  // facture n'existe.
+  function handleFactureCreated() {
+    const prestationId = pendingFacturePrefill?.sourcePrestationId;
+    if (!prestationId) return;
+    void updateContratPrestation(prestationId, { facturee: true });
+  }
+
   function changeTab(tab: FactureStatut | "Tous") {
     setActiveTab(tab);
     setPage(1);
@@ -190,6 +202,7 @@ export function useFacturesScreen() {
     formPrefill,
     formKey: prefillDossierId ?? (pendingFacturePrefill ? "prestation-prefill" : "blank"),
     closeForm,
+    handleFactureCreated,
     deleteTarget,
     setDeleteTarget,
     envoyeeTarget,
