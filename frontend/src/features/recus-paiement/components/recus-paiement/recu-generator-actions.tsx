@@ -1,10 +1,11 @@
 "use client";
 
-import { FilePlus2, Printer } from "lucide-react";
+import { FilePlus2, Minus, Plus, Printer } from "lucide-react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { cn } from "@/shared/utils/cn";
 
 interface RecuGeneratorActionsProps {
   canWrite: boolean;
@@ -13,12 +14,61 @@ interface RecuGeneratorActionsProps {
   onCountChange: (value: number) => void;
   generating: boolean;
   printing: boolean;
-  variant?: "default" | "toolbar";
+  variant?: "default" | "sidebar";
   onGenerate: () => unknown;
   onPrint: () => unknown;
 }
 
-/** Deux actions : réserver le(s) prochain(s) numéro(s) (un champ précise
+/** Stepper -/valeur/+ — plus tactile et lisible qu'un simple champ nombre
+ *  pour une valeur bornée [1, 100] qu'on ajuste surtout de 1 en 1. */
+function QuantityStepper({
+  count,
+  onCountChange,
+  disabled,
+  className,
+}: {
+  count: number;
+  onCountChange: (value: number) => void;
+  disabled: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-center gap-1.5", className)}>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon-sm"
+        onClick={() => onCountChange(count - 1)}
+        disabled={disabled || count <= 1}
+        aria-label="Diminuer le nombre de reçus"
+      >
+        <Minus className="size-3.5" />
+      </Button>
+      <Input
+        id="recu-count"
+        type="number"
+        min={1}
+        max={100}
+        value={count}
+        onChange={(e) => onCountChange(Number(e.target.value))}
+        disabled={disabled}
+        className="h-8.5 w-14 text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="icon-sm"
+        onClick={() => onCountChange(count + 1)}
+        disabled={disabled || count >= 100}
+        aria-label="Augmenter le nombre de reçus"
+      >
+        <Plus className="size-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+/** Deux actions : réserver le(s) prochain(s) numéro(s) (un stepper précise
  *  combien), puis imprimer le carnet vierge — plus de formulaire à
  *  enregistrer ni à réinitialiser. */
 export function RecuGeneratorActions({
@@ -33,52 +83,44 @@ export function RecuGeneratorActions({
   onPrint,
 }: RecuGeneratorActionsProps) {
   const busy = generating || printing;
-  const countInput = (
-    <div className="flex items-center gap-1.5">
-      <Label htmlFor="recu-count" className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-        Nombre
-      </Label>
-      <Input
-        id="recu-count"
-        type="number"
-        min={1}
-        max={100}
-        value={count}
-        onChange={(e) => onCountChange(Number(e.target.value))}
-        disabled={busy}
-        className="h-9 w-16 text-center"
-      />
-    </div>
-  );
 
-  if (variant === "toolbar") {
+  if (variant === "sidebar") {
     return (
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-5">
         {canWrite && (
-          <>
-            {countInput}
+          <div className="space-y-2">
+            <Label htmlFor="recu-count" className="text-xs font-medium text-muted-foreground">
+              Nombre de reçus à réserver
+            </Label>
+            <QuantityStepper count={count} onCountChange={onCountChange} disabled={busy} />
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Plusieurs numéros d&apos;affilée pour un carnet à découper.
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2">
+          {canWrite && (
             <Button
-              size="sm"
               onClick={() => void onGenerate()}
               disabled={busy}
-              className="h-9 gap-1.5 px-4 bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold rounded-xl shadow-md shadow-red-600/25 border border-red-500/40 transition-all"
+              className="h-11 justify-center gap-2 bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 transition-all"
             >
-              <FilePlus2 className="size-3.5" />
+              <FilePlus2 className="size-4" />
               {generating ? "Génération…" : count > 1 ? `Générer ${count} reçus` : "Générer un reçu"}
             </Button>
-          </>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => void onPrint()}
-          disabled={busy || !hasCurrent}
-          className="h-9 gap-1.5"
-          title={`Impression ${RECEIPT_FORMAT_LABEL} paysage (pas A4)`}
-        >
-          <Printer className="size-3.5" />
-          {printing ? "Préparation…" : "Imprimer"}
-        </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => void onPrint()}
+            disabled={busy || !hasCurrent}
+            className="h-11 justify-center gap-2"
+            title={`Impression ${RECEIPT_FORMAT_LABEL} paysage (pas A4)`}
+          >
+            <Printer className="size-4" />
+            {printing ? "Préparation…" : "Imprimer"}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -92,10 +134,15 @@ export function RecuGeneratorActions({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-2">
+      <div className="grid grid-cols-1 gap-3">
         {canWrite && (
           <>
-            {countInput}
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+              <Label htmlFor="recu-count" className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                Nombre de reçus
+              </Label>
+              <QuantityStepper count={count} onCountChange={onCountChange} disabled={busy} />
+            </div>
             <Button
               onClick={() => void onGenerate()}
               disabled={busy}

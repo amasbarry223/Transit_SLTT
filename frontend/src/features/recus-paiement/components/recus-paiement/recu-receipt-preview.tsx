@@ -24,6 +24,11 @@ interface RecuReceiptPreviewProps {
   className?: string;
   fitContainer?: boolean;
   scale?: number;
+  /** Canvas nu : juste la feuille centrée sur le fond, sans bandeau de statut
+   *  ni pied de page — pour un contexte où ces infos vivent déjà ailleurs
+   *  (ex. le panneau latéral du workspace desktop). N'a d'effet qu'avec
+   *  `fitContainer`. */
+  bare?: boolean;
 }
 
 /** Bandeau format carnet — rappelle que l'impression n'est pas A4. */
@@ -86,6 +91,7 @@ export function RecuReceiptPreview({
   className,
   fitContainer = false,
   scale = 0.92,
+  bare = false,
 }: RecuReceiptPreviewProps) {
   if (!brand) {
     return (
@@ -114,6 +120,14 @@ export function RecuReceiptPreview({
       {paper}
     </div>
   );
+
+  if (fitContainer && bare) {
+    return (
+      <div className={cn("flex h-full min-h-0 items-center justify-center overflow-hidden", className)}>
+        {paperFrame}
+      </div>
+    );
+  }
 
   if (fitContainer) {
     return (
