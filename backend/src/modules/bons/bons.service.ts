@@ -108,8 +108,20 @@ export class BonsService {
         });
         if (claimed.count > 0) {
           const fresh = await tx.stockItem.findUnique({ where: { id: bon.stockId } });
+          // Contrôle sur la valeur RÉELLE post-écriture (même principe que
+          // stock.service.createMouvement et caisse.service.createTransaction) :
+          // si le stock devient négatif, on rejette et toute la transaction
+          // est annulée — le bon n'est PAS marqué "Validé" et aucun
+          // mouvement n'est créé. Avant ce correctif, la quantité était
+          // silencieusement ramenée à 0 mais le bon était quand même validé
+          // avec un mouvement de sortie à la quantité PLEINE demandée : un
+          // bon de 100 unités sur un stock de 30 se validait « avec succès »,
+          // laissant le stock à 0 et un historique prétendant que 100
+          // unités avaient bien été sorties.
           if (fresh && fresh.quantite < 0) {
-            await tx.stockItem.update({ where: { id: bon.stockId }, data: { quantite: 0 } });
+            throw new BadRequestException(
+              'Quantité insuffisante en stock pour valider ce bon de sortie.',
+            );
           }
           await tx.mouvementStock.create({
             data: {

@@ -160,8 +160,19 @@ export class StockService {
         });
         if (claimed.count > 0) {
           const fresh = await tx.stockItem.findUnique({ where: { id: data.stockId } });
+          // Contrôle sur la valeur RÉELLE post-écriture (même principe que
+          // caisse.service.createTransaction) : si le stock devient négatif
+          // (sortie supérieure à la quantité disponible, y compris via des
+          // mouvements concurrents), on rejette et toute la transaction est
+          // annulée — le mouvement n'est PAS créé. Avant ce correctif, la
+          // quantité était silencieusement ramenée à 0 et le mouvement
+          // persistait quand même : l'historique affichait une sortie de,
+          // disons, 100 unités alors que le stock n'en a réellement perdu
+          // que 30, sans qu'aucune erreur ne soit jamais remontée.
           if (fresh && fresh.quantite < 0) {
-            await tx.stockItem.update({ where: { id: data.stockId }, data: { quantite: 0 } });
+            throw new BadRequestException(
+              'Quantité insuffisante en stock pour cette sortie.',
+            );
           }
         }
       }

@@ -50,4 +50,11 @@ describe('cookie.config', () => {
     const { accessCookieOptions } = await loadConfig();
     expect(accessCookieOptions().sameSite).toBe('lax');
   });
+
+  it("tolère un espace de tête/fin dans COOKIE_SAME_SITE (saisie via un panel d'hébergement) au lieu de retomber silencieusement sur le défaut", async () => {
+    process.env.COOKIE_SAME_SITE = ' none ';
+    delete process.env.NODE_ENV;
+    const { accessCookieOptions } = await loadConfig();
+    expect(accessCookieOptions().sameSite).toBe('none');
+  });
 });

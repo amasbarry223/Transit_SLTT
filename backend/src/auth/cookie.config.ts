@@ -27,7 +27,11 @@ const isProd = process.env.NODE_ENV === 'production';
  *    ("session expirée") immédiatement après une connexion pourtant réussie.
  */
 function sameSite(): 'lax' | 'strict' | 'none' {
-  const value = process.env.COOKIE_SAME_SITE?.toLowerCase();
+  // .trim() indispensable : une valeur saisie dans un panel d'hébergement
+  // (Hostinger…) peut porter un espace de tête/fin invisible à la relecture
+  // — sans lui, "none " ne correspond à rien et retombe silencieusement sur
+  // le défaut au lieu de la valeur explicitement voulue.
+  const value = process.env.COOKIE_SAME_SITE?.trim().toLowerCase();
   if (value === 'strict' || value === 'none' || value === 'lax') return value;
   return isProd ? 'none' : 'lax';
 }

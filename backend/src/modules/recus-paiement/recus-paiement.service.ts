@@ -135,8 +135,12 @@ export class RecusPaiementService {
     if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas rattacher ce reçu à cette annexe');
     }
-    // Champs non modifiables directement (recalculés ou techniques).
-    const { reste: _r, statut: _s, id: _id, createdAt: _c, updatedAt: _u, ...safe } = data;
+    // Champs non modifiables directement (recalculés, techniques, ou
+    // d'attribution) — `creePar` en particulier : sans cette exclusion,
+    // n'importe quel payload d'update pouvait réécrire l'auteur d'un reçu
+    // déjà émis, alors que create() prend justement soin de ne JAMAIS le
+    // laisser venir du client (toujours `user.nom` depuis le JWT).
+    const { reste: _r, statut: _s, id: _id, createdAt: _c, updatedAt: _u, creePar: _cp, ...safe } = data;
     const updateData: any = { ...safe };
     if (data.somme !== undefined || data.montantPaye !== undefined) {
       const somme = data.somme !== undefined ? Number(data.somme) || 0 : current.somme;

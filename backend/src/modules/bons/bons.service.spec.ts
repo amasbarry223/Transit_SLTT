@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { BonsService } from './bons.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -71,5 +72,65 @@ describe('BonsService.updateBonCaisse', () => {
         lignes: [{ beneficiaire: 'X', motif: 'Y', montant: -100 }],
       }),
     ).rejects.toThrow();
+  });
+});
+
+function baseBonSortie(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'bon-2',
+    annexeId: 'annexe-ml',
+    statut: 'En attente',
+    stockId: 'stock-1',
+    quantite: 100,
+    marchandise: 'Riz',
+    unite: 'sac',
+    reference: 'BS-0001',
+    motif: 'Livraison client',
+    ...overrides,
+  };
+}
+
+function createFakeBonSortiePrisma(bon: ReturnType<typeof baseBonSortie>, stockAfterDecrement: number) {
+  const tx = {
+    bonSortie: {
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      findUnique: vi.fn().mockResolvedValue({ ...bon, statut: 'Validé' }),
+    },
+    stockItem: {
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      findUnique: vi.fn().mockResolvedValue({ id: bon.stockId, quantite: stockAfterDecrement }),
+      update: vi.fn(),
+    },
+    mouvementStock: { create: vi.fn() },
+  };
+  const prisma = {
+    bonSortie: { findUnique: vi.fn().mockResolvedValue(bon) },
+    $transaction: vi.fn(async (cb: (t: unknown) => unknown) => cb(tx)),
+  };
+  return { prisma, tx };
+}
+
+describe('BonsService.validateBon', () => {
+  it("rejette la validation d'un bon dont la quantité dépasse le stock disponible — pas de mouvement créé, le bon reste NON validé", async () => {
+    const bon = baseBonSortie({ quantite: 100 });
+    // Stock initial 30 - décrément de 100 (atomique) -> -70 en base.
+    const { prisma, tx } = createFakeBonSortiePrisma(bon, -70);
+    const service = new BonsService(prisma as any);
+
+    await expect(service.validateBon('bon-2', admin())).rejects.toThrow(BadRequestException);
+
+    expect(tx.mouvementStock.create).not.toHaveBeenCalled();
+    // La quantité n'est plus silencieusement forcée à 0 non plus.
+    expect(tx.stockItem.update).not.toHaveBeenCalled();
+  });
+
+  it('valide normalement un bon dont la quantité disponible suffit', async () => {
+    const bon = baseBonSortie({ quantite: 30 });
+    const { prisma, tx } = createFakeBonSortiePrisma(bon, 0);
+    const service = new BonsService(prisma as any);
+
+    await service.validateBon('bon-2', admin());
+
+    expect(tx.mouvementStock.create).toHaveBeenCalledTimes(1);
   });
 });
