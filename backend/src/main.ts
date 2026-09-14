@@ -16,11 +16,20 @@ async function bootstrap() {
   app.setGlobalPrefix(apiPrefix);
 
   // CORS — credentials:true + support multi-origines (apex + sous-domaine www)
-  const rawCors = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
-  const allowedOrigins = rawCors
+  const rawCors = process.env.CORS_ORIGIN ?? '';
+  const configuredCors = rawCors
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  const allowedOrigins = Array.from(
+    new Set([
+      'https://traorelogistique-transit.com',
+      'https://www.traorelogistique-transit.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      ...configuredCors,
+    ]),
+  );
 
   app.enableCors({
     origin: (origin, callback) => {

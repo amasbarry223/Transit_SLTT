@@ -79,4 +79,32 @@ describe('CsrfGuard', () => {
       expect(guard.canActivate(ctx)).toBe(true);
     });
   });
+
+  describe('Validation d’origine autorisée (cross-origin OWASP)', () => {
+    const prevCors = process.env.CORS_ORIGIN;
+    beforeAll(() => {
+      process.env.CORS_ORIGIN = 'https://traorelogistique-transit.com,https://www.traorelogistique-transit.com';
+    });
+    afterAll(() => {
+      process.env.CORS_ORIGIN = prevCors;
+    });
+
+    it('accepte une requête POST sans en-tête CSRF si l’en-tête Origin est une origine de confiance autorisée', () => {
+      const guard = makeGuard();
+      const ctx = contextFor('POST', { [CSRF_COOKIE]: 'abc' }, { origin: 'https://www.traorelogistique-transit.com' });
+      expect(guard.canActivate(ctx)).toBe(true);
+    });
+
+    it('accepte si le Referer provient du domaine autorisé', () => {
+      const guard = makeGuard();
+      const ctx = contextFor('POST', { [CSRF_COOKIE]: 'abc' }, { referer: 'https://traorelogistique-transit.com/clients' });
+      expect(guard.canActivate(ctx)).toBe(true);
+    });
+
+    it('rejette impitoyablement si l’en-tête Origin provient d’un site tiers malveillant', () => {
+      const guard = makeGuard();
+      const ctx = contextFor('POST', { [CSRF_COOKIE]: 'abc' }, { origin: 'https://evil-hacker.com' });
+      expect(() => guard.canActivate(ctx)).toThrow();
+    });
+  });
 });

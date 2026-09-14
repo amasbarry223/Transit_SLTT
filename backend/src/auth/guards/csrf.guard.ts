@@ -24,6 +24,52 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * refresh à volonté pour un compte déjà connecté (nuisance : épuisement du
  * throttle 10/min sur ce endpoint).
  */
+export function isAllowedOrigin(originOrReferer: string | undefined, rawAllowedCors?: string): boolean {
+  if (!originOrReferer) return false;
+  const rawCors = rawAllowedCors ?? process.env.CORS_ORIGIN ?? '';
+  const configuredCors = rawCors
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  const allowedOrigins = Array.from(
+    new Set([
+      'https://traorelogistique-transit.com',
+      'https://www.traorelogistique-transit.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      ...configuredCors,
+    ]),
+  );
+
+  let originToTest = originOrReferer;
+  try {
+    const parsed = new URL(originOrReferer);
+    originToTest = parsed.origin;
+  } catch {
+    // Si parsing échoue, on compare la valeur brute
+  }
+
+  return allowedOrigins.some((allowed) => {
+    if (allowed === originToTest) return true;
+    const cleanAllowed = allowed.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    const cleanOrigin = originToTest.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    return cleanAllowed === cleanOrigin;
+  });
+}
+
+/**
+ * Double-submit CSRF + vérification d'origine autorisée (OWASP Cross-Origin API) :
+ * 1. Une requête d'état (POST/PUT/PATCH/DELETE) qui échote dans X-CSRF-Token
+ *    le jeton du cookie transit_sltt_csrf est validée (same-origin / proxy).
+ * 2. Si le front et l'API sont déployés sur des origines distinctes
+ *    (ex. traorelogistique-transit.com -> goldenrod-newt-273291.hostingersite.com),
+ *    le cookie posé par le backend n'est pas lisible par document.cookie côté client
+ *    par restriction Same-Origin du navigateur. Dans ce cas, la vérification
+ *    de l'en-tête Origin / Referer contre la liste blanche CORS_ORIGIN
+ *    garantit que la requête provient bien de l'application légitime
+ *    (le navigateur interdisant toute falsification de l'en-tête Origin par un tiers).
+ */
 @Injectable()
 export class CsrfGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
@@ -49,10 +95,17 @@ export class CsrfGuard implements CanActivate {
 
     const headerToken = request.headers['x-csrf-token'];
 
-    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-      throw new ForbiddenException('Jeton CSRF manquant ou invalide.');
+    // 1. Validation double-submit si les deux jetons sont fournis et identiques
+    if (cookieToken && headerToken && cookieToken === headerToken) {
+      return true;
     }
 
-    return true;
+    // 2. Validation par vérification stricte de l'origine (recommandation OWASP API cross-origin)
+    const origin = (request.headers['origin'] || request.headers['referer']) as string | undefined;
+    if (origin && isAllowedOrigin(origin)) {
+      return true;
+    }
+
+    throw new ForbiddenException('Jeton CSRF manquant ou invalide.');
   }
 }
