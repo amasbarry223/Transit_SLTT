@@ -25,6 +25,7 @@ import {
   type DossierBulkImportRow,
 } from "@/lib/dossier-bulk-import";
 import { formatFCFA } from "@/lib/format";
+import { XLSX_IMPORT_MAX_MB, XLSX_IMPORT_MAX_BYTES } from "@/lib/constants";
 import { getErrorMessage, cn } from "@/shared/utils/cn";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -142,6 +143,13 @@ export function DossierBulkImportButton() {
   }
 
   async function handleFile(file: File) {
+    if (file.size > XLSX_IMPORT_MAX_BYTES) {
+      toastWarning(toast, {
+        title: "Fichier trop volumineux",
+        description: `${file.name} dépasse ${XLSX_IMPORT_MAX_MB} Mo.`,
+      });
+      return;
+    }
     setFileName(file.name);
     setParsing(true);
     try {

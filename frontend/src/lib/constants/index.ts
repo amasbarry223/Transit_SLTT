@@ -29,6 +29,8 @@ export {
   DOC_ACCEPTED_MIME_TYPES,
   DOC_ACCEPTED_EXTENSIONS,
   OCR_LOW_CONFIDENCE_THRESHOLD,
+  XLSX_IMPORT_MAX_MB,
+  XLSX_IMPORT_MAX_BYTES,
 } from "./validation.constants";
 
 export {

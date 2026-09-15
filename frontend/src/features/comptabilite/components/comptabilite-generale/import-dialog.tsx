@@ -18,6 +18,7 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
 import { formatFCFA } from "@/lib/format";
+import { XLSX_IMPORT_MAX_MB, XLSX_IMPORT_MAX_BYTES } from "@/lib/constants";
 import { cn, getErrorMessage } from "@/shared/utils/cn";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -127,6 +128,13 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
   }
 
   async function handleFile(file: File) {
+    if (file.size > XLSX_IMPORT_MAX_BYTES) {
+      toastWarning(toast, {
+        title: "Fichier trop volumineux",
+        description: `${file.name} dépasse ${XLSX_IMPORT_MAX_MB} Mo.`,
+      });
+      return;
+    }
     setFileName(file.name);
     setParsing(true);
     try {

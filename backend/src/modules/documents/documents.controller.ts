@@ -120,7 +120,17 @@ export class DocumentsController {
   async downloadFile(@Param('filename') filename: string, @Res() res: Response) {
     const { doc, fullPath } = await this.documentsService.getFilePath(filename);
     res.setHeader('Content-Type', doc.typeMime);
-    res.setHeader('Content-Disposition', `attachment; filename="${doc.nomOriginal}"`);
+    // `nomOriginal` est le nom de fichier brut fourni par le client à
+    // l'upload (non modifié depuis) : un guillemet y casse la syntaxe de
+    // l'en-tête, un caractère non-ASCII y est mal interprété par certains
+    // clients. Fallback ASCII assaini (RFC 6266) + variante UTF-8 encodée
+    // pour les navigateurs modernes.
+    const asciiFallback = doc.nomOriginal.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, "'");
+    const encoded = encodeURIComponent(doc.nomOriginal);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`,
+    );
     return res.sendFile(fullPath);
   }
 

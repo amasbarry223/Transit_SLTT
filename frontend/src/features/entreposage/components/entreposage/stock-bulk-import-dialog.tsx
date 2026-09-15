@@ -18,7 +18,7 @@ import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-hel
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { parseStockBulkXlsx, type StockBulkImportRow } from "@/lib/stock-bulk-import";
-import { DEFAULT_STOCK_SEUIL } from "@/lib/constants";
+import { DEFAULT_STOCK_SEUIL, XLSX_IMPORT_MAX_MB, XLSX_IMPORT_MAX_BYTES } from "@/lib/constants";
 import { getErrorMessage, cn } from "@/shared/utils/cn";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -155,6 +155,13 @@ export function StockBulkImportButton() {
   }
 
   async function handleFile(file: File) {
+    if (file.size > XLSX_IMPORT_MAX_BYTES) {
+      toastWarning(toast, {
+        title: "Fichier trop volumineux",
+        description: `${file.name} dépasse ${XLSX_IMPORT_MAX_MB} Mo.`,
+      });
+      return;
+    }
     setFileName(file.name);
     setParsing(true);
     try {

@@ -8,6 +8,12 @@ export const MAX_FILE_SIZE_MB = 2;
 export const DOC_MAX_FILE_MB = 10;
 export const DOC_MAX_FILE_BYTES = DOC_MAX_FILE_MB * 1024 * 1024;
 
+/** Limite fichier .xlsx pour les imports en masse (stock, comptabilité
+ *  générale, dossiers) — un classeur volumineux (erreur de sélection) peut
+ *  sinon geler l'onglet le temps du parsing en mémoire. */
+export const XLSX_IMPORT_MAX_MB = 20;
+export const XLSX_IMPORT_MAX_BYTES = XLSX_IMPORT_MAX_MB * 1024 * 1024;
+
 export const DOC_ACCEPTED_MIME_TYPES = [
   "application/pdf",
   "image/jpeg",
