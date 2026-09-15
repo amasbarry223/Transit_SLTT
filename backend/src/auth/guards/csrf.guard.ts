@@ -96,11 +96,19 @@ export class CsrfGuard implements CanActivate {
     const headerToken = request.headers['x-csrf-token'];
 
     // 1. Validation double-submit si les deux jetons sont fournis et identiques
-    if (cookieToken && headerToken && cookieToken === headerToken) {
-      return true;
+    if (cookieToken && headerToken) {
+      if (cookieToken === headerToken) return true;
+      // Un en-tête FAUX (par opposition à absent) signale soit une tentative
+      // de forgerie, soit une désynchronisation réelle : jamais rattrapé par
+      // la vérification d'origine ci-dessous, qui ne couvre que le cas où le
+      // front n'a physiquement jamais pu lire le cookie (cross-origin).
+      throw new ForbiddenException('Jeton CSRF invalide.');
     }
 
-    // 2. Validation par vérification stricte de l'origine (recommandation OWASP API cross-origin)
+    // 2. Validation par vérification stricte de l'origine (recommandation OWASP API cross-origin) :
+    // uniquement quand l'en-tête est ABSENT (front cross-origin qui ne peut
+    // pas lire le cookie transit_sltt_csrf posé par un domaine distinct),
+    // jamais quand un jeton a été envoyé mais ne correspond pas.
     const origin = (request.headers['origin'] || request.headers['referer']) as string | undefined;
     if (origin && isAllowedOrigin(origin)) {
       return true;

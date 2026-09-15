@@ -106,5 +106,15 @@ describe('CsrfGuard', () => {
       const ctx = contextFor('POST', { [CSRF_COOKIE]: 'abc' }, { origin: 'https://evil-hacker.com' });
       expect(() => guard.canActivate(ctx)).toThrow();
     });
+
+    it('rejette même avec une origine de confiance si un en-tête CSRF FAUX (pas absent) a été envoyé — jamais rattrapé par le fallback', () => {
+      const guard = makeGuard();
+      const ctx = contextFor(
+        'POST',
+        { [CSRF_COOKIE]: 'abc' },
+        { 'x-csrf-token': 'faux-jeton', origin: 'https://traorelogistique-transit.com' },
+      );
+      expect(() => guard.canActivate(ctx)).toThrow();
+    });
   });
 });
