@@ -198,7 +198,7 @@ export function DossierDetailScreen() {
   const reste = resteAPayer(currentDossier);
   const tauxRecouvrement =
     currentDossier.montantInvesti > 0
-      ? Math.round((currentDossier.montantPaye / currentDossier.montantInvesti) * 100)
+      ? Math.min(100, Math.round((currentDossier.montantPaye / currentDossier.montantInvesti) * 100))
       : 0;
 
   const today = new Date();

@@ -221,7 +221,7 @@ export function useBilansScreen() {
 
   const tauxRecouvrement =
     recapTotaux.investi > 0
-      ? Math.round((recapTotaux.encaisse / recapTotaux.investi) * 100)
+      ? Math.min(100, Math.round((recapTotaux.encaisse / recapTotaux.investi) * 100))
       : 0;
 
   const sortedRecap = useMemo(() => {

@@ -97,7 +97,11 @@ export function FactureDetailScreen() {
 
   const dossier = facture.dossierId ? dossiers.find((d) => d.id === facture.dossierId) : null;
   const reste = resteAPayer({ montantInvesti: facture.montantTTC, montantPaye: facture.montantPaye });
-  const pctPaye = facture.montantTTC > 0 ? Math.round((facture.montantPaye / facture.montantTTC) * 100) : 0;
+  // Plafonné à 100 : au-delà, `strokeDashoffset` du PaymentRing devient
+  // négatif et « boucle » visuellement (134 % s'affiche comme un arc à 34 %
+  // à cause de l'arithmétique modulo de stroke-dasharray) tout en gardant la
+  // couleur "complété" — ring et texte se contredisent sur un trop-perçu.
+  const pctPaye = facture.montantTTC > 0 ? Math.min(100, Math.round((facture.montantPaye / facture.montantTTC) * 100)) : 0;
   const isEchue =
     facture.statut !== "Soldée" &&
     facture.statut !== "Annulée" &&

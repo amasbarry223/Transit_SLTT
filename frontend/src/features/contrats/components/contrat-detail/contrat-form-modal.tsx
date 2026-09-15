@@ -45,7 +45,7 @@ export function ContratFormModal({
     statut: ContratStatut;
     notes?: string;
   };
-  onSubmit: (input: ContratInput) => void;
+  onSubmit: (input: ContratInput) => void | Promise<void>;
 }) {
   const clients = useStore((s) => s.clients);
   const { annexes, activeAnnexeId } = useActiveAnnexe();
@@ -58,6 +58,7 @@ export function ContratFormModal({
   const [montant, setMontant] = useState(String(initial.montant));
   const [statut, setStatut] = useState<ContratStatut>(initial.statut);
   const [notes, setNotes] = useState(initial.notes ?? "");
+  const [saving, setSaving] = useState(false);
 
   const showAnnexe = annexes.length > 1;
   const resolvedAnnexeId = showAnnexe ? annexeId : (activeAnnexeId ?? initial.annexeId);
@@ -75,19 +76,27 @@ export function ContratFormModal({
     ...(CONTRAT_ALLOWED_TRANSITIONS[initial.statut] ?? []),
   ];
 
-  function handleSubmit() {
-    if (!selectedClient || !canSubmit) return;
-    onSubmit({
-      clientId,
-      clientNom: selectedClient.nom,
-      annexeId: resolvedAnnexeId || undefined,
-      objet: objet.trim(),
-      dateDebut,
-      dateFin: dateFin || undefined,
-      montant: parseAmount(montant),
-      statut,
-      notes: notes.trim() || undefined,
-    });
+  async function handleSubmit() {
+    if (!selectedClient || !canSubmit || saving) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        clientId,
+        clientNom: selectedClient.nom,
+        annexeId: resolvedAnnexeId || undefined,
+        objet: objet.trim(),
+        dateDebut,
+        dateFin: dateFin || undefined,
+        montant: parseAmount(montant),
+        statut,
+        notes: notes.trim() || undefined,
+      });
+    } catch {
+      // Le parent affiche déjà le toast d'erreur — le formulaire reste rempli
+      // pour permettre de réessayer sans tout ressaisir.
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -180,11 +189,11 @@ export function ContratFormModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
-            Enregistrer
+          <Button onClick={() => void handleSubmit()} disabled={!canSubmit || saving}>
+            {saving ? "Enregistrement…" : "Enregistrer"}
           </Button>
         </DialogFooter>
       </DialogContent>

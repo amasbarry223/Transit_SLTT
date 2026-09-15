@@ -107,7 +107,9 @@ export function useFacturesScreen() {
     const totalTTC = actives.reduce((s, f) => s + f.montantTTC, 0);
     const totalPaye = actives.reduce((s, f) => s + f.montantPaye, 0);
     const nonSoldees = actives.filter((f) => f.statut !== "Soldée").length;
-    const tauxRecouvrement = totalTTC > 0 ? Math.round((totalPaye / totalTTC) * 100) : 0;
+    // Plafonné à 100 : un trop-perçu (avance client) ne doit jamais afficher
+    // un taux ni une barre de progression au-delà de 100 %.
+    const tauxRecouvrement = totalTTC > 0 ? Math.min(100, Math.round((totalPaye / totalTTC) * 100)) : 0;
     return { total: actives.length, totalTTC, totalPaye, nonSoldees, tauxRecouvrement };
   }, [societeFactures]);
 
