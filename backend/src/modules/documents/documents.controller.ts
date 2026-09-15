@@ -15,7 +15,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import type { Response } from 'express';
 import * as path from 'path';
+import * as fs from 'fs';
 import { DocumentsService } from './documents.service';
+import { detectRealMimeType, realMimeSatisfies } from './file-signature.util';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { CurrentUser, Public, RequirePermission } from '../../shared/decorators';
@@ -98,6 +100,17 @@ export class DocumentsController {
   ) {
     if (!file) {
       throw new BadRequestException('Aucun fichier reçu, ou type de fichier refusé.');
+    }
+    // documentFileFilter ne compare que des métadonnées déclarées par le
+    // client (mimetype du multipart, extension du nom de fichier) — jamais
+    // le contenu réel. Ce contrôle a posteriori lit les octets effectivement
+    // écrits sur disque et rejette tout contenu ne correspondant à aucune
+    // signature connue des formats autorisés, même si mimetype/extension
+    // avaient été falsifiés pour passer le premier filtre.
+    const real = await detectRealMimeType(file.path);
+    if (!realMimeSatisfies(real, file.mimetype?.toLowerCase())) {
+      await fs.promises.unlink(file.path).catch(() => {});
+      throw new BadRequestException('Le contenu du fichier ne correspond à aucun type autorisé.');
     }
     return this.documentsService.saveFileMetadata(file, dossierId);
   }
