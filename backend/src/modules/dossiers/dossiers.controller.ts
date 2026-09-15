@@ -11,6 +11,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { DossiersService } from './dossiers.service';
+import { CreateDossierDto } from './dto/create-dossier.dto';
+import { UpdateDossierDto } from './dto/update-dossier.dto';
+import { EnregistrerPaiementDto } from './dto/enregistrer-paiement.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
@@ -43,7 +46,7 @@ export class DossiersController {
   @Post()
   @UseGuards(AnnexeGuard)
   @RequirePermission('dossiers.creer')
-  async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  async create(@CurrentUser() user: CurrentUserType, @Body() body: CreateDossierDto) {
     return this.dossiersService.create(user, body);
   }
 
@@ -53,7 +56,7 @@ export class DossiersController {
   async update(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserType,
-    @Body() body: any,
+    @Body() body: UpdateDossierDto,
   ) {
     return this.dossiersService.update(id, user, body);
   }
@@ -73,7 +76,7 @@ export class DossiersController {
   async enregistrerPaiement(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserType,
-    @Body() body: { montant: number; statut?: string; date?: string },
+    @Body() body: EnregistrerPaiementDto,
   ) {
     return this.dossiersService.enregistrerPaiement(id, user, body);
   }
