@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { RecusPaiementService } from './recus-paiement.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -43,5 +44,27 @@ describe('RecusPaiementService.update', () => {
     const updateCall = (prisma.recuPaiement.update as any).mock.calls[0][0];
     expect(updateCall.data.creePar).toBeUndefined();
     expect(updateCall.data.motif).toBe('Correction du motif');
+  });
+
+  it('rejette un montant payé négatif à la mise à jour', async () => {
+    const recu = baseRecu();
+    const { prisma } = createFakePrisma(recu);
+    const service = new RecusPaiementService(prisma as any);
+
+    await expect(service.update('recu-1', admin(), { montantPaye: -50 })).rejects.toThrow(BadRequestException);
+  });
+});
+
+describe('RecusPaiementService.create', () => {
+  it('rejette une somme ou un montant payé négatif', async () => {
+    const prisma = { recuPaiement: {} };
+    const service = new RecusPaiementService(prisma as any);
+
+    await expect(
+      service.create(admin(), { annexeId: 'annexe-ml', somme: -100 }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.create(admin(), { annexeId: 'annexe-ml', montantPaye: -1 }),
+    ).rejects.toThrow(BadRequestException);
   });
 });

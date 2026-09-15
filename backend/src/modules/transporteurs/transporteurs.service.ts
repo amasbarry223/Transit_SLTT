@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+
+function toNonNegativeCapacite(value: unknown): number {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new BadRequestException('La capacité ne peut pas être négative.');
+  }
+  return n;
+}
 
 @Injectable()
 export class TransporteursService {
@@ -68,7 +76,7 @@ export class TransporteursService {
         vehicule: data.vehicule,
         immatriculation: data.immatriculation,
         trajet: data.trajet || null,
-        capacite: Number(data.capacite || 0),
+        capacite: toNonNegativeCapacite(data.capacite),
         statut: data.statut || 'DISPONIBLE',
         dateCreation: data.dateCreation || new Date().toISOString().slice(0, 10),
         notes: data.notes || null,
@@ -89,7 +97,7 @@ export class TransporteursService {
     for (const k of ['nom', 'contact', 'telephone', 'email', 'vehicule', 'immatriculation', 'trajet', 'statut', 'notes', 'annexeId'] as const) {
       if (data[k] !== undefined) updateData[k] = data[k];
     }
-    if (data.capacite !== undefined) updateData.capacite = Number(data.capacite) || 0;
+    if (data.capacite !== undefined) updateData.capacite = toNonNegativeCapacite(data.capacite);
     return this.prisma.transporteur.update({
       where: { id },
       data: updateData,

@@ -163,15 +163,20 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     // pas de mutation locale pour un devis dont l'écriture serveur a échoué
     // (sinon il repasse "Brouillon"/"Envoyé" au prochain rechargement sans
     // explication) — on ne marque expirés localement que ceux confirmés.
+    // Chaque devis est indépendant des autres (pas de séquence partagée
+    // contrairement à un numéro de référence) : paralléliser plutôt
+    // qu'attendre chaque appel l'un après l'autre.
+    const results = await Promise.allSettled(
+      obsoletes.map((d) => api.devis.update(d.id, { statut: "EXPIRE" })),
+    );
     const expiredIds: string[] = [];
-    for (const d of obsoletes) {
-      try {
-        await api.devis.update(d.id, { statut: "EXPIRE" });
-        expiredIds.push(d.id);
-      } catch (e) {
-        logWarn(`api.devis.update statut EXPIRE (devis ${d.reference} ignoré)`, e);
+    results.forEach((r, i) => {
+      if (r.status === "fulfilled") {
+        expiredIds.push(obsoletes[i].id);
+      } else {
+        logWarn(`api.devis.update statut EXPIRE (devis ${obsoletes[i].reference} ignoré)`, r.reason);
       }
-    }
+    });
     if (expiredIds.length === 0) return;
 
     const obsoleteIds = new Set(expiredIds);

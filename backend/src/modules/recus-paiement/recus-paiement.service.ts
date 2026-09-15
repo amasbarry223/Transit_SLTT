@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -8,6 +8,17 @@ function statutRecu(somme: number, montantPaye: number): 'SOLDE' | 'PARTIEL' | '
   const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
   if (reste < 0.5) return 'SOLDE';
   return montantPaye > 0 ? 'PARTIEL' : 'EN_ATTENTE';
+}
+
+// 0 reste une valeur légitime (carnet de reçus vierges : aucune de ces
+// données n'est transmise, seule la réservation du numéro compte) — seul le
+// négatif doit être rejeté.
+function toNonNegativeAmount(value: unknown, label: string): number {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new BadRequestException(`${label} ne peut pas être négatif.`);
+  }
+  return n;
 }
 
 @Injectable()
@@ -87,8 +98,8 @@ export class RecusPaiementService {
     // nom/prenom/motif/somme/montantPaye sont optionnels : le carnet de reçus
     // vierges (imprimé pour être rempli au stylo) ne transmet plus aucune de
     // ces données — seule la réservation du numéro compte ici.
-    const somme = Number(data.somme) || 0;
-    const montantPaye = Number(data.montantPaye) || 0;
+    const somme = toNonNegativeAmount(data.somme, 'La somme due');
+    const montantPaye = toNonNegativeAmount(data.montantPaye, 'Le montant payé');
     const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
     const statut = statutRecu(somme, montantPaye);
 
@@ -143,9 +154,11 @@ export class RecusPaiementService {
     const { reste: _r, statut: _s, id: _id, createdAt: _c, updatedAt: _u, creePar: _cp, ...safe } = data;
     const updateData: any = { ...safe };
     if (data.somme !== undefined || data.montantPaye !== undefined) {
-      const somme = data.somme !== undefined ? Number(data.somme) || 0 : current.somme;
+      const somme = data.somme !== undefined ? toNonNegativeAmount(data.somme, 'La somme due') : current.somme;
       const montantPaye =
-        data.montantPaye !== undefined ? Number(data.montantPaye) || 0 : current.montantPaye;
+        data.montantPaye !== undefined
+          ? toNonNegativeAmount(data.montantPaye, 'Le montant payé')
+          : current.montantPaye;
       updateData.somme = somme;
       updateData.montantPaye = montantPaye;
       updateData.reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);

@@ -1,6 +1,16 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+
+// Le front pose `min={0}` sur ce champ (contrat-form-modal.tsx) : 0 reste un
+// montant valide (contrat sans valeur chiffrée), seul le négatif est rejeté.
+function toNonNegativeMontant(value: unknown): number {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new BadRequestException('Le montant du contrat ne peut pas être négatif.');
+  }
+  return n;
+}
 
 @Injectable()
 export class ContratsService {
@@ -79,7 +89,7 @@ export class ContratsService {
         objet: data.objet,
         dateDebut,
         dateFin,
-        montant: Number(data.montant) || 0,
+        montant: toNonNegativeMontant(data.montant),
         statut: data.statut || 'Actif',
         notes: data.notes || undefined,
         // Attribution fiable : nom de l'auteur pris du JWT, jamais d'un
@@ -112,7 +122,7 @@ export class ContratsService {
     if (data.objet !== undefined) updateData.objet = data.objet;
     if (data.dateDebut !== undefined) updateData.dateDebut = new Date(data.dateDebut);
     if (data.dateFin !== undefined) updateData.dateFin = data.dateFin ? new Date(data.dateFin) : null;
-    if (data.montant !== undefined) updateData.montant = Number(data.montant) || 0;
+    if (data.montant !== undefined) updateData.montant = toNonNegativeMontant(data.montant);
     if (data.statut !== undefined) updateData.statut = data.statut;
     if (data.notes !== undefined) updateData.notes = data.notes;
     // creePar n'est pas modifiable après création — c'est l'auteur
