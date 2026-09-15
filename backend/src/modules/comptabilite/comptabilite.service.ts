@@ -184,19 +184,31 @@ export class ComptabiliteService {
       throw new ConflictException('Cette période a déjà été clôturée pour cette annexe.');
     }
 
-    return this.prisma.clotureCaisse.create({
-      data: {
-        annexeId: data.annexeId || null,
-        periodeDebut: data.periodeDebut,
-        periodeFin: data.periodeFin,
-        soldeTheorique,
-        soldeConstate,
-        ecart,
-        note: data.note || null,
-        cloturePar: user.nom,
-        clotureLe: data.clotureLe || new Date().toISOString(),
-      },
-      include: { annexe: true },
-    });
+    try {
+      return await this.prisma.clotureCaisse.create({
+        data: {
+          annexeId: data.annexeId || null,
+          periodeDebut: data.periodeDebut,
+          periodeFin: data.periodeFin,
+          soldeTheorique,
+          soldeConstate,
+          ecart,
+          note: data.note || null,
+          cloturePar: user.nom,
+          clotureLe: data.clotureLe || new Date().toISOString(),
+        },
+        include: { annexe: true },
+      });
+    } catch (err) {
+      // Filet de sécurité si deux clôtures concurrentes passent toutes les
+      // deux le `findFirst` ci-dessus avant que l'une n'écrive (race déjà
+      // recontrée sur nextOperationReference/nextRecuReference) : la
+      // contrainte @@unique tranche, on traduit juste en la même erreur
+      // métier plutôt qu'un 500 Prisma brut.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException('Cette période a déjà été clôturée pour cette annexe.');
+      }
+      throw err;
+    }
   }
 }

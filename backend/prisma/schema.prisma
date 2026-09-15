@@ -905,6 +905,14 @@ model ClotureCaisse {
 
   annexe         Annexe?  @relation(fields: [annexeId], references: [id])
 
+  // Empêche deux clôtures concurrentes sur la même période pour la même
+  // annexe (comptabilite.service.ts faisait un simple findFirst PUIS create,
+  // sans transaction ni verrou — deux requêtes simultanées passaient toutes
+  // les deux le contrôle avant que l'une n'écrive). Limite MySQL : NULL
+  // n'est jamais égal à NULL dans un index unique, donc les clôtures
+  // "toutes annexes" (annexeId = null) ne sont pas couvertes par cette
+  // contrainte — seul le cas par-annexe (le cas courant) l'est.
+  @@unique([annexeId, periodeDebut, periodeFin])
   @@index([annexeId])
   @@map("clotures_caisse")
 }
