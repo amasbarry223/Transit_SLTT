@@ -9,6 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AnnexesService } from './annexes.service';
+import { CreateAnnexeDto } from './dto/create-annexe.dto';
+import { UpdateAnnexeDto } from './dto/update-annexe.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { RequirePermission } from '../../shared/decorators';
@@ -30,13 +32,13 @@ export class AnnexesController {
 
   @Post()
   @RequirePermission('annexes.creer')
-  async create(@Body() body: any) {
+  async create(@Body() body: CreateAnnexeDto) {
     return this.annexesService.create(body);
   }
 
   @Put(':id')
   @RequirePermission('annexes.modifier')
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param('id') id: string, @Body() body: UpdateAnnexeDto) {
     return this.annexesService.update(id, body);
   }
 

@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { TransporteursService } from './transporteurs.service';
+import { CreateTransporteurDto } from './dto/create-transporteur.dto';
+import { UpdateTransporteurDto } from './dto/update-transporteur.dto';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -25,14 +27,14 @@ export class TransporteursController {
   @Post()
   @UseGuards(AnnexeGuard)
   @RequirePermission('transporteurs.creer')
-  create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  create(@CurrentUser() user: CurrentUserType, @Body() body: CreateTransporteurDto) {
     return this.transporteursService.create(user, body);
   }
 
   @Put(':id')
   @UseGuards(AnnexeGuard)
   @RequirePermission('transporteurs.modifier')
-  update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
+  update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: UpdateTransporteurDto) {
     return this.transporteursService.update(id, user, body);
   }
 

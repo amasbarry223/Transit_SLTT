@@ -9,6 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PortsService } from './ports.service';
+import { CreatePortDto } from './dto/create-port.dto';
+import { UpdatePortDto } from './dto/update-port.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { RequirePermission } from '../../shared/decorators';
@@ -30,13 +32,13 @@ export class PortsController {
 
   @Post()
   @RequirePermission('parametres.modifier')
-  async create(@Body() body: any) {
+  async create(@Body() body: CreatePortDto) {
     return this.portsService.create(body);
   }
 
   @Put(':id')
   @RequirePermission('parametres.modifier')
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param('id') id: string, @Body() body: UpdatePortDto) {
     return this.portsService.update(id, body);
   }
 

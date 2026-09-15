@@ -1,5 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { BonsService } from './bons.service';
+import { CreateBonSortieDto } from './dto/create-bon-sortie.dto';
+import { CreateBonCaisseDto } from './dto/create-bon-caisse.dto';
+import { UpdateBonCaisseDto } from './dto/update-bon-caisse.dto';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -20,7 +23,7 @@ export class BonsController {
   @Post('sortie')
   @UseGuards(AnnexeGuard)
   @RequirePermission('bons:write')
-  createBon(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  createBon(@CurrentUser() user: CurrentUserType, @Body() body: CreateBonSortieDto) {
     return this.bonsService.createBon(user, body);
   }
 
@@ -44,14 +47,14 @@ export class BonsController {
   @Post('caisse')
   @UseGuards(AnnexeGuard)
   @RequirePermission('bons:write-caisse')
-  createBonCaisse(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  createBonCaisse(@CurrentUser() user: CurrentUserType, @Body() body: CreateBonCaisseDto) {
     return this.bonsService.createBonCaisse(user, body);
   }
 
   @Put('caisse/:id')
   @UseGuards(AnnexeGuard)
   @RequirePermission('bons:write-caisse')
-  updateBonCaisse(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
+  updateBonCaisse(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: UpdateBonCaisseDto) {
     return this.bonsService.updateBonCaisse(id, user, body);
   }
 

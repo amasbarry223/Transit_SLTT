@@ -10,6 +10,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FournisseursService } from './fournisseurs.service';
+import { CreateFournisseurDto } from './dto/create-fournisseur.dto';
+import { UpdateFournisseurDto } from './dto/update-fournisseur.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { RequirePermission } from '../../shared/decorators';
@@ -31,13 +33,13 @@ export class FournisseursController {
 
   @Post()
   @RequirePermission('fournisseurs.creer')
-  async create(@Body() body: any) {
+  async create(@Body() body: CreateFournisseurDto) {
     return this.fournisseursService.create(body);
   }
 
   @Put(':id')
   @RequirePermission('fournisseurs.modifier')
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param('id') id: string, @Body() body: UpdateFournisseurDto) {
     return this.fournisseursService.update(id, body);
   }
 

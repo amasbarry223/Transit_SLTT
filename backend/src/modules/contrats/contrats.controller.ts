@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ContratsService } from './contrats.service';
+import { CreateContratDto } from './dto/create-contrat.dto';
+import { UpdateContratDto } from './dto/update-contrat.dto';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -26,14 +28,14 @@ export class ContratsController {
   @Post()
   @UseGuards(AnnexeGuard)
   @RequirePermission('contrats.creer')
-  create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  create(@CurrentUser() user: CurrentUserType, @Body() body: CreateContratDto) {
     return this.contratsService.create(user, body);
   }
 
   @Put(':id')
   @UseGuards(AnnexeGuard)
   @RequirePermission('contrats.modifier')
-  update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
+  update(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: UpdateContratDto) {
     return this.contratsService.update(id, user, body);
   }
 

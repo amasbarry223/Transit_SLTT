@@ -1,5 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { StockService } from './stock.service';
+import { CreateStockItemDto } from './dto/create-stock-item.dto';
+import { UpdateStockItemDto } from './dto/update-stock-item.dto';
+import { CreateMouvementDto } from './dto/create-mouvement.dto';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -26,14 +29,14 @@ export class StockController {
   @Post('items')
   @UseGuards(AnnexeGuard)
   @RequirePermission('stock:write')
-  createItem(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  createItem(@CurrentUser() user: CurrentUserType, @Body() body: CreateStockItemDto) {
     return this.stockService.createItem(user, body);
   }
 
   @Put('items/:id')
   @UseGuards(AnnexeGuard)
   @RequirePermission('stock:write')
-  updateItem(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: any) {
+  updateItem(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: UpdateStockItemDto) {
     return this.stockService.updateItem(id, user, body);
   }
 
@@ -55,7 +58,7 @@ export class StockController {
   @Post('mouvements')
   @UseGuards(AnnexeGuard)
   @RequirePermission('stock:write')
-  createMouvement(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  createMouvement(@CurrentUser() user: CurrentUserType, @Body() body: CreateMouvementDto) {
     return this.stockService.createMouvement(user, body);
   }
 }

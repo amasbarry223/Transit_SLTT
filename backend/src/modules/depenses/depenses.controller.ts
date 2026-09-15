@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { DepensesService } from './depenses.service';
+import { CreateDepenseDto } from './dto/create-depense.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
@@ -51,7 +52,7 @@ export class DepensesController {
   @Post()
   @UseGuards(AnnexeGuard)
   @RequirePermission('depenses.creer')
-  async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  async create(@CurrentUser() user: CurrentUserType, @Body() body: CreateDepenseDto) {
     return this.depensesService.create(user, body);
   }
 

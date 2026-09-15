@@ -11,6 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FacturesService } from './factures.service';
+import { CreateFactureDto } from './dto/create-facture.dto';
+import { UpdateFactureDto } from './dto/update-facture.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
@@ -44,7 +46,7 @@ export class FacturesController {
   @Post()
   @UseGuards(AnnexeGuard)
   @RequirePermission('factures.creer')
-  async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  async create(@CurrentUser() user: CurrentUserType, @Body() body: CreateFactureDto) {
     return this.facturesService.create(user, body);
   }
 
@@ -53,7 +55,7 @@ export class FacturesController {
   async update(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserType,
-    @Body() body: any,
+    @Body() body: UpdateFactureDto,
   ) {
     return this.facturesService.update(id, user, body);
   }
