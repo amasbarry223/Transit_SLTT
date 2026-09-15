@@ -90,6 +90,24 @@ export class DepensesService {
     const existing = await this.prisma.depense.findUnique({ where: { numero: data.numero } });
     if (existing) throw new ConflictException(`Le numéro ${data.numero} existe déjà`);
 
+    // `Number(x) || 0` acceptait un montant nul ou négatif sans le rejeter —
+    // une dépense enregistre un coût réellement engagé, jamais 0 ni négatif.
+    const montant = Number(data.montant);
+    if (!Number.isFinite(montant) || montant <= 0) {
+      throw new BadRequestException('Le montant de la dépense doit être un nombre supérieur à 0.');
+    }
+
+    // Le fournisseur utilise un soft-delete (`actif: false`) : sans ce
+    // contrôle, on pouvait continuer à créer des dépenses sur un fournisseur
+    // désactivé, contournant le filtre `actif: true` appliqué par
+    // fournisseurs.findAll().
+    if (data.fournisseurId) {
+      const fournisseur = await this.prisma.fournisseur.findUnique({ where: { id: data.fournisseurId } });
+      if (!fournisseur || !fournisseur.actif) {
+        throw new BadRequestException('Fournisseur invalide ou désactivé.');
+      }
+    }
+
     // Une dépense démarre toujours EN_ATTENTE : le client ne peut pas s'auto-approuver
     // ni marquer la dépense payée en contournant le workflow.
     const { statut: _st, approuveParId: _ap, creeParId: _cp, id: _id, ...depenseData } = data;
@@ -97,7 +115,7 @@ export class DepensesService {
     return this.prisma.depense.create({
       data: {
         ...depenseData,
-        montant: Number(depenseData.montant) || 0,
+        montant,
         statut: 'EN_ATTENTE',
         creeParId: user.id,
       },

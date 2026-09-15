@@ -152,8 +152,20 @@ export class FacturesService {
   private computeTotals(lignes: any[], tauxTvaRaw: unknown, defaultTauxTva: number) {
     let montantHt = 0;
     const lignesFormatted = (lignes || []).map((l: any) => {
-      const quantite = Number(l.quantite) || 1;
-      const prixUnitaire = Number(l.prixUnitaire) || 0;
+      // `Number(l.quantite) || 1` retombait silencieusement à 1 pour une
+      // quantité explicitement à 0, et n'importe quelle valeur négative était
+      // acceptée telle quelle (montantHt/Ttc négatif possible). Le frontend
+      // pose déjà `min="0.01"` sur ce champ, mais rien ne garantit ça côté
+      // API pour un appel direct. prixUnitaire à 0 reste légitime (ex. un
+      // droit de douane nul sur le dossier d'origine).
+      const quantite = Number(l.quantite);
+      if (!Number.isFinite(quantite) || quantite <= 0) {
+        throw new BadRequestException('La quantité de chaque ligne doit être un nombre supérieur à 0.');
+      }
+      const prixUnitaire = Number(l.prixUnitaire);
+      if (!Number.isFinite(prixUnitaire) || prixUnitaire < 0) {
+        throw new BadRequestException('Le prix unitaire de chaque ligne ne peut pas être négatif.');
+      }
       const montantTotal = quantite * prixUnitaire;
       montantHt += montantTotal;
       return { designation: l.designation, quantite, prixUnitaire, montantTotal };

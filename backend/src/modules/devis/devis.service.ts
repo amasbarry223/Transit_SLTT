@@ -21,8 +21,17 @@ import type { CurrentUserType } from '../../auth/auth.types';
 function computeDevisTotals(lignes: any[]) {
   let montantHt = 0;
   const lignesFormatted = (lignes || []).map((l: any) => {
-    const quantite = Number(l.quantite) || 1;
-    const prixUnitaire = Number(l.prixUnitaire) || 0;
+    // Même garde-fou que factures.service.ts::computeTotals : une quantité
+    // à 0 retombait silencieusement à 1, et une valeur négative n'était
+    // jamais rejetée.
+    const quantite = Number(l.quantite);
+    if (!Number.isFinite(quantite) || quantite <= 0) {
+      throw new BadRequestException('La quantité de chaque ligne doit être un nombre supérieur à 0.');
+    }
+    const prixUnitaire = Number(l.prixUnitaire);
+    if (!Number.isFinite(prixUnitaire) || prixUnitaire < 0) {
+      throw new BadRequestException('Le prix unitaire de chaque ligne ne peut pas être négatif.');
+    }
     const montantTotal = quantite * prixUnitaire;
     montantHt += montantTotal;
     return { designation: l.designation, quantite, prixUnitaire, montantTotal };

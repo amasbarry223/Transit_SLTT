@@ -84,4 +84,30 @@ describe('FacturesService.update', () => {
 
     await expect(service.update('f1', admin(), { notes: 'x' })).rejects.toThrow(BadRequestException);
   });
+
+  it('rejette une ligne à quantité nulle ou négative (retombait silencieusement à 1 avant ce garde-fou)', async () => {
+    const facture = baseFacture();
+    const { prisma } = createFakePrisma(facture);
+    const service = new FacturesService(prisma as any);
+
+    await expect(
+      service.update('f1', admin(), { lignes: [{ designation: 'X', quantite: 0, prixUnitaire: 500 }] }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.update('f1', admin(), { lignes: [{ designation: 'X', quantite: -2, prixUnitaire: 500 }] }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejette un prix unitaire négatif mais accepte un prix nul (ex. droit de douane à 0)', async () => {
+    const facture = baseFacture();
+    const { prisma, tx } = createFakePrisma(facture);
+    const service = new FacturesService(prisma as any);
+
+    await expect(
+      service.update('f1', admin(), { lignes: [{ designation: 'X', quantite: 1, prixUnitaire: -500 }] }),
+    ).rejects.toThrow(BadRequestException);
+
+    await service.update('f1', admin(), { lignes: [{ designation: 'X', quantite: 1, prixUnitaire: 0 }] });
+    expect(tx.facture.update.mock.calls[0][0].data.montantHt).toBe(0);
+  });
 });
