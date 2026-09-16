@@ -49,12 +49,25 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
       <EntitesConsolideesCard entiteTotals={screen.entiteTotals} activeEntiteKey={screen.resolvedTab} />
 
       <Tabs value={screen.resolvedTab} onValueChange={screen.setActiveEntiteKey}>
-        <TabsList className="h-10 flex-wrap">
-          {screen.entites.map((entite) => (
-            <TabsTrigger key={`${entite.type}:${entite.id}`} value={`${entite.type}:${entite.id}`}>
-              {entite.label}
-            </TabsTrigger>
-          ))}
+        <TabsList className="h-11 w-fit flex-wrap gap-1 rounded-xl border border-border/70 bg-muted/40 p-1">
+          {screen.entites.map((entite) => {
+            const isMali = entite.label.toLowerCase().includes("mali");
+            return (
+              <TabsTrigger
+                key={`${entite.type}:${entite.id}`}
+                value={`${entite.type}:${entite.id}`}
+                className="gap-2 rounded-lg px-4 font-medium data-[state=active]:shadow-sm"
+              >
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full",
+                    isMali ? "bg-emerald-500" : "bg-blue-500",
+                  )}
+                />
+                {entite.label}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
       </Tabs>
 
