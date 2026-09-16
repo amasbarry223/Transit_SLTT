@@ -23,6 +23,18 @@ export class UpdateDevisDto {
   @IsOptional()
   nature?: string;
 
+  @IsString()
+  @IsOptional()
+  ville?: string;
+
+  @IsString()
+  @IsOptional()
+  pays?: string;
+
+  @IsString()
+  @IsOptional()
+  numeroBordereau?: string;
+
   @IsDateString()
   @IsOptional()
   dateEmission?: string;

@@ -42,7 +42,7 @@ export function PrestationFormModal({
   const [libelle, setLibelle] = useState("");
   const [description, setDescription] = useState("");
   const [montant, setMontant] = useState("");
-  const [statut, setStatut] = useState<ContratPrestationStatut>("Prévue");
+  const [statut, setStatut] = useState<ContratPrestationStatut>("En attente");
   const [datePrevue, setDatePrevue] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -50,7 +50,7 @@ export function PrestationFormModal({
     setLibelle("");
     setDescription("");
     setMontant("");
-    setStatut("Prévue");
+    setStatut("En attente");
     setDatePrevue("");
   }
 

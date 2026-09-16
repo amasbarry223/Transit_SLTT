@@ -7,6 +7,7 @@ import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 export interface AnnexesSlice {
   annexes: Annexe[];
   updateAnnexe: (id: string, input: AnnexeInput) => Promise<void>;
+  removeAnnexe: (id: string) => Promise<void>;
 }
 
 export const createAnnexesSlice: StateCreator<SLTTState, [], [], AnnexesSlice> = (set, get) => ({
@@ -30,5 +31,13 @@ export const createAnnexesSlice: StateCreator<SLTTState, [], [], AnnexesSlice> =
       annexes: s.annexes.map((a) => (a.id === id ? { ...a, ...input } : a)),
     }));
     await get().addAuditLog(AUDIT_MODULE.Annexes, AUDIT_ACTION.Modification, "Identité annexe mise à jour");
+  },
+
+  removeAnnexe: async (id) => {
+    await api.annexes.delete(id);
+    set((s) => ({
+      annexes: s.annexes.filter((a) => a.id !== id),
+    }));
+    await get().addAuditLog(AUDIT_MODULE.Annexes, AUDIT_ACTION.Suppression, `Annexe supprimée (${id})`);
   },
 });

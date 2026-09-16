@@ -46,6 +46,9 @@ export function DevisFormDialog({
   const [clientNom, setClientNom] = useState(devis?.clientNom ?? "");
   const [portId, setPortId] = useState(devis?.portId ?? "");
   const [nature, setNature] = useState(devis?.nature ?? "");
+  const [ville, setVille] = useState(devis?.ville ?? "");
+  const [pays, setPays] = useState(devis?.pays ?? "");
+  const [numeroBordereau, setNumeroBordereau] = useState(devis?.numeroBordereau ?? "");
   const [droitDouane, setDroitDouane] = useState(devis ? String(devis.droitDouane) : "");
   const [fraisCircuit, setFraisCircuit] = useState(devis ? String(devis.fraisCircuit) : "");
   const [fraisPrestation, setFraisPrestation] = useState(devis ? String(devis.fraisPrestation) : "");
@@ -63,6 +66,9 @@ export function DevisFormDialog({
       setClientNom(devis?.clientNom ?? "");
       setPortId(devis?.portId ?? "");
       setNature(devis?.nature ?? "");
+      setVille(devis?.ville ?? "");
+      setPays(devis?.pays ?? "");
+      setNumeroBordereau(devis?.numeroBordereau ?? "");
       setDroitDouane(devis ? String(devis.droitDouane) : "");
       setFraisCircuit(devis ? String(devis.fraisCircuit) : "");
       setFraisPrestation(devis ? String(devis.fraisPrestation) : "");
@@ -83,7 +89,13 @@ export function DevisFormDialog({
   // l'annexe reste celle déjà fixée à la création du devis. Les intitulés de
   // rubrique s'adaptent en conséquence (ex. « Frais transit port » couvre la
   // manutention portuaire en Côte d'Ivoire).
-  const annexeCode = annexes.find((a) => a.id === (devis?.annexeId ?? activeAnnexeId))?.code;
+  const targetAnnexe = annexes.find((a) => a.id === (devis?.annexeId ?? activeAnnexeId));
+  const annexeCode = targetAnnexe?.code;
+  const isMali = Boolean(
+    targetAnnexe &&
+    (targetAnnexe.code?.toUpperCase().includes("ML") ||
+     targetAnnexe.nom?.toLowerCase().includes("mali"))
+  );
   const labels = resolveDossierCoutLabels(annexeCode);
 
   function handleClientChange(id: string) {
@@ -97,8 +109,11 @@ export function DevisFormDialog({
     onSave({
       clientId,
       clientNom,
-      portId: portId || undefined,
+      portId: isMali ? undefined : (portId || undefined),
       nature,
+      ville: ville.trim() || undefined,
+      pays: pays.trim() || undefined,
+      numeroBordereau: numeroBordereau.trim() || undefined,
       droitDouane: dd,
       fraisCircuit: fc,
       fraisPrestation: fp,
@@ -152,38 +167,67 @@ export function DevisFormDialog({
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  {labels.port}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                        <Info className="size-3.5" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-xs">{labels.portHint}</TooltipContent>
-                  </Tooltip>
-                </Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={portId || "__none"}
-                    onValueChange={(v) => setPortId(v === "__none" ? "" : v)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Aucun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none">Aucun</SelectItem>
-                      {ports.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.nom}
-                          {p.ville ? ` — ${p.ville}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <QuickPortButton onCreated={setPortId} />
-                </div>
+                <Label>N° de Bordereau</Label>
+                <Input
+                  value={numeroBordereau}
+                  onChange={(e) => setNumeroBordereau(e.target.value)}
+                  placeholder="Ex. BDM-2026-001"
+                />
               </div>
+
+              <div className="space-y-2">
+                <Label>Ville de destination</Label>
+                <Input
+                  value={ville}
+                  onChange={(e) => setVille(e.target.value)}
+                  placeholder="Ex. Bamako, Sikasso..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pays</Label>
+                <Input
+                  value={pays}
+                  onChange={(e) => setPays(e.target.value)}
+                  placeholder="Ex. Mali, Côte d'Ivoire..."
+                />
+              </div>
+
+              {!isMali && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label className="flex items-center gap-1.5">
+                    {labels.port}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0} className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                          <Info className="size-3.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs">{labels.portHint}</TooltipContent>
+                    </Tooltip>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={portId || "__none"}
+                      onValueChange={(v) => setPortId(v === "__none" ? "" : v)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Aucun" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">Aucun</SelectItem>
+                        {ports.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nom}
+                            {p.ville ? ` — ${p.ville}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <QuickPortButton onCreated={setPortId} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

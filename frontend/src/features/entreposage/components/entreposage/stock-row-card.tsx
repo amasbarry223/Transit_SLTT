@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, History, PackageMinus, PackagePlus, Pencil } from "lucide-react";
+import { AlertTriangle, History, PackageMinus, PackagePlus, Pencil, Trash2 } from "lucide-react";
 import type { StockItem } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { StockStatutBadge } from "@/components/sltt/status-badge";
@@ -15,6 +15,7 @@ export function StockRow({
   onExit,
   onHistory,
   onEdit,
+  onDelete,
   onOpenClient,
   canWrite = true,
 }: {
@@ -23,6 +24,7 @@ export function StockRow({
   onExit: (id: string) => void;
   onHistory: (stockId: string, marchandise: string) => void;
   onEdit: (id: string) => void;
+  onDelete?: (id: string) => void;
   onOpenClient?: (clientId: string) => void;
   canWrite?: boolean;
 }) {
@@ -128,6 +130,18 @@ export function StockRow({
               <Pencil className="size-4" />
             </Button>
           )}
+          {canWrite && onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+              aria-label="Supprimer l'article"
+              title="Supprimer"
+              onClick={() => onDelete(item.id)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>
@@ -140,6 +154,7 @@ export function StockCard({
   onExit,
   onHistory,
   onEdit,
+  onDelete,
   onOpenClient,
   canWrite = true,
 }: {
@@ -148,6 +163,7 @@ export function StockCard({
   onExit: (id: string) => void;
   onHistory: (stockId: string, marchandise: string) => void;
   onEdit: (id: string) => void;
+  onDelete?: (id: string) => void;
   onOpenClient?: (clientId: string) => void;
   canWrite?: boolean;
 }) {
@@ -246,6 +262,18 @@ export function StockCard({
             onClick={() => onEdit(item.id)}
           >
             <Pencil className="size-4" />
+          </Button>
+        )}
+        {canWrite && onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+            aria-label="Supprimer l'article"
+            title="Supprimer"
+            onClick={() => onDelete(item.id)}
+          >
+            <Trash2 className="size-4" />
           </Button>
         )}
       </div>

@@ -23,9 +23,11 @@ export const FACTURE_ALLOWED_TRANSITIONS: Record<FactureStatut, FactureStatut[]>
 
 /** Matrice contrat — alignée sur trigger DB assert_contrat_transition. */
 export const CONTRAT_ALLOWED_TRANSITIONS: Record<ContratStatut, ContratStatut[]> = {
-  Actif: ["Suspendu", "Clôturé"],
-  Suspendu: ["Actif", "Clôturé"],
-  Clôturé: ["Actif"],
+  "En cours": ["Exécuté"],
+  "Exécuté": ["En cours"],
+  Actif: ["Exécuté", "En cours", "Suspendu", "Clôturé"],
+  Suspendu: ["En cours", "Exécuté", "Actif", "Clôturé"],
+  Clôturé: ["En cours", "Exécuté", "Actif"],
 };
 
 export function canTransitionDevis(from: DevisStatut, to: DevisStatut): boolean {

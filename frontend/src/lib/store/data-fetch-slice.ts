@@ -24,6 +24,7 @@ import {
   type RecuPaiementStatut,
 } from "@/lib/domain-types";
 import { DEFAULT_TRANSIT_BRAND, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-brand";
+import { decodeDevisNotes } from "@/features/devis/services/devis-meta";
 import type {
   RawAnnexe,
   RawBonSortie,
@@ -284,6 +285,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           else if (l.designation?.includes("circuit")) fraisCircuit = Number(l.prixUnitaire || 0);
           else if (l.designation?.includes("prestation")) fraisPrestation = Number(l.prixUnitaire || 0);
         });
+        const decoded = decodeDevisNotes(d.notes);
         return {
           id: d.id,
           reference: d.numero || "",
@@ -295,6 +297,9 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           dossierId: d.dossierId ?? undefined,
           portId: d.portId ?? undefined,
           portNom: d.port?.nom ?? undefined,
+          ville: (d as any).ville || decoded.ville,
+          pays: (d as any).pays || decoded.pays,
+          numeroBordereau: (d as any).numeroBordereau || decoded.numeroBordereau,
           droitDouane: droitDouane || Number(d.montantHt || 0),
           fraisCircuit,
           fraisPrestation,
@@ -302,7 +307,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           statut: mapDevisStatut(d.statut),
           dateCreation: d.createdAt ? new Date(d.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
           dateValidite: d.dateValidite ? new Date(d.dateValidite).toISOString().slice(0, 10) : "",
-          notes: d.notes || "",
+          notes: decoded.cleanNotes || "",
         };
       });
 

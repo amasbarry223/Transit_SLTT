@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Building2, ImagePlus, Loader2, MapPin, Percent, X } from "lucide-react";
+import { AlertTriangle, Building2, ImagePlus, Loader2, MapPin, Percent, Trash2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
@@ -15,6 +15,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
+import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 
 const TVA_SETTING_KEY = "facturation_taux_tva";
 
@@ -364,11 +365,17 @@ function SocieteCard({
 function AnnexeCard({
   annexe,
   onSave,
+  onDelete,
+  isDuplicate,
 }: {
   annexe: Annexe;
   onSave: (id: string, input: AnnexeInput) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
+  isDuplicate?: boolean;
 }) {
   const { toast } = useToast();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [values, setValues] = useState<AnnexeInput>({
     villeSiege: annexe.villeSiege,
     adresse: annexe.adresse ?? "",
@@ -428,70 +435,116 @@ function AnnexeCard({
     }
   }
 
+  async function handleDelete() {
+    if (!onDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await onDelete(annexe.id);
+      setConfirmDelete(false);
+      toastSuccess(toast, { title: "Annexe supprimée", description: annexe.nom });
+    } catch (err) {
+      toastError(toast, err, { title: "Impossible de supprimer l'annexe", fallback: "Impossible de supprimer l'annexe." });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
-    <Card className="p-6 shadow-sm border-border/80">
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {hasConflict && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-            <span className="flex items-center gap-2">
-              <AlertTriangle className="size-4 shrink-0" />
-              Cette annexe a été modifiée par quelqu&apos;un d&apos;autre depuis l&apos;ouverture de ce formulaire.
-            </span>
-            <Button type="button" size="sm" variant="outline" onClick={reloadFromLatest}>
-              Charger les dernières valeurs
+    <>
+      <Card className="p-6 shadow-sm border-border/80">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {hasConflict && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+              <span className="flex items-center gap-2">
+                <AlertTriangle className="size-4 shrink-0" />
+                Cette annexe a été modifiée par quelqu&apos;un d&apos;autre depuis l&apos;ouverture de ce formulaire.
+              </span>
+              <Button type="button" size="sm" variant="outline" onClick={reloadFromLatest}>
+                Charger les dernières valeurs
+              </Button>
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                <MapPin className="size-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-foreground">{annexe.nom}</p>
+                  {isDuplicate && (
+                    <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-300">
+                      Doublon détecté
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Identité légale locale — code : {annexe.code || "—"}{annexe.villeSiege ? ` (${annexe.villeSiege})` : ""}
+                </p>
+              </div>
+            </div>
+
+            {onDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="mr-1.5 size-4" />
+                Supprimer
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground/90">Ville de siège</Label>
+              <Input value={values.villeSiege} onChange={(e) => set("villeSiege", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground/90">Téléphone</Label>
+              <Input value={values.telephone} onChange={(e) => set("telephone", e.target.value)} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="text-sm font-medium text-foreground/90">Adresse</Label>
+              <Input
+                value={values.adresse}
+                onChange={(e) => set("adresse", e.target.value)}
+                placeholder="Ex. Quartier, rue, porte"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground/90">RCCM</Label>
+              <Input
+                value={values.rccm}
+                onChange={(e) => set("rccm", e.target.value)}
+                placeholder="Ex. CI.ABJ.2026 B.1234"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground/90">NIF</Label>
+              <Input value={values.nif} onChange={(e) => set("nif", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button type="submit" disabled={saving}>
+              {saving ? "Enregistrement…" : "Enregistrer"}
             </Button>
           </div>
-        )}
-        <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-            <MapPin className="size-5" />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">{annexe.nom}</p>
-            <p className="text-xs text-muted-foreground">
-              Identité légale locale — imprimée sur les factures émises depuis cette annexe (le nom du logo/société reste celui de la société liée au dossier).
-            </p>
-          </div>
-        </div>
+        </form>
+      </Card>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground/90">Ville de siège</Label>
-            <Input value={values.villeSiege} onChange={(e) => set("villeSiege", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground/90">Téléphone</Label>
-            <Input value={values.telephone} onChange={(e) => set("telephone", e.target.value)} />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-medium text-foreground/90">Adresse</Label>
-            <Input
-              value={values.adresse}
-              onChange={(e) => set("adresse", e.target.value)}
-              placeholder="Ex. Quartier, rue, porte"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground/90">RCCM</Label>
-            <Input
-              value={values.rccm}
-              onChange={(e) => set("rccm", e.target.value)}
-              placeholder="Ex. CI.ABJ.2026 B.1234"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground/90">NIF</Label>
-            <Input value={values.nif} onChange={(e) => set("nif", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="flex justify-end pt-2">
-          <Button type="submit" disabled={saving}>
-            {saving ? "Enregistrement…" : "Enregistrer"}
-          </Button>
-        </div>
-      </form>
-    </Card>
+      <ConfirmDeleteDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Supprimer cette annexe ?"
+        description={`L'annexe "${annexe.nom}" (${annexe.villeSiege || ""}) sera retirée des agences actives.`}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 }
 
@@ -501,7 +554,16 @@ export function SocietesTab() {
   const uploadSocieteLogo = useStore((s) => s.uploadSocieteLogo);
   const annexes = useStore((s) => s.annexes);
   const updateAnnexe = useStore((s) => s.updateAnnexe);
+  const removeAnnexe = useStore((s) => s.removeAnnexe);
   const societe = resolveTransitSociete(societes) ?? societes[0];
+
+  // Détection des doublons Mali : s'il y a plus d'une annexe associée au Mali
+  const maliAnnexes = annexes.filter(
+    (a) =>
+      a.code?.toUpperCase().includes("ML") ||
+      a.nom?.toLowerCase().includes("mali")
+  );
+  const hasMaliDuplicate = maliAnnexes.length > 1;
 
   return (
     <div className="space-y-10">
@@ -530,9 +592,21 @@ export function SocietesTab() {
             officielle de l&apos;annexe.
           </p>
         </div>
-        {annexes.map((annexe) => (
-          <AnnexeCard key={annexe.id} annexe={annexe} onSave={updateAnnexe} />
-        ))}
+        {annexes.map((annexe, idx) => {
+          const isMali =
+            annexe.code?.toUpperCase().includes("ML") ||
+            annexe.nom?.toLowerCase().includes("mali");
+          const isDup = hasMaliDuplicate && isMali && idx > 0;
+          return (
+            <AnnexeCard
+              key={annexe.id}
+              annexe={annexe}
+              onSave={updateAnnexe}
+              onDelete={removeAnnexe}
+              isDuplicate={isDup}
+            />
+          );
+        })}
       </div>
 
       <div className="space-y-5 border-t border-border/60 pt-8">

@@ -1,14 +1,18 @@
 import type { ContratPrestationStatut, ContratStatut } from "@/lib/store";
 import type { PaiementMode } from "@/lib/domain-types";
 
-export const CONTRAT_STATUTS: ContratStatut[] = ["Actif", "Clôturé", "Suspendu"];
-export const CONTRAT_STATUT_TONE: Record<ContratStatut, "emerald" | "slate" | "amber"> = {
+export const CONTRAT_STATUTS: ContratStatut[] = ["En cours", "Exécuté"];
+export const CONTRAT_STATUT_TONE: Record<ContratStatut, "blue" | "emerald" | "slate" | "amber"> = {
+  "En cours": "blue",
+  "Exécuté": "emerald",
   Actif: "emerald",
   Clôturé: "slate",
   Suspendu: "amber",
 };
-export const PRESTATION_STATUTS: ContratPrestationStatut[] = ["Prévue", "Réalisée", "Annulée"];
-export const PRESTATION_STATUT_TONE: Record<ContratPrestationStatut, "blue" | "emerald" | "red"> = {
+export const PRESTATION_STATUTS: ContratPrestationStatut[] = ["En attente", "Exécuté"];
+export const PRESTATION_STATUT_TONE: Record<ContratPrestationStatut, "amber" | "emerald" | "blue" | "red"> = {
+  "En attente": "amber",
+  "Exécuté": "emerald",
   Prévue: "blue",
   Réalisée: "emerald",
   Annulée: "red",

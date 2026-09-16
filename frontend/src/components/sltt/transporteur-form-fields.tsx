@@ -17,6 +17,8 @@ import {
 import { cn } from "@/shared/utils/cn";
 
 export const VEHICULES: TypeVehicule[] = [
+  "Plateau",
+  "Carrosserie",
   "Camion",
   "Remorque",
   "Semi-remorque",
@@ -90,7 +92,7 @@ export function TransporteurFormFields({
           </div>
         </FormField>
 
-        <FormField id={`${idPrefix}-vehicule`} label="Type de véhicule">
+        <FormField id={`${idPrefix}-vehicule`} label="Type de camion / véhicule">
           <Select
             value={values.vehicule}
             onValueChange={(v) => onChange({ vehicule: v as TypeVehicule })}

@@ -35,6 +35,9 @@ export interface DevisData {
   clientEmail?: string;
   nature: string;
   portNom?: string;
+  ville?: string;
+  pays?: string;
+  numeroBordereau?: string;
   dateCreation: string;
   dateValidite: string;
   droitDouane: number;
@@ -360,10 +363,20 @@ ${SIGNATORIES_BLOCK_CSS}
     </section>
 
     <section class="meta-row">
-      <div class="meta-cell">
+      <div className="meta-cell">
         <div class="field-k">Nature de la marchandise</div>
         <div class="meta-val">${htmlEscape(data.nature)}</div>
       </div>
+      ${data.numeroBordereau ? `
+      <div class="meta-cell">
+        <div class="field-k">N° de Bordereau</div>
+        <div class="meta-val">${htmlEscape(data.numeroBordereau)}</div>
+      </div>` : ""}
+      ${(data.ville || data.pays) ? `
+      <div class="meta-cell">
+        <div class="field-k">Destination</div>
+        <div class="meta-val">${htmlEscape([data.ville, data.pays].filter(Boolean).join(", "))}</div>
+      </div>` : ""}
       <div class="meta-cell">
         <div class="field-k">Période de validité</div>
         <div class="meta-val">${fmtDevisDate(data.dateCreation)} → ${fmtDevisDate(data.dateValidite)}</div>

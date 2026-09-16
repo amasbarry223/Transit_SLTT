@@ -465,7 +465,7 @@ export interface RecuPaiementInput {
  */
 export const PRESTATION_OPTIONNELLE_LABEL = "Prestations optionnelles";
 
-export type ContratStatut = "Actif" | "Clôturé" | "Suspendu";
+export type ContratStatut = "En cours" | "Exécuté" | "Actif" | "Clôturé" | "Suspendu";
 
 export interface Contrat {
   id: string;
@@ -634,7 +634,7 @@ export interface DepenseInput {
   note?: string;
 }
 
-export type ContratPrestationStatut = "Prévue" | "Réalisée" | "Annulée";
+export type ContratPrestationStatut = "En attente" | "Exécuté" | "Prévue" | "Réalisée" | "Annulée";
 
 export interface ContratPrestation {
   id: string;
@@ -699,7 +699,7 @@ export interface DossierFichier {
 export type { DevisStatut, Devis, DevisInput } from "@/features/devis/types";
 
 export type TransporteurStatut = "Actif" | "Inactif";
-export type TypeVehicule = "Camion" | "Remorque" | "Semi-remorque" | "Benne" | "Fourgon";
+export type TypeVehicule = "Plateau" | "Carrosserie" | "Carosserie" | "Camion" | "Remorque" | "Semi-remorque" | "Benne" | "Fourgon";
 
 export interface Transporteur {
   id: string;

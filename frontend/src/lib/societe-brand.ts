@@ -152,17 +152,23 @@ export const DEFAULT_DOSSIER_COUT_LABELS: DossierCoutLabels = {
  * prestation ; la Côte d'Ivoire facture par transit portuaire (cf. facture
  * CI type — conteneurs/compagnie/bordereau, sans droit de douane affiché) :
  * "Frais transit port" remplace la douane, "Dépenses" remplace le circuit.
- * Le port lui-même change de sens : port de chargement lointain pour le
- * Mali (enclavé), port ivoirien où s'effectue la manutention pour la CI.
  */
 const ANNEXE_DOSSIER_COUT_LABELS: Record<string, Partial<DossierCoutLabels>> = {
   CI: {
-    droitDouane: "Frais transit port",
-    droitDouaneHint: "Frais de transit portuaire (manutention, passage port) — annexe Côte d'Ivoire.",
-    fraisCircuit: "Dépenses",
-    fraisCircuitHint: "Dépenses diverses engagées pour le dossier, hors frais de transit portuaire.",
+    droitDouane: "Frais de port",
+    droitDouaneHint: "Frais de port / passage portuaire — annexe Côte d'Ivoire.",
+    fraisCircuit: "Frais de transport",
+    fraisCircuitHint: "Frais de transport et acheminement.",
     port: "Port de manutention",
     portHint: "Port ivoirien où s'effectue la manutention portuaire (Abidjan, San-Pédro...).",
+  },
+  "CI-ABJ": {
+    droitDouane: "Frais de port",
+    droitDouaneHint: "Frais de port / passage portuaire — annexe Abidjan.",
+    fraisCircuit: "Frais de transport",
+    fraisCircuitHint: "Frais de transport et acheminement.",
+    port: "Port de manutention",
+    portHint: "Port ivoirien où s'effectue la manutention portuaire (Abidjan).",
   },
 };
 
@@ -173,7 +179,10 @@ const ANNEXE_DOSSIER_COUT_LABELS: Record<string, Partial<DossierCoutLabels>> = {
  * par annexe, jamais les champs stockés ni le calcul de marge/écart.
  */
 export function resolveDossierCoutLabels(annexeCode?: string | null): DossierCoutLabels {
-  const override = annexeCode ? ANNEXE_DOSSIER_COUT_LABELS[annexeCode] : undefined;
+  const code = annexeCode?.toUpperCase();
+  const override = code
+    ? (ANNEXE_DOSSIER_COUT_LABELS[code] || (code.startsWith("CI") ? ANNEXE_DOSSIER_COUT_LABELS["CI"] : undefined))
+    : undefined;
   return override ? { ...DEFAULT_DOSSIER_COUT_LABELS, ...override } : DEFAULT_DOSSIER_COUT_LABELS;
 }
 

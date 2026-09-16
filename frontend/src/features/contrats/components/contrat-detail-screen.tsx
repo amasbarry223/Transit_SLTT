@@ -6,7 +6,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Wallet,
   FileSignature,
   Receipt,
   CheckCircle2,
@@ -59,7 +58,6 @@ import {
   PRESTATION_STATUT_TONE,
   InfoRow,
   ContratFormModal,
-  DepenseFormModal,
   PrestationFormModal,
   ContratFileDropZone,
 } from "./contrat-detail";
@@ -71,7 +69,6 @@ export function ContratDetailScreen() {
   const setPendingFacturePrefill = useNav((s) => s.setPendingFacturePrefill);
 
   const contrats = useStore((s) => s.contrats);
-  const depenses = useStore((s) => s.depenses);
   const prestations = useStore((s) => s.contratPrestations);
   const contratFichiers = useStore((s) => s.contratFichiers);
   const clients = useStore((s) => s.clients);
@@ -80,8 +77,6 @@ export function ContratDetailScreen() {
   const updateContrat = useStore((s) => s.updateContrat);
   const updateContratStatut = useStore((s) => s.updateContratStatut);
   const removeContrat = useStore((s) => s.removeContrat);
-  const addDepense = useStore((s) => s.addDepense);
-  const removeDepense = useStore((s) => s.removeDepense);
   const addContratPrestation = useStore((s) => s.addContratPrestation);
   const updateContratPrestation = useStore((s) => s.updateContratPrestation);
   const removeContratPrestation = useStore((s) => s.removeContratPrestation);
@@ -92,10 +87,6 @@ export function ContratDetailScreen() {
   const canWrite = usePermission("contrats:write");
 
   const contrat = contrats.find((c) => c.id === selectedId);
-  const contratDepenses = useMemo(
-    () => depenses.filter((d) => d.contratId === selectedId),
-    [depenses, selectedId],
-  );
   const contratPrestations = useMemo(
     () => prestations.filter((p) => p.contratId === selectedId),
     [prestations, selectedId],
@@ -107,11 +98,7 @@ export function ContratDetailScreen() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [depenseOpen, setDepenseOpen] = useState(false);
   const [prestationOpen, setPrestationOpen] = useState(false);
-  // Suppressions de dépense/prestation — jusqu'ici directes en un clic, sans
-  // confirmation, contrairement à la suppression du contrat lui-même ci-dessous.
-  const [depenseToDelete, setDepenseToDelete] = useState<{ id: string; libelle: string } | null>(null);
   const [prestationToDelete, setPrestationToDelete] = useState<{ id: string; libelle: string } | null>(null);
   const [pendingStatut, setPendingStatut] = useState<ContratStatut | null>(null);
 
@@ -129,7 +116,7 @@ export function ContratDetailScreen() {
     );
   }
 
-  const nonVide = contrat.totalDepenses > 0 || contrat.nbPrestations > 0 || contratDocuments.length > 0;
+  const nonVide = contrat.nbPrestations > 0 || contratDocuments.length > 0;
 
   async function applyContratStatut(statut: ContratStatut) {
     await updateContratStatut(contrat!.id, statut);
@@ -148,21 +135,6 @@ export function ContratDetailScreen() {
       });
     } finally {
       setDeleteOpen(false);
-    }
-  }
-
-  async function handleDeleteDepense() {
-    if (!depenseToDelete) return;
-    try {
-      await removeDepense(depenseToDelete.id);
-      toastSuccess(toast, { title: "Dépense supprimée", description: depenseToDelete.libelle });
-    } catch (e) {
-      toastError(toast, e, {
-        title: "Impossible de supprimer la dépense",
-        fallback: UI.errors.generic,
-      });
-    } finally {
-      setDepenseToDelete(null);
     }
   }
 
@@ -208,12 +180,6 @@ export function ContratDetailScreen() {
       montant: p.montant,
       statut: p.statut,
     }));
-    const printDepenses = contratDepenses.map((d) => ({
-      libelle: d.libelle,
-      montant: d.montant,
-      dateDepense: d.dateDepense,
-      modePaiement: d.modePaiement,
-    }));
     printContrat(
       {
         reference: contrat.reference,
@@ -228,8 +194,8 @@ export function ContratDetailScreen() {
         statut: contrat.statut,
         notes: contrat.notes,
         prestations: printPrestations,
-        depenses: printDepenses,
-        totalDepenses: contrat.totalDepenses,
+        depenses: [],
+        totalDepenses: 0,
       },
       resolveSlttBrand(societes),
     );
@@ -341,12 +307,6 @@ export function ContratDetailScreen() {
       <Tabs defaultValue="infos">
         <TabsList className="h-10 flex-wrap">
           <TabsTrigger value="infos">Infos</TabsTrigger>
-          <TabsTrigger value="depenses">
-            Dépenses
-            <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-              {contratDepenses.length}
-            </span>
-          </TabsTrigger>
           <TabsTrigger value="prestations">
             {PRESTATION_OPTIONNELLE_LABEL}
             <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
@@ -376,113 +336,6 @@ export function ContratDetailScreen() {
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Notes</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-foreground/90">{contrat.notes}</p>
               </div>
-            )}
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="depenses" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Total dépenses : <span className="font-semibold tabular-nums">{formatFCFA(contrat.totalDepenses)}</span>
-            </p>
-            {canWrite && (
-              <Button size="sm" onClick={() => setDepenseOpen(true)}>
-                <Plus className="size-4" />
-                Ajouter une dépense
-              </Button>
-            )}
-          </div>
-
-          <Card className="gap-0 overflow-hidden p-0 shadow-sm border-border/80">
-            {contratDepenses.length === 0 ? (
-              <EmptyState
-                icon={Wallet}
-                title="Aucune dépense enregistrée"
-                description="Ajoutez les dépenses liées à ce contrat d'entreposage."
-                action={
-                  canWrite ? (
-                    <Button size="sm" onClick={() => setDepenseOpen(true)}>
-                      <Plus className="size-4" />
-                      Ajouter une dépense
-                    </Button>
-                  ) : undefined
-                }
-                className="border-0 bg-transparent"
-              />
-            ) : (
-              <>
-                <div className="space-y-3 p-4 md:hidden">
-                  {contratDepenses.map((d) => (
-                    <Card key={d.id} className="border-border/80 p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="min-w-0 truncate font-medium text-slate-800 dark:text-slate-200">{d.libelle}</p>
-                        <p className="shrink-0 tabular-nums font-semibold text-foreground">
-                          {formatFCFA(d.montant)}
-                        </p>
-                      </div>
-                      <dl className="mt-2 space-y-1 text-sm">
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-muted-foreground">Date</dt>
-                          <dd className="tabular-nums text-muted-foreground">{formatDateShort(d.dateDepense)}</dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-xs text-muted-foreground">Mode</dt>
-                          <dd className="text-muted-foreground">{d.modePaiement}</dd>
-                        </div>
-                      </dl>
-                      {canWrite && (
-                        <div className="mt-3 flex justify-end border-t border-border pt-3">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-11 text-slate-400 hover:text-red-600"
-                            aria-label={`Supprimer la dépense ${d.libelle}`}
-                            onClick={() => setDepenseToDelete({ id: d.id, libelle: d.libelle })}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </Card>
-                  ))}
-                </div>
-                <div className="hidden overflow-x-auto md:block">
-                <Table aria-label="Dépenses du contrat">
-                  <TableHeader>
-                    <TableRow className="border-b border-border bg-muted/50">
-                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Libellé</TableHead>
-                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Date</TableHead>
-                      <TableHead className="h-10 px-4 text-xs uppercase text-muted-foreground">Mode</TableHead>
-                      <TableHead className="h-10 px-4 text-right text-xs uppercase text-muted-foreground">Montant</TableHead>
-                      {canWrite && <TableHead className="h-10 px-4" />}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contratDepenses.map((d) => (
-                      <TableRow key={d.id} className="border-b border-border">
-                        <TableCell className="px-4 py-3">{d.libelle}</TableCell>
-                        <TableCell className="px-4 py-3 tabular-nums text-muted-foreground">{formatDateShort(d.dateDepense)}</TableCell>
-                        <TableCell className="px-4 py-3 text-muted-foreground">{d.modePaiement}</TableCell>
-                        <TableCell className="px-4 py-3 text-right tabular-nums font-medium">{formatFCFA(d.montant)}</TableCell>
-                        {canWrite && (
-                          <TableCell className="px-4 py-3 text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-9 text-slate-400 hover:text-red-600"
-                              aria-label={`Supprimer la dépense ${d.libelle}`}
-                              onClick={() => setDepenseToDelete({ id: d.id, libelle: d.libelle })}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                </div>
-              </>
             )}
           </Card>
         </TabsContent>
@@ -694,24 +547,6 @@ export function ContratDetailScreen() {
         }}
       />
 
-      <DepenseFormModal
-        open={depenseOpen}
-        onOpenChange={setDepenseOpen}
-        onSubmit={async (input) => {
-          try {
-            await addDepense({ contratId: contrat.id, ...input });
-            setDepenseOpen(false);
-            toastSuccess(toast, { title: "Dépense ajoutée" });
-          } catch (error) {
-            toastError(toast, error, {
-              title: "Impossible d'ajouter la dépense",
-              fallback: UI.errors.saveFailed,
-            });
-            throw error;
-          }
-        }}
-      />
-
       <PrestationFormModal
         open={prestationOpen}
         onOpenChange={setPrestationOpen}
@@ -736,14 +571,6 @@ export function ContratDetailScreen() {
         title="Supprimer ce contrat ?"
         description={<>Le contrat {contrat.reference} sera définitivement supprimé. Cette action est irréversible.</>}
         onConfirm={handleDelete}
-      />
-
-      <ConfirmDeleteDialog
-        open={!!depenseToDelete}
-        onOpenChange={(v) => !v && setDepenseToDelete(null)}
-        title="Supprimer cette dépense ?"
-        description={<>La dépense « {depenseToDelete?.libelle} » sera définitivement supprimée. Cette action est irréversible.</>}
-        onConfirm={handleDeleteDepense}
       />
 
       <ConfirmDeleteDialog

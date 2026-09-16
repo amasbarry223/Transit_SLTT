@@ -154,7 +154,10 @@ export function DevisDetailScreen() {
     printDevis({
       reference: devis.reference, clientNom: devis.clientNom, clientAdresse: client?.adresse,
       clientTelephone: client?.telephone, clientEmail: client?.email, nature: devis.nature,
-      portNom: devis.portNom,
+      portNom: annexeCode?.toUpperCase().includes("ML") ? undefined : devis.portNom,
+      ville: devis.ville,
+      pays: devis.pays,
+      numeroBordereau: devis.numeroBordereau,
       dateCreation: devis.dateCreation, dateValidite: devis.dateValidite, droitDouane: devis.droitDouane,
       fraisCircuit: devis.fraisCircuit, fraisPrestation: devis.fraisPrestation, total: devis.total,
       notes: devis.notes, statut: devis.statut, coutLabels,
@@ -195,7 +198,17 @@ export function DevisDetailScreen() {
               </div>
               <div className="px-5">
                 <InfoRow icon={User} label="Client" value={devis.clientNom} />
-                {devis.portNom && <InfoRow icon={Package} label={coutLabels.port} value={devis.portNom} />}
+                {devis.numeroBordereau && <InfoRow icon={Package} label="N° de Bordereau" value={devis.numeroBordereau} />}
+                {(devis.ville || devis.pays) && (
+                  <InfoRow
+                    icon={Package}
+                    label="Destination"
+                    value={[devis.ville, devis.pays].filter(Boolean).join(", ")}
+                  />
+                )}
+                {!annexeCode?.toUpperCase().includes("ML") && devis.portNom && (
+                  <InfoRow icon={Package} label={coutLabels.port} value={devis.portNom} />
+                )}
                 <InfoRow icon={Package} label="Nature de la marchandise" value={devis.nature} />
                 <InfoRow icon={CalendarDays} label="Date de création" value={formatDateShort(devis.dateCreation)} />
                 <InfoRow icon={CalendarDays} label="Valide jusqu'au" value={formatDateShort(devis.dateValidite)} />

@@ -254,6 +254,7 @@ type DossierTransportSectionProps = {
   portEntree: string;
   noConteneur: string;
   poidsTotal: string;
+  isMali?: boolean;
   onModeTransportChange: (value: string) => void;
   onPortEntreeChange: (value: string) => void;
   onNoConteneurChange: (value: string) => void;
@@ -266,6 +267,7 @@ export function DossierTransportSection({
   portEntree,
   noConteneur,
   poidsTotal,
+  isMali = false,
   onModeTransportChange,
   onPortEntreeChange,
   onNoConteneurChange,
@@ -295,14 +297,16 @@ export function DossierTransportSection({
             </SelectContent>
           </Select>
         </FormField>
-        <FormField label="Port / Frontière d'entrée">
-          <Input
-            className="h-10"
-            value={portEntree}
-            onChange={(e) => onPortEntreeChange(e.target.value)}
-            placeholder="Ex. Port de Dakar"
-          />
-        </FormField>
+        {!isMali && (
+          <FormField label="Port d'embarquement / d'entrée">
+            <Input
+              className="h-10"
+              value={portEntree}
+              onChange={(e) => onPortEntreeChange(e.target.value)}
+              placeholder="Ex. Port d'Abidjan"
+            />
+          </FormField>
+        )}
         {modeTransport === "Maritime" && (
           <FormField label="N° de conteneur">
             <Input

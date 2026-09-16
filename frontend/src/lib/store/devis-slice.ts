@@ -11,6 +11,7 @@ import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
 } from "@/lib/store/reference";
+import { encodeDevisNotes } from "@/features/devis/services/devis-meta";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
 function currentUserAnnexeIds(get: () => SLTTState): string[] {
@@ -44,6 +45,11 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     );
 
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
+    const encodedNotes = encodeDevisNotes(input.notes, {
+      ville: input.ville,
+      pays: input.pays,
+      numeroBordereau: input.numeroBordereau,
+    });
 
     // Persistance obligatoire : un devis sans écriture serveur disparaissait
     // silencieusement au rechargement, sans aucune erreur montrée.
@@ -54,7 +60,7 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       portId: input.portId || undefined,
       nature: input.nature,
       dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
-      notes: input.notes,
+      notes: encodedNotes || undefined,
       lignes: [
         { designation: "Droit de douane", quantite: 1, prixUnitaire: input.droitDouane },
         { designation: "Frais de circuit", quantite: 1, prixUnitaire: input.fraisCircuit },
@@ -72,6 +78,9 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       annexeNom: annexe?.nom ?? "",
       portId: input.portId,
       portNom: created?.port?.nom,
+      ville: input.ville,
+      pays: input.pays,
+      numeroBordereau: input.numeroBordereau,
       nature: input.nature ?? "",
       droitDouane: Number(input.droitDouane),
       fraisCircuit: Number(input.fraisCircuit),
@@ -95,12 +104,18 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
     const existing = get().devis.find((d) => d.id === id);
 
+    const encodedNotes = encodeDevisNotes(input.notes, {
+      ville: input.ville,
+      pays: input.pays,
+      numeroBordereau: input.numeroBordereau,
+    });
+
     await api.devis.update(id, {
       clientId: input.clientId,
       portId: input.portId || null,
       nature: input.nature,
       dateValidite: input.dateValidite ? new Date(input.dateValidite) : undefined,
-      notes: input.notes,
+      notes: encodedNotes || undefined,
       lignes: [
         { designation: "Droit de douane", quantite: 1, prixUnitaire: input.droitDouane },
         { designation: "Frais de circuit", quantite: 1, prixUnitaire: input.fraisCircuit },

@@ -19,6 +19,7 @@ export interface StockSlice {
   ) => Promise<void>;
   importStockHistorique: (input: ImportStockHistoriqueInput) => Promise<StockItem>;
   updateStockItem: (id: string, input: UpdateStockItemInput) => Promise<StockItem>;
+  removeStockItem: (id: string) => Promise<void>;
 }
 
 import { api } from "@/lib/api-client";
@@ -309,6 +310,20 @@ export const createStockSlice: StateCreator<SLTTState, [], [], StockSlice> = (se
         annexeNom: existing?.annexeNom,
         quantite: existing?.quantite ?? 0,
       }
+    );
+  },
+
+  removeStockItem: async (id: string) => {
+    const item = get().stock.find((s) => s.id === id);
+    await api.stock.deleteItem(id);
+    set((s) => ({
+      stock: s.stock.filter((it) => it.id !== id),
+      mouvements: s.mouvements.filter((m) => m.stockId !== id),
+    }));
+    await get().addAuditLog(
+      AUDIT_MODULE.Stock,
+      AUDIT_ACTION.Suppression,
+      `Article de stock supprimé : ${item?.marchandise ?? id}`,
     );
   },
 });

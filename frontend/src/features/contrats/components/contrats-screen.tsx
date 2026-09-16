@@ -116,7 +116,7 @@ export function ContratsScreen() {
   );
 
   const stats = useMemo(() => {
-    const actifs = scoped.filter((c) => c.statut === "Actif").length;
+    const actifs = scoped.filter((c) => c.statut === "En cours" || c.statut === "Actif").length;
     const montantTotal = scoped.reduce((sum, c) => sum + c.montant, 0);
     const nbPrestations = scoped.reduce((sum, c) => sum + c.nbPrestations, 0);
     const nbRealisees = scoped.reduce((sum, c) => sum + c.nbPrestationsRealisees, 0);
@@ -479,7 +479,7 @@ function ContratFormModal({
   const [dateDebut, setDateDebut] = useState(new Date().toISOString().slice(0, 10));
   const [dateFin, setDateFin] = useState("");
   const [montant, setMontant] = useState("");
-  const [statut, setStatut] = useState<ContratStatut>("Actif");
+  const [statut, setStatut] = useState<ContratStatut>("En cours");
   const [notes, setNotes] = useState("");
 
   const showAnnexe = annexes.length > 1;
@@ -492,7 +492,7 @@ function ContratFormModal({
     setDateDebut(new Date().toISOString().slice(0, 10));
     setDateFin("");
     setMontant("");
-    setStatut("Actif");
+    setStatut("En cours");
     setNotes("");
   }
 

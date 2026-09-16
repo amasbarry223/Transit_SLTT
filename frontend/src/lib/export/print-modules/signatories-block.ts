@@ -13,7 +13,7 @@ import { htmlEscape } from "../html-escape";
  */
 export const SIGNATORY_DEFAULTS = {
   dg: "Ali Badra TRAORE",
-  receveur: "OM",
+  receveur: "",
   pdg: "Abdoul TRAORÉ",
 } as const;
 
@@ -77,7 +77,7 @@ export function buildSignatoriesBlockHTML(overrides?: SignatoriesOverrides): str
   const col = (role: string, name: string) => `<td>
         <div class="sig-role">${role}</div>
         <div class="sig-line"></div>
-        <div class="sig-name">${htmlEscape(name)}</div>
+        <div class="sig-name">${name ? htmlEscape(name) : "&nbsp;"}</div>
       </td>`;
 
   return `<table class="signatories">

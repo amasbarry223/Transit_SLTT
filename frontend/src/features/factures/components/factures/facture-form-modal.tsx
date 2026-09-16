@@ -86,6 +86,13 @@ export function FactureFormModal({
   // champ plutôt que de faire choisir une annexe qui ne s'applique pas à
   // cette société (même règle que contrats/bons de caisse).
   const resolvedAnnexeId = annexeId || activeAnnexeId || "";
+  const selectedAnnexe = annexes.find((a) => a.id === resolvedAnnexeId);
+  const isAbidjan = Boolean(
+    selectedAnnexe &&
+      (selectedAnnexe.code?.toUpperCase().includes("CI") ||
+        selectedAnnexe.code?.toUpperCase().includes("ABJ") ||
+        selectedAnnexe.nom.toLowerCase().includes("abidjan"))
+  );
 
   // Seules les lignes avec une description non vide sont envoyées à
   // addFacture (voir handleSubmit) — le total affiché doit porter sur le même
@@ -272,6 +279,45 @@ export function FactureFormModal({
               </button>
             </div>
 
+            {isAbidjan && (
+              <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/50 p-2 dark:border-blue-900/40 dark:bg-blue-950/20">
+                <span className="text-[11px] font-medium text-blue-800 dark:text-blue-300">Ajout rapide Abidjan :</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = lignes.findIndex((l) => !l.description.trim());
+                    if (idx >= 0) updateLigne(idx, "description", "Frais de port");
+                    else setLignes((prev) => [...prev, { description: "Frais de port", quantite: "1", prixUnitaire: "0" }]);
+                  }}
+                  className="rounded-md border border-blue-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-blue-700 shadow-sm hover:bg-blue-50 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
+                >
+                  + Frais de port
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = lignes.findIndex((l) => !l.description.trim());
+                    if (idx >= 0) updateLigne(idx, "description", "Frais de transport");
+                    else setLignes((prev) => [...prev, { description: "Frais de transport", quantite: "1", prixUnitaire: "0" }]);
+                  }}
+                  className="rounded-md border border-blue-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-blue-700 shadow-sm hover:bg-blue-50 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
+                >
+                  + Frais de transport
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = lignes.findIndex((l) => !l.description.trim());
+                    if (idx >= 0) updateLigne(idx, "description", "Frais de prestation");
+                    else setLignes((prev) => [...prev, { description: "Frais de prestation", quantite: "1", prixUnitaire: "0" }]);
+                  }}
+                  className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  + Frais de prestation
+                </button>
+              </div>
+            )}
+
             {/* En-têtes colonnes */}
             <div className="mb-1.5 hidden grid-cols-[1fr_60px_100px_24px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:grid">
               <span>Description</span>
@@ -286,7 +332,7 @@ export function FactureFormModal({
                   <Input
                     value={l.description}
                     onChange={(e) => updateLigne(i, "description", e.target.value)}
-                    placeholder="ex. Frais de dédouanement"
+                    placeholder={isAbidjan ? "ex. Frais de port, Frais de transport" : "ex. Frais de dédouanement"}
                     className="h-8 text-xs"
                   />
                   <Input

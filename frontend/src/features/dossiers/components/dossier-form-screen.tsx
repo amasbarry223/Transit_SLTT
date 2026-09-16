@@ -205,6 +205,7 @@ function DossierFormInner() {
               portEntree={form.portEntree}
               noConteneur={form.noConteneur}
               poidsTotal={form.poidsTotal}
+              isMali={annexeCode === "ML" || annexes.find((a) => a.id === form.annexeId)?.nom?.toLowerCase().includes("mali")}
               onModeTransportChange={form.setModeTransport}
               onPortEntreeChange={form.setPortEntree}
               onNoConteneurChange={form.setNoConteneur}

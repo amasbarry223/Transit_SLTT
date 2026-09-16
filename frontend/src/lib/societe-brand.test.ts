@@ -43,8 +43,8 @@ describe("resolveDossierCoutLabels", () => {
 
   it("remplace les rubriques par le modèle transit portuaire pour l'annexe CI", () => {
     const labels = resolveDossierCoutLabels("CI");
-    expect(labels.droitDouane).toBe("Frais transit port");
-    expect(labels.fraisCircuit).toBe("Dépenses");
+    expect(labels.droitDouane).toBe("Frais de port");
+    expect(labels.fraisCircuit).toBe("Frais de transport");
     expect(labels.fraisPrestation).toBe("Frais de prestation");
   });
 });

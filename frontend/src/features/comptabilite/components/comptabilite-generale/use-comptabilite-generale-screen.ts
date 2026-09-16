@@ -13,6 +13,7 @@ import {
   resolveEntitesComptables,
 } from "@/lib/comptabilite-generale";
 import { usePermission } from "@/shared/hooks/use-permission";
+import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
@@ -23,6 +24,7 @@ import { PAGE_SIZE } from "./shared";
 export function useComptabiliteGeneraleScreen() {
   const { toast } = useToast();
   const canWrite = usePermission("comptabilite:write");
+  const { selectedAnnexeId } = useActiveAnnexe();
   const annexes = useStore((s) => s.annexes);
   const allOperations = useStore((s) => s.operationsComptables);
   const cloturesCaisse = useStore((s) => s.cloturesCaisse);
@@ -43,9 +45,16 @@ export function useComptabiliteGeneraleScreen() {
   const [activeEntiteKey, setActiveEntiteKey] = useState<string | null>(null);
   const resolvedEntite = useMemo(() => {
     if (entites.length === 0) return null;
-    const found = activeEntiteKey ? entites.find((e) => entiteKeyOf(e) === activeEntiteKey) : null;
-    return found ?? entites[0];
-  }, [entites, activeEntiteKey]);
+    if (activeEntiteKey) {
+      const found = entites.find((e) => entiteKeyOf(e) === activeEntiteKey);
+      if (found) return found;
+    }
+    if (selectedAnnexeId) {
+      const found = entites.find((e) => e.id === selectedAnnexeId);
+      if (found) return found;
+    }
+    return entites[0];
+  }, [entites, activeEntiteKey, selectedAnnexeId]);
   const resolvedTab = resolvedEntite ? entiteKeyOf(resolvedEntite) : "";
 
   const [query, setQuery] = useState("");

@@ -9,6 +9,9 @@ export interface Devis {
   annexeNom?: string;
   portId?: string;
   portNom?: string;
+  ville?: string;
+  pays?: string;
+  numeroBordereau?: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;
@@ -24,7 +27,11 @@ export interface Devis {
 export interface DevisInput {
   clientId: string;
   clientNom: string;
+  annexeId?: string;
   portId?: string;
+  ville?: string;
+  pays?: string;
+  numeroBordereau?: string;
   nature: string;
   droitDouane: number;
   fraisCircuit: number;

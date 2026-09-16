@@ -7,6 +7,7 @@ export class AnnexesService {
 
   async findAll() {
     return this.prisma.annexe.findMany({
+      where: { actif: true },
       orderBy: { nom: 'asc' },
     });
   }

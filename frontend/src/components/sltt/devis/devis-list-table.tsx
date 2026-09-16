@@ -233,6 +233,11 @@ export function DevisListTable({
                       >
                         <TableCell className="px-4 py-3.5">
                           <p className="font-mono text-xs font-semibold text-foreground">{d.reference}</p>
+                          {d.numeroBordereau && (
+                            <p className="font-mono text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                              Brd: {d.numeroBordereau}
+                            </p>
+                          )}
                           <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{formatDateShort(d.dateCreation)}</p>
                         </TableCell>
 
@@ -241,7 +246,12 @@ export function DevisListTable({
                         </TableCell>
 
                         <TableCell className="hidden max-w-[200px] px-4 py-3.5 md:table-cell">
-                          <span className="line-clamp-1 text-sm text-muted-foreground">{d.nature}</span>
+                          <span className="line-clamp-1 text-sm text-foreground/90">{d.nature}</span>
+                          {(d.ville || d.pays) && (
+                            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                              📍 {[d.ville, d.pays].filter(Boolean).join(", ")}
+                            </p>
+                          )}
                         </TableCell>
 
                         <TableCell className="px-4 py-3.5 text-right">
