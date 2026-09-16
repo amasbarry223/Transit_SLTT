@@ -156,29 +156,57 @@ export function FactureDetailScreen() {
 
   function handlePrint() {
     if (!facture) return;
+    const annexe = annexes.find((a) => a.id === facture.annexeId);
+    const isCoteIvoire = Boolean(
+      annexe &&
+        (annexe.code?.toUpperCase().includes("CI") ||
+          annexe.code?.toUpperCase().includes("ABJ") ||
+          annexe.nom.toLowerCase().includes("abidjan") ||
+          annexe.nom.toLowerCase().includes("ivoire")),
+    );
     const memesAnnexe = factures
       .filter((f) => f.annexeId === facture.annexeId)
       .sort((a, b) => a.creeLe.localeCompare(b.creeLe));
     const annexeSeq = memesAnnexe.findIndex((f) => f.id === facture.id) + 1;
-    const villeSiege = annexes.find((a) => a.id === facture.annexeId)?.villeSiege;
-    printFactureModule({
-      numero: facture.numero,
-      annexeSeq: annexeSeq > 0 ? annexeSeq : undefined,
-      villeSiege,
-      clientNom: facture.clientNom,
-      date: facture.date,
-      dateEcheance: facture.dateEcheance,
-      lignes: facture.lignes,
-      tauxTVA: facture.tauxTVA,
-      montantHT: facture.montantHT,
-      montantTVA: facture.montantTVA,
-      montantTTC: facture.montantTTC,
-      montantPaye: facture.montantPaye,
-      notes: facture.notes,
-      genereParNom: currentUserName || facture.creePar,
-      dossierReference: dossier?.reference,
-      dossierBl: dossier?.bl,
-    }, factureBrand);
+    const villeSiege = annexe?.villeSiege || (isCoteIvoire ? "Abidjan" : undefined);
+
+    const portTransit = dossier?.portEntree || "ABIDJAN - BAMAKO à partir de la frontière";
+    const nature = dossier?.nature || (facture.lignes[0]?.description || "FER");
+    const tonnage = dossier?.poidsTotal
+      ? dossier.poidsTotal >= 1000
+        ? `${(dossier.poidsTotal / 1000).toFixed(0)} T`
+        : `${dossier.poidsTotal} Kg`
+      : "56 T";
+    const typeTransport = dossier?.camion || "PLATEAU - CAMION";
+
+    printFactureModule(
+      {
+        numero: facture.numero,
+        annexeSeq: annexeSeq > 0 ? annexeSeq : undefined,
+        annexeCode: annexe?.code,
+        isCoteIvoire,
+        villeSiege,
+        clientNom: facture.clientNom,
+        date: facture.date,
+        dateEcheance: facture.dateEcheance,
+        lignes: facture.lignes,
+        tauxTVA: facture.tauxTVA,
+        montantHT: facture.montantHT,
+        montantTVA: facture.montantTVA,
+        montantTTC: facture.montantTTC,
+        montantPaye: facture.montantPaye,
+        notes: facture.notes,
+        genereParNom: currentUserName || facture.creePar,
+        dossierReference: dossier?.reference,
+        dossierBl: dossier?.bl,
+        portTransit,
+        nature,
+        tonnage,
+        typeTransport,
+        conditionPaiement: "PAIEMENT APRES DECHARGEMENT",
+      },
+      factureBrand,
+    );
   }
 
   return (

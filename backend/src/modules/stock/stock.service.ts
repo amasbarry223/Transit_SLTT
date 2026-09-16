@@ -107,7 +107,13 @@ export class StockService {
 
   async deleteItem(id: string, user: CurrentUserType) {
     await this.findOneItem(id, user);
-    return this.prisma.stockItem.delete({ where: { id } });
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.bonSortie.updateMany({
+        where: { stockId: id },
+        data: { stockId: null },
+      });
+      return tx.stockItem.delete({ where: { id } });
+    });
   }
 
   // Mouvements

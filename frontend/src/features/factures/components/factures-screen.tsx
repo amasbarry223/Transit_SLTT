@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { Plus, Receipt, Search, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
+import { FileSpreadsheet, Plus, Receipt, Search, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Card } from "@/shared/components/ui/card";
@@ -11,6 +11,7 @@ import { InfoCallout } from "@/components/sltt/info-callout";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { formatFCFA } from "@/lib/format";
+import { exportToExcel } from "@/lib/export";
 import type { Facture } from "@/lib/store";
 import { FactureFormModal } from "./factures/facture-form-modal";
 import { FacturesTable } from "./factures/factures-table";
@@ -23,6 +24,27 @@ export function FacturesScreen() {
   const handleEdit = useCallback((f: Facture) => screen.openFactureDetail(f.id, true), [screen.openFactureDetail]);
   const handleMarkEnvoyee = useCallback((f: Facture) => screen.setEnvoyeeTarget(f), [screen.setEnvoyeeTarget]);
   const handleDelete = useCallback((f: Facture) => screen.setDeleteTarget(f), [screen.setDeleteTarget]);
+
+  async function handleExportExcel() {
+    await exportToExcel(
+      "factures",
+      `factures-${new Date().toISOString().slice(0, 10)}`,
+      [
+        { header: "N° Facture", accessor: (f: Facture) => f.numero },
+        { header: "Client", accessor: (f: Facture) => f.clientNom },
+        { header: "Date émission", accessor: (f: Facture) => f.date },
+        { header: "Échéance", accessor: (f: Facture) => f.dateEcheance },
+        { header: "Montant HT (FCFA)", accessor: (f: Facture) => f.montantHT },
+        { header: "TVA (FCFA)", accessor: (f: Facture) => f.montantTVA },
+        { header: "Montant TTC (FCFA)", accessor: (f: Facture) => f.montantTTC },
+        { header: "Montant Payé (FCFA)", accessor: (f: Facture) => f.montantPaye },
+        { header: "Reste à payer (FCFA)", accessor: (f: Facture) => Math.max(0, f.montantTTC - f.montantPaye) },
+        { header: "Statut", accessor: (f: Facture) => f.statut },
+      ],
+      screen.filtered,
+      { module: "Factures" },
+    );
+  }
 
   return (
     <div className="space-y-6 pb-6">
@@ -38,15 +60,27 @@ export function FacturesScreen() {
         title="Facturation Client"
         description="Gestion, suivi des créances et encaissements avec TVA"
       >
-        {screen.canWrite && (
-          <Button
-            onClick={() => screen.setShowForm(true)}
-            className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus className="size-4 shrink-0 stroke-[3]" />
-            <span>Nouvelle facture</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {screen.filtered.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              className="gap-2 font-semibold h-10 rounded-xl"
+            >
+              <FileSpreadsheet className="size-4 text-emerald-600" />
+              <span>Exporter Excel</span>
+            </Button>
+          )}
+          {screen.canWrite && (
+            <Button
+              onClick={() => screen.setShowForm(true)}
+              className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="size-4 shrink-0 stroke-[3]" />
+              <span>Nouvelle facture</span>
+            </Button>
+          )}
+        </div>
       </PageHeader>
 
       <InfoCallout>

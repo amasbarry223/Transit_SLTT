@@ -500,7 +500,7 @@ export function DossierBulkImportButton() {
                           <Checkbox
                             checked={allChecked}
                             disabled={phase === "importing"}
-                            onCheckedChange={(v) => toggleAll(v === true)}
+                            onCheckedChange={(v: boolean | "indeterminate") => toggleAll(v === true)}
                             aria-label="Sélectionner toutes les lignes"
                           />
                         </TableHead>
@@ -521,7 +521,7 @@ export function DossierBulkImportButton() {
                               <Checkbox
                                 checked={g.checkedState}
                                 disabled={phase === "importing"}
-                                onCheckedChange={(v) => toggleGroup(g.key, v === true)}
+                                onCheckedChange={(v: boolean | "indeterminate") => toggleGroup(g.key, v === true)}
                                 aria-label={`Sélectionner toutes les lignes de ${g.nom}`}
                               />
                             </TableCell>
@@ -585,7 +585,7 @@ export function DossierBulkImportButton() {
                                 <Checkbox
                                   checked={r.selected}
                                   disabled={phase === "importing"}
-                                  onCheckedChange={(v) => toggleRow(r.key, v === true)}
+                                  onCheckedChange={(v: boolean | "indeterminate") => toggleRow(r.key, v === true)}
                                   aria-label={`Inclure la ligne ${r.rowNumber} de ${r.sheetName}`}
                                 />
                               </TableCell>

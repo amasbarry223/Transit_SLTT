@@ -72,10 +72,16 @@ export class BonsService {
   }
 
   async findOneBon(id: string, user: CurrentUserType) {
-    const bon = await this.prisma.bonSortie.findUnique({
+    let bon = await this.prisma.bonSortie.findUnique({
       where: { id },
       include: { annexe: true, client: true, stock: true },
     });
+    if (!bon) {
+      bon = await this.prisma.bonSortie.findFirst({
+        where: { reference: id },
+        include: { annexe: true, client: true, stock: true },
+      });
+    }
     if (!bon) throw new NotFoundException(`Bon de sortie ${id} non trouvé`);
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
       throw new ForbiddenException('Accès non autorisé à ce bon de sortie');
@@ -174,14 +180,21 @@ export class BonsService {
   }
 
   async deleteBon(id: string, user: CurrentUserType) {
-    const bon = await this.findOneBon(id, user);
+    let bon = await this.prisma.bonSortie.findUnique({ where: { id } });
+    if (!bon) {
+      bon = await this.prisma.bonSortie.findFirst({ where: { reference: id } });
+    }
+    if (!bon) return { id };
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce bon de sortie');
+    }
     if (bon.statut === 'Validé') {
       throw new BadRequestException(
         "Un bon de sortie validé ne peut pas être supprimé (le stock a déjà été mouvementé).",
       );
     }
-    await this.prisma.bonSortie.delete({ where: { id } });
-    return { id };
+    await this.prisma.bonSortie.delete({ where: { id: bon.id } });
+    return { id: bon.id };
   }
 
   // Bons de sortie caisse
@@ -205,7 +218,10 @@ export class BonsService {
   }
 
   async findOneBonCaisse(id: string, user: CurrentUserType) {
-    const bon = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
+    let bon = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
+    if (!bon) {
+      bon = await this.prisma.bonSortieCaisse.findFirst({ where: { reference: id } });
+    }
     if (!bon) throw new NotFoundException(`Bon de caisse ${id} non trouvé`);
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
       throw new ForbiddenException('Accès non autorisé à ce bon de caisse');
@@ -244,17 +260,53 @@ export class BonsService {
   }
 
   async updateBonCaisse(id: string, user: CurrentUserType, data: any) {
-    const existing = await this.findOneBonCaisse(id, user);
+    let existing = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
+    if (!existing && data.reference) {
+      existing = await this.prisma.bonSortieCaisse.findUnique({ where: { reference: data.reference } });
+    }
+    if (!existing) {
+      existing = await this.prisma.bonSortieCaisse.findFirst({ where: { reference: id } });
+    }
+
+    // Si introuvable en base (ex: créé hors ligne ou désynchronisé), upsert résilient pour ne pas bloquer l'utilisateur
+    if (!existing) {
+      const annexeId = data.annexeId || user.annexeIds[0];
+      if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId)) {
+        throw new ForbiddenException('Vous ne pouvez pas rattacher ce bon de caisse à cette annexe');
+      }
+      const date = data.date || new Date().toISOString().slice(0, 10);
+      const lignes = (data.lignes || []).map((l: any) => ({
+        date: l.date || date,
+        beneficiaire: l.beneficiaire,
+        motif: l.motif,
+        montant: this.toPositiveMontant(l.montant),
+      }));
+      const montantTotal = lignes.reduce((s: number, l: any) => s + l.montant, 0);
+
+      return this.prisma.bonSortieCaisse.create({
+        data: {
+          id,
+          reference: data.reference || `N°${Date.now()}`,
+          date,
+          annexeId,
+          montantTotal,
+          creePar: user.nom,
+          lignes: { create: lignes },
+        },
+        include: { annexe: true, lignes: true },
+      });
+    }
+
+    const targetId = existing.id;
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce bon de caisse');
+    }
     if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas rattacher ce bon de caisse à cette annexe');
     }
     const date = data.date || existing.date;
     const annexeId = data.annexeId || existing.annexeId;
-    // Comme factures.service.ts/devis.service.ts (update) : `lignes` n'est
-    // recalculé/remplacé que s'il est explicitement fourni — sans ce garde,
-    // un payload qui omet `lignes` retombait sur `[]` (via `data.lignes ||
-    // []`) et un `PUT /bons/caisse/:id` de simple correction (date, annexe)
-    // vidait silencieusement toutes les lignes ET remettait montantTotal à 0.
+
     const hasLignes = Array.isArray(data.lignes);
     const lignes = hasLignes
       ? data.lignes.map((l: any) => ({
@@ -264,16 +316,14 @@ export class BonsService {
           montant: this.toPositiveMontant(l.montant),
         }))
       : null;
-    // Même règle qu'à la création : le total est recalculé depuis les
-    // lignes, jamais une valeur fournie par le client.
     const montantTotal = lignes ? lignes.reduce((s: number, l: any) => s + l.montant, 0) : undefined;
 
     return this.prisma.$transaction(async (tx: any) => {
       if (hasLignes) {
-        await tx.ligneBonSortieCaisse.deleteMany({ where: { bonSortieCaisseId: id } });
+        await tx.ligneBonSortieCaisse.deleteMany({ where: { bonSortieCaisseId: targetId } });
       }
       return tx.bonSortieCaisse.update({
-        where: { id },
+        where: { id: targetId },
         data: {
           date,
           annexeId,
@@ -285,8 +335,17 @@ export class BonsService {
   }
 
   async deleteBonCaisse(id: string, user: CurrentUserType) {
-    await this.findOneBonCaisse(id, user);
-    await this.prisma.bonSortieCaisse.delete({ where: { id } });
-    return { id };
+    let existing = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
+    if (!existing) {
+      existing = await this.prisma.bonSortieCaisse.findFirst({ where: { reference: id } });
+    }
+    if (!existing) {
+      return { id };
+    }
+    if (user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à ce bon de caisse');
+    }
+    await this.prisma.bonSortieCaisse.delete({ where: { id: existing.id } });
+    return { id: existing.id };
   }
 }

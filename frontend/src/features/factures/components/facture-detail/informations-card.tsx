@@ -1,6 +1,4 @@
-"use client";
-
-import { CalendarDays, Clock, FolderKanban, Percent, Receipt, User } from "lucide-react";
+import { Anchor, CalendarDays, Clock, FolderKanban, Percent, Receipt, Truck, User, Weight } from "lucide-react";
 import type { Dossier, Facture } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
@@ -39,6 +37,26 @@ export function InformationsCard({
           label="Dossier lié"
           value={dossier ? `${dossier.reference} · BL ${dossier.bl}` : "—"}
         />
+        {dossier?.portEntree && (
+          <InfoRow icon={Anchor} label="Port de transit" value={dossier.portEntree} />
+        )}
+        {dossier?.nature && (
+          <InfoRow icon={FolderKanban} label="Nature marchandise" value={dossier.nature} />
+        )}
+        {dossier?.poidsTotal != null && (
+          <InfoRow
+            icon={Weight}
+            label="Tonnage"
+            value={
+              dossier.poidsTotal >= 1000
+                ? `${(dossier.poidsTotal / 1000).toFixed(0)} T`
+                : `${dossier.poidsTotal} Kg`
+            }
+          />
+        )}
+        {dossier?.camion && (
+          <InfoRow icon={Truck} label="Transport" value={dossier.camion} />
+        )}
         <InfoRow icon={Clock} label="Créée le" value={formatDateShort(facture.creeLe)} />
       </div>
     </Card>

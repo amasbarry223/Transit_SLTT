@@ -258,6 +258,7 @@ export interface BonSortieCaisse {
 }
 
 export interface BonSortieCaisseInput {
+  reference?: string;
   date: string;
   annexeId: string;
   lignes: Array<{ date: string; beneficiaire: string; motif: string; montant: number }>;

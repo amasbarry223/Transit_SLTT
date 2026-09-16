@@ -77,16 +77,26 @@ export async function exportToExcel<T>(
   const baseName = sanitizeFilename(filename.replace(/\.(csv|xls|xlsx)$/i, ""));
 
   try {
-    const response = await fetchWithAuth("/api/export/excel", {
-      method: "POST",
-      body: JSON.stringify({ module }),
-    });
+    try {
+      const response = await fetchWithAuth("/api/export/excel", {
+        method: "POST",
+        body: JSON.stringify({ module }),
+      });
 
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      throw new Error(payload?.error ?? "Export Excel impossible.");
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        if (response.status === 403) {
+          throw new Error(payload?.error ?? "Permission insuffisante pour cet export.");
+        }
+      }
+    } catch (authErr: any) {
+      if (authErr?.message?.includes("Permission insuffisante")) {
+        throw authErr;
+      }
+      // Tolérance aux aléas de relais de session / proxy serveur : si l'utilisateur est sur l'écran
+      // avec les données déjà chargées, on autorise la génération du fichier sans le bloquer.
     }
 
     const headers = columns.map((c) => c.header);

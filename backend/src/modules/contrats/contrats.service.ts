@@ -54,13 +54,22 @@ export class ContratsService {
   }
 
   async findOne(id: string, user: CurrentUserType) {
-    const contrat = await this.prisma.contrat.findUnique({
+    let contrat = await this.prisma.contrat.findUnique({
       where: { id },
       include: {
         annexe: true,
         client: true,
       },
     });
+    if (!contrat) {
+      contrat = await this.prisma.contrat.findUnique({
+        where: { reference: id },
+        include: {
+          annexe: true,
+          client: true,
+        },
+      });
+    }
 
     if (!contrat) throw new NotFoundException(`Contrat ${id} non trouvé`);
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(contrat.annexeId)) {
@@ -139,7 +148,7 @@ export class ContratsService {
   }
 
   async delete(id: string, user: CurrentUserType) {
-    await this.findOne(id, user);
-    return this.prisma.contrat.delete({ where: { id } });
+    const contrat = await this.findOne(id, user);
+    return this.prisma.contrat.delete({ where: { id: contrat.id } });
   }
 }

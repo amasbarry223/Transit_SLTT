@@ -81,10 +81,16 @@ export class DevisService {
   }
 
   async findOne(id: string, user: CurrentUserType) {
-    const devis = await this.prisma.devis.findUnique({
+    let devis = await this.prisma.devis.findUnique({
       where: { id },
       include: { client: true, annexe: true, port: true, lignes: true },
     });
+    if (!devis) {
+      devis = await this.prisma.devis.findUnique({
+        where: { numero: id },
+        include: { client: true, annexe: true, port: true, lignes: true },
+      });
+    }
     if (!devis) throw new NotFoundException(`Devis ${id} non trouvé`);
 
     if (devis.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(devis.annexeId)) {
@@ -174,7 +180,7 @@ export class DevisService {
   }
 
   async delete(id: string, user: CurrentUserType) {
-    await this.findOne(id, user);
-    return this.prisma.devis.delete({ where: { id } });
+    const devis = await this.findOne(id, user);
+    return this.prisma.devis.delete({ where: { id: devis.id } });
   }
 }

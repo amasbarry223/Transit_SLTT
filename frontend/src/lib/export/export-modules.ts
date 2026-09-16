@@ -11,6 +11,7 @@ export const EXPORT_MODULES = [
   "transporteurs",
   "fournisseurs",
   "bilans",
+  "bons",
 ] as const;
 
 export type ExportModule = (typeof EXPORT_MODULES)[number];
@@ -27,4 +28,5 @@ export const EXPORT_MODULE_PERMISSIONS: Record<ExportModule, string> = {
   transporteurs: "transporteurs:read",
   fournisseurs: "fournisseurs:read",
   bilans: "rapports:read",
+  bons: "bons:read",
 };

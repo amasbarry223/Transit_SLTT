@@ -266,8 +266,12 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
   updateBonSortieCaisse: async (id, input) => {
     const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
+    const existingBon = get().bonsSortieCaisse.find((b) => b.id === id || (input.reference && b.reference === input.reference));
+    const reference = input.reference || existingBon?.reference;
+
     // Persistance obligatoire — voir addBon ci-dessus pour la justification.
     const updated = await api.bons.updateBonCaisse(id, {
+      reference,
       date: input.date,
       annexeId: input.annexeId,
       lignes: input.lignes,
@@ -286,9 +290,10 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
     set((s) => ({
       bonsSortieCaisse: s.bonsSortieCaisse.map((b) =>
-        b.id === id
+        b.id === id || (reference && b.reference === reference)
           ? {
               ...b,
+              id: updated?.id ?? b.id,
               date: input.date,
               annexeId: input.annexeId,
               annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,

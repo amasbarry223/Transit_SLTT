@@ -561,7 +561,7 @@ export function StockBulkImportButton() {
                                 <Checkbox
                                   checked={stats.checkedState}
                                   disabled={phase === "importing"}
-                                  onCheckedChange={(v) => toggleGroup(g.key, v === true)}
+                                  onCheckedChange={(v: boolean | "indeterminate") => toggleGroup(g.key, v === true)}
                                   aria-label={`Sélectionner toutes les lignes de ${g.sheetName}`}
                                 />
                               </TableCell>
@@ -667,7 +667,7 @@ export function StockBulkImportButton() {
                                   <Checkbox
                                     checked={r.selected}
                                     disabled={phase === "importing"}
-                                    onCheckedChange={(v) => toggleRow(g.key, r.key, v === true)}
+                                    onCheckedChange={(v: boolean | "indeterminate") => toggleRow(g.key, r.key, v === true)}
                                     aria-label={`Inclure la ligne ${r.rowNumber}`}
                                   />
                                 </TableCell>

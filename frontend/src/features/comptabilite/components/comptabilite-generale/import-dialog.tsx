@@ -317,7 +317,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
                   <TableHeader className="sticky top-0 z-10 bg-background">
                     <TableRow>
                       <TableHead className="w-10">
-                        <Checkbox checked={allChecked} disabled={phase === "importing"} onCheckedChange={(v) => toggleAll(v === true)} aria-label="Sélectionner toutes les lignes" />
+                        <Checkbox checked={allChecked} disabled={phase === "importing"} onCheckedChange={(v: boolean | "indeterminate") => toggleAll(v === true)} aria-label="Sélectionner toutes les lignes" />
                       </TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Client / Tiers</TableHead>
@@ -331,7 +331,7 @@ export function ComptabiliteGeneraleImportDialog({ open, onOpenChange, entite, i
                     {rows.map((r) => (
                       <TableRow key={r.key} className={cn(r.blocking && "bg-red-50/60 dark:bg-red-950/20", !r.blocking && !r.selected && "opacity-45")}>
                         <TableCell>
-                          <Checkbox checked={r.selected} disabled={phase === "importing" || r.blocking} onCheckedChange={(v) => toggleRow(r.key, v === true)} aria-label={`Inclure la ligne ${r.rowNumber}`} />
+                          <Checkbox checked={r.selected} disabled={phase === "importing" || r.blocking} onCheckedChange={(v: boolean | "indeterminate") => toggleRow(r.key, v === true)} aria-label={`Inclure la ligne ${r.rowNumber}`} />
                         </TableCell>
                         <TableCell className="text-xs">
                           {r.date && derniereClotureFin && r.date <= derniereClotureFin ? (

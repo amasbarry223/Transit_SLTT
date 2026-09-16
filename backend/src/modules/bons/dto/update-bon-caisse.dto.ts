@@ -5,6 +5,10 @@ import { LigneBonCaisseDto } from './ligne-bon-caisse.dto';
 export class UpdateBonCaisseDto {
   @IsString()
   @IsOptional()
+  reference?: string;
+
+  @IsString()
+  @IsOptional()
   date?: string;
 
   @IsString()

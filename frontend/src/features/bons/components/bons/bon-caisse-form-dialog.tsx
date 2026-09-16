@@ -128,6 +128,7 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference, editing
     if (!caisseValid || saving) return;
     setSaving(true);
     const input = {
+      reference: editing?.reference,
       date: caisseDate,
       annexeId: resolvedCaisseAnnexeId,
       lignes: caisseLignes.map((ligne) => ({

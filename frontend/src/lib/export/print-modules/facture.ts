@@ -58,10 +58,304 @@ export interface FactureModuleData {
   genereParNom: string;
   dossierReference?: string;
   dossierBl?: string;
+  isCoteIvoire?: boolean;
+  annexeCode?: string;
+  isProforma?: boolean;
+  portTransit?: string;
+  nature?: string;
+  tonnage?: string;
+  typeTransport?: string;
+  detailsService?: string;
+  conditionPaiement?: string;
+}
+
+export function buildCoteIvoireFactureHTML(data: FactureModuleData, resolvedBrand: SocieteBrand): string {
+  const numeroAffiche = data.annexeSeq != null ? `0${data.annexeSeq}/26` : data.numero;
+  const isProforma = data.isProforma ?? true;
+  const titleText = isProforma ? `Facture pro-forma n°${htmlEscape(numeroAffiche)}` : `Facture n°${htmlEscape(numeroAffiche)}`;
+  const villeSiege = data.villeSiege || "Abidjan";
+  const portTransit = data.portTransit || "ABIDJAN - BAMAKO à partir de la frontière";
+  const nature = data.nature || (data.lignes.length > 0 ? data.lignes[0].description : "FER");
+  const tonnage = data.tonnage || "56 T";
+  const typeTransport = data.typeTransport || "PLATEAU - CAMION";
+  const detailsService = data.detailsService || (data.notes ? data.notes : "propositions du coût de dédouanement d'une marchandise.");
+  const conditionPaiement = data.conditionPaiement || "PAIEMENT APRES DECHARGEMENT";
+  const signataireNom =
+    (resolvedBrand as any).signataireDg ||
+    (resolvedBrand as any).signatairePdg ||
+    (resolvedBrand as any).signataireNom ||
+    "LAMINE TRAORE";
+  const adresseSiege = data.villeSiege?.toLowerCase().includes("abidjan")
+    ? (resolvedBrand.legal?.adresse || "Zone Industrielle de Vridi / Treichville, Abidjan")
+    : (resolvedBrand.legal?.adresse || "Hamdalaye ACI 2000");
+  const telephones = resolvedBrand.legal?.telephone || "+223 76 16 12 01 / +223 44 53 86 11";
+  const emailContact = "lamslogistique@gmail.com";
+
+  let lignesRowsHTML = "";
+  if (data.lignes && data.lignes.length > 0) {
+    lignesRowsHTML = data.lignes.map((l) => {
+      const isPort = l.description.toLowerCase().includes("port");
+      return `
+        <tr>
+          <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center;">
+            <div style="font-weight: 700; font-size: 11px;">${isPort ? "PORT" : htmlEscape(l.description)}</div>
+            ${isPort ? `<div style="font-size: 9px; font-weight: normal; color: #222; margin-top: 2px;">(Emas, Transit, Escort - brigade, machinerie, manœuvre)</div>` : ""}
+          </td>
+          <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 700; font-size: 11.5px; font-variant-numeric: tabular-nums;">
+            ${fmtFCFAPlain(l.montantHT)}
+          </td>
+        </tr>`;
+    }).join("");
+  } else {
+    lignesRowsHTML = `
+      <tr>
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center;">
+          <div style="font-weight: 700; font-size: 11px;">PORT</div>
+          <div style="font-size: 9px; font-weight: normal; color: #222; margin-top: 2px;">(Emas, Transit, Escort - brigade, machinerie, manœuvre)</div>
+        </td>
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 700; font-size: 11.5px;">1 080 000</td>
+      </tr>
+      <tr>
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 700; font-size: 11px;">Transport</td>
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 700; font-size: 11.5px;">3 800 000</td>
+      </tr>
+      <tr>
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 700; font-size: 11px;">Dédouanement</td>
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 700; font-size: 11.5px;">7 000 000</td>
+      </tr>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>${htmlEscape(titleText)}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #fff;
+  color: #000;
+  font-size: 11px;
+  line-height: 1.4;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.page-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+.no-print {
+  text-align: center;
+  padding: 12px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  margin-bottom: 16px;
+}
+.btn-print {
+  background: #0f3d33;
+  color: #fff;
+  border: none;
+  padding: 9px 24px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media print {
+  @page { size: A4 portrait; margin: 8mm 10mm 10mm; }
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .page-container { padding: 0; max-width: 100%; }
+  table { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button class="btn-print" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+</div>
+
+<div class="page-container">
+  <!-- EN-TETE LAMS CONTROL -->
+  <header style="display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-bottom: 10px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      ${
+        resolvedBrand.logoUrl
+          ? `<img src="${resolvedBrand.logoUrl}" alt="Logo" style="height: 64px; max-width: 130px; object-fit: contain;" />`
+          : `<div style="width: 54px; height: 54px; border-radius: 50%; border: 2.5px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+              <span style="font-size: 16px; font-weight: 900; line-height: 1;">LS</span>
+              <span style="font-size: 6px; font-weight: 800; text-transform: uppercase;">LOGISTIQUE</span>
+            </div>`
+      }
+      <div>
+        <div style="font-size: 26px; font-weight: 900; font-family: 'Arial Black', Impact, sans-serif; letter-spacing: -0.01em; color: #000; line-height: 1.1;">
+          ${htmlEscape(resolvedBrand.nom || "LAMS CONTROL SARL")}
+        </div>
+        <div style="font-size: 13px; font-style: italic; font-weight: 700; color: #111; margin-top: 3px;">
+          Voie d'excellence en Transit
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: left;">
+      <ul style="list-style: disc; margin: 0; padding-left: 16px; font-size: 10px; font-weight: 800; color: #000; line-height: 1.45;">
+        <li>Transport · Logistique</li>
+        <li>Import · Export</li>
+        <li>Commerce Général</li>
+        <li>Bâtiment et Travaux Publics</li>
+        <li>Prestation de service</li>
+      </ul>
+    </div>
+  </header>
+
+  <hr style="border: none; border-top: 2.5px solid #000; margin: 10px 0 20px;" />
+
+  <!-- TITRE FACTURE PRO-FORMA -->
+  <div style="text-align: center; margin-bottom: 24px;">
+    <span style="font-size: 17px; font-weight: 800; text-decoration: underline; text-underline-offset: 4px; letter-spacing: 0.02em;">
+      ${htmlEscape(titleText)}
+    </span>
+  </div>
+
+  <!-- BLOC DOIT & DATE -->
+  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 22px;">
+    <div style="font-size: 12.5px; font-weight: 800; color: #000;">
+      Doit : <span style="text-transform: uppercase;">${htmlEscape(data.clientNom)}</span>
+    </div>
+    <div style="font-size: 11.5px; font-weight: 700; color: #000;">
+      ${htmlEscape(villeSiege)}, le ${fmtDate(data.date).replace(/-/g, "-")}
+    </div>
+  </div>
+
+  <!-- DETAILS DU SERVICE -->
+  <div style="margin-bottom: 12px; font-size: 11px; font-weight: 700; color: #000;">
+    *Details du service : <span style="font-weight: 500;">${htmlEscape(detailsService)}</span>
+  </div>
+
+  <!-- TABLEAU 1 : CARACTERISTIQUES TRANSPORT -->
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 22px; border: 1.5px solid #000;">
+    <thead>
+      <tr style="background: #e2e4e8;">
+        <th style="border: 1.5px solid #000; padding: 7px 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; text-align: center; width: 34%;">PORT DE TRANSIT</th>
+        <th style="border: 1.5px solid #000; padding: 7px 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; text-align: center; width: 16%;">NATURE</th>
+        <th style="border: 1.5px solid #000; padding: 7px 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; text-align: center; width: 16%;">DATE</th>
+        <th style="border: 1.5px solid #000; padding: 7px 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; text-align: center; width: 14%;">TONNAGE</th>
+        <th style="border: 1.5px solid #000; padding: 7px 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; text-align: center; width: 20%;">TRANSPORT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border: 1.5px solid #000; padding: 8px 6px; font-size: 10.5px; font-weight: 700; text-align: center;">${htmlEscape(portTransit)}</td>
+        <td style="border: 1.5px solid #000; padding: 8px 6px; font-size: 10.5px; font-weight: 700; text-align: center; text-transform: uppercase;">${htmlEscape(nature)}</td>
+        <td style="border: 1.5px solid #000; padding: 8px 6px; font-size: 10.5px; font-weight: 700; text-align: center;">${fmtDate(data.date).replace(/-/g, " / ").replace(/\//g, " / ")}</td>
+        <td style="border: 1.5px solid #000; padding: 8px 6px; font-size: 10.5px; font-weight: 700; text-align: center;">${htmlEscape(tonnage)}</td>
+        <td style="border: 1.5px solid #000; padding: 8px 6px; font-size: 10.5px; font-weight: 700; text-align: center; text-transform: uppercase;">${htmlEscape(typeTransport)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TABLEAU 2 : DESIGNATIONS & MONTANT -->
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1.5px solid #000;">
+    <thead>
+      <tr style="background: #e2e4e8;">
+        <th style="border: 1.5px solid #000; padding: 7px 12px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; text-align: center; width: 68%;">DESIGNATIONS</th>
+        <th style="border: 1.5px solid #000; padding: 7px 12px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; text-align: center; width: 32%;">MONTANT</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${lignesRowsHTML}
+      <tr style="background: #e2e4e8;">
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 800; font-size: 11.5px;">TOTAL</td>
+        <td style="border: 1.5px solid #000; padding: 7px 12px; text-align: center; font-weight: 800; font-size: 11.5px; font-variant-numeric: tabular-nums;">${fmtFCFAPlain(data.montantTTC)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- NOTE PAIEMENT -->
+  <div style="margin-top: 16px; font-size: 11px; font-weight: 800; color: #000;">
+    NB : ${htmlEscape(conditionPaiement)}
+  </div>
+
+  <!-- BLOC SIGNATURE DIRECTEUR -->
+  <div style="margin-top: 32px; display: flex; justify-content: flex-end; padding-right: 36px;">
+    <div style="text-align: center; min-width: 190px;">
+      <div style="font-size: 11.5px; font-weight: 700; color: #000;">Directeur</div>
+      <div style="font-size: 11px; font-weight: 700; color: #000; margin-top: 2px;">${htmlEscape(signataireNom)}</div>
+      <div style="height: 75px; display: flex; align-items: center; justify-content: center; position: relative; margin-top: 4px;">
+        <div style="width: 76px; height: 76px; border-radius: 50%; border: 1.5px dashed #1e3a8a; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; color: #1e3a8a; text-transform: uppercase; font-weight: bold; transform: rotate(-7deg); opacity: 0.85;">
+          <span>LAMS CONTROL</span>
+          <span style="font-size: 11px;">★ LCS ★</span>
+          <span style="font-size: 6px;">Directeur Général</span>
+        </div>
+        <svg style="position: absolute; width: 95px; height: 50px; opacity: 0.9; stroke: #1e3a8a;" viewBox="0 0 100 50" fill="none">
+          <path d="M8 35 C 28 8, 42 45, 62 18 C 74 10, 84 38, 96 22" stroke="#1e3a8a" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M22 38 C 42 34, 68 28, 88 26" stroke="#1e3a8a" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIED DE PAGE STYLISE -->
+  <footer style="margin-top: 42px; padding-top: 10px; border-top: 1px solid #aaa;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 9.5px; font-weight: 700; color: #111; padding-bottom: 6px;">
+      <div style="line-height: 1.45;">
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span style="font-size: 11px;">📍</span> <span>${htmlEscape(adresseSiege)}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
+          <span style="font-size: 11px;">📞</span> <span>${htmlEscape(telephones)}</span>
+        </div>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span style="font-size: 11px;">✉️</span> <span>${htmlEscape(emailContact)}</span>
+        </div>
+      </div>
+    </div>
+    <!-- Bande graphique biseautée bicolore en bas de page -->
+    <div style="height: 12px; width: 100%; display: flex; gap: 5px; overflow: hidden; margin-top: 4px;">
+      <div style="flex: 3; background: #0f3d33; transform: skewX(-35deg); transform-origin: top left;"></div>
+      <div style="flex: 1; background: #475569; transform: skewX(-35deg);"></div>
+      <div style="flex: 4; background: #0f3d33; transform: skewX(-35deg);"></div>
+    </div>
+  </footer>
+</div>
+</body>
+</html>`;
 }
 
 export function printFactureModule(data: FactureModuleData, societe?: SocieteBrand | null): void {
   const resolvedBrand = ensureSocieteBrand(societe);
+
+  const isCI =
+    data.isCoteIvoire ||
+    Boolean(
+      data.annexeCode &&
+        (data.annexeCode.toUpperCase().includes("CI") ||
+          data.annexeCode.toUpperCase().includes("ABJ")),
+    ) ||
+    Boolean(
+      data.villeSiege &&
+        (data.villeSiege.toLowerCase().includes("abidjan") ||
+          data.villeSiege.toLowerCase().includes("ivoire")),
+    );
+
+  if (isCI) {
+    const html = buildCoteIvoireFactureHTML(data, resolvedBrand);
+    const win = acquirePrintTarget();
+    if (!win) {
+      warnPopupBlocked();
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    triggerPrint(win);
+    return;
+  }
+
   const letterheadHTML = buildOfficialLetterheadHTML(resolvedBrand);
 
   const hasLignesDetails = data.lignes.some((l) => l.compagnie || l.bordereauLivraison);

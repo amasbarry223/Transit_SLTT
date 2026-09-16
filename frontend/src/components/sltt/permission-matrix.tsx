@@ -146,7 +146,7 @@ export function PermissionMatrix({
                   >
                     <Checkbox
                       checked={allChecked ? true : someChecked ? "indeterminate" : false}
-                      onCheckedChange={(v) => toggleModule(permModule.id, Boolean(v))}
+                      onCheckedChange={(v: boolean | "indeterminate") => toggleModule(permModule.id, Boolean(v))}
                       disabled={disabled}
                     />
                     Tout
@@ -161,7 +161,7 @@ export function PermissionMatrix({
                       >
                         <Checkbox
                           checked={selection[perm.key] ?? false}
-                          onCheckedChange={(v) => toggle(perm.key, Boolean(v))}
+                          onCheckedChange={(v: boolean | "indeterminate") => toggle(perm.key, Boolean(v))}
                           disabled={disabled}
                         />
                         {perm.label}

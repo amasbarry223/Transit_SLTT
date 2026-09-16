@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Package, Banknote } from "lucide-react";
+import { FileSpreadsheet, Plus, Package, Banknote } from "lucide-react";
 import type { BonLigne, BonMotif, BonSortie, BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
-import { printHTML, htmlEscape } from "@/lib/export";
+import { printHTML, htmlEscape, exportToExcel } from "@/lib/export";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { usePermission } from "@/shared/hooks/use-permission";
@@ -229,6 +229,42 @@ export function BonsScreen() {
 
   const currentTab = tabMeta[activeTab];
 
+  async function handleExportExcel() {
+    if (activeTab === "marchandise") {
+      await exportToExcel(
+        "bons",
+        `bons-sortie-marchandises-${new Date().toISOString().slice(0, 10)}`,
+        [
+          { header: "Référence", accessor: (b) => b.reference },
+          { header: "Date", accessor: (b) => b.date },
+          { header: "Client", accessor: (b) => b.clientNom },
+          { header: "Marchandise", accessor: (b) => b.marchandise },
+          { header: "Quantité", accessor: (b) => `${b.quantite} ${b.unite}` },
+          { header: "Montant (FCFA)", accessor: (b) => b.montant },
+          { header: "Motif", accessor: (b) => b.motif },
+          { header: "Statut", accessor: (b) => b.statut },
+        ],
+        bons,
+        { module: "Bons" },
+      );
+    } else {
+      await exportToExcel(
+        "bons",
+        `bons-sortie-caisse-${new Date().toISOString().slice(0, 10)}`,
+        [
+          { header: "Référence", accessor: (b) => b.reference },
+          { header: "Date", accessor: (b) => b.date },
+          { header: "Montant Total (FCFA)", accessor: (b) => b.montantTotal },
+          { header: "Bénéficiaires", accessor: (b) => b.lignes.map((l) => l.beneficiaire).filter(Boolean).join(", ") },
+          { header: "Motifs", accessor: (b) => b.lignes.map((l) => l.motif).filter(Boolean).join(", ") },
+          { header: "Créé par", accessor: (b) => b.creePar || "" },
+        ],
+        bonsCaisse,
+        { module: "Bons" },
+      );
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Tabs
@@ -237,15 +273,27 @@ export function BonsScreen() {
         className="gap-5"
       >
         <PageHeader title="Bons de sortie" description={currentTab.description}>
-          {(activeTab === "caisse" ? canWriteCaisse : canWrite) && (
-            <Button
-              onClick={currentTab.onCreate}
-              className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shrink-0 self-start"
-            >
-              <Plus className="size-4 shrink-0 stroke-[3]" />
-              <span>{currentTab.cta}</span>
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {(activeTab === "marchandise" ? bons.length > 0 : bonsCaisse.length > 0) && (
+              <Button
+                variant="outline"
+                onClick={handleExportExcel}
+                className="gap-2 font-semibold h-10 rounded-xl"
+              >
+                <FileSpreadsheet className="size-4 text-emerald-600" />
+                <span>Exporter Excel</span>
+              </Button>
+            )}
+            {(activeTab === "caisse" ? canWriteCaisse : canWrite) && (
+              <Button
+                onClick={currentTab.onCreate}
+                className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shrink-0 self-start"
+              >
+                <Plus className="size-4 shrink-0 stroke-[3]" />
+                <span>{currentTab.cta}</span>
+              </Button>
+            )}
+          </div>
         </PageHeader>
 
         <TabsList
