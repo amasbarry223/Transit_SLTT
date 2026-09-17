@@ -60,7 +60,7 @@ async function bootstrap() {
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error(`Origine ${origin} non autorisée par CORS`));
+        callback(null, false);
       }
     },
     credentials: true,
@@ -83,9 +83,18 @@ async function bootstrap() {
   );
 
   const port = Number(process.env.PORT) || 3001;
-  await app.listen(port);
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen(port, host);
   const logger = new Logger('Bootstrap');
-  logger.log(`🚀 API Transit SLTT démarrée sur http://localhost:${port}/${apiPrefix}`);
+  logger.log(`🚀 API Transit SLTT démarrée sur http://${host}:${port}/${apiPrefix}`);
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection at:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
 
 bootstrap();

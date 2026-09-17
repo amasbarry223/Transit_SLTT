@@ -29,6 +29,7 @@ import { RecusPaiementModule } from './modules/recus-paiement/recus-paiement.mod
 import { ComptabiliteModule } from './modules/comptabilite/comptabilite.module';
 import { PortsModule } from './modules/ports/ports.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     ComptabiliteModule,
     PortsModule,
     DashboardModule,
+    HealthModule,
   ],
   providers: [
     // Authentification exigée par défaut sur toute route (sauf @Public()).

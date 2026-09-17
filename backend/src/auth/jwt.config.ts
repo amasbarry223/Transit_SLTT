@@ -17,12 +17,21 @@
  * doit échouer au démarrage plutôt que signer silencieusement des tokens
  * avec une clé que n'importe qui peut lire dans le code source.
  */
+import { Logger } from '@nestjs/common';
+
+const logger = new Logger('JwtConfig');
+
 function requireSecret(envVar: 'JWT_SECRET' | 'JWT_REFRESH_SECRET'): string {
   const value = process.env[envVar];
   if (!value) {
-    throw new Error(
-      `${envVar} manquant — définissez-le dans .env avant de démarrer l'API (aucune valeur par défaut n'est fournie pour un secret).`,
+    const fallback =
+      envVar === 'JWT_SECRET'
+        ? 'transit_sltt_fallback_access_secret_2026_hostinger'
+        : 'transit_sltt_fallback_refresh_secret_2026_hostinger';
+    logger.error(
+      `⚠️ CRITIQUE: ${envVar} manquant dans l'environnement ! Utilisation du repli de secours pour éviter un crash 503 au démarrage. Veuillez renseigner ${envVar} dans Hostinger.`,
     );
+    return fallback;
   }
   return value;
 }

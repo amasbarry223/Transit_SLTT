@@ -31,8 +31,19 @@ import type {
 } from "@/lib/api-types";
 import { CSRF_COOKIE_NAME } from "@/lib/auth/csrf-cookie";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+function resolveClientApiBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
+  }
+  // Côté navigateur en production : passer par le rewrite proxy same-origin de Next.js
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+  return 'http://localhost:3001/api';
+}
+
+const API_BASE_URL = resolveClientApiBaseUrl();
 
 // Non secret — mis en cache seulement pour l'hydratation UI (nom/rôle
 // affichés avant confirmation serveur). Les tokens, eux, vivent en cookies
