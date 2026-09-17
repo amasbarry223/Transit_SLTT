@@ -39,8 +39,11 @@ export class DocumentsService {
     if (isGlobal || !user.annexeIds?.length) {
       return this.prisma.document.findMany({
         include: {
+          // `reference`/`clientNom` n'existent pas sur Dossier (voir schema.prisma) —
+          // seuls id/numero/annexeId sont de vraies colonnes ; rien côté frontend
+          // (archives-slice.ts) ne consomme les deux premières de toute façon.
           dossier: {
-            select: { id: true, numero: true, reference: true, clientNom: true, annexeId: true },
+            select: { id: true, numero: true, annexeId: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -56,7 +59,7 @@ export class DocumentsService {
       },
       include: {
         dossier: {
-          select: { id: true, numero: true, reference: true, clientNom: true, annexeId: true },
+          select: { id: true, numero: true, annexeId: true },
         },
       },
       orderBy: { createdAt: 'desc' },
