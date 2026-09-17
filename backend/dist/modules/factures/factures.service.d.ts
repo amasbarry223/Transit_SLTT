@@ -45,7 +45,7 @@ export declare class FacturesService {
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutFacture;
+        statut: import("@prisma/client").$Enums.StatutFacture;
         montantPaye: number;
         dossierId: string | null;
         dateEmission: Date;
@@ -88,7 +88,7 @@ export declare class FacturesService {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         dossier: {
@@ -96,13 +96,13 @@ export declare class FacturesService {
             createdAt: Date;
             updatedAt: Date;
             annexeId: string;
-            type: import(".prisma/client").$Enums.TypeDossier;
+            type: import("@prisma/client").$Enums.TypeDossier;
             notes: string | null;
             numero: string;
             clientId: string;
             creeParId: string | null;
-            statut: import(".prisma/client").$Enums.StatutDossier;
-            voieTransport: import(".prisma/client").$Enums.VoieTransport;
+            statut: import("@prisma/client").$Enums.StatutDossier;
+            voieTransport: import("@prisma/client").$Enums.VoieTransport;
             marchandise: string | null;
             poids: number | null;
             volume: number | null;
@@ -148,17 +148,17 @@ export declare class FacturesService {
                 updatedAt: Date;
                 annexeId: string;
                 code: string;
-                statut: import(".prisma/client").$Enums.StatutCaisse;
+                statut: import("@prisma/client").$Enums.StatutCaisse;
                 devise: string;
                 soldeActuel: number;
             };
         } & {
             id: string;
             createdAt: Date;
-            type: import(".prisma/client").$Enums.TypeTransactionCaisse;
+            type: import("@prisma/client").$Enums.TypeTransactionCaisse;
+            date: Date;
             montant: number;
             factureId: string | null;
-            date: Date;
             caisseId: string;
             motif: string;
             depenseId: string | null;
@@ -173,7 +173,7 @@ export declare class FacturesService {
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutFacture;
+        statut: import("@prisma/client").$Enums.StatutFacture;
         montantPaye: number;
         dossierId: string | null;
         dateEmission: Date;
@@ -200,7 +200,7 @@ export declare class FacturesService {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         lignes: {
@@ -221,7 +221,7 @@ export declare class FacturesService {
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutFacture;
+        statut: import("@prisma/client").$Enums.StatutFacture;
         montantPaye: number;
         dossierId: string | null;
         dateEmission: Date;
@@ -252,7 +252,7 @@ export declare class FacturesService {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         lignes: {
@@ -273,7 +273,7 @@ export declare class FacturesService {
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutFacture;
+        statut: import("@prisma/client").$Enums.StatutFacture;
         montantPaye: number;
         dossierId: string | null;
         dateEmission: Date;

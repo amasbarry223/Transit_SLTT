@@ -32,7 +32,7 @@ export declare class DossiersService {
             updatedAt: Date;
             type: string | null;
             numero: string;
-            statut: import(".prisma/client").$Enums.StatutConteneur;
+            statut: import("@prisma/client").$Enums.StatutConteneur;
             dossierId: string;
             plomb: string | null;
             dateEntreePort: Date | null;
@@ -44,13 +44,13 @@ export declare class DossiersService {
         createdAt: Date;
         updatedAt: Date;
         annexeId: string;
-        type: import(".prisma/client").$Enums.TypeDossier;
+        type: import("@prisma/client").$Enums.TypeDossier;
         notes: string | null;
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutDossier;
-        voieTransport: import(".prisma/client").$Enums.VoieTransport;
+        statut: import("@prisma/client").$Enums.StatutDossier;
+        voieTransport: import("@prisma/client").$Enums.VoieTransport;
         marchandise: string | null;
         poids: number | null;
         volume: number | null;
@@ -106,7 +106,7 @@ export declare class DossiersService {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         trackingPublic: {
@@ -125,14 +125,14 @@ export declare class DossiersService {
             annexeId: string;
             numero: string;
             creeParId: string | null;
-            statut: import(".prisma/client").$Enums.StatutDepense;
+            statut: import("@prisma/client").$Enums.StatutDepense;
             dossierId: string | null;
             devise: string;
             description: string | null;
+            montant: number;
             fournisseurId: string | null;
             approuveParId: string | null;
-            categorie: import(".prisma/client").$Enums.CategorieDepense;
-            montant: number;
+            categorie: import("@prisma/client").$Enums.CategorieDepense;
             justificatif: string | null;
             dateDepense: Date;
         }[];
@@ -166,7 +166,7 @@ export declare class DossiersService {
             numero: string;
             clientId: string;
             creeParId: string | null;
-            statut: import(".prisma/client").$Enums.StatutFacture;
+            statut: import("@prisma/client").$Enums.StatutFacture;
             montantPaye: number;
             dossierId: string | null;
             dateEmission: Date;
@@ -188,7 +188,7 @@ export declare class DossiersService {
             updatedAt: Date;
             type: string | null;
             numero: string;
-            statut: import(".prisma/client").$Enums.StatutConteneur;
+            statut: import("@prisma/client").$Enums.StatutConteneur;
             dossierId: string;
             plomb: string | null;
             dateEntreePort: Date | null;
@@ -211,13 +211,13 @@ export declare class DossiersService {
         createdAt: Date;
         updatedAt: Date;
         annexeId: string;
-        type: import(".prisma/client").$Enums.TypeDossier;
+        type: import("@prisma/client").$Enums.TypeDossier;
         notes: string | null;
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutDossier;
-        voieTransport: import(".prisma/client").$Enums.VoieTransport;
+        statut: import("@prisma/client").$Enums.StatutDossier;
+        voieTransport: import("@prisma/client").$Enums.VoieTransport;
         marchandise: string | null;
         poids: number | null;
         volume: number | null;
@@ -274,7 +274,7 @@ export declare class DossiersService {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         conteneurs: {
@@ -283,7 +283,7 @@ export declare class DossiersService {
             updatedAt: Date;
             type: string | null;
             numero: string;
-            statut: import(".prisma/client").$Enums.StatutConteneur;
+            statut: import("@prisma/client").$Enums.StatutConteneur;
             dossierId: string;
             plomb: string | null;
             dateEntreePort: Date | null;
@@ -295,13 +295,13 @@ export declare class DossiersService {
         createdAt: Date;
         updatedAt: Date;
         annexeId: string;
-        type: import(".prisma/client").$Enums.TypeDossier;
+        type: import("@prisma/client").$Enums.TypeDossier;
         notes: string | null;
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutDossier;
-        voieTransport: import(".prisma/client").$Enums.VoieTransport;
+        statut: import("@prisma/client").$Enums.StatutDossier;
+        voieTransport: import("@prisma/client").$Enums.VoieTransport;
         marchandise: string | null;
         poids: number | null;
         volume: number | null;
@@ -357,7 +357,7 @@ export declare class DossiersService {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {
@@ -365,13 +365,13 @@ export declare class DossiersService {
         createdAt: Date;
         updatedAt: Date;
         annexeId: string;
-        type: import(".prisma/client").$Enums.TypeDossier;
+        type: import("@prisma/client").$Enums.TypeDossier;
         notes: string | null;
         numero: string;
         clientId: string;
         creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutDossier;
-        voieTransport: import(".prisma/client").$Enums.VoieTransport;
+        statut: import("@prisma/client").$Enums.StatutDossier;
+        voieTransport: import("@prisma/client").$Enums.VoieTransport;
         marchandise: string | null;
         poids: number | null;
         volume: number | null;

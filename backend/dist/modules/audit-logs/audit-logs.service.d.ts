@@ -13,7 +13,7 @@ export declare class AuditLogsService {
             id: string;
             email: string;
             nom: string;
-            role: import(".prisma/client").$Enums.RoleUtilisateur;
+            role: import("@prisma/client").$Enums.RoleUtilisateur;
         };
     } & {
         id: string;

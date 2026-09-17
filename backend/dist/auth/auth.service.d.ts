@@ -11,7 +11,7 @@ export declare class AuthService {
             id: string;
             nom: string;
             email: string;
-            role: import(".prisma/client").$Enums.RoleUtilisateur;
+            role: import("@prisma/client").$Enums.RoleUtilisateur;
             permissions: string[];
             annexeIds: any[];
         };
@@ -23,7 +23,7 @@ export declare class AuthService {
     hashPassword(password: string): Promise<string>;
     findProfileById(id: string): Promise<{
         id: string;
-        role: import(".prisma/client").$Enums.RoleUtilisateur;
+        role: import("@prisma/client").$Enums.RoleUtilisateur;
         actif: boolean;
     }>;
     updateProfile(userId: string, data: {
@@ -34,7 +34,7 @@ export declare class AuthService {
         email: string;
         nom: string;
         telephone: string;
-        role: import(".prisma/client").$Enums.RoleUtilisateur;
+        role: import("@prisma/client").$Enums.RoleUtilisateur;
         permissions: import("@prisma/client/runtime/library").JsonValue;
         actif: boolean;
         avatarUrl: string;

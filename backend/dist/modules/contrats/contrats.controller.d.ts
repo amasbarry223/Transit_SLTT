@@ -62,7 +62,7 @@ export declare class ContratsController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {
@@ -112,7 +112,7 @@ export declare class ContratsController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {
@@ -162,7 +162,7 @@ export declare class ContratsController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {

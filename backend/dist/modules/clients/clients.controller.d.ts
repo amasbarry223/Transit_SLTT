@@ -30,7 +30,7 @@ export declare class ClientsController {
         pays: string | null;
         rccm: string | null;
         nif: string | null;
-        type: import(".prisma/client").$Enums.TypeClient;
+        type: import("@prisma/client").$Enums.TypeClient;
         notes: string | null;
     })[]>;
     findOne(id: string, user: CurrentUserType): Promise<{
@@ -50,13 +50,13 @@ export declare class ClientsController {
             createdAt: Date;
             updatedAt: Date;
             annexeId: string;
-            type: import(".prisma/client").$Enums.TypeDossier;
+            type: import("@prisma/client").$Enums.TypeDossier;
             notes: string | null;
             numero: string;
             clientId: string;
             creeParId: string | null;
-            statut: import(".prisma/client").$Enums.StatutDossier;
-            voieTransport: import(".prisma/client").$Enums.VoieTransport;
+            statut: import("@prisma/client").$Enums.StatutDossier;
+            voieTransport: import("@prisma/client").$Enums.VoieTransport;
             marchandise: string | null;
             poids: number | null;
             volume: number | null;
@@ -89,7 +89,7 @@ export declare class ClientsController {
             numero: string;
             clientId: string;
             creeParId: string | null;
-            statut: import(".prisma/client").$Enums.StatutFacture;
+            statut: import("@prisma/client").$Enums.StatutFacture;
             montantPaye: number;
             dossierId: string | null;
             dateEmission: Date;
@@ -115,7 +115,7 @@ export declare class ClientsController {
         pays: string | null;
         rccm: string | null;
         nif: string | null;
-        type: import(".prisma/client").$Enums.TypeClient;
+        type: import("@prisma/client").$Enums.TypeClient;
         notes: string | null;
     }>;
     create(user: CurrentUserType, body: CreateClientDto): Promise<{
@@ -139,7 +139,7 @@ export declare class ClientsController {
         pays: string | null;
         rccm: string | null;
         nif: string | null;
-        type: import(".prisma/client").$Enums.TypeClient;
+        type: import("@prisma/client").$Enums.TypeClient;
         notes: string | null;
     }>;
     update(id: string, user: CurrentUserType, body: UpdateClientDto): Promise<{
@@ -163,7 +163,7 @@ export declare class ClientsController {
         pays: string | null;
         rccm: string | null;
         nif: string | null;
-        type: import(".prisma/client").$Enums.TypeClient;
+        type: import("@prisma/client").$Enums.TypeClient;
         notes: string | null;
     }>;
     remove(id: string, user: CurrentUserType): Promise<{
@@ -181,7 +181,7 @@ export declare class ClientsController {
         pays: string | null;
         rccm: string | null;
         nif: string | null;
-        type: import(".prisma/client").$Enums.TypeClient;
+        type: import("@prisma/client").$Enums.TypeClient;
         notes: string | null;
     }>;
 }

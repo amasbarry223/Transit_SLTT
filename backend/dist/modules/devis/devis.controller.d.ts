@@ -38,7 +38,7 @@ export declare class DevisController {
         notes: string | null;
         numero: string;
         clientId: string;
-        statut: import(".prisma/client").$Enums.StatutDevis;
+        statut: import("@prisma/client").$Enums.StatutDevis;
         dossierId: string | null;
         dateEmission: Date;
         montantHt: number;
@@ -81,7 +81,7 @@ export declare class DevisController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         port: {
@@ -111,7 +111,7 @@ export declare class DevisController {
         notes: string | null;
         numero: string;
         clientId: string;
-        statut: import(".prisma/client").$Enums.StatutDevis;
+        statut: import("@prisma/client").$Enums.StatutDevis;
         dossierId: string | null;
         dateEmission: Date;
         montantHt: number;
@@ -154,7 +154,7 @@ export declare class DevisController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         port: {
@@ -184,7 +184,7 @@ export declare class DevisController {
         notes: string | null;
         numero: string;
         clientId: string;
-        statut: import(".prisma/client").$Enums.StatutDevis;
+        statut: import("@prisma/client").$Enums.StatutDevis;
         dossierId: string | null;
         dateEmission: Date;
         montantHt: number;
@@ -204,7 +204,7 @@ export declare class DevisController {
         notes: string | null;
         numero: string;
         clientId: string;
-        statut: import(".prisma/client").$Enums.StatutDevis;
+        statut: import("@prisma/client").$Enums.StatutDevis;
         dossierId: string | null;
         dateEmission: Date;
         montantHt: number;

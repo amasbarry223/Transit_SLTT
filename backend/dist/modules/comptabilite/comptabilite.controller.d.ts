@@ -20,9 +20,9 @@ export declare class ComptabiliteController {
         clientId: string | null;
         creePar: string | null;
         dossierId: string | null;
-        montant: number;
         nature: string;
         date: string;
+        montant: number;
         reference: string;
         clientNom: string | null;
         modePaiement: string;
@@ -55,9 +55,9 @@ export declare class ComptabiliteController {
         clientId: string | null;
         creePar: string | null;
         dossierId: string | null;
-        montant: number;
         nature: string;
         date: string;
+        montant: number;
         reference: string;
         clientNom: string | null;
         modePaiement: string;

@@ -55,14 +55,14 @@ export declare class FournisseursService {
             annexeId: string;
             numero: string;
             creeParId: string | null;
-            statut: import(".prisma/client").$Enums.StatutDepense;
+            statut: import("@prisma/client").$Enums.StatutDepense;
             dossierId: string | null;
             devise: string;
             description: string | null;
+            montant: number;
             fournisseurId: string | null;
             approuveParId: string | null;
-            categorie: import(".prisma/client").$Enums.CategorieDepense;
-            montant: number;
+            categorie: import("@prisma/client").$Enums.CategorieDepense;
             justificatif: string | null;
             dateDepense: Date;
         }[];

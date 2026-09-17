@@ -13,7 +13,7 @@ export declare class AuthController {
             id: string;
             nom: string;
             email: string;
-            role: import(".prisma/client").$Enums.RoleUtilisateur;
+            role: import("@prisma/client").$Enums.RoleUtilisateur;
             permissions: string[];
             annexeIds: any[];
         };
@@ -31,7 +31,7 @@ export declare class AuthController {
         email: string;
         nom: string;
         telephone: string;
-        role: import(".prisma/client").$Enums.RoleUtilisateur;
+        role: import("@prisma/client").$Enums.RoleUtilisateur;
         permissions: import("@prisma/client/runtime/library").JsonValue;
         actif: boolean;
         avatarUrl: string;

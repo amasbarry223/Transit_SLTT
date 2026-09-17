@@ -22,9 +22,9 @@ export declare class ComptabiliteService {
         clientId: string | null;
         creePar: string | null;
         dossierId: string | null;
-        montant: number;
         nature: string;
         date: string;
+        montant: number;
         reference: string;
         clientNom: string | null;
         modePaiement: string;
@@ -58,9 +58,9 @@ export declare class ComptabiliteService {
         clientId: string | null;
         creePar: string | null;
         dossierId: string | null;
-        montant: number;
         nature: string;
         date: string;
+        montant: number;
         reference: string;
         clientNom: string | null;
         modePaiement: string;

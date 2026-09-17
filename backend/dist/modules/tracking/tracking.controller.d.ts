@@ -5,10 +5,10 @@ export declare class TrackingController {
     constructor(trackingService: TrackingService);
     getPublicTracking(code: string): Promise<{
         dossier: {
-            type: import(".prisma/client").$Enums.TypeDossier;
+            type: import("@prisma/client").$Enums.TypeDossier;
             numero: string;
-            statut: import(".prisma/client").$Enums.StatutDossier;
-            voieTransport: import(".prisma/client").$Enums.VoieTransport;
+            statut: import("@prisma/client").$Enums.StatutDossier;
+            voieTransport: import("@prisma/client").$Enums.VoieTransport;
             marchandise: string;
             navireVol: string;
             compagnie: string;
@@ -22,7 +22,7 @@ export declare class TrackingController {
             conteneurs: {
                 type: string;
                 numero: string;
-                statut: import(".prisma/client").$Enums.StatutConteneur;
+                statut: import("@prisma/client").$Enums.StatutConteneur;
             }[];
             etapes: {
                 titre: string;

@@ -23,8 +23,8 @@ export declare class StockController {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        quantite: number;
         date: string;
+        quantite: number;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -64,7 +64,7 @@ export declare class StockController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         mouvements: {
@@ -73,8 +73,8 @@ export declare class StockController {
             annexeId: string;
             type: string;
             marchandise: string | null;
-            quantite: number;
             date: string;
+            quantite: number;
             motif: string | null;
             stockId: string | null;
             unite: string | null;
@@ -88,8 +88,8 @@ export declare class StockController {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        quantite: number;
         date: string;
+        quantite: number;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -129,7 +129,7 @@ export declare class StockController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {
@@ -139,8 +139,8 @@ export declare class StockController {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        quantite: number;
         date: string;
+        quantite: number;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -180,7 +180,7 @@ export declare class StockController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
+            type: import("@prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {
@@ -190,8 +190,8 @@ export declare class StockController {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        quantite: number;
         date: string;
+        quantite: number;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -216,8 +216,8 @@ export declare class StockController {
         annexeId: string;
         type: string;
         marchandise: string | null;
-        quantite: number;
         date: string;
+        quantite: number;
         motif: string | null;
         stockId: string | null;
         unite: string | null;
