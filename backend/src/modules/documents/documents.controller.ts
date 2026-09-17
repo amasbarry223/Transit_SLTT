@@ -75,6 +75,12 @@ function documentFileFilter(
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
+  @Get()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  async findAll(@CurrentUser() user: CurrentUserType) {
+    return this.documentsService.findAll(user);
+  }
+
   @Get('dossier/:dossierId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   async findByDossier(

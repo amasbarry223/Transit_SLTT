@@ -684,6 +684,7 @@ class ApiClient {
   // Documents (Stockage local sur disque)
   // ---------------------------------------------------------------------------
   documents = {
+    getAll: () => this.request<RawDocument[]>('/documents'),
     getByDossier: (dossierId: string) => this.request<RawDocument[]>(`/documents/dossier/${dossierId}`),
     upload: async (file: File, dossierId?: string) => {
       const formData = new FormData();

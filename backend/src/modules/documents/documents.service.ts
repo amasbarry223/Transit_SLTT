@@ -34,6 +34,35 @@ export class DocumentsService {
     return document;
   }
 
+  async findAll(user: CurrentUserType) {
+    const isGlobal = user.role === 'ADMIN' || user.role === 'Administrateur' || user.permissions?.includes('*');
+    if (isGlobal || !user.annexeIds?.length) {
+      return this.prisma.document.findMany({
+        include: {
+          dossier: {
+            select: { id: true, numero: true, reference: true, clientNom: true, annexeId: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    return this.prisma.document.findMany({
+      where: {
+        OR: [
+          { dossierId: null },
+          { dossier: { annexeId: { in: user.annexeIds } } },
+        ],
+      },
+      include: {
+        dossier: {
+          select: { id: true, numero: true, reference: true, clientNom: true, annexeId: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findByDossier(dossierId: string, user: CurrentUserType) {
     // Sans ce contrôle, n'importe quel utilisateur authentifié (quel que
     // soit son périmètre d'annexe) pouvait lister les documents de N'IMPORTE

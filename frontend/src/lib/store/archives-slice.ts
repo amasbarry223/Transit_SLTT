@@ -76,8 +76,25 @@ export interface ArchivesSlice {
   getSignedArchiveUrl: (storagePath: string) => Promise<string>;
 }
 
+function getInitialLocalArchives(): Archive[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("transit_sltt_local_archives");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalArchives(archives: Archive[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("transit_sltt_local_archives", JSON.stringify(archives.slice(0, 100)));
+  } catch {}
+}
+
 export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice> = (set, get) => ({
-  archives: [],
+  archives: getInitialLocalArchives(),
 
   addArchive: async (input) => {
     const creePar = getConnectedUserName();
@@ -106,11 +123,15 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
     // 2. Upload effectif sur le serveur NestJS (backend Hostinger)
     let storagePath = dataUrl;
+    let uploadedId = "";
     try {
       if (input.file) {
         const uploaded = await api.documents.upload(input.file, input.dossierId);
         if (uploaded?.url) {
           storagePath = uploaded.url;
+        }
+        if (uploaded?.id) {
+          uploadedId = uploaded.id;
         }
       }
     } catch (err) {
@@ -125,7 +146,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
     }
 
     const newArchive: Archive = {
-      id: crypto.randomUUID(),
+      id: uploadedId || crypto.randomUUID(),
       nom: input.nom,
       typeDocument: input.typeDocument,
       taille: input.taille,
@@ -140,14 +161,27 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
       creePar,
       createdAt: new Date().toISOString(),
     };
-    set((s) => ({ archives: [newArchive, ...s.archives] }));
+
+    const nextArchives = [newArchive, ...get().archives];
+    set({ archives: nextArchives });
+    saveLocalArchives(nextArchives);
+
     await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Creation, `Document archivé "${input.nom}" (${input.typeDocument})`);
     return newArchive;
   },
 
   deleteArchive: async (id) => {
     const archive = get().archives.find((a) => a.id === id);
-    set((s) => ({ archives: s.archives.filter((a) => a.id !== id) }));
+    const nextArchives = get().archives.filter((a) => a.id !== id);
+    set({ archives: nextArchives });
+    saveLocalArchives(nextArchives);
+
+    try {
+      await api.documents.delete(id);
+    } catch (err) {
+      console.warn("Suppression du document distant échouée:", err);
+    }
+
     if (archive) {
       await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Suppression, `Document archivé "${archive.nom}" supprimé`);
     }
