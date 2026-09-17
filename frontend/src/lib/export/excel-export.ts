@@ -91,8 +91,8 @@ export async function exportToExcel<T>(
           throw new Error(payload?.error ?? "Permission insuffisante pour cet export.");
         }
       }
-    } catch (authErr: any) {
-      if (authErr?.message?.includes("Permission insuffisante")) {
+    } catch (authErr: unknown) {
+      if (authErr instanceof Error && authErr.message.includes("Permission insuffisante")) {
         throw authErr;
       }
       // Tolérance aux aléas de relais de session / proxy serveur : si l'utilisateur est sur l'écran

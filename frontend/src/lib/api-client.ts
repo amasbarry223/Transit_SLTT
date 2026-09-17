@@ -4,6 +4,7 @@
  */
 
 import type {
+  ConfigMap,
   RawAnnexe,
   RawBonSortie,
   RawBonSortieCaisse,
@@ -705,8 +706,8 @@ class ApiClient {
   // Paramètres dynamiques & Configurations globales
   // ---------------------------------------------------------------------------
   settings = {
-    getPublic: () => this.request<Record<string, any>>('/settings/public'),
-    getAll: () => this.request<{ list: RawSetting[]; map: Record<string, string>; parsedMap?: Record<string, any>; groups?: Record<string, any[]> }>('/settings'),
+    getPublic: () => this.request<ConfigMap>('/settings/public'),
+    getAll: () => this.request<{ list: RawSetting[]; map: Record<string, string>; parsedMap?: ConfigMap; groups?: Record<string, RawSetting[]> }>('/settings'),
     getByKey: (cle: string) => this.request<RawSetting>(`/settings/${cle}`),
     setMany: (settings: Record<string, string | object>) =>
       this.request<RawSetting>('/settings', {
@@ -721,7 +722,7 @@ class ApiClient {
   };
 
   config = {
-    getPublic: () => this.request<{ data: Record<string, any> }>('/config'),
+    getPublic: () => this.request<{ data: ConfigMap }>('/config'),
     getStatuses: (type?: string) =>
       this.request<{ data: Array<{ id: string; entityType: string; value: string; label: string; color?: string; icon?: string; orderIndex: number }> }>(
         `/config/statuses${type ? `?type=${encodeURIComponent(type)}` : ''}`,
@@ -738,7 +739,7 @@ class ApiClient {
   };
 
   dashboard = {
-    getAnalytics: () => this.request<{ data: any }>('/analytics/dashboard'),
+    getAnalytics: () => this.request<{ data: Record<string, unknown> }>('/analytics/dashboard'),
   };
 
 

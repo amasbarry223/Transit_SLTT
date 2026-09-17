@@ -80,11 +80,11 @@ export function buildCoteIvoireFactureHTML(data: FactureModuleData, resolvedBran
   const typeTransport = data.typeTransport || "PLATEAU - CAMION";
   const detailsService = data.detailsService || (data.notes ? data.notes : "propositions du coût de dédouanement d'une marchandise.");
   const conditionPaiement = data.conditionPaiement || "PAIEMENT APRES DECHARGEMENT";
-  const signataireNom =
-    (resolvedBrand as any).signataireDg ||
-    (resolvedBrand as any).signatairePdg ||
-    (resolvedBrand as any).signataireNom ||
-    "LAMINE TRAORE";
+  // Corrige un bug latent : signataireDg/signatairePdg n'étaient jusque-là
+  // jamais copiés depuis Societe vers SocieteBrand (societe-brand.ts), donc
+  // ce fallback était systématiquement pris malgré une configuration saisie
+  // dans Paramètres > Société.
+  const signataireNom = resolvedBrand.signataireDg || resolvedBrand.signatairePdg || "LAMINE TRAORE";
   const adresseSiege = data.villeSiege?.toLowerCase().includes("abidjan")
     ? (resolvedBrand.legal?.adresse || "Zone Industrielle de Vridi / Treichville, Abidjan")
     : (resolvedBrand.legal?.adresse || "Hamdalaye ACI 2000");

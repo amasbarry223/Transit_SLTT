@@ -340,9 +340,9 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           dossierId: d.dossierId ?? undefined,
           portId: d.portId ?? undefined,
           portNom: d.port?.nom ?? undefined,
-          ville: (d as any).ville || decoded.ville,
-          pays: (d as any).pays || decoded.pays,
-          numeroBordereau: (d as any).numeroBordereau || decoded.numeroBordereau,
+          ville: d.ville || decoded.ville,
+          pays: d.pays || decoded.pays,
+          numeroBordereau: d.numeroBordereau || decoded.numeroBordereau,
           droitDouane: droitDouane || Number(d.montantHt || 0),
           fraisCircuit,
           fraisPrestation,
@@ -588,9 +588,9 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         ];
 
         const rawDocuments: RawDocument[] = Array.isArray(documentsRes) ? documentsRes : [];
-        const mappedArchives: Archive[] = rawDocuments.map((doc: any) => ({
+        const mappedArchives: Archive[] = rawDocuments.map((doc) => ({
           id: doc.id,
-          nom: doc.nomOriginal || doc.nomFichier,
+          nom: doc.nomOriginal || doc.nomFichier || "Document",
           typeDocument: (doc.typeDocument || "Autre") as TypeDocument,
           taille: doc.taille || 0,
           type: doc.typeMime || "application/pdf",

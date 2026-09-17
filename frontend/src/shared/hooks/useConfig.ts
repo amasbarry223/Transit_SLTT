@@ -2,19 +2,20 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api-client";
+import type { ConfigMap, ConfigValue } from "@/lib/api-types";
 import { logWarn } from "@/shared/logger";
 
 // Cache mémoire client pour éviter les requêtes redondantes
-let cachedConfig: Record<string, any> | null = null;
-let inFlightPromise: Promise<Record<string, any>> | null = null;
-const listeners = new Set<(cfg: Record<string, any>) => void>();
+let cachedConfig: ConfigMap | null = null;
+let inFlightPromise: Promise<ConfigMap> | null = null;
+const listeners = new Set<(cfg: ConfigMap) => void>();
 
-function notifyListeners(cfg: Record<string, any>) {
+function notifyListeners(cfg: ConfigMap) {
   cachedConfig = cfg;
   listeners.forEach((fn) => fn(cfg));
 }
 
-async function fetchConfigOnce(): Promise<Record<string, any>> {
+async function fetchConfigOnce(): Promise<ConfigMap> {
   if (cachedConfig) return cachedConfig;
   if (inFlightPromise) return inFlightPromise;
 
@@ -43,7 +44,7 @@ async function fetchConfigOnce(): Promise<Record<string, any>> {
 }
 
 export function useConfig() {
-  const [config, setConfig] = useState<Record<string, any>>(cachedConfig || {});
+  const [config, setConfig] = useState<ConfigMap>(cachedConfig || {});
   const [isLoading, setIsLoading] = useState<boolean>(!cachedConfig);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +63,7 @@ export function useConfig() {
   }, []);
 
   useEffect(() => {
-    const handler = (newCfg: Record<string, any>) => {
+    const handler = (newCfg: ConfigMap) => {
       setConfig({ ...newCfg });
       setIsLoading(false);
     };
@@ -111,7 +112,7 @@ export function useConfigValue<T = string>(key: string, fallback?: T): T {
 /**
  * Permet de forcer une mise à jour locale immédiate après modification admin
  */
-export function updateLocalConfig(key: string, value: any) {
+export function updateLocalConfig(key: string, value: ConfigValue) {
   const updated = { ...(cachedConfig || {}), [key]: value };
   notifyListeners(updated);
 }

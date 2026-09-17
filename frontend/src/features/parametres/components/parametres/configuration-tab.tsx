@@ -58,10 +58,11 @@ export function ConfigurationTab() {
   // Sync formData with loaded config
   useEffect(() => {
     if (config && Object.keys(config).length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise le brouillon local avec la config chargée depuis le serveur (arrive après le mount)
       setFormData((prev) => ({
         ...prev,
         taux_tva_defaut: config.taux_tva_defaut?.toString() ?? prev.taux_tva_defaut,
-        devise_principale: config.devise_principale ?? prev.devise_principale,
+        devise_principale: config.devise_principale?.toString() ?? prev.devise_principale,
         delai_echeance_jours: config.delai_echeance_jours?.toString() ?? prev.delai_echeance_jours,
         commission_rate: config.commission_rate?.toString() ?? prev.commission_rate,
         default_stock_seuil: config.default_stock_seuil?.toString() ?? prev.default_stock_seuil,
@@ -69,18 +70,18 @@ export function ConfigurationTab() {
         session_timeout_min: config.session_timeout_min?.toString() ?? prev.session_timeout_min,
         security_mfa_enabled:
           config.security_mfa_enabled === true || config.security_mfa_enabled === "true",
-        app_title: config.app_title ?? prev.app_title,
-        app_subtitle: config.app_subtitle ?? prev.app_subtitle,
-        welcome_message: config.welcome_message ?? prev.welcome_message,
-        support_email: config.support_email ?? prev.support_email,
-        company_phone: config.company_phone ?? prev.company_phone,
+        app_title: config.app_title?.toString() ?? prev.app_title,
+        app_subtitle: config.app_subtitle?.toString() ?? prev.app_subtitle,
+        welcome_message: config.welcome_message?.toString() ?? prev.welcome_message,
+        support_email: config.support_email?.toString() ?? prev.support_email,
+        company_phone: config.company_phone?.toString() ?? prev.company_phone,
         maintenance_mode:
           config.maintenance_mode === true || config.maintenance_mode === "true",
       }));
     }
   }, [config]);
 
-  const handleChange = (key: keyof typeof formData, value: any) => {
+  const handleChange = (key: keyof typeof formData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
     setIsDirty(true);
   };
@@ -120,7 +121,7 @@ export function ConfigurationTab() {
         title: "Configuration enregistrée",
         description: "Toutes les variables dynamiques ont été mises à jour en base de données.",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toastError(toast, err, {
         title: "Erreur",
         fallback: "Échec de l'enregistrement de la configuration.",

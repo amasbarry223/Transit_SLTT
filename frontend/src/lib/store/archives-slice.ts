@@ -5,6 +5,7 @@ import type { SLTTState } from "@/lib/store";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 import { api } from "@/lib/api-client";
+import { logWarn } from "@/shared/logger";
 
 const ARCHIVES_ALLOWED_MIME = new Set([
   "application/pdf",
@@ -117,7 +118,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
           reader.readAsDataURL(input.file);
         });
       } catch (err) {
-        console.warn("Impossible de lire le fichier en dataUrl:", err);
+        logWarn("[archives-slice] Impossible de lire le fichier en dataUrl", err);
       }
     }
 
@@ -135,7 +136,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
         }
       }
     } catch (err) {
-      console.warn("Upload de l'archive vers le serveur échoué, repli sur dataUrl:", err);
+      logWarn("[archives-slice] Upload de l'archive vers le serveur échoué, repli sur dataUrl", err);
     }
 
     // Repli de secours si ni upload ni dataUrl
@@ -179,7 +180,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
     try {
       await api.documents.delete(id);
     } catch (err) {
-      console.warn("Suppression du document distant échouée:", err);
+      logWarn("[archives-slice] Suppression du document distant échouée", err);
     }
 
     if (archive) {

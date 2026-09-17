@@ -59,7 +59,10 @@ export function useDashboardData() {
     try {
       const res = await api.dashboard.getAnalytics();
       if (res?.data) {
-        const live = res.data;
+        // Le backend ne renvoie qu'un sous-ensemble de DashboardAnalyticsData
+        // (pas de pipeline/warehouseStats/transitPerformance) — non validé au
+        // runtime ici, d'où le cast explicite plutôt qu'un `any` implicite.
+        const live = res.data as Partial<DashboardAnalyticsData>;
         setData((prev) => ({
           ...prev,
           kpis: live.kpis || prev.kpis,
@@ -80,6 +83,7 @@ export function useDashboardData() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- charge les analytics live depuis le serveur au montage
     void fetchDashboardData();
   }, [fetchDashboardData]);
 

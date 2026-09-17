@@ -23,6 +23,9 @@ export interface SocieteBrand {
   legal?: SocieteLegalInfo;
   /** false si le logo contient déjà le nom en toutes lettres (répéter le nom en texte serait redondant). */
   afficherNomAvecLogo?: boolean;
+  /** Noms des signataires configurés dans Paramètres > Société (bon de sortie, facture CI). */
+  signataireDg?: string;
+  signatairePdg?: string;
 }
 
 export interface PrintHTMLBrand {
@@ -61,6 +64,8 @@ function societeToBrand(s: Societe): SocieteBrand {
     raisonSociale: s.raisonSociale,
     logoUrl: s.logoUrl,
     afficherNomAvecLogo: s.afficherNomAvecLogo,
+    signataireDg: s.signataireDg,
+    signatairePdg: s.signatairePdg,
     legal: {
       adresse: s.adresse,
       telephone: s.telephone,

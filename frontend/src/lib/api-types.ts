@@ -143,6 +143,12 @@ export interface RawDevis {
   createdAt?: string;
   dateValidite?: string;
   notes?: string;
+  /** Non modélisés dans Devis (Prisma) aujourd'hui — repli défensif si une
+   *  évolution backend les renvoie un jour directement plutôt qu'encodés
+   *  dans `notes` (cf. decodeDevisNotes). */
+  ville?: string;
+  pays?: string;
+  numeroBordereau?: string;
 }
 
 export interface RawCaisse {
@@ -370,6 +376,10 @@ export interface RawSetting {
   description?: string;
 }
 
+/** Une valeur de configuration dynamique, une fois désérialisée (settings.parsedMap). */
+export type ConfigValue = string | number | boolean;
+export type ConfigMap = Record<string, ConfigValue>;
+
 export interface RawTrackingPublic {
   id?: string;
   dossierId?: string;
@@ -387,6 +397,11 @@ export interface RawDocument {
   typeMime?: string;
   taille?: number;
   url?: string;
+  createdAt?: string;
+  dossier?: { id?: string; numero?: string; annexeId?: string };
+  /** Non modélisé dans Document (Prisma) aujourd'hui — repli sur "Autre"
+   *  tant qu'aucune classification n'est faite à l'upload. */
+  typeDocument?: string;
 }
 
 export interface RawUser {
