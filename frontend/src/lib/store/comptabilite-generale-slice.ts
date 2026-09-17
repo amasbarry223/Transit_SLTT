@@ -140,7 +140,12 @@ export const createComptabiliteGeneraleSlice: StateCreator<
 
     const cloture: ClotureCaisse = {
       id: created?.id ?? crypto.randomUUID(),
-      entiteType: "annexe",
+      // Avant : toujours "annexe" en dur, même pour une clôture "société"
+      // (entite.type === "societe", cf. cloture-dialog.tsx) — le filtre de
+      // déduplication ci-dessous et tout écran filtrant cloturesCaisse par
+      // entiteType ne retrouvaient alors jamais les clôtures société,
+      // toujours mal étiquetées "annexe" dans l'état local.
+      entiteType: input.entiteType,
       annexeId: input.annexeId,
       periodeDebut: input.periodeDebut,
       periodeFin: input.periodeFin,
