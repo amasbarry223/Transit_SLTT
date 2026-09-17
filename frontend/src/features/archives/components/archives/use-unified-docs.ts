@@ -52,6 +52,7 @@ export function useUnifiedDocs(): UnifiedDoc[] {
         taille: a.taille,
         mimeType: a.type,
         storagePath: a.storagePath,
+        dataUrl: a.dataUrl,
         clientNom: nomClient,
         annexeId: a.annexeId,
         rattachement,

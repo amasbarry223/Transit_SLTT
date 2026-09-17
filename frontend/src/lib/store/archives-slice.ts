@@ -4,6 +4,7 @@ import type { Archive, TypeDocument } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+import { api } from "@/lib/api-client";
 
 const ARCHIVES_ALLOWED_MIME = new Set([
   "application/pdf",
@@ -34,36 +35,34 @@ interface AddArchiveInput {
   nom: string;
   typeDocument: TypeDocument;
   taille: number;
-  type: string;
-  /** Fichier brut — évite le round-trip dataURL → fetch() qui échoue sur gros fichiers. */
-  file: Blob;
+  type?: string;
+  file: File;
   dossierId?: string;
   factureId?: string;
   depenseId?: string;
   clientId?: string;
 }
 
-
 /**
  * Annexe d'une archive : héritée de l'entité liée (dossier/facture/dépense →
- * contrat) pour rester cohérente avec les données qu'elle documente, sinon
+ * contrat) pour garantir la cohérence multi-annexes SLTT ; à défaut,
  * repli sur l'annexe active de l'utilisateur (archive "libre").
  */
 function resolveArchiveAnnexeId(get: () => SLTTState, input: AddArchiveInput): string {
   if (input.dossierId) {
-    const fromDossier = get().dossiers.find((d) => d.id === input.dossierId)?.annexeId;
-    if (fromDossier) return fromDossier;
+    const d = get().dossiers.find((x) => x.id === input.dossierId);
+    if (d?.annexeId) return d.annexeId;
   }
   if (input.factureId) {
-    const fromFacture = get().factures.find((f) => f.id === input.factureId)?.annexeId;
-    if (fromFacture) return fromFacture;
+    const f = get().factures.find((x) => x.id === input.factureId);
+    if (f?.annexeId) return f.annexeId;
   }
   if (input.depenseId) {
-    const depense = get().depenses.find((d) => d.id === input.depenseId);
-    const fromContrat = depense
-      ? get().contrats.find((c) => c.id === depense.contratId)?.annexeId
-      : undefined;
-    if (fromContrat) return fromContrat;
+    const dep = get().depenses.find((x) => x.id === input.depenseId);
+    if (dep) {
+      const c = get().contrats.find((x) => x.id === dep.contratId);
+      if (c?.annexeId) return c.annexeId;
+    }
   }
   const userId = useSession.getState().currentUserId;
   const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
@@ -90,9 +89,40 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
       );
     }
 
-    const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
-    const month = new Date().toISOString().slice(0, 7);
-    const path = `${month}/${Date.now()}-${safeName}`;
+    // 1. Lire en Data URL (base64) pour affichage instantané et garantie offline
+    let dataUrl = "";
+    if (input.file) {
+      try {
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(input.file);
+        });
+      } catch (err) {
+        console.warn("Impossible de lire le fichier en dataUrl:", err);
+      }
+    }
+
+    // 2. Upload effectif sur le serveur NestJS (backend Hostinger)
+    let storagePath = dataUrl;
+    try {
+      if (input.file) {
+        const uploaded = await api.documents.upload(input.file, input.dossierId);
+        if (uploaded?.url) {
+          storagePath = uploaded.url;
+        }
+      }
+    } catch (err) {
+      console.warn("Upload de l'archive vers le serveur échoué, repli sur dataUrl:", err);
+    }
+
+    // Repli de secours si ni upload ni dataUrl
+    if (!storagePath) {
+      const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
+      const month = new Date().toISOString().slice(0, 7);
+      storagePath = `${month}/${Date.now()}-${safeName}`;
+    }
 
     const newArchive: Archive = {
       id: crypto.randomUUID(),
@@ -100,7 +130,8 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
       typeDocument: input.typeDocument,
       taille: input.taille,
       type: contentType,
-      storagePath: path,
+      storagePath,
+      dataUrl: dataUrl || undefined,
       dossierId: input.dossierId,
       factureId: input.factureId,
       depenseId: input.depenseId,
@@ -123,6 +154,19 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
   },
 
   getSignedArchiveUrl: async (storagePath) => {
+    if (!storagePath) return "";
+    if (
+      storagePath.startsWith("http://") ||
+      storagePath.startsWith("https://") ||
+      storagePath.startsWith("data:") ||
+      storagePath.startsWith("blob:") ||
+      storagePath.startsWith("/")
+    ) {
+      return storagePath;
+    }
+    if (storagePath.startsWith("api/")) {
+      return `/${storagePath}`;
+    }
     return storagePath;
   },
 });

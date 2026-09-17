@@ -66,10 +66,30 @@ export class DocumentsService {
 
   async getFilePath(filename: string) {
     const doc = await this.prisma.document.findFirst({
-      where: { nomFichier: filename },
+      where: {
+        OR: [
+          { nomFichier: filename },
+          { id: filename },
+        ],
+      },
     });
 
-    if (!doc) throw new NotFoundException('Fichier non trouvé');
+    if (!doc) {
+      // Fallback si le fichier est directement présent sur le disque dans uploads
+      const directPath = path.resolve(this.uploadBaseDir, filename);
+      if (fs.existsSync(directPath)) {
+        const ext = path.extname(filename).toLowerCase();
+        const mime = ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'application/octet-stream';
+        return {
+          doc: {
+            nomOriginal: filename,
+            typeMime: mime,
+          },
+          fullPath: directPath,
+        };
+      }
+      throw new NotFoundException('Fichier non trouvé');
+    }
     const fullPath = this.resolveInsideUploads(doc.cheminRelatif);
 
     if (!fs.existsSync(fullPath)) {

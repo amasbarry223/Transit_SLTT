@@ -605,6 +605,7 @@ export interface Archive {
   taille: number;
   type: string;
   storagePath: string;
+  dataUrl?: string;
   dossierId?: string;
   factureId?: string;
   depenseId?: string;

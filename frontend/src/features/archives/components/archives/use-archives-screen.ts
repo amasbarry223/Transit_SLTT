@@ -84,17 +84,49 @@ export function useArchivesScreen() {
 
   async function handleOpen(doc: UnifiedDoc) {
     try {
-      let url: string;
-      if (doc.source === "dossier" && doc.dataUrl) {
+      let url: string = "";
+      if (doc.dataUrl) {
         url = doc.dataUrl;
       } else if (doc.source === "contrat" && doc.storagePath) {
         url = await getSignedContratFichierUrl(doc.storagePath);
       } else if (doc.storagePath) {
         url = await getSignedArchiveUrl(doc.storagePath);
-      } else {
+      }
+
+      if (!url) {
         throw new Error("Fichier introuvable.");
       }
-      window.open(url, "_blank", "noopener");
+
+      // 1. URL base64 (Data URL) -> conversion Blob pour affichage fiable sans blocage navigateur
+      if (url.startsWith("data:")) {
+        const parts = url.split(",");
+        const mimeMatch = parts[0]?.match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : (doc.mimeType || "application/pdf");
+        const b64 = parts[1] || "";
+        const byteString = atob(b64);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank", "noopener");
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        return;
+      }
+
+      // 2. URL absolue ou point d'accès serveur (/api/...)
+      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) {
+        window.open(url, "_blank", "noopener");
+        return;
+      }
+
+      // 3. Ancienne archive mockée locale sans stockage effectif du fichier physique
+      toastWarning(toast, {
+        title: "Document non synchronisé sur le serveur",
+        description: `Le document « ${doc.nom} » a été archivé sans fichier physique stocké. Veuillez réimporter le fichier pour pouvoir le consulter.`,
+      });
     } catch {
       toastWarning(toast, { title: "Impossible d'ouvrir le document" });
     }

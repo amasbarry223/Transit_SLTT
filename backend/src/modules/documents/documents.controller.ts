@@ -142,7 +142,7 @@ export class DocumentsController {
     const encoded = encodeURIComponent(doc.nomOriginal);
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`,
+      `inline; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`,
     );
     return res.sendFile(fullPath);
   }

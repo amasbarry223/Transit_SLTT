@@ -49,6 +49,7 @@ const MODULE_ALIAS: Record<string, string> = {
   settings: 'parametres',
   cotations: 'devis',
   tracking: 'dossiers',
+  archives: 'documents',
 };
 
 /** "module.verbe" ou "module:action" -> "module:read" | "module:write". */
