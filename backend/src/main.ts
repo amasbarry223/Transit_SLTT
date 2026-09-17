@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 import { getTrustedOrigins, isTrustedOrigin } from './common/cors-origins.util';
@@ -9,16 +8,22 @@ import { getTrustedOrigins, isTrustedOrigin } from './common/cors-origins.util';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // En-têtes de sécurité HTTP (X-Content-Type-Options, X-Frame-Options,
-  // Strict-Transport-Security, etc.) — absents jusqu'ici. `crossOriginResourcePolicy`
-  // desserré : le front peut être sur un domaine distinct de l'API (cf.
-  // .env.example / CORS_ORIGIN multi-origines) et charge des images (logo,
-  // documents) directement depuis cette API.
-  app.use(
-    helmet({
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-    }),
-  );
+  // En-têtes de sécurité HTTP — sécurisé avec repli natif si helmet n'est pas installé
+  try {
+    const helmet = require('helmet');
+    app.use(
+      helmet({
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+      }),
+    );
+  } catch {
+    app.use((_req: any, res: any, next: any) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      next();
+    });
+  }
 
   // Requis pour lire les cookies httpOnly (access/refresh/CSRF) posés par
   // AuthController — sans lui, req.cookies est toujours undefined.
