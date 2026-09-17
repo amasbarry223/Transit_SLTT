@@ -9,6 +9,7 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const helmet_1 = __importDefault(require("helmet"));
 const app_module_1 = require("./app.module");
 const prisma_exception_filter_1 = require("./common/prisma-exception.filter");
+const cors_origins_util_1 = require("./common/cors-origins.util");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.use((0, helmet_1.default)({
@@ -17,36 +18,13 @@ async function bootstrap() {
     app.use((0, cookie_parser_1.default)());
     const apiPrefix = process.env.API_PREFIX ?? 'api';
     app.setGlobalPrefix(apiPrefix);
-    const rawCors = process.env.CORS_ORIGIN ?? '';
-    const configuredCors = rawCors
-        .split(',')
-        .map((o) => o.trim())
-        .filter(Boolean);
-    const allowedOrigins = Array.from(new Set([
-        'https://traorelogistique-transit.com',
-        'https://www.traorelogistique-transit.com',
-        'http://localhost:3000',
-        'http://localhost:3001',
-        ...configuredCors,
-    ]));
+    const allowedOrigins = (0, cors_origins_util_1.getTrustedOrigins)();
     app.enableCors({
         origin: (origin, callback) => {
             if (!origin) {
                 return callback(null, true);
             }
-            const isAllowed = allowedOrigins.some((allowed) => {
-                if (allowed === origin)
-                    return true;
-                const cleanAllowed = allowed.replace(/^https?:\/\/(www\.)?/, '');
-                const cleanOrigin = origin.replace(/^https?:\/\/(www\.)?/, '');
-                return cleanAllowed === cleanOrigin;
-            });
-            if (isAllowed) {
-                callback(null, true);
-            }
-            else {
-                callback(null, false);
-            }
+            callback(null, (0, cors_origins_util_1.isTrustedOrigin)(origin, allowedOrigins));
         },
         credentials: true,
     });

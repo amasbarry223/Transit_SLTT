@@ -15,36 +15,18 @@ const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const decorators_1 = require("../../shared/decorators");
 const cookie_config_1 = require("../cookie.config");
+const cors_origins_util_1 = require("../../common/cors-origins.util");
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 function isAllowedOrigin(originOrReferer, rawAllowedCors) {
     if (!originOrReferer)
         return false;
-    const rawCors = rawAllowedCors ?? process.env.CORS_ORIGIN ?? '';
-    const configuredCors = rawCors
-        .split(',')
-        .map((o) => o.trim())
-        .filter(Boolean);
-    const allowedOrigins = Array.from(new Set([
-        'https://traorelogistique-transit.com',
-        'https://www.traorelogistique-transit.com',
-        'http://localhost:3000',
-        'http://localhost:3001',
-        ...configuredCors,
-    ]));
     let originToTest = originOrReferer;
     try {
-        const parsed = new URL(originOrReferer);
-        originToTest = parsed.origin;
+        originToTest = new URL(originOrReferer).origin;
     }
     catch {
     }
-    return allowedOrigins.some((allowed) => {
-        if (allowed === originToTest)
-            return true;
-        const cleanAllowed = allowed.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-        const cleanOrigin = originToTest.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-        return cleanAllowed === cleanOrigin;
-    });
+    return (0, cors_origins_util_1.isTrustedOrigin)(originToTest, (0, cors_origins_util_1.getTrustedOrigins)(rawAllowedCors));
 }
 let CsrfGuard = class CsrfGuard {
     reflector;

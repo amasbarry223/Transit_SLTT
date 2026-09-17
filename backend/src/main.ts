@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/prisma-exception.filter';
+import { getTrustedOrigins, isTrustedOrigin } from './common/cors-origins.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -27,21 +28,10 @@ async function bootstrap() {
   const apiPrefix = process.env.API_PREFIX ?? 'api';
   app.setGlobalPrefix(apiPrefix);
 
-  // CORS — credentials:true + support multi-origines (apex + sous-domaine www)
-  const rawCors = process.env.CORS_ORIGIN ?? '';
-  const configuredCors = rawCors
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-  const allowedOrigins = Array.from(
-    new Set([
-      'https://traorelogistique-transit.com',
-      'https://www.traorelogistique-transit.com',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      ...configuredCors,
-    ]),
-  );
+  // CORS — credentials:true + support multi-origines (apex + sous-domaine www).
+  // Liste d'origines de confiance : source unique dans cors-origins.util.ts,
+  // partagée avec CsrfGuard (voir ce fichier pour la justification du repli).
+  const allowedOrigins = getTrustedOrigins();
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -49,19 +39,7 @@ async function bootstrap() {
       if (!origin) {
         return callback(null, true);
       }
-      // Vérifier correspondance exacte ou avec/sans www
-      const isAllowed = allowedOrigins.some((allowed) => {
-        if (allowed === origin) return true;
-        const cleanAllowed = allowed.replace(/^https?:\/\/(www\.)?/, '');
-        const cleanOrigin = origin.replace(/^https?:\/\/(www\.)?/, '');
-        return cleanAllowed === cleanOrigin;
-      });
-
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
+      callback(null, isTrustedOrigin(origin, allowedOrigins));
     },
     credentials: true,
   });

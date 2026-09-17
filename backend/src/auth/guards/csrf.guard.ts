@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { SKIP_CSRF_KEY, SKIP_CSRF_IF_NO_COOKIE_KEY } from '../../shared/decorators';
 import { CSRF_COOKIE } from '../cookie.config';
+import { getTrustedOrigins, isTrustedOrigin } from '../../common/cors-origins.util';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -26,36 +27,18 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  */
 export function isAllowedOrigin(originOrReferer: string | undefined, rawAllowedCors?: string): boolean {
   if (!originOrReferer) return false;
-  const rawCors = rawAllowedCors ?? process.env.CORS_ORIGIN ?? '';
-  const configuredCors = rawCors
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
 
-  const allowedOrigins = Array.from(
-    new Set([
-      'https://traorelogistique-transit.com',
-      'https://www.traorelogistique-transit.com',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      ...configuredCors,
-    ]),
-  );
-
+  // Un Referer est une URL complète avec chemin ("https://site.com/clients") ;
+  // un Origin n'a jamais de chemin. Normaliser via `new URL(...).origin` gère
+  // les deux avec la même logique.
   let originToTest = originOrReferer;
   try {
-    const parsed = new URL(originOrReferer);
-    originToTest = parsed.origin;
+    originToTest = new URL(originOrReferer).origin;
   } catch {
     // Si parsing échoue, on compare la valeur brute
   }
 
-  return allowedOrigins.some((allowed) => {
-    if (allowed === originToTest) return true;
-    const cleanAllowed = allowed.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-    const cleanOrigin = originToTest.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-    return cleanAllowed === cleanOrigin;
-  });
+  return isTrustedOrigin(originToTest, getTrustedOrigins(rawAllowedCors));
 }
 
 /**

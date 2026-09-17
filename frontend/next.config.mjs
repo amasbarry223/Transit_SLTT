@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import withSerwistInit from "@serwist/next";
 import withBundleAnalyzerInit from "@next/bundle-analyzer";
+import { PROD_API_FALLBACK_URL } from "./src/lib/api/deployment-config.mjs";
 
 let revision;
 try {
@@ -93,9 +94,9 @@ const nextConfig = {
     // Cible du proxy same-origin (résout le problème de cookies cross-origin
     // en production quand front et API sont sur des domaines distincts : le
     // navigateur ne voit que l'origine du front, Next.js relaie vers le
-    // backend réel côté serveur). Configurable via INTERNAL_API_URL — doit
-    // rester en phase avec la même variable dans server-api-url.ts.
-    const apiTarget = (process.env.INTERNAL_API_URL || "https://goldenrod-newt-273291.hostingersite.com/api").replace(/\/$/, "");
+    // backend réel côté serveur). Configurable via INTERNAL_API_URL — le repli
+    // vient de deployment-config.mjs, source unique partagée avec server-api-url.ts.
+    const apiTarget = (process.env.INTERNAL_API_URL || PROD_API_FALLBACK_URL).replace(/\/$/, "");
     return [
       {
         source: "/api/:path*",
