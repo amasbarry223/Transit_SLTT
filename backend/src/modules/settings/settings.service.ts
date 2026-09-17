@@ -1,5 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+
+const MAX_SETTING_VALUE_LENGTH = 10_000;
+const VALID_SETTING_TYPES = new Set(['string', 'number', 'boolean', 'json']);
+
+/** setKey/setMany n'avaient jusque-là aucune validation (Record<string, any>
+ *  accepté tel quel) : n'importe quelle valeur, de n'importe quelle taille,
+ *  pouvait être stockée sous n'importe quelle clé par un titulaire de
+ *  `settings.modifier` — notamment `societe_logo_url`, réinjecté sans
+ *  échappement HTML lisible par un `<img src>` à l'impression d'une facture
+ *  (corrigé côté rendu dans facture.ts, mais mieux vaut aussi rejeter une
+ *  valeur manifestement invalide à l'écriture). */
+function assertValidSettingValue(cle: string, valeur: unknown, type?: string): void {
+  if (typeof valeur !== 'string' && typeof valeur !== 'number' && typeof valeur !== 'boolean') {
+    throw new BadRequestException(`Valeur invalide pour le paramètre "${cle}".`);
+  }
+  if (String(valeur).length > MAX_SETTING_VALUE_LENGTH) {
+    throw new BadRequestException(
+      `La valeur du paramètre "${cle}" dépasse la taille maximale autorisée (${MAX_SETTING_VALUE_LENGTH} caractères).`,
+    );
+  }
+  if (type !== undefined && !VALID_SETTING_TYPES.has(type)) {
+    throw new BadRequestException(`Type de paramètre invalide pour "${cle}" : "${type}".`);
+  }
+}
 
 function parseValue(valeur: string, type?: string): any {
   if (type === 'number') {
@@ -76,6 +100,7 @@ export class SettingsService {
     isPublic?: boolean,
     groupName?: string,
   ) {
+    assertValidSettingValue(cle, valeur, type);
     return this.prisma.setting.upsert({
       where: { cle },
       create: {
@@ -99,6 +124,7 @@ export class SettingsService {
   async setMany(settings: Record<string, string | { valeur: string; description?: string; type?: string; isPublic?: boolean; groupName?: string }>) {
     const operations = Object.entries(settings).map(([cle, data]) => {
       if (typeof data === 'object' && data !== null) {
+        assertValidSettingValue(cle, data.valeur, data.type);
         return this.prisma.setting.upsert({
           where: { cle },
           create: {
@@ -118,6 +144,7 @@ export class SettingsService {
           },
         });
       }
+      assertValidSettingValue(cle, data);
       return this.prisma.setting.upsert({
         where: { cle },
         create: { cle, valeur: String(data) },

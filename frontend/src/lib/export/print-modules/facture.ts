@@ -183,7 +183,7 @@ body {
     <div style="display: flex; align-items: center; gap: 12px;">
       ${
         resolvedBrand.logoUrl
-          ? `<img src="${resolvedBrand.logoUrl}" alt="Logo" style="height: 64px; max-width: 130px; object-fit: contain;" />`
+          ? `<img src="${htmlEscape(resolvedBrand.logoUrl)}" alt="Logo" style="height: 64px; max-width: 130px; object-fit: contain;" />`
           : `<div style="width: 54px; height: 54px; border-radius: 50%; border: 2.5px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
               <span style="font-size: 16px; font-weight: 900; line-height: 1;">LS</span>
               <span style="font-size: 6px; font-weight: 800; text-transform: uppercase;">LOGISTIQUE</span>

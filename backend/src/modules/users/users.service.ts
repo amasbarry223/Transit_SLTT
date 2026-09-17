@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { RoleUtilisateur } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { assertStrongPassword } from '../../common/password.utils';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -51,14 +52,6 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly auditLogsService: AuditLogsService,
   ) {}
-
-  /** Même seuil que authService.changePassword — jamais de repli implicite
-   *  sur un mot de passe par défaut quand ce champ est absent ou trop court. */
-  private assertStrongPassword(password: string | undefined): asserts password is string {
-    if (!password || password.length < 8) {
-      throw new BadRequestException('Le mot de passe doit contenir au moins 8 caractères');
-    }
-  }
 
   /** Bloque la suppression, désactivation ou rétrogradation du dernier
    *  compte ADMIN actif du système — sans ce garde-fou, plus personne ne
@@ -200,7 +193,7 @@ export class UsersService {
     if (existing) throw new ConflictException(`L'email ${data.email} est déjà utilisé`);
 
     const rawPassword = data.password ?? data.motDePasse;
-    this.assertStrongPassword(rawPassword);
+    assertStrongPassword(rawPassword);
 
     this.assertRoleEscalationAllowed(actor, data.role);
     this.assertPermissionCeiling(actor, data.permissions ?? []);
@@ -276,7 +269,7 @@ export class UsersService {
     if (data.actif !== undefined) updateData.actif = data.actif;
     const rawPassword = data.password ?? data.motDePasse;
     if (rawPassword !== undefined) {
-      this.assertStrongPassword(rawPassword);
+      assertStrongPassword(rawPassword);
       updateData.passwordHash = await bcrypt.hash(rawPassword, 12);
     }
 
@@ -305,6 +298,13 @@ export class UsersService {
         },
       });
 
+      // Révoque les sessions existantes si le mot de passe vient de changer —
+      // même raison que AuthService.changePassword (un refresh token émis
+      // avant ce changement resterait sinon utilisable jusqu'à ses 7 jours).
+      if (rawPassword !== undefined) {
+        await tx.refreshToken.deleteMany({ where: { userId: id } });
+      }
+
       await this.auditLogsService.log(
         {
           userId: actor.id,
@@ -328,11 +328,15 @@ export class UsersService {
   async resetPassword(id: string, newPassword: string | undefined, actor: CurrentUserType) {
     const target = await this.findOne(id, actor);
     this.assertCanTouchAdminTarget(actor, target);
-    this.assertStrongPassword(newPassword);
+    assertStrongPassword(newPassword);
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.profile.update({ where: { id }, data: { passwordHash } });
+      // Révoque les sessions existantes de la cible — même raison que
+      // AuthService.changePassword (un compte réinitialisé après compromission
+      // resterait sinon accessible via son ancien refresh token).
+      await tx.refreshToken.deleteMany({ where: { userId: id } });
       await this.auditLogsService.log(
         {
           userId: actor.id,

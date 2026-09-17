@@ -3,6 +3,7 @@ import { AuditLogsService } from './audit-logs.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
+import { CreateAuditLogDto } from './dto/create-audit-log.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
 
 @Controller('audit-logs')
@@ -21,7 +22,7 @@ export class AuditLogsController {
   }
 
   @Post()
-  async create(@CurrentUser() user: CurrentUserType, @Body() body: any) {
+  async create(@CurrentUser() user: CurrentUserType, @Body() body: CreateAuditLogDto) {
     // L'auteur du log est toujours l'utilisateur authentifié : impossible
     // d'écrire une entrée au nom de quelqu'un d'autre.
     return this.auditLogsService.log({

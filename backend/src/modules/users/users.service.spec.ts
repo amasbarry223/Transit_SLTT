@@ -26,6 +26,7 @@ function createFakePrisma() {
   const tx = {
     profile: { create: vi.fn(), update: vi.fn(), delete: vi.fn() },
     userAnnexe: { deleteMany: vi.fn(), createMany: vi.fn() },
+    refreshToken: { deleteMany: vi.fn() },
   };
   const prisma = {
     profile: {
@@ -70,7 +71,7 @@ describe('UsersService — garde-fous de délégation', () => {
 
     await expect(
       service.create(
-        { email: 'a@a.com', password: 'longpass1', nom: 'A', permissions: ['comptabilite:write'] } as any,
+        { email: 'a@a.com', password: 'Longpass1', nom: 'A', permissions: ['comptabilite:write'] } as any,
         delegate(),
       ),
     ).rejects.toThrow(ForbiddenException);
@@ -84,7 +85,7 @@ describe('UsersService — garde-fous de délégation', () => {
 
     await expect(
       service.create(
-        { email: 'a@a.com', password: 'longpass1', nom: 'A', annexeIds: ['annexe-ci'] } as any,
+        { email: 'a@a.com', password: 'Longpass1', nom: 'A', annexeIds: ['annexe-ci'] } as any,
         delegate(),
       ),
     ).rejects.toThrow(ForbiddenException);
@@ -98,7 +99,7 @@ describe('UsersService — garde-fous de délégation', () => {
 
     await expect(
       service.create(
-        { email: 'a@a.com', password: 'longpass1', nom: 'A', role: 'Administrateur' } as any,
+        { email: 'a@a.com', password: 'Longpass1', nom: 'A', role: 'Administrateur' } as any,
         delegate(),
       ),
     ).rejects.toThrow(ForbiddenException);
@@ -114,7 +115,7 @@ describe('UsersService — garde-fous de délégation', () => {
     const service = new UsersService(prisma as any, auditLogs as any);
 
     const created = await service.create(
-      { email: 'a@a.com', password: 'longpass1', nom: 'A', role: 'Administrateur', permissions: ['*'] } as any,
+      { email: 'a@a.com', password: 'Longpass1', nom: 'A', role: 'Administrateur', permissions: ['*'] } as any,
       admin(),
     );
 
@@ -181,6 +182,41 @@ describe('UsersService — garde-fous de délégation', () => {
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(auditLogs.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'Modification' }), tx);
   });
+
+  it('update() révoque les refresh tokens de la cible quand le mot de passe change', async () => {
+    const { prisma, tx } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(targetProfile());
+    (tx.profile.update as any).mockResolvedValue({ id: 'target-1', role: RoleUtilisateur.TRANSITAIRE });
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await service.update('target-1', { password: 'NouveauMdp1' } as any, admin());
+
+    expect(tx.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'target-1' } });
+  });
+
+  it("update() ne touche pas aux refresh tokens quand le mot de passe n'est pas modifié", async () => {
+    const { prisma, tx } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(targetProfile());
+    (tx.profile.update as any).mockResolvedValue({ id: 'target-1', role: RoleUtilisateur.TRANSITAIRE });
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await service.update('target-1', { nom: 'X' } as any, admin());
+
+    expect(tx.refreshToken.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('resetPassword() révoque les refresh tokens de la cible', async () => {
+    const { prisma, tx } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(targetProfile());
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await service.resetPassword('target-1', 'NouveauMdp1', admin());
+
+    expect(tx.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'target-1' } });
+  });
 });
 
 describe('UsersService.create — simulation de la création de compte', () => {
@@ -191,7 +227,7 @@ describe('UsersService.create — simulation de la création de compte', () => {
     const service = new UsersService(prisma as any, auditLogs as any);
 
     await expect(
-      service.create({ email: ' A@A.com ', password: 'longpass1', nom: 'A' } as any, admin()),
+      service.create({ email: ' A@A.com ', password: 'Longpass1', nom: 'A' } as any, admin()),
     ).rejects.toThrow(ConflictException);
   });
 
@@ -227,7 +263,7 @@ describe('UsersService.create — simulation de la création de compte', () => {
     const service = new UsersService(prisma as any, auditLogs as any);
 
     const created = await service.create(
-      { email: 'a@a.com', password: 'longpass1', nom: 'A', role: 'super-hacker' } as any,
+      { email: 'a@a.com', password: 'Longpass1', nom: 'A', role: 'super-hacker' } as any,
       delegate(),
     );
 
@@ -235,7 +271,7 @@ describe('UsersService.create — simulation de la création de compte', () => {
   });
 
   it('un nom vide est rejeté par le DTO avant même d\'atteindre le service (@IsNotEmpty)', async () => {
-    const dto = plainToInstance(CreateUserDto, { email: 'a@a.com', password: 'longpass1', nom: '' });
+    const dto = plainToInstance(CreateUserDto, { email: 'a@a.com', password: 'Longpass1', nom: '' });
     const errors = await validate(dto);
 
     expect(errors.some((e) => e.property === 'nom')).toBe(true);

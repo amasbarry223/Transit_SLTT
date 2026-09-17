@@ -11,6 +11,7 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtPayload } from './auth.types';
 import { jwtRefreshSecret, jwtRefreshExpiresIn } from './jwt.config';
+import { assertStrongPassword } from '../common/password.utils';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -225,15 +226,20 @@ export class AuthService {
       throw new BadRequestException('Mot de passe actuel incorrect');
     }
 
-    if (newPassword.length < 8) {
-      throw new BadRequestException('Le nouveau mot de passe doit contenir au moins 8 caractères');
-    }
+    assertStrongPassword(newPassword, 'Le nouveau mot de passe');
 
     const passwordHash = await this.hashPassword(newPassword);
     await this.prisma.profile.update({
       where: { id: userId },
       data: { passwordHash },
     });
+
+    // Révoque toutes les sessions existantes : sans ça, un refresh token déjà
+    // émis (volé avant ce changement de mot de passe "de sécurité") continuait
+    // à émettre de nouveaux access tokens jusqu'à sa propre expiration (7
+    // jours), rendant ce changement inefficace contre un attaquant en
+    // possession du refresh token.
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
 
     return { success: true, message: 'Mot de passe mis à jour avec succès' };
   }
