@@ -22,11 +22,11 @@ describe("status-flow FSM", () => {
     expect(canTransitionFacture("Envoyée", "Partielle")).toBe(true);
   });
 
-  it("matrice contrat alignée DB", () => {
+  it("matrice contrat alignée avec le backend (contrats.service.ts)", () => {
     expect(canTransitionContrat("Actif", "Clôturé")).toBe(true);
     expect(canTransitionContrat("Clôturé", "Suspendu")).toBe(false);
     expect(canTransitionContrat("Suspendu", "Actif")).toBe(true);
-    expect(CONTRAT_ALLOWED_TRANSITIONS.Actif).toEqual(["Suspendu", "Clôturé"]);
+    expect(CONTRAT_ALLOWED_TRANSITIONS.Actif).toEqual(["Exécuté", "En cours", "Suspendu", "Clôturé"]);
   });
 
   it("couvre toutes les clés devis/facture", () => {

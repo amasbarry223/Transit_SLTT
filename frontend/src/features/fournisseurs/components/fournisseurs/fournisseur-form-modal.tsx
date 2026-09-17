@@ -138,8 +138,10 @@ export function FournisseurFormModal({
       }
       onClose();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Impossible d'enregistrer le fournisseur";
-      toastError(toast, err, { title: "Impossible d'enregistrer", fallback: message });
+      // Fallback fixe (pas err.message) : mapErrorToUserMessage() ne l'utilise
+      // qu'en dernier recours, et un message backend brut/anglais non mappé
+      // serait sinon montré tel quel à l'utilisateur.
+      toastError(toast, err, { title: "Impossible d'enregistrer", fallback: "Impossible d'enregistrer le fournisseur. Réessayez." });
       setSaving(false);
     }
   }

@@ -384,13 +384,9 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     // montantPaye du dossier = incrément borné à l'assiette due — cohérent avec
     // le backend /paiements. Plus d'écriture locale jetable (le dossier.montantPaye
     // persiste désormais et sert de source unique aux bilans / au classeur).
-    let updatedMontantPaye = dossier.montantPaye;
-    let updatedDateSolde = dossier.dateSolde;
-    if (typeof montantRecu === "number" && montantRecu > 0) {
-      const plafond = dossier.montantInvesti > 0 ? dossier.montantInvesti : Number.POSITIVE_INFINITY;
-      updatedMontantPaye = Math.min(plafond, dossier.montantPaye + montantRecu);
-      updatedDateSolde = dossier.dateSolde || resolvedDate;
-    }
+    // `plafond` dépend de montantInvesti (l'assiette due, stable), pas de
+    // montantPaye : il peut donc être calculé ici sans risque.
+    const plafond = dossier.montantInvesti > 0 ? dossier.montantInvesti : Number.POSITIVE_INFINITY;
 
     // Le changement de statut DOIT être poussé (sinon le dossier repasse à son
     // ancien statut au rechargement). Quand la transition s'accompagne d'un
@@ -407,16 +403,23 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       await api.dossiers.updateStatut(id, newStatut);
     }
 
-    const applyPatch = (item: Dossier): Dossier =>
-      item.id === id
-        ? {
-            ...item,
-            statut: newStatut,
-            montantPaye: updatedMontantPaye,
-            dateDedouanement,
-            dateSolde: updatedDateSolde,
-          }
-        : item;
+    // `montantPaye`/`dateSolde` sont recalculés ici, à l'intérieur du updater
+    // `set()`, sur l'état frais (`item`) et non sur le `dossier` capturé avant
+    // les `await` ci-dessus : sinon un encaissement concurrent (double-clic,
+    // ou deux règlements presque simultanés) déjà appliqué par un autre appel
+    // serait écrasé — même bug que celui corrigé dans recordFacturePaiement
+    // (factures-slice.ts).
+    const applyPatch = (item: Dossier): Dossier => {
+      if (item.id !== id) return item;
+      const hasPaiement = typeof montantRecu === "number" && montantRecu > 0;
+      return {
+        ...item,
+        statut: newStatut,
+        montantPaye: hasPaiement ? Math.min(plafond, item.montantPaye + montantRecu) : item.montantPaye,
+        dateDedouanement,
+        dateSolde: hasPaiement ? item.dateSolde || resolvedDate : item.dateSolde,
+      };
+    };
 
     set((s) => {
       const updatedDossiers = s.dossiers.map(applyPatch);

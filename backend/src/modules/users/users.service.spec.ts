@@ -1,6 +1,9 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { RoleUtilisateur } from '@prisma/client';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
 
 function admin(overrides: Partial<CurrentUserType> = {}): CurrentUserType {
@@ -177,6 +180,65 @@ describe('UsersService — garde-fous de délégation', () => {
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(auditLogs.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'Modification' }), tx);
+  });
+});
+
+describe('UsersService.create — simulation de la création de compte', () => {
+  it("rejette un email déjà utilisé (comparaison insensible à la casse/espaces)", async () => {
+    const { prisma } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(targetProfile({ email: 'a@a.com' }));
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await expect(
+      service.create({ email: ' A@A.com ', password: 'longpass1', nom: 'A' } as any, admin()),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('rejette un mot de passe de moins de 8 caractères', async () => {
+    const { prisma } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(null);
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await expect(
+      service.create({ email: 'a@a.com', password: 'short1', nom: 'A' } as any, admin()),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejette une création sans mot de passe (ni "password" ni "motDePasse")', async () => {
+    const { prisma } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(null);
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await expect(
+      service.create({ email: 'a@a.com', nom: 'A' } as any, admin()),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it("un rôle inconnu retombe sur TRANSITAIRE — aucune valeur ne permet une escalade vers ADMIN par ce chemin", async () => {
+    const { prisma, tx } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(null);
+    (tx.profile.create as any).mockImplementation(({ data }: any) =>
+      Promise.resolve({ id: 'new-1', email: data.email, nom: data.nom, role: data.role, permissions: [], actif: true }),
+    );
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    const created = await service.create(
+      { email: 'a@a.com', password: 'longpass1', nom: 'A', role: 'super-hacker' } as any,
+      delegate(),
+    );
+
+    expect(created.role).toBe('Agent de transit');
+  });
+
+  it('un nom vide est rejeté par le DTO avant même d\'atteindre le service (@IsNotEmpty)', async () => {
+    const dto = plainToInstance(CreateUserDto, { email: 'a@a.com', password: 'longpass1', nom: '' });
+    const errors = await validate(dto);
+
+    expect(errors.some((e) => e.property === 'nom')).toBe(true);
   });
 });
 

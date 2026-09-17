@@ -307,6 +307,9 @@ export function UsersTab() {
               title: "Impossible de supprimer l'utilisateur",
               fallback: "Vérifiez qu'aucune action en cours ne bloque la suppression.",
             });
+            // Relancer pour que ConfirmDeleteDialog garde la modale ouverte :
+            // sans ça, elle se refermait même quand la suppression échouait.
+            throw err;
           }
         }}
       />
@@ -336,8 +339,11 @@ export function UsersTab() {
               title: "Impossible de désactiver l'utilisateur",
               fallback: "Réessayez dans quelques instants.",
             });
+            // Relancer pour que ConfirmActionDialog garde la modale ouverte sur
+            // échec ; `setDeactivateTarget(null)` (via onOpenChange) ne doit
+            // s'exécuter qu'après un succès réel.
+            throw err;
           }
-          setDeactivateTarget(null);
         }}
       />
     </div>

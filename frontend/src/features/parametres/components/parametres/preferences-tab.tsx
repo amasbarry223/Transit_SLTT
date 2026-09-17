@@ -103,8 +103,9 @@ export function PreferencesTab() {
           try {
             await refetchData();
             toastSuccess(toast, { title: "Données rechargées", description: "Les données ont été relues depuis le serveur.", });
-          } catch {
+          } catch (e) {
             toastWarning(toast, { title: "Échec du rechargement", description: "Impossible de recharger les données." });
+            throw e;
           }
         }}
       />

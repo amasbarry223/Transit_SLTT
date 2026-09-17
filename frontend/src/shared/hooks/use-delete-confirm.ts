@@ -28,13 +28,18 @@ export function useDeleteConfirm<T>(
         title: successTitle,
         description: getLabel(target),
       });
+      setTarget(null);
     } catch (e) {
       toastError(toast, e, {
         title: errorTitle,
         fallback: errorFallbackMessage,
       });
-    } finally {
-      setTarget(null);
+      // Ne pas effacer `target` (le dialogue est généralement ouvert via
+      // `open={!!target}`) et relancer : ConfirmDeleteDialog attend que
+      // `onConfirm()` rejette pour garder la modale ouverte sur échec.
+      // Sans ce rethrow, le dialogue se refermait systématiquement même
+      // quand la suppression avait réellement échoué côté serveur.
+      throw e;
     }
   }
 

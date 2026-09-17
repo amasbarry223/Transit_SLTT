@@ -43,9 +43,13 @@ export function ConfirmActionDialog({
     setLoading(true);
     try {
       await onConfirm();
+      onOpenChange(false);
+    } catch {
+      // Échec : on garde la modale ouverte (même logique que ConfirmDeleteDialog)
+      // pour que l'utilisateur voie que l'action n'a pas abouti, au lieu de la
+      // laisser se refermer comme si tout s'était bien passé.
     } finally {
       setLoading(false);
-      onOpenChange(false);
     }
   }
 

@@ -312,7 +312,8 @@ export class DossiersService {
   }
 
   /** Enregistre un règlement client sur le dossier (incrément atomique de
-   *  montantPaye, borné à montantInvesti). Optionnellement change le statut. */
+   *  montantPaye, rejeté si le montant dépasse le reste dû). Optionnellement
+   *  change le statut. */
   async enregistrerPaiement(
     id: string,
     user: CurrentUserType,
@@ -323,21 +324,28 @@ export class DossiersService {
     if (!Number.isFinite(montant) || montant <= 0) {
       throw new BadRequestException('Le montant du règlement doit être supérieur à 0.');
     }
+    // Rejette le trop-perçu au lieu de l'écrêter silencieusement — même règle
+    // que factures.service.ts:enregistrerPaiement, pour ne jamais faire
+    // disparaître un excédent sans que l'utilisateur en soit informé.
+    const plafond = dossier.montantInvesti || 0;
+    if (plafond > 0) {
+      const reste = plafond - dossier.montantPaye;
+      if (montant > reste + 0.5) {
+        throw new BadRequestException(
+          `Le montant dépasse le reste dû (${reste.toLocaleString('fr-FR')}).`,
+        );
+      }
+    }
     const datePaiement = data.date ? new Date(data.date) : new Date();
 
     return this.prisma.$transaction(async (tx: any) => {
-      const incremented = await tx.dossier.update({
+      await tx.dossier.update({
         where: { id },
         data: {
           montantPaye: { increment: montant },
           dateSolde: Number.isNaN(datePaiement.getTime()) ? new Date() : datePaiement,
         },
       });
-      // Ne jamais dépasser l'assiette due (paiements concurrents).
-      const plafond = incremented.montantInvesti || dossier.montantInvesti || 0;
-      if (plafond > 0 && incremented.montantPaye > plafond + 0.5) {
-        await tx.dossier.update({ where: { id }, data: { montantPaye: plafond } });
-      }
       if (data.statut) {
         const normalized = normalizeStatutDossier(data.statut) || dossier.statut;
         await tx.dossier.update({ where: { id }, data: { statut: normalized as any } });

@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 /**
  * DTO de création d'un utilisateur.
@@ -26,6 +26,7 @@ export class CreateUserDto {
   motDePasse?: string;
 
   @IsString()
+  @IsNotEmpty()
   nom!: string;
 
   @IsString()

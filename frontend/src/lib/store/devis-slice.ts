@@ -103,6 +103,12 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
   updateDevis: async (id, input) => {
     const total = Number(input.droitDouane) + Number(input.fraisCircuit) + Number(input.fraisPrestation);
     const existing = get().devis.find((d) => d.id === id);
+    // Accepté est terminal (DEVIS_ALLOWED_TRANSITIONS.Accepté = []), souvent
+    // déjà converti en dossier — l'éditer désynchroniserait silencieusement
+    // le dossier déjà créé. Même règle appliquée côté serveur (devis.service.ts).
+    if (existing?.statut === "Accepté") {
+      throw new Error("Ce devis est déjà accepté et ne peut plus être modifié.");
+    }
 
     const encodedNotes = encodeDevisNotes(input.notes, {
       ville: input.ville,

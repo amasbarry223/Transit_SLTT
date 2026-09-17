@@ -69,12 +69,18 @@ export function useFacturesScreen() {
       go("factures");
       return;
     }
-    if (selectedId?.startsWith("D-")) {
+    // Pont "Nouvelle facture" depuis un dossier (dossier-detail-screen.tsx
+    // `handleInvoice`) : passe l'UUID du dossier, la même clé que celle
+    // utilisée par `buildDossierPrefill` ci-dessus. Le test précédent
+    // (`selectedId?.startsWith("D-")`) attendait une référence formatée
+    // ("D-xxxx") que personne n'envoie jamais — le pont ne s'ouvrait donc
+    // jamais, silencieusement : "Nouvelle facture" ramenait sur la liste vide.
+    if (selectedId && dossiers.some((d) => d.id === selectedId)) {
       setPrefillDossierId(selectedId);
       setShowForm(true);
       go("factures");
     }
-  }, [selectedId, go]);
+  }, [selectedId, go, dossiers]);
 
   // F6 — pont "Facturer" depuis une prestation optionnelle réalisée
   React.useEffect(() => {

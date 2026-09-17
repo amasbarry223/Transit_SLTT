@@ -353,7 +353,15 @@ export class DashboardService {
 
       factures.forEach((fac: any) => {
         const facDate = fac.dateEmission ? new Date(fac.dateEmission) : new Date();
-        if (facDate.getMonth() === targetMonth && facDate.getFullYear() === targetYear) {
+        // Même exclusion que l'alerte de recouvrement ci-dessus (ANNULEE) plus
+        // BROUILLON : une facture annulée ou pas encore envoyée n'est pas du
+        // chiffre d'affaires réalisé, elle ne doit pas gonfler le graphique.
+        if (
+          facDate.getMonth() === targetMonth &&
+          facDate.getFullYear() === targetYear &&
+          fac.statut !== 'ANNULEE' &&
+          fac.statut !== 'BROUILLON'
+        ) {
           prestationsHT += Number(fac.montantHt || 0);
           tvaCollectee += Number(fac.montantTva || 0);
           totalFactureTTC += Number(fac.montantTtc || 0);

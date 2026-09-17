@@ -75,9 +75,21 @@ export class DocumentsService {
     });
 
     if (!doc) {
-      // Fallback si le fichier est directement présent sur le disque dans uploads
-      const directPath = path.resolve(this.uploadBaseDir, filename);
-      if (fs.existsSync(directPath)) {
+      // Fallback si le fichier est directement présent sur le disque dans uploads.
+      // `filename` vient d'un @Param() sur une route @Public() (sans authentification) :
+      // on refuse tout ce qui n'est pas un simple nom de fichier (pas de "..", pas de
+      // séparateur de chemin) avant de résoudre, puis on revalide que le résultat reste
+      // bien sous uploadBaseDir — sinon un `filename` du type "../../.env" permettait de
+      // lire n'importe quel fichier lisible par le process, sans authentification.
+      if (path.basename(filename) !== filename) {
+        throw new NotFoundException('Fichier non trouvé');
+      }
+      const directPath = this.resolveInsideUploads(path.join(this.uploadBaseDir, filename));
+      // `filename` égal à "." (basename(".") === ".", donc accepté par le contrôle
+      // ci-dessus) résout directPath sur uploadBaseDir lui-même — un dossier, pas un
+      // fichier. `isFile()` ferme ce cas avant `res.sendFile()` (qui échouerait sur un
+      // dossier de toute façon, mais après avoir déjà posé les en-têtes de réponse).
+      if (fs.existsSync(directPath) && fs.statSync(directPath).isFile()) {
         const ext = path.extname(filename).toLowerCase();
         const mime = ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'application/octet-stream';
         return {

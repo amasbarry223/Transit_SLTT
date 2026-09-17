@@ -15,13 +15,18 @@ export const DEVIS_ALLOWED_TRANSITIONS: Record<DevisStatut, DevisStatut[]> = {
 
 export const FACTURE_ALLOWED_TRANSITIONS: Record<FactureStatut, FactureStatut[]> = {
   Brouillon: ["Envoyée", "Annulée"],
-  Envoyée: ["Partielle", "Soldée", "Annulée"],
+  // "Brouillon" ajouté : le backend (factures.service.ts STATUT_TRANSITIONS.ENVOYEE)
+  // autorise déjà l'annulation d'un envoi par erreur ; cette matrice frontend
+  // ne le proposait pas, masquant un correctif légitime à tous les utilisateurs.
+  Envoyée: ["Partielle", "Soldée", "Annulée", "Brouillon"],
   Partielle: ["Soldée", "Annulée", "Partielle"],
   Soldée: ["Annulée"],
   Annulée: [],
 };
 
-/** Matrice contrat — alignée sur trigger DB assert_contrat_transition. */
+/** Matrice contrat — dupliquée côté backend (contrats.service.ts
+ *  STATUT_TRANSITIONS) pour une validation serveur réelle ; à maintenir
+ *  synchronisée si l'une des deux change. */
 export const CONTRAT_ALLOWED_TRANSITIONS: Record<ContratStatut, ContratStatut[]> = {
   "En cours": ["Exécuté"],
   "Exécuté": ["En cours"],

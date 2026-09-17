@@ -88,7 +88,12 @@ export function DevisDetailScreen() {
   const coutLabels = resolveDossierCoutLabels(annexeCode);
   const dd = parseAmount(fDroitDouane), fc = parseAmount(fFraisCircuit), fp = parseAmount(fFraisPrestation);
   const editTotal = dd + fc + fp;
-  const canEditContent = canWrite && !devis.dossierId;
+  // "Accepté" est terminal même AVANT conversion effective en dossier (celle-ci
+  // ne fixe dossierId que dans un second temps, via un bouton séparé) : sans
+  // ce check, un devis Accepté-mais-pas-encore-converti restait éditable, et
+  // devis-slice.ts::updateDevis rejette maintenant cette écriture de toute
+  // façon — autant l'empêcher dans l'UI plutôt que de la faire échouer après coup.
+  const canEditContent = canWrite && !devis.dossierId && devis.statut !== "Accepté";
   const editValid = !!fClientId && !!fNature.trim() && !!fDateValidite;
   const startEdit = () => { setIsEditing(true); setConfirmDelete(false); setConfirmConvert(false); };
   const requestConvert = () => { setConfirmConvert(true); setConfirmDelete(false); };

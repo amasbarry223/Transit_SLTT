@@ -93,8 +93,12 @@ export function SituationClientsPanel() {
         return true;
       });
 
+      // Exclut les factures Annulée, comme `cfActives`/`sommeFacturesEncaissees`
+      // (lib/client-stats.ts) : une facture annulée ne doit plus compter dans
+      // le total facturé/reste à payer d'un client.
       const clientFactures = factures.filter((f) => {
         if (f.clientId !== client.id) return false;
+        if (f.statut === "Annulée") return false;
         if (annexeFilter !== "all" && f.annexeId && f.annexeId !== annexeFilter) return false;
         return true;
       });

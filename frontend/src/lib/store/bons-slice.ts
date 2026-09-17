@@ -219,7 +219,15 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   },
 
   addBonSortieCaisse: async (input) => {
-    const seq = get().bonSortieCaisseSeq;
+    // Si la référence est déjà prise localement (créations simultanées), on
+    // bump — même garde-fou que addDossier (dossiers-slice.ts) pour ce même
+    // type de course : un compteur lu avant l'`await` et rebumpé seulement
+    // après pouvait faire calculer la même référence "N°x" à deux créations
+    // proches.
+    let seq = get().bonSortieCaisseSeq;
+    while (get().bonsSortieCaisse.some((b) => b.reference === `N°${seq}`)) {
+      seq++;
+    }
     const initialReference = `N°${seq}`;
     const creePar = getConnectedUserName();
     const montantTotal = input.lignes.reduce((sum, ligne) => sum + ligne.montant, 0);
@@ -254,7 +262,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
     };
     set((s) => ({
       bonsSortieCaisse: [newBon, ...s.bonsSortieCaisse],
-      bonSortieCaisseSeq: seq + 1,
+      bonSortieCaisseSeq: Math.max(s.bonSortieCaisseSeq, seq + 1),
     }));
     await get().addAuditLog(
       AUDIT_MODULE.Bons,

@@ -114,12 +114,11 @@ export function mapErrorToUserMessage(
     }
   }
 
-  if (code === "401" || code === "403") {
-    if (rawMessage && !/jwt|token|bearer|unauthorized/i.test(rawMessage)) {
-      return rawMessage;
-    }
-    return UI.errors.session;
-  }
+  // À ce stade, rawMessage a déjà échoué le test "ressemble à du français
+  // orienté utilisateur" ci-dessus — le retourner tel quel ici laissait
+  // passer des messages bruts NestJS (ex. "Forbidden resource") non traduits.
+  if (code === "403") return UI.errors.permission;
+  if (code === "401") return UI.errors.session;
   if (code === "429") {
     return "Trop de tentatives de connexion. Veuillez patienter un instant avant de réessayer.";
   }

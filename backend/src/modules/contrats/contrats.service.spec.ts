@@ -6,51 +6,60 @@ function admin(overrides: Partial<CurrentUserType> = {}): CurrentUserType {
   return { id: 'admin-1', email: 'admin@x.com', nom: 'Admin', role: 'ADMIN', permissions: ['*'], annexeIds: [], ...overrides };
 }
 
-function createFakePrisma() {
-  const prisma = {
-    contrat: {
-      findUnique: vi.fn().mockResolvedValue(null), // référence toujours libre
-      create: vi.fn((args: any) => ({ id: 'contrat-1', ...args.data })),
-      update: vi.fn((args: any) => ({ id: 'contrat-1', ...args.data })),
-    },
-  };
-  return { prisma };
-}
-
-function baseInput(overrides: Record<string, unknown> = {}) {
+function contratRow(overrides: Record<string, unknown> = {}) {
   return {
+    id: 'contrat-1',
+    annexeId: 'annexe-1',
     reference: 'CT-0001',
-    annexeId: 'annexe-ml',
-    clientId: 'client-1',
-    objet: 'Transit maritime',
-    montant: 500000,
+    statut: 'Actif',
+    montant: 100000,
     ...overrides,
   };
 }
 
-describe('ContratsService.create', () => {
-  it('rejette un montant négatif', async () => {
-    const { prisma } = createFakePrisma();
+function createFakePrisma(contrat: ReturnType<typeof contratRow>) {
+  return {
+    contrat: {
+      findUnique: vi.fn().mockResolvedValue(contrat),
+      update: vi.fn().mockImplementation(({ data }: any) => Promise.resolve({ ...contrat, ...data })),
+    },
+  };
+}
+
+describe('ContratsService.update — garde-fou de transition de statut', () => {
+  it('rejette une transition de statut interdite (ex: Clôturé → Suspendu)', async () => {
+    const prisma = createFakePrisma(contratRow({ statut: 'Clôturé' }));
     const service = new ContratsService(prisma as any);
 
-    await expect(service.create(admin(), baseInput({ montant: -100 }))).rejects.toThrow(BadRequestException);
+    await expect(
+      service.update('contrat-1', admin(), { statut: 'Suspendu' }),
+    ).rejects.toThrow(BadRequestException);
   });
 
-  it('accepte un montant à 0 (contrat sans valeur chiffrée)', async () => {
-    const { prisma } = createFakePrisma();
+  it('accepte une transition de statut autorisée par la matrice', async () => {
+    const prisma = createFakePrisma(contratRow({ statut: 'Actif' }));
     const service = new ContratsService(prisma as any);
 
-    const result = await service.create(admin(), baseInput({ montant: 0 }));
-    expect(result).toMatchObject({ montant: 0 });
+    await expect(
+      service.update('contrat-1', admin(), { statut: 'Suspendu' }),
+    ).resolves.toMatchObject({ statut: 'Suspendu' });
   });
-});
 
-describe('ContratsService.update', () => {
-  it('rejette un montant négatif', async () => {
-    const { prisma } = createFakePrisma();
-    prisma.contrat.findUnique = vi.fn().mockResolvedValue({ id: 'contrat-1', annexeId: 'annexe-ml' });
+  it("n'exige aucune transition valide quand le statut ne change pas", async () => {
+    const prisma = createFakePrisma(contratRow({ statut: 'Actif' }));
     const service = new ContratsService(prisma as any);
 
-    await expect(service.update('contrat-1', admin(), { montant: -1 })).rejects.toThrow(BadRequestException);
+    await expect(
+      service.update('contrat-1', admin(), { statut: 'Actif', notes: 'mise à jour' }),
+    ).resolves.toMatchObject({ statut: 'Actif' });
+  });
+
+  it("rejette un statut arbitraire non prévu par la matrice (ex. appel API direct)", async () => {
+    const prisma = createFakePrisma(contratRow({ statut: 'Actif' }));
+    const service = new ContratsService(prisma as any);
+
+    await expect(
+      service.update('contrat-1', admin(), { statut: 'InventeParUnClientMalveillant' }),
+    ).rejects.toThrow(BadRequestException);
   });
 });

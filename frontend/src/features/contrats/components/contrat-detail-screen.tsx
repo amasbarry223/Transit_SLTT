@@ -597,13 +597,16 @@ export function ContratDetailScreen() {
           if (!pendingStatut) return;
           try {
             await applyContratStatut(pendingStatut);
+            setPendingStatut(null);
           } catch (e) {
             toastWarning(toast, {
               title: "Transition impossible",
               description: e instanceof Error ? e.message : "Cette transition de statut n'est pas autorisée.",
             });
+            // Relancer pour que ConfirmActionDialog garde la modale ouverte :
+            // sans ça, une transition refusée se refermait comme un succès.
+            throw e;
           }
-          setPendingStatut(null);
         }}
       />
     </div>

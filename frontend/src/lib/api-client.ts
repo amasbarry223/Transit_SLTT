@@ -397,7 +397,8 @@ class ApiClient {
   // Factures
   // ---------------------------------------------------------------------------
   factures = {
-    getAll: () => this.request<RawPaginated<RawFacture>>('/factures'),
+    getAll: (params?: { page?: number; limit?: number }) =>
+      this.request<RawPaginated<RawFacture>>(`/factures${this.toQueryString(params)}`),
     getById: (id: string) => this.request<RawFacture>(`/factures/${id}`),
     create: (data: object) =>
       this.request<RawFacture>('/factures', {

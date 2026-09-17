@@ -107,10 +107,12 @@ export function LoginScreen() {
     } catch (e: unknown) {
       const err = e as { status?: number; data?: { message?: string }; message?: string };
       if (err?.status === 401) {
+        // Passe par mapErrorToUserMessage plutôt que d'afficher err.data.message
+        // brut : ça fonctionne aujourd'hui car le backend renvoie déjà du
+        // français, mais un futur message par défaut NestJS non mappé
+        // (ex. "Unauthorized") serait sinon montré tel quel à l'utilisateur.
         setError(
-          err?.data?.message ||
-          err?.message ||
-          "Identifiants incorrects. Vérifiez votre email et mot de passe.",
+          mapErrorToUserMessage(e, "Identifiants incorrects. Vérifiez votre email et mot de passe."),
         );
       } else {
         setError(

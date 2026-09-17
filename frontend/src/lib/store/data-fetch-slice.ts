@@ -69,6 +69,44 @@ function mapDevisStatut(raw: unknown): DevisStatut {
   return "Brouillon";
 }
 
+/** `/dossiers` et `/factures` paginent par défaut (page=1, limit=20, max
+ *  100/page) : un appel `getAll()` sans page/limit ne renvoyait donc que les
+ *  20 enregistrements les plus récents dans le cache global de l'app — tous
+ *  les autres devenaient invisibles (listes, recherche, totaux du dashboard)
+ *  sans la moindre erreur ni indication de pagination tronquée. On boucle sur
+ *  toutes les pages (100/page, le maximum accepté par l'API) pour reconstituer
+ *  le jeu complet, comme si l'API n'était pas paginée.
+ */
+export async function fetchAllPages<T>(
+  fetchPage: (params: { page: number; limit: number }) => Promise<RawPaginated<T>>,
+): Promise<RawPaginated<T>> {
+  const limit = 100;
+  // Plafonne le nombre de requêtes de pages simultanées : un jeu de données
+  // de plusieurs milliers d'enregistrements (des dizaines de pages) tirerait
+  // sinon toutes les requêtes 2..N d'un coup en un seul Promise.all, saturant
+  // les connexions HTTP disponibles du navigateur et la charge sur l'API à
+  // chaque chargement/rechargement de l'app.
+  const CONCURRENCY = 5;
+  const first = await fetchPage({ page: 1, limit });
+  const items = [...(first.data || [])];
+  const totalPages = Number(first.meta?.totalPages) || 1;
+  if (totalPages > 1) {
+    const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+    for (let i = 0; i < remainingPages.length; i += CONCURRENCY) {
+      const batch = remainingPages.slice(i, i + CONCURRENCY);
+      // Un `Promise.all` non protégé ferait échouer TOUT l'agrégat (donc perdre
+      // même la page 1, déjà en main) si une seule page du lot échoue — pire
+      // que le comportement d'origine (une seule requête, échec binaire).
+      // Une page en erreur dégrade juste ce sous-ensemble plutôt que tout le reste.
+      const results = await Promise.all(
+        batch.map((page) => fetchPage({ page, limit }).catch(() => ({ data: [] as T[] }))),
+      );
+      for (const page of results) items.push(...(page.data || []));
+    }
+  }
+  return { data: items, meta: first.meta };
+}
+
 export interface DataFetchSlice {
   dataLoading: boolean;
   loadError: string | null;
@@ -119,11 +157,11 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         usersRes,
         auditLogsRes,
       ] = await Promise.all([
-        tracked("dossiers", api.dossiers.getAll(), { data: [], meta: {} }),
+        tracked("dossiers", fetchAllPages(api.dossiers.getAll), { data: [], meta: {} }),
         tracked("clients", api.clients.getAll(), []),
         tracked("annexes", api.annexes.getAll(), []),
         tracked("ports", api.ports.getAll(), []),
-        tracked("factures", api.factures.getAll(), { data: [], meta: {} }),
+        tracked("factures", fetchAllPages(api.factures.getAll), { data: [], meta: {} }),
         tracked("devis", api.devis.getAll(), []),
         tracked("fournisseurs", api.fournisseurs.getAll(), []),
         tracked("contrats", api.contrats.getAll(), []),

@@ -44,7 +44,12 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     if (!(input.montant > 0)) {
       throw new Error("Le montant de l'opération doit être supérieur à 0.");
     }
-    const seq = get().operationComptableSeq;
+    // Même garde-fou que addDossier/addBonSortieCaisse contre deux créations
+    // proches calculant la même référence à partir d'un compteur lu avant l'`await`.
+    let seq = get().operationComptableSeq;
+    while (get().operationsComptables.some((o) => o.reference === `OPC-${seq}`)) {
+      seq++;
+    }
     const initialReference = `OPC-${seq}`;
     const creePar = getConnectedUserName();
 
@@ -87,7 +92,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
 
     set((s) => ({
       operationsComptables: [newOperation, ...s.operationsComptables],
-      operationComptableSeq: seq + 1,
+      operationComptableSeq: Math.max(s.operationComptableSeq, seq + 1),
     }));
 
     await get().addAuditLog(

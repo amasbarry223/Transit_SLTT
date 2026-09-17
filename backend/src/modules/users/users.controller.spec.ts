@@ -1,4 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -8,7 +7,7 @@ describe('UsersController', () => {
   let controller: UsersController;
   let service: { [K in keyof UsersService]: ReturnType<typeof vi.fn> };
 
-  beforeEach(async () => {
+  beforeEach(() => {
     service = {
       findAll: vi.fn(),
       findOne: vi.fn(),
@@ -18,12 +17,13 @@ describe('UsersController', () => {
       delete: vi.fn(),
     } as any;
 
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: service }],
-    }).compile();
-
-    controller = module.get(UsersController);
+    // Instanciation directe (comme tous les autres *.spec.ts du backend,
+    // ex. users.service.spec.ts), pas via `Test.createTestingModule` : la
+    // résolution DI de Nest dépend des métadonnées `design:paramtypes`
+    // émises par `emitDecoratorMetadata`, que la transformation esbuild de
+    // Vitest (vitest.config.ts) ne produit pas — `module.get(UsersController)`
+    // renvoyait un contrôleur avec `usersService` toujours `undefined`.
+    controller = new UsersController(service as unknown as UsersService);
   });
 
   it("chaque route exige la permission 'utilisateurs:manage'", () => {

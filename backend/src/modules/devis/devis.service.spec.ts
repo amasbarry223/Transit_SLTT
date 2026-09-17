@@ -20,6 +20,25 @@ function createFakePrisma() {
   return { prisma, created };
 }
 
+function devisRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'devis-1',
+    annexeId: null,
+    dossierId: null,
+    statut: 'BROUILLON',
+    lignes: [],
+    ...overrides,
+  };
+}
+
+function createFakePrismaForUpdate(devis: ReturnType<typeof devisRow>) {
+  const tx = { ligneDevis: { deleteMany: vi.fn() }, devis: { update: vi.fn().mockImplementation(({ data }: any) => Promise.resolve({ ...devis, ...data })) } };
+  return {
+    devis: { findUnique: vi.fn().mockResolvedValue(devis) },
+    $transaction: vi.fn(async (cb: (tx: unknown) => unknown) => cb(tx)),
+  };
+}
+
 function baseInput(overrides: Record<string, unknown> = {}) {
   return {
     numero: 'DEV-0001',
@@ -52,5 +71,25 @@ describe('DevisService.create', () => {
 
     await service.create(admin(), baseInput());
     expect(created[0]).toMatchObject({ montantHt: 0, montantTva: 0, montantTtc: 0 });
+  });
+});
+
+describe('DevisService.update — un devis ACCEPTE est terminal', () => {
+  it('rejette toute modification (y compris les lignes) une fois le devis accepté', async () => {
+    const prisma = createFakePrismaForUpdate(devisRow({ statut: 'ACCEPTE' }));
+    const service = new DevisService(prisma as any, {} as any);
+
+    await expect(
+      service.update('devis-1', admin(), { notes: 'tentative de modif' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('autorise la modification tant que le devis est en Brouillon', async () => {
+    const prisma = createFakePrismaForUpdate(devisRow({ statut: 'BROUILLON' }));
+    const service = new DevisService(prisma as any, {} as any);
+
+    await expect(
+      service.update('devis-1', admin(), { notes: 'ajustement' }),
+    ).resolves.toMatchObject({ notes: 'ajustement' });
   });
 });

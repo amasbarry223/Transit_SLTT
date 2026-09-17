@@ -16,6 +16,22 @@ function toNonNegativeMontant(value: unknown): number {
 export class ContratsService {
   constructor(private prisma: PrismaService) {}
 
+  /** Transitions manuelles autorisées — même matrice que le frontend
+   *  (frontend/src/lib/status-flow.ts CONTRAT_ALLOWED_TRANSITIONS), dupliquée
+   *  ici faute de package partagé front/back : à maintenir synchronisée si
+   *  l'une des deux change. Avant ce garde-fou, `statut` était une colonne
+   *  texte libre sans AUCUNE validation serveur — un appel API direct pouvait
+   *  réouvrir un contrat "Clôturé" ou sauter vers n'importe quelle valeur,
+   *  la matrice n'existant que côté store Zustand (contournable).
+   */
+  private static readonly STATUT_TRANSITIONS: Record<string, string[]> = {
+    'En cours': ['Exécuté'],
+    'Exécuté': ['En cours'],
+    Actif: ['Exécuté', 'En cours', 'Suspendu', 'Clôturé'],
+    Suspendu: ['En cours', 'Exécuté', 'Actif', 'Clôturé'],
+    'Clôturé': ['En cours', 'Exécuté', 'Actif'],
+  };
+
   private buildAnnexeFilter(user: CurrentUserType) {
     if (user.role === 'ADMIN') return {};
     return { annexeId: { in: user.annexeIds } };
@@ -113,9 +129,17 @@ export class ContratsService {
   }
 
   async update(id: string, user: CurrentUserType, data: any) {
-    await this.findOne(id, user);
+    const contrat = await this.findOne(id, user);
     if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas rattacher ce contrat à cette annexe');
+    }
+    if (data.statut !== undefined && data.statut !== contrat.statut) {
+      const allowed = ContratsService.STATUT_TRANSITIONS[contrat.statut] ?? [];
+      if (!allowed.includes(data.statut)) {
+        throw new BadRequestException(
+          `Transition de statut interdite : ${contrat.statut} → ${data.statut}.`,
+        );
+      }
     }
 
     const updateData: any = {};

@@ -350,10 +350,11 @@ export function DossierDocumentsPanel({
           try {
             await deleteDocument(deleteTarget.id);
             toastSuccess(toast, { title: "Document supprimé" });
+            setDeleteTarget(null);
           } catch (e) {
             toastError(toast, e, { title: "Suppression impossible", fallback: "Erreur" });
-          } finally {
-            setDeleteTarget(null);
+            // Relancer pour que ConfirmDeleteDialog garde la modale ouverte sur échec.
+            throw e;
           }
         }}
       />

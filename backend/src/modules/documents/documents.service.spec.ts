@@ -1,4 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { DocumentsService } from './documents.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -63,5 +66,61 @@ describe('DocumentsService.findByDossier', () => {
 
     await expect(service.findByDossier('dossier-inconnu', agent())).rejects.toThrow(NotFoundException);
     expect(prisma.document.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('DocumentsService.getFilePath', () => {
+  const originalUploadDir = process.env.UPLOAD_DIR;
+  let uploadDir: string;
+  let outsideFile: string;
+
+  beforeEach(() => {
+    uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'documents-uploads-'));
+    process.env.UPLOAD_DIR = uploadDir;
+    outsideFile = path.join(os.tmpdir(), `outside-secret-${Date.now()}.txt`);
+    fs.writeFileSync(outsideFile, 'contenu confidentiel');
+  });
+
+  afterEach(() => {
+    process.env.UPLOAD_DIR = originalUploadDir;
+    fs.rmSync(uploadDir, { recursive: true, force: true });
+    fs.rmSync(outsideFile, { force: true });
+  });
+
+  function service() {
+    const prisma = { document: { findFirst: vi.fn().mockResolvedValue(null) } };
+    return new DocumentsService(prisma as any);
+  }
+
+  it("rejette un filename '..' qui tente de sortir du répertoire uploads (path traversal)", async () => {
+    const relative = path
+      .relative(uploadDir, outsideFile)
+      .split(path.sep)
+      .join('/');
+
+    await expect(service().getFilePath(relative)).rejects.toThrow(NotFoundException);
+  });
+
+  it("rejette un filename contenant un séparateur de chemin même sans '..'", async () => {
+    fs.mkdirSync(path.join(uploadDir, 'sub'));
+    fs.writeFileSync(path.join(uploadDir, 'sub', 'a.pdf'), '%PDF-1.4');
+
+    await expect(service().getFilePath('sub/a.pdf')).rejects.toThrow(NotFoundException);
+  });
+
+  it('sert un fichier légitime présent directement dans uploads (repli sans ligne en base)', async () => {
+    fs.writeFileSync(path.join(uploadDir, 'legit.pdf'), '%PDF-1.4');
+
+    const result = await service().getFilePath('legit.pdf');
+
+    expect(result.fullPath).toBe(path.resolve(uploadDir, 'legit.pdf'));
+  });
+
+  it('rejette un filename "." (résoudrait sur le dossier uploads lui-même, pas un fichier)', async () => {
+    await expect(service().getFilePath('.')).rejects.toThrow(NotFoundException);
+  });
+
+  it('rejette un filename ".." (remonterait au dossier parent d\'uploads)', async () => {
+    await expect(service().getFilePath('..')).rejects.toThrow(NotFoundException);
   });
 });

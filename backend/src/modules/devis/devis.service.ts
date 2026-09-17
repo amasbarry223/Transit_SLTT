@@ -134,6 +134,16 @@ export class DevisService {
 
   async update(id: string, user: CurrentUserType, data: any) {
     const current = await this.findOne(id, user);
+    // Un devis ACCEPTE est terminal (frontend/src/lib/status-flow.ts
+    // DEVIS_ALLOWED_TRANSITIONS.Accepté = []) et souvent déjà converti en
+    // dossier (convertDevisToDossier snapshotte montantInvesti = devis.total
+    // au moment de la conversion) : l'éditer après coup désynchronise
+    // silencieusement le devis et le dossier qu'il a produit.
+    if (current.statut === 'ACCEPTE') {
+      throw new BadRequestException(
+        'Ce devis est déjà accepté et ne peut plus être modifié.',
+      );
+    }
     if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas rattacher ce devis à cette annexe');
     }

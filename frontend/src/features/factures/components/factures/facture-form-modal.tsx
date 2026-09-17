@@ -174,7 +174,14 @@ export function FactureFormModal({
         dateEcheance,
         lignes: lignesValides.map((l) => ({
           description: l.description,
-          quantite: parseFloat(l.quantite) || 1,
+          // `|| 0` ici, jamais `|| 1` : le total HT affiché juste au-dessus
+          // (montantHT) traite déjà une quantité vide/invalide comme 0 — un
+          // fallback à 1 à l'envoi facturait une quantité que l'utilisateur
+          // n'avait jamais vue dans le total affiché avant de valider. Le
+          // backend rejette de toute façon une quantité <= 0 avec un message
+          // clair (computeTotals), donc 0 déclenche une erreur visible au
+          // lieu d'une facture silencieusement fausse.
+          quantite: parseFloat(l.quantite) || 0,
           prixUnitaire: parseFloat(l.prixUnitaire) || 0,
         })),
         tauxTVA: parseFloat(tauxTVA) || 0,
