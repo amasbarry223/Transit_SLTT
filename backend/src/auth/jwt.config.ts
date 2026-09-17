@@ -16,22 +16,21 @@
  * n'est pas un secret. Une instance déployée sans JWT_SECRET/JWT_REFRESH_SECRET
  * doit échouer au démarrage plutôt que signer silencieusement des tokens
  * avec une clé que n'importe qui peut lire dans le code source.
+ *
+ * Un repli codé en dur a été introduit ici brièvement (commit dc6bb41) pour
+ * arrêter un crash 503 au démarrage sur Hostinger quand la variable n'était
+ * pas encore posée — mais ça revient à publier le secret JWT dans l'historique
+ * Git : n'importe qui le lisant peut forger un token valide tant que la vraie
+ * variable d'env reste absente. Retiré : la vraie correction est de définir
+ * JWT_SECRET/JWT_REFRESH_SECRET dans les variables d'environnement Hostinger,
+ * pas de contourner leur absence.
  */
-import { Logger } from '@nestjs/common';
-
-const logger = new Logger('JwtConfig');
-
 function requireSecret(envVar: 'JWT_SECRET' | 'JWT_REFRESH_SECRET'): string {
   const value = process.env[envVar];
   if (!value) {
-    const fallback =
-      envVar === 'JWT_SECRET'
-        ? 'transit_sltt_fallback_access_secret_2026_hostinger'
-        : 'transit_sltt_fallback_refresh_secret_2026_hostinger';
-    logger.error(
-      `⚠️ CRITIQUE: ${envVar} manquant dans l'environnement ! Utilisation du repli de secours pour éviter un crash 503 au démarrage. Veuillez renseigner ${envVar} dans Hostinger.`,
+    throw new Error(
+      `${envVar} manquant — définissez-le dans .env avant de démarrer l'API (aucune valeur par défaut n'est fournie pour un secret).`,
     );
-    return fallback;
   }
   return value;
 }

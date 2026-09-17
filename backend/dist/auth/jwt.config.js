@@ -4,16 +4,10 @@ exports.jwtAccessSecret = jwtAccessSecret;
 exports.jwtAccessExpiresIn = jwtAccessExpiresIn;
 exports.jwtRefreshSecret = jwtRefreshSecret;
 exports.jwtRefreshExpiresIn = jwtRefreshExpiresIn;
-const common_1 = require("@nestjs/common");
-const logger = new common_1.Logger('JwtConfig');
 function requireSecret(envVar) {
     const value = process.env[envVar];
     if (!value) {
-        const fallback = envVar === 'JWT_SECRET'
-            ? 'transit_sltt_fallback_access_secret_2026_hostinger'
-            : 'transit_sltt_fallback_refresh_secret_2026_hostinger';
-        logger.error(`⚠️ CRITIQUE: ${envVar} manquant dans l'environnement ! Utilisation du repli de secours pour éviter un crash 503 au démarrage. Veuillez renseigner ${envVar} dans Hostinger.`);
-        return fallback;
+        throw new Error(`${envVar} manquant — définissez-le dans .env avant de démarrer l'API (aucune valeur par défaut n'est fournie pour un secret).`);
     }
     return value;
 }

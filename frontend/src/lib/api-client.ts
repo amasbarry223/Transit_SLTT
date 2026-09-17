@@ -31,7 +31,7 @@ import type {
 } from "@/lib/api-types";
 import { CSRF_COOKIE_NAME } from "@/lib/auth/csrf-cookie";
 
-function resolveClientApiBaseUrl(): string {
+export function resolveClientApiBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (envUrl) {
     return envUrl.replace(/\/$/, '');
