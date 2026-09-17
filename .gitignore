@@ -63,7 +63,7 @@ server.log
 
 # next.js & nestjs builds
 .next/
-dist/
+frontend/dist/
 /build
 
 # OCR / PDF.js runtime assets (générés par `npm run sync:ocr-assets` / postinstall)

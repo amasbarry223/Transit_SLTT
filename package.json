@@ -8,6 +8,8 @@
     "backend"
   ],
   "scripts": {
+    "start": "node server.js",
+    "start:prod": "node server.js",
     "dev:front": "npm run dev --workspace=frontend",
     "dev:back": "npm run start:dev --workspace=backend",
     "build": "npm run build --workspaces",

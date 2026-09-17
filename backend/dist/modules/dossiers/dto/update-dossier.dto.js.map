@@ -1,0 +1,1 @@
+{"version":3,"file":"update-dossier.dto.js","sourceRoot":"","sources":["../../../../src/modules/dossiers/dto/update-dossier.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,qDAAuD;AACvD,6DAAwD;AAExD,MAAa,gBAAiB,SAAQ,qCAAgB;IAGpD,QAAQ,CAAU;IAIlB,QAAQ,CAAU;CACnB;AARD,4CAQC;AALC;IAFC,IAAA,0BAAQ,GAAE;IACV,IAAA,4BAAU,GAAE;;kDACK;AAIlB;IAFC,IAAA,0BAAQ,GAAE;IACV,IAAA,4BAAU,GAAE;;kDACK"}
