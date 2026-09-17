@@ -22,6 +22,8 @@ import {
   type OperationComptableType,
   type OperationComptableSource,
   type RecuPaiementStatut,
+  type Archive,
+  type TypeDocument,
 } from "@/lib/domain-types";
 import { DEFAULT_TRANSIT_BRAND, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-brand";
 import { decodeDevisNotes } from "@/features/devis/services/devis-meta";
@@ -33,6 +35,7 @@ import type {
   RawClotureCaisse,
   RawContrat,
   RawDevis,
+  RawDocument,
   RawDossier,
   RawFacture,
   RawFournisseur,
@@ -118,6 +121,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         settingsRes,
         usersRes,
         auditLogsRes,
+        documentsRes,
       ] = await Promise.all([
         tracked("dossiers", api.dossiers.getAll(), { data: [], meta: {} }),
         tracked("clients", api.clients.getAll(), []),
@@ -138,6 +142,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         tracked("paramètres", api.settings.getAll(), { list: [], map: {} }),
         tracked("utilisateurs", api.users.getAll(), []),
         tracked("journal d'audit", api.auditLogs.getAll({ limit: 100 }), []),
+        tracked("documents", api.documents.getAll(), []),
       ]);
 
       const currentUser = api.getCurrentUser();
@@ -544,8 +549,28 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           },
         ];
 
+        const rawDocuments: RawDocument[] = Array.isArray(documentsRes) ? documentsRes : [];
+        const mappedArchives: Archive[] = rawDocuments.map((doc: any) => ({
+          id: doc.id,
+          nom: doc.nomOriginal || doc.nomFichier,
+          typeDocument: (doc.typeDocument || "Autre") as TypeDocument,
+          taille: doc.taille || 0,
+          type: doc.typeMime || "application/pdf",
+          storagePath: doc.url || `/api/documents/${doc.nomFichier}/download`,
+          dossierId: doc.dossierId || undefined,
+          annexeId: doc.dossier?.annexeId || "",
+          creePar: "Système",
+          createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+        }));
+
+        const existingLocalArchives = (state.archives || []).filter(
+          (local) => !mappedArchives.some((m) => m.id === local.id || m.nom === local.nom)
+        );
+        const nextArchives = [...mappedArchives, ...existingLocalArchives];
+
         const intermediateState = {
           ...state,
+          archives: nextArchives,
           dossiers: mappedDossiers,
           clients: syncClientStats(
             mappedDossiers,
