@@ -358,7 +358,15 @@ export class UsersService {
     this.assertCanTouchAdminTarget(actor, target);
     await this.assertNotLastActiveAdmin(id, true);
 
-    await this.prisma.$transaction(async (tx) => {
+    // Contrairement à toutes les autres méthodes delete/remove du backend
+    // (contrats, transporteurs, bons...), rien n'était renvoyé ici : le
+    // handler Nest sérialise alors un corps vide (200 avec Content-Length: 0,
+    // pas 204). Le client générique (api-client.ts::request) ne saute
+    // res.json() que sur un 204 explicite — sur ce 200 vide, JSON.parse('')
+    // levait une SyntaxError, empêchant removeUser() (store) d'atteindre son
+    // set() : la suppression réussissait bel et bien en base, mais
+    // l'utilisateur restait affiché dans la liste avec un toast d'échec.
+    return this.prisma.$transaction(async (tx) => {
       await tx.profile.delete({ where: { id } });
       await this.auditLogsService.log(
         {
@@ -370,6 +378,7 @@ export class UsersService {
         },
         tx,
       );
+      return { id };
     });
   }
 }

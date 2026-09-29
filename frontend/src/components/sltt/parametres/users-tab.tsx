@@ -307,8 +307,10 @@ export function UsersTab() {
               title: "Impossible de supprimer l'utilisateur",
               fallback: "Vérifiez qu'aucune action en cours ne bloque la suppression.",
             });
-            // Relancer pour que ConfirmDeleteDialog garde la modale ouverte :
-            // sans ça, elle se refermait même quand la suppression échouait.
+            // Relancer : ConfirmDeleteDialog ne garde la modale ouverte en cas
+            // d'échec que si cette promesse est rejetée (voir son handleConfirm) —
+            // l'avaler ici la fermait silencieusement même quand la suppression
+            // avait réellement échoué côté serveur (dernier admin, auto-suppression...).
             throw err;
           }
         }}

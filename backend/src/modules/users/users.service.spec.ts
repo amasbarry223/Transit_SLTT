@@ -154,6 +154,16 @@ describe('UsersService — garde-fous de délégation', () => {
     await expect(service.delete('admin-1', admin())).rejects.toThrow(BadRequestException);
   });
 
+  it("delete() renvoie { id } — sans ça le handler Nest sérialise un corps vide (200, pas 204) et le client plante sur JSON.parse('')", async () => {
+    const { prisma, tx } = createFakePrisma();
+    const auditLogs = createFakeAuditLogs();
+    prisma.profile.findUnique.mockResolvedValue(targetProfile());
+    const service = new UsersService(prisma as any, auditLogs as any);
+
+    await expect(service.delete('target-1', admin())).resolves.toEqual({ id: 'target-1' });
+    expect(tx.profile.delete).toHaveBeenCalledWith({ where: { id: 'target-1' } });
+  });
+
   it('refuse de retirer les droits du dernier administrateur actif', async () => {
     const { prisma } = createFakePrisma();
     const auditLogs = createFakeAuditLogs();
