@@ -32,6 +32,7 @@ const VERB_TO_ACTION = {
     transition: 'write',
     write: 'write',
     'write-caisse': 'write-caisse',
+    manage: 'manage',
 };
 const MODULE_ALIAS = {
     caisse: 'comptabilite',

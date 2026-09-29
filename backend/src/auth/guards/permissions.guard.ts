@@ -39,6 +39,15 @@ const VERB_TO_ACTION: Record<string, string> = {
   // tous les deux en "write", ce qui permettait à chaque rôle d'effectuer les
   // actions réservées à l'autre (escalade de privilège croisée).
   'write-caisse': 'write-caisse',
+  // Même raison que "write-caisse" ci-dessus : "utilisateurs:manage" est
+  // l'UNIQUE permission du catalogue "Gestion utilisateurs" (pas de variante
+  // read/write séparée) — sans cette entrée, le fallback ci-dessous ne
+  // reconnaissait pas "manage" et le faisait retomber sur "read" par défaut.
+  // Un délégué avec un simple droit de lecture ("utilisateurs:read",
+  // "utilisateurs.lire"...) se voyait alors accorder tous les droits de
+  // gestion des comptes (création/modification/suppression/réinitialisation
+  // de mot de passe) via `userSatisfiesPermission`.
+  manage: 'manage',
 };
 
 // Modules backend sans équivalent 1:1 côté front.

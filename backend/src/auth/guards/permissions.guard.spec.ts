@@ -19,6 +19,15 @@ describe('canonicalPermission', () => {
     expect(canonicalPermission('settings.modifier')).toBe('parametres:write');
     expect(canonicalPermission('annexes.creer')).toBe('parametres:write');
   });
+
+  it('ne confond pas "manage" avec "read" (faille de canonicalisation)', () => {
+    // "manage" ne contient pas "write" et n'était pas dans VERB_TO_ACTION :
+    // il retombait sur "read" par défaut, ce qui faisait de
+    // "utilisateurs:read" (ou tout autre variante lecture) un droit
+    // équivalent à "utilisateurs:manage" (gestion complète des comptes).
+    expect(canonicalPermission('utilisateurs:manage')).toBe('utilisateurs:manage');
+    expect(canonicalPermission('utilisateurs:manage')).not.toBe('utilisateurs:read');
+  });
 });
 
 describe('userSatisfiesPermission', () => {
@@ -51,5 +60,15 @@ describe('userSatisfiesPermission', () => {
     expect(userSatisfiesPermission(['bons:write-caisse'], 'bons:write-caisse')).toBe(true);
     expect(userSatisfiesPermission(['bons:write-caisse'], 'bons:read')).toBe(true);
     expect(userSatisfiesPermission(['bons:write'], 'bons:read')).toBe(true);
+  });
+
+  it('un simple droit de lecture "utilisateurs" n’accorde PAS "utilisateurs:manage"', () => {
+    // Avant le fix : canonicalPermission('utilisateurs:manage') valait
+    // 'utilisateurs:read', donc un délégué avec 'utilisateurs:read' (ou
+    // 'utilisateurs.lire') se voyait accorder la gestion complète des
+    // comptes (création/suppression/réinitialisation de mot de passe).
+    expect(userSatisfiesPermission(['utilisateurs:read'], 'utilisateurs:manage')).toBe(false);
+    expect(userSatisfiesPermission(['utilisateurs.lire'], 'utilisateurs:manage')).toBe(false);
+    expect(userSatisfiesPermission(['utilisateurs:manage'], 'utilisateurs:manage')).toBe(true);
   });
 });
