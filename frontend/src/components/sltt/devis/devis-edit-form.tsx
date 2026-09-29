@@ -22,7 +22,9 @@ export function DevisEditForm({
   fPortId, setFPortId,
   fNature, setFNature, fDroitDouane, setFDroitDouane, fFraisCircuit, setFFraisCircuit,
   fFraisPrestation, setFFraisPrestation, fDateValidite, setFDateValidite, fNotes,
-  setFNotes, editTotal, handleCancelEdit, handleSave, saving = false,
+  setFNotes, fVille, setFVille, fPays, setFPays, fNumeroBordereau, setFNumeroBordereau,
+  isMali = false,
+  editTotal, handleCancelEdit, handleSave, saving = false,
   annexeCode,
 }: {
   devis: Devis;
@@ -45,6 +47,14 @@ export function DevisEditForm({
   setFDateValidite: Dispatch<SetStateAction<string>>;
   fNotes: string;
   setFNotes: Dispatch<SetStateAction<string>>;
+  fVille: string;
+  setFVille: Dispatch<SetStateAction<string>>;
+  fPays: string;
+  setFPays: Dispatch<SetStateAction<string>>;
+  fNumeroBordereau: string;
+  setFNumeroBordereau: Dispatch<SetStateAction<string>>;
+  /** Annexe Mali : pas de port maritime pertinent, le champ Port est masqué (même règle que devis-form-dialog.tsx). */
+  isMali?: boolean;
   editTotal: number;
   handleCancelEdit: () => void;
   handleSave: () => void | Promise<void>;
@@ -92,38 +102,55 @@ export function DevisEditForm({
                   placeholder="ex. Matériaux de construction" className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {labels.port}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span tabIndex={0} className="cursor-help normal-case text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                        <Info className="size-3.5" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-xs">{labels.portHint}</TooltipContent>
-                  </Tooltip>
-                </Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={fPortId || "__none"}
-                    onValueChange={(v) => setFPortId(v === "__none" ? "" : v)}
-                  >
-                    <SelectTrigger className="h-10 flex-1">
-                      <SelectValue placeholder="Aucun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none">Aucun</SelectItem>
-                      {ports.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.nom}
-                          {p.ville ? ` — ${p.ville}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <QuickPortButton onCreated={setFPortId} className="h-10 w-10" />
-                </div>
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">N° de Bordereau</Label>
+                <Input value={fNumeroBordereau} onChange={(e) => setFNumeroBordereau(e.target.value)}
+                  placeholder="Ex. BDM-2026-001" className="h-10" />
               </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Ville de destination</Label>
+                <Input value={fVille} onChange={(e) => setFVille(e.target.value)}
+                  placeholder="Ex. Bamako, Sikasso..." className="h-10" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Pays</Label>
+                <Input value={fPays} onChange={(e) => setFPays(e.target.value)}
+                  placeholder="Ex. Mali, Côte d'Ivoire..." className="h-10" />
+              </div>
+              {!isMali && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {labels.port}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0} className="cursor-help normal-case text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                          <Info className="size-3.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs">{labels.portHint}</TooltipContent>
+                    </Tooltip>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={fPortId || "__none"}
+                      onValueChange={(v) => setFPortId(v === "__none" ? "" : v)}
+                    >
+                      <SelectTrigger className="h-10 flex-1">
+                        <SelectValue placeholder="Aucun" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">Aucun</SelectItem>
+                        {ports.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nom}
+                            {p.ville ? ` — ${p.ville}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <QuickPortButton onCreated={setFPortId} className="h-10 w-10" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Montants */}

@@ -56,6 +56,9 @@ export function DevisDetailScreen() {
   const [fFraisPrestation, setFFraisPrestation] = useState("");
   const [fDateValidite, setFDateValidite] = useState("");
   const [fNotes, setFNotes] = useState("");
+  const [fVille, setFVille] = useState("");
+  const [fPays, setFPays] = useState("");
+  const [fNumeroBordereau, setFNumeroBordereau] = useState("");
   const editKey = isEditing ? (devis?.id ?? null) : null;
   const [prevEditKey, setPrevEditKey] = useState(editKey);
   if (editKey !== prevEditKey) {
@@ -66,6 +69,8 @@ export function DevisDetailScreen() {
       setFNature(devis.nature); setFDroitDouane(String(devis.droitDouane));
       setFFraisCircuit(String(devis.fraisCircuit)); setFFraisPrestation(String(devis.fraisPrestation));
       setFDateValidite(devis.dateValidite); setFNotes(devis.notes ?? "");
+      setFVille(devis.ville ?? ""); setFPays(devis.pays ?? "");
+      setFNumeroBordereau(devis.numeroBordereau ?? "");
     }
   }
 
@@ -86,6 +91,7 @@ export function DevisDetailScreen() {
   // manutention portuaire en Côte d'Ivoire).
   const annexeCode = annexes.find((a) => a.id === devis.annexeId)?.code;
   const coutLabels = resolveDossierCoutLabels(annexeCode);
+  const isMali = Boolean(annexeCode?.toUpperCase().includes("ML"));
   const dd = parseAmount(fDroitDouane), fc = parseAmount(fFraisCircuit), fp = parseAmount(fFraisPrestation);
   const editTotal = dd + fc + fp;
   // "Accepté" est terminal même AVANT conversion effective en dossier (celle-ci
@@ -120,9 +126,11 @@ export function DevisDetailScreen() {
     setSavingEdit(true);
     try {
       await updateDevis(devis.id, {
-        clientId: fClientId, clientNom: fClientNom, portId: fPortId || undefined, nature: fNature,
+        clientId: fClientId, clientNom: fClientNom, portId: isMali ? undefined : (fPortId || undefined), nature: fNature,
         droitDouane: dd, fraisCircuit: fc, fraisPrestation: fp, dateValidite: fDateValidite,
         notes: fNotes.trim() || undefined,
+        ville: fVille.trim() || undefined, pays: fPays.trim() || undefined,
+        numeroBordereau: fNumeroBordereau.trim() || undefined,
       } satisfies DevisInput);
       toastSuccess(toast, { title: "Devis mis à jour", description: devis.reference });
       setIsEditing(false);
@@ -249,6 +257,9 @@ export function DevisDetailScreen() {
           setFFraisCircuit={setFFraisCircuit} fFraisPrestation={fFraisPrestation}
           setFFraisPrestation={setFFraisPrestation} fDateValidite={fDateValidite}
           setFDateValidite={setFDateValidite} fNotes={fNotes} setFNotes={setFNotes}
+          fVille={fVille} setFVille={setFVille} fPays={fPays} setFPays={setFPays}
+          fNumeroBordereau={fNumeroBordereau} setFNumeroBordereau={setFNumeroBordereau}
+          isMali={isMali}
           editTotal={editTotal} handleCancelEdit={handleCancelEdit} handleSave={handleSave}
           saving={savingEdit} annexeCode={annexeCode}
         />
