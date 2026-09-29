@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var DevisService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DevisService = void 0;
 const common_1 = require("@nestjs/common");
@@ -31,8 +32,16 @@ function computeDevisTotals(lignes) {
     return { montantHt, montantTva: 0, montantTtc: montantHt, lignesFormatted };
 }
 let DevisService = class DevisService {
+    static { DevisService_1 = this; }
     prisma;
     portsService;
+    static STATUT_TRANSITIONS = {
+        BROUILLON: ['ENVOYE', 'REFUSE'],
+        ENVOYE: ['ACCEPTE', 'REFUSE', 'EXPIRE'],
+        ACCEPTE: [],
+        REFUSE: ['BROUILLON'],
+        EXPIRE: ['BROUILLON'],
+    };
     constructor(prisma, portsService) {
         this.prisma = prisma;
         this.portsService = portsService;
@@ -138,8 +147,13 @@ let DevisService = class DevisService {
             updateData.nature = data.nature || null;
         if (data.notes !== undefined)
             updateData.notes = data.notes ?? null;
-        if (data.statut !== undefined)
+        if (data.statut !== undefined && data.statut !== current.statut) {
+            const allowed = DevisService_1.STATUT_TRANSITIONS[current.statut] ?? [];
+            if (!allowed.includes(data.statut)) {
+                throw new common_1.BadRequestException(`Transition de statut interdite : ${current.statut} → ${data.statut}.`);
+            }
             updateData.statut = data.statut;
+        }
         if (data.dateEmission)
             updateData.dateEmission = new Date(data.dateEmission);
         if (data.dateValidite)
@@ -168,7 +182,7 @@ let DevisService = class DevisService {
     }
 };
 exports.DevisService = DevisService;
-exports.DevisService = DevisService = __decorate([
+exports.DevisService = DevisService = DevisService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         ports_service_1.PortsService])

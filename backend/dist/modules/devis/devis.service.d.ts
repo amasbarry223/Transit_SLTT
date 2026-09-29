@@ -4,6 +4,7 @@ import type { CurrentUserType } from '../../auth/auth.types';
 export declare class DevisService {
     private readonly prisma;
     private readonly portsService;
+    private static readonly STATUT_TRANSITIONS;
     constructor(prisma: PrismaService, portsService: PortsService);
     private assertPortUsable;
     private buildAnnexeFilter;

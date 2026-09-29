@@ -41,6 +41,19 @@ function computeDevisTotals(lignes: any[]) {
 
 @Injectable()
 export class DevisService {
+  // Même matrice que frontend/src/lib/status-flow.ts::DEVIS_ALLOWED_TRANSITIONS
+  // (en valeurs d'enum Prisma). Sans ce contrôle côté serveur, update() acceptait
+  // n'importe quel `data.statut` sans validation — un appel API direct (hors UI)
+  // pouvait faire régresser un devis ENVOYE en BROUILLON après refus implicite,
+  // ou sauter ENVOYE pour passer directement BROUILLON → ACCEPTE.
+  private static readonly STATUT_TRANSITIONS: Record<string, string[]> = {
+    BROUILLON: ['ENVOYE', 'REFUSE'],
+    ENVOYE: ['ACCEPTE', 'REFUSE', 'EXPIRE'],
+    ACCEPTE: [],
+    REFUSE: ['BROUILLON'],
+    EXPIRE: ['BROUILLON'],
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly portsService: PortsService,
@@ -165,7 +178,15 @@ export class DevisService {
     }
     if (data.nature !== undefined) updateData.nature = data.nature || null;
     if (data.notes !== undefined) updateData.notes = data.notes ?? null;
-    if (data.statut !== undefined) updateData.statut = data.statut;
+    if (data.statut !== undefined && data.statut !== current.statut) {
+      const allowed = DevisService.STATUT_TRANSITIONS[current.statut] ?? [];
+      if (!allowed.includes(data.statut)) {
+        throw new BadRequestException(
+          `Transition de statut interdite : ${current.statut} → ${data.statut}.`,
+        );
+      }
+      updateData.statut = data.statut;
+    }
     if (data.dateEmission) updateData.dateEmission = new Date(data.dateEmission);
     if (data.dateValidite) updateData.dateValidite = new Date(data.dateValidite);
 

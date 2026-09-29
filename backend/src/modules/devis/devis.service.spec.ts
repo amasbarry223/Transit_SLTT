@@ -93,3 +93,32 @@ describe('DevisService.update — un devis ACCEPTE est terminal', () => {
     ).resolves.toMatchObject({ notes: 'ajustement' });
   });
 });
+
+describe('DevisService.update — matrice de transition de statut', () => {
+  it('rejette un saut direct BROUILLON → ACCEPTE (doit passer par ENVOYE)', async () => {
+    const prisma = createFakePrismaForUpdate(devisRow({ statut: 'BROUILLON' }));
+    const service = new DevisService(prisma as any, {} as any);
+
+    await expect(
+      service.update('devis-1', admin(), { statut: 'ACCEPTE' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejette une régression ENVOYE → BROUILLON directe (doit passer par REFUSE/EXPIRE)', async () => {
+    const prisma = createFakePrismaForUpdate(devisRow({ statut: 'ENVOYE' }));
+    const service = new DevisService(prisma as any, {} as any);
+
+    await expect(
+      service.update('devis-1', admin(), { statut: 'BROUILLON' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('autorise une transition valide BROUILLON → ENVOYE', async () => {
+    const prisma = createFakePrismaForUpdate(devisRow({ statut: 'BROUILLON' }));
+    const service = new DevisService(prisma as any, {} as any);
+
+    await expect(
+      service.update('devis-1', admin(), { statut: 'ENVOYE' }),
+    ).resolves.toMatchObject({ statut: 'ENVOYE' });
+  });
+});
