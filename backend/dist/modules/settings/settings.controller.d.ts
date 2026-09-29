@@ -1,4 +1,5 @@
 import { SettingsService } from './settings.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 export declare class SettingsController {
     private readonly settingsService;
     constructor(settingsService: SettingsService);
@@ -47,7 +48,7 @@ export declare class SettingsController {
         orderIndex: number;
         isActive: boolean;
     }>;
-    getAll(): Promise<{
+    getAll(user: CurrentUserType): Promise<{
         list: {
             id: string;
             updatedAt: Date;
@@ -62,7 +63,7 @@ export declare class SettingsController {
         parsedMap: Record<string, any>;
         groups: Record<string, any[]>;
     }>;
-    getByKey(cle: string): Promise<{
+    getByKey(cle: string, user: CurrentUserType): Promise<{
         parsedValue: any;
         id: string;
         updatedAt: Date;

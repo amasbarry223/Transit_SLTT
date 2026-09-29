@@ -35,11 +35,11 @@ let SettingsController = class SettingsController {
     async setStatusOption(body) {
         return this.settingsService.setStatusOption(body);
     }
-    async getAll() {
-        return this.settingsService.getAll();
+    async getAll(user) {
+        return this.settingsService.getAll(user);
     }
-    async getByKey(cle) {
-        return this.settingsService.getByKey(cle);
+    async getByKey(cle, user) {
+        return this.settingsService.getByKey(cle, user);
     }
     async setMany(body) {
         return this.settingsService.setMany(body);
@@ -80,15 +80,17 @@ __decorate([
 ], SettingsController.prototype, "setStatusOption", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "getAll", null);
 __decorate([
     (0, common_1.Get)(':cle'),
     __param(0, (0, common_1.Param)('cle')),
+    __param(1, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "getByKey", null);
 __decorate([

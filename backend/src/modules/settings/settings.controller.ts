@@ -11,7 +11,8 @@ import {
 import { SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { Public, RequirePermission } from '../../shared/decorators';
+import { Public, RequirePermission, CurrentUser } from '../../shared/decorators';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 @Controller('settings')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -61,13 +62,13 @@ export class SettingsController {
   }
 
   @Get()
-  async getAll() {
-    return this.settingsService.getAll();
+  async getAll(@CurrentUser() user: CurrentUserType) {
+    return this.settingsService.getAll(user);
   }
 
   @Get(':cle')
-  async getByKey(@Param('cle') cle: string) {
-    return this.settingsService.getByKey(cle);
+  async getByKey(@Param('cle') cle: string, @CurrentUser() user: CurrentUserType) {
+    return this.settingsService.getByKey(cle, user);
   }
 
   @Put()

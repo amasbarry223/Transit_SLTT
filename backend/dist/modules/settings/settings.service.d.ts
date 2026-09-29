@@ -1,9 +1,10 @@
 import { PrismaService } from '../../prisma/prisma.service';
+import type { CurrentUserType } from '../../auth/auth.types';
 export declare class SettingsService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     getPublicSettings(): Promise<Record<string, any>>;
-    getAll(): Promise<{
+    getAll(user: CurrentUserType): Promise<{
         list: {
             id: string;
             updatedAt: Date;
@@ -18,7 +19,7 @@ export declare class SettingsService {
         parsedMap: Record<string, any>;
         groups: Record<string, any[]>;
     }>;
-    getByKey(cle: string): Promise<{
+    getByKey(cle: string, user: CurrentUserType): Promise<{
         parsedValue: any;
         id: string;
         updatedAt: Date;

@@ -12,8 +12,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SettingsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const permissions_guard_1 = require("../../auth/guards/permissions.guard");
 const MAX_SETTING_VALUE_LENGTH = 10_000;
 const VALID_SETTING_TYPES = new Set(['string', 'number', 'boolean', 'json']);
+const SENSITIVE_SETTING_KEYS = new Set([
+    'commission_rate',
+    'delai_echeance_jours',
+    'session_timeout_min',
+    'default_stock_seuil',
+    'max_upload_size_mb',
+    'security_mfa_enabled',
+]);
+function canSeePrivateSettings(user) {
+    const role = String(user.role || '').toUpperCase();
+    if (role === 'ADMIN')
+        return true;
+    const perms = user.permissions ?? [];
+    if (perms.includes('*'))
+        return true;
+    return (0, permissions_guard_1.userSatisfiesPermission)(perms, 'settings.consulter');
+}
 function assertValidSettingValue(cle, valeur, type) {
     if (typeof valeur !== 'string' && typeof valeur !== 'number' && typeof valeur !== 'boolean') {
         throw new common_1.BadRequestException(`Valeur invalide pour le paramètre "${cle}".`);
@@ -58,10 +76,13 @@ let SettingsService = class SettingsService {
         });
         return result;
     }
-    async getAll() {
-        const settings = await this.prisma.setting.findMany({
+    async getAll(user) {
+        const allSettings = await this.prisma.setting.findMany({
             orderBy: [{ groupName: 'asc' }, { cle: 'asc' }],
         });
+        const settings = canSeePrivateSettings(user)
+            ? allSettings
+            : allSettings.filter((s) => !SENSITIVE_SETTING_KEYS.has(s.cle));
         const map = {};
         const parsedMap = {};
         const groups = {};
@@ -75,9 +96,11 @@ let SettingsService = class SettingsService {
         });
         return { list: settings, map, parsedMap, groups };
     }
-    async getByKey(cle) {
+    async getByKey(cle, user) {
         const setting = await this.prisma.setting.findUnique({ where: { cle } });
         if (!setting)
+            return null;
+        if (SENSITIVE_SETTING_KEYS.has(cle) && !canSeePrivateSettings(user))
             return null;
         return {
             ...setting,

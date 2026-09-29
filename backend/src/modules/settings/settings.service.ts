@@ -1,8 +1,46 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { userSatisfiesPermission } from '../../auth/guards/permissions.guard';
+import type { CurrentUserType } from '../../auth/auth.types';
 
 const MAX_SETTING_VALUE_LENGTH = 10_000;
 const VALID_SETTING_TYPES = new Set(['string', 'number', 'boolean', 'json']);
+
+/** getAll()/getByKey() n'étaient protégés que par JwtAuthGuard (pas de
+ *  @RequirePermission) et renvoyaient TOUTES les lignes de `Setting` sans
+ *  filtre — n'importe quel compte authentifié, quel que soit son rôle,
+ *  pouvait donc lire des réglages métier sensibles (taux de commission,
+ *  délai de session, etc.).
+ *
+ *  On ne filtre PAS sur la colonne `isPublic` : plusieurs réglages de
+ *  branding société (societe_logo_url, societe_rccm, societe_nif,
+ *  societe_signataire_dg/pdg...) ne sont dans aucun seed et n'ont donc
+ *  jamais été créés avec `isPublic: true` explicite — leur upsert (plain
+ *  string, cf. societes-slice.ts::updateSociete) passe par la branche
+ *  `create` de setMany(), qui laisse `isPublic` au défaut Prisma `false`.
+ *  Filtrer sur `isPublic` masquerait donc le logo/RCCM/NIF/signataires à
+ *  tout utilisateur sans accès Paramètres, alors que ces informations
+ *  s'affichent normalement partout dans l'app (en-têtes, documents
+ *  imprimés) pour tout le monde. On masque à la place une liste explicite
+ *  des clés réellement sensibles (mêmes clés que la sweep de review qui a
+ *  signalé cette faille), plus sûre à faire évoluer sur une app déjà en
+ *  prod dont on ne peut pas relire l'état réel des colonnes `isPublic`. */
+const SENSITIVE_SETTING_KEYS = new Set([
+  'commission_rate',
+  'delai_echeance_jours',
+  'session_timeout_min',
+  'default_stock_seuil',
+  'max_upload_size_mb',
+  'security_mfa_enabled',
+]);
+
+function canSeePrivateSettings(user: CurrentUserType): boolean {
+  const role = String(user.role || '').toUpperCase();
+  if (role === 'ADMIN') return true;
+  const perms = user.permissions ?? [];
+  if (perms.includes('*')) return true;
+  return userSatisfiesPermission(perms, 'settings.consulter');
+}
 
 /** setKey/setMany n'avaient jusque-là aucune validation (Record<string, any>
  *  accepté tel quel) : n'importe quelle valeur, de n'importe quelle taille,
@@ -64,10 +102,13 @@ export class SettingsService {
   /**
    * Retourne tous les paramètres avec tableau, dictionnaire et groupes.
    */
-  async getAll() {
-    const settings = await this.prisma.setting.findMany({
+  async getAll(user: CurrentUserType) {
+    const allSettings = await this.prisma.setting.findMany({
       orderBy: [{ groupName: 'asc' }, { cle: 'asc' }],
     });
+    const settings = canSeePrivateSettings(user)
+      ? allSettings
+      : allSettings.filter((s: any) => !SENSITIVE_SETTING_KEYS.has(s.cle));
     const map: Record<string, string> = {};
     const parsedMap: Record<string, any> = {};
     const groups: Record<string, any[]> = {};
@@ -83,9 +124,10 @@ export class SettingsService {
     return { list: settings, map, parsedMap, groups };
   }
 
-  async getByKey(cle: string) {
+  async getByKey(cle: string, user: CurrentUserType) {
     const setting = await this.prisma.setting.findUnique({ where: { cle } });
     if (!setting) return null;
+    if (SENSITIVE_SETTING_KEYS.has(cle) && !canSeePrivateSettings(user)) return null;
     return {
       ...setting,
       parsedValue: parseValue(setting.valeur, setting.type),
