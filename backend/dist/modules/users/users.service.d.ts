@@ -88,5 +88,7 @@ export declare class UsersService {
     resetPassword(id: string, newPassword: string | undefined, actor: CurrentUserType): Promise<{
         success: boolean;
     }>;
-    delete(id: string, actor: CurrentUserType): Promise<void>;
+    delete(id: string, actor: CurrentUserType): Promise<{
+        id: string;
+    }>;
 }

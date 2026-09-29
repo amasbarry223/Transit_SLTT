@@ -80,5 +80,7 @@ export declare class UsersController {
     resetPassword(id: string, body: ResetPasswordDto, actor: CurrentUserType): Promise<{
         success: boolean;
     }>;
-    remove(id: string, actor: CurrentUserType): Promise<void>;
+    remove(id: string, actor: CurrentUserType): Promise<{
+        id: string;
+    }>;
 }

@@ -156,9 +156,9 @@ export declare class FacturesService {
             id: string;
             createdAt: Date;
             type: import("@prisma/client").$Enums.TypeTransactionCaisse;
-            date: Date;
             montant: number;
             factureId: string | null;
+            date: Date;
             caisseId: string;
             motif: string;
             depenseId: string | null;

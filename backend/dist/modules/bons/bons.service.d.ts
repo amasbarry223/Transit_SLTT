@@ -33,9 +33,9 @@ export declare class BonsService {
         clientId: string;
         statut: string;
         marchandise: string;
-        date: string;
         montant: number;
         quantite: number;
+        date: string;
         motif: string;
         reference: string;
         clientNom: string | null;
@@ -84,8 +84,8 @@ export declare class BonsService {
             annexeId: string;
             clientId: string | null;
             marchandise: string;
-            date: string;
             quantite: number;
+            date: string;
             unite: string;
             seuil: number;
             depositaire: string | null;
@@ -101,9 +101,9 @@ export declare class BonsService {
         clientId: string;
         statut: string;
         marchandise: string;
-        date: string;
         montant: number;
         quantite: number;
+        date: string;
         motif: string;
         reference: string;
         clientNom: string | null;
@@ -152,8 +152,8 @@ export declare class BonsService {
             annexeId: string;
             clientId: string | null;
             marchandise: string;
-            date: string;
             quantite: number;
+            date: string;
             unite: string;
             seuil: number;
             depositaire: string | null;
@@ -169,9 +169,9 @@ export declare class BonsService {
         clientId: string;
         statut: string;
         marchandise: string;
-        date: string;
         montant: number;
         quantite: number;
+        date: string;
         motif: string;
         reference: string;
         clientNom: string | null;
@@ -193,8 +193,8 @@ export declare class BonsService {
         lignes: {
             id: string;
             createdAt: Date;
-            date: string;
             montant: number;
+            date: string;
             motif: string;
             bonSortieCaisseId: string;
             beneficiaire: string;
@@ -205,8 +205,8 @@ export declare class BonsService {
         updatedAt: Date;
         annexeId: string;
         creePar: string | null;
-        date: string;
         montantTotal: number;
+        date: string;
         reference: string;
     })[]>;
     findOneBonCaisse(id: string, user: CurrentUserType): Promise<{
@@ -215,8 +215,8 @@ export declare class BonsService {
         updatedAt: Date;
         annexeId: string;
         creePar: string | null;
-        date: string;
         montantTotal: number;
+        date: string;
         reference: string;
     }>;
     createBonCaisse(user: CurrentUserType, data: any): Promise<{
@@ -239,8 +239,8 @@ export declare class BonsService {
         lignes: {
             id: string;
             createdAt: Date;
-            date: string;
             montant: number;
+            date: string;
             motif: string;
             bonSortieCaisseId: string;
             beneficiaire: string;
@@ -251,8 +251,8 @@ export declare class BonsService {
         updatedAt: Date;
         annexeId: string;
         creePar: string | null;
-        date: string;
         montantTotal: number;
+        date: string;
         reference: string;
     }>;
     updateBonCaisse(id: string, user: CurrentUserType, data: any): Promise<any>;

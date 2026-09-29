@@ -337,7 +337,7 @@ let UsersService = class UsersService {
         this.assertNotSelfDelete(actor.id, id);
         this.assertCanTouchAdminTarget(actor, target);
         await this.assertNotLastActiveAdmin(id, true);
-        await this.prisma.$transaction(async (tx) => {
+        return this.prisma.$transaction(async (tx) => {
             await tx.profile.delete({ where: { id } });
             await this.auditLogsService.log({
                 userId: actor.id,
@@ -346,6 +346,7 @@ let UsersService = class UsersService {
                 entiteId: id,
                 donnees: { detail: `Utilisateur ${target.nom} supprimé`, userName: actor.nom },
             }, tx);
+            return { id };
         });
     }
 };

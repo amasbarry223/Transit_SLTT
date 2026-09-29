@@ -37,10 +37,10 @@ export declare class DepensesService {
         dossierId: string | null;
         devise: string;
         description: string | null;
-        montant: number;
         fournisseurId: string | null;
         approuveParId: string | null;
         categorie: import("@prisma/client").$Enums.CategorieDepense;
+        montant: number;
         justificatif: string | null;
         dateDepense: Date;
     }>>;
@@ -132,9 +132,9 @@ export declare class DepensesService {
             id: string;
             createdAt: Date;
             type: import("@prisma/client").$Enums.TypeTransactionCaisse;
-            date: Date;
             montant: number;
             factureId: string | null;
+            date: Date;
             caisseId: string;
             motif: string;
             depenseId: string | null;
@@ -156,10 +156,10 @@ export declare class DepensesService {
         dossierId: string | null;
         devise: string;
         description: string | null;
-        montant: number;
         fournisseurId: string | null;
         approuveParId: string | null;
         categorie: import("@prisma/client").$Enums.CategorieDepense;
+        montant: number;
         justificatif: string | null;
         dateDepense: Date;
     }>;
@@ -206,10 +206,10 @@ export declare class DepensesService {
         dossierId: string | null;
         devise: string;
         description: string | null;
-        montant: number;
         fournisseurId: string | null;
         approuveParId: string | null;
         categorie: import("@prisma/client").$Enums.CategorieDepense;
+        montant: number;
         justificatif: string | null;
         dateDepense: Date;
     }>;
@@ -224,10 +224,10 @@ export declare class DepensesService {
         dossierId: string | null;
         devise: string;
         description: string | null;
-        montant: number;
         fournisseurId: string | null;
         approuveParId: string | null;
         categorie: import("@prisma/client").$Enums.CategorieDepense;
+        montant: number;
         justificatif: string | null;
         dateDepense: Date;
     }>;

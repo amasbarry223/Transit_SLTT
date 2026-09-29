@@ -25,8 +25,8 @@ export declare class StockService {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        date: string;
         quantite: number;
+        date: string;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -75,8 +75,8 @@ export declare class StockService {
             annexeId: string;
             type: string;
             marchandise: string | null;
-            date: string;
             quantite: number;
+            date: string;
             motif: string | null;
             stockId: string | null;
             unite: string | null;
@@ -90,8 +90,8 @@ export declare class StockService {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        date: string;
         quantite: number;
+        date: string;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -142,8 +142,8 @@ export declare class StockService {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        date: string;
         quantite: number;
+        date: string;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -193,8 +193,8 @@ export declare class StockService {
         annexeId: string;
         clientId: string | null;
         marchandise: string;
-        date: string;
         quantite: number;
+        date: string;
         unite: string;
         seuil: number;
         depositaire: string | null;
@@ -222,8 +222,8 @@ export declare class StockService {
         annexeId: string;
         type: string;
         marchandise: string | null;
-        date: string;
         quantite: number;
+        date: string;
         motif: string | null;
         stockId: string | null;
         unite: string | null;
