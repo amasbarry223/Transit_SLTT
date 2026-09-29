@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { useStore } from "@/lib/store";
+import { api, ApiError } from "@/lib/api-client";
 import type {
   Archive,
   Client,
@@ -198,9 +199,24 @@ describe("deleteArchive", () => {
 
   it("supprime le fichier de l'état local et journalise dans l'audit", async () => {
     seedArchive();
+    vi.spyOn(api.documents, "delete").mockResolvedValueOnce({} as never);
     await useStore.getState().deleteArchive("ar1");
     expect(useStore.getState().archives.find((a) => a.id === "ar1")).toBeUndefined();
     const audit = useStore.getState().auditLogs.find((l) => l.action === "Suppression");
     expect(audit).toBeDefined();
+  });
+
+  it("supprime quand même localement si le document n'existe déjà plus côté serveur (404)", async () => {
+    seedArchive();
+    vi.spyOn(api.documents, "delete").mockRejectedValueOnce(new ApiError(404, "Not Found"));
+    await useStore.getState().deleteArchive("ar1");
+    expect(useStore.getState().archives.find((a) => a.id === "ar1")).toBeUndefined();
+  });
+
+  it("ne supprime pas localement et remonte l'erreur si la suppression distante échoue vraiment", async () => {
+    seedArchive();
+    vi.spyOn(api.documents, "delete").mockRejectedValueOnce(new ApiError(500, "Erreur serveur"));
+    await expect(useStore.getState().deleteArchive("ar1")).rejects.toThrow();
+    expect(useStore.getState().archives.find((a) => a.id === "ar1")).toBeDefined();
   });
 });

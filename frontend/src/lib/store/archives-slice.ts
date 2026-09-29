@@ -4,7 +4,7 @@ import type { Archive, TypeDocument } from "@/lib/domain-types";
 import type { SLTTState } from "@/lib/store";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import { logWarn } from "@/shared/logger";
 
 const ARCHIVES_ALLOWED_MIME = new Set([
@@ -173,15 +173,25 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
   deleteArchive: async (id) => {
     const archive = get().archives.find((a) => a.id === id);
-    const nextArchives = get().archives.filter((a) => a.id !== id);
-    set({ archives: nextArchives });
-    saveLocalArchives(nextArchives);
+    const previousArchives = get().archives;
 
     try {
       await api.documents.delete(id);
     } catch (err) {
-      logWarn("[archives-slice] Suppression du document distant échouée", err);
+      // 404 : le document n'existe déjà plus côté serveur (ex. archive locale
+      // pré-upload, jamais synchronisée) — on peut retirer sans risque. Toute
+      // autre erreur (réseau, 403, 500...) doit remonter : sinon l'appelant
+      // affiche "Document supprimé" alors que le fichier est toujours sur le
+      // serveur, et l'archive disparaît quand même de l'écran sans recours.
+      if (!(err instanceof ApiError) || err.status !== 404) {
+        throw err;
+      }
+      logWarn("[archives-slice] Document déjà absent côté serveur, suppression locale uniquement", err);
     }
+
+    const nextArchives = previousArchives.filter((a) => a.id !== id);
+    set({ archives: nextArchives });
+    saveLocalArchives(nextArchives);
 
     if (archive) {
       await get().addAuditLog(AUDIT_MODULE.Archives, AUDIT_ACTION.Suppression, `Document archivé "${archive.nom}" supprimé`);
