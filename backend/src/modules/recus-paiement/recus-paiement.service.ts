@@ -21,6 +21,16 @@ function toNonNegativeAmount(value: unknown, label: string): number {
   return n;
 }
 
+// Sans ce garde-fou, un montantPaye > somme passait toNonNegativeAmount()
+// (juste positif) puis reste = Math.max(0, somme - montantPaye) écrasait le
+// dépassement à 0, faisant passer le reçu en statut "SOLDE" alors que le
+// montant réellement enregistré était un trop-perçu jamais signalé.
+function assertMontantPayeCoherent(somme: number, montantPaye: number): void {
+  if (montantPaye > somme) {
+    throw new BadRequestException('Le montant payé ne peut pas dépasser la somme due.');
+  }
+}
+
 @Injectable()
 export class RecusPaiementService {
   constructor(private prisma: PrismaService) {}
@@ -100,6 +110,7 @@ export class RecusPaiementService {
     // ces données — seule la réservation du numéro compte ici.
     const somme = toNonNegativeAmount(data.somme, 'La somme due');
     const montantPaye = toNonNegativeAmount(data.montantPaye, 'Le montant payé');
+    assertMontantPayeCoherent(somme, montantPaye);
     const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
     const statut = statutRecu(somme, montantPaye);
 
@@ -159,6 +170,7 @@ export class RecusPaiementService {
         data.montantPaye !== undefined
           ? toNonNegativeAmount(data.montantPaye, 'Le montant payé')
           : current.montantPaye;
+      assertMontantPayeCoherent(somme, montantPaye);
       updateData.somme = somme;
       updateData.montantPaye = montantPaye;
       updateData.reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);

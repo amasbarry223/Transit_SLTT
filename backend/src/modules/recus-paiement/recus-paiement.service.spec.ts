@@ -53,6 +53,14 @@ describe('RecusPaiementService.update', () => {
 
     await expect(service.update('recu-1', admin(), { montantPaye: -50 })).rejects.toThrow(BadRequestException);
   });
+
+  it('rejette un montant payé supérieur à la somme due — sans ce garde-fou reste=max(0,...) écrasait le trop-perçu et le reçu passait à SOLDE', async () => {
+    const recu = baseRecu({ somme: 1000, montantPaye: 1000 });
+    const { prisma } = createFakePrisma(recu);
+    const service = new RecusPaiementService(prisma as any);
+
+    await expect(service.update('recu-1', admin(), { montantPaye: 5000 })).rejects.toThrow(BadRequestException);
+  });
 });
 
 describe('RecusPaiementService.create', () => {
@@ -65,6 +73,15 @@ describe('RecusPaiementService.create', () => {
     ).rejects.toThrow(BadRequestException);
     await expect(
       service.create(admin(), { annexeId: 'annexe-ml', montantPaye: -1 }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejette un montant payé supérieur à la somme due', async () => {
+    const prisma = { recuPaiement: {} };
+    const service = new RecusPaiementService(prisma as any);
+
+    await expect(
+      service.create(admin(), { annexeId: 'annexe-ml', somme: 1000, montantPaye: 5000 }),
     ).rejects.toThrow(BadRequestException);
   });
 });

@@ -26,6 +26,11 @@ function toNonNegativeAmount(value, label) {
     }
     return n;
 }
+function assertMontantPayeCoherent(somme, montantPaye) {
+    if (montantPaye > somme) {
+        throw new common_1.BadRequestException('Le montant payé ne peut pas dépasser la somme due.');
+    }
+}
 let RecusPaiementService = class RecusPaiementService {
     prisma;
     constructor(prisma) {
@@ -98,6 +103,7 @@ let RecusPaiementService = class RecusPaiementService {
         }
         const somme = toNonNegativeAmount(data.somme, 'La somme due');
         const montantPaye = toNonNegativeAmount(data.montantPaye, 'Le montant payé');
+        assertMontantPayeCoherent(somme, montantPaye);
         const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
         const statut = statutRecu(somme, montantPaye);
         const buildData = (reference) => ({
@@ -142,6 +148,7 @@ let RecusPaiementService = class RecusPaiementService {
             const montantPaye = data.montantPaye !== undefined
                 ? toNonNegativeAmount(data.montantPaye, 'Le montant payé')
                 : current.montantPaye;
+            assertMontantPayeCoherent(somme, montantPaye);
             updateData.somme = somme;
             updateData.montantPaye = montantPaye;
             updateData.reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
