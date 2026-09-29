@@ -25,8 +25,11 @@ function normalizeStatutDossier(
   const upper = String(val).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_');
   if (upper.includes('BROUILLON')) return 'BROUILLON';
   if (upper.includes('DEDOUAN')) return 'EN_DEDOUANEMENT';
-  if (upper.includes('LIVR')) return 'LIVRE';
+  // "ATTENTE" doit être testé avant "LIVR" : "EN_ATTENTE_LIVRAISON" contient
+  // la sous-chaîne "LIVR" (de "LIVRAISON") et se faisait donc toujours
+  // classer comme "LIVRE" — ce statut était inatteignable.
   if (upper.includes('ATTENTE')) return 'EN_ATTENTE_LIVRAISON';
+  if (upper.includes('LIVR')) return 'LIVRE';
   if (upper.includes('SOLDE') || upper.includes('CLOTUR')) return 'CLOTURE';
   if (upper.includes('ANNUL')) return 'ANNULE';
   if (upper.includes('COURS')) return 'EN_COURS';

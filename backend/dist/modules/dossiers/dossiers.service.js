@@ -34,10 +34,10 @@ function normalizeStatutDossier(val) {
         return 'BROUILLON';
     if (upper.includes('DEDOUAN'))
         return 'EN_DEDOUANEMENT';
-    if (upper.includes('LIVR'))
-        return 'LIVRE';
     if (upper.includes('ATTENTE'))
         return 'EN_ATTENTE_LIVRAISON';
+    if (upper.includes('LIVR'))
+        return 'LIVRE';
     if (upper.includes('SOLDE') || upper.includes('CLOTUR'))
         return 'CLOTURE';
     if (upper.includes('ANNUL'))

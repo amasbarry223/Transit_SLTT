@@ -227,6 +227,13 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         let statut: DossierStatut = "En cours";
         const st = String(d.statut || "").toUpperCase();
         if (st.includes("DEDOUAN")) statut = "Dédouané";
+        // "ATTENTE" doit être testé avant "LIVR" : "EN_ATTENTE_LIVRAISON"
+        // contient la sous-chaîne "LIVR" (de "LIVRAISON") et se faisait donc
+        // classer comme "Livré" alors que la marchandise n'est pas encore
+        // livrée. Pas d'équivalent dédié côté frontend (DossierStatut) : on
+        // retombe sur "Dédouané", l'état le plus proche qui reste correct
+        // (pas encore livré).
+        else if (st.includes("ATTENTE")) statut = "Dédouané";
         else if (st.includes("LIVR")) statut = "Livré";
         else if (st.includes("CLOTUR") || st.includes("SOLDE")) statut = "Soldé";
         else statut = "En cours";
