@@ -19,7 +19,7 @@ export declare class CaisseController {
         updatedAt: Date;
         annexeId: string;
         code: string;
-        statut: import("@prisma/client").$Enums.StatutCaisse;
+        statut: import(".prisma/client").$Enums.StatutCaisse;
         devise: string;
         soldeActuel: number;
     })[]>;
@@ -56,7 +56,7 @@ export declare class CaisseController {
         } & {
             id: string;
             createdAt: Date;
-            type: import("@prisma/client").$Enums.TypeTransactionCaisse;
+            type: import(".prisma/client").$Enums.TypeTransactionCaisse;
             montant: number;
             factureId: string | null;
             date: Date;
@@ -72,7 +72,7 @@ export declare class CaisseController {
         updatedAt: Date;
         annexeId: string;
         code: string;
-        statut: import("@prisma/client").$Enums.StatutCaisse;
+        statut: import(".prisma/client").$Enums.StatutCaisse;
         devise: string;
         soldeActuel: number;
     }>;

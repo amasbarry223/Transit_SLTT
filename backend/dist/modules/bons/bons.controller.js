@@ -16,6 +16,7 @@ exports.BonsController = void 0;
 const common_1 = require("@nestjs/common");
 const bons_service_1 = require("./bons.service");
 const create_bon_sortie_dto_1 = require("./dto/create-bon-sortie.dto");
+const update_bon_sortie_dto_1 = require("./dto/update-bon-sortie.dto");
 const create_bon_caisse_dto_1 = require("./dto/create-bon-caisse.dto");
 const update_bon_caisse_dto_1 = require("./dto/update-bon-caisse.dto");
 const annexe_guard_1 = require("../../auth/guards/annexe.guard");
@@ -30,6 +31,9 @@ let BonsController = class BonsController {
     }
     createBon(user, body) {
         return this.bonsService.createBon(user, body);
+    }
+    updateBon(id, user, body) {
+        return this.bonsService.updateBon(id, user, body);
     }
     validateBon(id, user) {
         return this.bonsService.validateBon(id, user);
@@ -70,6 +74,17 @@ __decorate([
     __metadata("design:paramtypes", [Object, create_bon_sortie_dto_1.CreateBonSortieDto]),
     __metadata("design:returntype", void 0)
 ], BonsController.prototype, "createBon", null);
+__decorate([
+    (0, common_1.Put)('sortie/:id'),
+    (0, common_1.UseGuards)(annexe_guard_1.AnnexeGuard),
+    (0, decorators_1.RequirePermission)('bons:write'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, decorators_1.CurrentUser)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, update_bon_sortie_dto_1.UpdateBonSortieDto]),
+    __metadata("design:returntype", void 0)
+], BonsController.prototype, "updateBon", null);
 __decorate([
     (0, common_1.Put)('sortie/:id/valider'),
     (0, decorators_1.RequirePermission)('bons:write'),

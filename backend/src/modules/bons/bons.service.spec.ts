@@ -110,7 +110,7 @@ function createFakeBonSortiePrisma(bon: ReturnType<typeof baseBonSortie>, stockA
   return { prisma, tx };
 }
 
-function createFakeCreateBonPrisma() {
+function createFakeCreateBonPrisma(stockAnnexeId = 'annexe-ml') {
   const created: Record<string, unknown>[] = [];
   const prisma = {
     bonSortie: {
@@ -119,6 +119,7 @@ function createFakeCreateBonPrisma() {
         return { id: 'new-bon', ...args.data };
       }),
     },
+    stockItem: { findUnique: vi.fn().mockResolvedValue({ annexeId: stockAnnexeId }) },
   };
   return { prisma, created };
 }
@@ -146,6 +147,54 @@ describe('BonsService.createBon', () => {
 
     await service.createBon(admin(), { ...baseBonSortie(), quantite: 10, montant: 0 });
     expect(created[0]).toMatchObject({ quantite: 10, montant: 0 });
+  });
+
+  it("rejette un article de stock d'une autre annexe (décrément du stock hors périmètre à la validation)", async () => {
+    const { prisma, created } = createFakeCreateBonPrisma('annexe-ci');
+    const service = new BonsService(prisma as any);
+
+    await expect(
+      service.createBon(admin(), { ...baseBonSortie(), quantite: 10, montant: 0 }),
+    ).rejects.toThrow(BadRequestException);
+    expect(created).toHaveLength(0);
+  });
+
+  it('ne crée jamais un bon déjà "Validé" (validateBon le court-circuiterait sans décrémenter le stock)', async () => {
+    const { prisma, created } = createFakeCreateBonPrisma();
+    const service = new BonsService(prisma as any);
+
+    await service.createBon(admin(), { ...baseBonSortie(), quantite: 10, statut: 'Validé' });
+    expect(created[0].statut).toBe('En attente');
+  });
+});
+
+describe('BonsService.updateBon', () => {
+  function createFakeUpdateBonPrisma(updatedCount: number) {
+    const bon = baseBonSortie();
+    const prisma = {
+      bonSortie: {
+        findUnique: vi.fn().mockResolvedValue(bon),
+        updateMany: vi.fn().mockResolvedValue({ count: updatedCount }),
+      },
+      stockItem: { findUnique: vi.fn().mockResolvedValue({ annexeId: bon.annexeId }) },
+    };
+    return { prisma };
+  }
+
+  it("rejette la modification si le bon a été validé entre la lecture et l'écriture", async () => {
+    const { prisma } = createFakeUpdateBonPrisma(0);
+    const service = new BonsService(prisma as any);
+
+    await expect(service.updateBon('bon-2', admin(), { quantite: 5 })).rejects.toThrow(BadRequestException);
+    expect(prisma.bonSortie.updateMany.mock.calls[0][0].where).toEqual({ id: 'bon-2', statut: { not: 'Validé' } });
+  });
+
+  it('enregistre un stockId vide comme null (pas de violation de clé étrangère)', async () => {
+    const { prisma } = createFakeUpdateBonPrisma(1);
+    const service = new BonsService(prisma as any);
+
+    await service.updateBon('bon-2', admin(), { stockId: '' });
+    expect(prisma.bonSortie.updateMany.mock.calls[0][0].data.stockId).toBeNull();
   });
 });
 

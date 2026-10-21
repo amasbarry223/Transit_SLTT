@@ -1,5 +1,6 @@
 import { BonsService } from './bons.service';
 import { CreateBonSortieDto } from './dto/create-bon-sortie.dto';
+import { UpdateBonSortieDto } from './dto/update-bon-sortie.dto';
 import { CreateBonCaisseDto } from './dto/create-bon-caisse.dto';
 import { UpdateBonCaisseDto } from './dto/update-bon-caisse.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -70,7 +71,75 @@ export declare class BonsController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import("@prisma/client").$Enums.TypeClient;
+            type: import(".prisma/client").$Enums.TypeClient;
+            notes: string | null;
+        };
+        stock: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            annexeId: string;
+            clientId: string | null;
+            marchandise: string;
+            quantite: number;
+            date: string;
+            unite: string;
+            seuil: number;
+            depositaire: string | null;
+            commercial: string | null;
+            sommePayee: number;
+            resteAPayer: number;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        annexeId: string;
+        clientId: string;
+        statut: string;
+        marchandise: string;
+        montant: number;
+        quantite: number;
+        date: string;
+        motif: string;
+        reference: string;
+        clientNom: string | null;
+        stockId: string | null;
+        unite: string;
+    }>;
+    updateBon(id: string, user: CurrentUserType, body: UpdateBonSortieDto): Promise<{
+        annexe: {
+            id: string;
+            email: string | null;
+            nom: string;
+            telephone: string | null;
+            actif: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            code: string;
+            adresse: string | null;
+            ville: string | null;
+            pays: string;
+            rccm: string | null;
+            nif: string | null;
+            estSiege: boolean;
+        };
+        client: {
+            id: string;
+            email: string | null;
+            nom: string;
+            telephone: string | null;
+            actif: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            annexeId: string | null;
+            code: string;
+            adresse: string | null;
+            ville: string | null;
+            pays: string | null;
+            rccm: string | null;
+            nif: string | null;
+            type: import(".prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         stock: {

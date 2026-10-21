@@ -153,7 +153,7 @@ export class BonsService {
         clientId: data.clientId !== undefined ? data.clientId : bon.clientId,
         clientNom: data.clientNom !== undefined ? data.clientNom : bon.clientNom,
         annexeId: data.annexeId !== undefined ? data.annexeId : bon.annexeId,
-        stockId: data.stockId !== undefined ? data.stockId : bon.stockId,
+        stockId: data.stockId !== undefined ? data.stockId || null : bon.stockId,
         marchandise: data.marchandise !== undefined ? data.marchandise : bon.marchandise,
         quantite: data.quantite !== undefined ? this.toPositiveQuantite(data.quantite) : bon.quantite,
         unite: data.unite !== undefined ? data.unite : bon.unite,

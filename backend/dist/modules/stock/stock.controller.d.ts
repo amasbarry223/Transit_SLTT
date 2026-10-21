@@ -64,7 +64,7 @@ export declare class StockController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import("@prisma/client").$Enums.TypeClient;
+            type: import(".prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
         mouvements: {
@@ -129,7 +129,7 @@ export declare class StockController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import("@prisma/client").$Enums.TypeClient;
+            type: import(".prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {
@@ -180,7 +180,7 @@ export declare class StockController {
             pays: string | null;
             rccm: string | null;
             nif: string | null;
-            type: import("@prisma/client").$Enums.TypeClient;
+            type: import(".prisma/client").$Enums.TypeClient;
             notes: string | null;
         };
     } & {
