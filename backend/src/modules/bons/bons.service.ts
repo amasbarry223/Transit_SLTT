@@ -89,10 +89,27 @@ export class BonsService {
     return bon;
   }
 
+  // Sans ce contrôle, un stockId d'une autre annexe était accepté tel quel :
+  // la validation du bon décrémentait alors le stock d'une annexe hors du
+  // périmètre de l'utilisateur.
+  private async assertStockInAnnexe(stockId: string | null | undefined, annexeId: string) {
+    if (!stockId) return;
+    const stock = await this.prisma.stockItem.findUnique({ where: { id: stockId }, select: { annexeId: true } });
+    if (!stock) throw new BadRequestException('Article de stock introuvable.');
+    if (stock.annexeId !== annexeId) {
+      throw new BadRequestException("L'article de stock n'appartient pas à l'annexe du bon.");
+    }
+  }
+
   async createBon(user: CurrentUserType, data: any) {
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas créer de bon pour cette annexe');
     }
+    await this.assertStockInAnnexe(data.stockId, data.annexeId);
+    // Jamais créé "Validé" : validateBon court-circuite un bon déjà validé,
+    // le stock n'aurait alors jamais été décrémenté ni le mouvement tracé.
+    // Le front crée le bon puis appelle /valider (bons-slice.ts::addBon).
+    const statut = data.statut && data.statut !== 'Validé' ? data.statut : 'En attente';
     return this.prisma.bonSortie.create({
       data: {
         reference: data.reference,
@@ -106,8 +123,49 @@ export class BonsService {
         unite: data.unite || 'colis',
         motif: data.motif || '',
         montant: this.toNonNegativeMontant(data.montant),
-        statut: data.statut || 'En attente',
+        statut,
       },
+      include: { annexe: true, client: true, stock: true },
+    });
+  }
+
+  async updateBon(id: string, user: CurrentUserType, data: any) {
+    const bon = await this.findOneBon(id, user);
+    if (bon.statut === 'Validé') {
+      throw new BadRequestException('Un bon de sortie déjà validé ne peut pas être modifié.');
+    }
+    if (user.role !== 'ADMIN' && data.annexeId && !user.annexeIds.includes(data.annexeId)) {
+      throw new ForbiddenException('Accès non autorisé à cette annexe');
+    }
+    await this.assertStockInAnnexe(
+      data.stockId !== undefined ? data.stockId : bon.stockId,
+      data.annexeId !== undefined ? data.annexeId : bon.annexeId,
+    );
+
+    // Écriture conditionnée au statut (même pattern que validateBon) : une
+    // validation concurrente entre le findOneBon ci-dessus et cette écriture
+    // aurait sinon laissé un bon "Validé" dont la quantité ne correspond plus
+    // au stock réellement décrémenté.
+    const updated = await this.prisma.bonSortie.updateMany({
+      where: { id: bon.id, statut: { not: 'Validé' } },
+      data: {
+        date: data.date !== undefined ? data.date : bon.date,
+        clientId: data.clientId !== undefined ? data.clientId : bon.clientId,
+        clientNom: data.clientNom !== undefined ? data.clientNom : bon.clientNom,
+        annexeId: data.annexeId !== undefined ? data.annexeId : bon.annexeId,
+        stockId: data.stockId !== undefined ? data.stockId : bon.stockId,
+        marchandise: data.marchandise !== undefined ? data.marchandise : bon.marchandise,
+        quantite: data.quantite !== undefined ? this.toPositiveQuantite(data.quantite) : bon.quantite,
+        unite: data.unite !== undefined ? data.unite : bon.unite,
+        motif: data.motif !== undefined ? data.motif : bon.motif,
+        montant: data.montant !== undefined ? this.toNonNegativeMontant(data.montant) : bon.montant,
+      },
+    });
+    if (updated.count === 0) {
+      throw new BadRequestException('Un bon de sortie déjà validé ne peut pas être modifié.');
+    }
+    return this.prisma.bonSortie.findUnique({
+      where: { id: bon.id },
       include: { annexe: true, client: true, stock: true },
     });
   }

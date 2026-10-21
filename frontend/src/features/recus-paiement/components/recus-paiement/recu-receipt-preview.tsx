@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Radio, Ruler } from "lucide-react";
+import { AlertTriangle, Radio, Ruler, Sparkles } from "lucide-react";
 import type { RecuPaiementModuleData } from "@/lib/export";
 import {
   RECEIPT_BLUE,
@@ -13,10 +13,10 @@ import {
 } from "@/lib/recus-paiement-styles";
 import type { SocieteBrand } from "@/lib/societe-brand";
 import { cn } from "@/shared/utils/cn";
-import { RecuReceiptBody } from "./recu-receipt-body";
+import { RecuReceiptBody, type RecuEditableField } from "./recu-receipt-body";
 import { RecuReceiptHeader } from "./recu-receipt-header";
 
-interface RecuReceiptPreviewProps {
+export interface RecuReceiptPreviewProps {
   data: RecuPaiementModuleData;
   brand: SocieteBrand | null;
   reference?: string;
@@ -24,11 +24,10 @@ interface RecuReceiptPreviewProps {
   className?: string;
   fitContainer?: boolean;
   scale?: number;
-  /** Canvas nu : juste la feuille centrée sur le fond, sans bandeau de statut
-   *  ni pied de page — pour un contexte où ces infos vivent déjà ailleurs
-   *  (ex. le panneau latéral du workspace desktop). N'a d'effet qu'avec
-   *  `fitContainer`. */
   bare?: boolean;
+  editable?: boolean;
+  onFieldChange?: (field: RecuEditableField, value: string) => void;
+  montantPayeInput?: string;
 }
 
 /** Bandeau format carnet — rappelle que l'impression n'est pas A4. */
@@ -51,15 +50,21 @@ function ReceiptPaper({
   id,
   data,
   brand,
+  editable,
+  onFieldChange,
+  montantPayeInput,
 }: {
   id: string;
   data: RecuPaiementModuleData;
   brand: SocieteBrand;
+  editable?: boolean;
+  onFieldChange?: (field: RecuEditableField, value: string) => void;
+  montantPayeInput?: string;
 }) {
   return (
     <div
       id={id}
-      className="recu-print-target relative flex flex-col print:shadow-none"
+      className="recu-print-target relative flex flex-col print:shadow-none select-text"
       style={{
         width: `${RECEIPT_WIDTH_MM}mm`,
         minWidth: `${RECEIPT_WIDTH_MM}mm`,
@@ -77,12 +82,18 @@ function ReceiptPaper({
         aria-hidden
       />
       <RecuReceiptHeader brand={brand} reference={data.reference} />
-      <RecuReceiptBody data={data} className="flex-1" />
+      <RecuReceiptBody
+        data={data}
+        className="flex-1"
+        editable={editable}
+        onFieldChange={onFieldChange}
+        montantPayeInput={montantPayeInput}
+      />
     </div>
   );
 }
 
-/** Aperçu React WYSIWYG — reçu horizontal (paysage) fidèle au carnet papier. */
+/** Aperçu React WYSIWYG — reçu horizontal (paysage) fidèle au carnet papier avec saisie directe possible. */
 export function RecuReceiptPreview({
   data,
   brand,
@@ -92,6 +103,9 @@ export function RecuReceiptPreview({
   fitContainer = false,
   scale = 0.92,
   bare = false,
+  editable = false,
+  onFieldChange,
+  montantPayeInput,
 }: RecuReceiptPreviewProps) {
   if (!brand) {
     return (
@@ -110,11 +124,23 @@ export function RecuReceiptPreview({
     );
   }
 
-  const paper = <ReceiptPaper id={id} data={data} brand={brand} />;
+  const paper = (
+    <ReceiptPaper
+      id={id}
+      data={data}
+      brand={brand}
+      editable={editable}
+      onFieldChange={onFieldChange}
+      montantPayeInput={montantPayeInput}
+    />
+  );
 
   const paperFrame = (
     <div
-      className="relative rounded-sm shadow-[0_8px_30px_rgba(30,74,138,0.14),0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-[#1e4a8a]/12"
+      className={cn(
+        "relative rounded-sm shadow-[0_12px_40px_rgba(30,74,138,0.18),0_3px_10px_rgba(0,0,0,0.1)] ring-1 ring-[#1e4a8a]/15 transition-shadow",
+        editable && "hover:ring-[#1e4a8a]/35 focus-within:ring-2 focus-within:ring-[#1e4a8a]/50",
+      )}
       style={{ transform: `scale(${scale})`, transformOrigin: fitContainer ? "center center" : "top center" }}
     >
       {paper}
@@ -137,20 +163,27 @@ export function RecuReceiptPreview({
           className,
         )}
       >
-        <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2 text-xs">
-          <span className="relative flex size-1.5">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-          </span>
-          <span className="font-medium text-foreground/90">Aperçu carnet</span>
-          <FormatBadge />
-          {reference ? (
-            <>
-              <span className="text-slate-300 text-muted-foreground">·</span>
-              <Radio className="size-3 text-primary" aria-hidden />
-              <span className="font-mono tracking-wide text-muted-foreground">{reference}</span>
-            </>
-          ) : null}
+        <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+            </span>
+            <span className="font-medium text-foreground/90">Aperçu carnet</span>
+            <FormatBadge />
+            {reference ? (
+              <>
+                <span className="text-slate-300 text-muted-foreground">·</span>
+                <Radio className="size-3 text-primary" aria-hidden />
+                <span className="font-mono tracking-wide text-muted-foreground">{reference}</span>
+              </>
+            ) : null}
+          </div>
+          {editable && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+              <Sparkles className="size-3" /> Saisie interactive active
+            </span>
+          )}
         </div>
 
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-3">
@@ -180,6 +213,11 @@ export function RecuReceiptPreview({
           <span className="text-sm font-medium text-foreground">Aperçu carnet</span>
           <FormatBadge />
         </div>
+        {editable && (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-md">
+            <Sparkles className="size-3.5" /> Saisie sur le reçu active
+          </span>
+        )}
       </div>
 
       {reference ? (

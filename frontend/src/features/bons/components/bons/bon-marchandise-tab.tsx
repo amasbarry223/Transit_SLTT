@@ -11,6 +11,8 @@ import {
   FilePen,
   Wallet,
   Package,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import type { BonSortie } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
@@ -52,6 +54,8 @@ type BonMarchandiseTabProps = {
   canWrite: boolean;
   validatingIds: Set<string>;
   onOpenCreateDialog: () => void;
+  onOpenEditDialog: (bon: BonSortie) => void;
+  onDeleteBon: (bon: BonSortie) => void;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
   onPrint: (reference: string) => void;
   /** Préremplit la recherche — utilisé pour arriver directement sur un bon précis via un lien. */
@@ -63,6 +67,8 @@ export function BonMarchandiseTab({
   canWrite,
   validatingIds,
   onOpenCreateDialog,
+  onOpenEditDialog,
+  onDeleteBon,
   onConfirmValidate,
   onPrint,
   initialSearch,
@@ -225,6 +231,8 @@ export function BonMarchandiseTab({
                   validatingIds={validatingIds}
                   onConfirmValidate={onConfirmValidate}
                   onPrint={onPrint}
+                  onEdit={onOpenEditDialog}
+                  onDelete={onDeleteBon}
                 />
               ))}
             </div>
@@ -270,6 +278,8 @@ export function BonMarchandiseTab({
                       validatingIds={validatingIds}
                       onConfirmValidate={onConfirmValidate}
                       onPrint={onPrint}
+                      onEdit={onOpenEditDialog}
+                      onDelete={onDeleteBon}
                     />
                   ))}
                 </TableBody>
@@ -298,12 +308,16 @@ function BonMobileCard({
   validatingIds,
   onConfirmValidate,
   onPrint,
+  onEdit,
+  onDelete,
 }: {
   bon: BonSortie;
   canWrite: boolean;
   validatingIds: Set<string>;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
   onPrint: (reference: string) => void;
+  onEdit: (bon: BonSortie) => void;
+  onDelete: (bon: BonSortie) => void;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
 
@@ -379,6 +393,42 @@ function BonMobileCard({
         >
           <FileText className="size-4" />
         </Button>
+        {canWrite && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "size-11",
+              isBrouillon
+                ? "text-muted-foreground hover:text-primary"
+                : "text-muted-foreground/30 cursor-not-allowed",
+            )}
+            aria-label={`Modifier ${bon.reference}`}
+            title={isBrouillon ? "Modifier le bon" : "Un bon validé ne peut plus être modifié"}
+            disabled={!isBrouillon}
+            onClick={() => onEdit(bon)}
+          >
+            <Pencil className="size-4" />
+          </Button>
+        )}
+        {canWrite && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "size-11",
+              isBrouillon
+                ? "text-slate-400 hover:text-red-600"
+                : "text-slate-400/30 cursor-not-allowed",
+            )}
+            aria-label={`Supprimer ${bon.reference}`}
+            title={isBrouillon ? "Supprimer le bon" : "Un bon validé ne peut plus être supprimé"}
+            disabled={!isBrouillon}
+            onClick={() => onDelete(bon)}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        )}
       </div>
     </Card>
   );
@@ -390,12 +440,16 @@ function BonTableRow({
   validatingIds,
   onConfirmValidate,
   onPrint,
+  onEdit,
+  onDelete,
 }: {
   bon: BonSortie;
   canWrite: boolean;
   validatingIds: Set<string>;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
   onPrint: (reference: string) => void;
+  onEdit: (bon: BonSortie) => void;
+  onDelete: (bon: BonSortie) => void;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
 
@@ -476,6 +530,42 @@ function BonTableRow({
           >
             <FileText className="size-4" />
           </Button>
+          {canWrite && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "size-11",
+                isBrouillon
+                  ? "text-muted-foreground hover:text-primary"
+                  : "text-muted-foreground/30 cursor-not-allowed",
+              )}
+              aria-label={`Modifier ${bon.reference}`}
+              title={isBrouillon ? "Modifier le bon" : "Un bon validé ne peut plus être modifié"}
+              disabled={!isBrouillon}
+              onClick={() => onEdit(bon)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          )}
+          {canWrite && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "size-11",
+                isBrouillon
+                  ? "text-slate-400 hover:text-red-600"
+                  : "text-slate-400/30 cursor-not-allowed",
+              )}
+              aria-label={`Supprimer ${bon.reference}`}
+              title={isBrouillon ? "Supprimer le bon" : "Un bon validé ne peut plus être supprimé"}
+              disabled={!isBrouillon}
+              onClick={() => onDelete(bon)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>

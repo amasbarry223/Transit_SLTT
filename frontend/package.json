@@ -6,7 +6,7 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "npx -y oxlint src/",
     "test": "vitest run",
     "test:watch": "vitest",
     "sync:ocr-assets": "node scripts/sync-ocr-assets.mjs",

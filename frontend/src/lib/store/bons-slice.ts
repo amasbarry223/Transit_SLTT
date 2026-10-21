@@ -23,6 +23,8 @@ export interface BonsSlice {
   bonsSortieCaisse: BonSortieCaisse[];
   bonSortieCaisseSeq: number;
   addBon: (input: BonInput) => Promise<BonSortie>;
+  updateBon: (id: string, input: Partial<BonInput>) => Promise<BonSortie>;
+  removeBon: (id: string) => Promise<void>;
   validateBon: (id: string) => Promise<boolean>;
   addBonSortieCaisse: (input: BonSortieCaisseInput) => Promise<BonSortieCaisse>;
   updateBonSortieCaisse: (id: string, input: BonSortieCaisseInput) => Promise<void>;
@@ -115,6 +117,87 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       return get().bons.find((b) => b.id === newBon.id) ?? newBon;
     }
     return newBon;
+  },
+
+  updateBon: async (id, input) => {
+    const existing = get().bons.find((b) => b.id === id);
+    if (!existing) throw new Error("Bon de sortie introuvable");
+    if (existing.statut === "Validé") {
+      throw new Error("Un bon validé ne peut pas être modifié (le stock a déjà été décrémenté).");
+    }
+
+    const annexe = input.annexeId ? get().annexes.find((a) => a.id === input.annexeId) : undefined;
+    const client = input.clientId ? get().clients.find((c) => c.id === input.clientId) : undefined;
+
+    const hasLignes = Boolean(input.lignes && input.lignes.length > 0);
+    const lignes: BonLigne[] = hasLignes
+      ? input.lignes!.map((l) => ({ ...l, id: l.id || crypto.randomUUID() }))
+      : (existing.lignes || []);
+
+    const totalQuantite = hasLignes
+      ? lignes.reduce((acc, l) => acc + (Number(l.quantite) || 0), 0)
+      : (input.quantite ?? existing.quantite);
+
+    const totalMontant = hasLignes
+      ? lignes.reduce((acc, l) => acc + (Number(l.montant) || 0), 0)
+      : (input.montant ?? existing.montant);
+
+    const marchandise = hasLignes
+      ? lignes.map((l) => l.marchandise).join(", ")
+      : (input.marchandise ?? existing.marchandise);
+
+    const unite = hasLignes ? lignes[0]?.unite || (input.unite ?? existing.unite) : (input.unite ?? existing.unite);
+    const stockId = hasLignes ? lignes[0]?.stockId || (input.stockId ?? existing.stockId) : (input.stockId ?? existing.stockId);
+
+    await api.bons.updateBonSortie(id, {
+      date: input.date ?? existing.date,
+      clientId: input.clientId ?? existing.clientId,
+      clientNom: client?.nom || existing.clientNom,
+      annexeId: input.annexeId ?? existing.annexeId,
+      stockId,
+      marchandise,
+      quantite: totalQuantite,
+      unite,
+      motif: input.motif ?? existing.motif,
+      montant: totalMontant,
+    });
+
+    const updatedBon: BonSortie = {
+      ...existing,
+      date: input.date ?? existing.date,
+      clientId: input.clientId ?? existing.clientId,
+      clientNom: client?.nom || existing.clientNom,
+      annexeId: input.annexeId ?? existing.annexeId,
+      annexeNom: annexe?.nom || existing.annexeNom,
+      stockId,
+      marchandise,
+      quantite: totalQuantite,
+      unite,
+      motif: input.motif ?? existing.motif,
+      montant: totalMontant,
+      lignes: hasLignes ? lignes : existing.lignes,
+    };
+
+    set((s) => ({
+      bons: s.bons.map((b) => (b.id === id ? updatedBon : b)),
+    }));
+    await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Modification, `Bon ${existing.reference} modifié`);
+    return updatedBon;
+  },
+
+  removeBon: async (id) => {
+    const bon = get().bons.find((b) => b.id === id);
+    if (!bon) return;
+    if (bon.statut === "Validé") {
+      throw new Error("Un bon validé ne peut pas être supprimé (le stock a déjà été décrémenté).");
+    }
+
+    await api.bons.deleteBonSortie(id);
+
+    set((s) => ({
+      bons: s.bons.filter((b) => b.id !== id),
+    }));
+    await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Suppression, `Bon ${bon.reference} supprimé`);
   },
 
   validateBon: async (id) => {

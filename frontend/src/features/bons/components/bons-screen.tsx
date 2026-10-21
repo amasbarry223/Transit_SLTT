@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FileSpreadsheet, Plus, Package, Banknote } from "lucide-react";
-import type { BonLigne, BonMotif, BonSortie, BonSortieCaisse } from "@/lib/domain-types";
+import type { BonLigne, BonSortie, BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
@@ -42,6 +42,7 @@ export function BonsScreen() {
 
   const allBons = useStore((state) => state.bons);
   const validateBon = useStore((state) => state.validateBon);
+  const removeBon = useStore((state) => state.removeBon);
   const societes = useStore((state) => state.societes);
   const bonSeq = useStore((state) => state.bonSeq);
   const bonSortieCaisseSeq = useStore((state) => state.bonSortieCaisseSeq);
@@ -50,10 +51,22 @@ export function BonsScreen() {
   const [activeTab, setActiveTab] = useState<"marchandise" | "caisse">("marchandise");
   const [marchandiseDialogOpen, setMarchandiseDialogOpen] = useState(false);
   const [caisseDialogOpen, setCaisseDialogOpen] = useState(false);
+  const [editingBonMarchandise, setEditingBonMarchandise] = useState<BonSortie | null>(null);
   const [editingBonCaisse, setEditingBonCaisse] = useState<BonSortieCaisse | null>(null);
+  const [bonDeleteTarget, setBonDeleteTarget] = useState<BonSortie | null>(null);
   const [validatingIds, setValidatingIds] = useState<Set<string>>(new Set());
   const [confirmValidate, setConfirmValidate] = useState<{ id: string; ref: string } | null>(null);
   const [deepLinkSearch, setDeepLinkSearch] = useState<string | undefined>(undefined);
+
+  function openCreateMarchandiseDialog() {
+    setEditingBonMarchandise(null);
+    setMarchandiseDialogOpen(true);
+  }
+
+  function openEditMarchandiseDialog(bon: BonSortie) {
+    setEditingBonMarchandise(bon);
+    setMarchandiseDialogOpen(true);
+  }
 
   function openCreateCaisseDialog() {
     setEditingBonCaisse(null);
@@ -63,6 +76,20 @@ export function BonsScreen() {
   function openEditCaisseDialog(bon: BonSortieCaisse) {
     setEditingBonCaisse(bon);
     setCaisseDialogOpen(true);
+  }
+
+  async function handleDeleteBon(bon: BonSortie) {
+    try {
+      await removeBon(bon.id);
+      toastSuccess(toast, {
+        title: "Bon supprimé",
+        description: `Le bon ${bon.reference} a été supprimé.`,
+      });
+    } catch (err) {
+      toastError(toast, err, { title: "Impossible de supprimer le bon" });
+    } finally {
+      setBonDeleteTarget(null);
+    }
   }
 
   const bons = useMemo(
@@ -81,7 +108,10 @@ export function BonsScreen() {
   useEffect(() => {
     if (selectedId === "new") {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le routeur (nav-store) : ouvre le dialogue puis consomme le marqueur "new" de l'URL
-      if (canWrite) setMarchandiseDialogOpen(true);
+      if (canWrite) {
+        setEditingBonMarchandise(null);
+        setMarchandiseDialogOpen(true);
+      }
       go("bons");
       return;
     }
@@ -218,12 +248,12 @@ export function BonsScreen() {
     marchandise: {
       description: "Sorties de stock : validation, stock et justificatifs clients.",
       cta: "Nouveau bon de sortie",
-      onCreate: () => setMarchandiseDialogOpen(true),
+      onCreate: openCreateMarchandiseDialog,
     },
     caisse: {
       description: "Décaissements espèces : honoraires, frais divers, justificatifs caisse.",
       cta: "Nouvelle sortie de caisse",
-      onCreate: () => setCaisseDialogOpen(true),
+      onCreate: openCreateCaisseDialog,
     },
   } as const;
 
@@ -386,7 +416,9 @@ export function BonsScreen() {
           bons={bons}
           canWrite={canWrite}
           validatingIds={validatingIds}
-          onOpenCreateDialog={() => setMarchandiseDialogOpen(true)}
+          onOpenCreateDialog={openCreateMarchandiseDialog}
+          onOpenEditDialog={openEditMarchandiseDialog}
+          onDeleteBon={setBonDeleteTarget}
           onConfirmValidate={setConfirmValidate}
           onPrint={handlePrint}
           initialSearch={deepLinkSearch}
@@ -401,10 +433,15 @@ export function BonsScreen() {
       </Tabs>
 
       <BonFormDialog
+        key={editingBonMarchandise?.id ?? "new"}
         open={marchandiseDialogOpen}
-        onOpenChange={setMarchandiseDialogOpen}
+        onOpenChange={(open) => {
+          setMarchandiseDialogOpen(open);
+          if (!open) setEditingBonMarchandise(null);
+        }}
         nextReference={nextReference}
         canWrite={canWrite}
+        editing={editingBonMarchandise}
       />
 
       <BonCaisseFormDialog
@@ -433,6 +470,28 @@ export function BonsScreen() {
               }}
             >
               Valider
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!bonDeleteTarget} onOpenChange={(open) => !open && setBonDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le bon {bonDeleteTarget?.reference} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le bon de sortie et ses lignes associées seront définitivement supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (bonDeleteTarget) void handleDeleteBon(bonDeleteTarget);
+              }}
+            >
+              Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

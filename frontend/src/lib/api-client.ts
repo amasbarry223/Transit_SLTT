@@ -607,6 +607,11 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    updateBonSortie: (id: string, data: object) =>
+      this.request<RawBonSortie>(`/bons/sortie/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
     validateBonSortie: (id: string) =>
       this.request<RawBonSortie>(`/bons/sortie/${id}/valider`, {
         method: 'PUT',

@@ -2,13 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { AlertCircle, Check, FilePen, Package, Plus, Trash2, Truck } from "lucide-react";
-import type { BonMotif, StockItem } from "@/lib/domain-types";
+import type { BonMotif, BonSortie, StockItem } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { QuickClientButton } from "@/features/clients";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -48,6 +47,7 @@ type BonFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   nextReference: string;
   canWrite: boolean;
+  editing?: BonSortie | null;
 };
 
 interface FormArticleLigne {
@@ -66,11 +66,13 @@ function createEmptyLigne(): FormArticleLigne {
   };
 }
 
-export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: BonFormDialogProps) {
+export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, editing }: BonFormDialogProps) {
   const { toast } = useToast();
   const [confirmValiderOpen, setConfirmValiderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const addBon = useStore((state) => state.addBon);
+  const updateBon = useStore((state) => state.updateBon);
+  const validateBon = useStore((state) => state.validateBon);
   const stock = useStore((state) => state.stock);
   const clients = useStore((state) => state.clients);
   const societes = useStore((state) => state.societes);
@@ -88,18 +90,42 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
     [clients, formClientId],
   );
 
-  // Réinitialisation du formulaire à l'ouverture
+  // Réinitialisation / pré-remplissage du formulaire à l'ouverture
   const [prevDialogOpen, setPrevDialogOpen] = useState(open);
-  if (open !== prevDialogOpen) {
+  const [prevEditingId, setPrevEditingId] = useState<string | undefined>(editing?.id);
+  if (open !== prevDialogOpen || editing?.id !== prevEditingId) {
     setPrevDialogOpen(open);
+    setPrevEditingId(editing?.id);
     if (open) {
-      setFormDate(new Date().toISOString().slice(0, 10));
-      setFormClientId("");
-      setFormMotif("");
-      setFormLignes([createEmptyLigne()]);
-      // saving n'est plus remis à false après un succès (voir handleValider/
-      // handleSaveDraft) : on le réarme ici pour ne pas laisser les boutons
-      // désactivés à la réouverture.
+      if (editing) {
+        setFormDate(editing.date ? editing.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
+        setFormClientId(editing.clientId || "");
+        setFormMotif((editing.motif as BonMotif) || "");
+        if (editing.lignes && editing.lignes.length > 0) {
+          setFormLignes(
+            editing.lignes.map((l) => ({
+              id: l.id || crypto.randomUUID(),
+              stockId: l.stockId || "",
+              quantite: String(l.quantite || ""),
+              montant: String(l.montant || ""),
+            })),
+          );
+        } else {
+          setFormLignes([
+            {
+              id: crypto.randomUUID(),
+              stockId: editing.stockId || "",
+              quantite: String(editing.quantite || ""),
+              montant: String(editing.montant || ""),
+            },
+          ]);
+        }
+      } else {
+        setFormDate(new Date().toISOString().slice(0, 10));
+        setFormClientId("");
+        setFormMotif("");
+        setFormLignes([createEmptyLigne()]);
+      }
       setSaving(false);
     }
   }
@@ -220,11 +246,25 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
 
     setSaving(true);
     try {
-      await addBon(payload);
-      toastSuccess(toast, {
-        title: "Bon de sortie validé",
-        description: `Bon de sortie validé — ${payload.lignes.length} article(s) décrémenté(s) du stock.`,
-      });
+      if (editing) {
+        await updateBon(editing.id, payload);
+        // Même contrat que addBon : un refus de validation (stock local
+        // insuffisant) doit remonter au catch, pas fermer le dialogue en silence.
+        const ok = await validateBon(editing.id);
+        if (!ok) {
+          throw new Error("Stock insuffisant pour valider ce bon de sortie.");
+        }
+        toastSuccess(toast, {
+          title: "Bon de sortie validé",
+          description: `${editing.reference} validé — stock décrémenté.`,
+        });
+      } else {
+        await addBon(payload);
+        toastSuccess(toast, {
+          title: "Bon de sortie validé",
+          description: `Bon de sortie validé — ${payload.lignes.length} article(s) décrémenté(s) du stock.`,
+        });
+      }
       setFormLignes([createEmptyLigne()]);
       onOpenChange(false);
     } catch (error: unknown) {
@@ -254,17 +294,25 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
 
     setSaving(true);
     try {
-      await addBon(payload);
-      toastSuccess(toast, {
-        title: "Brouillon enregistré",
-        description: "Le bon de sortie multi-articles a été sauvegardé comme brouillon.",
-      });
+      if (editing) {
+        await updateBon(editing.id, payload);
+        toastSuccess(toast, {
+          title: "Bon de sortie modifié",
+          description: `Le bon ${editing.reference} a été mis à jour avec succès.`,
+        });
+      } else {
+        await addBon(payload);
+        toastSuccess(toast, {
+          title: "Brouillon enregistré",
+          description: "Le bon de sortie multi-articles a été sauvegardé comme brouillon.",
+        });
+      }
       setFormLignes([createEmptyLigne()]);
       onOpenChange(false);
     } catch (error: unknown) {
       toastError(toast, error, {
-        title: "Impossible d'enregistrer le brouillon",
-        fallback: "Impossible d'enregistrer le brouillon.",
+        title: "Impossible d'enregistrer le bon",
+        fallback: "Impossible d'enregistrer le bon.",
       });
       setSaving(false);
     }
@@ -278,16 +326,18 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
       <DialogContent className="sm:max-w-4xl lg:max-w-5xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-3">
-            <DialogTitle>Nouveau bon de sortie</DialogTitle>
+            <DialogTitle>{editing ? `Modifier le bon ${editing.reference}` : "Nouveau bon de sortie"}</DialogTitle>
             <Badge
               variant="outline"
               className="border-slate-200 dark:border-slate-700 bg-slate-50 font-mono text-xs text-muted-foreground"
             >
-              {previewReference}
+              {editing ? editing.reference : previewReference}
             </Badge>
           </div>
           <DialogDescription>
-            Sélectionnez le client, le motif et ajoutez les articles à sortir du stock.
+            {editing
+              ? "Modifiez le client, le motif ou les articles de ce bon de sortie."
+              : "Sélectionnez le client, le motif et ajoutez les articles à sortir du stock."}
           </DialogDescription>
         </DialogHeader>
 
@@ -484,7 +534,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
           {/* Aperçu à droite */}
           <div className="lg:col-span-5">
             <BonPreview
-              reference={previewReference}
+              reference={editing ? editing.reference : previewReference}
               date={formDate}
               client={selectedClient?.nom}
               motif={formMotif}
@@ -508,7 +558,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite }: B
             disabled={!canWrite || saving || !formClientId || !formMotif || !firstStockItem}
           >
             <FilePen className="size-4" />
-            Brouillon
+            {editing ? "Enregistrer" : "Brouillon"}
           </Button>
           <Button
             onClick={() => setConfirmValiderOpen(true)}

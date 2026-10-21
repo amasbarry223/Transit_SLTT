@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { BonsService } from './bons.service';
 import { CreateBonSortieDto } from './dto/create-bon-sortie.dto';
+import { UpdateBonSortieDto } from './dto/update-bon-sortie.dto';
 import { CreateBonCaisseDto } from './dto/create-bon-caisse.dto';
 import { UpdateBonCaisseDto } from './dto/update-bon-caisse.dto';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
@@ -25,6 +26,13 @@ export class BonsController {
   @RequirePermission('bons:write')
   createBon(@CurrentUser() user: CurrentUserType, @Body() body: CreateBonSortieDto) {
     return this.bonsService.createBon(user, body);
+  }
+
+  @Put('sortie/:id')
+  @UseGuards(AnnexeGuard)
+  @RequirePermission('bons:write')
+  updateBon(@Param('id') id: string, @CurrentUser() user: CurrentUserType, @Body() body: UpdateBonSortieDto) {
+    return this.bonsService.updateBon(id, user, body);
   }
 
   @Put('sortie/:id/valider')

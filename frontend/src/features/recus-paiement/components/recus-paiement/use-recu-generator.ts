@@ -5,6 +5,9 @@ import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import type { RecuPaiementModuleData } from "@/lib/export";
 import { printRecuPaiementBatch } from "@/lib/export";
 import { useStore } from "@/lib/store";
+import { computeReste, computeStatut } from "@/lib/recus-paiement";
+import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";
+import type { RecuPaiementStatut } from "@/lib/domain-types";
 
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { usePermission } from "@/shared/hooks/use-permission";
@@ -12,22 +15,41 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { resolveGeneratorBrand } from "./shared";
 
+export type RecuMode = "saisie" | "vierge";
+
+/** Pas de champ date : l'API ne persiste que createdAt, une date choisie
+ *  ici serait imprimée sans jamais être enregistrée (papier et base
+ *  divergeraient). Le reçu porte donc toujours la date de sa génération. */
+export interface SaisieForm {
+  nom: string;
+  prenom: string;
+  motif: string;
+  somme: string;
+  montantPaye: string;
+}
+
 export interface GeneratedRecu {
   reference: string;
   moduleData: RecuPaiementModuleData;
 }
 
-/** Un clic imprime un carnet entier, une génération par centaine serait
- *  un abus manifeste (erreur de saisie) plutôt qu'un besoin réel. */
+const DEFAULT_SAISIE_FORM: SaisieForm = {
+  nom: "",
+  prenom: "",
+  motif: "Frais de prestation de transit",
+  somme: "",
+  montantPaye: "",
+};
+
 const MAX_BATCH_COUNT = 100;
 
-/**
- * Un reçu se génère désormais VIERGE : plus de formulaire, seul le numéro
- * (RECU-0001…) est réservé côté serveur et pré-imprimé — le reste du carnet
- * (nom, motif, montants, date, signature) est rempli au stylo une fois
- * imprimé. Un même clic peut réserver et imprimer PLUSIEURS numéros
- * d'affilée (carnet à découper). Voir recus-paiement.service.ts::nextRecuReference.
- */
+function validateSaisie(form: SaisieForm, somme: number, montantPaye: number): string | null {
+  if (!form.nom.trim() || !form.prenom.trim()) return "Le nom et le prénom sont obligatoires.";
+  if (somme <= 0) return "La somme due doit être supérieure à 0.";
+  if (montantPaye > somme) return "Le montant payé ne peut pas dépasser la somme due.";
+  return null;
+}
+
 export function useRecuGenerator() {
   const { toast } = useToast();
   const canWrite = usePermission("recus-paiement:write");
@@ -36,26 +58,163 @@ export function useRecuGenerator() {
   const annexes = useStore((s) => s.annexes);
   const addRecuPaiement = useStore((s) => s.addRecuPaiement);
 
-  const [count, setCount] = useState(1);
+  const [mode, setMode] = useState<RecuMode>("saisie");
+  const [form, setForm] = useState<SaisieForm>(DEFAULT_SAISIE_FORM);
+  const [savedRecu, setSavedRecu] = useState<GeneratedRecu | null>(null);
+
+  // Mode carnet vierge
+  const [batchCount, setBatchCount] = useState(1);
+  const [batch, setBatch] = useState<GeneratedRecu[]>([]);
+
   const [generating, setGenerating] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const [batch, setBatch] = useState<GeneratedRecu[]>([]);
 
   const brand = useMemo(
     () => resolveGeneratorBrand(societes, annexes, activeAnnexeId),
     [societes, annexes, activeAnnexeId],
   );
 
-  /** Le dernier reçu généré du lot — sert d'aperçu représentatif (tous les
-   *  reçus d'un même lot sont identiques hormis leur numéro). */
-  const current = batch.length > 0 ? batch[batch.length - 1] : null;
+  // Calculs dérivés pour la saisie directe
+  const numSomme = useMemo(() => {
+    const n = Number(form.somme);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [form.somme]);
 
-  const updateCount = useCallback((value: number) => {
-    if (!Number.isFinite(value)) return;
-    setCount(Math.min(MAX_BATCH_COUNT, Math.max(1, Math.round(value))));
+  const numMontantPaye = useMemo(() => {
+    const n = Number(form.montantPaye);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [form.montantPaye]);
+
+  const reste = useMemo(() => computeReste(numSomme, numMontantPaye), [numSomme, numMontantPaye]);
+  const statut: RecuPaiementStatut = useMemo(() => computeStatut(numSomme, numMontantPaye), [numSomme, numMontantPaye]);
+  const sommeLettres = useMemo(() => (numSomme > 0 ? montantEnLettresFCFA(numSomme) : ""), [numSomme]);
+
+  const updateFormField = useCallback((field: keyof SaisieForm, value: string) => {
+    setForm((prev: SaisieForm) => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleGenerate = useCallback(async (): Promise<GeneratedRecu[] | null> => {
+  const updateBatchCount = useCallback((value: number) => {
+    if (!Number.isFinite(value)) return;
+    setBatchCount(Math.min(MAX_BATCH_COUNT, Math.max(1, Math.round(value))));
+  }, []);
+
+  // Données du reçu en cours d'aperçu dynamique
+  const activeModuleData: RecuPaiementModuleData = useMemo(() => {
+    if (mode === "saisie") {
+      return {
+        reference: savedRecu ? savedRecu.reference : "RECU-XXXX",
+        nom: form.nom.trim() || undefined,
+        prenom: form.prenom.trim() || undefined,
+        motif: form.motif.trim() || undefined,
+        somme: numSomme > 0 ? numSomme : undefined,
+        montantPaye: numMontantPaye > 0 ? numMontantPaye : undefined,
+        reste: numSomme > 0 ? reste : undefined,
+        date: savedRecu?.moduleData.date ?? new Date().toISOString(),
+      };
+    }
+    // Mode carnet vierge
+    if (batch.length > 0) {
+      return batch[batch.length - 1].moduleData;
+    }
+    return { reference: "" };
+  }, [mode, savedRecu, form, numSomme, numMontantPaye, reste, batch]);
+
+  // Génération et enregistrement d'un reçu avec saisie
+  const handleGenerateSaisie = useCallback(async (): Promise<GeneratedRecu | null> => {
+    if (generating) return null;
+    if (!canWrite) {
+      toastWarning(toast, { title: "Permission insuffisante" });
+      return null;
+    }
+    if (!activeAnnexeId) {
+      toastWarning(toast, { title: "Aucune annexe active — assignez une annexe à votre compte." });
+      return null;
+    }
+    // Chaque enregistrement consomme un numéro de la séquence RECU-xxxx :
+    // un reçu vide ou incohérent ne doit jamais atteindre l'API.
+    const invalid = validateSaisie(form, numSomme, numMontantPaye);
+    if (invalid) {
+      toastWarning(toast, { title: "Reçu incomplet", description: invalid });
+      return null;
+    }
+
+    setGenerating(true);
+    try {
+      const saved = await addRecuPaiement({
+        annexeId: activeAnnexeId,
+        nom: form.nom.trim(),
+        prenom: form.prenom.trim(),
+        motif: form.motif.trim(),
+        somme: numSomme,
+        montantPaye: numMontantPaye,
+      });
+
+      const moduleData: RecuPaiementModuleData = {
+        reference: saved.reference,
+        nom: form.nom.trim() || undefined,
+        prenom: form.prenom.trim() || undefined,
+        motif: form.motif.trim() || undefined,
+        somme: numSomme > 0 ? numSomme : undefined,
+        montantPaye: numMontantPaye > 0 ? numMontantPaye : undefined,
+        reste: numSomme > 0 ? reste : undefined,
+        date: new Date().toISOString(),
+      };
+
+      const result: GeneratedRecu = { reference: saved.reference, moduleData };
+      setSavedRecu(result);
+
+      toastSuccess(toast, {
+        title: `Reçu ${saved.reference} généré`,
+        description: "Le reçu a été enregistré avec succès et est prêt à imprimer.",
+      });
+      return result;
+    } catch (err) {
+      toastError(toast, err, { title: "Échec de l'enregistrement", fallback: "Réessayez." });
+      return null;
+    } finally {
+      setGenerating(false);
+    }
+  }, [generating, canWrite, activeAnnexeId, form, numSomme, numMontantPaye, reste, addRecuPaiement, toast]);
+
+  // Impression du reçu en mode saisie
+  const handlePrintSaisie = useCallback(async (): Promise<boolean> => {
+    if (!brand) {
+      toastWarning(toast, { title: "Aperçu indisponible", description: "Configurez l'entreprise dans Paramètres > Entreprise." });
+      return false;
+    }
+
+    let recuToPrint = savedRecu;
+    if (!recuToPrint) {
+      // Auto-génération si pas encore validé
+      recuToPrint = await handleGenerateSaisie();
+      if (!recuToPrint) return false;
+    }
+
+    setPrinting(true);
+    try {
+      const ok = printRecuPaiementBatch([recuToPrint.moduleData], brand);
+      if (!ok) {
+        toastWarning(toast, { title: "Impression impossible", description: "Autorisez les fenêtres pop-up ou réessayez." });
+        return false;
+      }
+      toastSuccess(toast, {
+        title: "Impression du reçu",
+        description: `Format ${RECEIPT_FORMAT_LABEL} paysage envoyé à l'impression.`,
+      });
+      return true;
+    } finally {
+      setPrinting(false);
+    }
+  }, [brand, savedRecu, handleGenerateSaisie, toast]);
+
+  // Réinitialiser pour un nouveau reçu
+  const handleResetSaisie = useCallback(() => {
+    setForm(DEFAULT_SAISIE_FORM);
+    setSavedRecu(null);
+  }, []);
+
+  // Génération d'un lot de numéros vierges (carnet)
+  const handleGenerateBatch = useCallback(async (): Promise<GeneratedRecu[] | null> => {
     if (generating) return null;
     if (!canWrite) {
       toastWarning(toast, { title: "Permission insuffisante" });
@@ -68,11 +227,7 @@ export function useRecuGenerator() {
     setGenerating(true);
     try {
       const results: GeneratedRecu[] = [];
-      // Séquentiel, pas Promise.all : chaque réservation de numéro dépend de
-      // l'état déjà persisté par la précédente (nextRecuReference() lit le
-      // dernier RECU- en base) — des appels parallèles multiplieraient les
-      // collisions et les retries côté serveur pour rien.
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < batchCount; i++) {
         const saved = await addRecuPaiement({ annexeId: activeAnnexeId });
         results.push({ reference: saved.reference, moduleData: { reference: saved.reference } });
       }
@@ -86,14 +241,15 @@ export function useRecuGenerator() {
       });
       return results;
     } catch (err) {
-      toastError(toast, err, { title: "Échec de la génération du reçu", fallback: "Réessayez." });
+      toastError(toast, err, { title: "Échec de la génération du carnet", fallback: "Réessayez." });
       return null;
     } finally {
       setGenerating(false);
     }
-  }, [generating, canWrite, activeAnnexeId, addRecuPaiement, count, toast]);
+  }, [generating, canWrite, activeAnnexeId, addRecuPaiement, batchCount, toast]);
 
-  const handlePrint = useCallback(async (): Promise<boolean> => {
+  // Impression du lot vierge
+  const handlePrintBatch = useCallback(async (): Promise<boolean> => {
     if (batch.length === 0) {
       toastWarning(toast, { title: "Générez d'abord un reçu avant de l'imprimer." });
       return false;
@@ -104,14 +260,14 @@ export function useRecuGenerator() {
     }
     setPrinting(true);
     try {
-      const ok = printRecuPaiementBatch(batch.map((r) => r.moduleData), brand);
+      const ok = printRecuPaiementBatch(batch.map((r: GeneratedRecu) => r.moduleData), brand);
       if (!ok) {
         toastWarning(toast, { title: "Impression impossible", description: "Autorisez les fenêtres pop-up ou réessayez." });
         return false;
       }
       toastSuccess(toast, {
         title: "Enregistrer en PDF",
-        description: `Format ${RECEIPT_FORMAT_LABEL} paysage uniquement (une page par reçu). Choisissez « Enregistrer au format PDF » — vérifiez que le format papier n'est pas A4.`,
+        description: `Format ${RECEIPT_FORMAT_LABEL} paysage (une page par reçu).`,
       });
       return true;
     } finally {
@@ -120,15 +276,34 @@ export function useRecuGenerator() {
   }, [batch, brand, toast]);
 
   return {
+    mode,
+    setMode,
     brand,
     canWrite,
-    count,
-    setCount: updateCount,
+    // Saisie directe
+    form,
+    updateFormField,
+    savedRecu,
+    numSomme,
+    numMontantPaye,
+    reste,
+    statut,
+    sommeLettres,
+    handleGenerateSaisie,
+    handlePrintSaisie,
+    handleResetSaisie,
+    // Carnet vierge
+    batchCount,
+    setBatchCount: updateBatchCount,
+    batchSize: batch.length,
+    currentVierge: batch.length > 0 ? batch[batch.length - 1] : null,
+    handleGenerateBatch,
+    handlePrintBatch,
+    // Vue courante
+    activeModuleData,
     generating,
     printing,
-    current,
-    batchSize: batch.length,
-    handleGenerate,
-    handlePrint,
   };
 }
+
+export type RecuGeneratorBrand = ReturnType<typeof resolveGeneratorBrand>;

@@ -253,6 +253,7 @@ export interface ImportDossierHistoriqueInput {
 export type { ClientInput } from "@/features/clients/types";
 
 export interface BonLigneInput {
+  id?: string;
   stockId?: string;
   marchandise: string;
   quantite: number;
