@@ -3,8 +3,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import type { RecuPaiementModuleData } from "@/lib/export";
-import { printRecuPaiementBatch } from "@/lib/export";
+import { printRecuPaiementBatch, printRecuPaiementTicket } from "@/lib/export";
 import { useStore } from "@/lib/store";
+import { useSession } from "@/lib/session/session-store";
 import { computeReste, computeStatut } from "@/lib/recus-paiement";
 import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";
 import type { RecuPaiementStatut } from "@/lib/domain-types";
@@ -57,6 +58,7 @@ export function useRecuGenerator() {
   const societes = useStore((s) => s.societes);
   const annexes = useStore((s) => s.annexes);
   const addRecuPaiement = useStore((s) => s.addRecuPaiement);
+  const currentUserName = useSession((s) => s.currentUserName);
 
   const [mode, setMode] = useState<RecuMode>("saisie");
   const [form, setForm] = useState<SaisieForm>(DEFAULT_SAISIE_FORM);
@@ -207,6 +209,44 @@ export function useRecuGenerator() {
     }
   }, [brand, savedRecu, handleGenerateSaisie, toast]);
 
+  // Impression ticket de caisse 80 mm (imprimante thermique) — même logique
+  // d'auto-enregistrement que l'impression carnet.
+  const handlePrintTicket = useCallback(async (): Promise<boolean> => {
+    if (!brand) {
+      toastWarning(toast, { title: "Aperçu indisponible", description: "Configurez l'entreprise dans Paramètres > Entreprise." });
+      return false;
+    }
+    let recuToPrint = savedRecu;
+    if (!recuToPrint) {
+      recuToPrint = await handleGenerateSaisie();
+      if (!recuToPrint) return false;
+    }
+
+    const data = recuToPrint.moduleData;
+    setPrinting(true);
+    try {
+      const ok = await printRecuPaiementTicket(
+        {
+          ...data,
+          statut: computeStatut(data.somme ?? 0, data.montantPaye ?? 0),
+          encaissePar: currentUserName || undefined,
+        },
+        brand,
+      );
+      if (!ok) {
+        toastWarning(toast, { title: "Impression impossible", description: "Autorisez les fenêtres pop-up ou réessayez." });
+        return false;
+      }
+      toastSuccess(toast, {
+        title: "Ticket de caisse",
+        description: "Choisissez l'imprimante ticket (80 mm) dans la fenêtre d'impression.",
+      });
+      return true;
+    } finally {
+      setPrinting(false);
+    }
+  }, [brand, savedRecu, handleGenerateSaisie, currentUserName, toast]);
+
   // Réinitialiser pour un nouveau reçu
   const handleResetSaisie = useCallback(() => {
     setForm(DEFAULT_SAISIE_FORM);
@@ -291,6 +331,7 @@ export function useRecuGenerator() {
     sommeLettres,
     handleGenerateSaisie,
     handlePrintSaisie,
+    handlePrintTicket,
     handleResetSaisie,
     // Carnet vierge
     batchCount,

@@ -29,6 +29,7 @@ export interface RecuWorkspaceProps {
   statut: RecuPaiementStatut;
   onGenerateSaisie: () => unknown;
   onPrintSaisie: () => unknown;
+  onPrintTicket: () => unknown;
   onResetSaisie: () => void;
   // Carnet vierge
   batchCount: number;
@@ -129,6 +130,7 @@ export function RecuWorkspace({
   statut,
   onGenerateSaisie,
   onPrintSaisie,
+  onPrintTicket,
   onResetSaisie,
   batchCount,
   onBatchCountChange,
@@ -202,6 +204,7 @@ export function RecuWorkspace({
           statut={statut}
           onGenerateSaisie={onGenerateSaisie}
           onPrintSaisie={onPrintSaisie}
+          onPrintTicket={onPrintTicket}
           onResetSaisie={onResetSaisie}
           batchCount={batchCount}
           onBatchCountChange={onBatchCountChange}

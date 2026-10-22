@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Clock, FilePlus2, Minus, Plus, Printer, RotateCcw } from "lucide-react";
+import { CheckCircle2, Clock, FilePlus2, Minus, Plus, Printer, ReceiptText, RotateCcw } from "lucide-react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -25,6 +25,8 @@ export interface RecuGeneratorActionsProps {
   statut: RecuPaiementStatut;
   onGenerateSaisie: () => unknown;
   onPrintSaisie: () => unknown;
+  /** Ticket de caisse 80 mm (imprimante thermique). */
+  onPrintTicket?: () => unknown;
   onResetSaisie: () => void;
   // Vierge props
   batchCount: number;
@@ -102,6 +104,7 @@ export function RecuGeneratorActions({
   statut,
   onGenerateSaisie,
   onPrintSaisie,
+  onPrintTicket,
   onResetSaisie,
   batchCount,
   onBatchCountChange,
@@ -339,6 +342,19 @@ export function RecuGeneratorActions({
             <Printer className="size-4" />
             {printing ? "Préparation…" : isSaved ? "Imprimer le reçu" : "Générer & Imprimer"}
           </Button>
+
+          {onPrintTicket && (
+            <Button
+              variant="outline"
+              onClick={() => void onPrintTicket()}
+              disabled={busy}
+              className="h-10 justify-center gap-2 rounded-xl text-xs font-semibold"
+              title="Ticket de caisse pour imprimante thermique 80 mm"
+            >
+              <ReceiptText className="size-4" />
+              {isSaved ? "Ticket de caisse (80 mm)" : "Générer & Ticket (80 mm)"}
+            </Button>
+          )}
 
           {isSaved && (
             <Button

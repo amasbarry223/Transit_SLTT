@@ -33,6 +33,7 @@ export function RecusPaiementScreen() {
           statut={gen.statut}
           onGenerateSaisie={gen.handleGenerateSaisie}
           onPrintSaisie={gen.handlePrintSaisie}
+          onPrintTicket={gen.handlePrintTicket}
           onResetSaisie={gen.handleResetSaisie}
           batchCount={gen.batchCount}
           onBatchCountChange={gen.setBatchCount}
@@ -80,6 +81,7 @@ export function RecusPaiementScreen() {
             statut={gen.statut}
             onGenerateSaisie={gen.handleGenerateSaisie}
             onPrintSaisie={gen.handlePrintSaisie}
+            onPrintTicket={gen.handlePrintTicket}
             onResetSaisie={gen.handleResetSaisie}
             batchCount={gen.batchCount}
             onBatchCountChange={gen.setBatchCount}

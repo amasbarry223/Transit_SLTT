@@ -10,6 +10,7 @@ export {
   printRecuPaiementBatch,
   type RecuPaiementModuleData,
 } from "./recu-paiement";
+export { printRecuPaiementTicket, type RecuTicketData } from "./recu-ticket";
 export {
   buildBonSortieCaisseHTML,
   type BonSortieCaisseModuleData,
