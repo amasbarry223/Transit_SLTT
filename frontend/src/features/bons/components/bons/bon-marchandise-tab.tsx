@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { BonSortie } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
+import { useCurrentUser } from "@/shared/hooks/use-permission";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -65,6 +66,28 @@ type BonMarchandiseTabProps = {
   initialSearch?: string;
 };
 
+/** Modifier / supprimer : libre sur un brouillon ; sur un bon validé,
+ *  réservé à l'administrateur (le serveur corrige alors le stock) et bloqué
+ *  dès qu'un bon de livraison existe. Le serveur applique les mêmes règles. */
+function correctionFor(bon: BonSortie, isAdmin: boolean, livraisonRef?: string) {
+  if (bon.statut === "Brouillon") {
+    return { enabled: true, editTitle: "Modifier le bon", deleteTitle: "Supprimer le bon" };
+  }
+  if (livraisonRef) {
+    const why = `Bon de livraison ${livraisonRef} établi : supprimez-le d'abord`;
+    return { enabled: false, editTitle: why, deleteTitle: why };
+  }
+  if (isAdmin) {
+    return {
+      enabled: true,
+      editTitle: "Modifier le bon validé (le stock sera corrigé)",
+      deleteTitle: "Supprimer le bon validé (la quantité sera remise en stock)",
+    };
+  }
+  const why = "Bon validé : seul un administrateur peut le modifier ou le supprimer";
+  return { enabled: false, editTitle: why, deleteTitle: why };
+}
+
 /** Visible seulement sur un bon validé (la marchandise est sortie du stock).
  *  Sans droit d'écriture, on ne peut qu'ouvrir un bon de livraison existant. */
 function LivraisonButton({
@@ -111,6 +134,8 @@ export function BonMarchandiseTab({
 }: BonMarchandiseTabProps) {
   const clients = useStore((state) => state.clients);
   const bonsLivraison = useStore((state) => state.bonsLivraison);
+  const currentUser = useCurrentUser();
+  const isAdmin = (currentUser?.role as string) === "ADMIN" || currentUser?.role === "Administrateur";
   const livraisonRefBySortie = useMemo(
     () => new Map(bonsLivraison.map((bl) => [bl.bonSortieId, bl.reference])),
     [bonsLivraison],
@@ -276,6 +301,7 @@ export function BonMarchandiseTab({
                   onDelete={onDeleteBon}
                   livraisonRef={livraisonRefBySortie.get(bon.id)}
                   onLivraison={onLivraison}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>
@@ -325,6 +351,7 @@ export function BonMarchandiseTab({
                       onDelete={onDeleteBon}
                       livraisonRef={livraisonRefBySortie.get(bon.id)}
                       onLivraison={onLivraison}
+                      isAdmin={isAdmin}
                     />
                   ))}
                 </TableBody>
@@ -357,6 +384,7 @@ function BonMobileCard({
   onDelete,
   livraisonRef,
   onLivraison,
+  isAdmin,
 }: {
   bon: BonSortie;
   canWrite: boolean;
@@ -367,8 +395,10 @@ function BonMobileCard({
   onDelete: (bon: BonSortie) => void;
   livraisonRef?: string;
   onLivraison: (bon: BonSortie) => void;
+  isAdmin: boolean;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
+  const correction = correctionFor(bon, isAdmin, livraisonRef);
 
   return (
     <Card
@@ -449,13 +479,13 @@ function BonMobileCard({
             size="icon"
             className={cn(
               "size-11",
-              isBrouillon
+              correction.enabled
                 ? "text-muted-foreground hover:text-primary"
                 : "text-muted-foreground/30 cursor-not-allowed",
             )}
             aria-label={`Modifier ${bon.reference}`}
-            title={isBrouillon ? "Modifier le bon" : "Un bon validé ne peut plus être modifié"}
-            disabled={!isBrouillon}
+            title={correction.editTitle}
+            disabled={!correction.enabled}
             onClick={() => onEdit(bon)}
           >
             <Pencil className="size-4" />
@@ -467,13 +497,13 @@ function BonMobileCard({
             size="icon"
             className={cn(
               "size-11",
-              isBrouillon
+              correction.enabled
                 ? "text-slate-400 hover:text-red-600"
                 : "text-slate-400/30 cursor-not-allowed",
             )}
             aria-label={`Supprimer ${bon.reference}`}
-            title={isBrouillon ? "Supprimer le bon" : "Un bon validé ne peut plus être supprimé"}
-            disabled={!isBrouillon}
+            title={correction.deleteTitle}
+            disabled={!correction.enabled}
             onClick={() => onDelete(bon)}
           >
             <Trash2 className="size-4" />
@@ -494,6 +524,7 @@ function BonTableRow({
   onDelete,
   livraisonRef,
   onLivraison,
+  isAdmin,
 }: {
   bon: BonSortie;
   canWrite: boolean;
@@ -504,8 +535,10 @@ function BonTableRow({
   onDelete: (bon: BonSortie) => void;
   livraisonRef?: string;
   onLivraison: (bon: BonSortie) => void;
+  isAdmin: boolean;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
+  const correction = correctionFor(bon, isAdmin, livraisonRef);
 
   return (
     <TableRow
@@ -591,13 +624,13 @@ function BonTableRow({
               size="icon"
               className={cn(
                 "size-11",
-                isBrouillon
+                correction.enabled
                   ? "text-muted-foreground hover:text-primary"
                   : "text-muted-foreground/30 cursor-not-allowed",
               )}
               aria-label={`Modifier ${bon.reference}`}
-              title={isBrouillon ? "Modifier le bon" : "Un bon validé ne peut plus être modifié"}
-              disabled={!isBrouillon}
+              title={correction.editTitle}
+              disabled={!correction.enabled}
               onClick={() => onEdit(bon)}
             >
               <Pencil className="size-4" />
@@ -609,13 +642,13 @@ function BonTableRow({
               size="icon"
               className={cn(
                 "size-11",
-                isBrouillon
+                correction.enabled
                   ? "text-slate-400 hover:text-red-600"
                   : "text-slate-400/30 cursor-not-allowed",
               )}
               aria-label={`Supprimer ${bon.reference}`}
-              title={isBrouillon ? "Supprimer le bon" : "Un bon validé ne peut plus être supprimé"}
-              disabled={!isBrouillon}
+              title={correction.deleteTitle}
+              disabled={!correction.enabled}
               onClick={() => onDelete(bon)}
             >
               <Trash2 className="size-4" />

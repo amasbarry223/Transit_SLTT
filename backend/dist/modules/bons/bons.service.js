@@ -114,36 +114,104 @@ let BonsService = class BonsService {
             include: { annexe: true, client: true, stock: true },
         });
     }
+    async assertCanCorrectValidated(bonId, user, action) {
+        if (user.role !== 'ADMIN') {
+            throw new common_1.ForbiddenException(`Seul un administrateur peut ${action} un bon de sortie validé.`);
+        }
+        const livraison = await this.prisma.bonLivraison.findUnique({
+            where: { bonSortieId: bonId },
+            select: { reference: true },
+        });
+        if (livraison) {
+            throw new common_1.BadRequestException(`Ce bon a déjà un bon de livraison (${livraison.reference}) : supprimez-le d'abord.`);
+        }
+    }
+    async moveStock(tx, user, m) {
+        if (!m.stockId || m.delta === 0)
+            return;
+        const claimed = await tx.stockItem.updateMany({
+            where: { id: m.stockId },
+            data: { quantite: { increment: m.delta } },
+        });
+        if (claimed.count === 0)
+            return;
+        const fresh = await tx.stockItem.findUnique({ where: { id: m.stockId } });
+        if (fresh && fresh.quantite < 0) {
+            throw new common_1.BadRequestException('Quantité insuffisante en stock pour cette correction du bon de sortie.');
+        }
+        await tx.mouvementStock.create({
+            data: {
+                stockId: m.stockId,
+                annexeId: m.annexeId,
+                date: new Date().toISOString().slice(0, 10),
+                type: m.delta > 0 ? 'Entrée' : 'Sortie',
+                marchandise: m.marchandise,
+                quantite: Math.abs(m.delta),
+                unite: m.unite,
+                responsable: user.nom,
+                bonRef: m.bonRef,
+                motif: m.motif,
+            },
+        });
+    }
     async updateBon(id, user, data) {
         const bon = await this.findOneBon(id, user);
-        if (bon.statut === 'Validé') {
-            throw new common_1.BadRequestException('Un bon de sortie déjà validé ne peut pas être modifié.');
-        }
         if (user.role !== 'ADMIN' && data.annexeId && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette annexe');
         }
         await this.assertStockInAnnexe(data.stockId !== undefined ? data.stockId : bon.stockId, data.annexeId !== undefined ? data.annexeId : bon.annexeId);
-        const updated = await this.prisma.bonSortie.updateMany({
-            where: { id: bon.id, statut: { not: 'Validé' } },
-            data: {
-                date: data.date !== undefined ? data.date : bon.date,
-                clientId: data.clientId !== undefined ? data.clientId : bon.clientId,
-                clientNom: data.clientNom !== undefined ? data.clientNom : bon.clientNom,
-                annexeId: data.annexeId !== undefined ? data.annexeId : bon.annexeId,
-                stockId: data.stockId !== undefined ? data.stockId || null : bon.stockId,
-                marchandise: data.marchandise !== undefined ? data.marchandise : bon.marchandise,
-                quantite: data.quantite !== undefined ? this.toPositiveQuantite(data.quantite) : bon.quantite,
-                unite: data.unite !== undefined ? data.unite : bon.unite,
-                motif: data.motif !== undefined ? data.motif : bon.motif,
-                montant: data.montant !== undefined ? this.toNonNegativeMontant(data.montant) : bon.montant,
-            },
-        });
-        if (updated.count === 0) {
-            throw new common_1.BadRequestException('Un bon de sortie déjà validé ne peut pas être modifié.');
+        const next = {
+            date: data.date !== undefined ? data.date : bon.date,
+            clientId: data.clientId !== undefined ? data.clientId : bon.clientId,
+            clientNom: data.clientNom !== undefined ? data.clientNom : bon.clientNom,
+            annexeId: data.annexeId !== undefined ? data.annexeId : bon.annexeId,
+            stockId: data.stockId !== undefined ? data.stockId || null : bon.stockId,
+            marchandise: data.marchandise !== undefined ? data.marchandise : bon.marchandise,
+            quantite: data.quantite !== undefined ? this.toPositiveQuantite(data.quantite) : bon.quantite,
+            unite: data.unite !== undefined ? data.unite : bon.unite,
+            motif: data.motif !== undefined ? data.motif : bon.motif,
+            montant: data.montant !== undefined ? this.toNonNegativeMontant(data.montant) : bon.montant,
+        };
+        if (bon.statut !== 'Validé') {
+            const updated = await this.prisma.bonSortie.updateMany({
+                where: { id: bon.id, statut: { not: 'Validé' } },
+                data: next,
+            });
+            if (updated.count === 0) {
+                throw new common_1.BadRequestException('Ce bon vient d\'être validé : rechargez la page avant de le modifier.');
+            }
+            return this.prisma.bonSortie.findUnique({
+                where: { id: bon.id },
+                include: { annexe: true, client: true, stock: true },
+            });
         }
-        return this.prisma.bonSortie.findUnique({
-            where: { id: bon.id },
-            include: { annexe: true, client: true, stock: true },
+        await this.assertCanCorrectValidated(bon.id, user, 'modifier');
+        const stockChange = next.stockId !== bon.stockId || next.quantite !== bon.quantite;
+        return this.prisma.$transaction(async (tx) => {
+            if (stockChange) {
+                await this.moveStock(tx, user, {
+                    stockId: bon.stockId,
+                    annexeId: bon.annexeId,
+                    delta: bon.quantite,
+                    marchandise: bon.marchandise,
+                    unite: bon.unite,
+                    bonRef: bon.reference,
+                    motif: `Annulation (modification) du bon ${bon.reference}`,
+                });
+                await this.moveStock(tx, user, {
+                    stockId: next.stockId,
+                    annexeId: next.annexeId,
+                    delta: -next.quantite,
+                    marchandise: next.marchandise,
+                    unite: next.unite,
+                    bonRef: bon.reference,
+                    motif: `Sortie corrigée du bon ${bon.reference}`,
+                });
+            }
+            const updated = await tx.bonSortie.updateMany({ where: { id: bon.id, statut: 'Validé' }, data: next });
+            if (updated.count === 0)
+                throw new common_1.BadRequestException('Ce bon a changé entre-temps : rechargez la page.');
+            return tx.bonSortie.findUnique({ where: { id: bon.id }, include: { annexe: true, client: true, stock: true } });
         });
     }
     async validateBon(id, user) {
@@ -203,10 +271,26 @@ let BonsService = class BonsService {
         if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de sortie');
         }
-        if (bon.statut === 'Validé') {
-            throw new common_1.BadRequestException("Un bon de sortie validé ne peut pas être supprimé (le stock a déjà été mouvementé).");
+        if (bon.statut !== 'Validé') {
+            await this.prisma.bonSortie.delete({ where: { id: bon.id } });
+            return { id: bon.id };
         }
-        await this.prisma.bonSortie.delete({ where: { id: bon.id } });
+        await this.assertCanCorrectValidated(bon.id, user, 'supprimer');
+        const validated = bon;
+        await this.prisma.$transaction(async (tx) => {
+            await this.moveStock(tx, user, {
+                stockId: validated.stockId,
+                annexeId: validated.annexeId,
+                delta: validated.quantite,
+                marchandise: validated.marchandise,
+                unite: validated.unite,
+                bonRef: validated.reference,
+                motif: `Annulation (suppression) du bon ${validated.reference}`,
+            });
+            const deleted = await tx.bonSortie.deleteMany({ where: { id: validated.id, statut: 'Validé' } });
+            if (deleted.count === 0)
+                throw new common_1.BadRequestException('Ce bon a changé entre-temps : rechargez la page.');
+        });
         return { id: bon.id };
     }
     async findAllBonsCaisse(user, params) {

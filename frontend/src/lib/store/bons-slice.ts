@@ -122,9 +122,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   updateBon: async (id, input) => {
     const existing = get().bons.find((b) => b.id === id);
     if (!existing) throw new Error("Bon de sortie introuvable");
-    if (existing.statut === "Validé") {
-      throw new Error("Un bon validé ne peut pas être modifié (le stock a déjà été décrémenté).");
-    }
+    // Bon validé : autorisé côté serveur pour un administrateur seulement
+    // (correction du stock en transaction) — c'est lui qui tranche.
 
     const annexe = input.annexeId ? get().annexes.find((a) => a.id === input.annexeId) : undefined;
     const client = input.clientId ? get().clients.find((c) => c.id === input.clientId) : undefined;
@@ -182,15 +181,15 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       bons: s.bons.map((b) => (b.id === id ? updatedBon : b)),
     }));
     await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Modification, `Bon ${existing.reference} modifié`);
+    // Le serveur a corrigé le stock et ajouté des mouvements : on recharge
+    // pour que stock et historique reflètent la base (opération rare, admin).
+    if (existing.statut === "Validé") await get().refetchData();
     return updatedBon;
   },
 
   removeBon: async (id) => {
     const bon = get().bons.find((b) => b.id === id);
     if (!bon) return;
-    if (bon.statut === "Validé") {
-      throw new Error("Un bon validé ne peut pas être supprimé (le stock a déjà été décrémenté).");
-    }
 
     await api.bons.deleteBonSortie(id);
 
@@ -198,6 +197,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       bons: s.bons.filter((b) => b.id !== id),
     }));
     await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Suppression, `Bon ${bon.reference} supprimé`);
+    // Bon validé : la quantité est revenue en stock côté serveur.
+    if (bon.statut === "Validé") await get().refetchData();
   },
 
   validateBon: async (id) => {
@@ -278,8 +279,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       bons: s.bons.map((b) => (b.id === id ? { ...b, statut: "Validé" as const } : b)),
       stock: stockItem
         ? s.stock.map((item) =>
-            item.id === stockItem.id ? { ...item, quantite: item.quantite - bon.quantite } : item,
-          )
+          item.id === stockItem.id ? { ...item, quantite: item.quantite - bon.quantite } : item,
+        )
         : s.stock,
       mouvements: [
         {
@@ -383,20 +384,20 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       bonsSortieCaisse: s.bonsSortieCaisse.map((b) =>
         b.id === id || (reference && b.reference === reference)
           ? {
-              ...b,
-              id: updated?.id ?? b.id,
-              date: input.date,
-              annexeId: input.annexeId,
-              annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
-              montantTotal,
-              lignes: confirmedLignes.map((ligne) => ({
-                id: ligne.id,
-                date: ligne.date,
-                beneficiaire: ligne.beneficiaire,
-                motif: ligne.motif,
-                montant: Number(ligne.montant),
-              })),
-            }
+            ...b,
+            id: updated?.id ?? b.id,
+            date: input.date,
+            annexeId: input.annexeId,
+            annexeNom: get().annexes.find((a) => a.id === input.annexeId)?.nom,
+            montantTotal,
+            lignes: confirmedLignes.map((ligne) => ({
+              id: ligne.id,
+              date: ligne.date,
+              beneficiaire: ligne.beneficiaire,
+              motif: ligne.motif,
+              montant: Number(ligne.montant),
+            })),
+          }
           : b,
       ),
     }));

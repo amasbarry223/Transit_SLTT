@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { BonsService } from './bons.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 
@@ -220,5 +220,74 @@ describe('BonsService.validateBon', () => {
     await service.validateBon('bon-2', admin());
 
     expect(tx.mouvementStock.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('BonsService — correction d’un bon VALIDÉ (admin, avec correction du stock)', () => {
+  function createValidatedPrisma(opts: { livraison?: { reference: string } | null; stockAfter?: number } = {}) {
+    const bon = baseBonSortie({ statut: 'Validé', stockId: 'stock-1', quantite: 100 });
+    const tx = {
+      stockItem: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'stock-1', quantite: opts.stockAfter ?? 50 }),
+      },
+      mouvementStock: { create: vi.fn() },
+      bonSortie: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUnique: vi.fn().mockResolvedValue(bon),
+      },
+    };
+    const prisma = {
+      bonSortie: { findUnique: vi.fn().mockResolvedValue(bon) },
+      stockItem: { findUnique: vi.fn().mockResolvedValue({ annexeId: bon.annexeId }) },
+      bonLivraison: { findUnique: vi.fn().mockResolvedValue(opts.livraison ?? null) },
+      $transaction: vi.fn(async (cb: (t: unknown) => unknown) => cb(tx)),
+    };
+    return { prisma, tx };
+  }
+  const agent = () => admin({ role: 'TRANSITAIRE', annexeIds: ['annexe-ml'] });
+
+  it('refuse la suppression à un non-administrateur', async () => {
+    const { prisma } = createValidatedPrisma();
+    await expect(new BonsService(prisma as any).deleteBon('bon-2', agent())).rejects.toThrow(ForbiddenException);
+  });
+
+  it('suppression admin : remet la quantité en stock et trace un mouvement Entrée', async () => {
+    const { prisma, tx } = createValidatedPrisma();
+    await new BonsService(prisma as any).deleteBon('bon-2', admin());
+
+    expect(tx.stockItem.updateMany.mock.calls[0][0].data).toEqual({ quantite: { increment: 100 } });
+    expect(tx.mouvementStock.create.mock.calls[0][0].data).toMatchObject({ type: 'Entrée', quantite: 100, bonRef: 'BS-0001' });
+    expect(tx.bonSortie.deleteMany).toHaveBeenCalledWith({ where: { id: 'bon-2', statut: 'Validé' } });
+  });
+
+  it('refuse si le bon a déjà un bon de livraison', async () => {
+    const { prisma } = createValidatedPrisma({ livraison: { reference: 'LIV-2026-0001' } });
+    await expect(new BonsService(prisma as any).deleteBon('bon-2', admin())).rejects.toThrow(BadRequestException);
+  });
+
+  it('modification de quantité : annule la sortie d’origine puis applique la nouvelle', async () => {
+    const { prisma, tx } = createValidatedPrisma();
+    await new BonsService(prisma as any).updateBon('bon-2', admin(), { quantite: 60 });
+
+    const deltas = tx.stockItem.updateMany.mock.calls.map((c: any) => c[0].data.quantite.increment);
+    expect(deltas).toEqual([100, -60]);
+    const types = tx.mouvementStock.create.mock.calls.map((c: any) => c[0].data.type);
+    expect(types).toEqual(['Entrée', 'Sortie']);
+    expect(tx.bonSortie.updateMany.mock.calls[0][0].data.quantite).toBe(60);
+  });
+
+  it('modification sans changement de quantité ni d’article : aucun mouvement de stock', async () => {
+    const { prisma, tx } = createValidatedPrisma();
+    await new BonsService(prisma as any).updateBon('bon-2', admin(), { motif: 'Correction' });
+
+    expect(tx.stockItem.updateMany).not.toHaveBeenCalled();
+    expect(tx.mouvementStock.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse une correction qui rendrait le stock négatif', async () => {
+    const { prisma } = createValidatedPrisma({ stockAfter: -5 });
+    await expect(new BonsService(prisma as any).updateBon('bon-2', admin(), { quantite: 200 })).rejects.toThrow(BadRequestException);
   });
 });

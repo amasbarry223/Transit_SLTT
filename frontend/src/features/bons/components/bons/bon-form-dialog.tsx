@@ -70,6 +70,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   const { toast } = useToast();
   const [confirmValiderOpen, setConfirmValiderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const editingValidated = editing?.statut === "Validé";
   const addBon = useStore((state) => state.addBon);
   const updateBon = useStore((state) => state.updateBon);
   const validateBon = useStore((state) => state.validateBon);
@@ -335,9 +336,11 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
             </Badge>
           </div>
           <DialogDescription>
-            {editing
-              ? "Modifiez le client, le motif ou les articles de ce bon de sortie."
-              : "Sélectionnez le client, le motif et ajoutez les articles à sortir du stock."}
+            {editingValidated
+              ? "Bon déjà validé : à l'enregistrement, l'ancienne sortie est remise en stock et la nouvelle est décrémentée (mouvements tracés)."
+              : editing
+                ? "Modifiez le client, le motif ou les articles de ce bon de sortie."
+                : "Sélectionnez le client, le motif et ajoutez les articles à sortir du stock."}
           </DialogDescription>
         </DialogHeader>
 
@@ -558,15 +561,19 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
             disabled={!canWrite || saving || !formClientId || !formMotif || !firstStockItem}
           >
             <FilePen className="size-4" />
-            {editing ? "Enregistrer" : "Brouillon"}
+            {editingValidated ? "Enregistrer la correction" : editing ? "Enregistrer" : "Brouillon"}
           </Button>
-          <Button
-            onClick={() => setConfirmValiderOpen(true)}
-            disabled={!isFormReady || saving}
-          >
-            <Check className="size-4" />
-            Valider le bon
-          </Button>
+          {/* Un bon déjà validé ne se revalide pas : l'enregistrement corrige
+              directement le stock côté serveur. */}
+          {!editingValidated && (
+            <Button
+              onClick={() => setConfirmValiderOpen(true)}
+              disabled={!isFormReady || saving}
+            >
+              <Check className="size-4" />
+              Valider le bon
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
 

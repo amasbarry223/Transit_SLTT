@@ -447,7 +447,10 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         unite: b.unite || "",
         motif: (b.motif || "Vente") as BonMotif,
         montant: Number(b.montant || 0),
-        statut: (b.statut || "Brouillon") as "Validé" | "Brouillon",
+        // Tout statut serveur autre que "Validé" (ex. "En attente", défaut
+        // en base) est un brouillon : sinon le bon n'était ni modifiable, ni
+        // supprimable, ni validable depuis l'écran.
+        statut: (b.statut === "Validé" ? "Validé" : "Brouillon") as "Validé" | "Brouillon",
       }));
 
       const rawBonsCaisse: RawBonSortieCaisse[] = Array.isArray(bonsCaisseRes) ? bonsCaisseRes : [];

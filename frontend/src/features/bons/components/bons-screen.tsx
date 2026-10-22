@@ -594,7 +594,9 @@ export function BonsScreen() {
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer le bon {bonDeleteTarget?.reference} ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le bon de sortie et ses lignes associées seront définitivement supprimés.
+              {bonDeleteTarget?.statut === "Validé"
+                ? `Ce bon est validé : la quantité sortie (${bonDeleteTarget.quantite} ${bonDeleteTarget.unite}) sera remise en stock et un mouvement d'annulation sera tracé. Cette action est irréversible.`
+                : "Cette action est irréversible. Le bon de sortie et ses lignes associées seront définitivement supprimés."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
