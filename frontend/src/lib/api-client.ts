@@ -6,8 +6,10 @@
 import type {
   ConfigMap,
   RawAnnexe,
+  RawBonLivraison,
   RawBonSortie,
   RawBonSortieCaisse,
+  RawNotification,
   RawCaisse,
   RawClient,
   RawClotureCaisse,
@@ -636,6 +638,39 @@ class ApiClient {
       this.request<RawBonSortieCaisse>(`/bons/caisse/${id}`, {
         method: 'DELETE',
       }),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Bons de livraison (générés depuis un bon de sortie validé)
+  // ---------------------------------------------------------------------------
+  bonsLivraison = {
+    getAll: (params?: { annexeId?: string; clientId?: string }) =>
+      this.request<RawBonLivraison[]>(`/bons-livraison${this.toQueryString(params)}`),
+    create: (data: object) =>
+      this.request<RawBonLivraison>('/bons-livraison', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: object) =>
+      this.request<RawBonLivraison>(`/bons-livraison/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    remove: (id: string) =>
+      this.request<{ id: string }>(`/bons-livraison/${id}`, {
+        method: 'DELETE',
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Notifications (cloche) — toujours celles de l'utilisateur connecté
+  // ---------------------------------------------------------------------------
+  notifications = {
+    list: (limit = 20) =>
+      this.request<{ items: RawNotification[]; unreadCount: number }>(`/notifications?limit=${limit}`),
+    markRead: (id: string) =>
+      this.request<{ id: string; lue: boolean }>(`/notifications/${id}/lue`, { method: 'PATCH' }),
+    markAllRead: () => this.request<{ count: number }>('/notifications/lues', { method: 'PATCH' }),
   };
 
   // ---------------------------------------------------------------------------

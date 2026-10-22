@@ -179,6 +179,7 @@ model Annexe {
   mouvements  MouvementStock[]
   bonsSortie  BonSortie[]
   bonsSortieCaisse BonSortieCaisse[]
+  bonsLivraison BonLivraison[]
   recusPaiement RecuPaiement[]
   operationsComptables OperationComptable[]
   cloturesCaisse ClotureCaisse[]
@@ -234,6 +235,7 @@ model Client {
   contrats   Contrat[]
   stockItems StockItem[]
   bonsSortie BonSortie[]
+  bonsLivraison BonLivraison[]
 
   @@index([annexeId])
   @@map("clients")
@@ -721,6 +723,7 @@ model Transporteur {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   annexe          Annexe?  @relation(fields: [annexeId], references: [id])
+  bonsLivraison   BonLivraison[]
 
   @@index([annexeId])
   @@map("transporteurs")
@@ -800,11 +803,48 @@ model BonSortie {
   client      Client     @relation(fields: [clientId], references: [id])
   annexe      Annexe     @relation(fields: [annexeId], references: [id])
   stock       StockItem? @relation(fields: [stockId], references: [id])
+  bonLivraison BonLivraison?
 
   @@index([clientId])
   @@index([annexeId])
   @@index([stockId])
   @@map("bons_sortie")
+}
+
+// Bon de livraison — généré depuis un bon de sortie VALIDÉ (un seul par bon).
+// `lignes` est un instantané JSON [{marchandise, quantite, unite}] : les lignes
+// multi-articles d'un bon de sortie ne sont pas persistées côté serveur, le
+// bon de livraison garde donc les siennes, figées au moment de sa création.
+model BonLivraison {
+  id                 String   @id @default(uuid())
+  reference          String   @unique
+  date               String
+  bonSortieId        String   @unique @map("bon_sortie_id")
+  clientId           String   @map("client_id")
+  clientNom          String   @map("client_nom")
+  annexeId           String   @map("annexe_id")
+  lignes             Json
+  transporteurId     String?  @map("transporteur_id")
+  transporteurNom    String?  @map("transporteur_nom")
+  immatriculation    String?
+  chauffeurNom       String?  @map("chauffeur_nom")
+  chauffeurTelephone String?  @map("chauffeur_telephone")
+  adresseLivraison   String?  @map("adresse_livraison")
+  observations       String?  @db.Text
+  statut             String   @default("En cours")
+  creePar            String?  @map("cree_par")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  bonSortie    BonSortie     @relation(fields: [bonSortieId], references: [id], onDelete: Restrict)
+  client       Client        @relation(fields: [clientId], references: [id])
+  annexe       Annexe        @relation(fields: [annexeId], references: [id])
+  transporteur Transporteur? @relation(fields: [transporteurId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([annexeId])
+  @@index([transporteurId])
+  @@map("bons_livraison")
 }
 
 model BonSortieCaisse {

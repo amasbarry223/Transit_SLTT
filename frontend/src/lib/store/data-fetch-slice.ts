@@ -5,6 +5,7 @@ import { api } from "@/lib/api-client";
 import { syncContratStats } from "@/lib/contrat-stats";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
+import { mapBonLivraison } from "@/lib/store/bons-livraison-slice";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
 import {
@@ -153,6 +154,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         mouvementsRes,
         bonsSortieRes,
         bonsCaisseRes,
+        bonsLivraisonRes,
         recusPaiementRes,
         operationsRes,
         cloturesRes,
@@ -174,6 +176,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         tracked("mouvements de stock", api.stock.getMouvements(), []),
         tracked("bons de sortie", api.bons.getBonsSortie(), []),
         tracked("bons de caisse", api.bons.getBonsCaisse(), []),
+        tracked("bons de livraison", api.bonsLivraison.getAll(), []),
         tracked("reçus de paiement", api.recusPaiement.getAll(), []),
         tracked("opérations comptables", api.comptabilite.getOperations(), []),
         tracked("clôtures", api.comptabilite.getClotures(), []),
@@ -466,6 +469,8 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         })),
       }));
 
+      const mappedBonsLivraison = (Array.isArray(bonsLivraisonRes) ? bonsLivraisonRes : []).map(mapBonLivraison);
+
       const rawRecus: RawRecuPaiement[] = Array.isArray(recusPaiementRes) ? recusPaiementRes : [];
       const mappedRecus = rawRecus.map((r) => ({
         id: r.id,
@@ -634,6 +639,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           mouvements: mappedMouvements,
           bons: mappedBons,
           bonsSortieCaisse: mappedBonsCaisse,
+          bonsLivraison: mappedBonsLivraison,
           recusPaiement: mappedRecus,
           operationsComptables: mappedOps,
           cloturesCaisse: mappedClotures,

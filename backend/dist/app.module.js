@@ -34,6 +34,8 @@ const contrats_module_1 = require("./modules/contrats/contrats.module");
 const transporteurs_module_1 = require("./modules/transporteurs/transporteurs.module");
 const stock_module_1 = require("./modules/stock/stock.module");
 const bons_module_1 = require("./modules/bons/bons.module");
+const bons_livraison_module_1 = require("./modules/bons-livraison/bons-livraison.module");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
 const recus_paiement_module_1 = require("./modules/recus-paiement/recus-paiement.module");
 const comptabilite_module_1 = require("./modules/comptabilite/comptabilite.module");
 const ports_module_1 = require("./modules/ports/ports.module");
@@ -69,6 +71,8 @@ exports.AppModule = AppModule = __decorate([
             transporteurs_module_1.TransporteursModule,
             stock_module_1.StockModule,
             bons_module_1.BonsModule,
+            bons_livraison_module_1.BonsLivraisonModule,
+            notifications_module_1.NotificationsModule,
             recus_paiement_module_1.RecusPaiementModule,
             comptabilite_module_1.ComptabiliteModule,
             ports_module_1.PortsModule,

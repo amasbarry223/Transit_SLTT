@@ -1,8 +1,12 @@
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 export declare class RecusPaiementService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private notifications;
+    private readonly logger;
+    constructor(prisma: PrismaService, notifications: NotificationsService);
+    private notifyRecuCree;
     private buildAnnexeFilter;
     findAll(user: CurrentUserType, params?: {
         search?: string;
@@ -61,38 +65,7 @@ export declare class RecusPaiementService {
         reste: number;
     }>;
     private nextRecuReference;
-    create(user: CurrentUserType, data: any): Promise<{
-        annexe: {
-            id: string;
-            email: string | null;
-            nom: string;
-            telephone: string | null;
-            actif: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            code: string;
-            adresse: string | null;
-            ville: string | null;
-            pays: string;
-            rccm: string | null;
-            nif: string | null;
-            estSiege: boolean;
-        };
-    } & {
-        id: string;
-        nom: string;
-        createdAt: Date;
-        updatedAt: Date;
-        annexeId: string;
-        statut: string;
-        montantPaye: number;
-        creePar: string | null;
-        motif: string;
-        reference: string;
-        prenom: string;
-        somme: number;
-        reste: number;
-    }>;
+    create(user: CurrentUserType, data: any): Promise<any>;
     update(id: string, user: CurrentUserType, data: any): Promise<{
         annexe: {
             id: string;

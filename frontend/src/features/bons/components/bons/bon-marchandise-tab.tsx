@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   Plus,
   FileText,
@@ -58,9 +59,43 @@ type BonMarchandiseTabProps = {
   onDeleteBon: (bon: BonSortie) => void;
   onConfirmValidate: (payload: { id: string; ref: string }) => void;
   onPrint: (reference: string) => void;
+  /** Bon validé : établit son bon de livraison, ou ouvre celui qui existe déjà. */
+  onLivraison: (bon: BonSortie) => void;
   /** Préremplit la recherche — utilisé pour arriver directement sur un bon précis via un lien. */
   initialSearch?: string;
 };
+
+/** Visible seulement sur un bon validé (la marchandise est sortie du stock).
+ *  Sans droit d'écriture, on ne peut qu'ouvrir un bon de livraison existant. */
+function LivraisonButton({
+  bon,
+  livraisonRef,
+  canWrite,
+  onLivraison,
+}: {
+  bon: BonSortie;
+  livraisonRef?: string;
+  canWrite: boolean;
+  onLivraison: (bon: BonSortie) => void;
+}) {
+  if (bon.statut !== "Validé" || (!livraisonRef && !canWrite)) return null;
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={cn(
+        "relative size-11",
+        livraisonRef ? "text-blue-600 hover:text-blue-700 dark:text-blue-400" : "text-muted-foreground hover:text-primary",
+      )}
+      aria-label={livraisonRef ? `Bon de livraison ${livraisonRef}` : `Établir le bon de livraison de ${bon.reference}`}
+      title={livraisonRef ? `Bon de livraison ${livraisonRef}` : "Établir le bon de livraison"}
+      onClick={() => onLivraison(bon)}
+    >
+      <Truck className="size-4" />
+      {livraisonRef && <span className="absolute right-2 top-2 size-1.5 rounded-full bg-blue-500" aria-hidden />}
+    </Button>
+  );
+}
 
 export function BonMarchandiseTab({
   bons,
@@ -71,9 +106,15 @@ export function BonMarchandiseTab({
   onDeleteBon,
   onConfirmValidate,
   onPrint,
+  onLivraison,
   initialSearch,
 }: BonMarchandiseTabProps) {
   const clients = useStore((state) => state.clients);
+  const bonsLivraison = useStore((state) => state.bonsLivraison);
+  const livraisonRefBySortie = useMemo(
+    () => new Map(bonsLivraison.map((bl) => [bl.bonSortieId, bl.reference])),
+    [bonsLivraison],
+  );
   const filters = useBonFilters(bons, initialSearch);
 
   return (
@@ -233,6 +274,8 @@ export function BonMarchandiseTab({
                   onPrint={onPrint}
                   onEdit={onOpenEditDialog}
                   onDelete={onDeleteBon}
+                  livraisonRef={livraisonRefBySortie.get(bon.id)}
+                  onLivraison={onLivraison}
                 />
               ))}
             </div>
@@ -280,6 +323,8 @@ export function BonMarchandiseTab({
                       onPrint={onPrint}
                       onEdit={onOpenEditDialog}
                       onDelete={onDeleteBon}
+                      livraisonRef={livraisonRefBySortie.get(bon.id)}
+                      onLivraison={onLivraison}
                     />
                   ))}
                 </TableBody>
@@ -310,6 +355,8 @@ function BonMobileCard({
   onPrint,
   onEdit,
   onDelete,
+  livraisonRef,
+  onLivraison,
 }: {
   bon: BonSortie;
   canWrite: boolean;
@@ -318,6 +365,8 @@ function BonMobileCard({
   onPrint: (reference: string) => void;
   onEdit: (bon: BonSortie) => void;
   onDelete: (bon: BonSortie) => void;
+  livraisonRef?: string;
+  onLivraison: (bon: BonSortie) => void;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
 
@@ -393,6 +442,7 @@ function BonMobileCard({
         >
           <FileText className="size-4" />
         </Button>
+        <LivraisonButton bon={bon} livraisonRef={livraisonRef} canWrite={canWrite} onLivraison={onLivraison} />
         {canWrite && (
           <Button
             variant="ghost"
@@ -442,6 +492,8 @@ function BonTableRow({
   onPrint,
   onEdit,
   onDelete,
+  livraisonRef,
+  onLivraison,
 }: {
   bon: BonSortie;
   canWrite: boolean;
@@ -450,6 +502,8 @@ function BonTableRow({
   onPrint: (reference: string) => void;
   onEdit: (bon: BonSortie) => void;
   onDelete: (bon: BonSortie) => void;
+  livraisonRef?: string;
+  onLivraison: (bon: BonSortie) => void;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
 
@@ -530,6 +584,7 @@ function BonTableRow({
           >
             <FileText className="size-4" />
           </Button>
+          <LivraisonButton bon={bon} livraisonRef={livraisonRef} canWrite={canWrite} onLivraison={onLivraison} />
           {canWrite && (
             <Button
               variant="ghost"

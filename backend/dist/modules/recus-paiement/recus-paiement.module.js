@@ -10,11 +10,13 @@ exports.RecusPaiementModule = void 0;
 const common_1 = require("@nestjs/common");
 const recus_paiement_service_1 = require("./recus-paiement.service");
 const recus_paiement_controller_1 = require("./recus-paiement.controller");
+const notifications_module_1 = require("../notifications/notifications.module");
 let RecusPaiementModule = class RecusPaiementModule {
 };
 exports.RecusPaiementModule = RecusPaiementModule;
 exports.RecusPaiementModule = RecusPaiementModule = __decorate([
     (0, common_1.Module)({
+        imports: [notifications_module_1.NotificationsModule],
         controllers: [recus_paiement_controller_1.RecusPaiementController],
         providers: [recus_paiement_service_1.RecusPaiementService],
         exports: [recus_paiement_service_1.RecusPaiementService],

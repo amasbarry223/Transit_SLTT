@@ -25,6 +25,8 @@ import { ContratsModule } from './modules/contrats/contrats.module';
 import { TransporteursModule } from './modules/transporteurs/transporteurs.module';
 import { StockModule } from './modules/stock/stock.module';
 import { BonsModule } from './modules/bons/bons.module';
+import { BonsLivraisonModule } from './modules/bons-livraison/bons-livraison.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RecusPaiementModule } from './modules/recus-paiement/recus-paiement.module';
 import { ComptabiliteModule } from './modules/comptabilite/comptabilite.module';
 import { PortsModule } from './modules/ports/ports.module';
@@ -61,6 +63,8 @@ import { HealthModule } from './modules/health/health.module';
     TransporteursModule,
     StockModule,
     BonsModule,
+    BonsLivraisonModule,
+    NotificationsModule,
     RecusPaiementModule,
     ComptabiliteModule,
     PortsModule,

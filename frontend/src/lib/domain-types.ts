@@ -232,6 +232,68 @@ export interface BonSortie {
 }
 
 /* ------------------------------------------------------------------ */
+/* BONS DE LIVRAISON — générés depuis un bon de sortie validé (1 pour 1) */
+/* ------------------------------------------------------------------ */
+
+export interface BonLivraisonLigne {
+  marchandise: string;
+  quantite: number;
+  unite: string;
+}
+
+export type BonLivraisonStatut = "En cours" | "Livré";
+
+export interface BonLivraison {
+  id: string;
+  /** Format "LIV-AAAA-NNNN", généré par le serveur. */
+  reference: string;
+  date: string;
+  bonSortieId: string;
+  bonSortieReference?: string;
+  clientId: string;
+  clientNom: string;
+  annexeId: string;
+  annexeNom?: string;
+  lignes: BonLivraisonLigne[];
+  transporteurId?: string;
+  transporteurNom?: string;
+  immatriculation?: string;
+  chauffeurNom?: string;
+  chauffeurTelephone?: string;
+  adresseLivraison?: string;
+  observations?: string;
+  statut: BonLivraisonStatut;
+  creePar?: string;
+  creeLe: string;
+}
+
+export interface BonLivraisonInput {
+  date?: string;
+  lignes?: BonLivraisonLigne[];
+  transporteurId?: string;
+  transporteurNom?: string;
+  immatriculation?: string;
+  chauffeurNom?: string;
+  chauffeurTelephone?: string;
+  adresseLivraison?: string;
+  observations?: string;
+  statut?: BonLivraisonStatut;
+}
+
+/* ------------------------------------------------------------------ */
+/* NOTIFICATIONS — messages persistés par destinataire (cloche)         */
+/* ------------------------------------------------------------------ */
+
+export interface AppNotification {
+  id: string;
+  titre: string;
+  message: string;
+  lue: boolean;
+  lien?: string;
+  createdAt: string;
+}
+
+/* ------------------------------------------------------------------ */
 /* BONS DE SORTIE DE CAISSE (décaissement) — sans rapport avec le stock */
 /* ------------------------------------------------------------------ */
 

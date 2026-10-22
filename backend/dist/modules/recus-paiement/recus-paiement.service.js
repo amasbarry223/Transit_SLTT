@@ -8,11 +8,17 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var RecusPaiementService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RecusPaiementService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const notifications_service_1 = require("../notifications/notifications.service");
+const STATUT_LABEL = { SOLDE: 'soldé', PARTIEL: 'partiel', EN_ATTENTE: 'en attente' };
+function fmtFCFA(n) {
+    return `${Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ')} FCFA`;
+}
 function statutRecu(somme, montantPaye) {
     const reste = Math.max(0, Math.round((somme - montantPaye) * 100) / 100);
     if (reste < 0.5)
@@ -31,10 +37,30 @@ function assertMontantPayeCoherent(somme, montantPaye) {
         throw new common_1.BadRequestException('Le montant payé ne peut pas dépasser la somme due.');
     }
 }
-let RecusPaiementService = class RecusPaiementService {
+let RecusPaiementService = RecusPaiementService_1 = class RecusPaiementService {
     prisma;
-    constructor(prisma) {
+    notifications;
+    logger = new common_1.Logger(RecusPaiementService_1.name);
+    constructor(prisma, notifications) {
         this.prisma = prisma;
+        this.notifications = notifications;
+    }
+    async notifyRecuCree(user, recu) {
+        if (recu.somme <= 0 || !recu.nom.trim())
+            return;
+        try {
+            const recipients = await this.notifications.recipientsForAnnexe(recu.annexeId, user.id);
+            const client = `${recu.prenom} ${recu.nom}`.trim();
+            const annexe = recu.annexe?.nom ? ` · ${recu.annexe.nom}` : '';
+            await this.notifications.notifyUsers(recipients, {
+                titre: `Nouveau reçu ${recu.reference}`,
+                message: `${client} — ${fmtFCFA(recu.montantPaye)} payés sur ${fmtFCFA(recu.somme)} (${STATUT_LABEL[recu.statut] ?? recu.statut})${annexe} · par ${user.nom}`,
+                lien: '/recus/nouveau',
+            });
+        }
+        catch (err) {
+            this.logger.warn(`Notification du reçu ${recu.reference} non envoyée : ${err.message}`);
+        }
     }
     buildAnnexeFilter(user) {
         if (user.role === 'ADMIN')
@@ -119,22 +145,24 @@ let RecusPaiementService = class RecusPaiementService {
             creePar: user.nom,
         });
         const reference = await this.nextRecuReference();
+        let created;
         try {
-            return await this.prisma.recuPaiement.create({
+            created = await this.prisma.recuPaiement.create({
                 data: buildData(reference),
                 include: { annexe: true },
             });
         }
         catch (err) {
-            if (err instanceof client_1.Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-                const retryReference = await this.nextRecuReference();
-                return this.prisma.recuPaiement.create({
-                    data: buildData(retryReference),
-                    include: { annexe: true },
-                });
-            }
-            throw err;
+            if (!(err instanceof client_1.Prisma.PrismaClientKnownRequestError && err.code === 'P2002'))
+                throw err;
+            const retryReference = await this.nextRecuReference();
+            created = await this.prisma.recuPaiement.create({
+                data: buildData(retryReference),
+                include: { annexe: true },
+            });
         }
+        await this.notifyRecuCree(user, created);
+        return created;
     }
     async update(id, user, data) {
         const current = await this.findOne(id, user);
@@ -166,8 +194,9 @@ let RecusPaiementService = class RecusPaiementService {
     }
 };
 exports.RecusPaiementService = RecusPaiementService;
-exports.RecusPaiementService = RecusPaiementService = __decorate([
+exports.RecusPaiementService = RecusPaiementService = RecusPaiementService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        notifications_service_1.NotificationsService])
 ], RecusPaiementService);
 //# sourceMappingURL=recus-paiement.service.js.map

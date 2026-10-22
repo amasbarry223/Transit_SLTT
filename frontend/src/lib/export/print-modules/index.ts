@@ -14,6 +14,7 @@ export {
   buildBonSortieCaisseHTML,
   type BonSortieCaisseModuleData,
 } from "./bon-caisse";
+export { buildBonLivraisonHTML, type BonLivraisonModuleData } from "./bon-livraison";
 export {
   printStockInventory,
   type StockInventoryRow,

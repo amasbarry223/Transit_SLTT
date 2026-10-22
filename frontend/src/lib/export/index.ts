@@ -5,6 +5,7 @@ export { printHTML } from "./print-document";
 export { exportToExcel } from "./excel-export";
 
 export {
+  buildBonLivraisonHTML,
   buildBonSortieCaisseHTML,
   printBilan,
   printClasseur,
@@ -19,6 +20,7 @@ export {
   shouldShowTva,
   type BilanPrintRow,
   type BilanPrintTotals,
+  type BonLivraisonModuleData,
   type BonSortieCaisseModuleData,
   type ClasseurPrintRow,
   type ClientPrintRow,

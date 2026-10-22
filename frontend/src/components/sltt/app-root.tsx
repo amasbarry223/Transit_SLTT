@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
 import { toast } from "@/shared/hooks/use-toast";
+import { useNotificationsPolling } from "@/shared/hooks/use-notifications-polling";
 import {
   Dialog,
   DialogContent,
@@ -141,6 +142,8 @@ function AppRootInner() {
     if (!authReady || !isAuthenticated) return;
     void fetchData();
   }, [authReady, isAuthenticated, fetchData]);
+
+  useNotificationsPolling(authReady && isAuthenticated);
 
   // Déconnexion pour inactivité (30 min). Un refresh remet le timer (mémoire).
   useEffect(() => {

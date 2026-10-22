@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileSpreadsheet, Plus, Package, Banknote } from "lucide-react";
-import type { BonLigne, BonSortie, BonSortieCaisse } from "@/lib/domain-types";
+import { FileSpreadsheet, Plus, Package, Banknote, Truck } from "lucide-react";
+import type { BonLigne, BonLivraison, BonSortie, BonSortieCaisse } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useNav } from "@/lib/nav-store";
 import { formatDateShort, formatFCFA } from "@/lib/format";
@@ -31,6 +31,11 @@ import { BonMarchandiseTab } from "./bons/bon-marchandise-tab";
 import { BonCaisseTab } from "./bons/bon-caisse-tab";
 import { BonFormDialog } from "./bons/bon-form-dialog";
 import { BonCaisseFormDialog } from "./bons/bon-caisse-form-dialog";
+import { BonLivraisonTab } from "./bons/bon-livraison-tab";
+import { BonLivraisonFormDialog } from "./bons/bon-livraison-form-dialog";
+import { BonLivraisonPreviewDialog } from "./bons/bon-livraison-preview-dialog";
+
+type BonsTab = "marchandise" | "caisse" | "livraison";
 
 export function BonsScreen() {
   const { toast } = useToast();
@@ -47,8 +52,13 @@ export function BonsScreen() {
   const bonSeq = useStore((state) => state.bonSeq);
   const bonSortieCaisseSeq = useStore((state) => state.bonSortieCaisseSeq);
   const bonsSortieCaisse = useStore((state) => state.bonsSortieCaisse);
+  const allBonsLivraison = useStore((state) => state.bonsLivraison);
 
-  const [activeTab, setActiveTab] = useState<"marchandise" | "caisse">("marchandise");
+  const [activeTab, setActiveTab] = useState<BonsTab>("marchandise");
+  // Bon de livraison : création (depuis un bon de sortie), édition, aperçu.
+  const [livraisonSource, setLivraisonSource] = useState<BonSortie | null>(null);
+  const [editingLivraison, setEditingLivraison] = useState<BonLivraison | null>(null);
+  const [livraisonPreview, setLivraisonPreview] = useState<BonLivraison | null>(null);
   const [marchandiseDialogOpen, setMarchandiseDialogOpen] = useState(false);
   const [caisseDialogOpen, setCaisseDialogOpen] = useState(false);
   const [editingBonMarchandise, setEditingBonMarchandise] = useState<BonSortie | null>(null);
@@ -78,6 +88,14 @@ export function BonsScreen() {
     setCaisseDialogOpen(true);
   }
 
+  /** Un bon de sortie n'a qu'un bon de livraison : s'il existe, on l'ouvre
+   *  (aperçu/impression) plutôt que de proposer un doublon voué au 409. */
+  function handleLivraisonFromBonSortie(bon: BonSortie) {
+    const existing = allBonsLivraison.find((bl) => bl.bonSortieId === bon.id);
+    if (existing) setLivraisonPreview(existing);
+    else setLivraisonSource(bon);
+  }
+
   async function handleDeleteBon(bon: BonSortie) {
     try {
       await removeBon(bon.id);
@@ -95,6 +113,11 @@ export function BonsScreen() {
   const bons = useMemo(
     () => filterByAnnexe(allBons, selectedAnnexeId),
     [allBons, selectedAnnexeId],
+  );
+
+  const bonsLivraison = useMemo(
+    () => filterByAnnexe(allBonsLivraison, selectedAnnexeId),
+    [allBonsLivraison, selectedAnnexeId],
   );
 
   const bonsCaisse = useMemo(
@@ -255,6 +278,13 @@ export function BonsScreen() {
       cta: "Nouvelle sortie de caisse",
       onCreate: openCreateCaisseDialog,
     },
+    // Pas de création directe : un bon de livraison naît toujours d'un bon
+    // de sortie validé (icône camion dans l'onglet Marchandises).
+    livraison: {
+      description: "Livraisons clients : bon N° LIV, transporteur et réception signée.",
+      cta: null,
+      onCreate: null,
+    },
   } as const;
 
   const currentTab = tabMeta[activeTab];
@@ -275,6 +305,24 @@ export function BonsScreen() {
           { header: "Statut", accessor: (b) => b.statut },
         ],
         bons,
+        { module: "Bons" },
+      );
+    } else if (activeTab === "livraison") {
+      await exportToExcel(
+        "bons",
+        `bons-livraison-${new Date().toISOString().slice(0, 10)}`,
+        [
+          { header: "Référence", accessor: (b) => b.reference },
+          { header: "Date", accessor: (b) => b.date },
+          { header: "Client", accessor: (b) => b.clientNom },
+          { header: "Bon de sortie", accessor: (b) => b.bonSortieReference || "" },
+          { header: "Articles", accessor: (b) => b.lignes.map((l) => `${l.marchandise} (${l.quantite} ${l.unite})`).join(", ") },
+          { header: "Transporteur", accessor: (b) => b.transporteurNom || "" },
+          { header: "Immatriculation", accessor: (b) => b.immatriculation || "" },
+          { header: "Chauffeur", accessor: (b) => b.chauffeurNom || "" },
+          { header: "Statut", accessor: (b) => b.statut },
+        ],
+        bonsLivraison,
         { module: "Bons" },
       );
     } else {
@@ -299,12 +347,12 @@ export function BonsScreen() {
     <div className="space-y-6">
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as "marchandise" | "caisse")}
+        onValueChange={(value) => setActiveTab(value as BonsTab)}
         className="gap-5"
       >
         <PageHeader title="Bons de sortie" description={currentTab.description}>
           <div className="flex items-center gap-2">
-            {(activeTab === "marchandise" ? bons.length > 0 : bonsCaisse.length > 0) && (
+            {{ marchandise: bons, caisse: bonsCaisse, livraison: bonsLivraison }[activeTab].length > 0 && (
               <Button
                 variant="outline"
                 onClick={handleExportExcel}
@@ -314,7 +362,7 @@ export function BonsScreen() {
                 <span>Exporter Excel</span>
               </Button>
             )}
-            {(activeTab === "caisse" ? canWriteCaisse : canWrite) && (
+            {currentTab.onCreate && (activeTab === "caisse" ? canWriteCaisse : canWrite) && (
               <Button
                 onClick={currentTab.onCreate}
                 className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shrink-0 self-start"
@@ -328,7 +376,7 @@ export function BonsScreen() {
 
         <TabsList
           className={cn(
-            "grid h-auto w-full grid-cols-1 gap-1 p-1.5 bg-muted/60 sm:grid-cols-2",
+            "grid h-auto w-full grid-cols-1 gap-1 p-1.5 bg-muted/60 sm:grid-cols-3",
             "rounded-xl",
           )}
         >
@@ -409,6 +457,45 @@ export function BonsScreen() {
               </span>
             </span>
           </TabsTrigger>
+
+          <TabsTrigger
+            value="livraison"
+            className={cn(
+              "group h-auto flex-col items-stretch gap-1 rounded-lg px-4 py-3 text-left",
+              "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-border/80",
+              "dark:data-[state=active]:bg-slate-900 dark:data-[state=active]:ring-slate-700",
+            )}
+          >
+            <span className="flex w-full items-center justify-between gap-3">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                    "bg-violet-50 text-violet-700 group-data-[state=inactive]:bg-slate-200/70 group-data-[state=inactive]:text-slate-500",
+                    "dark:bg-violet-950/50 dark:text-violet-300 dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-400",
+                  )}
+                >
+                  <Truck className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-foreground">Livraison</span>
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                    Bons de livraison · clients
+                  </span>
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                  "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200",
+                  "group-data-[state=inactive]:bg-slate-200/80 group-data-[state=inactive]:text-slate-600",
+                  "dark:group-data-[state=inactive]:bg-slate-700 dark:group-data-[state=inactive]:text-slate-300",
+                )}
+              >
+                {bonsLivraison.length}
+              </span>
+            </span>
+          </TabsTrigger>
         </TabsList>
 
         <BonMarchandiseTab
@@ -421,6 +508,7 @@ export function BonsScreen() {
           onDeleteBon={setBonDeleteTarget}
           onConfirmValidate={setConfirmValidate}
           onPrint={handlePrint}
+          onLivraison={handleLivraisonFromBonSortie}
           initialSearch={deepLinkSearch}
         />
 
@@ -430,7 +518,33 @@ export function BonsScreen() {
           onOpenCreateDialog={openCreateCaisseDialog}
           onOpenEditDialog={openEditCaisseDialog}
         />
+
+        <BonLivraisonTab
+          bons={bonsLivraison}
+          canWrite={canWrite}
+          onPrint={setLivraisonPreview}
+          onEdit={setEditingLivraison}
+        />
       </Tabs>
+
+      <BonLivraisonFormDialog
+        key={editingLivraison?.id ?? livraisonSource?.id ?? "none"}
+        open={!!livraisonSource || !!editingLivraison}
+        onOpenChange={(open) => {
+          if (open) return;
+          setLivraisonSource(null);
+          setEditingLivraison(null);
+        }}
+        bonSortie={livraisonSource}
+        editing={editingLivraison}
+        // Création : on enchaîne sur l'aperçu, le bon doit partir imprimé
+        // avec la marchandise.
+        onSaved={(bl) => {
+          if (!editingLivraison) setLivraisonPreview(bl);
+        }}
+      />
+
+      <BonLivraisonPreviewDialog bon={livraisonPreview} onClose={() => setLivraisonPreview(null)} />
 
       <BonFormDialog
         key={editingBonMarchandise?.id ?? "new"}

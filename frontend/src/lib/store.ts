@@ -62,6 +62,8 @@ import {
   createBonsSlice,
   type BonsSlice,
 } from "@/lib/store/bons-slice";
+import { createBonsLivraisonSlice, type BonsLivraisonSlice } from "@/lib/store/bons-livraison-slice";
+import { createNotificationsSlice, type NotificationsSlice } from "@/lib/store/notifications-slice";
 import { createAuditSlice, type AuditSlice } from "@/lib/store/audit-slice";
 import { createEcrituresSlice, type EcrituresSlice } from "@/lib/store/ecritures-slice";
 import {
@@ -359,7 +361,7 @@ export interface UserInput {
   annexeIds: string[];
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, PortsSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, PortsSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, BonsLivraisonSlice, NotificationsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
   dossierSeq: number;
   auditSeq: number;
   ecritureSeq: number;
@@ -412,6 +414,8 @@ export const useStore = create<SLTTState>()((set, get, api) => ({
   ...createFacturesSlice(set, get, api),
   ...createStockSlice(set, get, api),
   ...createBonsSlice(set, get, api),
+  ...createBonsLivraisonSlice(set, get, api),
+  ...createNotificationsSlice(set, get, api),
   ...createAuditSlice(set, get, api),
   ...createEcrituresSlice(set, get, api),
   ...createComptabiliteGeneraleSlice(set, get, api),

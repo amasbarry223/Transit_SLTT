@@ -19,10 +19,10 @@ import {
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
-import { formatFCFA } from "@/lib/format";
+import { formatDateTime, formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
 import { dossiersNonFactures } from "@/lib/client-stats";
-import { Bell, Calendar, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
+import { Bell, Calendar, CheckCheck, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import {
@@ -86,6 +86,16 @@ const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
   parametres:       { title: "Paramètres",       sub: "Utilisateurs, rôles et sécurité" },
 };
 
+/** Le serveur stocke un chemin (`lien`) ; la navigation de l'app se fait par
+ *  vue. Un lien inconnu marque juste la notification lue, sans naviguer. */
+const NOTIFICATION_LINK_VIEWS: Array<[prefix: string, view: ViewKey]> = [
+  ["/recus", "recus-paiement"],
+  ["/bons", "bons"],
+];
+
+function viewForNotificationLink(lien: string): ViewKey | null {
+  return NOTIFICATION_LINK_VIEWS.find(([prefix]) => lien.startsWith(prefix))?.[1] ?? null;
+}
 
 export function Topbar() {
   const view = useNav((s) => s.view);
@@ -193,6 +203,20 @@ export function Topbar() {
 
   const hasUnread = alertIds.some((id) => !seenAlertIds.has(id));
 
+  // Notifications persistées (serveur) — distinctes des alertes ci-dessus,
+  // calculées localement : elles ont un état lu/non-lu durable par utilisateur.
+  const notifications = useStore((s) => s.notifications);
+  const notificationsUnread = useStore((s) => s.notificationsUnread);
+  const markNotificationRead = useStore((s) => s.markNotificationRead);
+  const markAllNotificationsRead = useStore((s) => s.markAllNotificationsRead);
+  const badgeCount = notificationsUnread + (hasUnread ? alertCount : 0);
+
+  function openNotification(id: string, lien?: string) {
+    markNotificationRead(id).catch(() => {});
+    const view = lien ? viewForNotificationLink(lien) : null;
+    if (view) goToView(view);
+  }
+
   function navigateToView(key: ViewKey, comptaTab?: ComptaTab) {
     goToView(key, comptaTab ? { comptaTab } : undefined);
     setMobileOpen(false);
@@ -241,12 +265,12 @@ export function Topbar() {
                 variant="ghost"
                 size="icon"
                 className="relative text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-full size-9"
-                aria-label={hasUnread && alertCount > 0 ? `${alertCount} notification(s) non lue(s)` : "Notifications"}
+                aria-label={badgeCount > 0 ? `${badgeCount} notification(s) non lue(s)` : "Notifications"}
               >
                 <Bell className="size-5" />
-                {alertCount > 0 && hasUnread && (
+                {badgeCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#ED1C24] text-[9px] font-bold text-white shadow-xs">
-                    {alertCount > 9 ? "9+" : alertCount}
+                    {badgeCount > 9 ? "9+" : badgeCount}
                   </span>
                 )}
               </Button>
@@ -261,6 +285,52 @@ export function Topbar() {
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+
+              {/* 0. Notifications persistées (reçus de paiement…) */}
+              {notifications.length > 0 && (
+                <>
+                  <div className="flex items-center justify-between px-2 py-1.5">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-primary">
+                      Notifications{notificationsUnread > 0 ? ` (${notificationsUnread} non lue${notificationsUnread > 1 ? "s" : ""})` : ""}
+                    </span>
+                    {notificationsUnread > 0 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          // Ne pas fermer le menu : l'utilisateur voit les
+                          // points non-lus disparaître sur place.
+                          e.preventDefault();
+                          markAllNotificationsRead().catch(() => {});
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <CheckCheck className="size-3.5" aria-hidden />
+                        Tout marquer lu
+                      </button>
+                    )}
+                  </div>
+                  {notifications.slice(0, 6).map((n) => (
+                    <DropdownMenuItem
+                      key={n.id}
+                      className="flex cursor-pointer items-start gap-2 py-2"
+                      onClick={() => openNotification(n.id, n.lien)}
+                    >
+                      <span
+                        className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.lue ? "bg-transparent" : "bg-primary")}
+                        aria-label={n.lue ? undefined : "Non lue"}
+                      />
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className={cn("text-xs text-foreground", n.lue ? "font-medium" : "font-semibold")}>
+                          {n.titre}
+                        </span>
+                        <span className="text-[11px] leading-snug text-muted-foreground">{n.message}</span>
+                        <span className="text-[10px] text-muted-foreground/80">{formatDateTime(n.createdAt)}</span>
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                </>
+              )}
 
               {/* 1. Stocks faibles */}
               {lowStock.length > 0 && (
@@ -358,9 +428,9 @@ export function Topbar() {
                 </>
               )}
 
-              {alertCount === 0 && (
+              {alertCount === 0 && notifications.length === 0 && (
                 <div className="py-8 text-center text-xs text-muted-foreground space-y-1">
-                  <p className="font-medium text-foreground">Aucune alerte active</p>
+                  <p className="font-medium text-foreground">Aucune notification ni alerte</p>
                   <p>Tous les stocks, dossiers et paiements sont à jour.</p>
                 </div>
               )}

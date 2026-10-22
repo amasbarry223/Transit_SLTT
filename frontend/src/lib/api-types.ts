@@ -261,6 +261,38 @@ export interface RawBonSortie {
   statut?: string;
 }
 
+export interface RawBonLivraison {
+  id: string;
+  reference?: string;
+  date?: string;
+  bonSortieId?: string;
+  bonSortie?: { id: string; reference?: string };
+  clientId?: string;
+  clientNom?: string;
+  annexeId?: string;
+  annexe?: RawAnnexeRef;
+  lignes?: Array<{ marchandise?: string; quantite?: number; unite?: string }>;
+  transporteurId?: string | null;
+  transporteurNom?: string | null;
+  immatriculation?: string | null;
+  chauffeurNom?: string | null;
+  chauffeurTelephone?: string | null;
+  adresseLivraison?: string | null;
+  observations?: string | null;
+  statut?: string;
+  creePar?: string | null;
+  createdAt?: string;
+}
+
+export interface RawNotification {
+  id: string;
+  titre: string;
+  message: string;
+  lue: boolean;
+  lien?: string | null;
+  createdAt: string;
+}
+
 export interface RawLigneBonSortieCaisse {
   id?: string;
   date?: string;

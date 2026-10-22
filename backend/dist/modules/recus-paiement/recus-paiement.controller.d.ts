@@ -58,38 +58,7 @@ export declare class RecusPaiementController {
         somme: number;
         reste: number;
     }>;
-    create(user: CurrentUserType, body: CreateRecuPaiementDto): Promise<{
-        annexe: {
-            id: string;
-            email: string | null;
-            nom: string;
-            telephone: string | null;
-            actif: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            code: string;
-            adresse: string | null;
-            ville: string | null;
-            pays: string;
-            rccm: string | null;
-            nif: string | null;
-            estSiege: boolean;
-        };
-    } & {
-        id: string;
-        nom: string;
-        createdAt: Date;
-        updatedAt: Date;
-        annexeId: string;
-        statut: string;
-        montantPaye: number;
-        creePar: string | null;
-        motif: string;
-        reference: string;
-        prenom: string;
-        somme: number;
-        reste: number;
-    }>;
+    create(user: CurrentUserType, body: CreateRecuPaiementDto): Promise<any>;
     update(id: string, user: CurrentUserType, body: UpdateRecuPaiementDto): Promise<{
         annexe: {
             id: string;

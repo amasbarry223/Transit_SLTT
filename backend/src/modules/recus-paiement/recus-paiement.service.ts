@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+
+const STATUT_LABEL: Record<string, string> = { SOLDE: 'soldé', PARTIEL: 'partiel', EN_ATTENTE: 'en attente' };
+
+function fmtFCFA(n: number): string {
+  return `${Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ')} FCFA`;
+}
 
 /** Statut d'un reçu à partir de la somme due et du montant payé, avec tolérance d'arrondi. */
 function statutRecu(somme: number, montantPaye: number): 'SOLDE' | 'PARTIEL' | 'EN_ATTENTE' {
@@ -33,7 +40,35 @@ function assertMontantPayeCoherent(somme: number, montantPaye: number): void {
 
 @Injectable()
 export class RecusPaiementService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(RecusPaiementService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
+
+  /** Notifie admins + comptables de l'annexe d'un reçu SAISI. Un reçu vierge
+   *  (carnet à remplir au stylo, généré par lots) ne notifie pas : 50 numéros
+   *  réservés produiraient sinon 50 notifications vides. Au mieux : un échec
+   *  de notification ne doit jamais faire échouer l'enregistrement du reçu. */
+  private async notifyRecuCree(
+    user: CurrentUserType,
+    recu: { reference: string; annexeId: string; nom: string; prenom: string; somme: number; montantPaye: number; statut: string; annexe?: { nom: string } | null },
+  ) {
+    if (recu.somme <= 0 || !recu.nom.trim()) return;
+    try {
+      const recipients = await this.notifications.recipientsForAnnexe(recu.annexeId, user.id);
+      const client = `${recu.prenom} ${recu.nom}`.trim();
+      const annexe = recu.annexe?.nom ? ` · ${recu.annexe.nom}` : '';
+      await this.notifications.notifyUsers(recipients, {
+        titre: `Nouveau reçu ${recu.reference}`,
+        message: `${client} — ${fmtFCFA(recu.montantPaye)} payés sur ${fmtFCFA(recu.somme)} (${STATUT_LABEL[recu.statut] ?? recu.statut})${annexe} · par ${user.nom}`,
+        lien: '/recus/nouveau',
+      });
+    } catch (err) {
+      this.logger.warn(`Notification du reçu ${recu.reference} non envoyée : ${(err as Error).message}`);
+    }
+  }
 
   private buildAnnexeFilter(user: CurrentUserType) {
     if (user.role === 'ADMIN') return {};
@@ -130,8 +165,9 @@ export class RecusPaiementService {
     });
 
     const reference = await this.nextRecuReference();
+    let created;
     try {
-      return await this.prisma.recuPaiement.create({
+      created = await this.prisma.recuPaiement.create({
         data: buildData(reference),
         include: { annexe: true },
       });
@@ -141,15 +177,15 @@ export class RecusPaiementService {
       // générations concurrentes peuvent viser le même numéro. On retente une
       // fois avec un numéro frais plutôt que de renvoyer une erreur pour une
       // collision purement interne.
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        const retryReference = await this.nextRecuReference();
-        return this.prisma.recuPaiement.create({
-          data: buildData(retryReference),
-          include: { annexe: true },
-        });
-      }
-      throw err;
+      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err;
+      const retryReference = await this.nextRecuReference();
+      created = await this.prisma.recuPaiement.create({
+        data: buildData(retryReference),
+        include: { annexe: true },
+      });
     }
+    await this.notifyRecuCree(user, created);
+    return created;
   }
 
   async update(id: string, user: CurrentUserType, data: any) {
