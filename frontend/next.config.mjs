@@ -42,6 +42,13 @@ const pwaHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   devIndicators: false,
+  experimental: {
+    // Le serveur de build Hostinger annonce 32 CPU mais limite la mémoire
+    // (mutualisé) : un worker par CPU peut faire tuer le build en cours de
+    // route, qui est alors publié incomplet (500 sur toutes les routes).
+    cpus: 4,
+    webpackMemoryOptimizations: true,
+  },
   images: {
     remotePatterns: [
       {
