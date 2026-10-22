@@ -13,6 +13,7 @@ exports.HealthController = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const decorators_1 = require("../../shared/decorators");
+const ensure_prisma_client_1 = require("../../bootstrap/ensure-prisma-client");
 let HealthController = class HealthController {
     check() {
         return {
@@ -22,6 +23,7 @@ let HealthController = class HealthController {
             timestamp: new Date().toISOString(),
             nodeEnv: process.env.NODE_ENV || 'development',
             prismaModels: Object.keys(client_1.Prisma.ModelName).length,
+            prismaClientSync: ensure_prisma_client_1.prismaClientSync,
         };
     }
     root() {

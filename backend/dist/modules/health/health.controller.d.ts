@@ -6,6 +6,10 @@ export declare class HealthController {
         timestamp: string;
         nodeEnv: string;
         prismaModels: number;
+        prismaClientSync: {
+            status: import("../../bootstrap/ensure-prisma-client").PrismaClientSyncStatus;
+            detail?: string;
+        };
     };
     root(): {
         status: string;

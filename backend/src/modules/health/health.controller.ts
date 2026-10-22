@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Public } from '../../shared/decorators';
+import { prismaClientSync } from '../../bootstrap/ensure-prisma-client';
 
 @Controller()
 export class HealthController {
@@ -15,8 +16,9 @@ export class HealthController {
       nodeEnv: process.env.NODE_ENV || 'development',
       // Nombre de modèles connus du client Prisma chargé : permet de vérifier
       // de l'extérieur que le client n'est pas en retard sur le schéma
-      // déployé (cf. scripts/ensure-prisma-client.js).
+      // déployé (cf. bootstrap/ensure-prisma-client.ts).
       prismaModels: Object.keys(Prisma.ModelName).length,
+      prismaClientSync,
     };
   }
 

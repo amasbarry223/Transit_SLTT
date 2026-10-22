@@ -1,3 +1,6 @@
+// DOIT rester le premier import : régénère le client Prisma s'il est en
+// retard sur le schéma, avant que quoi que ce soit ne charge @prisma/client.
+import './bootstrap/ensure-prisma-client';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
