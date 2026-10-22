@@ -1,4 +1,13 @@
+import { PrismaService } from '../../prisma/prisma.service';
 export declare class HealthController {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    db(): Promise<{
+        durationMs: number;
+        checks: {
+            [k: string]: string;
+        };
+    }>;
     check(): {
         status: string;
         service: string;
