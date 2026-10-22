@@ -9,4 +9,7 @@ process.env.NODE_PATH = (process.env.NODE_PATH ? process.env.NODE_PATH + path.de
 Module._initPaths();
 process.chdir(backendDir);
 
+// Avant de charger le code compilé : client Prisma aligné sur le schéma.
+require(path.join(backendDir, 'scripts', 'ensure-prisma-client.js')).ensurePrismaClient(backendDir);
+
 require(path.join(backendDir, 'dist', 'main.js'));

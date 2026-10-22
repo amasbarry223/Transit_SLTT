@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HealthController = void 0;
 const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
 const decorators_1 = require("../../shared/decorators");
 let HealthController = class HealthController {
     check() {
@@ -20,6 +21,7 @@ let HealthController = class HealthController {
             uptime: Math.floor(process.uptime()),
             timestamp: new Date().toISOString(),
             nodeEnv: process.env.NODE_ENV || 'development',
+            prismaModels: Object.keys(client_1.Prisma.ModelName).length,
         };
     }
     root() {

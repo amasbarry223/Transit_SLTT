@@ -5,6 +5,7 @@ export declare class HealthController {
         uptime: number;
         timestamp: string;
         nodeEnv: string;
+        prismaModels: number;
     };
     root(): {
         status: string;
