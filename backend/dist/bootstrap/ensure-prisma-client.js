@@ -8,7 +8,13 @@ exports.prismaClientSync = { status: 'ok' };
 const normalize = (text) => text.replace(/\s+/g, ' ').trim();
 function ensurePrismaClient() {
     const backendDir = (0, path_1.resolve)(__dirname, '..', '..');
-    const schemaPath = (0, path_1.join)(backendDir, 'prisma', 'schema.prisma');
+    const schemaPath = [(0, path_1.join)(__dirname, '..', 'prisma', 'schema.prisma'), (0, path_1.join)(backendDir, 'prisma', 'schema.prisma')].find((p) => (0, fs_1.existsSync)(p));
+    if (!schemaPath) {
+        exports.prismaClientSync.status = 'error';
+        exports.prismaClientSync.detail = 'schema.prisma introuvable (ni dist/prisma ni prisma/)';
+        console.error(`[prisma] ${exports.prismaClientSync.detail}`);
+        return;
+    }
     try {
         const searchPaths = [backendDir, (0, path_1.join)(backendDir, '..')];
         const clientPkg = require.resolve('@prisma/client/package.json', { paths: searchPaths });

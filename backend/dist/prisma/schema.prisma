@@ -1,0 +1,960 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RoleUtilisateur {
+  ADMIN
+  TRANSITAIRE
+  COMPTABLE
+  COMMERCIAL
+  OPERATEUR
+  CLIENT
+}
+
+enum TypeDossier {
+  IMPORT
+  EXPORT
+  TRANSIT
+}
+
+enum StatutDossier {
+  BROUILLON
+  EN_COURS
+  EN_DEDOUANEMENT
+  EN_ATTENTE_LIVRAISON
+  LIVRE
+  CLOTURE
+  ANNULE
+}
+
+enum VoieTransport {
+  MARITIME
+  AERIEN
+  TERRESTRE
+}
+
+enum StatutConteneur {
+  EN_TRANSIT
+  AU_PORT
+  DEDOUANE
+  EN_LIVRAISON
+  LIVRE
+  RETOURNE
+}
+
+enum TypeClient {
+  PARTICULIER
+  ENTREPRISE
+  ONG
+  GOUVERNEMENT
+}
+
+enum StatutFacture {
+  BROUILLON
+  ENVOYEE
+  PARTIELLEMENT_PAYEE
+  PAYEE
+  ANNULEE
+  RETARD
+}
+
+enum StatutDevis {
+  BROUILLON
+  ENVOYE
+  ACCEPTE
+  REFUSE
+  EXPIRE
+}
+
+enum StatutCotation {
+  BROUILLON
+  EN_ATTENTE
+  VALIDEE
+  REJETEE
+  EXPIREE
+}
+
+enum CategorieDepense {
+  DOUANE
+  PORT
+  TRANSPORT
+  MANUTENTION
+  ASSURANCE
+  DIVERS
+}
+
+enum StatutDepense {
+  EN_ATTENTE
+  APPROUVEE
+  PAYEE
+  REJETEE
+}
+
+enum TypeTransactionCaisse {
+  ENTREE
+  SORTIE
+}
+
+enum StatutCaisse {
+  OUVERTE
+  FERMEE
+}
+
+// -----------------------------------------------------------------------------
+// Profils & Utilisateurs (remplace auth.users de Supabase)
+// -----------------------------------------------------------------------------
+model Profile {
+  id                String          @id @default(uuid())
+  email             String          @unique
+  passwordHash      String          @map("password_hash")
+  nom               String
+  telephone         String?
+  role              RoleUtilisateur @default(OPERATEUR)
+  permissions       Json?
+  actif             Boolean         @default(true)
+  avatarUrl         String?         @map("avatar_url")
+  derniereConnexion DateTime?       @map("derniere_connexion")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  userAnnexes         UserAnnexe[]
+  dossiersCrees       Dossier[]           @relation("DossierCreePar")
+  facturesCrees       Facture[]           @relation("FactureCreePar")
+  depensesCrees       Depense[]           @relation("DepenseCreePar")
+  depensesApprouvees  Depense[]           @relation("DepenseApprouvePar")
+  transactionsCaisse  TransactionCaisse[] @relation("TransactionCaisseEffectuePar")
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+
+  @@map("profiles")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// -----------------------------------------------------------------------------
+// Annexes (Agences)
+// -----------------------------------------------------------------------------
+model Annexe {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  nom       String
+  adresse   String?
+  ville     String?
+  pays      String   @default("Guinée")
+  telephone String?
+  email     String?
+  rccm      String?
+  nif       String?
+  estSiege  Boolean  @default(false) @map("est_siege")
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userAnnexes UserAnnexe[]
+  clients     Client[]
+  dossiers    Dossier[]
+  devis       Devis[]
+  factures    Facture[]
+  caisses     Caisse[]
+  depenses    Depense[]
+  contrats    Contrat[]
+  transporteurs Transporteur[]
+  stockItems  StockItem[]
+  mouvements  MouvementStock[]
+  bonsSortie  BonSortie[]
+  bonsSortieCaisse BonSortieCaisse[]
+  bonsLivraison BonLivraison[]
+  recusPaiement RecuPaiement[]
+  operationsComptables OperationComptable[]
+  cloturesCaisse ClotureCaisse[]
+
+  @@map("annexes")
+}
+
+model UserAnnexe {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  annexeId  String   @map("annexe_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  annexe Annexe  @relation(fields: [annexeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, annexeId])
+  @@map("user_annexes")
+}
+
+// -----------------------------------------------------------------------------
+// Clients
+// -----------------------------------------------------------------------------
+model Client {
+  id        String     @id @default(uuid())
+  code      String     @unique
+  nom       String
+  type      TypeClient @default(ENTREPRISE)
+  email     String?
+  telephone String?
+  adresse   String?
+  ville     String?
+  pays      String?    @default("Guinée")
+  nif       String?
+  rccm      String?
+  actif     Boolean    @default(true)
+  notes     String?
+  // Ajouté après coup : le formulaire client (front) affiche un sélecteur
+  // Annexe obligatoire depuis le début, mais rien ne le persistait ici —
+  // chaque annexe choisie à la création/modification d'un client était
+  // silencieusement perdue. Nullable pour ne pas casser les clients déjà
+  // créés sans cette colonne (annexeId = null jusqu'à leur prochaine
+  // modification).
+  annexeId  String?    @map("annexe_id")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  annexe     Annexe?    @relation(fields: [annexeId], references: [id])
+  dossiers   Dossier[]
+  factures   Facture[]
+  devis      Devis[]
+  cotations  Cotation[]
+  contrats   Contrat[]
+  stockItems StockItem[]
+  bonsSortie BonSortie[]
+  bonsLivraison BonLivraison[]
+
+  @@index([annexeId])
+  @@map("clients")
+}
+
+// -----------------------------------------------------------------------------
+// Dossiers de Transit
+// -----------------------------------------------------------------------------
+model Dossier {
+  id               String        @id @default(uuid())
+  numero           String        @unique
+  annexeId         String        @map("annexe_id")
+  clientId         String        @map("client_id")
+  creeParId        String?       @map("cree_par_id")
+  type             TypeDossier   @default(IMPORT)
+  statut           StatutDossier @default(BROUILLON)
+  voieTransport    VoieTransport @default(MARITIME) @map("voie_transport")
+  marchandise      String?
+  poids            Float?
+  volume           Float?
+  nombreColis      Int?          @map("nombre_colis")
+  navireVol        String?       @map("navire_vol")
+  compagnie        String?
+  numeroBl         String?       @map("numero_bl")
+  portProvenance   String?       @map("port_provenance")
+  portDestination  String?       @map("port_destination")
+  dateDepart       DateTime?     @map("date_depart")
+  dateArriveePrevue DateTime?    @map("date_arrivee_prevue")
+  dateArriveeEffective DateTime? @map("date_arrivee_effective")
+  dateLivraison    DateTime?     @map("date_livraison")
+  bureauDouane     String?       @map("bureau_douane")
+  numeroDeclaration String?      @map("numero_declaration")
+  dateDeclaration  DateTime?     @map("date_declaration")
+  valeurDouane     Float?        @map("valeur_douane")
+  fraisCircuit     Float         @default(0) @map("frais_circuit")
+  fraisPrestation  Float         @default(0) @map("frais_prestation")
+  montantInvesti   Float         @default(0) @map("montant_investi")
+  montantPaye      Float         @default(0) @map("montant_paye")
+  dateSolde        DateTime?     @map("date_solde")
+  notes            String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  annexe         Annexe          @relation(fields: [annexeId], references: [id])
+  client         Client          @relation(fields: [clientId], references: [id])
+  creePar        Profile?        @relation("DossierCreePar", fields: [creeParId], references: [id])
+  conteneurs     Conteneur[]
+  etapes         EtapeDossier[]
+  factures       Facture[]
+  devis          Devis[]
+  depenses       Depense[]
+  documents      Document[]
+  trackingPublic TrackingPublic?
+
+  @@index([annexeId])
+  @@index([clientId])
+  @@index([statut])
+  @@map("dossiers")
+}
+
+model Conteneur {
+  id             String          @id @default(uuid())
+  dossierId      String          @map("dossier_id")
+  numero         String
+  type           String?
+  plomb          String?
+  statut         StatutConteneur @default(EN_TRANSIT)
+  dateEntreePort DateTime?       @map("date_entree_port")
+  dateSortiePort DateTime?       @map("date_sortie_port")
+  dateRetour     DateTime?       @map("date_retour")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  dossier Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  @@index([dossierId])
+  @@map("conteneurs")
+}
+
+model EtapeDossier {
+  id          String    @id @default(uuid())
+  dossierId   String    @map("dossier_id")
+  titre       String
+  description String?
+  ordre       Int       @default(0)
+  completee   Boolean   @default(false)
+  datePrevue  DateTime? @map("date_prevue")
+  dateEffective DateTime? @map("date_effective")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  dossier Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  @@index([dossierId])
+  @@map("etapes_dossier")
+}
+
+model TrackingPublic {
+  id              String   @id @default(uuid())
+  dossierId       String   @unique @map("dossier_id")
+  codeTracking    String   @unique @map("code_tracking")
+  actif           Boolean  @default(true)
+  dernierePosition String? @map("derniere_position")
+  statutAffiche   String?  @map("statut_affiche")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  dossier Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  @@map("tracking_public")
+}
+
+// -----------------------------------------------------------------------------
+// Factures, Devis, Cotations
+// -----------------------------------------------------------------------------
+model Facture {
+  id           String        @id @default(uuid())
+  numero       String        @unique
+  dossierId    String?       @map("dossier_id")
+  clientId     String        @map("client_id")
+  annexeId     String        @map("annexe_id")
+  creeParId    String?       @map("cree_par_id")
+  dateEmission DateTime      @default(now()) @map("date_emission")
+  dateEcheance DateTime?     @map("date_echeance")
+  statut       StatutFacture @default(BROUILLON)
+  montantHt    Float         @default(0) @map("montant_ht")
+  tauxTva      Float         @default(18) @map("taux_tva")
+  montantTva   Float         @default(0) @map("montant_tva")
+  montantTtc   Float         @default(0) @map("montant_ttc")
+  montantPaye  Float         @default(0) @map("montant_paye")
+  devise       String        @default("FCFA")
+  notes        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  dossier       Dossier?       @relation(fields: [dossierId], references: [id])
+  client        Client         @relation(fields: [clientId], references: [id])
+  annexe        Annexe         @relation(fields: [annexeId], references: [id])
+  creePar       Profile?       @relation("FactureCreePar", fields: [creeParId], references: [id])
+  lignes        LigneFacture[]
+  transactions  TransactionCaisse[]
+
+  @@index([dossierId])
+  @@index([clientId])
+  @@index([annexeId])
+  @@index([statut])
+  @@map("factures")
+}
+
+model LigneFacture {
+  id          String   @id @default(uuid())
+  factureId   String   @map("facture_id")
+  designation String
+  quantite    Float    @default(1)
+  prixUnitaire Float   @map("prix_unitaire")
+  montantTotal Float   @map("montant_total")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  facture Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+
+  @@index([factureId])
+  @@map("lignes_facture")
+}
+
+model Devis {
+  id           String      @id @default(uuid())
+  numero       String      @unique
+  clientId     String      @map("client_id")
+  annexeId     String?     @map("annexe_id")
+  dossierId    String?     @map("dossier_id")
+  portId       String?     @map("port_id")
+  nature       String?
+  dateEmission DateTime    @default(now()) @map("date_emission")
+  dateValidite DateTime?   @map("date_validite")
+  statut       StatutDevis @default(BROUILLON)
+  montantHt    Float       @default(0) @map("montant_ht")
+  montantTva   Float       @default(0) @map("montant_tva")
+  montantTtc   Float       @default(0) @map("montant_ttc")
+  devise       String      @default("FCFA")
+  notes        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  client  Client       @relation(fields: [clientId], references: [id])
+  annexe  Annexe?      @relation(fields: [annexeId], references: [id])
+  dossier Dossier?     @relation(fields: [dossierId], references: [id])
+  port    Port?        @relation(fields: [portId], references: [id])
+  lignes  LigneDevis[]
+
+  @@index([clientId])
+  @@index([annexeId])
+  @@index([dossierId])
+  @@index([portId])
+  @@map("devis")
+}
+
+model LigneDevis {
+  id           String   @id @default(uuid())
+  devisId      String   @map("devis_id")
+  designation  String
+  quantite     Float    @default(1)
+  prixUnitaire Float    @map("prix_unitaire")
+  montantTotal Float    @map("montant_total")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  devis Devis @relation(fields: [devisId], references: [id], onDelete: Cascade)
+
+  @@index([devisId])
+  @@map("lignes_devis")
+}
+
+model Cotation {
+  id           String         @id @default(uuid())
+  numero       String         @unique
+  clientId     String         @map("client_id")
+  dateDemande  DateTime       @default(now()) @map("date_demande")
+  statut       StatutCotation @default(BROUILLON)
+  montantTotal Float          @default(0) @map("montant_total")
+  devise       String         @default("FCFA")
+  notes        String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  client Client          @relation(fields: [clientId], references: [id])
+  lignes LigneCotation[]
+
+  @@index([clientId])
+  @@map("cotations")
+}
+
+model LigneCotation {
+  id           String   @id @default(uuid())
+  cotationId   String   @map("cotation_id")
+  rubrique     String
+  montant      Float
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  cotation Cotation @relation(fields: [cotationId], references: [id], onDelete: Cascade)
+
+  @@index([cotationId])
+  @@map("lignes_cotation")
+}
+
+// -----------------------------------------------------------------------------
+// Dépenses & Fournisseurs
+// -----------------------------------------------------------------------------
+model Port {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  nom       String
+  ville     String?
+  pays      String?
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  devis Devis[]
+
+  @@map("ports")
+}
+
+model Fournisseur {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  nom       String
+  type      String?  @default("Autre")
+  contact   String?
+  telephone String?
+  email     String?
+  adresse   String?
+  rccm      String?
+  nif       String?
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  depenses Depense[]
+
+  @@map("fournisseurs")
+}
+
+model Depense {
+  id            String           @id @default(uuid())
+  numero        String           @unique
+  dossierId     String?          @map("dossier_id")
+  annexeId      String           @map("annexe_id")
+  fournisseurId String?          @map("fournisseur_id")
+  creeParId     String?          @map("cree_par_id")
+  approuveParId String?          @map("approuve_par_id")
+  categorie     CategorieDepense @default(DIVERS)
+  statut        StatutDepense    @default(EN_ATTENTE)
+  montant       Float
+  devise        String           @default("FCFA")
+  justificatif  String?
+  description   String?
+  dateDepense   DateTime         @default(now()) @map("date_depense")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  dossier      Dossier?            @relation(fields: [dossierId], references: [id])
+  annexe       Annexe              @relation(fields: [annexeId], references: [id])
+  fournisseur  Fournisseur?        @relation(fields: [fournisseurId], references: [id])
+  creePar      Profile?            @relation("DepenseCreePar", fields: [creeParId], references: [id])
+  approuvePar  Profile?            @relation("DepenseApprouvePar", fields: [approuveParId], references: [id])
+  transactions TransactionCaisse[]
+
+  @@index([dossierId])
+  @@index([annexeId])
+  @@index([fournisseurId])
+  @@map("depenses")
+}
+
+// -----------------------------------------------------------------------------
+// Caisses & Transactions
+// -----------------------------------------------------------------------------
+model Caisse {
+  id           String       @id @default(uuid())
+  code         String       @unique
+  nom          String
+  annexeId     String       @map("annexe_id")
+  soldeActuel  Float        @default(0) @map("solde_actuel")
+  devise       String       @default("FCFA")
+  statut       StatutCaisse @default(OUVERTE)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  annexe       Annexe              @relation(fields: [annexeId], references: [id])
+  transactions TransactionCaisse[]
+
+  @@index([annexeId])
+  @@map("caisses")
+}
+
+model TransactionCaisse {
+  id           String                @id @default(uuid())
+  caisseId     String                @map("caisse_id")
+  type         TypeTransactionCaisse
+  montant      Float
+  motif        String
+  factureId    String?               @map("facture_id")
+  depenseId    String?               @map("depense_id")
+  effectueParId String?              @map("effectue_par_id")
+  date         DateTime              @default(now())
+  createdAt    DateTime              @default(now()) @map("created_at")
+
+  caisse      Caisse   @relation(fields: [caisseId], references: [id], onDelete: Cascade)
+  facture     Facture? @relation(fields: [factureId], references: [id])
+  depense     Depense? @relation(fields: [depenseId], references: [id])
+  effectuePar Profile? @relation("TransactionCaisseEffectuePar", fields: [effectueParId], references: [id])
+
+  @@index([caisseId])
+  @@map("transactions_caisse")
+}
+
+// -----------------------------------------------------------------------------
+// Documents (Storage local remplaçant Supabase Storage)
+// -----------------------------------------------------------------------------
+model Document {
+  id             String   @id @default(uuid())
+  dossierId      String?  @map("dossier_id")
+  nomFichier     String   @map("nom_fichier")
+  nomOriginal    String   @map("nom_original")
+  typeMime       String   @map("type_mime")
+  taille         Int
+  cheminRelatif  String   @map("chemin_relatif")
+  url            String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  dossier Dossier? @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  @@index([dossierId])
+  @@map("documents")
+}
+
+// -----------------------------------------------------------------------------
+// Paramètres & Notifications & Audit
+// -----------------------------------------------------------------------------
+model Setting {
+  id          String   @id @default(uuid())
+  cle         String   @unique
+  valeur      String
+  type        String   @default("string")
+  description String?
+  isPublic    Boolean  @default(false) @map("is_public")
+  groupName   String   @default("general") @map("group_name")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([cle])
+  @@index([groupName])
+  @@index([isPublic])
+  @@map("settings")
+}
+
+model StatusConfig {
+  id          String   @id @default(uuid())
+  entityType  String   @map("entity_type")
+  value       String
+  label       String
+  color       String?
+  icon        String?
+  orderIndex  Int      @default(0) @map("order_index")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([entityType, value])
+  @@index([entityType])
+  @@index([isActive])
+  @@map("status_configs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  titre     String
+  message   String
+  lue       Boolean  @default(false)
+  lien      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  action      String
+  entite      String
+  entiteId    String?  @map("entite_id")
+  donnees     Json?
+  adresseIp   String?  @map("adresse_ip")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user Profile? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entite, entiteId])
+  @@map("audit_logs")
+}
+
+// -----------------------------------------------------------------------------
+// Contrats
+// -----------------------------------------------------------------------------
+model Contrat {
+  id        String    @id @default(uuid())
+  reference String    @unique
+  annexeId  String    @map("annexe_id")
+  clientId  String    @map("client_id")
+  objet     String
+  dateDebut DateTime  @map("date_debut")
+  dateFin   DateTime? @map("date_fin")
+  montant   Float     @default(0)
+  statut    String    @default("Actif")
+  notes     String?
+  creePar   String?   @map("cree_par")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  annexe Annexe @relation(fields: [annexeId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@index([annexeId])
+  @@index([clientId])
+  @@map("contrats")
+}
+
+// -----------------------------------------------------------------------------
+// Transporteurs
+// -----------------------------------------------------------------------------
+model Transporteur {
+  id              String   @id @default(uuid())
+  nom             String
+  contact         String?
+  telephone       String
+  email           String?
+  vehicule        String
+  immatriculation String
+  trajet          String?
+  capacite        Float    @default(0)
+  statut          String   @default("DISPONIBLE")
+  dateCreation    String?  @map("date_creation")
+  notes           String?
+  annexeId        String?  @map("annexe_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  annexe          Annexe?  @relation(fields: [annexeId], references: [id])
+  bonsLivraison   BonLivraison[]
+
+  @@index([annexeId])
+  @@map("transporteurs")
+}
+
+// -----------------------------------------------------------------------------
+// Stock & Mouvements (Entreposage / Magasin)
+// -----------------------------------------------------------------------------
+model StockItem {
+  id          String   @id @default(uuid())
+  clientId    String?  @map("client_id")
+  annexeId    String   @map("annexe_id")
+  marchandise String
+  quantite    Float    @default(0)
+  unite       String   @default("kg")
+  seuil       Float    @default(0)
+  depositaire String?
+  commercial  String?
+  sommePayee  Float    @default(0) @map("somme_payee")
+  resteAPayer Float    @default(0) @map("reste_a_payer")
+  date        String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  client      Client?  @relation(fields: [clientId], references: [id])
+  annexe      Annexe   @relation(fields: [annexeId], references: [id])
+  mouvements  MouvementStock[]
+  bons        BonSortie[]
+
+  @@index([clientId])
+  @@index([annexeId])
+  @@map("stock_items")
+}
+
+model MouvementStock {
+  id          String   @id @default(uuid())
+  stockId     String?  @map("stock_id")
+  annexeId    String   @map("annexe_id")
+  date        String
+  type        String
+  marchandise String?
+  quantite    Float    @default(0)
+  unite       String?
+  responsable String?
+  bonRef      String?  @map("bon_ref")
+  motif       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  stock       StockItem? @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  annexe      Annexe     @relation(fields: [annexeId], references: [id])
+
+  @@index([stockId])
+  @@index([annexeId])
+  @@map("mouvements_stock")
+}
+
+// -----------------------------------------------------------------------------
+// Bons de Sortie & Bons de Sortie Caisse
+// -----------------------------------------------------------------------------
+model BonSortie {
+  id          String   @id @default(uuid())
+  reference   String   @unique
+  date        String
+  clientId    String   @map("client_id")
+  clientNom   String?  @map("client_nom")
+  annexeId    String   @map("annexe_id")
+  stockId     String?  @map("stock_id")
+  marchandise String
+  quantite    Float    @default(0)
+  unite       String
+  motif       String
+  montant     Float    @default(0)
+  statut      String   @default("En attente")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  client      Client     @relation(fields: [clientId], references: [id])
+  annexe      Annexe     @relation(fields: [annexeId], references: [id])
+  stock       StockItem? @relation(fields: [stockId], references: [id])
+  bonLivraison BonLivraison?
+
+  @@index([clientId])
+  @@index([annexeId])
+  @@index([stockId])
+  @@map("bons_sortie")
+}
+
+// Bon de livraison — généré depuis un bon de sortie VALIDÉ (un seul par bon).
+// `lignes` est un instantané JSON [{marchandise, quantite, unite}] : les lignes
+// multi-articles d'un bon de sortie ne sont pas persistées côté serveur, le
+// bon de livraison garde donc les siennes, figées au moment de sa création.
+model BonLivraison {
+  id                 String   @id @default(uuid())
+  reference          String   @unique
+  date               String
+  bonSortieId        String   @unique @map("bon_sortie_id")
+  clientId           String   @map("client_id")
+  clientNom          String   @map("client_nom")
+  annexeId           String   @map("annexe_id")
+  lignes             Json
+  transporteurId     String?  @map("transporteur_id")
+  transporteurNom    String?  @map("transporteur_nom")
+  immatriculation    String?
+  chauffeurNom       String?  @map("chauffeur_nom")
+  chauffeurTelephone String?  @map("chauffeur_telephone")
+  adresseLivraison   String?  @map("adresse_livraison")
+  observations       String?  @db.Text
+  statut             String   @default("En cours")
+  creePar            String?  @map("cree_par")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  bonSortie    BonSortie     @relation(fields: [bonSortieId], references: [id], onDelete: Restrict)
+  client       Client        @relation(fields: [clientId], references: [id])
+  annexe       Annexe        @relation(fields: [annexeId], references: [id])
+  transporteur Transporteur? @relation(fields: [transporteurId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([annexeId])
+  @@index([transporteurId])
+  @@map("bons_livraison")
+}
+
+model BonSortieCaisse {
+  id           String   @id @default(uuid())
+  reference    String   @unique
+  date         String
+  annexeId     String   @map("annexe_id")
+  montantTotal Float    @default(0) @map("montant_total")
+  creePar      String?  @map("cree_par")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  annexe       Annexe   @relation(fields: [annexeId], references: [id])
+  lignes       LigneBonSortieCaisse[]
+
+  @@index([annexeId])
+  @@map("bons_sortie_caisse")
+}
+
+model LigneBonSortieCaisse {
+  id                String          @id @default(uuid())
+  bonSortieCaisseId String          @map("bon_sortie_caisse_id")
+  date              String
+  beneficiaire      String
+  motif             String
+  montant           Float           @default(0)
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  bonSortieCaisse   BonSortieCaisse @relation(fields: [bonSortieCaisseId], references: [id], onDelete: Cascade)
+
+  @@index([bonSortieCaisseId])
+  @@map("lignes_bon_sortie_caisse")
+}
+
+// -----------------------------------------------------------------------------
+// Reçus de Paiement
+// -----------------------------------------------------------------------------
+model RecuPaiement {
+  id          String   @id @default(uuid())
+  reference   String   @unique
+  annexeId    String   @map("annexe_id")
+  nom         String
+  prenom      String
+  somme       Float    @default(0)
+  motif       String
+  montantPaye Float    @default(0) @map("montant_paye")
+  reste       Float    @default(0)
+  statut      String   @default("EN_ATTENTE")
+  creePar     String?  @map("cree_par")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  annexe      Annexe   @relation(fields: [annexeId], references: [id])
+
+  @@index([annexeId])
+  @@map("recus_paiement")
+}
+
+// -----------------------------------------------------------------------------
+// Comptabilité Générale (Opérations & Clôtures)
+// -----------------------------------------------------------------------------
+model OperationComptable {
+  id           String   @id @default(uuid())
+  reference    String   @unique
+  annexeId     String?  @map("annexe_id")
+  date         String
+  clientId     String?  @map("client_id")
+  dossierId    String?  @map("dossier_id")
+  clientNom    String?  @map("client_nom")
+  nature       String
+  type         String
+  montant      Float    @default(0)
+  modePaiement String   @default("Espèces") @map("mode_paiement")
+  source       String   @default("saisie")
+  importRef    String?  @map("import_ref")
+  creePar      String?  @map("cree_par")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  annexe       Annexe?  @relation(fields: [annexeId], references: [id])
+
+  @@index([annexeId])
+  @@map("operations_comptables")
+}
+
+model ClotureCaisse {
+  id             String   @id @default(uuid())
+  annexeId       String?  @map("annexe_id")
+  periodeDebut   String   @map("periode_debut")
+  periodeFin     String   @map("periode_fin")
+  soldeTheorique Float    @default(0) @map("solde_theorique")
+  soldeConstate  Float    @default(0) @map("solde_constate")
+  ecart          Float    @default(0)
+  note           String?
+  cloturePar     String?  @map("cloture_par")
+  clotureLe      String   @map("cloture_le")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  annexe         Annexe?  @relation(fields: [annexeId], references: [id])
+
+  // Empêche deux clôtures concurrentes sur la même période pour la même
+  // annexe (comptabilite.service.ts faisait un simple findFirst PUIS create,
+  // sans transaction ni verrou — deux requêtes simultanées passaient toutes
+  // les deux le contrôle avant que l'une n'écrive). Limite MySQL : NULL
+  // n'est jamais égal à NULL dans un index unique, donc les clôtures
+  // "toutes annexes" (annexeId = null) ne sont pas couvertes par cette
+  // contrainte — seul le cas par-annexe (le cas courant) l'est.
+  @@unique([annexeId, periodeDebut, periodeFin])
+  @@index([annexeId])
+  @@map("clotures_caisse")
+}
+
+

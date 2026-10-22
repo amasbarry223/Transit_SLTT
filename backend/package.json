@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npx prisma generate && npx nest build",
+    "build": "npx prisma generate && npx nest build && node -e \"require('fs').mkdirSync('dist/prisma',{recursive:true});require('fs').copyFileSync('prisma/schema.prisma','dist/prisma/schema.prisma')\"",
     "postinstall": "prisma generate",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

@@ -28,7 +28,18 @@ const normalize = (text: string) => text.replace(/\s+/g, ' ').trim();
 function ensurePrismaClient(): void {
   // dist/bootstrap/ → backend/
   const backendDir = resolve(__dirname, '..', '..');
-  const schemaPath = join(backendDir, 'prisma', 'schema.prisma');
+  // Sur Hostinger, seul le dossier de l'app (dist + node_modules) est déployé,
+  // sans backend/prisma : le build copie donc le schéma dans dist/prisma
+  // (script "build"), copie qui prime. Repli sur backend/prisma en local.
+  const schemaPath = [join(__dirname, '..', 'prisma', 'schema.prisma'), join(backendDir, 'prisma', 'schema.prisma')].find(
+    (p) => existsSync(p),
+  );
+  if (!schemaPath) {
+    prismaClientSync.status = 'error';
+    prismaClientSync.detail = 'schema.prisma introuvable (ni dist/prisma ni prisma/)';
+    console.error(`[prisma] ${prismaClientSync.detail}`);
+    return;
+  }
   try {
     const searchPaths = [backendDir, join(backendDir, '..')];
     const clientPkg = require.resolve('@prisma/client/package.json', { paths: searchPaths });
