@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { applySchemaScripts } from './apply-schema-scripts';
 
 /** Taille de pool par défaut adaptée à un MySQL mutualisé. */
 const DEFAULT_CONNECTION_LIMIT = 5;
@@ -45,7 +46,13 @@ export class PrismaService
       this.logger.log('✅ Base de données MySQL connectée avec succès');
     } catch (err: any) {
       this.logger.warn(`⚠️ Connexion MySQL en attente de configuration ou démarrage : ${err?.message || err}`);
+      return;
     }
+    // Tables ajoutées depuis le dernier déploiement (scripts idempotents) :
+    // plus de passage manuel par phpMyAdmin.
+    const res = await applySchemaScripts(this);
+    if (res.status === 'error') this.logger.error(`Scripts SQL : échec — ${res.detail}`);
+    else if (res.applied.length) this.logger.log(`Scripts SQL appliqués : ${res.applied.join(', ')}`);
   }
 
   async onModuleDestroy() {

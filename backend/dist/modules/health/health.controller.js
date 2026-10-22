@@ -15,6 +15,7 @@ const client_1 = require("@prisma/client");
 const decorators_1 = require("../../shared/decorators");
 const ensure_prisma_client_1 = require("../../bootstrap/ensure-prisma-client");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const apply_schema_scripts_1 = require("../../prisma/apply-schema-scripts");
 function errorCode(err) {
     if (err instanceof client_1.Prisma.PrismaClientKnownRequestError)
         return err.code;
@@ -45,6 +46,7 @@ let HealthController = class HealthController {
         const results = await Promise.allSettled(names.map((n) => checks[n]()));
         return {
             durationMs: Date.now() - started,
+            schemaScripts: apply_schema_scripts_1.schemaScripts,
             checks: Object.fromEntries(names.map((n, i) => {
                 const r = results[i];
                 return [n, r.status === 'fulfilled' ? 'ok' : errorCode(r.reason)];

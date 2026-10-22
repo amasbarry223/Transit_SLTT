@@ -14,6 +14,7 @@ exports.PrismaService = void 0;
 exports.withPoolLimits = withPoolLimits;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
+const apply_schema_scripts_1 = require("./apply-schema-scripts");
 const DEFAULT_CONNECTION_LIMIT = 5;
 const DEFAULT_POOL_TIMEOUT_S = 20;
 function withPoolLimits(url, env = process.env) {
@@ -43,7 +44,13 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
         }
         catch (err) {
             this.logger.warn(`⚠️ Connexion MySQL en attente de configuration ou démarrage : ${err?.message || err}`);
+            return;
         }
+        const res = await (0, apply_schema_scripts_1.applySchemaScripts)(this);
+        if (res.status === 'error')
+            this.logger.error(`Scripts SQL : échec — ${res.detail}`);
+        else if (res.applied.length)
+            this.logger.log(`Scripts SQL appliqués : ${res.applied.join(', ')}`);
     }
     async onModuleDestroy() {
         await this.$disconnect();

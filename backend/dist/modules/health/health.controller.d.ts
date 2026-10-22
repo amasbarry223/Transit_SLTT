@@ -4,6 +4,7 @@ export declare class HealthController {
     constructor(prisma: PrismaService);
     db(): Promise<{
         durationMs: number;
+        schemaScripts: import("../../prisma/apply-schema-scripts").SchemaScriptsResult;
         checks: {
             [k: string]: string;
         };

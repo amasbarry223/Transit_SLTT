@@ -5,7 +5,7 @@ export declare function accessCookieOptions(): {
     path: string;
     httpOnly: boolean;
     secure: boolean;
-    sameSite: "lax" | "strict" | "none";
+    sameSite: "none" | "lax" | "strict";
     domain: string;
 };
 export declare function accessCookieMaxAge(): number;
@@ -13,7 +13,7 @@ export declare function refreshCookieOptions(apiPrefix: string): {
     path: string;
     httpOnly: boolean;
     secure: boolean;
-    sameSite: "lax" | "strict" | "none";
+    sameSite: "none" | "lax" | "strict";
     domain: string;
 };
 export declare function refreshCookieMaxAge(): number;
@@ -21,6 +21,6 @@ export declare function csrfCookieOptions(): {
     httpOnly: boolean;
     path: string;
     secure: boolean;
-    sameSite: "lax" | "strict" | "none";
+    sameSite: "none" | "lax" | "strict";
     domain: string;
 };

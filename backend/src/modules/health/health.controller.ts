@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { Public } from '../../shared/decorators';
 import { prismaClientSync } from '../../bootstrap/ensure-prisma-client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { schemaScripts } from '../../prisma/apply-schema-scripts';
 
 /** Code d'erreur seul (jamais le message ni de donnée) : sûr à exposer. */
 function errorCode(err: unknown): string {
@@ -38,6 +39,7 @@ export class HealthController {
     const results = await Promise.allSettled(names.map((n) => checks[n]()));
     return {
       durationMs: Date.now() - started,
+      schemaScripts,
       checks: Object.fromEntries(
         names.map((n, i) => {
           const r = results[i];
