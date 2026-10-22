@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef } from "react";
-import { BookOpen, FileText, PenLine, Radio, Ruler, Sparkles } from "lucide-react";
+import { useRef, type ReactNode } from "react";
+import { Eye, PenLine, Ruler } from "lucide-react";
 import { RECEIPT_FORMAT_LABEL } from "@/lib/recus-paiement-styles";
 import { cn } from "@/shared/utils/cn";
 import { RecuGeneratorActions } from "./recu-generator-actions";
+import { RecuModeToggle } from "./recu-mode-toggle";
 import { RecuReceiptPreview } from "./recu-receipt-preview";
 import type { GeneratedRecu, RecuMode, SaisieForm } from "./use-recu-generator";
 import { useRecuPreviewScale } from "./use-recu-preview-scale";
@@ -40,142 +41,76 @@ export interface RecuWorkspaceProps {
   activeModuleData: RecuPaiementModuleData;
 }
 
-function RecuSidebar({
-  mode,
-  onModeChange,
-  canWrite,
-  generating,
-  printing,
-  form,
-  onFormFieldChange,
-  savedRecu,
-  sommeLettres,
-  reste,
-  statut,
-  onGenerateSaisie,
-  onPrintSaisie,
-  onResetSaisie,
-  batchCount,
-  onBatchCountChange,
-  batchSize,
-  currentVierge,
-  onGenerateBatch,
-  onPrintBatch,
-}: Omit<RecuWorkspaceProps, "brand" | "activeModuleData">) {
+type ChipTone = "neutral" | "draft" | "success";
+
+const CHIP_TONES: Record<ChipTone, { chip: string; dot: string }> = {
+  neutral: { chip: "border-border/60 bg-muted/40 text-muted-foreground", dot: "bg-muted-foreground/40" },
+  draft: { chip: "border-primary/25 bg-primary/5 text-foreground", dot: "bg-primary" },
+  success: {
+    chip: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+  },
+};
+
+function StatusChip({ tone, children }: { tone: ChipTone; children: ReactNode }) {
+  const t = CHIP_TONES[tone];
   return (
-    <aside className="flex w-[350px] shrink-0 flex-col border-r border-border/60 bg-card/50">
-      {/* En-tête de l'outil */}
-      <div className="flex items-center gap-2.5 border-b border-border/60 px-5 py-4">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#1e4a8a]/10 text-[#1e4a8a] dark:bg-primary/15 dark:text-primary">
-          <FileText className="size-4.5" aria-hidden />
-        </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-sm font-semibold text-foreground">Carnet de reçus</h1>
-          <p className="truncate text-xs text-muted-foreground">Saisie directe & Carnet vierge</p>
-        </div>
-      </div>
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center gap-1.5 truncate rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+        t.chip,
+      )}
+    >
+      <span className={cn("size-1.5 shrink-0 rounded-full", t.dot)} aria-hidden />
+      <span className="truncate">{children}</span>
+    </span>
+  );
+}
 
-      {/* Sélecteur de mode (Saisie directe / Carnet vierge) */}
-      <div className="border-b border-border/60 bg-muted/20 px-5 py-3">
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 border border-border/50 text-xs">
-          <button
-            type="button"
-            onClick={() => onModeChange("saisie")}
-            className={cn(
-              "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all",
-              mode === "saisie"
-                ? "bg-card text-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <PenLine className="size-3.5" />
-            Saisie directe
-          </button>
-          <button
-            type="button"
-            onClick={() => onModeChange("vierge")}
-            className={cn(
-              "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all",
-              mode === "vierge"
-                ? "bg-card text-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <BookOpen className="size-3.5" />
-            Carnet vierge
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {mode === "vierge" && (
-          <div className="mb-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3.5">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              {batchSize > 1 ? "Derniers numéros réservés" : "Dernier numéro réservé"}
-            </p>
-            <div className="mt-1.5 flex items-center gap-2">
-              <span className="relative flex size-1.5 shrink-0">
-                {currentVierge && (
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                )}
-                <span
-                  className={cn(
-                    "relative inline-flex size-1.5 rounded-full",
-                    currentVierge ? "bg-emerald-500" : "bg-muted-foreground/40",
-                  )}
-                />
-              </span>
-              <span
-                className={cn(
-                  "truncate font-mono text-lg font-semibold tracking-wide",
-                  currentVierge ? "text-foreground" : "text-muted-foreground/60",
-                )}
-              >
-                {currentVierge ? currentVierge.reference : "—"}
-              </span>
-            </div>
-            {batchSize > 1 && (
-              <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                Lot de {batchSize} reçus identiques (numéros différents), tous imprimés ensemble.
-              </p>
-            )}
-            <div className="mt-2.5 flex items-center gap-1.5">
-              <Ruler className="size-3 shrink-0 text-[#1e4a8a] dark:text-primary" aria-hidden />
-              <span className="font-mono text-[10px] tracking-wide text-muted-foreground">
-                {RECEIPT_FORMAT_LABEL} · Paysage
-              </span>
-            </div>
+/** Coque commune aux deux colonnes : même en-tête, même bandeau d'outils,
+ *  même pied — c'est ce qui rend les deux panneaux visuellement égaux,
+ *  pas seulement leur largeur. */
+function Panel({
+  icon,
+  title,
+  subtitle,
+  aside,
+  toolbar,
+  footer,
+  bodyClassName,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  aside?: ReactNode;
+  toolbar: ReactNode;
+  footer: ReactNode;
+  bodyClassName?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+      <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/60 px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#1e4a8a]/10 text-[#1e4a8a] dark:bg-primary/15 dark:text-primary">
+            {icon}
           </div>
-        )}
-
-        {/* Actions & formulaire de saisie */}
-        <RecuGeneratorActions
-          mode={mode}
-          variant="sidebar"
-          canWrite={canWrite}
-          generating={generating}
-          printing={printing}
-          form={form}
-          onFormFieldChange={onFormFieldChange}
-          savedRecu={savedRecu}
-          sommeLettres={sommeLettres}
-          reste={reste}
-          statut={statut}
-          onGenerateSaisie={onGenerateSaisie}
-          onPrintSaisie={onPrintSaisie}
-          onResetSaisie={onResetSaisie}
-          batchCount={batchCount}
-          onBatchCountChange={onBatchCountChange}
-          hasBatchCurrent={!!currentVierge}
-          onGenerateBatch={onGenerateBatch}
-          onPrintBatch={onPrintBatch}
-        />
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-semibold text-foreground">{title}</h2>
+            <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+          </div>
+        </div>
+        {aside ? <div className="min-w-0 shrink">{aside}</div> : null}
+      </header>
+      <div className="flex h-14 shrink-0 items-center border-b border-border/40 bg-muted/20 px-5">{toolbar}</div>
+      <div className={cn("min-h-0 flex-1", bodyClassName)}>
+        {children}
       </div>
-
-      <div className="shrink-0 border-t border-border/40 px-5 py-3 text-[11px] leading-snug text-muted-foreground">
-        L&apos;impression utilise le format {RECEIPT_FORMAT_LABEL} paysage — personnalisé pour carnet souche.
-      </div>
-    </aside>
+      <footer className="flex h-10 shrink-0 items-center gap-1.5 border-t border-border/40 px-5 text-[11px] text-muted-foreground">
+        {footer}
+      </footer>
+    </section>
   );
 }
 
@@ -205,65 +140,95 @@ export function RecuWorkspace({
 }: RecuWorkspaceProps) {
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const scale = useRecuPreviewScale(previewContainerRef);
+  const busy = generating || printing;
+
+  const documentChip =
+    mode === "saisie" ? (
+      savedRecu ? (
+        <StatusChip tone="success">N° {savedRecu.reference} enregistré</StatusChip>
+      ) : (
+        <StatusChip tone="draft">Brouillon</StatusChip>
+      )
+    ) : currentVierge ? (
+      <StatusChip tone="success">
+        {batchSize > 1 ? `${batchSize} numéros réservés` : `N° ${currentVierge.reference}`}
+      </StatusChip>
+    ) : (
+      <StatusChip tone="neutral">Aucun numéro réservé</StatusChip>
+    );
+
+  const previewHint =
+    mode === "saisie"
+      ? savedRecu
+        ? "Reçu figé — imprimez-le ou préparez un nouveau reçu."
+        : "Cliquez directement sur la feuille pour la remplir."
+      : !currentVierge
+        ? "Réservez un numéro pour afficher le reçu à imprimer."
+        : batchSize > 1
+          ? `Dernier reçu du lot (${currentVierge.reference}) — ${batchSize} pages à l'impression.`
+          : "Reçu vierge prêt à imprimer, à remplir au stylo.";
 
   return (
-    <div className="flex h-full min-h-0">
-      <RecuSidebar
-        mode={mode}
-        onModeChange={onModeChange}
-        canWrite={canWrite}
-        generating={generating}
-        printing={printing}
-        form={form}
-        onFormFieldChange={onFormFieldChange}
-        savedRecu={savedRecu}
-        sommeLettres={sommeLettres}
-        reste={reste}
-        statut={statut}
-        onGenerateSaisie={onGenerateSaisie}
-        onPrintSaisie={onPrintSaisie}
-        onResetSaisie={onResetSaisie}
-        batchCount={batchCount}
-        onBatchCountChange={onBatchCountChange}
-        batchSize={batchSize}
-        currentVierge={currentVierge}
-        onGenerateBatch={onGenerateBatch}
-        onPrintBatch={onPrintBatch}
-      />
-
-      {/* Canevas — la feuille WYSIWYG centrée */}
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-hidden",
-          "bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-100/70 via-slate-150/40 to-slate-200/50 dark:from-card/60 dark:via-muted/30 dark:to-background/50",
-        )}
+    <div className="grid h-full min-h-0 grid-cols-2 gap-5 p-5">
+      {/* Colonne gauche — saisie */}
+      <Panel
+        icon={<PenLine className="size-4.5" aria-hidden />}
+        title="Reçu de paiement"
+        subtitle={mode === "saisie" ? "Informations du règlement" : "Carnet de reçus numérotés"}
+        aside={documentChip}
+        toolbar={<RecuModeToggle mode={mode} onModeChange={onModeChange} disabled={busy} className="w-full" />}
+        footer={
+          mode === "saisie" ? (
+            <>
+              Les champs marqués <span className="font-semibold text-red-500">*</span> sont obligatoires.
+            </>
+          ) : (
+            "Chaque numéro réservé est définitif et ne sera jamais réattribué."
+          )
+        }
+        bodyClassName="overflow-y-auto px-5 py-5"
       >
-        <div className="flex shrink-0 justify-center px-4 pt-3.5">
-          {mode === "saisie" ? (
-            savedRecu ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 shadow-sm">
-                <Radio className="size-3 text-emerald-500" aria-hidden />
-                Reçu {savedRecu.reference} enregistré — Prêt à imprimer
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-card/90 px-3.5 py-1 text-[11px] font-medium text-foreground shadow-sm">
-                <Sparkles className="size-3 text-primary" aria-hidden />
-                Saisie directe : remplissez les champs à gauche ou directement sur la feuille ci-dessous
-              </span>
-            )
-          ) : !currentVierge ? (
-            <span className="rounded-full border border-border/60 bg-card/90 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
-              Carnet vierge — réservez un numéro pour l&apos;imprimer
-            </span>
-          ) : batchSize > 1 ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-card/90 px-3 py-1 text-[11px] font-medium text-primary shadow-sm">
-              <Radio className="size-3" aria-hidden />
-              Aperçu du dernier reçu vierge du lot ({batchSize} au total)
-            </span>
-          ) : null}
-        </div>
+        <RecuGeneratorActions
+          mode={mode}
+          variant="sidebar"
+          canWrite={canWrite}
+          generating={generating}
+          printing={printing}
+          form={form}
+          onFormFieldChange={onFormFieldChange}
+          savedRecu={savedRecu}
+          sommeLettres={sommeLettres}
+          reste={reste}
+          statut={statut}
+          onGenerateSaisie={onGenerateSaisie}
+          onPrintSaisie={onPrintSaisie}
+          onResetSaisie={onResetSaisie}
+          batchCount={batchCount}
+          onBatchCountChange={onBatchCountChange}
+          hasBatchCurrent={!!currentVierge}
+          onGenerateBatch={onGenerateBatch}
+          onPrintBatch={onPrintBatch}
+        />
+      </Panel>
 
-        <div ref={previewContainerRef} className="min-h-0 flex-1 overflow-hidden p-4">
+      {/* Colonne droite — aperçu WYSIWYG */}
+      <Panel
+        icon={<Eye className="size-4.5" aria-hidden />}
+        title="Aperçu du reçu"
+        subtitle="Rendu identique à l'impression"
+        aside={
+          <span className="inline-flex items-center gap-1 rounded-full border border-[#1e4a8a]/20 bg-[#dce8f5]/80 px-2.5 py-1 font-mono text-[10px] font-medium tracking-wide text-[#1e4a8a] dark:border-[#1e4a8a]/30 dark:bg-primary/15 dark:text-primary">
+            <Ruler className="size-3 shrink-0" aria-hidden />
+            {RECEIPT_FORMAT_LABEL} · Paysage
+          </span>
+        }
+        toolbar={<p className="truncate text-xs text-muted-foreground">{previewHint}</p>}
+        footer={<>Impression au format {RECEIPT_FORMAT_LABEL} paysage, adapté au carnet à souche — pas A4.</>}
+        bodyClassName="overflow-hidden bg-muted/30 bg-[radial-gradient(circle,_rgb(148_163_184/0.18)_1px,_transparent_1px)] [background-size:16px_16px] p-6 dark:bg-background/40"
+      >
+        {/* Zone mesurée sans padding : useRecuPreviewScale calcule l'échelle
+            sur sa boîte, le padding du panneau fausserait l'ajustement. */}
+        <div ref={previewContainerRef} className="h-full min-h-0">
           <RecuReceiptPreview
             data={activeModuleData}
             brand={brand}
@@ -277,7 +242,7 @@ export function RecuWorkspace({
             className="h-full border-0 shadow-none"
           />
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

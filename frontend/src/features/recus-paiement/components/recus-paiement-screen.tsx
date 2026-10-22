@@ -1,8 +1,7 @@
 "use client";
 
-import { BookOpen, PenLine } from "lucide-react";
-import { cn } from "@/shared/utils/cn";
 import { RecuGeneratorActions } from "./recus-paiement/recu-generator-actions";
+import { RecuModeToggle } from "./recus-paiement/recu-mode-toggle";
 import { RecuReceiptPreview } from "./recus-paiement/recu-receipt-preview";
 import { RecuWorkspace } from "./recus-paiement/recu-workspace";
 import { useRecuGenerator } from "./recus-paiement/use-recu-generator";
@@ -17,7 +16,7 @@ export function RecusPaiementScreen() {
 
   return (
     <>
-      {/* Desktop: workspace plein écran en 2 colonnes sans scroll global */}
+      {/* Desktop : deux panneaux égaux (saisie | aperçu), sans scroll global */}
       <div className="hidden h-full min-h-0 lg:block">
         <RecuWorkspace
           mode={gen.mode}
@@ -47,35 +46,7 @@ export function RecusPaiementScreen() {
 
       {/* Mobile: aperçu + actions empilés */}
       <div className="space-y-4 pb-8 lg:hidden">
-        {/* Sélecteur de mode mobile */}
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 border border-border/50 text-xs">
-          <button
-            type="button"
-            onClick={() => gen.setMode("saisie")}
-            className={cn(
-              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-medium transition-all",
-              gen.mode === "saisie"
-                ? "bg-card text-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <PenLine className="size-3.5" />
-            Saisie directe
-          </button>
-          <button
-            type="button"
-            onClick={() => gen.setMode("vierge")}
-            className={cn(
-              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-medium transition-all",
-              gen.mode === "vierge"
-                ? "bg-card text-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <BookOpen className="size-3.5" />
-            Carnet vierge
-          </button>
-        </div>
+        <RecuModeToggle mode={gen.mode} onModeChange={gen.setMode} disabled={gen.generating || gen.printing} />
 
         {/* Aperçu du document */}
         <RecuReceiptPreview

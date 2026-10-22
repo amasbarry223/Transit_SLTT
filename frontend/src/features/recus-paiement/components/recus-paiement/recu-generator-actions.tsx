@@ -125,13 +125,15 @@ export function RecuGeneratorActions({
 
     return (
       <div className="flex flex-col gap-4">
-        {/* Statut du document en cours */}
+        {/* Statut du document en cours — dans le workspace desktop (sidebar),
+            l'en-tête du panneau porte déjà ce statut. */}
         <div
           className={cn(
             "flex items-center justify-between rounded-xl border px-3.5 py-2.5 transition-colors",
             isSaved
               ? "border-emerald-500/30 bg-emerald-50/50 dark:border-emerald-500/20 dark:bg-emerald-950/20"
               : "border-primary/25 bg-primary/5 dark:border-primary/20 dark:bg-primary/10",
+            variant === "sidebar" && "hidden",
           )}
         >
           <div className="flex items-center gap-2">
