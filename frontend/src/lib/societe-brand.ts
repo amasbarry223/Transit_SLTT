@@ -112,13 +112,23 @@ export function resolveAppShellBranding(societes: Societe[]): {
   };
 }
 
+/** Annexe du siège (Mali, code ML-SIEGE) : son identité légale est celle de
+ *  la société elle-même, éditée uniquement dans la carte Entreprise. */
+export function isSiegeAnnexe(annexe: Pick<Annexe, "code" | "nom">): boolean {
+  return Boolean(
+    annexe.code?.toUpperCase().startsWith("ML") || annexe.nom?.toLowerCase().includes("mali"),
+  );
+}
+
 /**
  * Fusionne l'identité légale d'une annexe (adresse/téléphone/RCCM/NIF,
  * lieu d'émission physique) dans le branding société (nom/logo — l'annexe
  * n'a pas son propre logo, c'est une déclinaison de coordonnées de la même
  * entreprise). Utilisé pour l'en-tête des factures par annexe (F4).
+ * L'annexe siège garde l'identité de la société (pas de doublon à maintenir).
  */
 export function mergeAnnexeIntoBrand(brand: SocieteBrand, annexe: Annexe): SocieteBrand {
+  if (isSiegeAnnexe(annexe)) return brand;
   return {
     ...brand,
     legal: {

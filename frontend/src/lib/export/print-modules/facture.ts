@@ -87,7 +87,7 @@ export function buildCoteIvoireFactureHTML(data: FactureModuleData, resolvedBran
   const signataireNom = resolvedBrand.signataireDg || resolvedBrand.signatairePdg || "LAMINE TRAORE";
   const adresseSiege = data.villeSiege?.toLowerCase().includes("abidjan")
     ? (resolvedBrand.legal?.adresse || "Zone Industrielle de Vridi / Treichville, Abidjan")
-    : (resolvedBrand.legal?.adresse || "Hamdalaye ACI 2000");
+    : (resolvedBrand.legal?.adresse || "");
   const telephones = resolvedBrand.legal?.telephone || "+223 76 16 12 01 / +223 44 53 86 11";
   const emailContact = "lamslogistique@gmail.com";
 
@@ -301,9 +301,9 @@ body {
   <footer style="margin-top: 42px; padding-top: 10px; border-top: 1px solid #aaa;">
     <div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 9.5px; font-weight: 700; color: #111; padding-bottom: 6px;">
       <div style="line-height: 1.45;">
-        <div style="display: flex; align-items: center; gap: 4px;">
+        ${adresseSiege ? `<div style="display: flex; align-items: center; gap: 4px;">
           <span style="font-size: 11px;">📍</span> <span>${htmlEscape(adresseSiege)}</span>
-        </div>
+        </div>` : ""}
         <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
           <span style="font-size: 11px;">📞</span> <span>${htmlEscape(telephones)}</span>
         </div>

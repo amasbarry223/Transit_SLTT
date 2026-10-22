@@ -9,7 +9,7 @@ import { UI } from "@/shared/utils/ui-messages";
 import { api } from "@/lib/api-client";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import type { Annexe, AnnexeInput, Societe, SocieteInput } from "@/lib/domain-types";
-import { resolveTransitSociete } from "@/lib/societe-brand";
+import { isSiegeAnnexe, resolveTransitSociete } from "@/lib/societe-brand";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -366,12 +366,10 @@ function AnnexeCard({
   annexe,
   onSave,
   onDelete,
-  isDuplicate,
 }: {
   annexe: Annexe;
   onSave: (id: string, input: AnnexeInput) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
-  isDuplicate?: boolean;
 }) {
   const { toast } = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -470,14 +468,7 @@ function AnnexeCard({
                 <MapPin className="size-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-foreground">{annexe.nom}</p>
-                  {isDuplicate && (
-                    <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-300">
-                      Doublon détecté
-                    </span>
-                  )}
-                </div>
+                <p className="font-semibold text-foreground">{annexe.nom}</p>
                 <p className="text-xs text-muted-foreground">
                   Identité légale locale — code : {annexe.code || "—"}{annexe.villeSiege ? ` (${annexe.villeSiege})` : ""}
                 </p>
@@ -556,14 +547,9 @@ export function SocietesTab() {
   const updateAnnexe = useStore((s) => s.updateAnnexe);
   const removeAnnexe = useStore((s) => s.removeAnnexe);
   const societe = resolveTransitSociete(societes) ?? societes[0];
-
-  // Détection des doublons Mali : s'il y a plus d'une annexe associée au Mali
-  const maliAnnexes = annexes.filter(
-    (a) =>
-      a.code?.toUpperCase().includes("ML") ||
-      a.nom?.toLowerCase().includes("mali")
-  );
-  const hasMaliDuplicate = maliAnnexes.length > 1;
+  // L'annexe siège (Mali) reprend l'identité de l'entreprise ci-dessus : on ne
+  // l'affiche pas une seconde fois.
+  const autresAnnexes = annexes.filter((a) => !isSiegeAnnexe(a));
 
   return (
     <div className="space-y-10">
@@ -582,32 +568,28 @@ export function SocietesTab() {
         )}
       </div>
 
-      <div className="space-y-5 border-t border-border/60 pt-8">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Annexes</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Coordonnées et identité légale (RCCM/NIF) de chaque implantation physique (Mali,
-            Côte d&apos;Ivoire). C&apos;est l&apos;annexe qui détermine l&apos;en-tête légal imprimé
-            sur une facture. Le RCCM/NIF peut rester vide en attendant l&apos;immatriculation
-            officielle de l&apos;annexe.
-          </p>
-        </div>
-        {annexes.map((annexe, idx) => {
-          const isMali =
-            annexe.code?.toUpperCase().includes("ML") ||
-            annexe.nom?.toLowerCase().includes("mali");
-          const isDup = hasMaliDuplicate && isMali && idx > 0;
-          return (
+      {autresAnnexes.length > 0 && (
+        <div className="space-y-5 border-t border-border/60 pt-8">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Annexes</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Coordonnées et identité légale (RCCM/NIF) de chaque agence hors siège (ex. Côte
+              d&apos;Ivoire). C&apos;est l&apos;annexe qui détermine l&apos;en-tête légal imprimé
+              sur ses factures ; le siège (Mali) utilise l&apos;identité de l&apos;entreprise
+              ci-dessus. Le RCCM/NIF peut rester vide en attendant l&apos;immatriculation
+              officielle de l&apos;annexe.
+            </p>
+          </div>
+          {autresAnnexes.map((annexe) => (
             <AnnexeCard
               key={annexe.id}
               annexe={annexe}
               onSave={updateAnnexe}
               onDelete={removeAnnexe}
-              isDuplicate={isDup}
             />
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-5 border-t border-border/60 pt-8">
         <FacturationCard />
