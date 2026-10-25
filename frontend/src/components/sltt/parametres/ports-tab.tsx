@@ -11,7 +11,10 @@ import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { PortFormDialog } from "@/components/sltt/parametres/port-form-dialog";
+
+const PAGE_SIZE = 8;
 
 export function PortsTab() {
   const ports = useStore((s) => s.ports);
@@ -21,8 +24,14 @@ export function PortsTab() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Port | null>(null);
+  const [page, setPage] = useState(1);
 
   const sorted = [...ports].sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = sorted.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, sorted.length);
 
   function openCreate() {
     setEditing(null);
@@ -86,43 +95,54 @@ export function PortsTab() {
             Aucun port enregistré pour l&apos;instant.
           </p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Ville</TableHead>
-                <TableHead>Pays</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sorted.map((port) => (
-                <TableRow key={port.id}>
-                  <TableCell className="font-medium">{port.nom}</TableCell>
-                  <TableCell className="text-muted-foreground">{port.code}</TableCell>
-                  <TableCell className="text-muted-foreground">{port.ville || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{port.pays || "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant={port.actif ? "default" : "secondary"}>
-                      {port.actif ? "Actif" : "Inactif"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(port)}>
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="size-8" onClick={() => void handleToggleActif(port)}>
-                        <Power className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Ville</TableHead>
+                  <TableHead>Pays</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {paged.map((port) => (
+                  <TableRow key={port.id}>
+                    <TableCell className="font-medium">{port.nom}</TableCell>
+                    <TableCell className="text-muted-foreground">{port.code}</TableCell>
+                    <TableCell className="text-muted-foreground">{port.ville || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{port.pays || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={port.actif ? "default" : "secondary"}>
+                        {port.actif ? "Actif" : "Inactif"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(port)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="size-8" onClick={() => void handleToggleActif(port)}>
+                          <Power className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <TablePagination
+              page={safePage}
+              totalPages={totalPages}
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={sorted.length}
+              onPageChange={setPage}
+              itemLabel="ports"
+            />
+          </>
         )}
       </Card>
 

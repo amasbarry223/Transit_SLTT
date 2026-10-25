@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Warehouse } from "lucide-react";
 import type { Mouvement, StockItem } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -14,7 +16,7 @@ import {
   TableCell,
 } from "@/shared/components/ui/table";
 import { TabsContent } from "@/shared/components/ui/tabs";
-import { TabEmptyState } from "./shared";
+import { PAGE_SIZE, TabEmptyState } from "./shared";
 
 type StockTabProps = {
   stockItems: StockItem[];
@@ -25,6 +27,13 @@ type StockTabProps = {
 };
 
 export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embedded }: StockTabProps) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(stockItems.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = stockItems.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = stockItems.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, stockItems.length);
+
   const content = (
       <Card className="gap-0 overflow-hidden border-border/80 p-0 shadow-sm">
         {stockItems.length === 0 ? (
@@ -40,7 +49,7 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embe
         ) : (
           <>
             <div className="space-y-3 p-4 md:hidden">
-              {stockItems.map((item) => (
+              {paged.map((item) => (
                 <Card key={item.id} className="border-border/80 p-4 shadow-sm">
                   <p className="font-medium text-foreground">{item.marchandise}</p>
                   <dl className="mt-3 space-y-1.5 text-sm">
@@ -99,7 +108,7 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embe
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {stockItems.map((item) => (
+                  {paged.map((item) => (
                     <TableRow key={item.id} className="border-b border-border">
                       <TableCell className="px-4 py-3.5 font-medium">{item.marchandise}</TableCell>
                       <TableCell className="px-4 py-3.5 text-right tabular-nums">
@@ -118,6 +127,15 @@ export function StockTab({ stockItems, clientMouvements, onOpenEntreposage, embe
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={stockItems.length}
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              itemLabel="articles"
+            />
             {clientMouvements.length > 0 && (
               <div className="border-t border-border px-4 py-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

@@ -43,6 +43,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { EmptyState } from "@/components/sltt/empty-state";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { cn } from "@/shared/utils/cn";
 
 export interface ClientSituation {
@@ -59,6 +60,8 @@ export interface ClientSituation {
   resteAPayer: number;
 }
 
+const PAGE_SIZE = 10;
+
 export function SituationClientsPanel() {
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
@@ -72,6 +75,7 @@ export function SituationClientsPanel() {
   const [annexeFilter, setAnnexeFilter] = useState<string>(selectedAnnexeId ?? "all");
   const [search, setSearch] = useState("");
   const [soldeFilter, setSoldeFilter] = useState<"all" | "debiteur" | "solde" | "crediteur">("all");
+  const [page, setPage] = useState(1);
   const [selectedClientDetail, setSelectedClientDetail] = useState<ClientSituation | null>(null);
 
   // Calcul de la situation de chaque client
@@ -218,6 +222,12 @@ export function SituationClientsPanel() {
     return dossiers.filter((d) => d.clientId === selectedClientDetail.clientId);
   }, [selectedClientDetail, dossiers]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredSituations.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filteredSituations.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = filteredSituations.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, filteredSituations.length);
+
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
@@ -286,7 +296,10 @@ export function SituationClientsPanel() {
               <Input
                 placeholder="Rechercher un client…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="h-9 pl-9 text-xs"
               />
             </div>
@@ -294,7 +307,13 @@ export function SituationClientsPanel() {
             {/* Filtre Annexe : Isolement Mali vs Abidjan */}
             <div className="flex items-center gap-1.5">
               <Building2 className="size-4 text-muted-foreground" />
-              <Select value={annexeFilter} onValueChange={setAnnexeFilter}>
+              <Select
+                value={annexeFilter}
+                onValueChange={(v) => {
+                  setAnnexeFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="h-9 w-[180px] text-xs">
                   <SelectValue placeholder="Toutes les annexes" />
                 </SelectTrigger>
@@ -310,7 +329,13 @@ export function SituationClientsPanel() {
             </div>
 
             {/* Filtre Solde */}
-            <Select value={soldeFilter} onValueChange={(v) => setSoldeFilter(v as typeof soldeFilter)}>
+            <Select
+              value={soldeFilter}
+              onValueChange={(v) => {
+                setSoldeFilter(v as typeof soldeFilter);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="h-9 w-[170px] text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -345,8 +370,9 @@ export function SituationClientsPanel() {
             description="Modifiez vos critères de recherche ou filtre d'annexe."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
+          <>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow className="border-b border-border bg-muted/50">
                   <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -376,7 +402,7 @@ export function SituationClientsPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSituations.map((sit) => (
+                {paged.map((sit) => (
                   <TableRow key={sit.clientId} className="border-b border-border hover:bg-muted/40 transition-colors">
                     <TableCell className="px-4 py-3 font-medium text-foreground">
                       {sit.clientNom}
@@ -444,6 +470,16 @@ export function SituationClientsPanel() {
               </TableBody>
             </Table>
           </div>
+            <TablePagination
+              page={safePage}
+              totalPages={totalPages}
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={filteredSituations.length}
+              onPageChange={setPage}
+              itemLabel="clients"
+            />
+          </>
         )}
       </Card>
 

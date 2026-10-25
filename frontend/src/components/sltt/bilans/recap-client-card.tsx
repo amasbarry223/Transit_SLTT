@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Users } from "lucide-react";
 import { Card } from "@/shared/components/ui/card";
 import {
@@ -9,11 +10,14 @@ import {
   TableRow,
 } from "@/shared/components/ui/table";
 import { EmptyState } from "@/components/sltt/empty-state";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { EcartValue } from "@/components/sltt/status-badge";
 import { GlossaryLabel } from "@/components/sltt/glossary-label";
 import { formatFCFA } from "@/lib/format";
 import { SortableHead } from "./sortable-head";
 import type { SortDir, SortKey } from "./shared";
+
+const PAGE_SIZE = 10;
 
 interface RecapRow {
   client: string;
@@ -44,6 +48,19 @@ export function RecapClientCard({
   periodeLabel,
   totalClients,
 }: RecapClientCardProps) {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(sortedRecap.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = sortedRecap.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = sortedRecap.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, sortedRecap.length);
+
+  const handleSort = (k: SortKey) => {
+    setPage(1);
+    onSort(k);
+  };
+
   return (
     <Card className="p-5 shadow-sm border-border/80 lg:col-span-2 gap-4">
       <div className="flex items-center justify-between gap-2">
@@ -59,7 +76,7 @@ export function RecapClientCard({
       ) : (
         <>
           <div className="space-y-3 md:hidden">
-            {sortedRecap.map((r) => (
+            {paged.map((r) => (
               <Card key={r.client} className="border-border/80 p-4 shadow-sm">
                 <p className="font-medium text-slate-800 dark:text-slate-200">{r.client}</p>
                 <dl className="mt-2 space-y-1 text-sm">
@@ -115,7 +132,7 @@ export function RecapClientCard({
                   label="Client"
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  onSort={onSort}
+                  onSort={handleSort}
                   align="left"
                 />
                 <SortableHead
@@ -123,33 +140,33 @@ export function RecapClientCard({
                   label="Investi"
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  onSort={onSort}
+                  onSort={handleSort}
                 />
                 <SortableHead
                   col="encaisse"
                   label="Encaissé"
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  onSort={onSort}
+                  onSort={handleSort}
                 />
                 <SortableHead
                   col="reste"
                   label={<GlossaryLabel term="resteAPayer" short />}
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  onSort={onSort}
+                  onSort={handleSort}
                 />
                 <SortableHead
                   col="ecart"
                   label={<GlossaryLabel term="ecartReglement" short />}
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  onSort={onSort}
+                  onSort={handleSort}
                 />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedRecap.map((r) => (
+              {paged.map((r) => (
                 <TableRow
                   key={r.client}
                   className="border-b border-border hover:bg-muted/60"
@@ -195,6 +212,15 @@ export function RecapClientCard({
             )}
           </Table>
           </div>
+          <TablePagination
+            page={safePage}
+            totalPages={totalPages}
+            startIdx={startIdx}
+            endIdx={endIdx}
+            totalItems={sortedRecap.length}
+            onPageChange={setPage}
+            itemLabel="clients"
+          />
         </>
       )}
     </Card>

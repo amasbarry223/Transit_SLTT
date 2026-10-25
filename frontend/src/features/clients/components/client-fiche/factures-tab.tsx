@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { Facture } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { FactureStatutBadge } from "@/components/sltt/status-badge";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -15,7 +17,7 @@ import {
   TableCell,
 } from "@/shared/components/ui/table";
 import { TabsContent } from "@/shared/components/ui/tabs";
-import { TabEmptyState } from "./shared";
+import { PAGE_SIZE, TabEmptyState } from "./shared";
 
 type FacturesTabProps = {
   factures: Facture[];
@@ -24,6 +26,13 @@ type FacturesTabProps = {
 };
 
 export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesTabProps) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(factures.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = factures.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = factures.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, factures.length);
+
   return (
     <TabsContent value="factures" className="mt-6 space-y-3 focus-visible:outline-none">
       {onNewFacture && (
@@ -40,7 +49,7 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
         ) : (
           <>
             <div className="space-y-3 p-4 md:hidden">
-              {factures.map((f) => (
+              {paged.map((f) => (
                 <Card
                   key={f.id}
                   className="cursor-pointer border-border/80 p-4 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/60"
@@ -95,7 +104,7 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {factures.map((f) => (
+                  {paged.map((f) => (
                     <TableRow
                       key={f.id}
                       className="cursor-pointer border-b border-border hover:bg-muted/60"
@@ -121,6 +130,15 @@ export function FacturesTab({ factures, onNewFacture, onOpenFacture }: FacturesT
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              startIdx={startIdx}
+              endIdx={endIdx}
+              totalItems={factures.length}
+              page={safePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              itemLabel="factures"
+            />
           </>
         )}
       </Card>

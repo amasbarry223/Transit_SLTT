@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";
 import { useDeleteConfirm } from "@/shared/hooks/use-delete-confirm";
@@ -47,11 +48,14 @@ function transportLabel(bon: BonLivraison): string {
   return [bon.transporteurNom, bon.immatriculation].filter(Boolean).join(" · ") || "—";
 }
 
+const PAGE_SIZE = 8;
+
 export function BonLivraisonTab({ bons, canWrite, onPrint, onEdit }: Props) {
   const { toast } = useToast();
   const removeBonLivraison = useStore((s) => s.removeBonLivraison);
   const updateBonLivraison = useStore((s) => s.updateBonLivraison);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [livrerTarget, setLivrerTarget] = useState<BonLivraison | null>(null);
 
   const { target: deleteTarget, setTarget: setDeleteTarget, confirm: confirmDelete } = useDeleteConfirm<BonLivraison>(
@@ -133,6 +137,12 @@ export function BonLivraisonTab({ bons, canWrite, onPrint, onEdit }: Props) {
     );
   };
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, filtered.length);
+
   return (
     <>
       <TabsContent value="livraison" className="mt-0 space-y-6">
@@ -149,7 +159,10 @@ export function BonLivraisonTab({ bons, canWrite, onPrint, onEdit }: Props) {
               <Input
                 placeholder="Référence, client, camion, chauffeur…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="h-10 pl-9"
                 aria-label="Rechercher un bon de livraison"
               />
@@ -183,7 +196,7 @@ export function BonLivraisonTab({ bons, canWrite, onPrint, onEdit }: Props) {
           ) : (
             <>
               <div className="space-y-3 p-4 md:hidden">
-                {filtered.map((bon) => (
+                {paged.map((bon) => (
                   <Card key={bon.id} className="gap-2 border-border/70 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -214,7 +227,7 @@ export function BonLivraisonTab({ bons, canWrite, onPrint, onEdit }: Props) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((bon) => (
+                    {paged.map((bon) => (
                       <TableRow key={bon.id}>
                         <TableCell className="px-4 font-mono text-sm font-semibold">{bon.reference}</TableCell>
                         <TableCell className="px-4 text-sm text-muted-foreground">{formatDateShort(bon.date)}</TableCell>
@@ -230,6 +243,16 @@ export function BonLivraisonTab({ bons, canWrite, onPrint, onEdit }: Props) {
                   </TableBody>
                 </Table>
               </div>
+
+              <TablePagination
+                page={safePage}
+                totalPages={totalPages}
+                startIdx={startIdx}
+                endIdx={endIdx}
+                totalItems={filtered.length}
+                onPageChange={setPage}
+                itemLabel="bons de livraison"
+              />
             </>
           )}
         </Card>
