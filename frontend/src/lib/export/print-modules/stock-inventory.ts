@@ -1,6 +1,6 @@
 "use client";
 
-import { DEFAULT_TRANSIT_BRAND, ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { DEFAULT_TRANSIT_BRAND, ensureSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
   buildOfficialLetterheadHTML,

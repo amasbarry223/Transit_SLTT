@@ -24,7 +24,7 @@ export const createContratFichiersSlice: StateCreator<SLTTState, [], [], Contrat
 
   addContratFichier: async (input) => {
     const seq = get().contratFichierSeq;
-    const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
+    const safeName = input.nom.replace(/[^\w.-]+/g, "_");
     const path = `${input.contratId}/${Date.now()}-${safeName}`;
 
     const newFile: ContratFichier = {

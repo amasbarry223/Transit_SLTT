@@ -32,7 +32,7 @@ export interface DossierBulkImportRow {
 }
 
 /** Accepte les variantes réellement rencontrées : « du Client », « de la Cliente », casse libre. */
-const CLIENT_TITLE_RE = /situation\s+d[eu](?:\s+la)?\s+client(?:e)?\s*[:\-]?\s*(.+)/i;
+const CLIENT_TITLE_RE = /situation\s+d[eu](?:\s+la)?\s+client(?:e)?\s*[:-]?\s*(.+)/i;
 const GENERIC_SHEET_NAMES = new Set(["sheet1", "feuil1", "feuille1", "sheet", "feuille"]);
 
 /**

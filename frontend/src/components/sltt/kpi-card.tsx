@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/shared/utils/cn";
-import { Card } from "@/shared/components/ui/card";
 import { TrendingUp, TrendingDown, Info } from "lucide-react";
 import {
   Tooltip,

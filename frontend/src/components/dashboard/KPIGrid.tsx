@@ -75,7 +75,7 @@ const COLOR_CONFIG = {
   },
 };
 
-export function KPIGrid({ kpis, onKpiClick }: KPIGridProps) {
+export const KPIGrid = React.memo(function KPIGrid({ kpis, onKpiClick }: KPIGridProps) {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -169,4 +169,5 @@ export function KPIGrid({ kpis, onKpiClick }: KPIGridProps) {
       </div>
     </TooltipProvider>
   );
-}
+});
+

@@ -9,7 +9,7 @@ const API_URL = resolveServerApiUrl();
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { user, profile } = await requireUser(request);
+    const { user } = await requireUser(request);
     const raw = await request.json();
     const parsed = updateOwnProfileBodySchema.safeParse(raw);
     if (!parsed.success) {

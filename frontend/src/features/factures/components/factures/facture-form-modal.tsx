@@ -50,7 +50,6 @@ export function FactureFormModal({
   const { toast } = useToast();
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
-  const societes = useStore((s) => s.societes);
   const addFacture = useStore((s) => s.addFacture);
   const go = useNav((s) => s.go);
   const { annexes, activeAnnexeId } = useActiveAnnexe();

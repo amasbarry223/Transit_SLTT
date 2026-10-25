@@ -26,7 +26,7 @@ import {
 } from "@/lib/dossier-bulk-import";
 import { formatFCFA } from "@/lib/format";
 import { XLSX_IMPORT_MAX_MB, XLSX_IMPORT_MAX_BYTES } from "@/lib/constants";
-import { getErrorMessage, cn } from "@/shared/utils/cn";
+import { cn } from "@/shared/utils/cn";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";

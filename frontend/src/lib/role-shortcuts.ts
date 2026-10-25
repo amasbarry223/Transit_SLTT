@@ -1,6 +1,6 @@
 import type { UserRole } from "@/lib/domain-types";
 import type { ComptaTab, ViewKey } from "@/lib/nav-store";
-import { Wallet, BarChart3, Warehouse, FileOutput, ClipboardList, Settings, LayoutDashboard, FolderKanban } from "lucide-react";
+import { Wallet, BarChart3, ClipboardList, Settings, LayoutDashboard, FolderKanban } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface RoleShortcut {

@@ -113,6 +113,6 @@ export function useConfigValue<T = string>(key: string, fallback?: T): T {
  * Permet de forcer une mise à jour locale immédiate après modification admin
  */
 export function updateLocalConfig(key: string, value: ConfigValue) {
-  const updated = { ...(cachedConfig || {}), [key]: value };
+  const updated = { ...cachedConfig, [key]: value };
   notifyListeners(updated);
 }

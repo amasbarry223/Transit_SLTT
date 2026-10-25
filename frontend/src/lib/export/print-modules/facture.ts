@@ -3,7 +3,6 @@
 import { BRAND } from "@/lib/brand-colors";
 import {
   ensureSocieteBrand,
-  requireSocieteBrand,
   type SocieteBrand,
 } from "@/lib/societe-brand";
 import { montantEnLettresFCFA } from "@/lib/number-to-words-fr";

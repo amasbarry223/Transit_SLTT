@@ -7,7 +7,7 @@ import { buildXlsxBlob } from "@/lib/export/build-xlsx-client";
 import type { ExportModule } from "@/lib/export/export-modules";
 import { useStore } from "@/lib/store";
 import { toast } from "@/shared/hooks/use-toast";
-import { toastError, toastLoading, toastSuccess } from "@/shared/utils/toast-helpers";
+import { toastError, toastLoading } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
 import { logError } from "@/shared/logger";
 
@@ -22,6 +22,7 @@ interface Column<T> {
  */
 function sanitizeFilename(name: string): string {
   const safe = name
+    // eslint-disable-next-line no-control-regex
     .replace(/[\\/:*?"<>|\x00-\x1f]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")

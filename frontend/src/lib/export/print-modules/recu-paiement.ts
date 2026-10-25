@@ -9,7 +9,7 @@ import {
   RECEIPT_WIDTH_MM,
   RECEIPT_HEIGHT_MM,
 } from "@/lib/recus-paiement-styles";
-import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import { acquirePrintTarget, resolveLogoUrl, triggerPrint, warnPopupBlocked } from "../print-document";
 import { fmtDate, fmtFCFA } from "./shared";

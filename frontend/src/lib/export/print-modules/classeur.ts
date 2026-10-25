@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "../html-escape";
 import {
   OFFICIAL_LETTERHEAD_CSS,
@@ -12,7 +12,7 @@ import {
   triggerPrint,
   warnPopupBlocked,
 } from "../print-document";
-import { fmtDate, fmtDateShort, fmtFCFA, fmtFCFAPlain } from "./shared";
+import { fmtDateShort, fmtFCFA, fmtFCFAPlain } from "./shared";
 
 /* ------------------------------------------------------------------ */
 /* printClasseur — classeur client (journal unifié + solde cumulé)      */

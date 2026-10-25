@@ -16,7 +16,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Separator } from "@/shared/components/ui/separator";
-import { prefsFromProfile, useUiPrefs } from "@/lib/session/ui-prefs-store";
 import {
   Eye,
   EyeOff,
@@ -35,7 +34,7 @@ function LoginBackground() {
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url('/bg.jpg')` }}
+        style={{ backgroundImage: `url('/bg.webp'), url('/bg.jpg')` }}
       />
       <div className="absolute inset-0" style={{ backgroundColor: `${BRAND.primary}8C` }} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(22,27,35,0.45)_100%)]" />
@@ -141,13 +140,12 @@ export function LoginScreen() {
         <div className="overflow-hidden rounded-2xl border border-white/25 bg-card/95 backdrop-blur-md shadow-[0_24px_80px_-12px_rgba(45,52,140,0.35)] dark:border-border/60">
           <div className="flex flex-col items-center px-8 pb-5 pt-8">
             <Image
-              src="/logoV.png"
+              src="/logoV.webp"
               alt="Transit"
               width={140}
               height={140}
               className="size-[124px] object-contain drop-shadow-md sm:size-[136px] transition-transform duration-300 hover:scale-105"
               priority
-              unoptimized
             />
           </div>
 

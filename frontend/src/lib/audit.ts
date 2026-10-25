@@ -1,4 +1,4 @@
-import { logError, logWarn } from "@/shared/logger";
+import { logWarn } from "@/shared/logger";
 
 export type AuditAction =
   | "Connexion"

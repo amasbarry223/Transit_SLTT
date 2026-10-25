@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { AlertTriangle, Clock, ShieldCheck, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import type { ReceivableStats } from "@/mock/dashboard";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";

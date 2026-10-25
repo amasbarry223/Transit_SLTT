@@ -1,26 +1,44 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { useNav } from "@/lib/nav-store";
-import { useStore } from "@/lib/store";
 import { useSession } from "@/lib/session/session-store";
 import { useUiPrefs } from "@/lib/session/ui-prefs-store";
-import { useCurrentUser, usePermission } from "@/shared/hooks/use-permission";
+import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
-import { formatFCFA } from "@/lib/format";
+import { SkeletonCard } from "@/shared/components/ui/skeleton";
+import { ScreenSkeleton } from "@/components/sltt/screen-skeleton";
 
 import {
   DashboardHeader,
   KPIGrid,
-  TransitActivityChart,
-  DossierStatusChart,
-  CashFlowChart,
-  RevenueChart,
-  ReceivablesChart,
   TransitPipeline,
   OperationalAlerts,
   RecentOperations,
 } from "@/components/dashboard";
+
+// Lazy loading des graphiques Recharts pour alléger le bundle initial (~400KB)
+const TransitActivityChart = dynamic(
+  () => import("@/components/dashboard/TransitActivityChart").then((m) => m.TransitActivityChart),
+  { loading: () => <SkeletonCard className="h-[340px]" /> },
+);
+const DossierStatusChart = dynamic(
+  () => import("@/components/dashboard/DossierStatusChart").then((m) => m.DossierStatusChart),
+  { loading: () => <SkeletonCard className="h-[340px]" /> },
+);
+const CashFlowChart = dynamic(
+  () => import("@/components/dashboard/CashFlowChart").then((m) => m.CashFlowChart),
+  { loading: () => <SkeletonCard className="h-[340px]" /> },
+);
+const RevenueChart = dynamic(
+  () => import("@/components/dashboard/RevenueChart").then((m) => m.RevenueChart),
+  { loading: () => <SkeletonCard className="h-[340px]" /> },
+);
+const ReceivablesChart = dynamic(
+  () => import("@/components/dashboard/ReceivablesChart").then((m) => m.ReceivablesChart),
+  { loading: () => <SkeletonCard className="h-[340px]" /> },
+);
 
 import { useDashboardData } from "@/shared/hooks/useDashboardData";
 import {
@@ -37,7 +55,7 @@ export function DashboardScreen() {
   const isDark = theme === "dark";
 
   // Récupération des données live de la base via l'API NestJS
-  const { data: liveData } = useDashboardData();
+  const { data: liveData, isLoading } = useDashboardData();
 
   const { annexes, selectedAnnexeId } = useActiveAnnexe();
 
@@ -50,34 +68,43 @@ export function DashboardScreen() {
     return found ? `${found.nom} (${found.villeSiege})` : "Toutes les annexes";
   }, [annexes, selectedAnnexeId]);
 
-  // Actions de navigation
-  const handleKpiClick = (targetView: string) => {
+  // Actions de navigation mémoïsées
+  const handleKpiClick = useCallback((targetView: string) => {
     if (targetView === "dossiers") go("dossiers");
     else if (targetView === "clients") go("clients");
     else if (targetView === "factures") go("factures");
     else if (targetView === "comptabilite") go("comptabilite");
     else if (targetView === "entreposage") go("entreposage");
-  };
+  }, [go]);
 
-  const handleOperationClick = (op: RecentOperation) => {
+  const handleOperationClick = useCallback((op: RecentOperation) => {
     if (op.type === "Dossier") go("dossiers");
     else if (op.type === "Facture") go("factures");
     else if (op.type === "Débours" || op.type === "Caisse") go("comptabilite");
     else if (op.type === "Stock") go("entreposage");
-  };
+  }, [go]);
 
-  const handleAlertClick = (alert: OperationalAlert) => {
+  const handleAlertClick = useCallback((alert: OperationalAlert) => {
     if (alert.targetView === "dossiers") go("dossiers");
     else if (alert.targetView === "factures") go("factures");
     else if (alert.targetView === "comptabilite") go("comptabilite");
     else if (alert.targetView === "archives") go("archives");
     else go("dossiers");
-  };
+  }, [go]);
 
-  const scrollToAlerts = () => {
+  const scrollToAlerts = useCallback(() => {
     const el = document.getElementById("alertes-a-traiter");
     if (el) el.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
+
+  const handleGoDossiers = useCallback(() => go("dossiers"), [go]);
+  const handleGoFactures = useCallback(() => go("factures"), [go]);
+  const handleGoClients = useCallback(() => go("clients"), [go]);
+  const handleNewDossier = useCallback(() => openDossier(null, "create"), [openDossier]);
+
+  if (isLoading) {
+    return <ScreenSkeleton view="dashboard" />;
+  }
 
   return (
     <div className="space-y-6 pb-12">
@@ -85,7 +112,7 @@ export function DashboardScreen() {
       <DashboardHeader
         userName={currentUserName}
         activeAnnexeName={activeAnnexeName}
-        onNewDossier={() => openDossier(null, "create")}
+        onNewDossier={handleNewDossier}
         onViewAlerts={scrollToAlerts}
         canCreateDossier={canCreateDossier}
         alertCount={liveData.operationalAlerts.length}
@@ -102,7 +129,7 @@ export function DashboardScreen() {
         <div className="lg:col-span-4">
           <DossierStatusChart
             stats={liveData.transitStats}
-            onSelectStatus={() => go("dossiers")}
+            onSelectStatus={handleGoDossiers}
           />
         </div>
       </div>
@@ -110,7 +137,7 @@ export function DashboardScreen() {
       {/* 4. PIPELINE HORIZONTAL DU CORRIDOR DE TRANSIT (12 COLS) */}
       <TransitPipeline
         steps={liveData.pipeline}
-        onSelectStep={() => go("dossiers")}
+        onSelectStep={handleGoDossiers}
       />
 
       {/* 5. TRÉSORERIE & FLUX DE DÉBOURS (12 COLS - GRAPHIQUE + INDICATEURS AVANCES DOUANE) */}
@@ -125,8 +152,8 @@ export function DashboardScreen() {
           <ReceivablesChart
             stats={liveData.receivableStats}
             isDark={isDark}
-            onGoToFactures={() => go("factures")}
-            onSelectClient={() => go("clients")}
+            onGoToFactures={handleGoFactures}
+            onSelectClient={handleGoClients}
           />
         </div>
       </div>
@@ -137,7 +164,7 @@ export function DashboardScreen() {
           <RecentOperations
             operations={liveData.recentOperations}
             onSelectOperation={handleOperationClick}
-            onViewAll={() => go("dossiers")}
+            onViewAll={handleGoDossiers}
           />
         </div>
         <div id="alertes-a-traiter" className="lg:col-span-4">

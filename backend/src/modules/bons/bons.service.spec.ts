@@ -232,6 +232,10 @@ describe('BonsService — correction d’un bon VALIDÉ (admin, avec correction 
         findUnique: vi.fn().mockResolvedValue({ id: 'stock-1', quantite: opts.stockAfter ?? 50 }),
       },
       mouvementStock: { create: vi.fn() },
+      bonLivraison: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
       bonSortie: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -262,9 +266,19 @@ describe('BonsService — correction d’un bon VALIDÉ (admin, avec correction 
     expect(tx.bonSortie.deleteMany).toHaveBeenCalledWith({ where: { id: 'bon-2', statut: 'Validé' } });
   });
 
-  it('refuse si le bon a déjà un bon de livraison', async () => {
-    const { prisma } = createValidatedPrisma({ livraison: { reference: 'LIV-2026-0001' } });
-    await expect(new BonsService(prisma as any).deleteBon('bon-2', admin())).rejects.toThrow(BadRequestException);
+  it('supprime aussi le bon de livraison attaché et remet en stock', async () => {
+    const { prisma, tx } = createValidatedPrisma({ livraison: { reference: 'LIV-2026-0001' } });
+    await new BonsService(prisma as any).deleteBon('bon-2', admin());
+
+    expect(tx.bonLivraison.deleteMany).toHaveBeenCalledWith({ where: { bonSortieId: 'bon-2' } });
+    expect(tx.stockItem.updateMany.mock.calls[0][0].data).toEqual({ quantite: { increment: 100 } });
+    expect(tx.bonSortie.deleteMany).toHaveBeenCalledWith({ where: { id: 'bon-2', statut: 'Validé' } });
+  });
+
+  it('accepte les rôles Administrateur et DIRECTION comme administrateur', async () => {
+    const { prisma, tx } = createValidatedPrisma();
+    await new BonsService(prisma as any).deleteBon('bon-2', admin({ role: 'Administrateur' }));
+    expect(tx.bonSortie.deleteMany).toHaveBeenCalled();
   });
 
   it('modification de quantité : annule la sortie d’origine puis applique la nouvelle', async () => {
@@ -289,5 +303,20 @@ describe('BonsService — correction d’un bon VALIDÉ (admin, avec correction 
   it('refuse une correction qui rendrait le stock négatif', async () => {
     const { prisma } = createValidatedPrisma({ stockAfter: -5 });
     await expect(new BonsService(prisma as any).updateBon('bon-2', admin(), { quantite: 200 })).rejects.toThrow(BadRequestException);
+  });
+
+  it('supprime un bon non validé (brouillon) dans une transaction avec nettoyage du bon de livraison éventuel', async () => {
+    const draft = baseBonSortie({ statut: 'En attente' });
+    const tx = {
+      bonLivraison: { deleteMany: vi.fn() },
+      bonSortie: { deleteMany: vi.fn() },
+    };
+    const prisma = {
+      bonSortie: { findUnique: vi.fn().mockResolvedValue(draft) },
+      $transaction: vi.fn(async (cb: (t: unknown) => unknown) => cb(tx)),
+    };
+    await new BonsService(prisma as any).deleteBon('bon-2', admin());
+    expect(tx.bonLivraison.deleteMany).toHaveBeenCalledWith({ where: { bonSortieId: 'bon-2' } });
+    expect(tx.bonSortie.deleteMany).toHaveBeenCalledWith({ where: { id: 'bon-2', statut: { not: 'Validé' } } });
   });
 });

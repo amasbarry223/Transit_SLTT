@@ -9,7 +9,6 @@ import { OCR_LOW_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { logError, logWarn } from "@/shared/logger";
-import { UI } from "@/shared/utils/ui-messages";
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { runOcrOnStoragePath } from "@/lib/documents/ocr/run-ocr";

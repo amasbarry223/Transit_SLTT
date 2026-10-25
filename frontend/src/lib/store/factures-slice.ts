@@ -10,7 +10,6 @@ import type { FactureInput, SLTTState } from "@/lib/store";
 import {
   computeAnnexeScopedReference,
   extractTrailingSeq,
-  insertWithReferenceRetry,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 

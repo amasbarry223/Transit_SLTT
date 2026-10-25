@@ -1,7 +1,5 @@
-"use client";
-
-import React from "react";
-import { ArrowRight, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import * as React from "react";
+import { AlertCircle, Clock } from "lucide-react";
 import type { TransitPipelineStep } from "@/mock/dashboard";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
@@ -11,7 +9,10 @@ interface TransitPipelineProps {
   onSelectStep?: (stepKey: string) => void;
 }
 
-export function TransitPipeline({ steps, onSelectStep }: TransitPipelineProps) {
+export const TransitPipeline = React.memo(function TransitPipeline({
+  steps,
+  onSelectStep,
+}: TransitPipelineProps) {
   return (
     <div className="rounded-2xl border border-slate-200/80 dark:border-border/70 bg-white dark:bg-card p-5 sm:p-6 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
@@ -32,8 +33,6 @@ export function TransitPipeline({ steps, onSelectStep }: TransitPipelineProps) {
       {/* Grille horizontale du pipeline */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
         {steps.map((step, idx) => {
-          const isLast = idx === steps.length - 1;
-
           return (
             <div
               key={step.stepKey}
@@ -90,4 +89,5 @@ export function TransitPipeline({ steps, onSelectStep }: TransitPipelineProps) {
       </div>
     </div>
   );
-}
+});
+

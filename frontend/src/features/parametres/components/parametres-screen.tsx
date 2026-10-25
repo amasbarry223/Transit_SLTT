@@ -13,16 +13,13 @@ import {
   Sliders,
   Search,
   X,
-  Lock,
-  Sparkles,
   CheckCircle2,
   SlidersHorizontal,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useSession } from "@/lib/session/session-store";
-import { useCanManageUsers, usePermission, useCurrentUser } from "@/shared/hooks/use-permission";
+import { useCanManageUsers, usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
-import { PageHeader } from "@/components/sltt/page-header";
 import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/shared/utils/cn";
 
 // Onglets existants (préservation intégrale de la logique métier)

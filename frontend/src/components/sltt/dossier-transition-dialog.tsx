@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { cn, getErrorMessage } from "@/shared/utils/cn";
+import { cn } from "@/shared/utils/cn";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */

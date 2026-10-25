@@ -141,7 +141,7 @@ export const createArchivesSlice: StateCreator<SLTTState, [], [], ArchivesSlice>
 
     // Repli de secours si ni upload ni dataUrl
     if (!storagePath) {
-      const safeName = input.nom.replace(/[^\w.\-]+/g, "_");
+      const safeName = input.nom.replace(/[^\w.-]+/g, "_");
       const month = new Date().toISOString().slice(0, 7);
       storagePath = `${month}/${Date.now()}-${safeName}`;
     }

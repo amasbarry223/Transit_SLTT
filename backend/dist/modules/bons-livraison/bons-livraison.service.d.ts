@@ -11,6 +11,7 @@ export interface LigneLivraison {
 export declare class BonsLivraisonService {
     private prisma;
     constructor(prisma: PrismaService);
+    private isUserAdmin;
     private buildAnnexeFilter;
     private assertAnnexeAccess;
     private normalizeLignes;

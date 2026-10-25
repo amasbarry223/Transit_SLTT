@@ -9,7 +9,9 @@ import { formatDateShort, formatFCFA } from "@/lib/format";
 import { printHTML, htmlEscape, exportToExcel } from "@/lib/export";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { usePermission } from "@/shared/hooks/use-permission";
+import { usePermission, useCurrentUser } from "@/shared/hooks/use-permission";
+import { useSession } from "@/lib/session/session-store";
+import { normalizeRole } from "@/lib/permissions";
 import { PageHeader } from "@/components/sltt/page-header";
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -39,8 +41,15 @@ type BonsTab = "marchandise" | "caisse" | "livraison";
 
 export function BonsScreen() {
   const { toast } = useToast();
-  const canWrite = usePermission("bons:write");
-  const canWriteCaisse = usePermission("bons:write-caisse");
+  const sessionRole = useSession((state) => state.currentRole);
+  const currentUser = useCurrentUser();
+  const effectiveRole = currentUser?.role || sessionRole;
+  const isAdmin =
+    (effectiveRole as string) === "ADMIN" ||
+    effectiveRole === "Administrateur" ||
+    normalizeRole(effectiveRole) === "Administrateur";
+  const canWrite = usePermission("bons:write") || isAdmin;
+  const canWriteCaisse = usePermission("bons:write-caisse") || isAdmin;
   const go = useNav((state) => state.go);
   const selectedId = useNav((state) => state.selectedId);
   const { selectedAnnexeId } = useActiveAnnexe();
@@ -554,7 +563,7 @@ export function BonsScreen() {
           if (!open) setEditingBonMarchandise(null);
         }}
         nextReference={nextReference}
-        canWrite={canWrite}
+        canWrite={canWrite || isAdmin}
         editing={editingBonMarchandise}
       />
 
@@ -595,7 +604,11 @@ export function BonsScreen() {
             <AlertDialogTitle>Supprimer le bon {bonDeleteTarget?.reference} ?</AlertDialogTitle>
             <AlertDialogDescription>
               {bonDeleteTarget?.statut === "Validé"
-                ? `Ce bon est validé : la quantité sortie (${bonDeleteTarget.quantite} ${bonDeleteTarget.unite}) sera remise en stock et un mouvement d'annulation sera tracé. Cette action est irréversible.`
+                ? `Ce bon est validé : la quantité sortie (${bonDeleteTarget.quantite} ${bonDeleteTarget.unite}) sera remise en stock et un mouvement d'annulation sera tracé.${
+                    allBonsLivraison.some((bl) => bl.bonSortieId === bonDeleteTarget.id)
+                      ? " Le bon de livraison associé sera également supprimé."
+                      : ""
+                  } Cette action est irréversible.`
                 : "Cette action est irréversible. Le bon de sortie et ses lignes associées seront définitivement supprimés."}
             </AlertDialogDescription>
           </AlertDialogHeader>

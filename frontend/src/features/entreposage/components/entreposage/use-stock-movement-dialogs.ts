@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useStore, type StockItem } from "@/lib/store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { useCurrentUser } from "@/shared/hooks/use-permission";
 
 export const SORTIE_MOTIFS = ["Vente", "Livraison", "Transfert", "Autre"] as const;

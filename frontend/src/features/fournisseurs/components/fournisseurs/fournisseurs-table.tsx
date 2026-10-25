@@ -20,7 +20,7 @@ import {
 } from "@/shared/components/ui/table";
 import { cn } from "@/shared/utils/cn";
 import type { FournisseurType } from "@/lib/store";
-import { TYPE_META, getFournisseurTypeMeta } from "./fournisseur-type-meta";
+import { getFournisseurTypeMeta } from "./fournisseur-type-meta";
 
 interface PaginationProps {
   startIdx: number;

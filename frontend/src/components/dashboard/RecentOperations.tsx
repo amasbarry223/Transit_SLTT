@@ -28,7 +28,11 @@ const STATUT_COLOR_MAP = {
   slate: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700",
 };
 
-export function RecentOperations({ operations, onSelectOperation, onViewAll }: RecentOperationsProps) {
+export const RecentOperations = React.memo(function RecentOperations({
+  operations,
+  onSelectOperation,
+  onViewAll,
+}: RecentOperationsProps) {
   return (
     <div className="rounded-2xl border border-slate-200/80 dark:border-border/70 bg-white dark:bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between h-full">
       {/* En-tête */}
@@ -121,4 +125,5 @@ export function RecentOperations({ operations, onSelectOperation, onViewAll }: R
       </div>
     </div>
   );
-}
+});
+

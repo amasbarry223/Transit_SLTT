@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, ShieldAlert, ArrowRight, Clock, FileWarning } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import type { OperationalAlert } from "@/mock/dashboard";
 import { cn } from "@/shared/utils/cn";
 
@@ -10,7 +10,10 @@ interface OperationalAlertsProps {
   onAlertClick: (alert: OperationalAlert) => void;
 }
 
-export function OperationalAlerts({ alerts, onAlertClick }: OperationalAlertsProps) {
+export const OperationalAlerts = React.memo(function OperationalAlerts({
+  alerts,
+  onAlertClick,
+}: OperationalAlertsProps) {
   return (
     <div className="rounded-2xl border border-slate-200/80 dark:border-border/70 bg-white dark:bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between h-full">
       <div className="flex items-center justify-between mb-4">
@@ -93,4 +96,5 @@ export function OperationalAlerts({ alerts, onAlertClick }: OperationalAlertsPro
       </div>
     </div>
   );
-}
+});
+

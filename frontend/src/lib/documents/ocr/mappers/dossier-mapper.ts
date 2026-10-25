@@ -26,15 +26,15 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   const fields: OcrExtractedField[] = [];
 
   const bl = findFirst(text, [
-    /(?:N[°o.]?\s*(?:BL|B\/L)|B\/L|connaissement|bill\s*of\s*lading)\s*[:\-]?\s*([A-Z0-9\-\/]{5,30})/i,
-    /\bBL\s*[:\-]?\s*([A-Z0-9\-\/]{5,30})/i,
-    /(?:n[°o.]?\s*(?:de\s+)?(?:connaissement|bordereau))\s*[:\-]?\s*([A-Z0-9\-\/]{5,30})/i,
+    /(?:N[°o.]?\s*(?:BL|B\/L)|B\/L|connaissement|bill\s*of\s*lading)\s*[:-]?\s*([A-Z0-9\-/]{5,30})/i,
+    /\bBL\s*[:-]?\s*([A-Z0-9\-/]{5,30})/i,
+    /(?:n[°o.]?\s*(?:de\s+)?(?:connaissement|bordereau))\s*[:-]?\s*([A-Z0-9\-/]{5,30})/i,
   ]);
   if (bl) fields.push({ fieldKey: "bl", fieldValue: bl.value.toUpperCase(), confidence: bl.confidence });
 
   const date = findFirst(text, [
-    /(?:date(?:\s+d[e']?\s*(?:émission|embarq|arrivée))?|du)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i,
-    /\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})\b/,
+    /(?:date(?:\s+d[e']?\s*(?:émission|embarq|arrivée))?|du)\s*[:-]?\s*(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4})/i,
+    /\b(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{4})\b/,
     /\b(\d{4}-\d{2}-\d{2})\b/,
   ]);
   if (date) {
@@ -49,7 +49,7 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   }
 
   const client = findFirst(text, [
-    /(?:client|destinataire|consignee|importateur|nom)\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,60})/i,
+    /(?:client|destinataire|consignee|importateur|nom)\s*[:-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,60})/i,
   ]);
   if (client) {
     fields.push({
@@ -60,7 +60,7 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   }
 
   const montant = findFirst(text, [
-    /(?:montant(?:\s+total|\s+investi)?|total\s*ttc|ttc|investi)\s*[:\-]?\s*([\d\s.,]+)\s*(?:F(?:CFA)?|XOF|€|EUR)?/i,
+    /(?:montant(?:\s+total|\s+investi)?|total\s*ttc|ttc|investi)\s*[:-]?\s*([\d\s.,]+)\s*(?:F(?:CFA)?|XOF|€|EUR)?/i,
     /\b([\d]{1,3}(?:[\s.]\d{3})+(?:,\d{2})?)\s*(?:F(?:CFA)?|XOF)?/i,
     /\b([\d]{1,3}(?:,\d{3})+(?:\.\d{2})?)\s*(?:F(?:CFA)?|XOF|\$)?/i,
   ]);
@@ -76,7 +76,7 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   }
 
   const refDouane = findFirst(text, [
-    /(?:réf(?:érence)?\.?\s*douanière|DAU|SYDONIA|n[°o.]?\s*déclaration)\s*[:\-]?\s*([A-Z0-9\-\/]{4,40})/i,
+    /(?:réf(?:érence)?\.?\s*douanière|DAU|SYDONIA|n[°o.]?\s*déclaration)\s*[:-]?\s*([A-Z0-9\-/]{4,40})/i,
   ]);
   if (refDouane) {
     fields.push({
@@ -87,7 +87,7 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   }
 
   const nature = findFirst(text, [
-    /(?:nature|marchandise|description|désignation)\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,80})/i,
+    /(?:nature|marchandise|description|désignation)\s*[:-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,80})/i,
   ]);
   if (nature) {
     fields.push({
@@ -98,7 +98,7 @@ export function mapDossierFieldsFromText(rawText: string): OcrExtractedField[] {
   }
 
   const camion = findFirst(text, [
-    /(?:camion|immatriculation|véhicule|plaque)\s*[:\-]?\s*([A-Z0-9\-\s]{4,20})/i,
+    /(?:camion|immatriculation|véhicule|plaque)\s*[:-]?\s*([A-Z0-9\-\s]{4,20})/i,
   ]);
   if (camion) {
     fields.push({
@@ -122,7 +122,7 @@ export function normalizeDate(raw: string): string | null {
     return raw;
   }
 
-  const parts = raw.split(/[\/\-.]/).map((p) => p.trim());
+  const parts = raw.split(/[/\-.]/).map((p) => p.trim());
   if (parts.length !== 3) return null;
   let [a, b, c] = parts;
   if (c.length === 2) c = `20${c}`;

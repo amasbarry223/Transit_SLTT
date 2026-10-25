@@ -21,7 +21,7 @@ import { NavList } from "./nav-list";
 export function SidebarBrand({
   logoUrl,
   alt = "Traoré de Logistique",
-  size = "md",
+  size: _size = "md",
   collapsed = false,
   onClick,
 }: {

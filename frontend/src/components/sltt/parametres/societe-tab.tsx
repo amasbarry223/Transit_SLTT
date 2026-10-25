@@ -5,7 +5,6 @@ import { AlertTriangle, Building2, ImagePlus, Loader2, MapPin, Percent, Trash2, 
 import { useStore } from "@/lib/store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { api } from "@/lib/api-client";
 import { DEFAULT_TVA_RATE } from "@/lib/domain-types";
 import type { Annexe, AnnexeInput, Societe, SocieteInput } from "@/lib/domain-types";

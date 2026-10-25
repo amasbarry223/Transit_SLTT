@@ -208,17 +208,17 @@ export function ensureSocieteBrand(brand?: SocieteBrand | null): SocieteBrand {
 }
 
 export function requireSocieteBrand(
-  brand: SocieteBrand | null | undefined,
+  _brand: SocieteBrand | null | undefined,
   _context?: string,
-): brand is SocieteBrand {
+): _brand is SocieteBrand {
   // Toujours autoriser l'impression en injectant les valeurs par défaut si nécessaire
   return true;
 }
 
 export function requirePrintHTMLBrand(
-  brand: PrintHTMLBrand | null | undefined,
+  _brand: PrintHTMLBrand | null | undefined,
   _context?: string,
-): brand is PrintHTMLBrand {
+): _brand is PrintHTMLBrand {
   return true;
 }
 

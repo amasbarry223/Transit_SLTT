@@ -9,7 +9,6 @@ import { printHTML, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { usePermission } from "@/shared/hooks/use-permission";
 
 import type { useDossierFormState } from "./use-dossier-form-state";

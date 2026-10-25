@@ -6,7 +6,6 @@ import { useStore, type TypeDocument } from "@/lib/store";
 import { deriveClientIdFromRattachement } from "@/lib/archives-utils";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
 import { Label } from "@/shared/components/ui/label";
 import {

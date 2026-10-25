@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Eye,
   Replace,
@@ -15,7 +15,6 @@ import { useStore } from "@/lib/store";
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { formatDateShort } from "@/lib/format";
 import { formatFileSize } from "@/lib/file-utils";
 import { Button } from "@/shared/components/ui/button";

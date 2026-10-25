@@ -6,6 +6,9 @@ import type { BonMotif, BonSortie, StockItem } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { QuickClientButton } from "@/features/clients";
 import { formatDateShort, formatFCFA } from "@/lib/format";
+import { useCurrentUser } from "@/shared/hooks/use-permission";
+import { useSession } from "@/lib/session/session-store";
+import { normalizeRole } from "@/lib/permissions";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { Badge } from "@/shared/components/ui/badge";
@@ -68,6 +71,14 @@ function createEmptyLigne(): FormArticleLigne {
 
 export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, editing }: BonFormDialogProps) {
   const { toast } = useToast();
+  const sessionRole = useSession((state) => state.currentRole);
+  const currentUser = useCurrentUser();
+  const effectiveRole = currentUser?.role || sessionRole;
+  const isAdmin =
+    (effectiveRole as string) === "ADMIN" ||
+    effectiveRole === "Administrateur" ||
+    normalizeRole(effectiveRole) === "Administrateur";
+  const canAct = canWrite || isAdmin;
   const [confirmValiderOpen, setConfirmValiderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const editingValidated = editing?.statut === "Validé";
@@ -137,7 +148,17 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
       const item = stock.find((s) => s.id === ligne.stockId);
       const qte = Number(ligne.quantite) || 0;
       const mnt = Number(ligne.montant) || 0;
-      const stockDispo = item?.quantite ?? 0;
+      let stockDispo = item?.quantite ?? 0;
+      if (editingValidated && editing) {
+        if (editing.lignes && editing.lignes.length > 0) {
+          const origQty = editing.lignes
+            .filter((l) => l.stockId === ligne.stockId)
+            .reduce((sum, l) => sum + (Number(l.quantite) || 0), 0);
+          stockDispo += origQty;
+        } else if (editing.stockId === ligne.stockId) {
+          stockDispo += Number(editing.quantite) || 0;
+        }
+      }
       const depasse = item !== undefined && qte > stockDispo;
       return {
         ...ligne,
@@ -149,7 +170,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
         valide: Boolean(item && qte > 0 && !depasse),
       };
     });
-  }, [formLignes, stock]);
+  }, [formLignes, stock, editingValidated, editing]);
 
   const hasInvalidStock = lignesAnalysis.some((l) => l.depasse);
   const allLignesValid =
@@ -241,13 +262,19 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   // ferment pas le dialog ; sur les branches de succès, on vide le formulaire
   // avant de fermer pour qu'un clic résiduel ne puisse plus rejouer la saisie.
   async function handleValider() {
-    if (!canWrite || !allLignesValid || !selectedClient || !formMotif) return;
+    if (!canAct || !allLignesValid || !selectedClient || !formMotif) return;
     const payload = prepareBonPayload("Validé");
     if (!payload) return;
 
     setSaving(true);
     try {
-      if (editing) {
+      if (editingValidated && editing) {
+        await updateBon(editing.id, payload);
+        toastSuccess(toast, {
+          title: "Correction enregistrée",
+          description: `${editing.reference} corrigé — stock et mouvements mis à jour.`,
+        });
+      } else if (editing) {
         await updateBon(editing.id, payload);
         // Même contrat que addBon : un refus de validation (stock local
         // insuffisant) doit remonter au catch, pas fermer le dialogue en silence.
@@ -289,8 +316,9 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   }
 
   async function handleSaveDraft() {
-    if (!canWrite || !selectedClient || !formMotif || !firstStockItem) return;
-    const payload = prepareBonPayload("Brouillon");
+    if (!canAct || !selectedClient || !formMotif || !firstStockItem) return;
+    const targetStatut = editingValidated ? "Validé" : "Brouillon";
+    const payload = prepareBonPayload(targetStatut);
     if (!payload || payload.lignes.length === 0) return;
 
     setSaving(true);
@@ -298,8 +326,10 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
       if (editing) {
         await updateBon(editing.id, payload);
         toastSuccess(toast, {
-          title: "Bon de sortie modifié",
-          description: `Le bon ${editing.reference} a été mis à jour avec succès.`,
+          title: editingValidated ? "Correction enregistrée" : "Bon de sortie modifié",
+          description: editingValidated
+            ? `Le bon ${editing.reference} a été corrigé et le stock réajusté.`
+            : `Le bon ${editing.reference} a été mis à jour avec succès.`,
         });
       } else {
         await addBon(payload);
@@ -320,7 +350,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   }
 
   const isFormReady =
-    Boolean(canWrite && formClientId && formMotif && allLignesValid && !hasInvalidStock);
+    Boolean(canAct && formClientId && formMotif && allLignesValid && !hasInvalidStock);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -558,7 +588,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
           <Button
             variant="outline"
             onClick={handleSaveDraft}
-            disabled={!canWrite || saving || !formClientId || !formMotif || !firstStockItem}
+            disabled={!canAct || saving || !formClientId || !formMotif || !firstStockItem}
           >
             <FilePen className="size-4" />
             {editingValidated ? "Enregistrer la correction" : editing ? "Enregistrer" : "Brouillon"}

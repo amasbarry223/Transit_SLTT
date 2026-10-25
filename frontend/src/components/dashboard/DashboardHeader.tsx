@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Plus, BellRing, Calendar, MapPin, CheckCircle2 } from "lucide-react";
+import { Plus, BellRing, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 
 interface DashboardHeaderProps {

@@ -27,13 +27,18 @@ const INCLUDE = {
 export class BonsLivraisonService {
   constructor(private prisma: PrismaService) {}
 
+  private isUserAdmin(user: CurrentUserType): boolean {
+    const role = String(user?.role || '').toUpperCase().trim();
+    return role === 'ADMIN' || role === 'ADMINISTRATEUR' || role === 'DIRECTION' || (user?.permissions?.includes('*') ?? false);
+  }
+
   private buildAnnexeFilter(user: CurrentUserType) {
-    if (user.role === 'ADMIN') return {};
+    if (this.isUserAdmin(user)) return {};
     return { annexeId: { in: user.annexeIds } };
   }
 
   private assertAnnexeAccess(user: CurrentUserType, annexeId: string) {
-    if (user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId)) {
+    if (!this.isUserAdmin(user) && !user.annexeIds.includes(annexeId)) {
       throw new ForbiddenException('Accès non autorisé à ce bon de livraison');
     }
   }

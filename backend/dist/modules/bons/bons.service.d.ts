@@ -3,6 +3,7 @@ import type { CurrentUserType } from '../../auth/auth.types';
 export declare class BonsService {
     private prisma;
     constructor(prisma: PrismaService);
+    private isUserAdmin;
     private buildAnnexeFilter;
     private toPositiveMontant;
     private toPositiveQuantite;

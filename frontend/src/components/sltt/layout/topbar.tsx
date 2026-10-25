@@ -22,9 +22,8 @@ import { useStore } from "@/lib/store";
 import { formatDateTime, formatFCFA } from "@/lib/format";
 import { resteAPayer } from "@/lib/domain-types";
 import { dossiersNonFactures } from "@/lib/client-stats";
-import { Bell, Calendar, CheckCheck, ChevronDown, CircleHelp, Menu, Moon, Sun } from "lucide-react";
+import { Bell, CheckCheck, ChevronDown, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +47,6 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Badge } from "@/shared/components/ui/badge";
 import { CommandPalette } from "./command-palette";
-import { BreadcrumbNav } from "./breadcrumb-nav";
 import { NavList } from "./nav-list";
 import type { NavItem } from "@/lib/nav-items";
 import { cn, getInitials, USER_AVATAR_GRADIENT } from "@/shared/utils/cn";
@@ -61,30 +59,7 @@ import { GLOSSARY } from "@/lib/glossary";
 import { useCurrentUser, usePermission } from "@/shared/hooks/use-permission";
 import { InstallPWA } from "@/components/pwa/InstallPWA";
 
-const viewTitles: Record<ViewKey, { title: string; sub: string }> = {
-  dashboard: { title: "Tableau de bord", sub: "Dossiers, paiements et alertes du jour" },
-  dossiers: { title: "Dossiers", sub: "Cycle devis → dossier → dédouanement → livraison → solde" },
-  "dossier-form": { title: "Dossier de transit", sub: "Création et édition" },
-  "dossier-detail": { title: "Dossier de transit", sub: "Statut, montants et documents du dossier" },
-  "dossier-ocr-review": { title: "Validation OCR", sub: "Vérifiez les champs extraits avant de créer le dossier" },
-  comptabilite: { title: "Comptabilité", sub: "Écritures dossiers et journal de caisse par entité" },
-  "recus-paiement": { title: "Nouveau reçu", sub: "Créer un reçu de paiement — format 19,5 × 8,2 cm paysage" },
-  bilans: { title: "Bilans", sub: "Analyse financière périodique" },
-  entreposage: { title: "Entreposage", sub: "Entrées, sorties et suivi du stock" },
-  bons: { title: "Bons de sortie", sub: "Sorties de marchandises entreposées" },
-  clients: { title: "Clients", sub: "Annuaire et fiches clients" },
-  "client-fiche": { title: "Fiche client", sub: "Historique dossiers, devis et paiements" },
-  devis: { title: "Devis", sub: "Estimations avant ouverture de dossier" },
-  "devis-detail": { title: "Fiche devis", sub: "Détail, modification et conversion en dossier" },
-  transporteurs:    { title: "Transporteurs",   sub: "Annuaire des transporteurs et chauffeurs partenaires" },
-  factures:         { title: "Factures",         sub: "Gestion et suivi de la facturation client" },
-  "facture-detail": { title: "Détail facture",   sub: "Visualiser, modifier et imprimer la facture" },
-  fournisseurs:     { title: "Fournisseurs",     sub: "Prestataires, sous-traitants et coûts externes" },
-  contrats:         { title: "Contrats",         sub: "Contrats d'entreposage, dépenses et prestations optionnelles" },
-  "contrat-detail": { title: "Détail contrat",   sub: "Infos, dépenses, prestations optionnelles et documents" },
-  archives:         { title: "Archives",         sub: "Documents scannés — dossiers, factures, dépenses" },
-  parametres:       { title: "Paramètres",       sub: "Utilisateurs, rôles et sécurité" },
-};
+
 
 /** Le serveur stocke un chemin (`lien`) ; la navigation de l'app se fait par
  *  vue. Un lien inconnu marque juste la notification lue, sans naviguer. */
@@ -121,22 +96,6 @@ export function Topbar() {
   const dossiers = useStore((s) => s.dossiers);
   const societes = useStore((s) => s.societes);
   const shellBrand = resolveAppShellBranding(societes);
-
-  const meta =
-    view === "comptabilite"
-      ? comptaTab === "journal"
-        ? {
-            title: "Journal de caisse",
-            sub: "Opérations, clôtures et import — par entité comptable",
-          }
-        : {
-            title: "Paiements dossiers",
-            sub: "Suivi des paiements liés aux dossiers de transit et entreposage",
-          }
-      : (viewTitles[view] ?? {
-          title: shellBrand.appTitle,
-          sub: shellBrand.appSubtitle,
-        });
 
   // Live alerts entièrement dynamiques
   const canSeeFactures = usePermission("factures:read");
@@ -228,10 +187,6 @@ export function Topbar() {
 
   const visibleMobileNavItems = useVisibleNavItems();
   const roleShortcuts = currentRole ? (ROLE_SHORTCUTS[currentRole] ?? []) : [];
-
-  const currentPeriodLabel = new Date()
-    .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
-    .replace(/^\w/, (c) => c.toUpperCase());
 
   return (
     <>

@@ -18,6 +18,8 @@ import {
 import type { BonSortie } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { useCurrentUser } from "@/shared/hooks/use-permission";
+import { useSession } from "@/lib/session/session-store";
+import { normalizeRole } from "@/lib/permissions";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -67,22 +69,24 @@ type BonMarchandiseTabProps = {
 };
 
 /** Modifier / supprimer : libre sur un brouillon ; sur un bon validé,
- *  réservé à l'administrateur (le serveur corrige alors le stock) et bloqué
- *  dès qu'un bon de livraison existe. Le serveur applique les mêmes règles. */
+ *  autorisé pour les administrateurs (le serveur corrige alors le stock ou remet
+ *  la quantité en stock, et supprime en cascade le bon de livraison si nécessaire). */
 function correctionFor(bon: BonSortie, isAdmin: boolean, livraisonRef?: string) {
   if (bon.statut === "Brouillon") {
     return { enabled: true, editTitle: "Modifier le bon", deleteTitle: "Supprimer le bon" };
-  }
-  if (livraisonRef) {
-    const why = `Bon de livraison ${livraisonRef} établi : supprimez-le d'abord`;
-    return { enabled: false, editTitle: why, deleteTitle: why };
   }
   if (isAdmin) {
     return {
       enabled: true,
       editTitle: "Modifier le bon validé (le stock sera corrigé)",
-      deleteTitle: "Supprimer le bon validé (la quantité sera remise en stock)",
+      deleteTitle: livraisonRef
+        ? `Supprimer le bon validé (le bon de livraison ${livraisonRef} sera aussi supprimé et la quantité remise en stock)`
+        : "Supprimer le bon validé (la quantité sera remise en stock)",
     };
+  }
+  if (livraisonRef) {
+    const why = `Bon de livraison ${livraisonRef} établi : seul un administrateur peut modifier ou supprimer ce bon`;
+    return { enabled: false, editTitle: why, deleteTitle: why };
   }
   const why = "Bon validé : seul un administrateur peut le modifier ou le supprimer";
   return { enabled: false, editTitle: why, deleteTitle: why };
@@ -134,8 +138,13 @@ export function BonMarchandiseTab({
 }: BonMarchandiseTabProps) {
   const clients = useStore((state) => state.clients);
   const bonsLivraison = useStore((state) => state.bonsLivraison);
+  const sessionRole = useSession((state) => state.currentRole);
   const currentUser = useCurrentUser();
-  const isAdmin = (currentUser?.role as string) === "ADMIN" || currentUser?.role === "Administrateur";
+  const effectiveRole = currentUser?.role || sessionRole;
+  const isAdmin =
+    (effectiveRole as string) === "ADMIN" ||
+    effectiveRole === "Administrateur" ||
+    normalizeRole(effectiveRole) === "Administrateur";
   const livraisonRefBySortie = useMemo(
     () => new Map(bonsLivraison.map((bl) => [bl.bonSortieId, bl.reference])),
     [bonsLivraison],
@@ -472,8 +481,8 @@ function BonMobileCard({
         >
           <FileText className="size-4" />
         </Button>
-        <LivraisonButton bon={bon} livraisonRef={livraisonRef} canWrite={canWrite} onLivraison={onLivraison} />
-        {canWrite && (
+        <LivraisonButton bon={bon} livraisonRef={livraisonRef} canWrite={canWrite || isAdmin} onLivraison={onLivraison} />
+        {(canWrite || isAdmin) && (
           <Button
             variant="ghost"
             size="icon"
@@ -491,7 +500,7 @@ function BonMobileCard({
             <Pencil className="size-4" />
           </Button>
         )}
-        {canWrite && (
+        {(canWrite || isAdmin) && (
           <Button
             variant="ghost"
             size="icon"
@@ -617,8 +626,8 @@ function BonTableRow({
           >
             <FileText className="size-4" />
           </Button>
-          <LivraisonButton bon={bon} livraisonRef={livraisonRef} canWrite={canWrite} onLivraison={onLivraison} />
-          {canWrite && (
+          <LivraisonButton bon={bon} livraisonRef={livraisonRef} canWrite={canWrite || isAdmin} onLivraison={onLivraison} />
+          {(canWrite || isAdmin) && (
             <Button
               variant="ghost"
               size="icon"
@@ -636,7 +645,7 @@ function BonTableRow({
               <Pencil className="size-4" />
             </Button>
           )}
-          {canWrite && (
+          {(canWrite || isAdmin) && (
             <Button
               variant="ghost"
               size="icon"

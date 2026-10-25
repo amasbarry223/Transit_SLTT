@@ -6,7 +6,6 @@ import type { Annexe, Dossier } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { matchesQuery } from "@/lib/search-filter";

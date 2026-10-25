@@ -4,7 +4,6 @@ import { BRAND } from "@/lib/brand-colors";
 import {
   DEFAULT_DOSSIER_COUT_LABELS,
   ensureSocieteBrand,
-  requireSocieteBrand,
   type DossierCoutLabels,
   type SocieteBrand,
 } from "@/lib/societe-brand";

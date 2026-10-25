@@ -32,7 +32,7 @@ export function mapOperationComptableFieldsFromText(rawText: string): OcrExtract
   const fields: OcrExtractedField[] = [];
 
   const date = findFirst(text, [
-    /(?:date)\s*[:\-]?\s*(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4})/i,
+    /(?:date)\s*[:-]?\s*(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4})/i,
     /\b(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{4})\b/,
     /\b(\d{4}-\d{2}-\d{2})\b/,
   ]);
@@ -44,21 +44,21 @@ export function mapOperationComptableFieldsFromText(rawText: string): OcrExtract
   }
 
   const clientNom = findFirst(text, [
-    /(?:client|tiers|b[ée]n[ée]ficiaire|re[çc]u\s+de|vers[ée]\s+(?:par|[àa]))\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,60})/i,
+    /(?:client|tiers|b[ée]n[ée]ficiaire|re[çc]u\s+de|vers[ée]\s+(?:par|[àa]))\s*[:-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,60})/i,
   ]);
   if (clientNom) {
     fields.push({ fieldKey: "client_nom", fieldValue: clientNom.value.replace(/\s+/g, " ").slice(0, 80), confidence: clientNom.confidence * 0.8 });
   }
 
   const nature = findFirst(text, [
-    /(?:motif|nature|objet|libell[ée])\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,80})/i,
+    /(?:motif|nature|objet|libell[ée])\s*[:-]?\s*([A-Za-zÀ-ÿ0-9 &\-'.]{3,80})/i,
   ]);
   if (nature) {
     fields.push({ fieldKey: "nature", fieldValue: nature.value.replace(/\s+/g, " ").slice(0, 100), confidence: nature.confidence * 0.75 });
   }
 
   const montant = findFirst(text, [
-    /(?:montant|somme|total)\s*[:\-]?\s*([\d\s.,]+)\s*(?:F(?:CFA)?|XOF|€|EUR)?/i,
+    /(?:montant|somme|total)\s*[:-]?\s*([\d\s.,]+)\s*(?:F(?:CFA)?|XOF|€|EUR)?/i,
     /\b([\d]{1,3}(?:[\s.]\d{3})+(?:,\d{2})?)\s*(?:F(?:CFA)?|XOF)?/i,
   ]);
   if (montant) {

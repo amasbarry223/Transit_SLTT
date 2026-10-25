@@ -50,6 +50,7 @@ const nextConfig = {
     webpackMemoryOptimizations: true,
   },
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
@@ -58,22 +59,6 @@ const nextConfig = {
       },
     ],
   },
-  transpilePackages: [
-    "@univerjs/presets",
-    "@univerjs/preset-sheets-core",
-    "@univerjs/core",
-    "@univerjs/design",
-    "@univerjs/engine-render",
-    "@univerjs/engine-formula",
-    "@univerjs/sheets",
-    "@univerjs/sheets-ui",
-    "@univerjs/sheets-formula",
-    "@univerjs/sheets-formula-ui",
-    "@univerjs/sheets-numfmt",
-    "@univerjs/sheets-numfmt-ui",
-    "@univerjs/docs",
-    "@univerjs/docs-ui",
-  ],
   webpack: (config, { dev }) => {
     if (dev) {
       config.cache = false;
@@ -83,6 +68,12 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/icons/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" },
+        ],
+      },
       {
         source: "/sw.js",
         headers: pwaHeaders,

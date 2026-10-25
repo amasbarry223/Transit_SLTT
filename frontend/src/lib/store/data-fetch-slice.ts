@@ -47,7 +47,6 @@ import type {
   RawRecuPaiement,
   RawStockItem,
   RawTransporteur,
-  RawUser,
 } from "@/lib/api-types";
 
 // Prisma StatutFacture (BROUILLON | ENVOYEE | PARTIELLEMENT_PAYEE | PAYEE | ANNULEE | RETARD)

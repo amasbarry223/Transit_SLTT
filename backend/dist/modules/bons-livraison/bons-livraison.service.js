@@ -23,13 +23,17 @@ let BonsLivraisonService = class BonsLivraisonService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    isUserAdmin(user) {
+        const role = String(user?.role || '').toUpperCase().trim();
+        return role === 'ADMIN' || role === 'ADMINISTRATEUR' || role === 'DIRECTION' || (user?.permissions?.includes('*') ?? false);
+    }
     buildAnnexeFilter(user) {
-        if (user.role === 'ADMIN')
+        if (this.isUserAdmin(user))
             return {};
         return { annexeId: { in: user.annexeIds } };
     }
     assertAnnexeAccess(user, annexeId) {
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de livraison');
         }
     }

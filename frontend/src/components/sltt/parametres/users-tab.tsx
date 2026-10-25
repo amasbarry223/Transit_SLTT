@@ -14,7 +14,6 @@ import type { User as UserAccount, UserInput } from "@/lib/store";
 import { matchesQuery } from "@/lib/search-filter";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { Button } from "@/shared/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/sltt/confirm-action-dialog";

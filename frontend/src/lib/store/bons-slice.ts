@@ -195,6 +195,7 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
 
     set((s) => ({
       bons: s.bons.filter((b) => b.id !== id),
+      bonsLivraison: s.bonsLivraison.filter((bl) => bl.bonSortieId !== id),
     }));
     await get().addAuditLog(AUDIT_MODULE.Bons, AUDIT_ACTION.Suppression, `Bon ${bon.reference} supprimé`);
     // Bon validé : la quantité est revenue en stock côté serveur.

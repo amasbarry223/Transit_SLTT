@@ -11,7 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Coins, ArrowUpRight, ArrowDownRight, TrendingUp, AlertCircle, Clock } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, TrendingUp, AlertCircle, Clock } from "lucide-react";
 import type { CashFlowStats } from "@/mock/dashboard";
 import { formatFCFA } from "@/lib/format";
 

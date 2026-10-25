@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { ensureSocieteBrand, requireSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
 
 import type { ClientPrintRow } from "@/features/clients/types";
 import { htmlEscape } from "@/lib/export/html-escape";

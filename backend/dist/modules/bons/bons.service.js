@@ -17,8 +17,12 @@ let BonsService = class BonsService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    isUserAdmin(user) {
+        const role = String(user?.role || '').toUpperCase().trim();
+        return role === 'ADMIN' || role === 'ADMINISTRATEUR' || role === 'DIRECTION' || (user?.permissions?.includes('*') ?? false);
+    }
     buildAnnexeFilter(user) {
-        if (user.role === 'ADMIN')
+        if (this.isUserAdmin(user))
             return {};
         return { annexeId: { in: user.annexeIds } };
     }
@@ -44,7 +48,7 @@ let BonsService = class BonsService {
         return n;
     }
     async findAllBons(user, params) {
-        if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+        if (params?.annexeId && !this.isUserAdmin(user) && !user.annexeIds.includes(params.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette annexe');
         }
         const where = {
@@ -75,7 +79,7 @@ let BonsService = class BonsService {
         }
         if (!bon)
             throw new common_1.NotFoundException(`Bon de sortie ${id} non trouvé`);
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(bon.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de sortie');
         }
         return bon;
@@ -91,7 +95,7 @@ let BonsService = class BonsService {
         }
     }
     async createBon(user, data) {
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException('Vous ne pouvez pas créer de bon pour cette annexe');
         }
         await this.assertStockInAnnexe(data.stockId, data.annexeId);
@@ -115,15 +119,8 @@ let BonsService = class BonsService {
         });
     }
     async assertCanCorrectValidated(bonId, user, action) {
-        if (user.role !== 'ADMIN') {
+        if (!this.isUserAdmin(user)) {
             throw new common_1.ForbiddenException(`Seul un administrateur peut ${action} un bon de sortie validé.`);
-        }
-        const livraison = await this.prisma.bonLivraison.findUnique({
-            where: { bonSortieId: bonId },
-            select: { reference: true },
-        });
-        if (livraison) {
-            throw new common_1.BadRequestException(`Ce bon a déjà un bon de livraison (${livraison.reference}) : supprimez-le d'abord.`);
         }
     }
     async moveStock(tx, user, m) {
@@ -156,7 +153,7 @@ let BonsService = class BonsService {
     }
     async updateBon(id, user, data) {
         const bon = await this.findOneBon(id, user);
-        if (user.role !== 'ADMIN' && data.annexeId && !user.annexeIds.includes(data.annexeId)) {
+        if (!this.isUserAdmin(user) && data.annexeId && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette annexe');
         }
         await this.assertStockInAnnexe(data.stockId !== undefined ? data.stockId : bon.stockId, data.annexeId !== undefined ? data.annexeId : bon.annexeId);
@@ -208,6 +205,14 @@ let BonsService = class BonsService {
                     motif: `Sortie corrigée du bon ${bon.reference}`,
                 });
             }
+            await tx.bonLivraison.updateMany({
+                where: { bonSortieId: bon.id },
+                data: {
+                    clientId: next.clientId,
+                    clientNom: next.clientNom,
+                    annexeId: next.annexeId,
+                },
+            });
             const updated = await tx.bonSortie.updateMany({ where: { id: bon.id, statut: 'Validé' }, data: next });
             if (updated.count === 0)
                 throw new common_1.BadRequestException('Ce bon a changé entre-temps : rechargez la page.');
@@ -268,16 +273,20 @@ let BonsService = class BonsService {
         }
         if (!bon)
             return { id };
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(bon.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de sortie');
         }
         if (bon.statut !== 'Validé') {
-            await this.prisma.bonSortie.delete({ where: { id: bon.id } });
+            await this.prisma.$transaction(async (tx) => {
+                await tx.bonLivraison.deleteMany({ where: { bonSortieId: bon.id } });
+                await tx.bonSortie.deleteMany({ where: { id: bon.id, statut: { not: 'Validé' } } });
+            });
             return { id: bon.id };
         }
         await this.assertCanCorrectValidated(bon.id, user, 'supprimer');
         const validated = bon;
         await this.prisma.$transaction(async (tx) => {
+            await tx.bonLivraison.deleteMany({ where: { bonSortieId: validated.id } });
             await this.moveStock(tx, user, {
                 stockId: validated.stockId,
                 annexeId: validated.annexeId,
@@ -294,7 +303,7 @@ let BonsService = class BonsService {
         return { id: bon.id };
     }
     async findAllBonsCaisse(user, params) {
-        if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
+        if (params?.annexeId && !this.isUserAdmin(user) && !user.annexeIds.includes(params.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette annexe');
         }
         const where = {
@@ -317,13 +326,13 @@ let BonsService = class BonsService {
         }
         if (!bon)
             throw new common_1.NotFoundException(`Bon de caisse ${id} non trouvé`);
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(bon.annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(bon.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de caisse');
         }
         return bon;
     }
     async createBonCaisse(user, data) {
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException('Vous ne pouvez pas créer de bon de caisse pour cette annexe');
         }
         const date = data.date || new Date().toISOString().slice(0, 10);
@@ -356,7 +365,7 @@ let BonsService = class BonsService {
         }
         if (!existing) {
             const annexeId = data.annexeId || user.annexeIds[0];
-            if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId)) {
+            if (annexeId && !this.isUserAdmin(user) && !user.annexeIds.includes(annexeId)) {
                 throw new common_1.ForbiddenException('Vous ne pouvez pas rattacher ce bon de caisse à cette annexe');
             }
             const date = data.date || new Date().toISOString().slice(0, 10);
@@ -381,10 +390,10 @@ let BonsService = class BonsService {
             });
         }
         const targetId = existing.id;
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(existing.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de caisse');
         }
-        if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
+        if (data.annexeId && !this.isUserAdmin(user) && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException('Vous ne pouvez pas rattacher ce bon de caisse à cette annexe');
         }
         const date = data.date || existing.date;
@@ -422,7 +431,7 @@ let BonsService = class BonsService {
         if (!existing) {
             return { id };
         }
-        if (user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
+        if (!this.isUserAdmin(user) && !user.annexeIds.includes(existing.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de caisse');
         }
         await this.prisma.bonSortieCaisse.delete({ where: { id: existing.id } });

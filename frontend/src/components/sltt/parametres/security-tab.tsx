@@ -5,7 +5,6 @@ import { Lock } from "lucide-react";
 import { useCurrentUser } from "@/shared/hooks/use-permission";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { fetchWithAuth } from "@/lib/api/fetch-auth";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";

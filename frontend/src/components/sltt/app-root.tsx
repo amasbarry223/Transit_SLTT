@@ -25,9 +25,6 @@ import {
 
 const ACTIVITY_EVENTS = ["mousemove", "keydown", "click", "scroll", "touchstart"] as const;
 const ACTIVITY_THROTTLE = 15 * 1000;
-/** Garde-fou : ne jamais bloquer l'UI sur "Vérification de la session…". */
-const AUTH_READY_TIMEOUT_MS = 4_000;
-const PROFILE_QUERY_TIMEOUT_MS = 3_000;
 
 /** Purge les Service Workers et caches pour forcer le chargement de la version propre. */
 async function cleanupForeignServiceWorkers(): Promise<"reload" | "ok"> {

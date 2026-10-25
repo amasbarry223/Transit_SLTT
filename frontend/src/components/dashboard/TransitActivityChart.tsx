@@ -11,7 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Ship, Truck, Plane, Calendar } from "lucide-react";
+import { Ship } from "lucide-react";
 import type { TransitStats, TransitActivityDataPoint } from "@/mock/dashboard";
 import { cn } from "@/shared/utils/cn";
 

@@ -5,7 +5,6 @@ import { useStore, type TypeDocument } from "@/lib/store";
 import { matchesQuery } from "@/lib/search-filter";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { UI } from "@/shared/utils/ui-messages";
 import { usePermission, useHasRole } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { usePagination } from "@/shared/hooks/use-pagination";

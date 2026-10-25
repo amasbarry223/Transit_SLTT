@@ -2,12 +2,10 @@
 
 import {
   PRINT_FALLBACK_MS,
-  PRINT_IMAGE_READY_MS,
   PRINT_WINDOW_READY_MS,
 } from "@/lib/constants";
 import {
   ensureSocieteBrand,
-  requireSocieteBrand,
   type SocieteBrand,
   type SocieteLegalInfo,
 } from "@/lib/societe-brand";

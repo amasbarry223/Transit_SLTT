@@ -11,7 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Receipt, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Receipt, ShieldAlert } from "lucide-react";
 import type { InvoiceStats } from "@/mock/dashboard";
 import { formatFCFA } from "@/lib/format";
 

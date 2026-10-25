@@ -4,16 +4,13 @@ import { useMemo, useState } from "react";
 import {
   Users,
   Search,
-  Wallet,
   ArrowDownRight,
   ArrowUpRight,
   AlertCircle,
-  CheckCircle2,
   FileSpreadsheet,
   Building2,
   Receipt,
   FolderKanban,
-  FileSignature,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
