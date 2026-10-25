@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Clock, ExternalLink, Ship, Receipt, Wallet, Warehouse, FileText } from "lucide-react";
-import type { RecentOperation } from "@/mock/dashboard";
+import type { RecentOperation } from "@/types/dashboard";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 

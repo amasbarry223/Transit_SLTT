@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, AlertCircle, Clock } from "lucide-react";
-import type { CashFlowStats } from "@/mock/dashboard";
+import type { CashFlowStats } from "@/types/dashboard";
 import { formatFCFA } from "@/lib/format";
 
 interface CashFlowChartProps {

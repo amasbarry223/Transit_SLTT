@@ -69,13 +69,13 @@ type BonMarchandiseTabProps = {
 };
 
 /** Modifier / supprimer : libre sur un brouillon ; sur un bon validé,
- *  autorisé pour les administrateurs (le serveur corrige alors le stock ou remet
- *  la quantité en stock, et supprime en cascade le bon de livraison si nécessaire). */
-function correctionFor(bon: BonSortie, isAdmin: boolean, livraisonRef?: string) {
+ *  autorisé pour les utilisateurs habilités (canWrite ou admin) — le serveur corrige alors le stock ou remet
+ *  la quantité en stock, et synchronise le bon de livraison si nécessaire. */
+function correctionFor(bon: BonSortie, canEdit: boolean, livraisonRef?: string) {
   if (bon.statut === "Brouillon") {
     return { enabled: true, editTitle: "Modifier le bon", deleteTitle: "Supprimer le bon" };
   }
-  if (isAdmin) {
+  if (canEdit) {
     return {
       enabled: true,
       editTitle: "Modifier le bon validé (le stock sera corrigé)",
@@ -85,10 +85,10 @@ function correctionFor(bon: BonSortie, isAdmin: boolean, livraisonRef?: string) 
     };
   }
   if (livraisonRef) {
-    const why = `Bon de livraison ${livraisonRef} établi : seul un administrateur peut modifier ou supprimer ce bon`;
+    const why = `Bon de livraison ${livraisonRef} établi : droits insuffisants pour modifier ou supprimer ce bon`;
     return { enabled: false, editTitle: why, deleteTitle: why };
   }
-  const why = "Bon validé : seul un administrateur peut le modifier ou le supprimer";
+  const why = "Bon validé : droits insuffisants pour le modifier ou le supprimer";
   return { enabled: false, editTitle: why, deleteTitle: why };
 }
 
@@ -407,7 +407,7 @@ function BonMobileCard({
   isAdmin: boolean;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
-  const correction = correctionFor(bon, isAdmin, livraisonRef);
+  const correction = correctionFor(bon, canWrite || isAdmin, livraisonRef);
 
   return (
     <Card
@@ -547,7 +547,7 @@ function BonTableRow({
   isAdmin: boolean;
 }) {
   const isBrouillon = bon.statut === "Brouillon";
-  const correction = correctionFor(bon, isAdmin, livraisonRef);
+  const correction = correctionFor(bon, canWrite || isAdmin, livraisonRef);
 
   return (
     <TableRow

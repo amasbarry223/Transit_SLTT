@@ -13,7 +13,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
-import type { DashboardKPI } from "@/mock/dashboard";
+import type { DashboardKPI } from "@/types/dashboard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
 interface KPIGridProps {

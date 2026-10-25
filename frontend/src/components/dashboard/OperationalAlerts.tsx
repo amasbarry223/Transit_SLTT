@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AlertTriangle, ArrowRight } from "lucide-react";
-import type { OperationalAlert } from "@/mock/dashboard";
+import type { OperationalAlert } from "@/types/dashboard";
 import { cn } from "@/shared/utils/cn";
 
 interface OperationalAlertsProps {

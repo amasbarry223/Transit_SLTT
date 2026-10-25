@@ -100,7 +100,7 @@ export class BonsService {
   private async assertStockInAnnexe(stockId: string | null | undefined, annexeId: string) {
     if (!stockId) return;
     const stock = await this.prisma.stockItem.findUnique({ where: { id: stockId }, select: { annexeId: true } });
-    if (!stock) throw new BadRequestException('Article de stock introuvable.');
+    if (!stock) return;
     if (stock.annexeId !== annexeId) {
       throw new BadRequestException("L'article de stock n'appartient pas à l'annexe du bon.");
     }
@@ -134,9 +134,12 @@ export class BonsService {
     });
   }
 
-  /** Corriger un bon VALIDÉ touche au stock réel : réservé aux administrateurs. */
+  /** Corriger un bon VALIDÉ touche au stock réel : modification autorisée aux admins et agents avec bons:write ; suppression réservée aux admins. */
   private async assertCanCorrectValidated(bonId: string, user: CurrentUserType, action: string) {
-    if (!this.isUserAdmin(user)) {
+    const role = String(user?.role || '').toUpperCase().trim();
+    const isAdmin = role === 'ADMIN' || role === 'ADMINISTRATEUR' || role === 'DIRECTION';
+    const canAct = isAdmin || (action === 'modifier' && (user?.permissions?.includes('bons:write') ?? false));
+    if (!canAct) {
       throw new ForbiddenException(`Seul un administrateur peut ${action} un bon de sortie validé.`);
     }
   }

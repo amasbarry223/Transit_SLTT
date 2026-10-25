@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Receipt, ShieldAlert } from "lucide-react";
-import type { InvoiceStats } from "@/mock/dashboard";
+import type { InvoiceStats } from "@/types/dashboard";
 import { formatFCFA } from "@/lib/format";
 
 interface RevenueChartProps {

@@ -97,10 +97,55 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   const [formMotif, setFormMotif] = useState<BonMotif | "">("");
   const [formLignes, setFormLignes] = useState<FormArticleLigne[]>([createEmptyLigne()]);
 
+  // Clients disponibles, avec inclusion de fallback si le bon porte un nom client non présent dans l'annexe courante
+  const availableClients = useMemo(() => {
+    const list = [...clients];
+    if (editing && editing.clientNom) {
+      const match = list.find(
+        (c) =>
+          (editing.clientId && c.id === editing.clientId) ||
+          c.nom.toLowerCase() === editing.clientNom?.toLowerCase(),
+      );
+      if (!match) {
+        list.unshift({
+          id: editing.clientId || `client-custom-${editing.id}`,
+          nom: editing.clientNom,
+          telephone: "",
+          email: "",
+          adresse: "",
+        } as any);
+      }
+    }
+    return list;
+  }, [clients, editing]);
+
   const selectedClient = useMemo(
-    () => clients.find((client) => client.id === formClientId),
-    [clients, formClientId],
+    () => availableClients.find((client) => client.id === formClientId),
+    [availableClients, formClientId],
   );
+
+  // Stock disponible, avec inclusion virtuelle de la marchandise du bon si non trouvée en stock
+  const availableStock = useMemo(() => {
+    const list = [...stock];
+    if (editing && editing.marchandise) {
+      const match = list.find(
+        (s) =>
+          (editing.stockId && s.id === editing.stockId) ||
+          s.marchandise.toLowerCase() === editing.marchandise.toLowerCase(),
+      );
+      if (!match) {
+        list.unshift({
+          id: editing.stockId || `stock-item-${editing.id}`,
+          marchandise: editing.marchandise,
+          quantite: Number(editing.quantite || 0),
+          unite: editing.unite || "colis",
+          annexeId: editing.annexeId || "",
+          seuil: 0,
+        } as any);
+      }
+    }
+    return list;
+  }, [stock, editing]);
 
   // Réinitialisation / pré-remplissage du formulaire à l'ouverture
   const [prevDialogOpen, setPrevDialogOpen] = useState(open);
@@ -111,13 +156,32 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
     if (open) {
       if (editing) {
         setFormDate(editing.date ? editing.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
-        setFormClientId(editing.clientId || "");
+
+        // Résolution du client
+        let resolvedClientId = editing.clientId || "";
+        if (!resolvedClientId || !availableClients.some((c) => c.id === resolvedClientId)) {
+          const found = availableClients.find(
+            (c) => c.nom.toLowerCase() === editing.clientNom?.toLowerCase(),
+          );
+          if (found) resolvedClientId = found.id;
+          else if (editing.clientNom) resolvedClientId = `client-custom-${editing.id}`;
+        }
+        setFormClientId(resolvedClientId);
         setFormMotif((editing.motif as BonMotif) || "");
+
+        // Résolution de l'article en stock
+        const matchedStock = availableStock.find(
+          (s) =>
+            (editing.stockId && s.id === editing.stockId) ||
+            s.marchandise.toLowerCase() === editing.marchandise?.toLowerCase(),
+        );
+        const resolvedStockId = matchedStock ? matchedStock.id : (editing.stockId || `stock-item-${editing.id}`);
+
         if (editing.lignes && editing.lignes.length > 0) {
           setFormLignes(
             editing.lignes.map((l) => ({
               id: l.id || crypto.randomUUID(),
-              stockId: l.stockId || "",
+              stockId: l.stockId || resolvedStockId,
               quantite: String(l.quantite || ""),
               montant: String(l.montant || ""),
             })),
@@ -126,7 +190,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
           setFormLignes([
             {
               id: crypto.randomUUID(),
-              stockId: editing.stockId || "",
+              stockId: resolvedStockId,
               quantite: String(editing.quantite || ""),
               montant: String(editing.montant || ""),
             },
@@ -145,7 +209,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   // Analyses des lignes
   const lignesAnalysis = useMemo(() => {
     return formLignes.map((ligne) => {
-      const item = stock.find((s) => s.id === ligne.stockId);
+      const item = availableStock.find((s) => s.id === ligne.stockId);
       const qte = Number(ligne.quantite) || 0;
       const mnt = Number(ligne.montant) || 0;
       let stockDispo = item?.quantite ?? 0;
@@ -170,7 +234,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
         valide: Boolean(item && qte > 0 && !depasse),
       };
     });
-  }, [formLignes, stock, editingValidated, editing]);
+  }, [formLignes, availableStock, editingValidated, editing]);
 
   const hasInvalidStock = lignesAnalysis.some((l) => l.depasse);
   const allLignesValid =
@@ -185,12 +249,9 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   const selectedSociete = resolveSlttBrand(societes);
 
   // Stock principal / Annexe pour calcul de la référence
-  const firstStockItem = lignesAnalysis.find((l) => l.stockItem)?.stockItem;
+  const firstStockItem = lignesAnalysis.find((l) => l.stockItem)?.stockItem || availableStock[0];
   const previewReference = firstStockItem
     ? computeAnnexeScopedReference(
-        // 1er paramètre jamais lu par computeAnnexeScopedReference (typé
-        // `unknown`) — un societes[0] brut était passé ici sans jamais
-        // influencer la référence calculée.
         undefined,
         annexes.find((a) => a.id === firstStockItem.annexeId),
         "BS",
@@ -205,7 +266,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
         if (l.id !== id) return l;
         const updated = { ...l, [field]: value };
         if (field === "stockId") {
-          const picked = stock.find((s) => s.id === value);
+          const picked = availableStock.find((s) => s.id === value);
           if (picked && !formClientId && picked.clientId) {
             setFormClientId(picked.clientId);
           }
@@ -225,27 +286,35 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   }
 
   function prepareBonPayload(statut: "Validé" | "Brouillon") {
-    if (!selectedClient || !formMotif || !firstStockItem) return null;
+    if (!selectedClient || !formMotif) return null;
 
     const payloadLignes = lignesAnalysis
-      .filter((l) => l.stockItem && l.quantiteNum > 0)
+      .filter((l) => l.quantiteNum > 0)
       .map((l) => ({
-        stockId: l.stockItem!.id,
-        marchandise: l.stockItem!.marchandise,
+        stockId: l.stockItem?.id || editing?.stockId || undefined,
+        marchandise: l.stockItem?.marchandise || editing?.marchandise || "Marchandise",
         quantite: l.quantiteNum,
-        unite: l.stockItem!.unite,
+        unite: l.stockItem?.unite || editing?.unite || "colis",
         montant: l.montantNum,
       }));
 
+    const firstItem = lignesAnalysis.find((l) => l.stockItem)?.stockItem || availableStock[0];
+    const annexeId = firstItem?.annexeId || editing?.annexeId || annexes[0]?.id || "";
+    const primaryStockId = firstItem?.id || editing?.stockId || undefined;
+    const primaryUnite = firstItem?.unite || editing?.unite || "colis";
+    const primaryMarchandise = payloadLignes.length > 0
+      ? payloadLignes.map((l) => l.marchandise).join(", ")
+      : (editing?.marchandise || "Marchandise");
+
     return {
       date: formDate,
-      clientId: formClientId,
-      clientNom: selectedClient.nom,
-      annexeId: firstStockItem.annexeId,
-      stockId: firstStockItem.id,
-      marchandise: payloadLignes.map((l) => l.marchandise).join(", "),
-      quantite: totalQuantite,
-      unite: firstStockItem.unite,
+      clientId: formClientId || editing?.clientId || "",
+      clientNom: selectedClient.nom || editing?.clientNom || "",
+      annexeId,
+      stockId: primaryStockId,
+      marchandise: primaryMarchandise,
+      quantite: totalQuantite || Number(editing?.quantite || 0),
+      unite: primaryUnite,
       motif: formMotif,
       montant: totalMontant,
       statut,
@@ -262,7 +331,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   // ferment pas le dialog ; sur les branches de succès, on vide le formulaire
   // avant de fermer pour qu'un clic résiduel ne puisse plus rejouer la saisie.
   async function handleValider() {
-    if (!canAct || !allLignesValid || !selectedClient || !formMotif) return;
+    if (!canAct || !selectedClient || !formMotif || totalQuantite <= 0) return;
     const payload = prepareBonPayload("Validé");
     if (!payload) return;
 
@@ -316,7 +385,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   }
 
   async function handleSaveDraft() {
-    if (!canAct || !selectedClient || !formMotif || !firstStockItem) return;
+    if (!canAct || !selectedClient || !formMotif || totalQuantite <= 0) return;
     const targetStatut = editingValidated ? "Validé" : "Brouillon";
     const payload = prepareBonPayload(targetStatut);
     if (!payload || payload.lignes.length === 0) return;
@@ -402,7 +471,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
                       <SelectValue placeholder="Sélectionner un client" />
                     </SelectTrigger>
                     <SelectContent>
-                      {clients.map((client) => (
+                      {availableClients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.nom}
                         </SelectItem>
@@ -499,7 +568,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
                             <SelectValue placeholder="Choisir un article en stock" />
                           </SelectTrigger>
                           <SelectContent>
-                            {stock.map((s) => (
+                            {availableStock.map((s) => (
                               <SelectItem key={s.id} value={s.id}>
                                 {s.marchandise} ({s.quantite} {s.unite} dispo)
                               </SelectItem>
@@ -588,7 +657,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
           <Button
             variant="outline"
             onClick={handleSaveDraft}
-            disabled={!canAct || saving || !formClientId || !formMotif || !firstStockItem}
+            disabled={!canAct || saving || !formClientId || !formMotif || totalQuantite <= 0}
           >
             <FilePen className="size-4" />
             {editingValidated ? "Enregistrer la correction" : editing ? "Enregistrer" : "Brouillon"}

@@ -12,7 +12,7 @@ import {
   Cell,
 } from "recharts";
 import { AlertTriangle, ArrowRight } from "lucide-react";
-import type { ReceivableStats } from "@/mock/dashboard";
+import type { ReceivableStats } from "@/types/dashboard";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 

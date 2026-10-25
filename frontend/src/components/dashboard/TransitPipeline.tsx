@@ -1,6 +1,6 @@
 import * as React from "react";
 import { AlertCircle, Clock } from "lucide-react";
-import type { TransitPipelineStep } from "@/mock/dashboard";
+import type { TransitPipelineStep } from "@/types/dashboard";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 

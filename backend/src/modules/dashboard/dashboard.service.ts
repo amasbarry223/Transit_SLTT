@@ -506,8 +506,43 @@ export class DashboardService {
       });
     });
 
+    // Pipeline des dossiers de transit (calculé dynamiquement depuis la base de données)
+    const pipelineConfig = [
+      { stepKey: 'OUVERT', label: 'Ouvert', statuses: ['BROUILLON'] },
+      { stepKey: 'EN_COURS', label: 'En cours', statuses: ['EN_COURS'] },
+      { stepKey: 'DOUANE', label: 'Douane (Sydonia)', statuses: ['EN_DEDOUANEMENT'] },
+      { stepKey: 'BAE', label: 'Bon à enlever', statuses: ['EN_ATTENTE_LIVRAISON'] },
+      { stepKey: 'LIVRE', label: 'Livré client', statuses: ['LIVRE'] },
+      { stepKey: 'CLOTURE', label: 'Clôturé', statuses: ['CLOTURE'] },
+    ];
+
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const pipeline = pipelineConfig.map((cfg) => {
+      const matching = dossiersList.filter((d: any) =>
+        cfg.statuses.includes(String(d.statut || '').toUpperCase())
+      );
+      const count = matching.length;
+      const deboursEngages = matching.reduce(
+        (sum: number, d: any) => sum + Number(d.fraisCircuit || 0),
+        0
+      );
+      const overdue = matching.filter(
+        (d: any) => d.createdAt && new Date(d.createdAt) < fifteenDaysAgo
+      );
+      return {
+        stepKey: cfg.stepKey,
+        label: cfg.label,
+        count,
+        percentage: totalDossiers > 0 ? Math.round((count / totalDossiers) * 100) : 0,
+        deboursEngages,
+        hasOverdueAlert: overdue.length > 0,
+        overdueCount: overdue.length > 0 ? overdue.length : undefined,
+      };
+    });
+
     return {
       kpis,
+      pipeline,
       transitStats: {
         totalDossiersCount: totalDossiers,
         statusDistribution: statusDistribution.length > 0 ? statusDistribution : [

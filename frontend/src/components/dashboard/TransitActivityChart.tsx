@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Ship } from "lucide-react";
-import type { TransitStats, TransitActivityDataPoint } from "@/mock/dashboard";
+import type { TransitStats, TransitActivityDataPoint } from "@/types/dashboard";
 import { cn } from "@/shared/utils/cn";
 
 interface TransitActivityChartProps {

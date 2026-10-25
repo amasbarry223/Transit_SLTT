@@ -44,7 +44,7 @@ import { useDashboardData } from "@/shared/hooks/useDashboardData";
 import {
   type OperationalAlert,
   type RecentOperation,
-} from "@/mock/dashboard";
+} from "@/types/dashboard";
 
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
