@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import React, { useState } from "react";
+import { AlertTriangle, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import type { OperationalAlert } from "@/types/dashboard";
 import { cn } from "@/shared/utils/cn";
 
@@ -10,10 +10,18 @@ interface OperationalAlertsProps {
   onAlertClick: (alert: OperationalAlert) => void;
 }
 
+const PAGE_SIZE = 4;
+
 export const OperationalAlerts = React.memo(function OperationalAlerts({
   alerts,
   onAlertClick,
 }: OperationalAlertsProps) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(alerts.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = alerts.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = alerts.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, alerts.length);
   return (
     <div className="rounded-2xl border border-slate-200/80 dark:border-border/70 bg-white dark:bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between h-full">
       <div className="flex items-center justify-between mb-4">
@@ -37,7 +45,7 @@ export const OperationalAlerts = React.memo(function OperationalAlerts({
       </div>
 
       <div className="space-y-2.5">
-        {alerts.map((alert) => {
+        {paged.map((alert) => {
           const isCritical = alert.severity === "critical";
           const isWarning = alert.severity === "warning";
 
@@ -94,6 +102,37 @@ export const OperationalAlerts = React.memo(function OperationalAlerts({
           );
         })}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-3 mt-3 text-xs text-muted-foreground">
+          <span>
+            {startIdx}–{endIdx} sur {alerts.length} alertes
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label="Page précédente"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label="Page suivante"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

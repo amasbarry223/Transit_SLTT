@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Clock, ExternalLink, Ship, Receipt, Wallet, Warehouse, FileText } from "lucide-react";
+import React, { useState } from "react";
+import { Clock, ExternalLink, Ship, Receipt, Wallet, Warehouse, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import type { RecentOperation } from "@/types/dashboard";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
@@ -11,6 +11,8 @@ interface RecentOperationsProps {
   onSelectOperation?: (op: RecentOperation) => void;
   onViewAll?: () => void;
 }
+
+const PAGE_SIZE = 5;
 
 const TYPE_ICON_MAP = {
   Dossier: Ship,
@@ -33,6 +35,13 @@ export const RecentOperations = React.memo(function RecentOperations({
   onSelectOperation,
   onViewAll,
 }: RecentOperationsProps) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(operations.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = operations.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const startIdx = operations.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * PAGE_SIZE, operations.length);
+
   return (
     <div className="rounded-2xl border border-slate-200/80 dark:border-border/70 bg-white dark:bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between h-full">
       {/* En-tête */}
@@ -78,7 +87,7 @@ export const RecentOperations = React.memo(function RecentOperations({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-              {operations.map((op) => {
+              {paged.map((op) => {
                 const Icon = TYPE_ICON_MAP[op.type] || FileText;
                 const badgeStyle = STATUT_COLOR_MAP[op.statutColor] || STATUT_COLOR_MAP.slate;
 
@@ -123,6 +132,37 @@ export const RecentOperations = React.memo(function RecentOperations({
           </table>
         </div>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-3 mt-3 text-xs text-muted-foreground">
+          <span>
+            {startIdx}–{endIdx} sur {operations.length} opérations
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label="Page précédente"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label="Page suivante"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
