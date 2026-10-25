@@ -9,6 +9,7 @@ import { buildBonSortieCaisseHTML, type BonSortieCaisseModuleData } from "@/lib/
 import { requirePrintHTMLBrand, resolveTransitSociete } from "@/lib/societe-brand";
 import { KpiCard } from "@/components/sltt/kpi-card";
 import { EmptyState } from "@/components/sltt/empty-state";
+import { TablePagination } from "@/components/sltt/table-pagination";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
@@ -54,6 +55,8 @@ function beneficiairesSummary(bon: BonSortieCaisse): string {
   return bon.lignes.length > 1 ? `${first} +${bon.lignes.length - 1}` : first;
 }
 
+const CAISSE_PAGE_SIZE = 8;
+
 export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCreateDialog, onOpenEditDialog }: BonCaisseTabProps) {
   const { toast } = useToast();
   const removeBonSortieCaisse = useStore((state) => state.removeBonSortieCaisse);
@@ -61,6 +64,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
   const [caisseSearch, setCaisseSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [preview, setPreview] = useState<PreviewState>({ status: "closed" });
 
   const { target: caisseDeleteTarget, setTarget: setCaisseDeleteTarget, confirm: handleDeleteCaisse } =
@@ -92,6 +96,17 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
         ),
     );
   }, [bonsSortieCaisse, caisseSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCaisse.length / CAISSE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedCaisse = useMemo(() => {
+    const start = (safePage - 1) * CAISSE_PAGE_SIZE;
+    return filteredCaisse.slice(start, start + CAISSE_PAGE_SIZE);
+  }, [filteredCaisse, safePage]);
+
+  const startIdx = filteredCaisse.length === 0 ? 0 : (safePage - 1) * CAISSE_PAGE_SIZE + 1;
+  const endIdx = Math.min(safePage * CAISSE_PAGE_SIZE, filteredCaisse.length);
+
 
   function buildCaissePrintData(bon: BonSortieCaisse): BonSortieCaisseModuleData | null {
     // resolveSlttBrand(societes) est TOUJOURS vérité (repli sur
@@ -225,7 +240,10 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
               <Input
                 placeholder="Référence, bénéficiaire, motif…"
                 value={caisseSearch}
-                onChange={(event) => setCaisseSearch(event.target.value)}
+                onChange={(event) => {
+                  setCaisseSearch(event.target.value);
+                  setPage(1);
+                }}
                 className="h-10 pl-9"
                 aria-label="Rechercher un bon de sortie de caisse"
               />
@@ -263,7 +281,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
           ) : (
             <>
               <div className="space-y-3 p-4 md:hidden">
-                {filteredCaisse.map((bon) => (
+                {pagedCaisse.map((bon) => (
                   <CaisseMobileCard
                     key={bon.id}
                     bon={bon}
@@ -299,7 +317,7 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCaisse.map((bon) => (
+                    {pagedCaisse.map((bon) => (
                       <CaisseTableRow
                         key={bon.id}
                         bon={bon}
@@ -312,10 +330,21 @@ export function BonCaisseTab({ bons: bonsSortieCaisse, canWriteCaisse, onOpenCre
                   </TableBody>
                 </Table>
               </div>
+
+              <TablePagination
+                startIdx={startIdx}
+                endIdx={endIdx}
+                totalItems={filteredCaisse.length}
+                itemLabel={`bon${filteredCaisse.length !== 1 ? "s" : ""}`}
+                page={safePage}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
             </>
           )}
         </Card>
       </TabsContent>
+
 
       <Dialog
         open={previewOpen}
