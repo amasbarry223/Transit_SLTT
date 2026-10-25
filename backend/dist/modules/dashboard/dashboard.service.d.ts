@@ -41,6 +41,15 @@ export declare class DashboardService {
             accentColor: string;
             targetView: string;
         })[];
+        pipeline: {
+            stepKey: string;
+            label: string;
+            count: number;
+            percentage: number;
+            deboursEngages: number;
+            hasOverdueAlert: boolean;
+            overdueCount: number;
+        }[];
         transitStats: {
             totalDossiersCount: number;
             statusDistribution: {

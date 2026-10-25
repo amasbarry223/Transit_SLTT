@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useUiPrefs } from "@/lib/session/ui-prefs-store";
-import { formatFCFA, formatDateShort, formatDateTime, parseAmount } from "./format";
+import { formatFCFA, formatDateShort, formatDateTime, parseAmount, toDateInputValue } from "./format";
 
 describe("parseAmount", () => {
   it("parse un entier simple", () => {
@@ -92,3 +92,29 @@ describe("formatDateTime", () => {
     expect(formatDateTime("2026-02-05T14:30:00")).toBe("2026-02-05 14:30");
   });
 });
+
+describe("toDateInputValue", () => {
+  it("convertit DD/MM/YYYY en YYYY-MM-DD", () => {
+    expect(toDateInputValue("17/09/2026")).toBe("2026-09-17");
+    expect(toDateInputValue("05/02/2026")).toBe("2026-02-05");
+  });
+
+  it("gère les formats YYYY-MM-DD et ISO", () => {
+    expect(toDateInputValue("2026-09-17")).toBe("2026-09-17");
+    expect(toDateInputValue("2026-09-17T15:45:00.000Z")).toBe("2026-09-17");
+  });
+
+  it("gère les instances de Date", () => {
+    const d = new Date(2026, 8, 17); // Month is 0-indexed (8 = September)
+    expect(toDateInputValue(d)).toBe("2026-09-17");
+  });
+
+  it("renvoie la date du jour si valeur absente ou invalide", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    expect(toDateInputValue(null)).toBe(today);
+    expect(toDateInputValue(undefined)).toBe(today);
+    expect(toDateInputValue("")).toBe(today);
+    expect(toDateInputValue("invalide")).toBe(today);
+  });
+});
+

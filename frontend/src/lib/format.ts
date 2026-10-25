@@ -58,6 +58,40 @@ function formatDatePart(d: Date): string {
   }
 }
 
+/**
+ * Format a date string, timestamp or object into HTML5 input[type="date"] format: "YYYY-MM-DD".
+ * Safely parses "DD/MM/YYYY", ISO strings, Date instances, and returns today's date if invalid or absent.
+ */
+export function toDateInputValue(raw?: Date | string | null | undefined): string {
+  if (!raw) return new Date().toISOString().slice(0, 10);
+  if (raw instanceof Date) {
+    if (isNaN(raw.getTime())) return new Date().toISOString().slice(0, 10);
+    return `${raw.getFullYear()}-${pad2(raw.getMonth() + 1)}-${pad2(raw.getDate())}`;
+  }
+  const str = String(raw).trim();
+  if (!str) return new Date().toISOString().slice(0, 10);
+
+  const dmyMatch = str.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})/);
+  if (dmyMatch) {
+    const [, day, month, year] = dmyMatch;
+    return `${year}-${pad2(Number(month))}-${pad2(Number(day))}`;
+  }
+
+  const ymdMatch = str.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})/);
+  if (ymdMatch) {
+    const [, year, month, day] = ymdMatch;
+    return `${year}-${pad2(Number(month))}-${pad2(Number(day))}`;
+  }
+
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  }
+
+  return new Date().toISOString().slice(0, 10);
+}
+
+
 /** Format a date as "12/01/2026" (ou MM/JJ/AAAA, AAAA-MM-JJ selon préférence). Invalid/missing values return "—". */
 export function formatDateShort(date: Date | string | null | undefined): string {
   if (!date) return "—";

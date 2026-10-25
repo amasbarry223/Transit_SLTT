@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Check, FilePen, Package, Plus, Trash2, Truck } from "lucide-react";
 import type { BonMotif, BonSortie, StockItem } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
 import { QuickClientButton } from "@/features/clients";
-import { formatDateShort, formatFCFA } from "@/lib/format";
+import { formatDateShort, formatFCFA, toDateInputValue } from "@/lib/format";
 import { useCurrentUser } from "@/shared/hooks/use-permission";
 import { useSession } from "@/lib/session/session-store";
 import { normalizeRole } from "@/lib/permissions";
@@ -69,6 +69,77 @@ function createEmptyLigne(): FormArticleLigne {
   };
 }
 
+function resolveBonFormState(
+  editing: BonSortie | null | undefined,
+  clientsList: Array<{ id: string; nom: string }>,
+  stockList: StockItem[],
+) {
+  if (!editing) {
+    return {
+      date: toDateInputValue(),
+      clientId: "",
+      motif: "" as BonMotif | "",
+      lignes: [createEmptyLigne()],
+    };
+  }
+
+  const date = toDateInputValue(editing.date);
+
+  // Résolution du client
+  let resolvedClientId = editing.clientId || "";
+  const matchedClient = clientsList.find(
+    (c) =>
+      (resolvedClientId && c.id === resolvedClientId) ||
+      (editing.clientNom && c.nom.toLowerCase().trim() === editing.clientNom.toLowerCase().trim()),
+  );
+  if (matchedClient) {
+    resolvedClientId = matchedClient.id;
+  } else if (editing.clientId) {
+    resolvedClientId = editing.clientId;
+  } else if (editing.clientNom) {
+    resolvedClientId = `client-custom-${editing.id}`;
+  }
+
+  // Résolution du motif
+  const motif = (editing.motif as BonMotif) || "";
+
+  // Résolution de l'article en stock
+  const matchedStock = stockList.find(
+    (s) =>
+      (editing.stockId && s.id === editing.stockId) ||
+      (editing.marchandise && s.marchandise.toLowerCase().trim() === editing.marchandise.toLowerCase().trim()),
+  );
+  const resolvedStockId = matchedStock ? matchedStock.id : (editing.stockId || `stock-item-${editing.id}`);
+
+  let lignes: FormArticleLigne[] = [];
+  if (editing.lignes && editing.lignes.length > 0) {
+    lignes = editing.lignes.map((l) => {
+      const lineStock = stockList.find(
+        (s) =>
+          (l.stockId && s.id === l.stockId) ||
+          (l.marchandise && s.marchandise.toLowerCase().trim() === l.marchandise.toLowerCase().trim()),
+      );
+      return {
+        id: l.id || crypto.randomUUID(),
+        stockId: lineStock ? lineStock.id : (l.stockId || resolvedStockId),
+        quantite: l.quantite !== undefined && l.quantite !== null ? String(l.quantite) : "",
+        montant: l.montant !== undefined && l.montant !== null ? String(l.montant) : "",
+      };
+    });
+  } else {
+    lignes = [
+      {
+        id: crypto.randomUUID(),
+        stockId: resolvedStockId,
+        quantite: editing.quantite !== undefined && editing.quantite !== null ? String(editing.quantite) : "",
+        montant: editing.montant !== undefined && editing.montant !== null ? String(editing.montant) : "",
+      },
+    ];
+  }
+
+  return { date, clientId: resolvedClientId, motif, lignes };
+}
+
 export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, editing }: BonFormDialogProps) {
   const { toast } = useToast();
   const sessionRole = useSession((state) => state.currentRole);
@@ -92,11 +163,6 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   const bons = useStore((state) => state.bons);
   const bonSeq = useStore((state) => state.bonSeq);
 
-  const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
-  const [formClientId, setFormClientId] = useState("");
-  const [formMotif, setFormMotif] = useState<BonMotif | "">("");
-  const [formLignes, setFormLignes] = useState<FormArticleLigne[]>([createEmptyLigne()]);
-
   // Clients disponibles, avec inclusion de fallback si le bon porte un nom client non présent dans l'annexe courante
   const availableClients = useMemo(() => {
     const list = [...clients];
@@ -104,7 +170,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
       const match = list.find(
         (c) =>
           (editing.clientId && c.id === editing.clientId) ||
-          c.nom.toLowerCase() === editing.clientNom?.toLowerCase(),
+          c.nom.toLowerCase().trim() === editing.clientNom?.toLowerCase().trim(),
       );
       if (!match) {
         list.unshift({
@@ -119,11 +185,6 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
     return list;
   }, [clients, editing]);
 
-  const selectedClient = useMemo(
-    () => availableClients.find((client) => client.id === formClientId),
-    [availableClients, formClientId],
-  );
-
   // Stock disponible, avec inclusion virtuelle de la marchandise du bon si non trouvée en stock
   const availableStock = useMemo(() => {
     const list = [...stock];
@@ -131,13 +192,13 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
       const match = list.find(
         (s) =>
           (editing.stockId && s.id === editing.stockId) ||
-          s.marchandise.toLowerCase() === editing.marchandise.toLowerCase(),
+          s.marchandise.toLowerCase().trim() === editing.marchandise.toLowerCase().trim(),
       );
       if (!match) {
         list.unshift({
           id: editing.stockId || `stock-item-${editing.id}`,
           marchandise: editing.marchandise,
-          quantite: Number(editing.quantite || 0),
+          quantite: editingValidated ? 0 : Number(editing.quantite || 0),
           unite: editing.unite || "colis",
           annexeId: editing.annexeId || "",
           seuil: 0,
@@ -145,66 +206,38 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
       }
     }
     return list;
-  }, [stock, editing]);
+  }, [stock, editing, editingValidated]);
 
-  // Réinitialisation / pré-remplissage du formulaire à l'ouverture
-  const [prevDialogOpen, setPrevDialogOpen] = useState(open);
-  const [prevEditingId, setPrevEditingId] = useState<string | undefined>(editing?.id);
-  if (open !== prevDialogOpen || editing?.id !== prevEditingId) {
-    setPrevDialogOpen(open);
-    setPrevEditingId(editing?.id);
+  // Initialisation immédiate et synchronisation dès l'ouverture
+  const [formDate, setFormDate] = useState(() =>
+    resolveBonFormState(editing, availableClients, availableStock).date,
+  );
+  const [formClientId, setFormClientId] = useState(() =>
+    resolveBonFormState(editing, availableClients, availableStock).clientId,
+  );
+  const [formMotif, setFormMotif] = useState<BonMotif | "">(() =>
+    resolveBonFormState(editing, availableClients, availableStock).motif,
+  );
+  const [formLignes, setFormLignes] = useState<FormArticleLigne[]>(() =>
+    resolveBonFormState(editing, availableClients, availableStock).lignes,
+  );
+
+  const selectedClient = useMemo(
+    () => availableClients.find((client) => client.id === formClientId),
+    [availableClients, formClientId],
+  );
+
+  useEffect(() => {
     if (open) {
-      if (editing) {
-        setFormDate(editing.date ? editing.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
-
-        // Résolution du client
-        let resolvedClientId = editing.clientId || "";
-        if (!resolvedClientId || !availableClients.some((c) => c.id === resolvedClientId)) {
-          const found = availableClients.find(
-            (c) => c.nom.toLowerCase() === editing.clientNom?.toLowerCase(),
-          );
-          if (found) resolvedClientId = found.id;
-          else if (editing.clientNom) resolvedClientId = `client-custom-${editing.id}`;
-        }
-        setFormClientId(resolvedClientId);
-        setFormMotif((editing.motif as BonMotif) || "");
-
-        // Résolution de l'article en stock
-        const matchedStock = availableStock.find(
-          (s) =>
-            (editing.stockId && s.id === editing.stockId) ||
-            s.marchandise.toLowerCase() === editing.marchandise?.toLowerCase(),
-        );
-        const resolvedStockId = matchedStock ? matchedStock.id : (editing.stockId || `stock-item-${editing.id}`);
-
-        if (editing.lignes && editing.lignes.length > 0) {
-          setFormLignes(
-            editing.lignes.map((l) => ({
-              id: l.id || crypto.randomUUID(),
-              stockId: l.stockId || resolvedStockId,
-              quantite: String(l.quantite || ""),
-              montant: String(l.montant || ""),
-            })),
-          );
-        } else {
-          setFormLignes([
-            {
-              id: crypto.randomUUID(),
-              stockId: resolvedStockId,
-              quantite: String(editing.quantite || ""),
-              montant: String(editing.montant || ""),
-            },
-          ]);
-        }
-      } else {
-        setFormDate(new Date().toISOString().slice(0, 10));
-        setFormClientId("");
-        setFormMotif("");
-        setFormLignes([createEmptyLigne()]);
-      }
+      const state = resolveBonFormState(editing, availableClients, availableStock);
+      setFormDate(state.date);
+      setFormClientId(state.clientId);
+      setFormMotif(state.motif);
+      setFormLignes(state.lignes);
       setSaving(false);
     }
-  }
+  }, [open, editing?.id, editing?.reference, editing?.date, editing?.quantite, editing?.montant]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // Analyses des lignes
   const lignesAnalysis = useMemo(() => {
@@ -216,10 +249,17 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
       if (editingValidated && editing) {
         if (editing.lignes && editing.lignes.length > 0) {
           const origQty = editing.lignes
-            .filter((l) => l.stockId === ligne.stockId)
+            .filter(
+              (l) =>
+                l.stockId === ligne.stockId ||
+                (l.marchandise && item?.marchandise && l.marchandise.toLowerCase().trim() === item.marchandise.toLowerCase().trim()),
+            )
             .reduce((sum, l) => sum + (Number(l.quantite) || 0), 0);
           stockDispo += origQty;
-        } else if (editing.stockId === ligne.stockId) {
+        } else if (
+          editing.stockId === ligne.stockId ||
+          (editing.marchandise && item?.marchandise && editing.marchandise.toLowerCase().trim() === item.marchandise.toLowerCase().trim())
+        ) {
           stockDispo += Number(editing.quantite) || 0;
         }
       }
@@ -235,6 +275,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
       };
     });
   }, [formLignes, availableStock, editingValidated, editing]);
+
 
   const hasInvalidStock = lignesAnalysis.some((l) => l.depasse);
   const allLignesValid =
@@ -286,7 +327,8 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   }
 
   function prepareBonPayload(statut: "Validé" | "Brouillon") {
-    if (!selectedClient || !formMotif) return null;
+    const clientNom = selectedClient?.nom || editing?.clientNom || "";
+    if (!clientNom || !formMotif) return null;
 
     const payloadLignes = lignesAnalysis
       .filter((l) => l.quantiteNum > 0)
@@ -309,7 +351,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
     return {
       date: formDate,
       clientId: formClientId || editing?.clientId || "",
-      clientNom: selectedClient.nom || editing?.clientNom || "",
+      clientNom,
       annexeId,
       stockId: primaryStockId,
       marchandise: primaryMarchandise,
@@ -331,7 +373,8 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   // ferment pas le dialog ; sur les branches de succès, on vide le formulaire
   // avant de fermer pour qu'un clic résiduel ne puisse plus rejouer la saisie.
   async function handleValider() {
-    if (!canAct || !selectedClient || !formMotif || totalQuantite <= 0) return;
+    const clientNom = selectedClient?.nom || editing?.clientNom || "";
+    if (!canAct || !clientNom || !formMotif || totalQuantite <= 0) return;
     const payload = prepareBonPayload("Validé");
     if (!payload) return;
 
@@ -385,7 +428,8 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
   }
 
   async function handleSaveDraft() {
-    if (!canAct || !selectedClient || !formMotif || totalQuantite <= 0) return;
+    const clientNom = selectedClient?.nom || editing?.clientNom || "";
+    if (!canAct || !clientNom || !formMotif || totalQuantite <= 0) return;
     const targetStatut = editingValidated ? "Validé" : "Brouillon";
     const payload = prepareBonPayload(targetStatut);
     if (!payload || payload.lignes.length === 0) return;
@@ -418,8 +462,10 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
     }
   }
 
+  const clientNom = selectedClient?.nom || editing?.clientNom || "";
   const isFormReady =
-    Boolean(canAct && formClientId && formMotif && allLignesValid && !hasInvalidStock);
+    Boolean(canAct && clientNom && formMotif && allLignesValid && !hasInvalidStock);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -638,7 +684,7 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
             <BonPreview
               reference={editing ? editing.reference : previewReference}
               date={formDate}
-              client={selectedClient?.nom}
+              client={clientNom}
               motif={formMotif}
               lignes={lignesAnalysis}
               totalMontant={totalMontant}
@@ -657,11 +703,12 @@ export function BonFormDialog({ open, onOpenChange, nextReference, canWrite, edi
           <Button
             variant="outline"
             onClick={handleSaveDraft}
-            disabled={!canAct || saving || !formClientId || !formMotif || totalQuantite <= 0}
+            disabled={!canAct || saving || !clientNom || !formMotif || totalQuantite <= 0}
           >
             <FilePen className="size-4" />
             {editingValidated ? "Enregistrer la correction" : editing ? "Enregistrer" : "Brouillon"}
           </Button>
+
           {/* Un bon déjà validé ne se revalide pas : l'enregistrement corrige
               directement le stock côté serveur. */}
           {!editingValidated && (

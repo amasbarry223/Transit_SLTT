@@ -89,7 +89,7 @@ let BonsService = class BonsService {
             return;
         const stock = await this.prisma.stockItem.findUnique({ where: { id: stockId }, select: { annexeId: true } });
         if (!stock)
-            throw new common_1.BadRequestException('Article de stock introuvable.');
+            return;
         if (stock.annexeId !== annexeId) {
             throw new common_1.BadRequestException("L'article de stock n'appartient pas à l'annexe du bon.");
         }
@@ -119,7 +119,10 @@ let BonsService = class BonsService {
         });
     }
     async assertCanCorrectValidated(bonId, user, action) {
-        if (!this.isUserAdmin(user)) {
+        const role = String(user?.role || '').toUpperCase().trim();
+        const isAdmin = role === 'ADMIN' || role === 'ADMINISTRATEUR' || role === 'DIRECTION';
+        const canAct = isAdmin || (action === 'modifier' && (user?.permissions?.includes('bons:write') ?? false));
+        if (!canAct) {
             throw new common_1.ForbiddenException(`Seul un administrateur peut ${action} un bon de sortie validé.`);
         }
     }
@@ -157,12 +160,29 @@ let BonsService = class BonsService {
             throw new common_1.ForbiddenException('Accès non autorisé à cette annexe');
         }
         await this.assertStockInAnnexe(data.stockId !== undefined ? data.stockId : bon.stockId, data.annexeId !== undefined ? data.annexeId : bon.annexeId);
+        let safeClientId = bon.clientId;
+        if (data.clientId) {
+            const c = await this.prisma.client.findUnique({ where: { id: data.clientId }, select: { id: true } });
+            if (c)
+                safeClientId = c.id;
+        }
+        let safeStockId = bon.stockId;
+        if (data.stockId !== undefined) {
+            if (!data.stockId) {
+                safeStockId = null;
+            }
+            else {
+                const s = await this.prisma.stockItem.findUnique({ where: { id: data.stockId }, select: { id: true } });
+                if (s)
+                    safeStockId = s.id;
+            }
+        }
         const next = {
             date: data.date !== undefined ? data.date : bon.date,
-            clientId: data.clientId !== undefined ? data.clientId : bon.clientId,
+            clientId: safeClientId,
             clientNom: data.clientNom !== undefined ? data.clientNom : bon.clientNom,
             annexeId: data.annexeId !== undefined ? data.annexeId : bon.annexeId,
-            stockId: data.stockId !== undefined ? data.stockId || null : bon.stockId,
+            stockId: safeStockId,
             marchandise: data.marchandise !== undefined ? data.marchandise : bon.marchandise,
             quantite: data.quantite !== undefined ? this.toPositiveQuantite(data.quantite) : bon.quantite,
             unite: data.unite !== undefined ? data.unite : bon.unite,

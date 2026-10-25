@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { BonSortieCaisse } from "@/lib/domain-types";
-import { formatFCFA } from "@/lib/format";
+import { formatFCFA, toDateInputValue } from "@/lib/format";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
@@ -53,23 +53,28 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference, editing
   const isEdit = !!editing;
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  const [caisseDate, setCaisseDate] = useState(todayIso);
-  const [caisseAnnexeId, setCaisseAnnexeId] = useState("");
-  const [caisseLignes, setCaisseLignes] = useState<CaisseLigneForm[]>([
-    { date: todayIso, beneficiaire: "", motif: "", montant: "" },
-  ]);
+  const [caisseDate, setCaisseDate] = useState(() => (editing ? toDateInputValue(editing.date) : todayIso));
+  const [caisseAnnexeId, setCaisseAnnexeId] = useState(() => (editing ? editing.annexeId : (activeAnnexeId ?? "")));
+  const [caisseLignes, setCaisseLignes] = useState<CaisseLigneForm[]>(() =>
+    editing
+      ? editing.lignes.map((ligne) => ({
+          date: toDateInputValue(ligne.date),
+          beneficiaire: ligne.beneficiaire,
+          motif: ligne.motif,
+          montant: String(ligne.montant),
+        }))
+      : [{ date: todayIso, beneficiaire: "", motif: "", montant: "" }],
+  );
   const [saving, setSaving] = useState(false);
 
-  const [prevDialogOpen, setPrevDialogOpen] = useState(open);
-  if (open !== prevDialogOpen) {
-    setPrevDialogOpen(open);
+  useEffect(() => {
     if (open) {
       if (editing) {
-        setCaisseDate(editing.date);
+        setCaisseDate(toDateInputValue(editing.date));
         setCaisseAnnexeId(editing.annexeId);
         setCaisseLignes(
           editing.lignes.map((ligne) => ({
-            date: ligne.date,
+            date: toDateInputValue(ligne.date),
             beneficiaire: ligne.beneficiaire,
             motif: ligne.motif,
             montant: String(ligne.montant),
@@ -80,11 +85,10 @@ export function BonCaisseFormDialog({ open, onOpenChange, nextReference, editing
         setCaisseAnnexeId(activeAnnexeId ?? "");
         setCaisseLignes([{ date: todayIso, beneficiaire: "", motif: "", montant: "" }]);
       }
-      // saving n'est plus remis à false après un succès (voir handleSubmitCaisse) :
-      // on le réarme ici pour ne pas laisser le bouton désactivé à la réouverture.
       setSaving(false);
     }
-  }
+  }, [open, editing?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   const resolvedCaisseAnnexeId = caisseAnnexeId || activeAnnexeId || "";
 

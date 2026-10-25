@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AlertCircle, Package, Truck } from "lucide-react";
 import type { BonLivraison, BonLivraisonInput, BonLivraisonLigne, BonSortie } from "@/lib/domain-types";
 import { useStore } from "@/lib/store";
-import { formatDateShort } from "@/lib/format";
+import { formatDateShort, toDateInputValue } from "@/lib/format";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
 import { Badge } from "@/shared/components/ui/badge";
@@ -83,7 +83,7 @@ export function BonLivraisonFormDialog({ open, onOpenChange, bonSortie, editing,
     setPrevOpen(open);
     if (open) {
       const base = editing?.lignes ?? (bonSortie ? lignesFromBonSortie(bonSortie) : []);
-      setDate(editing?.date || new Date().toISOString().slice(0, 10));
+      setDate(toDateInputValue(editing?.date));
       setLignes(base.map((l) => ({ ...l, quantiteSaisie: String(l.quantite) })));
       setTransporteurId(editing?.transporteurId ?? AUCUN_TRANSPORTEUR);
       setTransporteurNom(editing?.transporteurNom ?? "");

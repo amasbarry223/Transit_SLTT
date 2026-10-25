@@ -42,6 +42,15 @@ export declare class DashboardAnalyticsController {
                 accentColor: string;
                 targetView: string;
             })[];
+            pipeline: {
+                stepKey: string;
+                label: string;
+                count: number;
+                percentage: number;
+                deboursEngages: number;
+                hasOverdueAlert: boolean;
+                overdueCount: number;
+            }[];
             transitStats: {
                 totalDossiersCount: number;
                 statusDistribution: {
@@ -192,6 +201,15 @@ export declare class DashboardController {
                 accentColor: string;
                 targetView: string;
             })[];
+            pipeline: {
+                stepKey: string;
+                label: string;
+                count: number;
+                percentage: number;
+                deboursEngages: number;
+                hasOverdueAlert: boolean;
+                overdueCount: number;
+            }[];
             transitStats: {
                 totalDossiersCount: number;
                 statusDistribution: {

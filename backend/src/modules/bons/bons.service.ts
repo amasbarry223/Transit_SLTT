@@ -188,12 +188,28 @@ export class BonsService {
       data.annexeId !== undefined ? data.annexeId : bon.annexeId,
     );
 
+    let safeClientId = bon.clientId;
+    if (data.clientId) {
+      const c = await this.prisma.client.findUnique({ where: { id: data.clientId }, select: { id: true } });
+      if (c) safeClientId = c.id;
+    }
+
+    let safeStockId = bon.stockId;
+    if (data.stockId !== undefined) {
+      if (!data.stockId) {
+        safeStockId = null;
+      } else {
+        const s = await this.prisma.stockItem.findUnique({ where: { id: data.stockId }, select: { id: true } });
+        if (s) safeStockId = s.id;
+      }
+    }
+
     const next = {
       date: data.date !== undefined ? data.date : bon.date,
-      clientId: data.clientId !== undefined ? data.clientId : bon.clientId,
+      clientId: safeClientId,
       clientNom: data.clientNom !== undefined ? data.clientNom : bon.clientNom,
       annexeId: data.annexeId !== undefined ? data.annexeId : bon.annexeId,
-      stockId: data.stockId !== undefined ? data.stockId || null : bon.stockId,
+      stockId: safeStockId,
       marchandise: data.marchandise !== undefined ? data.marchandise : bon.marchandise,
       quantite: data.quantite !== undefined ? this.toPositiveQuantite(data.quantite) : bon.quantite,
       unite: data.unite !== undefined ? data.unite : bon.unite,
