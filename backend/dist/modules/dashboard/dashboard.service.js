@@ -13,6 +13,7 @@ exports.DashboardService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");
+const dossier_finances_1 = require("../dossiers/dossier-finances");
 let DashboardService = class DashboardService {
     prisma;
     constructor(prisma) {
@@ -61,9 +62,8 @@ let DashboardService = class DashboardService {
                     statut: true,
                     voieTransport: true,
                     createdAt: true,
-                    fraisPrestation: true,
-                    valeurDouane: true,
-                    fraisCircuit: true,
+                    totalContrat: true,
+                    depensesDossier: { select: { montant: true } },
                     client: { select: { id: true, nom: true } },
                 },
                 orderBy: { createdAt: 'desc' },
@@ -389,7 +389,7 @@ let DashboardService = class DashboardService {
                 type: 'Dossier',
                 reference: d.numero,
                 clientOuTiers: d.client?.nom || 'Client',
-                montant: Number(d.fraisPrestation || 0),
+                montant: Number(d.totalContrat || 0),
                 statut: 'En douane',
                 statutColor: 'blue',
                 targetView: 'dossiers',
@@ -421,7 +421,7 @@ let DashboardService = class DashboardService {
         const pipeline = pipelineConfig.map((cfg) => {
             const matching = dossiersList.filter((d) => cfg.statuses.includes(String(d.statut || '').toUpperCase()));
             const count = matching.length;
-            const deboursEngages = matching.reduce((sum, d) => sum + Number(d.fraisCircuit || 0), 0);
+            const deboursEngages = matching.reduce((sum, d) => sum + (0, dossier_finances_1.calculerFinancesDossier)({ depenses: d.depensesDossier }).totalDepenses, 0);
             const overdue = matching.filter((d) => d.createdAt && new Date(d.createdAt) < fifteenDaysAgo);
             return {
                 stepKey: cfg.stepKey,

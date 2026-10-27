@@ -58,11 +58,11 @@ export declare class FournisseursService {
             statut: import(".prisma/client").$Enums.StatutDepense;
             dossierId: string | null;
             devise: string;
+            categorie: import(".prisma/client").$Enums.CategorieDepense;
+            montant: number;
             description: string | null;
             fournisseurId: string | null;
             approuveParId: string | null;
-            categorie: import(".prisma/client").$Enums.CategorieDepense;
-            montant: number;
             justificatif: string | null;
             dateDepense: Date;
         }[];

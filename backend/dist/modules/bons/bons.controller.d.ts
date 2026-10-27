@@ -30,11 +30,11 @@ export declare class BonsController {
         clientId: string;
         statut: string;
         marchandise: string;
-        montant: number;
-        quantite: number;
         date: string;
-        motif: string;
+        montant: number;
         reference: string;
+        quantite: number;
+        motif: string;
         clientNom: string | null;
         stockId: string | null;
         unite: string;
@@ -81,8 +81,8 @@ export declare class BonsController {
             annexeId: string;
             clientId: string | null;
             marchandise: string;
-            quantite: number;
             date: string;
+            quantite: number;
             unite: string;
             seuil: number;
             depositaire: string | null;
@@ -98,11 +98,11 @@ export declare class BonsController {
         clientId: string;
         statut: string;
         marchandise: string;
-        montant: number;
-        quantite: number;
         date: string;
-        motif: string;
+        montant: number;
         reference: string;
+        quantite: number;
+        motif: string;
         clientNom: string | null;
         stockId: string | null;
         unite: string;
@@ -121,8 +121,8 @@ export declare class BonsController {
         lignes: {
             id: string;
             createdAt: Date;
-            montant: number;
             date: string;
+            montant: number;
             motif: string;
             bonSortieCaisseId: string;
             beneficiaire: string;
@@ -133,9 +133,9 @@ export declare class BonsController {
         updatedAt: Date;
         annexeId: string;
         creePar: string | null;
-        montantTotal: number;
         date: string;
         reference: string;
+        montantTotal: number;
     })[]>;
     createBonCaisse(user: CurrentUserType, body: CreateBonCaisseDto): Promise<{
         annexe: {
@@ -157,8 +157,8 @@ export declare class BonsController {
         lignes: {
             id: string;
             createdAt: Date;
-            montant: number;
             date: string;
+            montant: number;
             motif: string;
             bonSortieCaisseId: string;
             beneficiaire: string;
@@ -169,9 +169,9 @@ export declare class BonsController {
         updatedAt: Date;
         annexeId: string;
         creePar: string | null;
-        montantTotal: number;
         date: string;
         reference: string;
+        montantTotal: number;
     }>;
     updateBonCaisse(id: string, user: CurrentUserType, body: UpdateBonCaisseDto): Promise<any>;
     deleteBonCaisse(id: string, user: CurrentUserType): Promise<{

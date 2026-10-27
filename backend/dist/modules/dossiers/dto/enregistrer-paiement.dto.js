@@ -11,12 +11,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EnregistrerPaiementDto = void 0;
 const class_validator_1 = require("class-validator");
+const dossier_finances_1 = require("../dossier-finances");
 class EnregistrerPaiementDto {
+    mode;
+    reference;
     montant;
     statut;
     date;
 }
 exports.EnregistrerPaiementDto = EnregistrerPaiementDto;
+__decorate([
+    (0, class_validator_1.IsIn)(dossier_finances_1.MODES_PAIEMENT),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], EnregistrerPaiementDto.prototype, "mode", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], EnregistrerPaiementDto.prototype, "reference", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)

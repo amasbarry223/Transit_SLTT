@@ -1,4 +1,5 @@
 import { ConteneurInputDto } from './conteneur-input.dto';
+import { DepenseDossierDto, PaiementDossierDto } from './dossier-lignes.dto';
 export declare class DossierFieldsDto {
     numero?: string;
     type?: string;
@@ -29,11 +30,14 @@ export declare class DossierFieldsDto {
     bureauDouane?: string;
     numeroDeclaration?: string;
     dateDeclaration?: string;
+    totalContrat?: number;
+    fraisPrestation?: number;
     valeurDouane?: number;
     droitDouane?: number;
     fraisCircuit?: number;
-    fraisPrestation?: number;
     montantInvesti?: number;
+    depensesDossier?: DepenseDossierDto[];
+    paiements?: PaiementDossierDto[];
     notes?: string;
     noConteneur?: string;
     conteneurs?: ConteneurInputDto[];

@@ -119,10 +119,7 @@ export declare class FacturesService {
             bureauDouane: string | null;
             numeroDeclaration: string | null;
             dateDeclaration: Date | null;
-            valeurDouane: number | null;
-            fraisCircuit: number;
-            fraisPrestation: number;
-            montantInvesti: number;
+            totalContrat: number;
             montantPaye: number;
             dateSolde: Date | null;
         };
@@ -156,9 +153,9 @@ export declare class FacturesService {
             id: string;
             createdAt: Date;
             type: import(".prisma/client").$Enums.TypeTransactionCaisse;
+            date: Date;
             montant: number;
             factureId: string | null;
-            date: Date;
             caisseId: string;
             motif: string;
             depenseId: string | null;

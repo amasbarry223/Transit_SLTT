@@ -13,6 +13,7 @@ exports.DossierFieldsDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const conteneur_input_dto_1 = require("./conteneur-input.dto");
+const dossier_lignes_dto_1 = require("./dossier-lignes.dto");
 class DossierFieldsDto {
     numero;
     type;
@@ -43,11 +44,14 @@ class DossierFieldsDto {
     bureauDouane;
     numeroDeclaration;
     dateDeclaration;
+    totalContrat;
+    fraisPrestation;
     valeurDouane;
     droitDouane;
     fraisCircuit;
-    fraisPrestation;
     montantInvesti;
+    depensesDossier;
+    paiements;
     notes;
     noConteneur;
     conteneurs;
@@ -202,6 +206,16 @@ __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
+], DossierFieldsDto.prototype, "totalContrat", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], DossierFieldsDto.prototype, "fraisPrestation", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
 ], DossierFieldsDto.prototype, "valeurDouane", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
@@ -217,12 +231,21 @@ __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
-], DossierFieldsDto.prototype, "fraisPrestation", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
 ], DossierFieldsDto.prototype, "montantInvesti", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => dossier_lignes_dto_1.DepenseDossierDto),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], DossierFieldsDto.prototype, "depensesDossier", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => dossier_lignes_dto_1.PaiementDossierDto),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], DossierFieldsDto.prototype, "paiements", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

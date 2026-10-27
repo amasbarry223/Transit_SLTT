@@ -35,6 +35,26 @@ export declare class DossiersController {
             dateSortiePort: Date | null;
             dateRetour: Date | null;
         }[];
+        depensesDossier: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            dossierId: string;
+            date: Date;
+            nature: string;
+            categorie: string;
+            montant: bigint;
+        }[];
+        paiements: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            dossierId: string;
+            date: Date;
+            montant: bigint;
+            mode: string;
+            reference: string | null;
+        }[];
     } & {
         id: string;
         createdAt: Date;
@@ -63,10 +83,7 @@ export declare class DossiersController {
         bureauDouane: string | null;
         numeroDeclaration: string | null;
         dateDeclaration: Date | null;
-        valeurDouane: number | null;
-        fraisCircuit: number;
-        fraisPrestation: number;
-        montantInvesti: number;
+        totalContrat: number;
         montantPaye: number;
         dateSolde: Date | null;
     }>>;
@@ -124,11 +141,11 @@ export declare class DossiersController {
             statut: import(".prisma/client").$Enums.StatutDepense;
             dossierId: string | null;
             devise: string;
+            categorie: import(".prisma/client").$Enums.CategorieDepense;
+            montant: number;
             description: string | null;
             fournisseurId: string | null;
             approuveParId: string | null;
-            categorie: import(".prisma/client").$Enums.CategorieDepense;
-            montant: number;
             justificatif: string | null;
             dateDepense: Date;
         }[];
@@ -202,89 +219,25 @@ export declare class DossiersController {
             datePrevue: Date | null;
             dateEffective: Date | null;
         }[];
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        annexeId: string;
-        type: import(".prisma/client").$Enums.TypeDossier;
-        notes: string | null;
-        numero: string;
-        clientId: string;
-        creeParId: string | null;
-        statut: import(".prisma/client").$Enums.StatutDossier;
-        voieTransport: import(".prisma/client").$Enums.VoieTransport;
-        marchandise: string | null;
-        poids: number | null;
-        volume: number | null;
-        nombreColis: number | null;
-        navireVol: string | null;
-        compagnie: string | null;
-        numeroBl: string | null;
-        portProvenance: string | null;
-        portDestination: string | null;
-        dateDepart: Date | null;
-        dateArriveePrevue: Date | null;
-        dateArriveeEffective: Date | null;
-        dateLivraison: Date | null;
-        bureauDouane: string | null;
-        numeroDeclaration: string | null;
-        dateDeclaration: Date | null;
-        valeurDouane: number | null;
-        fraisCircuit: number;
-        fraisPrestation: number;
-        montantInvesti: number;
-        montantPaye: number;
-        dateSolde: Date | null;
-    }>;
-    create(user: CurrentUserType, body: CreateDossierDto): Promise<any>;
-    update(id: string, user: CurrentUserType, body: UpdateDossierDto): Promise<{
-        annexe: {
-            id: string;
-            email: string | null;
-            nom: string;
-            telephone: string | null;
-            actif: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            code: string;
-            adresse: string | null;
-            ville: string | null;
-            pays: string;
-            rccm: string | null;
-            nif: string | null;
-            estSiege: boolean;
-        };
-        client: {
-            id: string;
-            email: string | null;
-            nom: string;
-            telephone: string | null;
-            actif: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            annexeId: string | null;
-            code: string;
-            adresse: string | null;
-            ville: string | null;
-            pays: string | null;
-            rccm: string | null;
-            nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
-            notes: string | null;
-        };
-        conteneurs: {
+        depensesDossier: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            type: string | null;
-            numero: string;
-            statut: import(".prisma/client").$Enums.StatutConteneur;
             dossierId: string;
-            plomb: string | null;
-            dateEntreePort: Date | null;
-            dateSortiePort: Date | null;
-            dateRetour: Date | null;
+            date: Date;
+            nature: string;
+            categorie: string;
+            montant: bigint;
+        }[];
+        paiements: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            dossierId: string;
+            date: Date;
+            montant: bigint;
+            mode: string;
+            reference: string | null;
         }[];
     } & {
         id: string;
@@ -314,13 +267,12 @@ export declare class DossiersController {
         bureauDouane: string | null;
         numeroDeclaration: string | null;
         dateDeclaration: Date | null;
-        valeurDouane: number | null;
-        fraisCircuit: number;
-        fraisPrestation: number;
-        montantInvesti: number;
+        totalContrat: number;
         montantPaye: number;
         dateSolde: Date | null;
     }>;
+    create(user: CurrentUserType, body: CreateDossierDto): Promise<any>;
+    update(id: string, user: CurrentUserType, body: UpdateDossierDto): Promise<any>;
     updateStatut(id: string, user: CurrentUserType, statut: any): Promise<{
         annexe: {
             id: string;
@@ -384,10 +336,7 @@ export declare class DossiersController {
         bureauDouane: string | null;
         numeroDeclaration: string | null;
         dateDeclaration: Date | null;
-        valeurDouane: number | null;
-        fraisCircuit: number;
-        fraisPrestation: number;
-        montantInvesti: number;
+        totalContrat: number;
         montantPaye: number;
         dateSolde: Date | null;
     }>;

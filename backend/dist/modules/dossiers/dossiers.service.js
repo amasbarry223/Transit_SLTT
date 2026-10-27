@@ -10,10 +10,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DossiersService = void 0;
+exports.serializeDossier = serializeDossier;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");
 const pagination_utils_1 = require("../../common/pagination.utils");
+const dossier_finances_1 = require("./dossier-finances");
 function normalizeVoieTransport(val) {
     if (!val)
         return undefined;
@@ -113,19 +115,97 @@ function buildDossierPrismaData(data) {
     const dDecl = parseDossierDate(data.dateDeclaration);
     if (dDecl !== undefined)
         res.dateDeclaration = dDecl;
-    const vd = data.valeurDouane ?? data.droitDouane;
-    if (vd !== undefined)
-        res.valeurDouane = vd !== null && vd !== '' ? Number(vd) : null;
-    const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-    if (data.fraisCircuit !== undefined)
-        res.fraisCircuit = num(data.fraisCircuit);
-    if (data.fraisPrestation !== undefined)
-        res.fraisPrestation = num(data.fraisPrestation);
-    if (data.montantInvesti !== undefined)
-        res.montantInvesti = num(data.montantInvesti);
+    const contrat = data.totalContrat ?? data.fraisPrestation;
+    if (contrat !== undefined)
+        res.totalContrat = (0, dossier_finances_1.toFcfa)(contrat);
     if (data.notes !== undefined)
         res.notes = data.notes || null;
     return res;
+}
+const ORDRE_LIGNES = [{ date: 'asc' }, { createdAt: 'asc' }];
+const LIGNES_INCLUDE = {
+    depensesDossier: { orderBy: ORDRE_LIGNES },
+    paiements: { orderBy: ORDRE_LIGNES },
+};
+function serializeDossier(d) {
+    if (!d)
+        return d;
+    const depensesDossier = (d.depensesDossier ?? []).map((l) => ({ ...l, montant: (0, dossier_finances_1.toFcfa)(l.montant) }));
+    const paiements = (d.paiements ?? []).map((p) => ({ ...p, montant: (0, dossier_finances_1.toFcfa)(p.montant) }));
+    return {
+        ...d,
+        depensesDossier,
+        paiements,
+        finances: (0, dossier_finances_1.calculerFinancesDossier)({ totalContrat: d.totalContrat, paiements, depenses: depensesDossier }),
+    };
+}
+const parseLigneDate = (v) => parseDossierDate(v) ?? new Date();
+async function remplacerLignes(delegate, dossierId, lignes, toData) {
+    const existants = await delegate.findMany({ where: { dossierId }, select: { id: true } });
+    const idsExistants = new Set(existants.map((e) => e.id));
+    const conserves = lignes.filter((l) => l.id && idsExistants.has(l.id)).map((l) => l.id);
+    await delegate.deleteMany({ where: { dossierId, id: { notIn: conserves } } });
+    for (const l of lignes) {
+        if (l.id && idsExistants.has(l.id)) {
+            await delegate.updateMany({ where: { id: l.id, dossierId }, data: toData(l) });
+        }
+        else {
+            await delegate.create({ data: { ...toData(l), dossierId } });
+        }
+    }
+}
+const depenseData = (l) => ({
+    date: parseLigneDate(l.date),
+    nature: String(l.nature || '').trim() || 'Dépense',
+    categorie: dossier_finances_1.CATEGORIES_DEPENSE.includes(l.categorie) ? l.categorie : 'DIVERS',
+    montant: BigInt((0, dossier_finances_1.toFcfa)(l.montant)),
+});
+const paiementData = (p) => ({
+    date: parseLigneDate(p.date),
+    montant: BigInt((0, dossier_finances_1.toFcfa)(p.montant)),
+    mode: dossier_finances_1.MODES_PAIEMENT.includes(p.mode) ? p.mode : 'ESPECES',
+    reference: p.reference ? String(p.reference) : null,
+});
+async function syncLignesEtTotaux(tx, dossierId, data) {
+    if (Array.isArray(data.depensesDossier)) {
+        await remplacerLignes(tx.dossierDepense, dossierId, data.depensesDossier, depenseData);
+    }
+    else {
+        const reprises = [
+            { nature: 'Droit de douane', categorie: 'DOUANE', montant: (0, dossier_finances_1.toFcfa)(data.droitDouane ?? data.valeurDouane) },
+            { nature: 'Frais de circuit (reprise)', categorie: 'DIVERS', montant: (0, dossier_finances_1.toFcfa)(data.fraisCircuit) },
+        ].filter((r) => r.montant > 0);
+        if (reprises.length && (await tx.dossierDepense.count({ where: { dossierId } })) === 0) {
+            for (const r of reprises) {
+                await tx.dossierDepense.create({ data: { ...depenseData(r), dossierId } });
+            }
+        }
+    }
+    if (Array.isArray(data.paiements)) {
+        await remplacerLignes(tx.dossierPaiement, dossierId, data.paiements, paiementData);
+    }
+    else if ((0, dossier_finances_1.toFcfa)(data.montantPaye) > 0 && (await tx.dossierPaiement.count({ where: { dossierId } })) === 0) {
+        await tx.dossierPaiement.create({
+            data: {
+                ...paiementData({ montant: data.montantPaye, date: data.dateSolde ?? data.date, reference: 'Paiement (reprise)' }),
+                dossierId,
+            },
+        });
+    }
+    const dossier = await tx.dossier.findUnique({ where: { id: dossierId }, include: LIGNES_INCLUDE });
+    const f = (0, dossier_finances_1.calculerFinancesDossier)({
+        totalContrat: dossier.totalContrat,
+        paiements: dossier.paiements,
+        depenses: dossier.depensesDossier,
+    });
+    const dernierPaiement = dossier.paiements[dossier.paiements.length - 1];
+    await tx.dossier.update({
+        where: { id: dossierId },
+        data: {
+            montantPaye: f.montantPaye,
+            dateSolde: dernierPaiement ? dernierPaiement.date : null,
+        },
+    });
 }
 let DossiersService = class DossiersService {
     prisma;
@@ -162,11 +242,12 @@ let DossiersService = class DossiersService {
                     client: { select: { id: true, nom: true, code: true } },
                     annexe: { select: { id: true, nom: true, code: true } },
                     conteneurs: true,
+                    ...LIGNES_INCLUDE,
                     _count: { select: { documents: true, factures: true, depenses: true } },
                 },
             }),
         ]);
-        return (0, pagination_utils_1.buildPaginatedResponse)(data, total, { page, limit });
+        return (0, pagination_utils_1.buildPaginatedResponse)(data.map(serializeDossier), total, { page, limit });
     }
     async findOne(id, user) {
         const dossier = await this.prisma.dossier.findUnique({
@@ -181,12 +262,13 @@ let DossiersService = class DossiersService {
                 depenses: true,
                 trackingPublic: true,
                 creePar: { select: { id: true, nom: true, email: true } },
+                ...LIGNES_INCLUDE,
             },
         });
         if (!dossier)
             throw new common_1.NotFoundException(`Dossier ${id} non trouvé`);
         (0, annexe_filter_utils_1.assertAnnexeAccess)(user, dossier.annexeId, 'ce dossier');
-        return dossier;
+        return serializeDossier(dossier);
     }
     async create(user, data) {
         (0, annexe_filter_utils_1.assertAnnexeAccess)(user, data.annexeId, 'cette annexe');
@@ -205,12 +287,6 @@ let DossiersService = class DossiersService {
                     annexeId: data.annexeId,
                     clientId: data.clientId,
                     statut: prismaData.statut ?? 'EN_COURS',
-                    montantPaye: data.montantPaye !== undefined && Number.isFinite(Number(data.montantPaye))
-                        ? Number(data.montantPaye)
-                        : 0,
-                    dateSolde: Number(data.montantPaye) > 0
-                        ? parseDossierDate(data.dateSolde ?? data.date ?? data.dateDepart) ?? new Date()
-                        : null,
                     creeParId: user.id,
                     conteneurs: conteneurs?.length
                         ? {
@@ -244,7 +320,8 @@ let DossiersService = class DossiersService {
             await tx.etapeDossier.createMany({
                 data: etapesDefaut.map((e) => ({ ...e, dossierId: dossier.id })),
             });
-            return dossier;
+            await syncLignesEtTotaux(tx, dossier.id, data);
+            return serializeDossier(await tx.dossier.findUnique({ where: { id: dossier.id }, include: LIGNES_INCLUDE }));
         });
     }
     async update(id, user, data) {
@@ -270,10 +347,13 @@ let DossiersService = class DossiersService {
                 }
             }
         }
-        return this.prisma.dossier.update({
-            where: { id },
-            data: updateData,
-            include: { conteneurs: true, client: true, annexe: true },
+        return this.prisma.$transaction(async (tx) => {
+            await tx.dossier.update({ where: { id }, data: updateData });
+            await syncLignesEtTotaux(tx, id, data);
+            return serializeDossier(await tx.dossier.findUnique({
+                where: { id },
+                include: { conteneurs: true, client: true, annexe: true, ...LIGNES_INCLUDE },
+            }));
         });
     }
     async updateStatut(id, user, statut) {
@@ -294,26 +374,15 @@ let DossiersService = class DossiersService {
     }
     async enregistrerPaiement(id, user, data) {
         const dossier = await this.findOne(id, user);
-        const montant = Number(data.montant);
-        if (!Number.isFinite(montant) || montant <= 0) {
+        const montant = (0, dossier_finances_1.toFcfa)(data.montant);
+        if (montant <= 0) {
             throw new common_1.BadRequestException('Le montant du règlement doit être supérieur à 0.');
         }
-        const plafond = dossier.montantInvesti || 0;
-        if (plafond > 0) {
-            const reste = plafond - dossier.montantPaye;
-            if (montant > reste + 0.5) {
-                throw new common_1.BadRequestException(`Le montant dépasse le reste dû (${reste.toLocaleString('fr-FR')}).`);
-            }
-        }
-        const datePaiement = data.date ? new Date(data.date) : new Date();
         return this.prisma.$transaction(async (tx) => {
-            await tx.dossier.update({
-                where: { id },
-                data: {
-                    montantPaye: { increment: montant },
-                    dateSolde: Number.isNaN(datePaiement.getTime()) ? new Date() : datePaiement,
-                },
+            await tx.dossierPaiement.create({
+                data: { ...paiementData({ montant, date: data.date, mode: data.mode, reference: data.reference }), dossierId: id },
             });
+            await syncLignesEtTotaux(tx, id, {});
             if (data.statut) {
                 const normalized = normalizeStatutDossier(data.statut) || dossier.statut;
                 await tx.dossier.update({ where: { id }, data: { statut: normalized } });
@@ -322,7 +391,7 @@ let DossiersService = class DossiersService {
                     data: { statutAffiche: normalized },
                 });
             }
-            return tx.dossier.findUnique({ where: { id }, include: { client: true, annexe: true } });
+            return serializeDossier(await tx.dossier.findUnique({ where: { id }, include: { client: true, annexe: true, ...LIGNES_INCLUDE } }));
         });
     }
     async remove(id, user) {

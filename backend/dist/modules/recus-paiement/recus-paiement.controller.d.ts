@@ -20,8 +20,8 @@ export declare class RecusPaiementController {
         statut: string;
         montantPaye: number;
         creePar: string | null;
-        motif: string;
         reference: string;
+        motif: string;
         prenom: string;
         somme: number;
         reste: number;
@@ -52,8 +52,8 @@ export declare class RecusPaiementController {
         statut: string;
         montantPaye: number;
         creePar: string | null;
-        motif: string;
         reference: string;
+        motif: string;
         prenom: string;
         somme: number;
         reste: number;
@@ -85,8 +85,8 @@ export declare class RecusPaiementController {
         statut: string;
         montantPaye: number;
         creePar: string | null;
-        motif: string;
         reference: string;
+        motif: string;
         prenom: string;
         somme: number;
         reste: number;
@@ -100,8 +100,8 @@ export declare class RecusPaiementController {
         statut: string;
         montantPaye: number;
         creePar: string | null;
-        motif: string;
         reference: string;
+        motif: string;
         prenom: string;
         somme: number;
         reste: number;

@@ -73,10 +73,7 @@ export declare class ClientsController {
             bureauDouane: string | null;
             numeroDeclaration: string | null;
             dateDeclaration: Date | null;
-            valeurDouane: number | null;
-            fraisCircuit: number;
-            fraisPrestation: number;
-            montantInvesti: number;
+            totalContrat: number;
             montantPaye: number;
             dateSolde: Date | null;
         }[];
