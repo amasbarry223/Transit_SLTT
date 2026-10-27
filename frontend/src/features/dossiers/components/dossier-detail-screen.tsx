@@ -7,12 +7,7 @@ import { useStore } from "@/lib/store";
 import type { SubDossier, DossierFournisseurInput, FournisseurType } from "@/lib/store";
 import { financesDossier } from "@/lib/domain-types";
 import { dossierMontantsHtml } from "@/lib/export/print-modules/dossier-montants";
-import { formatDateShort, parseLocalDate } from "@/lib/format";
-import {
-  calculateDaysUntil,
-  isEcheanceDepassee,
-  isEcheanceImminente,
-} from "@/lib/echeance-utils";
+import { formatDateShort } from "@/lib/format";
 import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
 import { resolveSlttBrand } from "@/lib/societe-brand";
@@ -20,11 +15,11 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
 import { usePermission } from "@/shared/hooks/use-permission";
+import { cn } from "@/shared/utils/cn";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -54,19 +49,17 @@ import {
   TransitionDialog,
   getNextTransition,
 } from "@/components/sltt/dossier-transition-dialog";
-import { DossierDetailHero } from "@/components/sltt/dossier-detail/dossier-detail-hero";
-import { DossierDetailOverview } from "@/components/sltt/dossier-detail/dossier-detail-overview";
 import { DossierDetailDocuments } from "@/components/sltt/dossier-detail/dossier-detail-documents";
 import { DossierDetailSuivi } from "@/components/sltt/dossier-detail/dossier-detail-suivi";
 import { OcrReviewDialogLazy } from "@/components/sltt/documents/ocr-review-dialog-lazy";
+import { DossierScreenRedesign } from "./dossier-screen-redesign";
 
 export function DossierDetailScreen() {
-  const { selectedId, go, openDossier } = useNav();
+  const { selectedId, go } = useNav();
   const { toast } = useToast();
 
   const dossier = useStore((state) => state.dossiers.find((item) => item.id === selectedId));
   const societes = useStore((state) => state.societes);
-  const annexes = useStore((state) => state.annexes);
   const addSubDossier = useStore((state) => state.addSubDossier);
   const updateSubDossier = useStore((state) => state.updateSubDossier);
   const deleteSubDossier = useStore((state) => state.deleteSubDossier);
@@ -76,7 +69,6 @@ export function DossierDetailScreen() {
   const addDossierFournisseur = useStore((state) => state.addDossierFournisseur);
   const removeDossier = useStore((state) => state.removeDossier);
   const canWrite = usePermission("dossiers:write");
-  const canTransition = usePermission("dossiers:transition");
 
   const dossierId = selectedId ?? "";
   const dossierFournisseursSource = useStore((state) => state.dossierFournisseurs);
@@ -111,6 +103,7 @@ export function DossierDetailScreen() {
     [facturesSource, dossierId],
   );
 
+  const [activeTab, setActiveTab] = useState<"apercu" | "documents" | "suivi">("apercu");
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [ocrDocumentId, setOcrDocumentId] = useState<string | null>(null);
@@ -191,29 +184,8 @@ export function DossierDetailScreen() {
   }
 
   const currentDossier = dossier;
-  const annexeCode = annexes.find((a) => a.id === currentDossier.annexeId)?.code;
-
-  const nextTransition = getNextTransition(currentDossier.statut);
   const finances = financesDossier(currentDossier);
-  const ecart = finances.beneficeNet;
-  const reste = finances.resteAPayer;
-  // Recouvrement = part du total contrat déjà payée par le client.
-  const tauxRecouvrement =
-    finances.totalContrat > 0
-      ? Math.min(100, Math.round((finances.montantPaye / finances.totalContrat) * 100))
-      : 0;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const echeanceDate = currentDossier.dateEcheance
-    ? parseLocalDate(currentDossier.dateEcheance)
-    : null;
-  echeanceDate?.setHours(0, 0, 0, 0);
-  const joursRestants = echeanceDate ? calculateDaysUntil(echeanceDate, today) : null;
-  // Dossier Soldé = clos : une échéance dépassée après clôture ne signale plus
-  // rien d'actionnable (pas de surestaries à venir sur un dossier déjà réglé).
-  const echeanceDepassee = currentDossier.statut !== "Soldé" && isEcheanceDepassee(joursRestants);
-  const echeanceImminente = currentDossier.statut !== "Soldé" && isEcheanceImminente(joursRestants);
+  const nextTransition = getNextTransition(currentDossier.statut);
 
   function openCreateSubDossier() {
     setSubDossierEditId(null);
@@ -403,59 +375,107 @@ export function DossierDetailScreen() {
 
   return (
     <div className="space-y-6">
-      <DossierDetailHero
-        dossier={currentDossier}
-        reste={reste}
-        ecart={ecart}
-        tauxRecouvrement={tauxRecouvrement}
-        joursRestants={joursRestants}
-        echeanceDepassee={echeanceDepassee}
-        echeanceImminente={echeanceImminente}
-        nextTransition={nextTransition}
-        canWrite={canWrite}
-        canTransition={canTransition}
-        onBack={() => go("dossiers")}
-        onEdit={() => openDossier(currentDossier.id, "edit")}
-        onTransition={() => setTransitionOpen(true)}
-        onPdf={handlePdfExport}
-        onDelete={() => setDeleteOpen(true)}
-      />
+      {activeTab === "apercu" && (
+        <DossierScreenRedesign
+          existingDossier={currentDossier}
+          isEdit={true}
+          onPdfExport={handlePdfExport}
+          onTransition={nextTransition ? () => setTransitionOpen(true) : undefined}
+          nextTransitionLabel={nextTransition ? `Passer à : ${nextTransition}` : null}
+          onDelete={() => setDeleteOpen(true)}
+          extraTabsHeader={
+            totalFichiers > 0 || suiviCount > 0 ? (
+              <div className="flex items-center gap-1.5 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("apercu")}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all",
+                    activeTab === "apercu"
+                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shadow-xs"
+                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                  )}
+                >
+                  Détail du dossier
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("documents")}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5",
+                    (activeTab as string) === "documents"
+                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shadow-xs"
+                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                  )}
+                >
+                  <span>Documents</span>
+                  {totalFichiers > 0 && (
+                    <span className="rounded-full bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.2 text-[10px] font-bold text-blue-700 dark:text-blue-300">
+                      {totalFichiers}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("suivi")}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5",
+                    (activeTab as string) === "suivi"
+                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shadow-xs"
+                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                  )}
+                >
+                  <span>Suivi & Écritures</span>
+                  {suiviCount > 0 && (
+                    <span className="rounded-full bg-slate-200 dark:bg-slate-700 px-1.5 py-0.2 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                      {suiviCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            ) : null
+          }
+        />
+      )}
 
-      <Tabs defaultValue="apercu">
-        <TabsList className="mb-4 h-10 flex-wrap">
-          <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-          <TabsTrigger value="documents">
-            Documents
-            {totalFichiers > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {totalFichiers}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="suivi">
-            Suivi
-            {suiviCount > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                {suiviCount}
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      {activeTab === "documents" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveTab("apercu")}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all"
+              >
+                ← Retour au détail du dossier
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("documents")}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shadow-xs transition-all flex items-center gap-1.5"
+              >
+                <span>Documents</span>
+                {totalFichiers > 0 && (
+                  <span className="rounded-full bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.2 text-[10px] font-bold text-blue-700 dark:text-blue-300">
+                    {totalFichiers}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("suivi")}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all flex items-center gap-1.5"
+              >
+                <span>Suivi & Écritures</span>
+                {suiviCount > 0 && (
+                  <span className="rounded-full bg-slate-200 dark:bg-slate-700 px-1.5 py-0.2 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                    {suiviCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
 
-        <TabsContent value="apercu">
-          <DossierDetailOverview
-            dossier={currentDossier}
-            ecart={ecart}
-            reste={reste}
-            nextTransition={nextTransition}
-            echeanceDepassee={echeanceDepassee}
-            echeanceImminente={echeanceImminente}
-            joursRestants={joursRestants}
-            annexeCode={annexeCode}
-          />
-        </TabsContent>
-
-        <TabsContent value="documents">
           <DossierDetailDocuments
             dossierId={currentDossier.id}
             clientId={currentDossier.clientId}
@@ -470,9 +490,47 @@ export function DossierDetailScreen() {
             canWrite={canWrite}
             onStartOcr={handleStartOcr}
           />
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="suivi">
+      {activeTab === "suivi" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveTab("apercu")}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all"
+              >
+                ← Retour au détail du dossier
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("documents")}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all flex items-center gap-1.5"
+              >
+                <span>Documents</span>
+                {totalFichiers > 0 && (
+                  <span className="rounded-full bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.2 text-[10px] font-bold text-blue-700 dark:text-blue-300">
+                    {totalFichiers}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("suivi")}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shadow-xs transition-all flex items-center gap-1.5"
+              >
+                <span>Suivi & Écritures</span>
+                {suiviCount > 0 && (
+                  <span className="rounded-full bg-slate-200 dark:bg-slate-700 px-1.5 py-0.2 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                    {suiviCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
           <DossierDetailSuivi
             dossier={currentDossier}
             ecritures={dossierEcritures}
@@ -485,8 +543,8 @@ export function DossierDetailScreen() {
             onGoComptabilite={() => go("comptabilite")}
             canWrite={canWrite}
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       {nextTransition && (
         <TransitionDialog
