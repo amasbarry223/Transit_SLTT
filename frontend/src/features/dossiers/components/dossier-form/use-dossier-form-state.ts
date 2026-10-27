@@ -10,14 +10,13 @@ import {
   type PaiementDossier,
 } from "@/lib/domain/dossier-finances";
 import { parseAmount } from "@/lib/format";
-import { getNextTransition } from "@/components/sltt/dossier-transition-dialog";
 import { resolveDossierReferencePrefix } from "@/lib/societe-brand";
 import { computeDossierReference } from "@/lib/store/reference";
 
 export const WIZARD_STEPS = [
   { id: 1, label: "Identité", hint: "Annexe, client, BL, camion, nature" },
   { id: 2, label: "Montants", hint: "Contrat, paiements, dépenses" },
-  { id: 3, label: "Suivi", hint: "Dates, transport, notes" },
+  { id: 3, label: "Transport", hint: "Mode, conteneur, poids, colis" },
 ] as const;
 
 export type DossierFormErrors = {
@@ -146,7 +145,6 @@ export function useDossierFormState({
   const [paiements, setPaiements] = useState<PaiementForm[]>(() => initialPaiements(existing));
   const [depenses, setDepenses] = useState<DepenseForm[]>(() => initialDepenses(existing));
   const [draftStatut, setDraftStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
-  const [transitionOpen, setTransitionOpen] = useState(false);
   const [dateEcheance, setDateEcheance] = useState<string>(existing?.dateEcheance ?? "");
   const [dateDedouanement, setDateDedouanement] = useState<string>(existing?.dateDedouanement ?? "");
   const [modeTransport, setModeTransport] = useState<string>(existing?.modeTransport ?? "");
@@ -164,7 +162,6 @@ export function useDossierFormState({
 
   const statut = isEdit && existing ? existing.statut : draftStatut;
   const setStatut = setDraftStatut;
-  const nextTransition = existing ? getNextTransition(existing.statut) : null;
   const showWizard = !isEdit;
   const showStep = (step: number) => isEdit || !showWizard || wizardStep === step;
 
@@ -375,9 +372,6 @@ export function useDossierFormState({
     removeDepense,
     statut,
     setStatut,
-    transitionOpen,
-    setTransitionOpen,
-    nextTransition,
     dateEcheance,
     setDateEcheance,
     dateDedouanement,

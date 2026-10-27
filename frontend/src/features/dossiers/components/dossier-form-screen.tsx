@@ -14,10 +14,8 @@ import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
 import { DossierStatutBadge, StatutPaiementBadge, ToneBadge } from "@/components/sltt/status-badge";
 import { InfoCallout } from "@/components/sltt/info-callout";
-import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { useUnsavedChangesWarning } from "@/shared/hooks/use-unsaved-changes-warning";
-import { TransitionDialog } from "@/components/sltt/dossier-transition-dialog";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
@@ -39,7 +37,6 @@ import {
   DossierWizardProgress,
   DossierIdentityStep,
   DossierTransportSection,
-  DossierSuiviSection,
   DossierWizardNav,
   SectionTitle,
   SummaryRow,
@@ -56,7 +53,6 @@ export function DossierFormScreen() {
 
 function DossierFormInner() {
   const { selectedId, dossierFormMode, go } = useNav();
-  const canTransition = usePermission("dossiers:transition");
 
   const clients = useStore((s) => s.clients);
   const societes = useStore((s) => s.societes);
@@ -244,22 +240,6 @@ function DossierFormInner() {
             />
           )}
 
-          {form.showStep(3) && (
-            <DossierSuiviSection
-              isEdit={isEdit}
-              statut={form.statut}
-              nextTransition={form.nextTransition}
-              canTransition={canTransition}
-              dateEcheance={form.dateEcheance}
-              dateDedouanement={form.dateDedouanement}
-              notes={form.notes}
-              onTransitionOpen={() => form.setTransitionOpen(true)}
-              onDateEcheanceChange={form.setDateEcheance}
-              onDateDedouanementChange={form.setDateDedouanement}
-              onNotesChange={form.setNotes}
-            />
-          )}
-
           {form.showWizard && (
             <DossierWizardNav
               wizardStep={form.wizardStep}
@@ -367,15 +347,6 @@ function DossierFormInner() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {isEdit && existing && form.nextTransition && (
-        <TransitionDialog
-          dossier={existing}
-          transition={form.nextTransition}
-          open={form.transitionOpen}
-          onOpenChange={form.setTransitionOpen}
-        />
-      )}
     </div>
   );
 }

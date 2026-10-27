@@ -3,18 +3,14 @@
 import {
   ArrowRight,
   FolderKanban,
-  ListChecks,
   Save,
   Truck,
 } from "lucide-react";
-import type { Annexe, Client, DossierStatut } from "@/lib/domain-types";
+import type { Annexe, Client } from "@/lib/domain-types";
 import { QuickClientButton } from "@/features/clients";
-import { DossierStatutBadge } from "@/components/sltt/status-badge";
-import { TRANSITION_META, type TransitionType } from "@/components/sltt/dossier-transition-dialog";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -341,112 +337,6 @@ export function DossierTransportSection({
             placeholder="Ex. 1"
           />
         </FormField>
-      </div>
-    </CollapsibleSection>
-  );
-}
-
-type DossierSuiviSectionProps = {
-  isEdit: boolean;
-  statut: DossierStatut;
-  nextTransition: TransitionType | null;
-  canTransition: boolean;
-  dateEcheance: string;
-  dateDedouanement: string;
-  notes: string;
-  onTransitionOpen: () => void;
-  onDateEcheanceChange: (value: string) => void;
-  onDateDedouanementChange: (value: string) => void;
-  onNotesChange: (value: string) => void;
-};
-
-export function DossierSuiviSection({
-  isEdit,
-  statut,
-  nextTransition,
-  canTransition,
-  dateEcheance,
-  dateDedouanement,
-  notes,
-  onTransitionOpen,
-  onDateEcheanceChange,
-  onDateDedouanementChange,
-  onNotesChange,
-}: DossierSuiviSectionProps) {
-  return (
-    <CollapsibleSection
-      icon={<ListChecks className="size-4" />}
-      tone="indigo"
-      title="Suivi"
-      description="Statut du dossier et observations internes"
-      defaultOpen={isEdit}
-      badge={isEdit ? undefined : "Optionnel"}
-    >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Statut">
-          {isEdit ? (
-            <div className="flex flex-wrap items-center gap-2.5">
-              <DossierStatutBadge statut={statut} />
-              {nextTransition && canTransition ? (
-                <Button type="button" variant="outline" size="sm" onClick={onTransitionOpen}>
-                  <ArrowRight className="size-3.5" />
-                  {TRANSITION_META[nextTransition].actionLabel}
-                </Button>
-              ) : nextTransition ? (
-                <span className="text-xs text-muted-foreground">
-                  Vous n'avez pas la permission de changer le statut de ce dossier.
-                </span>
-              ) : (
-                <span className="text-xs text-muted-foreground">
-                  Statut final — aucune transition possible
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2.5">
-              <DossierStatutBadge statut="En cours" />
-              <span className="text-xs text-muted-foreground">
-                Tout nouveau dossier démarre à « En cours ». Les transitions se font ensuite depuis
-                la fiche dossier.
-              </span>
-            </div>
-          )}
-          {isEdit && (
-            <p className="text-xs text-muted-foreground">
-              Le statut se fait uniquement avancer via une transition guidée, qui enregistre le
-              paiement associé.
-            </p>
-          )}
-        </FormField>
-
-        <FormField label="Date d'échéance">
-          <Input
-            type="date"
-            className="h-10"
-            value={dateEcheance}
-            onChange={(e) => onDateEcheanceChange(e.target.value)}
-          />
-        </FormField>
-
-        <FormField label="Date de dédouanement">
-          <Input
-            type="date"
-            className="h-10"
-            value={dateDedouanement}
-            onChange={(e) => onDateDedouanementChange(e.target.value)}
-          />
-        </FormField>
-
-        <div className="sm:col-span-2">
-          <FormField label="Notes">
-            <Textarea
-              className="min-h-24"
-              value={notes}
-              onChange={(e) => onNotesChange(e.target.value)}
-              placeholder="Observations, particularités du dossier…"
-            />
-          </FormField>
-        </div>
       </div>
     </CollapsibleSection>
   );
