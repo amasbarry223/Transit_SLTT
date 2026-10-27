@@ -49,6 +49,8 @@ import {
 export function DashboardScreen() {
   const go = useNav((s) => s.go);
   const openDossier = useNav((s) => s.openDossier);
+  const openDossierDetail = useNav((s) => s.openDossierDetail);
+  const openFactureDetail = useNav((s) => s.openFactureDetail);
   const currentUserName = useSession((s) => s.currentUserName);
   const canCreateDossier = usePermission("dossiers:write");
   const theme = useUiPrefs((s) => s.theme);
@@ -62,7 +64,10 @@ export function DashboardScreen() {
   // Nom de l'annexe active
   const activeAnnexeName = useMemo(() => {
     if (!selectedAnnexeId || selectedAnnexeId === "all") {
-      return "Toutes les annexes (Siège Bamako & Abidjan)";
+      if (annexes.length > 0) {
+        return `Toutes les annexes (${annexes.map((a) => a.nom || a.villeSiege).join(" & ")})`;
+      }
+      return "Toutes les annexes";
     }
     const found = annexes.find((a) => a.id === selectedAnnexeId);
     return found ? `${found.nom} (${found.villeSiege})` : "Toutes les annexes";
@@ -78,19 +83,47 @@ export function DashboardScreen() {
   }, [go]);
 
   const handleOperationClick = useCallback((op: RecentOperation) => {
-    if (op.type === "Dossier") go("dossiers");
-    else if (op.type === "Facture") go("factures");
-    else if (op.type === "Débours" || op.type === "Caisse") go("comptabilite");
-    else if (op.type === "Stock") go("entreposage");
-  }, [go]);
+    // Si l'opération a un identifiant direct ou préfixé (ex: op-dos-123 ou op-fac-456)
+    const rawId = op.targetId || op.id;
+    const cleanId = rawId?.replace(/^op-(dos|fac)-/, "");
+
+    if (op.type === "Dossier") {
+      if (cleanId && cleanId !== rawId) {
+        openDossierDetail(cleanId);
+      } else {
+        go("dossiers", { id: cleanId || null });
+      }
+    } else if (op.type === "Facture") {
+      if (cleanId && cleanId !== rawId) {
+        openFactureDetail(cleanId);
+      } else {
+        go("factures", { id: cleanId || null });
+      }
+    } else if (op.type === "Débours" || op.type === "Caisse") {
+      go("comptabilite");
+    } else if (op.type === "Stock") {
+      go("entreposage");
+    }
+  }, [go, openDossierDetail, openFactureDetail]);
 
   const handleAlertClick = useCallback((alert: OperationalAlert) => {
+    if (alert.targetId) {
+      if (alert.targetView === "dossiers") {
+        openDossierDetail(alert.targetId);
+        return;
+      }
+      if (alert.targetView === "factures") {
+        openFactureDetail(alert.targetId);
+        return;
+      }
+    }
+
     if (alert.targetView === "dossiers") go("dossiers");
     else if (alert.targetView === "factures") go("factures");
     else if (alert.targetView === "comptabilite") go("comptabilite");
     else if (alert.targetView === "archives") go("archives");
     else go("dossiers");
-  }, [go]);
+  }, [go, openDossierDetail, openFactureDetail]);
 
   const scrollToAlerts = useCallback(() => {
     const el = document.getElementById("alertes-a-traiter");

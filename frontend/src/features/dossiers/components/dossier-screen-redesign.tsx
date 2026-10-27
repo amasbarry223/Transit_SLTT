@@ -20,12 +20,7 @@ import { useStore } from "@/lib/store";
 import type { Dossier, DossierStatut } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
-import {
-  MODE_PAIEMENT_LABELS,
-  type ModePaiementDossier,
-  CATEGORIE_DEPENSE_LABELS,
-  type CategorieDepense,
-} from "@/lib/domain/dossier-finances";
+
 import { useDossierFormState } from "./dossier-form/use-dossier-form-state";
 import { useDossierFormActions } from "./dossier-form/use-dossier-form-actions";
 import { useToast } from "@/shared/hooks/use-toast";
@@ -47,23 +42,14 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { cn } from "@/shared/utils/cn";
 
-const CATEGORIES_DEPENSES_PRESETS = [
-  "Frais de circuit",
-  "Port",
-  "Avance transport",
-  "Frais de frontière",
-  "Droit de douane",
-  "Transport",
-  "Manutention",
-  "Divers",
-];
-
-const MODES_PAIEMENTS_PRESETS = [
-  "Espèces",
-  "Virement",
-  "Chèque",
-  "Mobile Money",
-];
+import {
+  CATEGORIES_DEPENSE,
+  CATEGORIE_DEPENSE_LABELS,
+  MODES_PAIEMENT,
+  MODE_PAIEMENT_LABELS,
+  type ModePaiementDossier,
+  type CategorieDepense,
+} from "@/lib/domain/dossier-finances";
 
 interface DossierScreenRedesignProps {
   existingDossier?: Dossier;
@@ -120,13 +106,13 @@ export function DossierScreenRedesign({
   const [newPayDate, setNewPayDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
-  const [newPayMode, setNewPayMode] = useState<string>("Espèces");
+  const [newPayMode, setNewPayMode] = useState<ModePaiementDossier>("ESPECES");
   const [newPayRef, setNewPayRef] = useState("");
   const [newPayAmount, setNewPayAmount] = useState("");
 
   // État local pour la ligne d'ajout rapide de dépense
   const [newDepNature, setNewDepNature] = useState("");
-  const [newDepCat, setNewDepCat] = useState<string>("Frais de circuit");
+  const [newDepCat, setNewDepCat] = useState<CategorieDepense>("DOUANE");
   const [newDepAmount, setNewDepAmount] = useState("");
 
   // Ajouter un paiement dynamiquement
@@ -141,18 +127,9 @@ export function DossierScreenRedesign({
       return;
     }
 
-    const modeCode =
-      newPayMode === "Espèces"
-        ? "ESPECES"
-        : newPayMode === "Virement"
-          ? "VIREMENT"
-          : newPayMode === "Chèque"
-            ? "CHEQUE"
-            : "ORANGE_MONEY";
-
     form.addPaiement({
       date: newPayDate || new Date().toISOString().slice(0, 10),
-      mode: modeCode as any,
+      mode: newPayMode,
       reference: newPayRef.trim() || undefined,
       montant: String(rawNum),
     });
@@ -173,21 +150,10 @@ export function DossierScreenRedesign({
       return;
     }
 
-    const catCode =
-      newDepCat === "Droit de douane"
-        ? "DOUANE"
-        : newDepCat === "Transport" || newDepCat === "Avance transport"
-          ? "TRANSPORT"
-          : newDepCat === "Port"
-            ? "FRAIS_PORTUAIRES"
-            : newDepCat === "Manutention"
-              ? "MANUTENTION"
-              : "DIVERS";
-
     form.addDepense({
       date: new Date().toISOString().slice(0, 10),
-      nature: newDepNature.trim() || newDepCat,
-      categorie: catCode as any,
+      nature: newDepNature.trim() || CATEGORIE_DEPENSE_LABELS[newDepCat] || "Frais divers",
+      categorie: newDepCat,
       montant: String(rawNum),
     });
 
@@ -646,14 +612,18 @@ export function DossierScreenRedesign({
               </div>
 
               <div className="col-span-3">
-                <Select value={newPayMode} onValueChange={setNewPayMode} disabled={!canWrite}>
+                <Select
+                  value={newPayMode}
+                  onValueChange={(val) => setNewPayMode(val as ModePaiementDossier)}
+                  disabled={!canWrite}
+                >
                   <SelectTrigger className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs disabled:opacity-60 disabled:cursor-not-allowed">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MODES_PAIEMENTS_PRESETS.map((m) => (
+                    {MODES_PAIEMENT.map((m) => (
                       <SelectItem key={m} value={m} className="text-xs">
-                        {m}
+                        {MODE_PAIEMENT_LABELS[m]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -792,14 +762,18 @@ export function DossierScreenRedesign({
               </div>
 
               <div className="col-span-3">
-                <Select value={newDepCat} onValueChange={setNewDepCat} disabled={!canWrite}>
+                <Select
+                  value={newDepCat}
+                  onValueChange={(val) => setNewDepCat(val as CategorieDepense)}
+                  disabled={!canWrite}
+                >
                   <SelectTrigger className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs disabled:opacity-60 disabled:cursor-not-allowed">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES_DEPENSES_PRESETS.map((c) => (
+                    {CATEGORIES_DEPENSE.map((c) => (
                       <SelectItem key={c} value={c} className="text-xs">
-                        {c}
+                        {CATEGORIE_DEPENSE_LABELS[c]}
                       </SelectItem>
                     ))}
                   </SelectContent>
