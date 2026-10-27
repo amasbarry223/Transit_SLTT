@@ -17,6 +17,12 @@ import { useStore } from "@/lib/store";
 import type { Dossier, DossierStatut } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
+import {
+  MODE_PAIEMENT_LABELS,
+  type ModePaiementDossier,
+  CATEGORIE_DEPENSE_LABELS,
+  type CategorieDepense,
+} from "@/lib/domain/dossier-finances";
 import { useDossierFormState } from "./dossier-form/use-dossier-form-state";
 import { useDossierFormActions } from "./dossier-form/use-dossier-form-actions";
 import { useToast } from "@/shared/hooks/use-toast";
@@ -122,6 +128,7 @@ export function DossierScreenRedesign({
 
   // Ajouter un paiement dynamiquement
   function handleAddPayment() {
+    if (!canWrite) return;
     const rawNum = parseFloat(newPayAmount.replace(/\s+/g, "").replace(",", "."));
     if (isNaN(rawNum) || rawNum <= 0) {
       toastWarning(toast, {
@@ -153,6 +160,7 @@ export function DossierScreenRedesign({
 
   // Ajouter une dépense dynamiquement
   function handleAddDepense() {
+    if (!canWrite) return;
     const rawNum = parseFloat(newDepAmount.replace(/\s+/g, "").replace(",", "."));
     if (isNaN(rawNum) || rawNum <= 0) {
       toastWarning(toast, {
@@ -186,6 +194,7 @@ export function DossierScreenRedesign({
 
   // Saisie du montant Total Contrat
   function handleTotalContratChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!canWrite) return;
     const val = e.target.value.replace(/[^\d]/g, "");
     form.setTotalContrat(val);
   }
@@ -200,9 +209,8 @@ export function DossierScreenRedesign({
   // Statut dynamique & Badge
   const statutActuel: DossierStatut =
     existingDossier?.statut ?? (form.statut || "En cours");
-  const isSolde =
-    statutActuel === "Soldé" ||
-    (form.finances.resteAPayer <= 0 && form.finances.montantPaye > 0);
+  const isFinancierementSolde =
+    form.finances.resteAPayer <= 0 && form.finances.montantPaye > 0;
 
   // Marge calculée en temps réel
   const margeCalc = useMemo(() => {
@@ -261,12 +269,19 @@ export function DossierScreenRedesign({
           </div>
         </div>
 
-        {/* Badge Statut dynamique en haut à droite avec menu actions */}
-        <div className="flex items-center gap-2 self-start">
+        {/* Badge Statut opérationnel dynamique & indicateur de paiement */}
+        <div className="flex items-center gap-2 self-start flex-wrap">
+          {isFinancierementSolde && statutActuel !== "Soldé" && (
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 shadow-xs">
+              <span className="size-2 rounded-full bg-emerald-500" />
+              Payé à 100%
+            </span>
+          )}
+
           <span
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-semibold shadow-xs border",
-              isSolde
+              statutActuel === "Soldé"
                 ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
                 : statutActuel === "Dédouané"
                   ? "bg-indigo-50 text-indigo-700 border-indigo-200/80 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
@@ -278,7 +293,7 @@ export function DossierScreenRedesign({
             <span
               className={cn(
                 "size-2 rounded-full",
-                isSolde
+                statutActuel === "Soldé"
                   ? "bg-emerald-500"
                   : statutActuel === "Dédouané"
                     ? "bg-indigo-500"
@@ -287,7 +302,7 @@ export function DossierScreenRedesign({
                       : "bg-blue-500",
               )}
             />
-            {isSolde ? "Soldé" : statutActuel}
+            {statutActuel}
           </span>
 
           {(onTransition || onDelete) && (
@@ -347,12 +362,13 @@ export function DossierScreenRedesign({
                   </label>
                   <Select
                     value={form.clientId}
+                    disabled={!canWrite}
                     onValueChange={(val) => {
                       form.setClientId(val);
                       form.setTouched((p) => ({ ...p, clientId: true }));
                     }}
                   >
-                    <SelectTrigger className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full">
+                    <SelectTrigger className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed">
                       <SelectValue placeholder="Sélectionner le client" />
                     </SelectTrigger>
                     <SelectContent>
@@ -371,7 +387,8 @@ export function DossierScreenRedesign({
                   </label>
                   <Input
                     type="date"
-                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full"
+                    disabled={!canWrite}
+                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                     value={form.date}
                     onChange={(e) => form.setDate(e.target.value)}
                   />
@@ -385,7 +402,8 @@ export function DossierScreenRedesign({
                     Nature de la marchandise
                   </label>
                   <Input
-                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full"
+                    disabled={!canWrite}
+                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Ex. Conteneur pompes à eau, matériel..."
                     value={form.nature}
                     onChange={(e) => form.setNature(e.target.value)}
@@ -397,7 +415,8 @@ export function DossierScreenRedesign({
                     Quantité
                   </label>
                   <Input
-                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full"
+                    disabled={!canWrite}
+                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Ex. 1"
                     value={form.nombreColis}
                     onChange={(e) => form.setNombreColis(e.target.value)}
@@ -409,7 +428,8 @@ export function DossierScreenRedesign({
                     Facture N° / BL
                   </label>
                   <Input
-                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full"
+                    disabled={!canWrite}
+                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Ex. 0124"
                     value={form.bl}
                     onChange={(e) => form.setBl(e.target.value)}
@@ -425,9 +445,10 @@ export function DossierScreenRedesign({
                   </label>
                   <Select
                     value={form.modeTransport || "Maritime"}
+                    disabled={!canWrite}
                     onValueChange={form.setModeTransport}
                   >
-                    <SelectTrigger className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full">
+                    <SelectTrigger className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed">
                       <SelectValue placeholder="Maritime" />
                     </SelectTrigger>
                     <SelectContent>
@@ -444,7 +465,8 @@ export function DossierScreenRedesign({
                     N° conteneur
                   </label>
                   <Input
-                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full"
+                    disabled={!canWrite}
+                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Ex. CONT123456"
                     value={form.noConteneur}
                     onChange={(e) => form.setNoConteneur(e.target.value)}
@@ -456,7 +478,8 @@ export function DossierScreenRedesign({
                     Poids total (kg)
                   </label>
                   <Input
-                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full"
+                    disabled={!canWrite}
+                    className="h-10 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white text-slate-900 dark:text-slate-100 w-full disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Ex. 15 000 kg"
                     value={form.poidsTotal}
                     onChange={(e) => form.setPoidsTotal(e.target.value)}
@@ -485,7 +508,8 @@ export function DossierScreenRedesign({
             <div className="rounded-xl border-2 border-blue-600 bg-white dark:bg-slate-900 py-3.5 px-6 flex items-center justify-center gap-2 shadow-xs w-full">
               <input
                 type="text"
-                className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight text-center bg-transparent border-0 outline-none w-full max-w-[340px]"
+                disabled={!canWrite}
+                className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight text-center bg-transparent border-0 outline-none w-full max-w-[340px] disabled:opacity-60 disabled:cursor-not-allowed"
                 value={totalContratDisplay}
                 onChange={handleTotalContratChange}
                 placeholder="0"
@@ -539,13 +563,9 @@ export function DossierScreenRedesign({
               ) : (
                 form.paiements.map((p) => {
                   const modeLabel =
-                    p.mode === "ESPECES"
-                      ? "Espèces"
-                      : p.mode === "VIREMENT"
-                        ? "Virement"
-                        : p.mode === "CHEQUE"
-                          ? "Chèque"
-                          : "Mobile Money";
+                    (p.mode && MODE_PAIEMENT_LABELS[p.mode as ModePaiementDossier]) ||
+                    p.mode ||
+                    "Autre";
 
                   return (
                     <div
@@ -569,8 +589,9 @@ export function DossierScreenRedesign({
                       <div className="col-span-1 text-center">
                         <button
                           type="button"
+                          disabled={!canWrite}
                           onClick={() => form.removePaiement(p.key)}
-                          className="text-slate-400 hover:text-red-500 p-1 rounded-md transition-colors"
+                          className="text-slate-400 hover:text-red-500 p-1 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Supprimer ce paiement"
                         >
                           <X className="size-4" />
@@ -587,15 +608,16 @@ export function DossierScreenRedesign({
               <div className="col-span-3">
                 <Input
                   type="date"
-                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                  disabled={!canWrite}
+                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs disabled:opacity-60 disabled:cursor-not-allowed"
                   value={newPayDate}
                   onChange={(e) => setNewPayDate(e.target.value)}
                 />
               </div>
 
               <div className="col-span-3">
-                <Select value={newPayMode} onValueChange={setNewPayMode}>
-                  <SelectTrigger className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs">
+                <Select value={newPayMode} onValueChange={setNewPayMode} disabled={!canWrite}>
+                  <SelectTrigger className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs disabled:opacity-60 disabled:cursor-not-allowed">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -610,7 +632,8 @@ export function DossierScreenRedesign({
 
               <div className="col-span-3">
                 <Input
-                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs placeholder:text-slate-400"
+                  disabled={!canWrite}
+                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder="Optionnel"
                   value={newPayRef}
                   onChange={(e) => setNewPayRef(e.target.value)}
@@ -619,7 +642,8 @@ export function DossierScreenRedesign({
 
               <div className="col-span-2">
                 <Input
-                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs text-right placeholder:text-slate-400"
+                  disabled={!canWrite}
+                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs text-right placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder="Montant"
                   value={newPayAmount}
                   onChange={(e) => setNewPayAmount(e.target.value.replace(/[^\d]/g, ""))}
@@ -636,7 +660,8 @@ export function DossierScreenRedesign({
                 <Button
                   type="button"
                   onClick={handleAddPayment}
-                  className="size-9 p-0 rounded-lg bg-[#15803d] hover:bg-[#166534] text-white shadow-xs cursor-pointer"
+                  disabled={!canWrite}
+                  className="size-9 p-0 rounded-lg bg-[#15803d] hover:bg-[#166534] text-white shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Ajouter le paiement"
                 >
                   <Plus className="size-4" />
@@ -686,6 +711,11 @@ export function DossierScreenRedesign({
                 </div>
               ) : (
                 form.depenses.map((d) => {
+                  const catLabel =
+                    (d.categorie && CATEGORIE_DEPENSE_LABELS[d.categorie as CategorieDepense]) ||
+                    d.categorie ||
+                    "Frais divers";
+
                   return (
                     <div
                       key={d.key}
@@ -696,15 +726,7 @@ export function DossierScreenRedesign({
                       </div>
                       <div className="col-span-3">
                         <span className="inline-block bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border border-orange-100 dark:border-orange-800 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                          {d.categorie === "DOUANE"
-                            ? "Droit de douane"
-                            : d.categorie === "TRANSPORT"
-                              ? "Transport"
-                              : d.categorie === "FRAIS_PORTUAIRES"
-                                ? "Port"
-                                : d.categorie === "MANUTENTION"
-                                  ? "Manutention"
-                                  : d.nature || "Frais de circuit"}
+                          {catLabel}
                         </span>
                       </div>
                       <div className="col-span-3 text-right font-bold text-slate-900 dark:text-white tabular-nums">
@@ -713,8 +735,9 @@ export function DossierScreenRedesign({
                       <div className="col-span-1 text-center">
                         <button
                           type="button"
+                          disabled={!canWrite}
                           onClick={() => form.removeDepense(d.key)}
-                          className="text-slate-400 hover:text-red-500 p-1 rounded-md transition-colors"
+                          className="text-slate-400 hover:text-red-500 p-1 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Supprimer cette dépense"
                         >
                           <X className="size-4" />
@@ -730,7 +753,8 @@ export function DossierScreenRedesign({
             <div className="grid grid-cols-12 gap-2 items-center pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="col-span-5">
                 <Input
-                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs placeholder:text-slate-400"
+                  disabled={!canWrite}
+                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder="Ex. Frais de magasinage, manutention..."
                   value={newDepNature}
                   onChange={(e) => setNewDepNature(e.target.value)}
@@ -738,8 +762,8 @@ export function DossierScreenRedesign({
               </div>
 
               <div className="col-span-3">
-                <Select value={newDepCat} onValueChange={setNewDepCat}>
-                  <SelectTrigger className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs">
+                <Select value={newDepCat} onValueChange={setNewDepCat} disabled={!canWrite}>
+                  <SelectTrigger className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs disabled:opacity-60 disabled:cursor-not-allowed">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -754,7 +778,8 @@ export function DossierScreenRedesign({
 
               <div className="col-span-3">
                 <Input
-                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs text-right placeholder:text-slate-400"
+                  disabled={!canWrite}
+                  className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs text-right placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder="Montant"
                   value={newDepAmount}
                   onChange={(e) => setNewDepAmount(e.target.value.replace(/[^\d]/g, ""))}
@@ -771,7 +796,8 @@ export function DossierScreenRedesign({
                 <Button
                   type="button"
                   onClick={handleAddDepense}
-                  className="size-9 p-0 rounded-lg bg-[#c2410c] hover:bg-[#9a3412] text-white shadow-xs cursor-pointer"
+                  disabled={!canWrite}
+                  className="size-9 p-0 rounded-lg bg-[#c2410c] hover:bg-[#9a3412] text-white shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Ajouter la dépense"
                 >
                   <Plus className="size-4" />

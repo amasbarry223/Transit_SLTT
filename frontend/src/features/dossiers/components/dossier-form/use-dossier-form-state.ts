@@ -329,10 +329,14 @@ export function useDossierFormState({
   }
 
   function buildSaveInput(clientNom: string) {
-    const colis = parseInt(nombreColis, 10);
+    const rawColis = nombreColis.replace(/\s+/g, "");
+    const colis = parseInt(rawColis, 10);
     const resolvedAnnexeId = annexeId || (annexes.length > 0 ? annexes[0].id : "");
     const resolvedBl = bl.trim() ? bl.trim().toUpperCase() : reference || "N/A";
     const resolvedCamion = camion.trim() ? camion.trim().toUpperCase() : "—";
+    const parsedPoids = poidsTotal
+      ? parseFloat(poidsTotal.replace(/\s+/g, "").replace(",", "."))
+      : undefined;
     return {
       annexeId: resolvedAnnexeId,
       clientId,
@@ -346,7 +350,7 @@ export function useDossierFormState({
       modeTransport: (modeTransport as "Maritime" | "Aérien" | "Routier" | "Ferroviaire") || undefined,
       noConteneur: noConteneur ? noConteneur.trim().toUpperCase() : undefined,
       portEntree: portEntree ? portEntree.trim() : undefined,
-      poidsTotal: poidsTotal ? Math.max(0, parseFloat(poidsTotal) || 0) : undefined,
+      poidsTotal: Number.isFinite(parsedPoids) ? Math.max(0, parsedPoids!) : undefined,
       nombreColis: Number.isFinite(colis) && colis >= 0 ? colis : undefined,
       // Seules les lignes partent au serveur, qui calcule lui-même payé,
       // reste et bénéfice.

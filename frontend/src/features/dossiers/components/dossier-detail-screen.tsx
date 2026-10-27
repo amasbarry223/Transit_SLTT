@@ -377,6 +377,7 @@ export function DossierDetailScreen() {
     <div className="w-full space-y-6">
       {activeTab === "apercu" && (
         <DossierScreenRedesign
+          key={currentDossier.id}
           existingDossier={currentDossier}
           isEdit={true}
           onPdfExport={handlePdfExport}
