@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   ArrowRight,
   FolderKanban,
@@ -74,6 +75,7 @@ type DossierIdentityStepProps = {
   annexes: Annexe[];
   annexeId: string;
   clientId: string;
+  existingClientNom?: string;
   nature: string;
   bl: string;
   camion: string;
@@ -96,6 +98,7 @@ export function DossierIdentityStep({
   annexes,
   annexeId,
   clientId,
+  existingClientNom,
   nature,
   bl,
   camion,
@@ -112,6 +115,26 @@ export function DossierIdentityStep({
   onValidateField,
   onTouch,
 }: DossierIdentityStepProps) {
+  const annexeOptions = useMemo(() => {
+    if (annexeId && !annexes.some((a) => a.id === annexeId)) {
+      return [{ id: annexeId, nom: "Annexe sélectionnée" } as Annexe, ...annexes];
+    }
+    return annexes;
+  }, [annexes, annexeId]);
+
+  const clientOptions = useMemo(() => {
+    const sorted = [...clients].sort((a, b) =>
+      (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }),
+    );
+    if (clientId && !sorted.some((c) => c.id === clientId)) {
+      sorted.unshift({
+        id: clientId,
+        nom: existingClientNom || "Client sélectionné",
+      } as Client);
+    }
+    return sorted;
+  }, [clients, clientId, existingClientNom]);
+
   return (
     <Card className="border-border/80 p-5 shadow-sm">
       <SectionTitle
@@ -138,7 +161,7 @@ export function DossierIdentityStep({
               <SelectValue placeholder="Sélectionner une annexe" />
             </SelectTrigger>
             <SelectContent>
-              {annexes.map((a) => (
+              {annexeOptions.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.nom}
                 </SelectItem>
@@ -165,11 +188,17 @@ export function DossierIdentityStep({
                 <SelectValue placeholder="Sélectionner un client" />
               </SelectTrigger>
               <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nom}
-                  </SelectItem>
-                ))}
+                {clientOptions.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                    Aucun client disponible — créez-en un via le bouton +
+                  </div>
+                ) : (
+                  clientOptions.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nom}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <QuickClientButton
@@ -182,8 +211,9 @@ export function DossierIdentityStep({
           </div>
         </FormField>
 
-        <FormField label="Nature de la marchandise" required error={errors.nature}>
+        <FormField id="dossier-nature-input" label="Nature de la marchandise" required error={errors.nature}>
           <Input
+            id="dossier-nature-input"
             className={cn("h-10", errors.nature && "border-red-400")}
             value={nature}
             onChange={(e) => {
@@ -196,38 +226,46 @@ export function DossierIdentityStep({
         </FormField>
 
         <FormField
+          id="dossier-bl-input"
           label="N° de BL"
           required
           error={errors.bl}
           hint="Numéro du connaissement (Bill of Lading) — le document qui identifie la marchandise transportée."
         >
           <Input
-            className={cn("h-10", errors.bl && "border-red-400")}
+            id="dossier-bl-input"
+            className={cn("h-10 font-mono uppercase tracking-wider", errors.bl && "border-red-400")}
             value={bl}
             onChange={(e) => {
-              onBlChange(e.target.value);
-              if (touched.bl) onValidateField("bl", e.target.value);
+              const val = e.target.value.toUpperCase();
+              onBlChange(val);
+              if (touched.bl) onValidateField("bl", val);
             }}
             onBlur={() => onFieldBlur("bl")}
             placeholder="Ex. BL-0000"
+            autoCapitalize="characters"
           />
         </FormField>
 
-        <FormField label="N° du camion" required error={errors.camion}>
+        <FormField id="dossier-camion-input" label="N° du camion" required error={errors.camion}>
           <Input
-            className={cn("h-10", errors.camion && "border-red-400")}
+            id="dossier-camion-input"
+            className={cn("h-10 font-mono uppercase tracking-wider", errors.camion && "border-red-400")}
             value={camion}
             onChange={(e) => {
-              onCamionChange(e.target.value);
-              if (touched.camion) onValidateField("camion", e.target.value);
+              const val = e.target.value.toUpperCase();
+              onCamionChange(val);
+              if (touched.camion) onValidateField("camion", val);
             }}
             onBlur={() => onFieldBlur("camion")}
             placeholder="Ex. AB 1234 CD"
+            autoCapitalize="characters"
           />
         </FormField>
 
-        <FormField label="Date" required error={errors.date}>
+        <FormField id="dossier-date-input" label="Date" required error={errors.date}>
           <Input
+            id="dossier-date-input"
             type="date"
             className={cn("h-10", errors.date && "border-red-400")}
             value={date}

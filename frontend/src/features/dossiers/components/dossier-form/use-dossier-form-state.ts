@@ -134,13 +134,14 @@ export function useDossierFormState({
 }: UseDossierFormStateOptions) {
   const initialAnnexeId =
     existing?.annexeId ?? defaultAnnexeId ?? (annexes.length === 1 ? annexes[0].id : "");
+  const initialDate = existing?.date ?? today();
 
   const [annexeId, setAnnexeId] = useState<string>(initialAnnexeId);
   const [clientId, setClientId] = useState<string>(existing?.clientId ?? "");
   const [nature, setNature] = useState<string>(existing?.nature ?? "");
   const [bl, setBl] = useState<string>(existing?.bl ?? "");
   const [camion, setCamion] = useState<string>(existing?.camion ?? "");
-  const [date, setDate] = useState<string>(existing?.date ?? "");
+  const [date, setDate] = useState<string>(initialDate);
   const [totalContrat, setTotalContrat] = useState<string>(numStr(existing?.totalContrat));
   const [paiements, setPaiements] = useState<PaiementForm[]>(() => initialPaiements(existing));
   const [depenses, setDepenses] = useState<DepenseForm[]>(() => initialDepenses(existing));
@@ -209,12 +210,12 @@ export function useDossierFormState({
   const isDirty = useMemo(() => {
     if (!isEdit) {
       return !!(
-        annexeId ||
+        (initialAnnexeId ? annexeId !== initialAnnexeId : Boolean(annexeId)) ||
         clientId ||
         nature.trim() ||
         bl.trim() ||
         camion.trim() ||
-        date ||
+        date !== initialDate ||
         totalContrat ||
         paiementsSaisis.length ||
         depensesSaisies.length
@@ -244,6 +245,8 @@ export function useDossierFormState({
   }, [
     isEdit,
     existing,
+    initialAnnexeId,
+    initialDate,
     annexeId,
     clientId,
     nature,
@@ -288,16 +291,20 @@ export function useDossierFormState({
     if (!nature.trim()) errs.nature = "La nature de la marchandise est obligatoire.";
     if (!date) errs.date = "La date est obligatoire.";
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    if (Object.keys(errs).length > 0) {
+      setWizardStep(1);
+      return false;
+    }
+    return true;
   }
 
   function validateStep1(): boolean {
     const next: DossierFormErrors = {};
     if (!annexeId) next.annexeId = "L'annexe est obligatoire.";
     if (!clientId) next.clientId = "Le client est obligatoire.";
-    if (!nature.trim()) next.nature = "La nature est obligatoire.";
-    if (!bl.trim()) next.bl = "Le n° de BL est obligatoire.";
-    if (!camion.trim()) next.camion = "Le n° de camion est obligatoire.";
+    if (!nature.trim()) next.nature = "La nature de la marchandise est obligatoire.";
+    if (!bl.trim()) next.bl = "Le numéro de BL est obligatoire.";
+    if (!camion.trim()) next.camion = "Le numéro de camion est obligatoire.";
     if (!date) next.date = "La date est obligatoire.";
     setErrors((p) => ({ ...p, ...next }));
     setTouched({
@@ -326,15 +333,15 @@ export function useDossierFormState({
       annexeId,
       clientId,
       clientNom,
-      nature,
-      bl,
-      camion,
+      nature: nature.trim(),
+      bl: bl.trim().toUpperCase(),
+      camion: camion.trim().toUpperCase(),
       date,
       dateEcheance: dateEcheance || undefined,
       dateDedouanement: dateDedouanement || undefined,
       modeTransport: (modeTransport as "Maritime" | "Aérien" | "Routier" | "Ferroviaire") || undefined,
-      noConteneur: noConteneur || undefined,
-      portEntree: portEntree || undefined,
+      noConteneur: noConteneur ? noConteneur.trim().toUpperCase() : undefined,
+      portEntree: portEntree ? portEntree.trim() : undefined,
       poidsTotal: poidsTotal ? Math.max(0, parseFloat(poidsTotal) || 0) : undefined,
       nombreColis: Number.isFinite(colis) && colis >= 0 ? colis : undefined,
       // Seules les lignes partent au serveur, qui calcule lui-même payé,
@@ -394,6 +401,7 @@ export function useDossierFormState({
     confirmLeaveOpen,
     setConfirmLeaveOpen,
     wizardStep,
+    setWizardStep,
     showWizard,
     showStep,
     finances,

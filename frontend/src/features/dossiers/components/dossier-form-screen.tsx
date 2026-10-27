@@ -177,6 +177,7 @@ function DossierFormInner() {
               annexes={annexes}
               annexeId={form.annexeId}
               clientId={form.clientId}
+              existingClientNom={existing?.clientNom}
               nature={form.nature}
               bl={form.bl}
               camion={form.camion}
