@@ -9,7 +9,7 @@ function toAppError(error: unknown, fallback: string): AppError {
   return new AppError(message, "CLIENT_SERVICE_ERROR", error);
 }
 
-export async function createClient(input: ClientInput): Promise<Result<Client, AppError>> {
+async function createClient(input: ClientInput): Promise<Result<Client, AppError>> {
   try {
     const created = await api.clients.create({
       nom: input.nom,
@@ -37,7 +37,7 @@ export async function createClient(input: ClientInput): Promise<Result<Client, A
   }
 }
 
-export async function updateClient(
+async function updateClient(
   id: string,
   input: ClientInput,
 ): Promise<Result<void, AppError>> {
@@ -56,7 +56,7 @@ export async function updateClient(
   }
 }
 
-export async function deleteClient(id: string): Promise<Result<void, AppError>> {
+async function deleteClient(id: string): Promise<Result<void, AppError>> {
   try {
     await api.clients.delete(id);
     return ok(undefined);

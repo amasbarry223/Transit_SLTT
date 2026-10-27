@@ -1,6 +1,5 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
-export declare function serializeDossier<T extends Record<string, any>>(d: T): T;
 export declare class DossiersService {
     private readonly prisma;
     constructor(prisma: PrismaService);

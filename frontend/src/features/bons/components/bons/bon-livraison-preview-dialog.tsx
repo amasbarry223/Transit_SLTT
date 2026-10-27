@@ -20,7 +20,7 @@ import {
 
 /** Même résolution de société que le bon de caisse (resolveTransitSociete),
  *  pour que tous les documents sortent sur le même papier à en-tête. */
-export function buildLivraisonPrintData(bon: BonLivraison, societes: Societe[]): BonLivraisonModuleData | null {
+function buildLivraisonPrintData(bon: BonLivraison, societes: Societe[]): BonLivraisonModuleData | null {
   const societe = resolveTransitSociete(societes);
   if (!societe?.nom) return null;
   return {

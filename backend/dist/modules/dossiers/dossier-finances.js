@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MODES_PAIEMENT = exports.CATEGORIES_DEPENSE = void 0;
 exports.toFcfa = toFcfa;
-exports.statutPaiement = statutPaiement;
 exports.calculerFinancesDossier = calculerFinancesDossier;
 exports.CATEGORIES_DEPENSE = [
     'DOUANE',

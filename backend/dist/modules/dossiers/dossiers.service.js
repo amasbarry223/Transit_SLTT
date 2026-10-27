@@ -10,7 +10,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DossiersService = void 0;
-exports.serializeDossier = serializeDossier;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");
@@ -400,6 +399,7 @@ let DossiersService = class DossiersService {
             await tx.facture.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
             await tx.depense.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
             await tx.devis.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+            await tx.operationComptable.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
             await tx.dossier.delete({ where: { id } });
             return { id };
         });

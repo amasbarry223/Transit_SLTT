@@ -59,7 +59,7 @@ function resolveHeaderField(raw: string): Field | null {
   return null;
 }
 
-function parseAmount(raw: string): number | null {
+function parseCellAmount(raw: string): number | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
   const n = Number(trimmed.replace(/[\s ]/g, "").replace(",", "."));
@@ -154,8 +154,8 @@ export async function parseComptabiliteGeneraleXlsx(file: ArrayBuffer): Promise<
       const dateRaw = raw.date ?? "";
       const clientNom = (raw.clientNom ?? "").trim();
       const nature = (raw.nature ?? "").trim();
-      const entree = raw.entree ? parseAmount(raw.entree) : null;
-      const sortie = raw.sortie ? parseAmount(raw.sortie) : null;
+      const entree = raw.entree ? parseCellAmount(raw.entree) : null;
+      const sortie = raw.sortie ? parseCellAmount(raw.sortie) : null;
 
       // Ligne totalement vide (espaceur entre mois dans le classeur source) — ignorée sans avertissement.
       if (!clientNom && !nature && !entree && !sortie) return;

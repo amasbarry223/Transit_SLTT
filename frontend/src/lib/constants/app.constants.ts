@@ -5,9 +5,6 @@ export const MS_PER_DAY = 86_400_000;
 /** Jours avant échéance considérés comme « imminents » (alerte ambre). */
 export const ECHEANCE_IMMINENTE_JOURS = 3;
 
-/** Délai par défaut avant échéance d'une facture (jours). */
-export const FACTURE_ECHEANCE_JOURS = 30;
-
 /** Nombre de mois affichés sur les graphiques dashboard / bilans. */
 export const CHART_MONTHS_COUNT = 6;
 

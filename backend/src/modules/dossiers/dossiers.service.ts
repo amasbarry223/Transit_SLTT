@@ -119,7 +119,7 @@ const LIGNES_INCLUDE = {
 };
 
 /** BigInt → number sur les lignes et ajout des montants calculés à la lecture. */
-export function serializeDossier<T extends Record<string, any>>(d: T) {
+function serializeDossier<T extends Record<string, any>>(d: T) {
   if (!d) return d;
   const depensesDossier = (d.depensesDossier ?? []).map((l: any) => ({ ...l, montant: toFcfa(l.montant) }));
   const paiements = (d.paiements ?? []).map((p: any) => ({ ...p, montant: toFcfa(p.montant) }));
@@ -468,6 +468,7 @@ export class DossiersService {
       await tx.facture.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
       await tx.depense.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
       await tx.devis.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
+      await tx.operationComptable.updateMany({ where: { dossierId: id }, data: { dossierId: null } });
       await tx.dossier.delete({ where: { id } });
       return { id };
     });

@@ -51,7 +51,7 @@ export function toFcfa(v: unknown): number {
 const somme = (lignes?: ReadonlyArray<{ montant: number | bigint }> | null) =>
   (lignes ?? []).reduce((s, l) => s + toFcfa(l.montant), 0);
 
-export function statutPaiement(totalContrat: number, montantPaye: number): StatutPaiement {
+function statutPaiement(totalContrat: number, montantPaye: number): StatutPaiement {
   const reste = totalContrat - montantPaye;
   if (reste < 0) return 'TROP_PERCU';
   if (reste === 0) return 'SOLDE';

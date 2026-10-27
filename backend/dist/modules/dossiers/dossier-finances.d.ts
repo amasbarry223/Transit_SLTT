@@ -20,5 +20,4 @@ export interface FinancesDossier {
     perte: boolean;
 }
 export declare function toFcfa(v: unknown): number;
-export declare function statutPaiement(totalContrat: number, montantPaye: number): StatutPaiement;
 export declare function calculerFinancesDossier(d: FinancesDossierInput): FinancesDossier;

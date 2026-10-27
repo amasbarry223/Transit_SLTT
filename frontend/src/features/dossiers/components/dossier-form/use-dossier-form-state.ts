@@ -53,7 +53,7 @@ export type DepenseForm = {
   montant: string;
 };
 
-export const emptyPaiement = (): PaiementForm => ({
+const emptyPaiement = (): PaiementForm => ({
   key: rowKey(),
   date: today(),
   montant: "",
@@ -61,7 +61,7 @@ export const emptyPaiement = (): PaiementForm => ({
   reference: "",
 });
 
-export const emptyDepense = (): DepenseForm => ({
+const emptyDepense = (): DepenseForm => ({
   key: rowKey(),
   date: today(),
   nature: "",
@@ -86,7 +86,7 @@ function initialDepenses(existing?: Dossier): DepenseForm[] {
 const isBlankPaiement = (p: PaiementForm) => parseAmount(p.montant) === 0 && !(p.reference || "").trim();
 const isBlankDepense = (d: DepenseForm) => parseAmount(d.montant) === 0 && !(d.nature || "").trim();
 
-export function toPaiements(rows: PaiementForm[]): PaiementDossier[] {
+function toPaiements(rows: PaiementForm[]): PaiementDossier[] {
   return rows
     .filter((p) => !isBlankPaiement(p))
     .map(({ key: _key, montant, reference, date, ...rest }) => ({
@@ -97,7 +97,7 @@ export function toPaiements(rows: PaiementForm[]): PaiementDossier[] {
     }));
 }
 
-export function toDepenses(rows: DepenseForm[]): DepenseDossier[] {
+function toDepenses(rows: DepenseForm[]): DepenseDossier[] {
   return rows
     .filter((d) => !isBlankDepense(d))
     .map(({ key: _key, montant, nature, date, ...rest }) => ({

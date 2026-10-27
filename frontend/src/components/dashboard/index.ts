@@ -1,10 +1,5 @@
 export { DashboardHeader } from "./DashboardHeader";
 export { KPIGrid } from "./KPIGrid";
-export { TransitActivityChart } from "./TransitActivityChart";
-export { DossierStatusChart } from "./DossierStatusChart";
-export { CashFlowChart } from "./CashFlowChart";
-export { RevenueChart } from "./RevenueChart";
-export { ReceivablesChart } from "./ReceivablesChart";
 export { TransitPipeline } from "./TransitPipeline";
 export { OperationalAlerts } from "./OperationalAlerts";
 export { RecentOperations } from "./RecentOperations";

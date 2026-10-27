@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { computeBenefice } from "@/lib/benefice";
+import { computeBenefice, filterByPeriode } from "@/lib/benefice";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { parseLocalDate } from "@/lib/format";
 import { sommeDossiersEncaisses, sommeFacturesEncaissees } from "@/lib/client-stats";
@@ -11,18 +11,6 @@ export type BeneficeMensuel = {
   depenses: number;
   benefice: number;
 };
-
-function filterByPeriode<T extends { date: string }>(
-  rows: T[],
-  year: number,
-  month: number,
-): T[] {
-  return rows.filter((row) => {
-    const d = parseLocalDate(row.date);
-    if (Number.isNaN(d.getTime())) return false;
-    return d.getFullYear() === year && d.getMonth() === month;
-  });
-}
 
 /** Bénéfice mensuel consolidé — écritures sur datePaiement (F5), dépenses + caisse (F1). */
 export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate()) {
