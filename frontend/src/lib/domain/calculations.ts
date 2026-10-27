@@ -1,19 +1,14 @@
-/**
- * Marge métier dossier = prestation − (droit de douane + frais de circuit).
- *
- * `montantInvesti` est accepté pour permettre de passer un `Dossier` entier,
- * mais n'entre pas dans la formule : côté formulaire, `montantInvesti` vaut
- * droit+circuit+prestation (assiette à payer), pas le coût engagé.
- */
-export function calculerEcart(d: {
-  droitDouane: number;
-  fraisCircuit: number;
-  fraisPrestation: number;
-  montantInvesti?: number;
-}): number {
-  return d.fraisPrestation - (d.droitDouane + d.fraisCircuit);
+import { financesDossier, type DossierFinancesSource } from "@/lib/domain/dossier-finances";
+
+/** Bénéfice net d'un dossier = total contrat − Σ dépenses (dossier-finances.ts). */
+export function beneficeNet(d: DossierFinancesSource): number {
+  return financesDossier(d).beneficeNet;
 }
 
+/**
+ * Reste générique « assiette − payé », borné à 0 — factures et écritures.
+ * Pour un dossier, utiliser `resteDuDossier` (total contrat − paiements).
+ */
 export function resteAPayer(d: {
   montantInvesti: number;
   montantPaye: number;

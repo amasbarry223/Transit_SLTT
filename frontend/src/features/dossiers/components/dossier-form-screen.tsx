@@ -12,7 +12,7 @@ import {
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import { formatFCFA } from "@/lib/format";
-import { DossierStatutBadge } from "@/components/sltt/status-badge";
+import { DossierStatutBadge, StatutPaiementBadge, ToneBadge } from "@/components/sltt/status-badge";
 import { InfoCallout } from "@/components/sltt/info-callout";
 import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
@@ -44,6 +44,8 @@ import {
   SectionTitle,
   SummaryRow,
 } from "./dossier-form";
+import { DossierPaiementsSection } from "./dossier-form/dossier-paiements-section";
+import { DossierDepensesSection } from "./dossier-form/dossier-depenses-section";
 
 export function DossierFormScreen() {
   const { selectedId, dossierFormMode } = useNav();
@@ -81,7 +83,6 @@ function DossierFormInner() {
     form,
     isEdit,
     selectedId,
-    annexeCode,
   });
 
   useUnsavedChangesWarning(form.isDirty);
@@ -205,6 +206,8 @@ function DossierFormInner() {
               portEntree={form.portEntree}
               noConteneur={form.noConteneur}
               poidsTotal={form.poidsTotal}
+              nombreColis={form.nombreColis}
+              onNombreColisChange={form.setNombreColis}
               isMali={annexeCode === "ML" || annexes.find((a) => a.id === form.annexeId)?.nom?.toLowerCase().includes("mali")}
               onModeTransportChange={form.setModeTransport}
               onPortEntreeChange={form.setPortEntree}
@@ -215,15 +218,29 @@ function DossierFormInner() {
 
           {form.showStep(2) && (
             <DossierAmountsSection
-              droitDouane={form.droitDouane}
-              fraisCircuit={form.fraisCircuit}
-              fraisPrestation={form.fraisPrestation}
-              onDroitDouaneChange={form.setDroitDouane}
-              onFraisCircuitChange={form.setFraisCircuit}
-              onFraisPrestationChange={form.setFraisPrestation}
-              montantInvesti={form.totalImportAmount}
-              ecart={form.ecart}
-              annexeCode={annexeCode}
+              totalContrat={form.totalContrat}
+              onTotalContratChange={form.setTotalContrat}
+            />
+          )}
+
+          {form.showStep(2) && (
+            <DossierPaiementsSection
+              paiements={form.paiements}
+              montantPaye={form.finances.montantPaye}
+              totalContrat={form.finances.totalContrat}
+              onChange={form.updatePaiement}
+              onAdd={form.addPaiement}
+              onRemove={form.removePaiement}
+            />
+          )}
+
+          {form.showStep(2) && (
+            <DossierDepensesSection
+              depenses={form.depenses}
+              totalDepenses={form.finances.totalDepenses}
+              onChange={form.updateDepense}
+              onAdd={form.addDepense}
+              onRemove={form.removeDepense}
             />
           )}
 
@@ -266,29 +283,42 @@ function DossierFormInner() {
               />
 
               <div className="divide-y divide-border">
-                <SummaryRow label="Frais prestation" value={formatFCFA(form.serviceFeesAmount)} />
-                <SummaryRow label="Montant investi" value={formatFCFA(form.totalImportAmount)} />
-                <SummaryRow label="Reste à payer" value={formatFCFA(form.reste)} tone="amber" />
+                <SummaryRow label="Total contrat" value={formatFCFA(form.finances.totalContrat)} />
+                <SummaryRow label="Montant payé" value={formatFCFA(form.finances.montantPaye)} />
+                <SummaryRow
+                  label={form.finances.resteAPayer < 0 ? "Trop-perçu" : "Reste à payer"}
+                  value={formatFCFA(Math.abs(form.finances.resteAPayer))}
+                  tone={
+                    form.finances.resteAPayer > 0
+                      ? "amber"
+                      : form.finances.resteAPayer === 0
+                        ? "emerald"
+                        : undefined
+                  }
+                />
+                <SummaryRow label="Dépenses" value={formatFCFA(form.finances.totalDepenses)} />
               </div>
 
               <div className="mt-4 border-t border-border pt-4">
-                <div className="text-xs text-muted-foreground">Marge</div>
+                <div className="text-xs text-muted-foreground">Bénéfice net</div>
                 <div
                   className={cn(
-                    "mt-1 text-2xl font-bold tabular-nums",
-                    form.ecart >= 0
+                    "mt-1 text-3xl font-bold tabular-nums",
+                    form.finances.beneficeNet >= 0
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-red-600 dark:text-red-400",
                   )}
                 >
-                  {form.ecart >= 0 ? "+" : ""}
-                  {formatFCFA(form.ecart)}
+                  {formatFCFA(form.finances.beneficeNet)}
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {form.ecart >= 0
-                    ? "Marge positive sur ce dossier."
-                    : "Marge négative — à surveiller."}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <StatutPaiementBadge statut={form.finances.statutPaiement} />
+                  {form.finances.perte && (
+                    <ToneBadge tone="red" icon={AlertTriangle}>
+                      Perte
+                    </ToneBadge>
+                  )}
+                </div>
               </div>
 
               <Separator className="my-4" />

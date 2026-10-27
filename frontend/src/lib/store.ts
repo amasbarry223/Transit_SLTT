@@ -133,6 +133,8 @@ import {
   type Facture,
   type FactureLigne,
   type FactureStatut,
+  type DepenseDossier,
+  type PaiementDossier,
 } from "@/lib/domain-types";
 
 export {
@@ -225,10 +227,14 @@ export interface DossierInput {
   noConteneur?: string;
   portEntree?: string;
   poidsTotal?: number;
-  droitDouane: number;
-  fraisCircuit: number;
-  fraisPrestation: number;
-  montantInvesti: number;
+  /** Total contrat (montant facturé au client). */
+  totalContrat: number;
+  /** Quantité (nombre de colis / conteneurs). */
+  nombreColis?: number;
+  /** Dépenses du dossier — remplacent toutes les lignes existantes. */
+  depenses?: DepenseDossier[];
+  /** Paiements reçus — le serveur en déduit montantPaye. */
+  paiements?: PaiementDossier[];
   statut: DossierStatut;
   notes?: string;
 }

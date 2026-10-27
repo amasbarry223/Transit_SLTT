@@ -8,7 +8,7 @@ describe("syncClientStats", () => {
     // d1 a déjà 400 réglés AVANT sa facturation — une fois facturé, c'est la
     // facture (200/500) qui doit compter, plus son reste dû (300), pas les 400
     // du dossier en plus.
-    const dossiers = [{ id: "d1", clientId: "c1", montantInvesti: 1000, montantPaye: 400 }] as Dossier[];
+    const dossiers = [{ id: "d1", clientId: "c1", totalContrat: 1000, montantPaye: 400 }] as Dossier[];
     const factures = [
       { clientId: "c1", dossierId: "d1", statut: "Partielle", montantTTC: 500, montantPaye: 200 },
       { clientId: "c1", dossierId: null, statut: "Partielle", montantTTC: 500, montantPaye: 200 },
@@ -27,7 +27,7 @@ describe("syncClientStats", () => {
 
   it("exclut les dossiers rattachés à une facture du client (anti double comptage)", () => {
     const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
-    const dossiers = [{ id: "d1", clientId: "c1", montantInvesti: 1000, montantPaye: 0 }] as Dossier[];
+    const dossiers = [{ id: "d1", clientId: "c1", totalContrat: 1000, montantPaye: 0 }] as Dossier[];
     const factures = [
       { clientId: "c1", dossierId: "d1", statut: "Envoyée", montantTTC: 1000, montantPaye: 0 },
     ] as Facture[];
@@ -77,8 +77,9 @@ describe("syncClientStats", () => {
     // de resteAPayer clampés à 0 par dossier — d1 ne peut pas passer sous 0).
     const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
     const dossiers = [
-      { id: "d1", clientId: "c1", montantInvesti: 1000, montantPaye: 1200 }, // avance de 200
-      { id: "d2", clientId: "c1", montantInvesti: 600, montantPaye: 0 }, // dû de 600
+      // Dû client = total contrat (dossier-finances.ts).
+      { id: "d1", clientId: "c1", totalContrat: 1000, montantPaye: 1200 }, // avance de 200
+      { id: "d2", clientId: "c1", totalContrat: 600, montantPaye: 0 }, // dû de 600
     ] as Dossier[];
     const [updated] = syncClientStats(dossiers, [], [], clients);
     expect(updated.totalDu).toBe(600);

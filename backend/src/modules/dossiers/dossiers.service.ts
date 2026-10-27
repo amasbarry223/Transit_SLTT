@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
 import { parsePagination, buildPaginatedResponse } from '../../common/pagination.utils';
+import { CATEGORIES_DEPENSE, MODES_PAIEMENT, calculerFinancesDossier, toFcfa } from './dossier-finances';
 
 function normalizeVoieTransport(val?: string): 'MARITIME' | 'AERIEN' | 'TERRESTRE' | undefined {
   if (!val) return undefined;
@@ -99,17 +100,127 @@ function buildDossierPrismaData(data: any): Record<string, any> {
   const dDecl = parseDossierDate(data.dateDeclaration);
   if (dDecl !== undefined) res.dateDeclaration = dDecl;
 
-  const vd = data.valeurDouane ?? data.droitDouane;
-  if (vd !== undefined) res.valeurDouane = vd !== null && vd !== '' ? Number(vd) : null;
+  // `fraisPrestation` : ancien nom de totalContrat (front resté en cache).
+  const contrat = data.totalContrat ?? data.fraisPrestation;
+  if (contrat !== undefined) res.totalContrat = toFcfa(contrat);
 
-  const num = (v: any) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-  if (data.fraisCircuit !== undefined) res.fraisCircuit = num(data.fraisCircuit);
-  if (data.fraisPrestation !== undefined) res.fraisPrestation = num(data.fraisPrestation);
-  if (data.montantInvesti !== undefined) res.montantInvesti = num(data.montantInvesti);
+  // montantPaye / dateSolde ne sont jamais repris du payload :
+  // syncLignesEtTotaux() les recalcule depuis les paiements.
 
   if (data.notes !== undefined) res.notes = data.notes || null;
 
   return res;
+}
+
+const ORDRE_LIGNES = [{ date: 'asc' as const }, { createdAt: 'asc' as const }];
+const LIGNES_INCLUDE = {
+  depensesDossier: { orderBy: ORDRE_LIGNES },
+  paiements: { orderBy: ORDRE_LIGNES },
+};
+
+/** BigInt → number sur les lignes et ajout des montants calculés à la lecture. */
+export function serializeDossier<T extends Record<string, any>>(d: T) {
+  if (!d) return d;
+  const depensesDossier = (d.depensesDossier ?? []).map((l: any) => ({ ...l, montant: toFcfa(l.montant) }));
+  const paiements = (d.paiements ?? []).map((p: any) => ({ ...p, montant: toFcfa(p.montant) }));
+  return {
+    ...d,
+    depensesDossier,
+    paiements,
+    finances: calculerFinancesDossier({ totalContrat: d.totalContrat, paiements, depenses: depensesDossier }),
+  };
+}
+
+const parseLigneDate = (v: any) => parseDossierDate(v) ?? new Date();
+
+/**
+ * Remplace les lignes d'un dossier par celles du payload : `id` connu → mise
+ * à jour, sans id (ou id inconnu) → création, absentes → suppression. Les
+ * `updateMany` filtrent sur dossierId pour qu'un id d'un autre dossier ne
+ * puisse jamais être modifié.
+ */
+async function remplacerLignes(
+  delegate: any,
+  dossierId: string,
+  lignes: any[],
+  toData: (l: any) => Record<string, any>,
+) {
+  const existants: Array<{ id: string }> = await delegate.findMany({ where: { dossierId }, select: { id: true } });
+  const idsExistants = new Set(existants.map((e) => e.id));
+  const conserves = lignes.filter((l) => l.id && idsExistants.has(l.id)).map((l) => l.id as string);
+  await delegate.deleteMany({ where: { dossierId, id: { notIn: conserves } } });
+  for (const l of lignes) {
+    if (l.id && idsExistants.has(l.id)) {
+      await delegate.updateMany({ where: { id: l.id, dossierId }, data: toData(l) });
+    } else {
+      await delegate.create({ data: { ...toData(l), dossierId } });
+    }
+  }
+}
+
+const depenseData = (l: any) => ({
+  date: parseLigneDate(l.date),
+  nature: String(l.nature || '').trim() || 'Dépense',
+  categorie: (CATEGORIES_DEPENSE as readonly string[]).includes(l.categorie) ? l.categorie : 'DIVERS',
+  montant: BigInt(toFcfa(l.montant)),
+});
+
+const paiementData = (p: any) => ({
+  date: parseLigneDate(p.date),
+  montant: BigInt(toFcfa(p.montant)),
+  mode: (MODES_PAIEMENT as readonly string[]).includes(p.mode) ? p.mode : 'ESPECES',
+  reference: p.reference ? String(p.reference) : null,
+});
+
+/**
+ * Applique les dépenses / paiements du payload puis recalcule le cache
+ * `montantPaye` / `dateSolde` du dossier depuis la base — jamais depuis des
+ * totaux reçus du front.
+ *
+ * Payload ancien format (front en cache, import, OCR) : droit de douane,
+ * frais de circuit et montantPaye scalaires deviennent des lignes de reprise,
+ * seulement si le dossier n'a encore aucune ligne de ce type.
+ */
+async function syncLignesEtTotaux(tx: any, dossierId: string, data: any) {
+  if (Array.isArray(data.depensesDossier)) {
+    await remplacerLignes(tx.dossierDepense, dossierId, data.depensesDossier, depenseData);
+  } else {
+    const reprises = [
+      { nature: 'Droit de douane', categorie: 'DOUANE', montant: toFcfa(data.droitDouane ?? data.valeurDouane) },
+      { nature: 'Frais de circuit (reprise)', categorie: 'DIVERS', montant: toFcfa(data.fraisCircuit) },
+    ].filter((r) => r.montant > 0);
+    if (reprises.length && (await tx.dossierDepense.count({ where: { dossierId } })) === 0) {
+      for (const r of reprises) {
+        await tx.dossierDepense.create({ data: { ...depenseData(r), dossierId } });
+      }
+    }
+  }
+
+  if (Array.isArray(data.paiements)) {
+    await remplacerLignes(tx.dossierPaiement, dossierId, data.paiements, paiementData);
+  } else if (toFcfa(data.montantPaye) > 0 && (await tx.dossierPaiement.count({ where: { dossierId } })) === 0) {
+    await tx.dossierPaiement.create({
+      data: {
+        ...paiementData({ montant: data.montantPaye, date: data.dateSolde ?? data.date, reference: 'Paiement (reprise)' }),
+        dossierId,
+      },
+    });
+  }
+
+  const dossier = await tx.dossier.findUnique({ where: { id: dossierId }, include: LIGNES_INCLUDE });
+  const f = calculerFinancesDossier({
+    totalContrat: dossier.totalContrat,
+    paiements: dossier.paiements,
+    depenses: dossier.depensesDossier,
+  });
+  const dernierPaiement = dossier.paiements[dossier.paiements.length - 1];
+  await tx.dossier.update({
+    where: { id: dossierId },
+    data: {
+      montantPaye: f.montantPaye,
+      dateSolde: dernierPaiement ? dernierPaiement.date : null,
+    },
+  });
 }
 
 @Injectable()
@@ -159,12 +270,13 @@ export class DossiersService {
           client: { select: { id: true, nom: true, code: true } },
           annexe: { select: { id: true, nom: true, code: true } },
           conteneurs: true,
+          ...LIGNES_INCLUDE,
           _count: { select: { documents: true, factures: true, depenses: true } },
         },
       }),
     ]);
 
-    return buildPaginatedResponse(data, total, { page, limit });
+    return buildPaginatedResponse(data.map(serializeDossier), total, { page, limit });
   }
 
   async findOne(id: string, user: CurrentUserType) {
@@ -180,6 +292,7 @@ export class DossiersService {
         depenses: true,
         trackingPublic: true,
         creePar: { select: { id: true, nom: true, email: true } },
+        ...LIGNES_INCLUDE,
       },
     });
 
@@ -187,7 +300,7 @@ export class DossiersService {
 
     assertAnnexeAccess(user, dossier.annexeId, 'ce dossier');
 
-    return dossier;
+    return serializeDossier(dossier);
   }
 
   async create(user: CurrentUserType, data: any) {
@@ -212,14 +325,6 @@ export class DossiersService {
           annexeId: data.annexeId,
           clientId: data.clientId,
           statut: prismaData.statut ?? 'EN_COURS',
-          montantPaye:
-            data.montantPaye !== undefined && Number.isFinite(Number(data.montantPaye))
-              ? Number(data.montantPaye)
-              : 0,
-          dateSolde:
-            Number(data.montantPaye) > 0
-              ? parseDossierDate(data.dateSolde ?? data.date ?? data.dateDepart) ?? new Date()
-              : null,
           creeParId: user.id,
           conteneurs: conteneurs?.length
             ? {
@@ -259,7 +364,11 @@ export class DossiersService {
         data: etapesDefaut.map((e) => ({ ...e, dossierId: dossier.id })),
       });
 
-      return dossier;
+      await syncLignesEtTotaux(tx, dossier.id, data);
+
+      return serializeDossier(
+        await tx.dossier.findUnique({ where: { id: dossier.id }, include: LIGNES_INCLUDE }),
+      );
     });
   }
 
@@ -288,10 +397,15 @@ export class DossiersService {
       }
     }
 
-    return this.prisma.dossier.update({
-      where: { id },
-      data: updateData,
-      include: { conteneurs: true, client: true, annexe: true },
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.dossier.update({ where: { id }, data: updateData });
+      await syncLignesEtTotaux(tx, id, data);
+      return serializeDossier(
+        await tx.dossier.findUnique({
+          where: { id },
+          include: { conteneurs: true, client: true, annexe: true, ...LIGNES_INCLUDE },
+        }),
+      );
     });
   }
 
@@ -314,41 +428,26 @@ export class DossiersService {
     return updated;
   }
 
-  /** Enregistre un règlement client sur le dossier (incrément atomique de
-   *  montantPaye, rejeté si le montant dépasse le reste dû). Optionnellement
-   *  change le statut. */
+  /** Enregistre un règlement client sur le dossier : nouvelle ligne de
+   *  paiement puis recalcul des totaux. Un dépassement des frais de
+   *  prestation est accepté (statut "trop-perçu" visible partout) plutôt que
+   *  rejeté. Optionnellement change le statut. */
   async enregistrerPaiement(
     id: string,
     user: CurrentUserType,
-    data: { montant: number; statut?: string; date?: string },
+    data: { montant: number; statut?: string; date?: string; mode?: string; reference?: string },
   ) {
     const dossier = await this.findOne(id, user);
-    const montant = Number(data.montant);
-    if (!Number.isFinite(montant) || montant <= 0) {
+    const montant = toFcfa(data.montant);
+    if (montant <= 0) {
       throw new BadRequestException('Le montant du règlement doit être supérieur à 0.');
     }
-    // Rejette le trop-perçu au lieu de l'écrêter silencieusement — même règle
-    // que factures.service.ts:enregistrerPaiement, pour ne jamais faire
-    // disparaître un excédent sans que l'utilisateur en soit informé.
-    const plafond = dossier.montantInvesti || 0;
-    if (plafond > 0) {
-      const reste = plafond - dossier.montantPaye;
-      if (montant > reste + 0.5) {
-        throw new BadRequestException(
-          `Le montant dépasse le reste dû (${reste.toLocaleString('fr-FR')}).`,
-        );
-      }
-    }
-    const datePaiement = data.date ? new Date(data.date) : new Date();
 
     return this.prisma.$transaction(async (tx: any) => {
-      await tx.dossier.update({
-        where: { id },
-        data: {
-          montantPaye: { increment: montant },
-          dateSolde: Number.isNaN(datePaiement.getTime()) ? new Date() : datePaiement,
-        },
+      await tx.dossierPaiement.create({
+        data: { ...paiementData({ montant, date: data.date, mode: data.mode, reference: data.reference }), dossierId: id },
       });
+      await syncLignesEtTotaux(tx, id, {});
       if (data.statut) {
         const normalized = normalizeStatutDossier(data.statut) || dossier.statut;
         await tx.dossier.update({ where: { id }, data: { statut: normalized as any } });
@@ -357,7 +456,9 @@ export class DossiersService {
           data: { statutAffiche: normalized as any },
         });
       }
-      return tx.dossier.findUnique({ where: { id }, include: { client: true, annexe: true } });
+      return serializeDossier(
+        await tx.dossier.findUnique({ where: { id }, include: { client: true, annexe: true, ...LIGNES_INCLUDE } }),
+      );
     });
   }
 

@@ -75,7 +75,7 @@ export function DossiersTab({
                     <div className="flex justify-between gap-3">
                       <dt className="text-xs text-muted-foreground">Montant</dt>
                       <dd className="tabular-nums font-medium text-foreground">
-                        {formatFCFA(d.montantInvesti)}
+                        {formatFCFA(d.totalContrat)}
                       </dd>
                     </div>
                   </dl>
@@ -126,7 +126,7 @@ export function DossiersTab({
                         <DossierStatutBadge statut={d.statut} />
                       </TableCell>
                       <TableCell className="px-4 py-3.5 text-right tabular-nums font-medium text-foreground">
-                        {formatFCFA(d.montantInvesti)}
+                        {formatFCFA(d.totalContrat)}
                       </TableCell>
                       <TableCell className="px-4 py-3.5">
                         <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>

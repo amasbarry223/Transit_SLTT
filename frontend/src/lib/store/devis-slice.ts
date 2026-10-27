@@ -241,10 +241,15 @@ export const createDevisSlice: StateCreator<SLTTState, [], [], DevisSlice> = (se
       bl,
       camion,
       date: new Date().toISOString().slice(0, 10),
-      droitDouane: dev.droitDouane,
-      fraisCircuit: dev.fraisCircuit,
-      fraisPrestation: dev.fraisPrestation,
-      montantInvesti: dev.total,
+      // Le total du devis devient le total contrat ; douane et circuit chiffrés
+      // au devis sont repris comme dépenses estimées (à corriger au réel).
+      totalContrat: dev.total,
+      depenses: [
+        { nature: "Droit de douane (devis)", categorie: "DOUANE" as const, montant: dev.droitDouane },
+        { nature: "Frais de circuit (devis)", categorie: "DIVERS" as const, montant: dev.fraisCircuit },
+      ]
+        .filter((l) => l.montant > 0)
+        .map((l) => ({ ...l, montant: Math.round(l.montant), date: new Date().toISOString().slice(0, 10) })),
       statut: "En cours",
       notes: dev.notes,
     };

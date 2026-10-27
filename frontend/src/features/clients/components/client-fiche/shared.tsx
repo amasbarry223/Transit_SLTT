@@ -5,11 +5,12 @@ import {
   FolderKanban,
   Receipt,
   Package,
+  Table2,
 } from "lucide-react";
 
 export const PAGE_SIZE = 6;
 
-export type FicheTab = "classeur" | "dossiers" | "factures" | "logistique";
+export type FicheTab = "situation" | "classeur" | "dossiers" | "factures" | "logistique";
 
 export const FICHE_TABS: {
   key: FicheTab;
@@ -17,6 +18,7 @@ export const FICHE_TABS: {
   shortLabel: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
+  { key: "situation", label: "Situation", shortLabel: "Situation", icon: Table2 },
   { key: "classeur", label: "Classeur", shortLabel: "Classeur", icon: BookOpen },
   { key: "dossiers", label: "Dossiers", shortLabel: "Dossiers", icon: FolderKanban },
   { key: "factures", label: "Factures", shortLabel: "Factures", icon: Receipt },

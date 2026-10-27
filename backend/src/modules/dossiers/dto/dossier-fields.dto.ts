@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsDateString, IsIn, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ConteneurInputDto } from './conteneur-input.dto';
+import { DepenseDossierDto, PaiementDossierDto } from './dossier-lignes.dto';
 
 /**
  * Champs communs à la création et à la mise à jour d'un dossier.
@@ -143,6 +144,19 @@ export class DossierFieldsDto {
   @IsOptional()
   dateDeclaration?: string;
 
+  /** Total contrat (montant facturé au client), en FCFA. */
+  @IsNumber()
+  @IsOptional()
+  totalContrat?: number;
+
+  // Anciens noms, encore envoyés par un front resté en cache après le
+  // déploiement : `fraisPrestation` est un alias de `totalContrat` ; douane et
+  // circuit deviennent des lignes de dépense de reprise si le dossier n'en a
+  // aucune ; montantInvesti est ignoré (il n'existe plus).
+  @IsNumber()
+  @IsOptional()
+  fraisPrestation?: number;
+
   @IsNumber()
   @IsOptional()
   valeurDouane?: number;
@@ -157,11 +171,21 @@ export class DossierFieldsDto {
 
   @IsNumber()
   @IsOptional()
-  fraisPrestation?: number;
-
-  @IsNumber()
-  @IsOptional()
   montantInvesti?: number;
+
+  /** Dépenses du dossier (droit de douane compris) — remplacent toutes les lignes existantes. */
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DepenseDossierDto)
+  @IsOptional()
+  depensesDossier?: DepenseDossierDto[];
+
+  /** Paiements reçus du client — remplacent `montantPaye` quand ils sont fournis. */
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PaiementDossierDto)
+  @IsOptional()
+  paiements?: PaiementDossierDto[];
 
   @IsString()
   @IsOptional()

@@ -4,15 +4,15 @@ import { useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import type { Dossier } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
-import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import {
   TRANSITION_META,
   type TransitionType,
 } from "@/components/sltt/dossier-transition-dialog";
 import { Card } from "@/shared/components/ui/card";
-import { Separator } from "@/shared/components/ui/separator";
-import { EcartValue } from "@/components/sltt/status-badge";
+import { EcartValue, StatutPaiementBadge } from "@/components/sltt/status-badge";
+import { financesDossier } from "@/lib/domain/dossier-finances";
 import { DossierInfoGrid } from "./dossier-info-grid";
+import { DossierLignesTables } from "./dossier-lignes-tables";
 import { cn } from "@/shared/utils/cn";
 
 function AmountRow({
@@ -50,7 +50,6 @@ export function DossierDetailOverview({
   echeanceDepassee,
   echeanceImminente,
   joursRestants,
-  annexeCode,
 }: {
   dossier: Dossier;
   ecart: number;
@@ -59,11 +58,11 @@ export function DossierDetailOverview({
   echeanceDepassee: boolean;
   echeanceImminente: boolean;
   joursRestants: number | null;
-  /** Code annexe (ML/CI) — détermine les intitulés des rubriques de coûts. */
+  /** Code annexe (ML/CI) — n'est plus utilisé depuis la suppression des rubriques douane/circuit. */
   annexeCode?: string | null;
 }) {
   const [amountsOpen, setAmountsOpen] = useState(false);
-  const coutLabels = resolveDossierCoutLabels(annexeCode);
+  const finances = financesDossier(dossier);
 
   return (
     <div className="space-y-6">
@@ -136,24 +135,28 @@ export function DossierDetailOverview({
         >
           <div>
             <h2 className="text-base font-semibold">Détail des montants</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Douane, circuit, prestation et marge</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Contrat, paiements, dépenses et bénéfice net</p>
           </div>
           {amountsOpen ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
         </button>
         {amountsOpen && (
           <div className="border-t border-border px-5 pb-5 pt-2">
-            <AmountRow label={coutLabels.droitDouane} value={dossier.droitDouane} />
-            <AmountRow label={coutLabels.fraisCircuit} value={dossier.fraisCircuit} />
-            <AmountRow label={coutLabels.fraisPrestation} value={dossier.fraisPrestation} />
-            <Separator className="my-2" />
-            <AmountRow label="Montant investi" value={dossier.montantInvesti} />
-            <AmountRow label="Montant payé" value={dossier.montantPaye} tone="emerald" />
-            <AmountRow label="Reste à payer" value={reste} tone={reste > 0 ? "amber" : "emerald"} />
-            <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
-              <span className="text-sm text-muted-foreground">Marge calculée</span>
+            <AmountRow label="Total contrat" value={finances.totalContrat} />
+            <AmountRow label="Montant payé" value={finances.montantPaye} tone="emerald" />
+            <AmountRow
+              label={reste < 0 ? "Trop-perçu" : "Reste à payer"}
+              value={Math.abs(reste)}
+              tone={reste > 0 ? "amber" : "emerald"}
+            />
+            <AmountRow label="Dépenses" value={finances.totalDepenses} />
+            <div className="mt-4 flex items-baseline justify-between gap-2 border-t border-border pt-4">
+              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                Bénéfice net
+                <StatutPaiementBadge statut={finances.statutPaiement} size="sm" />
+              </span>
               <EcartValue value={ecart} />
             </div>
-            <p className="mt-1 text-xs text-slate-400">Prestation − (Douane + Circuit)</p>
+            <DossierLignesTables dossier={dossier} className="mt-4" />
           </div>
         )}
       </Card>

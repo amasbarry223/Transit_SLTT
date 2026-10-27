@@ -48,6 +48,7 @@ import { cn } from "@/shared/utils/cn";
 import { ClientProfileCard } from "@/features/clients/components/client-fiche/client-profile-card";
 import { FinancialSummary } from "@/features/clients/components/client-fiche/financial-summary";
 import { ClasseurTab } from "@/features/clients/components/client-fiche/classeur-tab";
+import { SituationTab } from "@/features/clients/components/client-fiche/situation-tab";
 import { ClasseurSuiviDialog } from "@/features/clients/components/client-fiche/classeur-suivi-dialog";
 import { DossiersTab } from "@/features/clients/components/client-fiche/dossiers-tab";
 import { FacturesTab } from "@/features/clients/components/client-fiche/factures-tab";
@@ -76,7 +77,7 @@ export function ClientFicheScreen() {
   const updateClient = useStore((s) => s.updateClient);
   const { annexes } = useActiveAnnexe();
 
-  const [activeTab, setActiveTab] = useState<FicheTab>(() => (canSeeCompta ? "classeur" : "dossiers"));
+  const [activeTab, setActiveTab] = useState<FicheTab>("situation");
   const visibleFicheTabs = useMemo(
     () => FICHE_TABS.filter((t) => t.key !== "classeur" || canSeeCompta),
     [canSeeCompta],
@@ -411,7 +412,7 @@ export function ClientFicheScreen() {
               const count =
                 t.key === "classeur"
                   ? classeurJournal.length
-                  : t.key === "dossiers"
+                  : t.key === "dossiers" || t.key === "situation"
                     ? dossiers.length
                     : t.key === "factures"
                       ? factures.length
@@ -442,6 +443,14 @@ export function ClientFicheScreen() {
             })}
           </TabsList>
         </div>
+
+        <SituationTab
+          clientNom={client.nom}
+          dossiers={dossiers}
+          factures={factures}
+          societes={societes}
+          onOpenDossier={openDossierDetail}
+        />
 
         {canSeeCompta && (
         <ClasseurTab

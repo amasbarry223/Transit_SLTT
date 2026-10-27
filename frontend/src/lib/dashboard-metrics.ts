@@ -1,5 +1,5 @@
 import type { Dossier, Ecriture, Facture, OperationComptable, StockItem } from "@/lib/domain-types";
-import { resteAPayer } from "@/lib/domain-types";
+import { resteDuDossier } from "@/lib/domain-types";
 import { formatFCFA, parseLocalDate } from "@/lib/format";
 import { filterByPeriode } from "@/lib/benefice";
 import { dossiersNonFactures, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
@@ -119,7 +119,7 @@ export function computeRestesAPayer(dossiers: Dossier[], factures: Facture[] = [
   let total = 0;
   let count = 0;
   for (const d of dossiersNonFactures(dossiers, factures)) {
-    const reste = resteAPayer(d);
+    const reste = resteDuDossier(d);
     if (reste > 0) {
       total += reste;
       count += 1;
@@ -293,13 +293,13 @@ export function buildLiveAlertes(stock: StockItem[], dossiers: Dossier[], factur
   // continuait à déclencher une alerte "non soldé" basée sur son propre
   // reste, resté obsolète depuis la facturation.
   const unpaid: LiveAlert[] = dossiersNonFactures(dossiers, factures)
-    .filter((d) => resteAPayer(d) > 0)
+    .filter((d) => resteDuDossier(d) > 0)
     .slice(0, 4)
     .map((d) => ({
       id: `dossier-${d.id}`,
       niveau: "warning" as const,
       message: `Dossier non soldé : ${d.reference}`,
-      detail: `Reste à payer : ${formatFCFA(resteAPayer(d))} — ${d.clientNom}`,
+      detail: `Reste à payer : ${formatFCFA(resteDuDossier(d))} — ${d.clientNom}`,
       target: { view: "dossier-detail" as const, id: d.id },
     }));
 

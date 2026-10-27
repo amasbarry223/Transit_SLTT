@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, Truck, Banknote } from "lucide-react";
 import { useStore, type DossierStatut } from "@/lib/store";
-import { resteAPayer, type Dossier, type PaiementMode } from "@/lib/domain-types";
+import { resteDuDossier, type Dossier, type PaiementMode } from "@/lib/domain-types";
 import { formatFCFA, parseAmount } from "@/lib/format";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
@@ -135,7 +135,7 @@ export function TransitionDialog({
   const { toast } = useToast();
   const transitionDossierFn = useStore((s) => s.transitionDossier);
   const meta = TRANSITION_META[transition];
-  const reste = resteAPayer(dossier);
+  const reste = resteDuDossier(dossier);
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [montantRecu, setMontantRecu] = useState(String(reste));
@@ -152,12 +152,10 @@ export function TransitionDialog({
 
     if (transition === "solder" && reste > 0) {
       const amt = parseAmount(montantRecu);
+      // Un montant supérieur au solde est accepté (trop-perçu signalé sous le
+      // champ, puis par le statut de paiement du dossier).
       if (amt < reste) {
         errs.montantRecu = `Le paiement doit couvrir le solde dû (${formatFCFA(reste)}).`;
-      } else if (amt > reste) {
-        // Plafonné ici plutôt que laissé au clampage silencieux côté store,
-        // qui écrirait alors un montant faux dans le journal d'audit.
-        errs.montantRecu = `Le montant ne peut pas dépasser le solde dû (${formatFCFA(reste)}).`;
       }
       if (!date) errs.date = "La date de paiement est requise.";
     }
@@ -260,6 +258,11 @@ export function TransitionDialog({
                   </div>
                   {errors.montantRecu && (
                     <p className="text-xs text-red-500">{errors.montantRecu}</p>
+                  )}
+                  {!errors.montantRecu && parseAmount(montantRecu) > reste && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      Trop-perçu de {formatFCFA(parseAmount(montantRecu) - reste)} — l&apos;enregistrement reste possible.
+                    </p>
                   )}
                 </div>
 

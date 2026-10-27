@@ -88,12 +88,12 @@ export function DossiersListScreen() {
           sublabel="dossiers clôturés"
         />
         <KpiCard
-          label="Marge cumulée"
+          label="Bénéfice net cumulé"
           value={formatFCFA(screen.stats.ecartTotal)}
           icon={TrendingUp}
           tone="amber"
-          sublabel="marge prestation − frais"
-          tooltip="Frais de prestation moins droits de douane et frais de circuit."
+          sublabel="total contrat − dépenses"
+          tooltip="Somme des bénéfices nets : total contrat moins total des dépenses de chaque dossier."
         />
       </div>
 

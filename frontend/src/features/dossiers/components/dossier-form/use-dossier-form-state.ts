@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { Annexe, Dossier, DossierStatut, Societe } from "@/lib/domain-types";
-import { calculerEcart, resteAPayer } from "@/lib/domain-types";
+import {
+  calculerFinancesDossier,
+  type CategorieDepense,
+  type DepenseDossier,
+  type ModePaiementDossier,
+  type PaiementDossier,
+} from "@/lib/domain/dossier-finances";
 import { parseAmount } from "@/lib/format";
 import { getNextTransition } from "@/components/sltt/dossier-transition-dialog";
 import { resolveDossierReferencePrefix } from "@/lib/societe-brand";
@@ -10,7 +16,7 @@ import { computeDossierReference } from "@/lib/store/reference";
 
 export const WIZARD_STEPS = [
   { id: 1, label: "Identité", hint: "Annexe, client, BL, camion, nature" },
-  { id: 2, label: "Montants", hint: "Droits, frais, marge" },
+  { id: 2, label: "Montants", hint: "Contrat, paiements, dépenses" },
   { id: 3, label: "Suivi", hint: "Dates, transport, notes" },
 ] as const;
 
@@ -24,6 +30,85 @@ export type DossierFormErrors = {
 };
 
 const numStr = (n: number | undefined): string => (n != null ? n.toString() : "");
+const today = () => new Date().toISOString().slice(0, 10);
+let rowSeq = 0;
+const rowKey = () => `row-${++rowSeq}`;
+
+/** Paiement en cours de saisie (montant en texte, comme les autres champs). */
+export type PaiementForm = {
+  key: string;
+  id?: string;
+  date: string;
+  montant: string;
+  mode: ModePaiementDossier;
+  reference: string;
+};
+
+/** Dépense en cours de saisie. */
+export type DepenseForm = {
+  key: string;
+  id?: string;
+  date: string;
+  nature: string;
+  categorie: CategorieDepense;
+  montant: string;
+};
+
+export const emptyPaiement = (): PaiementForm => ({
+  key: rowKey(),
+  date: today(),
+  montant: "",
+  mode: "ESPECES",
+  reference: "",
+});
+
+export const emptyDepense = (): DepenseForm => ({
+  key: rowKey(),
+  date: today(),
+  nature: "",
+  categorie: "TRANSPORT",
+  montant: "",
+});
+
+function initialPaiements(existing?: Dossier): PaiementForm[] {
+  return (existing?.paiements ?? []).map((p) => ({
+    ...p,
+    key: rowKey(),
+    montant: numStr(p.montant),
+    reference: p.reference ?? "",
+  }));
+}
+
+function initialDepenses(existing?: Dossier): DepenseForm[] {
+  return (existing?.depenses ?? []).map((d) => ({ ...d, key: rowKey(), montant: numStr(d.montant) }));
+}
+
+/** Une ligne vide (ni montant ni texte) n'est pas envoyée. */
+const isBlankPaiement = (p: PaiementForm) => parseAmount(p.montant) === 0 && !p.reference.trim();
+const isBlankDepense = (d: DepenseForm) => parseAmount(d.montant) === 0 && !d.nature.trim();
+
+export function toPaiements(rows: PaiementForm[]): PaiementDossier[] {
+  return rows
+    .filter((p) => !isBlankPaiement(p))
+    .map(({ key: _key, montant, reference, ...rest }) => ({
+      ...rest,
+      montant: Math.max(0, Math.round(parseAmount(montant))),
+      reference: reference.trim() || undefined,
+    }));
+}
+
+export function toDepenses(rows: DepenseForm[]): DepenseDossier[] {
+  return rows
+    .filter((d) => !isBlankDepense(d))
+    .map(({ key: _key, montant, nature, ...rest }) => ({
+      ...rest,
+      nature: nature.trim() || "Dépense",
+      montant: Math.max(0, Math.round(parseAmount(montant))),
+    }));
+}
+
+/** Signature stable des lignes pour la détection de modifications. */
+const signature = (rows: object[]) => JSON.stringify(rows);
 
 type UseDossierFormStateOptions = {
   existing?: Dossier;
@@ -55,9 +140,9 @@ export function useDossierFormState({
   const [bl, setBl] = useState<string>(existing?.bl ?? "");
   const [camion, setCamion] = useState<string>(existing?.camion ?? "");
   const [date, setDate] = useState<string>(existing?.date ?? "");
-  const [droitDouane, setDroitDouane] = useState<string>(numStr(existing?.droitDouane));
-  const [fraisCircuit, setFraisCircuit] = useState<string>(numStr(existing?.fraisCircuit));
-  const [fraisPrestation, setFraisPrestation] = useState<string>(numStr(existing?.fraisPrestation));
+  const [totalContrat, setTotalContrat] = useState<string>(numStr(existing?.totalContrat));
+  const [paiements, setPaiements] = useState<PaiementForm[]>(() => initialPaiements(existing));
+  const [depenses, setDepenses] = useState<DepenseForm[]>(() => initialDepenses(existing));
   const [draftStatut, setDraftStatut] = useState<DossierStatut>(existing?.statut ?? "En cours");
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [dateEcheance, setDateEcheance] = useState<string>(existing?.dateEcheance ?? "");
@@ -68,6 +153,7 @@ export function useDossierFormState({
   const [poidsTotal, setPoidsTotal] = useState<string>(
     existing?.poidsTotal ? String(existing.poidsTotal) : "",
   );
+  const [nombreColis, setNombreColis] = useState<string>(numStr(existing?.nombreColis));
   const [notes, setNotes] = useState<string>(existing?.notes ?? "");
   const [errors, setErrors] = useState<DossierFormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -80,26 +166,30 @@ export function useDossierFormState({
   const showWizard = !isEdit;
   const showStep = (step: number) => isEdit || !showWizard || wizardStep === step;
 
-  const customsDutyAmount = parseAmount(droitDouane);
-  const circuitFeesAmount = parseAmount(fraisCircuit);
-  const serviceFeesAmount = parseAmount(fraisPrestation);
-  const totalImportAmount = customsDutyAmount + circuitFeesAmount + serviceFeesAmount;
-  const montantPaye = existing?.montantPaye ?? 0;
+  const totalContratAmount = Math.max(0, Math.round(parseAmount(totalContrat)));
+  const paiementsSaisis = useMemo(() => toPaiements(paiements), [paiements]);
+  const depensesSaisies = useMemo(() => toDepenses(depenses), [depenses]);
 
-  const ecart = useMemo(
+  // Aperçu instantané — le serveur refait ce calcul à l'enregistrement.
+  const finances = useMemo(
     () =>
-      calculerEcart({
-        droitDouane: customsDutyAmount,
-        fraisCircuit: circuitFeesAmount,
-        fraisPrestation: serviceFeesAmount,
-        montantInvesti: totalImportAmount,
+      calculerFinancesDossier({
+        totalContrat: totalContratAmount,
+        paiements: paiementsSaisis,
+        depenses: depensesSaisies,
       }),
-    [serviceFeesAmount, customsDutyAmount, circuitFeesAmount, totalImportAmount],
+    [totalContratAmount, paiementsSaisis, depensesSaisies],
   );
-  const reste = useMemo(
-    () => resteAPayer({ montantInvesti: totalImportAmount, montantPaye }),
-    [totalImportAmount, montantPaye],
-  );
+
+  const updatePaiement = (key: string, patch: Partial<PaiementForm>) =>
+    setPaiements((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const addPaiement = () => setPaiements((rows) => [...rows, emptyPaiement()]);
+  const removePaiement = (key: string) => setPaiements((rows) => rows.filter((r) => r.key !== key));
+
+  const updateDepense = (key: string, patch: Partial<DepenseForm>) =>
+    setDepenses((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const addDepense = () => setDepenses((rows) => [...rows, emptyDepense()]);
+  const removeDepense = (key: string) => setDepenses((rows) => rows.filter((r) => r.key !== key));
 
   const selectedAnnexe = annexes.find((item) => item.id === annexeId);
   // resolveDossierReferencePrefix() passe par resolveTransitSociete() — un
@@ -126,9 +216,9 @@ export function useDossierFormState({
         bl.trim() ||
         camion.trim() ||
         date ||
-        droitDouane ||
-        fraisCircuit ||
-        fraisPrestation
+        totalContrat ||
+        paiementsSaisis.length ||
+        depensesSaisies.length
       );
     }
     if (!existing) return false;
@@ -139,9 +229,9 @@ export function useDossierFormState({
       bl !== existing.bl ||
       camion !== existing.camion ||
       date !== existing.date ||
-      parseAmount(droitDouane) !== existing.droitDouane ||
-      parseAmount(fraisCircuit) !== existing.fraisCircuit ||
-      parseAmount(fraisPrestation) !== existing.fraisPrestation ||
+      parseAmount(totalContrat) !== existing.totalContrat ||
+      signature(paiementsSaisis) !== signature(toPaiements(initialPaiements(existing))) ||
+      signature(depensesSaisies) !== signature(toDepenses(initialDepenses(existing))) ||
       statut !== existing.statut ||
       notes !== (existing.notes ?? "") ||
       dateEcheance !== (existing.dateEcheance ?? "") ||
@@ -149,7 +239,8 @@ export function useDossierFormState({
       modeTransport !== (existing.modeTransport ?? "") ||
       noConteneur !== (existing.noConteneur ?? "") ||
       portEntree !== (existing.portEntree ?? "") ||
-      poidsTotal !== (existing.poidsTotal ? String(existing.poidsTotal) : "")
+      poidsTotal !== (existing.poidsTotal ? String(existing.poidsTotal) : "") ||
+      nombreColis !== numStr(existing.nombreColis)
     );
   }, [
     isEdit,
@@ -160,9 +251,9 @@ export function useDossierFormState({
     bl,
     camion,
     date,
-    droitDouane,
-    fraisCircuit,
-    fraisPrestation,
+    totalContrat,
+    paiementsSaisis,
+    depensesSaisies,
     statut,
     notes,
     dateEcheance,
@@ -171,6 +262,7 @@ export function useDossierFormState({
     noConteneur,
     portEntree,
     poidsTotal,
+    nombreColis,
   ]);
 
   function validateField(field: keyof DossierFormErrors, value: string) {
@@ -230,6 +322,7 @@ export function useDossierFormState({
   }
 
   function buildSaveInput(clientNom: string) {
+    const colis = parseInt(nombreColis, 10);
     return {
       annexeId,
       clientId,
@@ -244,10 +337,12 @@ export function useDossierFormState({
       noConteneur: noConteneur || undefined,
       portEntree: portEntree || undefined,
       poidsTotal: poidsTotal ? Math.max(0, parseFloat(poidsTotal) || 0) : undefined,
-      droitDouane: customsDutyAmount,
-      fraisCircuit: circuitFeesAmount,
-      fraisPrestation: serviceFeesAmount,
-      montantInvesti: totalImportAmount,
+      nombreColis: Number.isFinite(colis) && colis >= 0 ? colis : undefined,
+      // Seules les lignes partent au serveur, qui calcule lui-même payé,
+      // reste et bénéfice.
+      totalContrat: totalContratAmount,
+      paiements: paiementsSaisis,
+      depenses: depensesSaisies,
       statut,
       notes,
     };
@@ -266,12 +361,16 @@ export function useDossierFormState({
     setCamion,
     date,
     setDate,
-    droitDouane,
-    setDroitDouane,
-    fraisCircuit,
-    setFraisCircuit,
-    fraisPrestation,
-    setFraisPrestation,
+    totalContrat,
+    setTotalContrat,
+    paiements,
+    updatePaiement,
+    addPaiement,
+    removePaiement,
+    depenses,
+    updateDepense,
+    addDepense,
+    removeDepense,
     statut,
     setStatut,
     transitionOpen,
@@ -289,6 +388,8 @@ export function useDossierFormState({
     setPortEntree,
     poidsTotal,
     setPoidsTotal,
+    nombreColis,
+    setNombreColis,
     notes,
     setNotes,
     errors,
@@ -299,13 +400,9 @@ export function useDossierFormState({
     wizardStep,
     showWizard,
     showStep,
-    customsDutyAmount,
-    circuitFeesAmount,
-    serviceFeesAmount,
-    totalImportAmount,
-    montantPaye,
-    ecart,
-    reste,
+    finances,
+    paiementsSaisis,
+    depensesSaisies,
     reference,
     isDirty,
     validateField,

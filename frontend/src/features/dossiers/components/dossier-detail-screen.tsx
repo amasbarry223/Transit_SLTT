@@ -5,9 +5,9 @@ import { ArrowLeft, Info, Check, Plus } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
 import type { SubDossier, DossierFournisseurInput, FournisseurType } from "@/lib/store";
-import { calculerEcart, resteAPayer } from "@/lib/domain-types";
-import { formatFCFA, formatDateShort, parseLocalDate } from "@/lib/format";
-import { CHART_COLORS } from "@/lib/constants";
+import { financesDossier } from "@/lib/domain-types";
+import { dossierMontantsHtml } from "@/lib/export/print-modules/dossier-montants";
+import { formatDateShort, parseLocalDate } from "@/lib/format";
 import {
   calculateDaysUntil,
   isEcheanceDepassee,
@@ -15,7 +15,7 @@ import {
 } from "@/lib/echeance-utils";
 import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { UI } from "@/shared/utils/ui-messages";
@@ -194,11 +194,13 @@ export function DossierDetailScreen() {
   const annexeCode = annexes.find((a) => a.id === currentDossier.annexeId)?.code;
 
   const nextTransition = getNextTransition(currentDossier.statut);
-  const ecart = calculerEcart(currentDossier);
-  const reste = resteAPayer(currentDossier);
+  const finances = financesDossier(currentDossier);
+  const ecart = finances.beneficeNet;
+  const reste = finances.resteAPayer;
+  // Recouvrement = part du total contrat déjà payée par le client.
   const tauxRecouvrement =
-    currentDossier.montantInvesti > 0
-      ? Math.min(100, Math.round((currentDossier.montantPaye / currentDossier.montantInvesti) * 100))
+    finances.totalContrat > 0
+      ? Math.min(100, Math.round((finances.montantPaye / finances.totalContrat) * 100))
       : 0;
 
   const today = new Date();
@@ -339,9 +341,6 @@ export function DossierDetailScreen() {
       });
       return;
     }
-    const positiveMarginColor = CHART_COLORS.emerald;
-    const negativeMarginColor = CHART_COLORS.red;
-    const coutLabels = resolveDossierCoutLabels(annexeCode);
     printHTML(
       `Dossier ${currentDossier.reference}`,
       `
@@ -356,23 +355,11 @@ export function DossierDetailScreen() {
           <tr><th>Date</th><td>${currentDossier.date ? formatDateShort(currentDossier.date) : "—"}</td></tr>
         </tbody>
       </table>
-      <h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Montants (FCFA)</h2>
-      <table>
-        <tbody>
-          <tr><th style="width:35%">${htmlEscape(coutLabels.droitDouane)}</th><td class="num">${formatFCFA(currentDossier.droitDouane, false)}</td></tr>
-          <tr><th>${htmlEscape(coutLabels.fraisCircuit)}</th><td class="num">${formatFCFA(currentDossier.fraisCircuit, false)}</td></tr>
-          <tr><th>${htmlEscape(coutLabels.fraisPrestation)}</th><td class="num">${formatFCFA(currentDossier.fraisPrestation, false)}</td></tr>
-          <tr><th>Montant investi</th><td class="num">${formatFCFA(currentDossier.montantInvesti, false)}</td></tr>
-          <tr><th>Montant payé</th><td class="num">${formatFCFA(currentDossier.montantPaye, false)}</td></tr>
-          <tr><th>Reste à payer</th><td class="num">${formatFCFA(reste, false)}</td></tr>
-          <tr class="total-row">
-            <th>Marge calculée</th>
-            <td class="num" style="color:${ecart >= 0 ? positiveMarginColor : negativeMarginColor}">
-              ${ecart >= 0 ? "+" : ""}${ecart.toLocaleString("fr-FR")}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      ${dossierMontantsHtml({
+        finances,
+        depenses: currentDossier.depenses,
+        paiements: currentDossier.paiements,
+      })}
       ${currentDossier.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(currentDossier.notes)}</p>` : ""}
       ${subDossiers.length > 0 ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Sous-dossiers (${subDossiers.length})</h2><ul style="font-size:13px;color:#45556b">${subDossiers.map((subDossier) => `<li>${htmlEscape(subDossier.nom)}${subDossier.description ? ` — ${htmlEscape(subDossier.description)}` : ""}</li>`).join("")}</ul>` : ""}
     `,

@@ -321,10 +321,17 @@ class ApiClient {
         body: JSON.stringify({ statut }),
       }),
 
-    enregistrerPaiement: (id: string, montant: number, statut?: string, date?: string) =>
+    enregistrerPaiement: (
+      id: string,
+      montant: number,
+      statut?: string,
+      date?: string,
+      mode?: string,
+      reference?: string,
+    ) =>
       this.request<RawDossier>(`/dossiers/${id}/paiements`, {
         method: 'POST',
-        body: JSON.stringify({ montant, statut, date }),
+        body: JSON.stringify({ montant, statut, date, mode, reference }),
       }),
 
     delete: (id: string) =>

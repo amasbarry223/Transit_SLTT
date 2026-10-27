@@ -9,6 +9,7 @@ import {
 } from "@/lib/domain-types";
 import type { FactureStatut } from "@/lib/store";
 import type { DevisStatut } from "@/lib/domain-types";
+import { STATUT_PAIEMENT_LABELS, type StatutPaiement } from "@/lib/domain/dossier-finances";
 import {
   AlertCircle,
   CheckCircle2,
@@ -100,6 +101,28 @@ export const DOSSIER_STATUT_DOT: Record<DossierStatut, string> = {
 
 export function DossierStatutBadge({ statut }: { statut: DossierStatut }) {
   return <ToneBadge tone={DOSSIER_STATUT_TONE[statut]}>{statut}</ToneBadge>;
+}
+
+const STATUT_PAIEMENT_TONE: Record<StatutPaiement, Tone> = {
+  SOLDE: "emerald",
+  PARTIEL: "amber",
+  IMPAYE: "red",
+  TROP_PERCU: "indigo",
+};
+
+/** Statut de paiement d'un dossier (dossier-finances.ts). */
+export function StatutPaiementBadge({
+  statut,
+  size = "md",
+}: {
+  statut: StatutPaiement;
+  size?: "sm" | "md";
+}) {
+  return (
+    <ToneBadge tone={STATUT_PAIEMENT_TONE[statut]} size={size}>
+      {STATUT_PAIEMENT_LABELS[statut]}
+    </ToneBadge>
+  );
 }
 
 export function EcritureStatutBadge({ statut }: { statut: EcritureStatut }) {

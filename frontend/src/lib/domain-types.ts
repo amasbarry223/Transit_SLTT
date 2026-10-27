@@ -13,6 +13,8 @@ export type EcritureStatut = "Soldé" | "En attente";
 export type StockStatut = "Disponible" | "Stock faible";
 export type BonMotif = "Vente" | "Livraison" | "Transfert";
 export type { ClientType, Client } from "@/features/clients/types";
+import type { DepenseDossier, PaiementDossier } from "@/lib/domain/dossier-finances";
+export type { DepenseDossier, PaiementDossier } from "@/lib/domain/dossier-finances";
 export type UserRole =
   | "Administrateur"
   | "Agent de transit"
@@ -28,11 +30,16 @@ export interface Dossier {
   bl: string;
   camion: string;
   nature: string;
-  droitDouane: number;
-  fraisCircuit: number;
-  fraisPrestation: number;
-  montantInvesti: number;
+  /** Total contrat — montant facturé au client (fiche "Situation du client"). */
+  totalContrat: number;
+  /** Cache serveur de Σ paiements (sert quand le détail n'est pas chargé). */
   montantPaye: number;
+  /** Paiements reçus du client. */
+  paiements?: PaiementDossier[];
+  /** Dépenses du dossier, droit de douane compris. */
+  depenses?: DepenseDossier[];
+  /** Quantité (nombre de colis / conteneurs). */
+  nombreColis?: number;
   statut: DossierStatut;
   date: string;
   /** Date limite de dédouanement / livraison. Dépassée = surestaries. */
@@ -795,11 +802,12 @@ export interface TransporteurInput {
   notes?: string;
 }
 
-/**
- * Marge métier dossier = prestation − (droit de douane + frais de circuit).
- *
- * `montantInvesti` est accepté pour permettre de passer un `Dossier` entier,
- * mais n'entre pas dans la formule : côté formulaire, `montantInvesti` vaut
- * droit+circuit+prestation (assiette à payer), pas le coût engagé.
- */
-export { calculerEcart, resteAPayer } from "@/lib/domain/calculations";
+/** Marge dossier et reste générique — voir lib/domain/calculations.ts. */
+export { beneficeNet, resteAPayer } from "@/lib/domain/calculations";
+export {
+  calculerFinancesDossier,
+  financesDossier,
+  resteDuDossier,
+  STATUT_PAIEMENT_LABELS,
+} from "@/lib/domain/dossier-finances";
+export type { FinancesDossier, StatutPaiement } from "@/lib/domain/dossier-finances";

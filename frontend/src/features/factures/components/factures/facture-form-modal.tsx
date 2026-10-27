@@ -24,7 +24,6 @@ import { toastError, toastWarning } from "@/shared/utils/toast-helpers";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { formatFCFA } from "@/lib/format";
 import { shouldShowTva } from "@/lib/export";
-import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 
 interface FactureFormModalProps {
   open: boolean;
@@ -120,16 +119,12 @@ export function FactureFormModal({
       const d = dossiers.find((x) => x.id === id);
       if (d) {
         handleClientChange(d.clientId);
-        const coutLabels = resolveDossierCoutLabels(annexes.find((a) => a.id === d.annexeId)?.code);
         setLignes([
-          { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: "1", prixUnitaire: String(d.fraisPrestation) },
-          { description: coutLabels.droitDouane, quantite: "1", prixUnitaire: String(d.droitDouane) },
-          { description: coutLabels.fraisCircuit, quantite: "1", prixUnitaire: String(d.fraisCircuit) },
+          { description: `Total contrat — ${d.reference} (${d.nature})`, quantite: "1", prixUnitaire: String(d.totalContrat) },
         ]);
-        // Droits de douane et frais de circuit sont des débours refacturés au
-        // client, pas des prestations de service — la TVA ne s'applique pas
-        // dessus. On désactive la TVA par défaut ; l'utilisateur peut la
-        // réactiver s'il ne facture que la prestation.
+        // Le total contrat inclut des débours (douane, circuit) refacturés au
+        // client, sur lesquels la TVA ne s'applique pas : TVA désactivée par
+        // défaut, l'utilisateur peut la réactiver.
         setTvaOn(false);
       }
     }

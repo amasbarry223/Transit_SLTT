@@ -6,7 +6,7 @@ import { useNav } from "@/lib/nav-store";
 import { useAppNavigation } from "@/lib/app-navigation";
 import { useStore } from "@/lib/store";
 import type { Dossier } from "@/lib/domain-types";
-import { resteAPayer } from "@/lib/domain-types";
+import { resteDuDossier } from "@/lib/domain-types";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { UI } from "@/shared/utils/ui-messages";
@@ -94,8 +94,8 @@ export function DossiersGrid({
         deleteTarget.montantPaye > 0
           ? `Règlement déjà encaissé : ${deleteTarget.montantPaye.toLocaleString("fr-FR")} FCFA`
           : "",
-        resteAPayer(deleteTarget) > 0
-          ? `Reste dû non recouvré : ${resteAPayer(deleteTarget).toLocaleString("fr-FR")} FCFA`
+        resteDuDossier(deleteTarget) > 0
+          ? `Reste dû non recouvré : ${resteDuDossier(deleteTarget).toLocaleString("fr-FR")} FCFA`
           : "",
       ].filter(Boolean)
     : [];

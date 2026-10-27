@@ -28,6 +28,7 @@ import {
 } from "@/lib/domain-types";
 import { DEFAULT_TRANSIT_BRAND, LEGACY_TRANSIT_SOCIETE_ID } from "@/lib/societe-brand";
 import { decodeDevisNotes } from "@/features/devis/services/devis-meta";
+import { lignesDossierDepuisApi } from "@/lib/domain/dossier-finances";
 import type {
   RawAnnexe,
   RawBonSortie,
@@ -253,11 +254,10 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           bl: d.numeroBl || d.bl || "",
           camion: d.navireVol || d.camion || "",
           nature: d.marchandise || d.nature || "Marchandises diverses",
-          droitDouane: Number(d.valeurDouane || d.droitDouane || 0),
-          fraisCircuit: Number(d.fraisCircuit || 0),
-          fraisPrestation: Number(d.fraisPrestation || 0),
-          montantInvesti: Number(d.montantInvesti || 0),
+          totalContrat: Number(d.totalContrat || 0),
           montantPaye: Number(d.montantPaye || 0),
+          nombreColis: d.nombreColis != null ? Number(d.nombreColis) : undefined,
+          ...lignesDossierDepuisApi(d),
           statut,
           date: d.dateDepart
             ? new Date(d.dateDepart).toISOString().split("T")[0]

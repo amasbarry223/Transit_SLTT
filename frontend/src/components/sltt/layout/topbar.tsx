@@ -20,7 +20,7 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
 import { formatDateTime, formatFCFA } from "@/lib/format";
-import { resteAPayer } from "@/lib/domain-types";
+import { resteDuDossier } from "@/lib/domain-types";
 import { dossiersNonFactures } from "@/lib/client-stats";
 import { Bell, CheckCheck, ChevronDown, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
@@ -131,7 +131,7 @@ export function Topbar() {
         // (ici avec le reste obsolète du dossier, plus bas avec celui,
         // exact, de sa facture).
         ? dossiersNonFactures(dossiers, factures).filter(
-            (d) => resteAPayer(d) > 0 && !overdueDossiers.some((od) => od.id === d.id),
+            (d) => resteDuDossier(d) > 0 && !overdueDossiers.some((od) => od.id === d.id),
           )
         : [],
     [canSeeDossiers, dossiers, factures, overdueDossiers],
@@ -351,7 +351,7 @@ export function Topbar() {
                         {d.reference} — {d.clientNom}
                       </span>
                       <span className="text-[11px] text-muted-foreground">
-                        Reste à payer : <strong>{formatFCFA(resteAPayer(d))}</strong>
+                        Reste à payer : <strong>{formatFCFA(resteDuDossier(d))}</strong>
                       </span>
                     </DropdownMenuItem>
                   ))}

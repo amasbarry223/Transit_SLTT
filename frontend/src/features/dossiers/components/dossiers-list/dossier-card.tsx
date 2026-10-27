@@ -11,7 +11,7 @@ import {
   Trash2,
   Layers,
 } from "lucide-react";
-import { calculerEcart, type Dossier } from "@/lib/domain-types";
+import { beneficeNet, type Dossier } from "@/lib/domain-types";
 import { formatDateShort } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 import { Button } from "@/shared/components/ui/button";
@@ -254,7 +254,7 @@ export const DossierCard = memo(function DossierCard({
       {/* Pied : statut + marge */}
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
         <DossierStatutBadge statut={dossier.statut} />
-        <EcartValue value={calculerEcart(dossier)} />
+        <EcartValue value={beneficeNet(dossier)} />
       </div>
     </div>
   );

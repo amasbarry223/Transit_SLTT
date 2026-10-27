@@ -2,10 +2,9 @@
 
 export const GLOSSARY = {
   margeDossier: {
-    label: "Marge dossier",
-    short: "Marge",
-    definition:
-      "Frais de prestation moins droits de douane et frais de circuit (marge opérationnelle du dossier).",
+    label: "Bénéfice net",
+    short: "Bénéfice net",
+    definition: "Total contrat moins le total des dépenses du dossier (droit de douane compris).",
   },
   ecartReglement: {
     label: "Écart de règlement",
@@ -19,9 +18,9 @@ export const GLOSSARY = {
     definition: "Solde impayé sur un dossier, une facture ou une écriture.",
   },
   margeBrutePeriode: {
-    label: "Marge brute période",
-    short: "Marge période",
-    definition: "Somme des marges dossiers sur la période sélectionnée (tableau de bord / bilans).",
+    label: "Bénéfice net période",
+    short: "Bénéfice période",
+    definition: "Somme des bénéfices nets des dossiers sur la période sélectionnée (tableau de bord / bilans).",
   },
   bl: {
     label: "N° de BL",

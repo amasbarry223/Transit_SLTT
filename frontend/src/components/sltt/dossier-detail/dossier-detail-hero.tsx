@@ -147,8 +147,8 @@ export function DossierDetailHero({
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <KpiCard
                 compact
-                label="Reste à payer"
-                value={formatFCFA(reste)}
+                label={reste < 0 ? "Trop-perçu" : "Reste à payer"}
+                value={formatFCFA(Math.abs(reste))}
                 icon={Wallet}
                 tone={reste > 0 ? "amber" : "emerald"}
                 tooltip={GLOSSARY.resteAPayer.definition}
@@ -159,7 +159,7 @@ export function DossierDetailHero({
                 value={`${tauxRecouvrement} %`}
                 icon={TrendingUp}
                 tone={tauxRecouvrement >= 100 ? "emerald" : "blue"}
-                sublabel={`${formatFCFA(dossier.montantPaye)} / ${formatFCFA(dossier.montantInvesti)}`}
+                sublabel={`${formatFCFA(dossier.montantPaye)} / ${formatFCFA(dossier.totalContrat)}`}
               />
               <KpiCard
                 compact
@@ -170,7 +170,7 @@ export function DossierDetailHero({
               />
               <KpiCard
                 compact
-                label="Marge dossier"
+                label="Bénéfice net"
                 value={`${ecart >= 0 ? "+" : ""}${formatFCFA(ecart, false)}`}
                 icon={TrendingUp}
                 tone={ecart >= 0 ? "emerald" : "red"}

@@ -3,7 +3,7 @@
 import { memo, useCallback } from "react";
 import { Plus, Pencil, FolderKanban } from "lucide-react";
 import { useNav } from "@/lib/nav-store";
-import { calculerEcart } from "@/lib/domain-types";
+import { beneficeNet } from "@/lib/domain-types";
 import { formatFCFA, formatDateShort } from "@/lib/format";
 import { EmptyState } from "@/components/sltt/empty-state";
 import { UI } from "@/shared/utils/ui-messages";
@@ -80,7 +80,7 @@ const DossierMobileCard = memo(function DossierMobileCard({
           <dt className="text-xs text-muted-foreground">
             <GlossaryLabel term="margeDossier" short className="text-xs" />
           </dt>
-          <dd><EcartValue value={calculerEcart(dossier)} /></dd>
+          <dd><EcartValue value={beneficeNet(dossier)} /></dd>
         </div>
       </dl>
     </Card>
@@ -147,10 +147,10 @@ const DossierTableRow = memo(function DossierTableRow({
         </span>
       </TableCell>
       <TableCell className="hidden px-4 py-3.5 text-right tabular-nums text-foreground/90 md:table-cell">
-        {formatFCFA(dossier.fraisPrestation)}
+        {formatFCFA(dossier.totalContrat)}
       </TableCell>
       <TableCell className="px-4 py-3.5 text-right tabular-nums">
-        <EcartValue value={calculerEcart(dossier)} />
+        <EcartValue value={beneficeNet(dossier)} />
       </TableCell>
       <TableCell className="px-4 py-3.5">
         <div className="flex flex-col gap-1">
@@ -275,7 +275,7 @@ export function DossiersListTable({
                       Nature
                     </TableHead>
                     <TableHead className="hidden h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
-                      Prestation
+                      Total contrat
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       <GlossaryLabel term="margeDossier" short className="justify-end" />

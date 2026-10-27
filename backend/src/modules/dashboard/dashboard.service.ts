@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 import { buildAnnexeScopeFilter } from '../../common/annexe-filter.utils';
+import { calculerFinancesDossier } from '../dossiers/dossier-finances';
 
 @Injectable()
 export class DashboardService {
@@ -62,9 +63,8 @@ export class DashboardService {
           statut: true,
           voieTransport: true,
           createdAt: true,
-          fraisPrestation: true,
-          valeurDouane: true,
-          fraisCircuit: true,
+          totalContrat: true,
+          depensesDossier: { select: { montant: true } },
           client: { select: { id: true, nom: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -484,7 +484,7 @@ export class DashboardService {
         type: 'Dossier',
         reference: d.numero,
         clientOuTiers: d.client?.nom || 'Client',
-        montant: Number(d.fraisPrestation || 0),
+        montant: Number(d.totalContrat || 0),
         statut: 'En douane',
         statutColor: 'blue',
         targetView: 'dossiers',
@@ -523,7 +523,8 @@ export class DashboardService {
       );
       const count = matching.length;
       const deboursEngages = matching.reduce(
-        (sum: number, d: any) => sum + Number(d.fraisCircuit || 0),
+        // Débours engagés = dépenses du dossier (fiche "Situation du client").
+        (sum: number, d: any) => sum + calculerFinancesDossier({ depenses: d.depensesDossier }).totalDepenses,
         0
       );
       const overdue = matching.filter(

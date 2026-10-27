@@ -8,7 +8,6 @@ import {
   Truck,
 } from "lucide-react";
 import type { Annexe, Client, DossierStatut } from "@/lib/domain-types";
-import { UI } from "@/shared/utils/ui-messages";
 import { QuickClientButton } from "@/features/clients";
 import { DossierStatutBadge } from "@/components/sltt/status-badge";
 import { TRANSITION_META, type TransitionType } from "@/components/sltt/dossier-transition-dialog";
@@ -254,11 +253,13 @@ type DossierTransportSectionProps = {
   portEntree: string;
   noConteneur: string;
   poidsTotal: string;
+  nombreColis: string;
   isMali?: boolean;
   onModeTransportChange: (value: string) => void;
   onPortEntreeChange: (value: string) => void;
   onNoConteneurChange: (value: string) => void;
   onPoidsTotalChange: (value: string) => void;
+  onNombreColisChange: (value: string) => void;
 };
 
 export function DossierTransportSection({
@@ -267,11 +268,13 @@ export function DossierTransportSection({
   portEntree,
   noConteneur,
   poidsTotal,
+  nombreColis,
   isMali = false,
   onModeTransportChange,
   onPortEntreeChange,
   onNoConteneurChange,
   onPoidsTotalChange,
+  onNombreColisChange,
 }: DossierTransportSectionProps) {
   return (
     <CollapsibleSection
@@ -324,7 +327,18 @@ export function DossierTransportSection({
             className="h-10"
             value={poidsTotal}
             onChange={(e) => onPoidsTotalChange(e.target.value)}
-            placeholder={UI.placeholders.amountFCFA}
+            placeholder="Ex. 15 000 kg"
+          />
+        </FormField>
+        <FormField label="Quantité (colis / conteneurs)">
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            className="h-10"
+            value={nombreColis}
+            onChange={(e) => onNombreColisChange(e.target.value)}
+            placeholder="Ex. 1"
           />
         </FormField>
       </div>

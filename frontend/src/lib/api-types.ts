@@ -27,6 +27,22 @@ export interface RawPortRef {
   code?: string;
 }
 
+export interface RawDossierDepense {
+  id: string;
+  date?: string;
+  nature?: string;
+  categorie?: string;
+  montant?: number;
+}
+
+export interface RawDossierPaiement {
+  id: string;
+  date?: string;
+  montant?: number;
+  mode?: string;
+  reference?: string | null;
+}
+
 export interface RawDossier {
   id: string;
   numero?: string;
@@ -49,6 +65,10 @@ export interface RawDossier {
   fraisPrestation?: number;
   montantInvesti?: number;
   montantPaye?: number;
+  totalContrat?: number;
+  nombreColis?: number | null;
+  depensesDossier?: RawDossierDepense[];
+  paiements?: RawDossierPaiement[];
   statut?: string;
   voieTransport?: string;
   dateDepart?: string;

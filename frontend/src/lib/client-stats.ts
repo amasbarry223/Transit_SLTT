@@ -1,4 +1,4 @@
-import { resteAPayer } from "@/lib/domain-types";
+import { resteAPayer, resteDuDossier } from "@/lib/domain-types";
 import type { Client, Dossier, Ecriture, Facture } from "@/lib/store";
 
 /**
@@ -86,7 +86,7 @@ export function syncClientStats(
         sommeFacturesEncaissees(cf) +
         ce.reduce((s, e) => s + e.montantPaye, 0),
       totalDu:
-        cdNonFactures.reduce((s, d) => s + resteAPayer(d), 0) +
+        cdNonFactures.reduce((s, d) => s + resteDuDossier(d), 0) +
         ce.reduce((s, e) => s + resteAPayer(e), 0) +
         cfActives.reduce((s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }), 0),
       // Même composition que totalPaye/totalDu ci-dessus (dossiers non
@@ -95,7 +95,8 @@ export function syncClientStats(
       // l'approximer en aval par totalPaye + totalDu (imprécis dès qu'un
       // enregistrement est en trop-perçu).
       totalInvesti:
-        cdNonFactures.reduce((s, d) => s + d.montantInvesti, 0) +
+        // Engagement client d'un dossier = total contrat (ce qu'il doit).
+        cdNonFactures.reduce((s, d) => s + d.totalContrat, 0) +
         ce.reduce((s, e) => s + e.montantInvesti, 0) +
         cfActives.reduce((s, f) => s + f.montantTTC, 0),
     };

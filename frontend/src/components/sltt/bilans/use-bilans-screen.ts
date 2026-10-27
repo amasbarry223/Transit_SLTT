@@ -63,7 +63,7 @@ export function useBilansScreen() {
     const direct = allEcritures.filter((e) => !e.dossierId);
 
     const fromDossiers = dossiersNonFactures(dossiers, factures)
-      .filter((d) => d.montantInvesti > 0 || d.montantPaye > 0)
+      .filter((d) => d.totalContrat > 0 || d.montantPaye > 0)
       .map((d) => ({
         id: `dos-${d.id}`,
         date: d.dateSolde || d.date,
@@ -72,7 +72,8 @@ export function useBilansScreen() {
         clientNom: d.clientNom,
         dossierId: d.id,
         annexeId: d.annexeId,
-        montantInvesti: Number(d.montantInvesti || 0),
+        // Assiette due par le client = total contrat (dossier-finances).
+        montantInvesti: Number(d.totalContrat || 0),
         montantPaye: Number(d.montantPaye || 0),
         modePaiement: "Virement" as const,
         note: `Dossier ${d.reference}`,

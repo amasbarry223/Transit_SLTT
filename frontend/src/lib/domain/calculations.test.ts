@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculerEcart, resteAPayer } from "@/lib/domain/calculations";
+import { beneficeNet, resteAPayer } from "@/lib/domain/calculations";
 import {
   FETCH_ENTITY_SOFT_CAPS,
   getRecoveryRateColor,
@@ -7,9 +7,9 @@ import {
 } from "@/lib/constants/business";
 
 describe("domain calculations", () => {
-  it("calculerEcart returns prestation minus customs and circuit fees", () => {
+  it("beneficeNet = total contrat − Σ dépenses", () => {
     expect(
-      calculerEcart({ droitDouane: 100, fraisCircuit: 50, fraisPrestation: 200 }),
+      beneficeNet({ totalContrat: 200, montantPaye: 0, depenses: [{ montant: 100 }, { montant: 50 }] }),
     ).toBe(50);
   });
 

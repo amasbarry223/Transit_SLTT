@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useNav } from "@/lib/nav-store";
 import { useStore } from "@/lib/store";
-import { formatFCFA, formatDateShort } from "@/lib/format";
+import { formatDateShort } from "@/lib/format";
 import { BRAND } from "@/lib/brand-colors";
 import { printHTML, htmlEscape } from "@/lib/export";
-import { resolveSlttBrand, resolveDossierCoutLabels } from "@/lib/societe-brand";
+import { dossierMontantsHtml } from "@/lib/export/print-modules/dossier-montants";
+import { resolveSlttBrand } from "@/lib/societe-brand";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { usePermission } from "@/shared/hooks/use-permission";
@@ -19,14 +20,12 @@ type UseDossierFormActionsOptions = {
   form: DossierFormState;
   isEdit: boolean;
   selectedId: string | null;
-  annexeCode: string | undefined;
 };
 
 export function useDossierFormActions({
   form,
   isEdit,
   selectedId,
-  annexeCode,
 }: UseDossierFormActionsOptions) {
   const { go } = useNav();
   const { toast } = useToast();
@@ -105,7 +104,6 @@ export function useDossierFormActions({
       return;
     }
     const clientNom = clients.find((c) => c.id === form.clientId)?.nom ?? "—";
-    const coutLabels = resolveDossierCoutLabels(annexeCode);
     printHTML(
       `Dossier ${form.reference}`,
       `
@@ -120,23 +118,11 @@ export function useDossierFormActions({
           <tr><th>Date</th><td>${form.date ? formatDateShort(form.date) : "—"}</td></tr>
         </tbody>
       </table>
-      <h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Montants (FCFA)</h2>
-      <table>
-        <tbody>
-          <tr><th style="width:35%">${htmlEscape(coutLabels.droitDouane)}</th><td class="num">${formatFCFA(form.customsDutyAmount, false)}</td></tr>
-          <tr><th>${htmlEscape(coutLabels.fraisCircuit)}</th><td class="num">${formatFCFA(form.circuitFeesAmount, false)}</td></tr>
-          <tr><th>${htmlEscape(coutLabels.fraisPrestation)}</th><td class="num">${formatFCFA(form.serviceFeesAmount, false)}</td></tr>
-          <tr><th>Montant investi</th><td class="num">${formatFCFA(form.totalImportAmount, false)}</td></tr>
-          <tr><th>Montant payé</th><td class="num">${formatFCFA(form.montantPaye, false)}</td></tr>
-          <tr><th>Reste à payer</th><td class="num">${formatFCFA(form.reste, false)}</td></tr>
-          <tr class="total-row">
-            <th>Marge calculée</th>
-            <td class="num" style="color:${form.ecart >= 0 ? "#16853f" : "#dc2626"}">
-              ${form.ecart >= 0 ? "+" : ""}${form.ecart.toLocaleString("fr-FR")}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      ${dossierMontantsHtml({
+        finances: form.finances,
+        depenses: form.depensesSaisies,
+        paiements: form.paiementsSaisis,
+      })}
       ${form.notes ? `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">Notes</h2><p style="font-size:13px;color:#45556b;white-space:pre-wrap">${htmlEscape(form.notes)}</p>` : ""}
     `,
       brand,

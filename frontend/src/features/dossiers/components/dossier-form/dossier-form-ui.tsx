@@ -104,27 +104,35 @@ export function CollapsibleSection({
   );
 }
 
+const SUMMARY_TONES = {
+  amber: "font-medium text-amber-700 dark:text-amber-300",
+  emerald: "font-medium text-emerald-700 dark:text-emerald-300",
+} as const;
+
 export function SummaryRow({
   label,
   value,
   tone,
+  hint,
 }: {
   label: string;
   value: string;
-  tone?: "amber";
+  tone?: keyof typeof SUMMARY_TONES;
+  /** Petite ligne explicative sous le libellé. */
+  hint?: string;
 }) {
-  if (tone === "amber") {
-    return (
-      <div className="flex items-center justify-between py-3 first:pt-0">
-        <span className="text-sm font-medium text-amber-700 dark:text-amber-300">{label}</span>
-        <span className="text-sm font-semibold tabular-nums text-amber-700 dark:text-amber-300">{value}</span>
-      </div>
-    );
-  }
   return (
-    <div className="flex items-center justify-between py-3 first:pt-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-semibold tabular-nums text-foreground">
+    <div className="flex items-center justify-between gap-3 py-3 first:pt-0">
+      <div className="min-w-0">
+        <span className={cn("text-sm", tone ? SUMMARY_TONES[tone] : "text-muted-foreground")}>{label}</span>
+        {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+      </div>
+      <span
+        className={cn(
+          "text-sm font-semibold tabular-nums",
+          tone ? SUMMARY_TONES[tone] : "text-foreground",
+        )}
+      >
         {value}
       </span>
     </div>

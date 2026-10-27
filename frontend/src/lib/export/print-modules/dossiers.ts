@@ -247,14 +247,14 @@ tfoot .total-amount { text-align: right; font-variant-numeric: tabular-nums; col
       <div class="summary-hint">dossiers clôturés</div>
     </div>
     <div class="summary-item">
-      <div class="summary-label">Marge cumulée</div>
+      <div class="summary-label">Bénéfice net cumulé</div>
       <div class="summary-value ${margeCls}">${fmtFCFA(totals.margeCumulee)}</div>
-      <div class="summary-hint">prestation − frais</div>
+      <div class="summary-hint">total contrat − dépenses</div>
     </div>
   </div>
 
   <section class="table-section">
-    <div class="table-caption">Montants en francs CFA (FCFA) · Marge = frais de prestation − (droits de douane + frais de circuit)</div>
+    <div class="table-caption">Montants en francs CFA (FCFA) · Bénéfice net = total contrat − total des dépenses</div>
     <div class="table-wrap">
       <table>
         <colgroup>
@@ -268,8 +268,8 @@ tfoot .total-amount { text-align: right; font-variant-numeric: tabular-nums; col
             <th>N° BL</th>
             <th>Camion</th>
             <th>Nature</th>
-            <th class="head-amount">Prestation</th>
-            <th class="head-amount">Marge</th>
+            <th class="head-amount">Total contrat</th>
+            <th class="head-amount">Bénéfice net</th>
           </tr>
         </thead>
         <tbody>${rowsHTML || `<tr><td colspan="7" style="padding:16px;text-align:center;color:#92a3ba">Aucun dossier</td></tr>`}</tbody>

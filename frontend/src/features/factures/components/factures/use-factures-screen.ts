@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useStore, type Facture, type FactureInput, type FactureStatut } from "@/lib/store";
-import type { Annexe, Dossier } from "@/lib/domain-types";
+import type { Dossier } from "@/lib/domain-types";
 import { useNav } from "@/lib/nav-store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess } from "@/shared/utils/toast-helpers";
@@ -10,28 +10,19 @@ import { usePermission } from "@/shared/hooks/use-permission";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
 import { matchesQuery } from "@/lib/search-filter";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
-import { resolveDossierCoutLabels } from "@/lib/societe-brand";
 import { PAGE_SIZE } from "./shared";
 
-function buildDossierPrefill(
-  dossierId: string,
-  dossiers: Dossier[],
-  annexes: Annexe[],
-): Partial<FactureInput> {
+function buildDossierPrefill(dossierId: string, dossiers: Dossier[]): Partial<FactureInput> {
   const d = dossiers.find((x) => x.id === dossierId);
   if (!d) return {};
-  const coutLabels = resolveDossierCoutLabels(annexes.find((a) => a.id === d.annexeId)?.code);
   return {
     dossierId: d.id,
     clientId: d.clientId,
     clientNom: d.clientNom,
-    // Droits de douane et frais de circuit sont des débours refacturés, pas
-    // des prestations — pas de TVA par défaut.
+    // Le total contrat inclut des débours refacturés — pas de TVA par défaut.
     tauxTVA: 0,
     lignes: [
-      { description: `Frais de prestation — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.fraisPrestation },
-      { description: coutLabels.droitDouane, quantite: 1, prixUnitaire: d.droitDouane },
-      { description: coutLabels.fraisCircuit, quantite: 1, prixUnitaire: d.fraisCircuit },
+      { description: `Total contrat — ${d.reference} (${d.nature})`, quantite: 1, prixUnitaire: d.totalContrat },
     ],
   };
 }
@@ -128,7 +119,7 @@ export function useFacturesScreen() {
   }, [societeFactures]);
 
   const formPrefill = React.useMemo((): Partial<FactureInput> | undefined => {
-    if (prefillDossierId) return buildDossierPrefill(prefillDossierId, dossiers, annexes);
+    if (prefillDossierId) return buildDossierPrefill(prefillDossierId, dossiers);
     if (pendingFacturePrefill) {
       return {
         clientId: pendingFacturePrefill.clientId,

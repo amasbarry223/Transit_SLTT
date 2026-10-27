@@ -44,7 +44,7 @@ const FIELD_LABELS: Record<string, string> = {
   bl: "N° BL",
   date: "Date",
   client_nom: "Client (détecté)",
-  montant: "Montant investi",
+  montant: "Total contrat",
   ref_douaniere: "Réf. douanière",
   nature: "Nature",
   camion: "Camion / immat.",
@@ -257,7 +257,7 @@ export function useOcrReviewState({
           if (!next.bl) next.bl = existing.bl;
           if (!next.nature) next.nature = existing.nature;
           if (!next.camion) next.camion = existing.camion;
-          if (!next.montantInvesti) next.montantInvesti = String(existing.montantInvesti);
+          if (!next.montantInvesti) next.montantInvesti = String(existing.totalContrat);
         }
       }
 
@@ -494,10 +494,11 @@ export function useOcrReviewState({
           noConteneur: existing.noConteneur,
           portEntree: existing.portEntree,
           poidsTotal: existing.poidsTotal,
-          droitDouane: existing.droitDouane,
-          fraisCircuit: existing.fraisCircuit,
-          fraisPrestation: existing.fraisPrestation,
-          montantInvesti: montant || existing.montantInvesti,
+          // Le montant lu sur le document est ce que le client doit : c'est
+          // le total contrat. Dépenses et paiements ne sont pas envoyés, le
+          // serveur conserve donc les lignes existantes.
+          totalContrat: montant || existing.totalContrat,
+          nombreColis: existing.nombreColis,
           statut: existing.statut,
           notes: mergedNotes || undefined,
         };
@@ -519,10 +520,7 @@ export function useOcrReviewState({
           bl: form.bl,
           camion: form.camion,
           date: form.date,
-          droitDouane: 0,
-          fraisCircuit: 0,
-          fraisPrestation: 0,
-          montantInvesti: montant,
+          totalContrat: montant,
           statut: DOSSIER_STATUT_EN_COURS,
           notes: ocrNotesBlock || undefined,
         };
@@ -683,7 +681,7 @@ export function OcrReviewFields({ state }: { state: OcrReviewState }) {
               ["date", "date", "Date"],
               ["nature", "nature", "Nature"],
               ["camion", "camion", "Camion"],
-              ["montantInvesti", "montant", "Montant investi"],
+              ["montantInvesti", "montant", "Total contrat"],
               ["refDouaniere", "ref_douaniere", "Réf. douanière"],
             ] as const
           ).map(([formKey, confKey, label]) => (

@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import {
-  calculerEcart,
-  resteAPayer,
+  beneficeNet,
+  financesDossier,
+  resteDuDossier,
+  STATUT_PAIEMENT_LABELS,
   type DossierStatut,
   type Dossier,
 } from "@/lib/domain-types";
@@ -55,10 +57,10 @@ export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "date-asc", label: "Date (ancien d'abord)" },
   { value: "reference", label: "Référence A → Z" },
   { value: "client", label: "Client A → Z" },
-  { value: "montant-desc", label: "Prestation (décroissante)" },
-  { value: "montant-asc", label: "Prestation (croissante)" },
+  { value: "montant-desc", label: "Total contrat (décroissant)" },
+  { value: "montant-asc", label: "Total contrat (croissant)" },
   { value: "statut", label: "Statut" },
-  { value: "ecart-desc", label: "Marge (décroissante)" },
+  { value: "ecart-desc", label: "Bénéfice net (décroissant)" },
 ];
 
 export function useDossiersListScreen() {
@@ -123,7 +125,7 @@ export function useDossiersListScreen() {
       if (!matchesQuery(d, ["reference", "clientNom", "bl", "camion", "nature"], search)) return false;
       if (clientFilter !== "all" && d.clientId !== clientFilter) return false;
       if (statutFilter !== "Tous" && d.statut !== statutFilter) return false;
-      if (nonSoldeOnly && resteAPayer(d) <= 0) return false;
+      if (nonSoldeOnly && resteDuDossier(d) <= 0) return false;
       if (yearFilter !== "all" && d.date.slice(0, 4) !== yearFilter) return false;
       if (periode !== "all") {
         const dDate = parseLocalDate(d.date);
@@ -145,13 +147,13 @@ export function useDossiersListScreen() {
         case "client":
           return a.clientNom.localeCompare(b.clientNom, "fr");
         case "montant-desc":
-          return b.fraisPrestation - a.fraisPrestation;
+          return b.totalContrat - a.totalContrat;
         case "montant-asc":
-          return a.fraisPrestation - b.fraisPrestation;
+          return a.totalContrat - b.totalContrat;
         case "statut":
           return a.statut.localeCompare(b.statut);
         case "ecart-desc":
-          return calculerEcart(b) - calculerEcart(a);
+          return beneficeNet(b) - beneficeNet(a);
         default:
           return 0;
       }
@@ -176,7 +178,7 @@ export function useDossiersListScreen() {
     for (const d of filtered) {
       if (d.statut === "En cours") enCours++;
       if (d.statut === "Soldé") soldes++;
-      ecartTotal += calculerEcart(d);
+      ecartTotal += beneficeNet(d);
     }
     return { total: filtered.length, enCours, soldes, ecartTotal };
   }, [filtered]);
@@ -227,16 +229,18 @@ export function useDossiersListScreen() {
           { header: "N° BL", accessor: (d) => d.bl },
           { header: "N° camion", accessor: (d) => d.camion },
           { header: "Nature marchandise", accessor: (d) => d.nature },
-          { header: "Droit de douane (FCFA)", accessor: (d) => d.droitDouane },
-          { header: "Frais circuit (FCFA)", accessor: (d) => d.fraisCircuit },
-          { header: "Frais prestation (FCFA)", accessor: (d) => d.fraisPrestation },
-          { header: "Montant investi (FCFA)", accessor: (d) => d.montantInvesti },
-          { header: "Montant payé (FCFA)", accessor: (d) => d.montantPaye },
+          { header: "Total contrat (FCFA)", accessor: (d) => d.totalContrat },
+          { header: "Montant payé (FCFA)", accessor: (d) => financesDossier(d).montantPaye },
           {
             header: "Reste à payer (FCFA)",
-            accessor: (d) => resteAPayer(d),
+            accessor: (d) => financesDossier(d).resteAPayer,
           },
-          { header: "Marge (FCFA)", accessor: (d) => calculerEcart(d) },
+          { header: "Dépenses (FCFA)", accessor: (d) => financesDossier(d).totalDepenses },
+          { header: "Bénéfice net (FCFA)", accessor: (d) => financesDossier(d).beneficeNet },
+          {
+            header: "Statut paiement",
+            accessor: (d) => STATUT_PAIEMENT_LABELS[financesDossier(d).statutPaiement],
+          },
           { header: "Statut", accessor: (d) => d.statut },
           { header: "Date", accessor: (d) => formatDateShort(d.date) },
         ],
@@ -268,8 +272,8 @@ export function useDossiersListScreen() {
         bl: d.bl,
         camion: d.camion,
         nature: d.nature,
-        prestation: d.fraisPrestation,
-        marge: calculerEcart(d),
+        prestation: d.totalContrat,
+        marge: beneficeNet(d),
         statut: d.statut,
       })),
       {

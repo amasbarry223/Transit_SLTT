@@ -25,10 +25,8 @@ const baseDossier: Dossier = {
   bl: "BL-1",
   camion: "",
   nature: "Marchandise générale",
-  droitDouane: 0,
-  fraisCircuit: 0,
-  fraisPrestation: 0,
-  montantInvesti: 1000,
+  // Reste dû = total contrat − payé (dossier-finances.ts).
+  totalContrat: 1000,
   montantPaye: 700,
   statut: "Livré",
   date: "2026-07-01",
@@ -70,7 +68,7 @@ describe("transitionDossier (NestJS API)", () => {
 
   it("autorise Soldé sans montantRecu lorsque le dossier est déjà intégralement payé", async () => {
     useStore.setState({
-      dossiers: [{ ...baseDossier, montantPaye: 1000, montantInvesti: 1000 }],
+      dossiers: [{ ...baseDossier, montantPaye: 1000, totalContrat: 1000 }],
     });
 
     await useStore.getState().transitionDossier("d1", "Soldé");

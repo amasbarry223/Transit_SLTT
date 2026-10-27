@@ -10,7 +10,9 @@ import {
   DOSSIER_STATUT_EN_COURS,
   DOSSIER_STATUT_SOLDE,
 } from "@/lib/constants";
-import { resteAPayer, type Dossier, type DossierStatut, type PaiementMode } from "@/lib/domain-types";
+import { resteDuDossier, type Dossier, type DossierStatut, type PaiementMode } from "@/lib/domain-types";
+import { lignesDossierDepuisApi, type ModePaiementDossier } from "@/lib/domain/dossier-finances";
+import type { RawDossier } from "@/lib/api-types";
 import type { DossierInput, ImportDossierHistoriqueInput, SLTTState } from "@/lib/store";
 import {
   computeDossierReference,
@@ -19,6 +21,27 @@ import {
   bumpTrailingSeq,
 } from "@/lib/store/reference";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
+
+/**
+ * Montants recalculés par le serveur (dossier-finances côté backend) — seule
+ * source de vérité après une écriture : le front n'envoie jamais de totaux.
+ */
+function montantsServeur(raw: RawDossier | undefined | null): Partial<Dossier> {
+  if (!raw) return {};
+  return {
+    totalContrat: Number(raw.totalContrat || 0),
+    montantPaye: Number(raw.montantPaye || 0),
+    dateSolde: raw.dateSolde ? String(raw.dateSolde).slice(0, 10) : undefined,
+    ...lignesDossierDepuisApi(raw),
+  };
+}
+
+const MODE_TRANSITION: Record<PaiementMode, ModePaiementDossier> = {
+  "Espèces": "ESPECES",
+  "Virement": "VIREMENT",
+  "Chèque": "CHEQUE",
+  "Mobile Money": "ORANGE_MONEY",
+};
 
 export interface DossiersSlice {
   dossiers: Dossier[];
@@ -90,11 +113,11 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       bl: input.bl,
       camion: input.camion,
       nature: input.nature,
-      droitDouane: input.droitDouane,
-      fraisCircuit: input.fraisCircuit,
-      fraisPrestation: input.fraisPrestation,
-      montantInvesti: input.montantInvesti,
+      totalContrat: input.totalContrat,
+      nombreColis: input.nombreColis,
       montantPaye: 0,
+      depenses: input.depenses,
+      paiements: input.paiements,
       statut,
       date: input.date,
       dateEcheance: input.dateEcheance,
@@ -113,10 +136,10 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       annexeId: input.annexeId,
       clientId: input.clientId,
       marchandise: input.nature,
-      valeurDouane: input.droitDouane,
-      fraisCircuit: input.fraisCircuit,
-      fraisPrestation: input.fraisPrestation,
-      montantInvesti: input.montantInvesti,
+      totalContrat: input.totalContrat,
+      nombreColis: input.nombreColis,
+      depensesDossier: input.depenses,
+      paiements: input.paiements,
       numeroBl: input.bl,
       notes: input.notes,
       voieTransport: input.modeTransport,
@@ -141,6 +164,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     });
     if (created?.id) {
       newDossier.id = created.id;
+      Object.assign(newDossier, montantsServeur(created));
     }
 
     const finalSeq = extractTrailingSeq(reference) ?? get().dossierSeq;
@@ -184,10 +208,9 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       bl: "",
       camion: "",
       nature: input.nature,
-      droitDouane: 0,
-      fraisCircuit: 0,
-      fraisPrestation: input.montantInvesti,
-      montantInvesti: input.montantInvesti,
+      // Le "total investi" du grand livre importé est ce que le client doit :
+      // c'est le total contrat. Aucune dépense n'est connue à l'import.
+      totalContrat: input.montantInvesti,
       montantPaye: input.montantPaye,
       statut: input.statut,
       date: input.date,
@@ -207,12 +230,13 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       statut: input.statut,
       dateDepart: input.date,
       date: input.date,
-      fraisPrestation: input.montantInvesti,
-      montantInvesti: input.montantInvesti,
+      totalContrat: input.montantInvesti,
+      // Devient une ligne "Paiement (reprise)" côté serveur.
       montantPaye: input.montantPaye,
     });
     if (created?.id) {
       newDossier.id = created.id;
+      Object.assign(newDossier, montantsServeur(created));
     }
 
     set((s) => {
@@ -245,14 +269,14 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       get().annexes.find((item) => item.id === input.annexeId)?.nom ||
       existing?.annexeNom;
 
-    await api.dossiers.update(id, {
+    const updated = await api.dossiers.update(id, {
       annexeId: input.annexeId,
       clientId: input.clientId,
       marchandise: input.nature,
-      valeurDouane: input.droitDouane,
-      fraisCircuit: input.fraisCircuit,
-      fraisPrestation: input.fraisPrestation,
-      montantInvesti: input.montantInvesti,
+      totalContrat: input.totalContrat,
+      nombreColis: input.nombreColis,
+      depensesDossier: input.depenses,
+      paiements: input.paiements,
       numeroBl: input.bl,
       notes: input.notes,
       voieTransport: input.modeTransport,
@@ -276,7 +300,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     set((s) => {
       const updatedDossiers = s.dossiers.map((dossier) =>
         dossier.id === id
-          ? { ...dossier, ...input, statut, annexeId: input.annexeId, annexeNom }
+          ? { ...dossier, ...input, ...montantsServeur(updated), statut, annexeId: input.annexeId, annexeNom }
           : dossier,
       );
       return {
@@ -367,7 +391,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
 
     // Soldé avec reste dû exige un encaissement couvrant le solde — la garde UI
     // ne suffit pas (appel programmatique ou RPC).
-    const reste = resteAPayer(dossier);
+    const reste = resteDuDossier(dossier);
     if (newStatut === DOSSIER_STATUT_SOLDE && reste > 0) {
       if (!(typeof montantRecu === "number" && montantRecu >= reste)) {
         throw new Error(
@@ -381,13 +405,6 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     const dateDedouanement =
       newStatut === DOSSIER_STATUT_DEDOUANE ? resolvedDate : dossier.dateDedouanement;
 
-    // montantPaye du dossier = incrément borné à l'assiette due — cohérent avec
-    // le backend /paiements. Plus d'écriture locale jetable (le dossier.montantPaye
-    // persiste désormais et sert de source unique aux bilans / au classeur).
-    // `plafond` dépend de montantInvesti (l'assiette due, stable), pas de
-    // montantPaye : il peut donc être calculé ici sans risque.
-    const plafond = dossier.montantInvesti > 0 ? dossier.montantInvesti : Number.POSITIVE_INFINITY;
-
     // Le changement de statut DOIT être poussé (sinon le dossier repasse à son
     // ancien statut au rechargement). Quand la transition s'accompagne d'un
     // encaissement, on passe par /paiements pour incrémenter montantPaye + dater
@@ -397,27 +414,28 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
     // alors que l'appel serveur a échoué revient à comptabiliser un paiement
     // jamais confirmé côté serveur — pas seulement une perte d'enregistrement,
     // un désaccord argent réel/argent affiché.
-    if (typeof montantRecu === "number" && montantRecu > 0) {
-      await api.dossiers.enregistrerPaiement(id, montantRecu, newStatut, resolvedDate);
-    } else {
-      await api.dossiers.updateStatut(id, newStatut);
-    }
+    // Avec encaissement, le serveur ajoute une ligne de paiement et renvoie le
+    // dossier recalculé (montantPaye = Σ paiements, trop-perçu accepté) : on
+    // reprend ses montants tels quels, ce qui intègre aussi un encaissement
+    // concurrent (double-clic) au lieu de l'écraser.
+    const hasPaiement = typeof montantRecu === "number" && montantRecu > 0;
+    const serveur = hasPaiement
+      ? await api.dossiers.enregistrerPaiement(
+          id,
+          montantRecu as number,
+          newStatut,
+          resolvedDate,
+          modePaiement ? MODE_TRANSITION[modePaiement] : undefined,
+        )
+      : await api.dossiers.updateStatut(id, newStatut);
 
-    // `montantPaye`/`dateSolde` sont recalculés ici, à l'intérieur du updater
-    // `set()`, sur l'état frais (`item`) et non sur le `dossier` capturé avant
-    // les `await` ci-dessus : sinon un encaissement concurrent (double-clic,
-    // ou deux règlements presque simultanés) déjà appliqué par un autre appel
-    // serait écrasé — même bug que celui corrigé dans recordFacturePaiement
-    // (factures-slice.ts).
     const applyPatch = (item: Dossier): Dossier => {
       if (item.id !== id) return item;
-      const hasPaiement = typeof montantRecu === "number" && montantRecu > 0;
       return {
         ...item,
+        ...(hasPaiement ? montantsServeur(serveur) : {}),
         statut: newStatut,
-        montantPaye: hasPaiement ? Math.min(plafond, item.montantPaye + montantRecu) : item.montantPaye,
         dateDedouanement,
-        dateSolde: hasPaiement ? item.dateSolde || resolvedDate : item.dateSolde,
       };
     };
 

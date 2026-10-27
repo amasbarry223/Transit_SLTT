@@ -526,7 +526,7 @@ export function SituationClientsPanel() {
                       <div key={d.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-muted/30">
                         <span className="font-mono font-medium">{d.reference}</span>
                         <span className="text-muted-foreground">{d.nature}</span>
-                        <span className="font-semibold">{formatFCFA(d.fraisPrestation)}</span>
+                        <span className="font-semibold">{formatFCFA(d.totalContrat)}</span>
                       </div>
                     ))}
                   </div>

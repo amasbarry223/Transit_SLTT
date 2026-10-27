@@ -22,6 +22,8 @@ describe('applySchemaScripts', () => {
 
     expect(res.status).toBe('ok');
     expect(res.applied).toContain('2026-10-22-bons-livraison-notifications.sql');
-    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(2);
+    expect(res.applied).toContain('2026-10-27-dossier-depenses-paiements.sql');
+    // 2 instructions (bons de livraison) + 6 (sauvegarde, 2 tables, 2 INSERT de reprise, 1 UPDATE).
+    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(8);
   });
 });

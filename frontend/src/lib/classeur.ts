@@ -58,7 +58,8 @@ export function buildClasseurJournal(
       type: "Dossier",
       reference: d.reference,
       libelle: buildDossierLibelle(d),
-      debit: d.montantInvesti,
+      // Ce que le client doit sur le dossier = total contrat.
+      debit: d.totalContrat,
       credit: d.montantPaye,
       statut: d.statut,
     });
