@@ -1,11 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.schemaScripts = void 0;
+exports.requiredColumns = requiredColumns;
 exports.splitSqlStatements = splitSqlStatements;
 exports.applySchemaScripts = applySchemaScripts;
 const fs_1 = require("fs");
 const path_1 = require("path");
-exports.schemaScripts = { status: 'none', applied: [] };
+exports.schemaScripts = { status: 'none', applied: [], skipped: [] };
+function requiredColumns(sql) {
+    return [...sql.matchAll(/^--\s*@si-colonne:\s*([\w]+)\.([\w]+)\s*$/gm)].map((m) => ({
+        table: m[1],
+        column: m[2],
+    }));
+}
+async function columnExists(prisma, table, column) {
+    const rows = await prisma.$queryRawUnsafe('SELECT COUNT(*) AS n FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?', table, column);
+    return Number(rows[0]?.n ?? 0) > 0;
+}
 function splitSqlStatements(sql) {
     return sql
         .split(/\r?\n/)
@@ -25,7 +36,17 @@ async function applySchemaScripts(prisma) {
     const files = (0, fs_1.readdirSync)(dir).filter((f) => f.endsWith('.sql')).sort();
     for (const file of files) {
         try {
-            for (const statement of splitSqlStatements((0, fs_1.readFileSync)((0, path_1.join)(dir, file), 'utf8'))) {
+            const sql = (0, fs_1.readFileSync)((0, path_1.join)(dir, file), 'utf8');
+            let present = true;
+            for (const { table, column } of requiredColumns(sql)) {
+                if (!(await columnExists(prisma, table, column)))
+                    present = false;
+            }
+            if (!present) {
+                exports.schemaScripts.skipped.push(file);
+                continue;
+            }
+            for (const statement of splitSqlStatements(sql)) {
                 await prisma.$executeRawUnsafe(statement);
             }
             exports.schemaScripts.applied.push(file);
