@@ -10,6 +10,9 @@ import {
   ArrowRightCircle,
   Trash2,
   MoreVertical,
+  Wallet,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 
 import { useNav } from "@/lib/nav-store";
@@ -218,6 +221,33 @@ export function DossierScreenRedesign({
     const pct = (form.finances.beneficeNet / form.finances.totalContrat) * 100;
     return pct.toFixed(1).replace(".", ",");
   }, [form.finances.beneficeNet, form.finances.totalContrat]);
+
+  // Taux de recouvrement du contrat (0 à 100%)
+  const tauxRecouvrement = useMemo(() => {
+    if (!form.finances.totalContrat || form.finances.totalContrat <= 0) return 0;
+    return Math.min(100, Math.max(0, Math.round((form.finances.montantPaye / form.finances.totalContrat) * 100)));
+  }, [form.finances.montantPaye, form.finances.totalContrat]);
+
+  // Position de trésorerie directe du dossier (Cashflow actuel SLTT)
+  const soldeTresorerie = useMemo(() => {
+    return form.finances.montantPaye - form.finances.totalDepenses;
+  }, [form.finances.montantPaye, form.finances.totalDepenses]);
+
+  // Ventilation des débours par catégorie
+  const depensesParCategorie = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const d of form.depenses) {
+      const montant = parseFloat(d.montant.replace(/\s+/g, "").replace(",", ".")) || 0;
+      if (montant > 0) {
+        const cat =
+          (d.categorie && CATEGORIE_DEPENSE_LABELS[d.categorie as CategorieDepense]) ||
+          d.categorie ||
+          "Divers";
+        map[cat] = (map[cat] || 0) + montant;
+      }
+    }
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [form.depenses]);
 
   // Sauvegarde dynamique
   async function onSaveClick() {
@@ -807,65 +837,209 @@ export function DossierScreenRedesign({
           </div>
         </div>
 
-        {/* Colonne Droite (Carte Récapitulatif Sticky Full Width) */}
-        <div className="lg:col-span-4 lg:sticky lg:top-6 w-full">
-          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs space-y-6 w-full">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Récapitulatif
-            </h2>
+        {/* Colonne Droite (Carte Récapitulatif Refondue - Full Width & Sticky) */}
+        <div className="lg:col-span-4 lg:sticky lg:top-6 w-full space-y-4">
+          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs space-y-5 w-full">
+            {/* 1. En-tête Récapitulatif & Statut Recouvrement */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="size-8 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <Wallet className="size-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
+                      Récapitulatif
+                    </h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      Bilan financier & opérationnel
+                    </p>
+                  </div>
+                </div>
 
-            <div className="space-y-3.5 text-sm">
-              <div className="flex items-center justify-between">
+                {/* Badge statut de paiement dynamique */}
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border",
+                    form.finances.totalContrat <= 0
+                      ? "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                      : form.finances.resteAPayer < 0
+                        ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
+                        : form.finances.montantPaye === 0
+                          ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800"
+                          : form.finances.resteAPayer === 0
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                            : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      form.finances.totalContrat <= 0
+                        ? "bg-slate-400"
+                        : form.finances.resteAPayer < 0
+                          ? "bg-purple-500"
+                          : form.finances.montantPaye === 0
+                            ? "bg-red-500"
+                            : form.finances.resteAPayer === 0
+                              ? "bg-emerald-500"
+                              : "bg-amber-500",
+                    )}
+                  />
+                  {form.finances.totalContrat <= 0
+                    ? "Nouveau"
+                    : form.finances.resteAPayer < 0
+                      ? "Trop-perçu"
+                      : form.finances.montantPaye === 0
+                        ? "Impayé (0%)"
+                        : form.finances.resteAPayer === 0
+                          ? "Soldé (100%)"
+                          : `Partiel (${tauxRecouvrement}%)`}
+                </span>
+              </div>
+
+              {/* Jauge visuelle de recouvrement */}
+              {form.finances.totalContrat > 0 && (
+                <div className="space-y-1 pt-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>Recouvrement client</span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {tauxRecouvrement}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full transition-all duration-300 rounded-full",
+                        tauxRecouvrement === 100
+                          ? "bg-emerald-500"
+                          : tauxRecouvrement > 0
+                            ? "bg-amber-500"
+                            : "bg-slate-300 dark:bg-slate-700",
+                      )}
+                      style={{ width: `${tauxRecouvrement}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Lignes Chiffrées du Contrat */}
+            <div className="space-y-3 text-sm divide-y divide-slate-100 dark:divide-slate-800/80">
+              <div className="flex items-center justify-between pt-1">
                 <span className="text-slate-600 dark:text-slate-300 font-medium">
                   Total contrat
                 </span>
-                <span className="font-extrabold text-slate-900 dark:text-white">
+                <span className="font-extrabold text-slate-900 dark:text-white tabular-nums">
                   {formatFCFA(form.finances.totalContrat)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600 dark:text-slate-300 font-medium">
-                  Montant payé
-                </span>
-                <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center justify-between pt-2.5">
+                <div className="flex flex-col">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Montant payé
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {form.paiements.length} versement{form.paiements.length > 1 ? "s" : ""} reçu{form.paiements.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <span
+                  className={cn(
+                    "font-extrabold tabular-nums",
+                    form.finances.montantPaye > 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-slate-400 dark:text-slate-500",
+                  )}
+                >
                   {formatFCFA(form.finances.montantPaye)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-2.5">
                 <span className="text-slate-600 dark:text-slate-300 font-medium">
-                  Reste à payer
+                  {form.finances.resteAPayer < 0 ? "Trop-perçu client" : "Reste à payer"}
                 </span>
                 <span
                   className={cn(
-                    "font-extrabold",
-                    form.finances.resteAPayer <= 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-amber-600 dark:text-amber-400",
+                    "font-extrabold tabular-nums",
+                    form.finances.resteAPayer < 0
+                      ? "text-purple-600 dark:text-purple-400"
+                      : form.finances.resteAPayer === 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-amber-600 dark:text-amber-400",
                   )}
                 >
-                  {formatFCFA(Math.max(0, form.finances.resteAPayer))}
+                  {formatFCFA(Math.abs(form.finances.resteAPayer))}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600 dark:text-slate-300 font-medium">
-                  Dépenses
-                </span>
-                <span className="font-extrabold text-[#ea580c] dark:text-orange-400">
+              <div className="flex items-center justify-between pt-2.5">
+                <div className="flex flex-col">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Dépenses
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {form.depenses.length} débours enregistré{form.depenses.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <span className="font-extrabold text-[#c2410c] dark:text-orange-400 tabular-nums">
                   {formatFCFA(form.finances.totalDepenses)}
                 </span>
               </div>
             </div>
 
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                Bénéfice net
-              </span>
+            {/* 3. Bloc Indicateur Métier Transit : Position de Trésorerie Caisse SLTT */}
+            {form.finances.totalDepenses > 0 && (
               <div
                 className={cn(
-                  "text-3xl font-black tracking-tight",
+                  "p-3 rounded-xl border text-xs space-y-1 transition-all",
+                  soldeTresorerie < 0
+                    ? "bg-amber-50/70 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/80 text-amber-900 dark:text-amber-200"
+                    : "bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200",
+                )}
+              >
+                <div className="flex items-center justify-between font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    {soldeTresorerie < 0 ? (
+                      <AlertTriangle className="size-3.5 text-amber-600 shrink-0" />
+                    ) : (
+                      <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                    )}
+                    {soldeTresorerie < 0 ? "Avance de fonds SLTT" : "Trésorerie couverte"}
+                  </span>
+                  <span className="font-extrabold tabular-nums">
+                    {soldeTresorerie < 0 ? "-" : "+"}
+                    {formatFCFA(Math.abs(soldeTresorerie))}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                  {soldeTresorerie < 0
+                    ? "L'agence avance les frais sur sa trésorerie en attente du paiement client."
+                    : "Les versements reçus couvrent les dépenses engagées à ce jour."}
+                </p>
+              </div>
+            )}
+
+            {/* 4. Bloc Héro Bénéfice Net & Marge Commerciale */}
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-100 dark:border-slate-800 space-y-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <span>Bénéfice net</span>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                    form.finances.beneficeNet >= 0
+                      ? "bg-emerald-100/60 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                      : "bg-red-100/60 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800",
+                  )}
+                >
+                  {form.finances.beneficeNet >= 0 ? "Rentable" : "Déficit"}
+                </span>
+              </div>
+
+              <div
+                className={cn(
+                  "text-3xl font-black tracking-tight tabular-nums pt-1",
                   form.finances.beneficeNet >= 0
                     ? "text-emerald-600 dark:text-emerald-400"
                     : "text-red-600 dark:text-red-400",
@@ -874,18 +1048,76 @@ export function DossierScreenRedesign({
                 {form.finances.beneficeNet >= 0 ? "+" : ""}
                 {formatFCFA(form.finances.beneficeNet)}
               </div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                Marge {margeCalc} % · Total contrat – Dépenses
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 pt-0.5 font-medium">
+                Marge <span className="font-bold text-slate-700 dark:text-slate-200">{margeCalc} %</span> · Total contrat – Dépenses
               </p>
             </div>
 
-            {/* Boutons d'action (Enregistrer le dossier & Générer le PDF) */}
-            <div className="space-y-3 pt-2">
+            {/* 5. Ventilation des dépenses par catégorie (si existantes) */}
+            {depensesParCategorie.length > 0 && (
+              <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                  Postes de dépenses
+                </span>
+                <div className="space-y-1.5 text-xs">
+                  {depensesParCategorie.slice(0, 4).map(([cat, montant]) => (
+                    <div key={cat} className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                      <span className="truncate pr-2 text-[11px]">{cat}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white shrink-0 tabular-nums text-[11px]">
+                        {formatFCFA(montant)}
+                      </span>
+                    </div>
+                  ))}
+                  {depensesParCategorie.length > 4 && (
+                    <span className="text-[10px] text-slate-400 italic block pt-0.5">
+                      + {depensesParCategorie.length - 4} autre(s) poste(s)...
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 6. Synthèse Opérationnelle du Dossier (Toutes les données de la page) */}
+            <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                Fiche d&apos;expédition
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 truncate">
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Client</span>
+                  <span className="font-bold text-slate-900 dark:text-white truncate block" title={clientActuel?.nom || ""}>
+                    {clientActuel?.nom || "Non renseigné"}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 truncate">
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Mode</span>
+                  <span className="font-bold text-slate-900 dark:text-white block">
+                    {form.modeTransport || "Maritime"}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 truncate">
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Colis / Poids</span>
+                  <span className="font-bold text-slate-900 dark:text-white block truncate">
+                    {form.nombreColis ? `${form.nombreColis} colis` : "—"} · {form.poidsTotal ? `${form.poidsTotal} kg` : "—"}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 truncate">
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">BL / Conteneur</span>
+                  <span className="font-bold text-slate-900 dark:text-white block truncate" title={form.noConteneur || form.bl}>
+                    {form.noConteneur || form.bl || "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 7. Boutons d'action (Enregistrer le dossier & Générer le PDF) */}
+            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
                 type="button"
                 onClick={onSaveClick}
                 disabled={!canWrite || saving}
-                className="w-full h-11 bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-semibold rounded-xl shadow-xs text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-11 bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-semibold rounded-xl shadow-xs text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? (
                   <Loader2 className="size-4 animate-spin" />
