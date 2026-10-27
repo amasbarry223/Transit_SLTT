@@ -75,12 +75,14 @@ async function bootstrap() {
   logger.log(`🚀 API Transit SLTT démarrée sur http://${host}:${port}/${apiPrefix}`);
 }
 
+const processLogger = new Logger('Process');
+
 process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection at:', reason);
+  processLogger.error('Unhandled Rejection at:', reason as any);
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+  processLogger.error('Uncaught Exception:', err);
 });
 
 bootstrap();

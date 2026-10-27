@@ -15,6 +15,9 @@
 import { existsSync, readFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { spawnSync } from 'child_process';
+import { Logger } from '@nestjs/common';
+
+const logger = new Logger('PrismaSync');
 
 export type PrismaClientSyncStatus = 'ok' | 'regenerated' | 'failed' | 'error';
 
@@ -37,7 +40,7 @@ function ensurePrismaClient(): void {
   if (!schemaPath) {
     prismaClientSync.status = 'error';
     prismaClientSync.detail = 'schema.prisma introuvable (ni dist/prisma ni prisma/)';
-    console.error(`[prisma] ${prismaClientSync.detail}`);
+    logger.error(prismaClientSync.detail);
     return;
   }
   try {
@@ -49,7 +52,7 @@ function ensurePrismaClient(): void {
     const generated = existsSync(generatedSchema) ? normalize(readFileSync(generatedSchema, 'utf8')) : '';
     if (deployed === generated) return;
 
-    console.log('[prisma] Client Prisma périmé par rapport au schéma déployé — régénération…');
+    logger.log('Client Prisma périmé par rapport au schéma déployé — régénération…');
     const prismaCli = require.resolve('prisma/build/index.js', { paths: searchPaths });
     const res = spawnSync(process.execPath, [prismaCli, 'generate', '--schema', schemaPath], {
       cwd: backendDir,
@@ -58,18 +61,18 @@ function ensurePrismaClient(): void {
     });
     if (res.status === 0) {
       prismaClientSync.status = 'regenerated';
-      console.log('[prisma] Client Prisma régénéré.');
+      logger.log('Client Prisma régénéré.');
     } else {
       const output = `${res.stderr ?? ''}${res.stdout ?? ''}${res.error ? String(res.error) : ''}`.trim();
       prismaClientSync.status = 'failed';
       prismaClientSync.detail = output.slice(-500) || `code ${res.status}`;
-      console.error(`[prisma] Échec de prisma generate : ${prismaClientSync.detail}`);
+      logger.error(`Échec de prisma generate : ${prismaClientSync.detail}`);
     }
   } catch (err) {
     // Ne jamais empêcher l'API de démarrer pour ce contrôle.
     prismaClientSync.status = 'error';
     prismaClientSync.detail = (err as Error)?.message?.slice(0, 500);
-    console.error('[prisma] Vérification du client Prisma impossible :', prismaClientSync.detail);
+    logger.error(`Vérification du client Prisma impossible : ${prismaClientSync.detail}`);
   }
 }
 

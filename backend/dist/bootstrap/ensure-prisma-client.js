@@ -4,6 +4,8 @@ exports.prismaClientSync = void 0;
 const fs_1 = require("fs");
 const path_1 = require("path");
 const child_process_1 = require("child_process");
+const common_1 = require("@nestjs/common");
+const logger = new common_1.Logger('PrismaSync');
 exports.prismaClientSync = { status: 'ok' };
 const normalize = (text) => text.replace(/\s+/g, ' ').trim();
 function ensurePrismaClient() {
@@ -12,7 +14,7 @@ function ensurePrismaClient() {
     if (!schemaPath) {
         exports.prismaClientSync.status = 'error';
         exports.prismaClientSync.detail = 'schema.prisma introuvable (ni dist/prisma ni prisma/)';
-        console.error(`[prisma] ${exports.prismaClientSync.detail}`);
+        logger.error(exports.prismaClientSync.detail);
         return;
     }
     try {
@@ -23,7 +25,7 @@ function ensurePrismaClient() {
         const generated = (0, fs_1.existsSync)(generatedSchema) ? normalize((0, fs_1.readFileSync)(generatedSchema, 'utf8')) : '';
         if (deployed === generated)
             return;
-        console.log('[prisma] Client Prisma périmé par rapport au schéma déployé — régénération…');
+        logger.log('Client Prisma périmé par rapport au schéma déployé — régénération…');
         const prismaCli = require.resolve('prisma/build/index.js', { paths: searchPaths });
         const res = (0, child_process_1.spawnSync)(process.execPath, [prismaCli, 'generate', '--schema', schemaPath], {
             cwd: backendDir,
@@ -32,19 +34,19 @@ function ensurePrismaClient() {
         });
         if (res.status === 0) {
             exports.prismaClientSync.status = 'regenerated';
-            console.log('[prisma] Client Prisma régénéré.');
+            logger.log('Client Prisma régénéré.');
         }
         else {
             const output = `${res.stderr ?? ''}${res.stdout ?? ''}${res.error ? String(res.error) : ''}`.trim();
             exports.prismaClientSync.status = 'failed';
             exports.prismaClientSync.detail = output.slice(-500) || `code ${res.status}`;
-            console.error(`[prisma] Échec de prisma generate : ${exports.prismaClientSync.detail}`);
+            logger.error(`Échec de prisma generate : ${exports.prismaClientSync.detail}`);
         }
     }
     catch (err) {
         exports.prismaClientSync.status = 'error';
         exports.prismaClientSync.detail = err?.message?.slice(0, 500);
-        console.error('[prisma] Vérification du client Prisma impossible :', exports.prismaClientSync.detail);
+        logger.error(`Vérification du client Prisma impossible : ${exports.prismaClientSync.detail}`);
     }
 }
 ensurePrismaClient();

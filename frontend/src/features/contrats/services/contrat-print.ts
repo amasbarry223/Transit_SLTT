@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/brand-colors";
-import { ensureSocieteBrand, type SocieteBrand } from "@/lib/societe-brand";
+import { ensureSocieteBrand, prestataireDisplayName, type SocieteBrand } from "@/lib/societe-brand";
 import { htmlEscape } from "@/lib/export/html-escape";
 import {
   OFFICIAL_LETTERHEAD_CSS,
@@ -54,10 +54,6 @@ export interface ContratPrintData {
   prestations: ContratPrestationPrintRow[];
   depenses: ContratDepensePrintRow[];
   totalDepenses: number;
-}
-
-function prestataireDisplayName(societe: SocieteBrand): string {
-  return societe.raisonSociale || societe.nom;
 }
 
 const PIN_ICON = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>`;

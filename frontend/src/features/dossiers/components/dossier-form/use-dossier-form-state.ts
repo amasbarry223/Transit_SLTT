@@ -84,25 +84,27 @@ function initialDepenses(existing?: Dossier): DepenseForm[] {
 }
 
 /** Une ligne vide (ni montant ni texte) n'est pas envoyée. */
-const isBlankPaiement = (p: PaiementForm) => parseAmount(p.montant) === 0 && !p.reference.trim();
-const isBlankDepense = (d: DepenseForm) => parseAmount(d.montant) === 0 && !d.nature.trim();
+const isBlankPaiement = (p: PaiementForm) => parseAmount(p.montant) === 0 && !(p.reference || "").trim();
+const isBlankDepense = (d: DepenseForm) => parseAmount(d.montant) === 0 && !(d.nature || "").trim();
 
 export function toPaiements(rows: PaiementForm[]): PaiementDossier[] {
   return rows
     .filter((p) => !isBlankPaiement(p))
-    .map(({ key: _key, montant, reference, ...rest }) => ({
+    .map(({ key: _key, montant, reference, date, ...rest }) => ({
       ...rest,
+      date: date || today(),
       montant: Math.max(0, Math.round(parseAmount(montant))),
-      reference: reference.trim() || undefined,
+      reference: (reference || "").trim() || undefined,
     }));
 }
 
 export function toDepenses(rows: DepenseForm[]): DepenseDossier[] {
   return rows
     .filter((d) => !isBlankDepense(d))
-    .map(({ key: _key, montant, nature, ...rest }) => ({
+    .map(({ key: _key, montant, nature, date, ...rest }) => ({
       ...rest,
-      nature: nature.trim() || "Dépense",
+      date: date || today(),
+      nature: (nature || "").trim() || "Dépense",
       montant: Math.max(0, Math.round(parseAmount(montant))),
     }));
 }

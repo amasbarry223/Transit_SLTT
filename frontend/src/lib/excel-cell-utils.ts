@@ -14,7 +14,8 @@ export function normalizeHeader(h: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
-    .trim();
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 /** Convertit une valeur de cellule ExcelJS (texte riche, formule, date) en chaine exploitable. */

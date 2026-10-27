@@ -28,6 +28,10 @@ export interface SocieteBrand {
   signatairePdg?: string;
 }
 
+export function prestataireDisplayName(societe: SocieteBrand): string {
+  return societe.raisonSociale || societe.nom;
+}
+
 export interface PrintHTMLBrand {
   logoUrl?: string;
   name?: string;

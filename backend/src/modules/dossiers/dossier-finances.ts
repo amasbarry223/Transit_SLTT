@@ -54,8 +54,8 @@ const somme = (lignes?: ReadonlyArray<{ montant: number | bigint }> | null) =>
 export function statutPaiement(totalContrat: number, montantPaye: number): StatutPaiement {
   const reste = totalContrat - montantPaye;
   if (reste < 0) return 'TROP_PERCU';
-  if (montantPaye === 0 && totalContrat > 0) return 'IMPAYE';
   if (reste === 0) return 'SOLDE';
+  if (montantPaye === 0 && totalContrat > 0) return 'IMPAYE';
   return 'PARTIEL';
 }
 

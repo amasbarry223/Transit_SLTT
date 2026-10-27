@@ -1,4 +1,4 @@
-import { IsDateString, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsDateString, IsIn, IsInt, IsOptional, IsString, Min, ValidateIf } from 'class-validator';
 import { CATEGORIES_DEPENSE, MODES_PAIEMENT } from '../dossier-finances';
 
 /** Dépense du dossier. `id` présent = ligne existante à mettre à jour. */
@@ -7,6 +7,7 @@ export class DepenseDossierDto {
   @IsOptional()
   id?: string;
 
+  @ValidateIf((_o, v) => v !== '' && v != null)
   @IsDateString()
   @IsOptional()
   date?: string;
@@ -29,6 +30,7 @@ export class PaiementDossierDto {
   @IsOptional()
   id?: string;
 
+  @ValidateIf((_o, v) => v !== '' && v != null)
   @IsDateString()
   @IsOptional()
   date?: string;

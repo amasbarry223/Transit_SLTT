@@ -2,7 +2,7 @@
 
 import { Building2 } from "lucide-react";
 import type { EntiteComptable } from "@/lib/domain-types";
-import type { OperationsTotals } from "@/lib/comptabilite-generale";
+import { entiteKeyOf, type OperationsTotals } from "@/lib/comptabilite-generale";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 import { Card } from "@/shared/components/ui/card";
@@ -16,10 +16,6 @@ export interface EntiteTotal {
 interface EntitesConsolideesCardProps {
   entiteTotals: EntiteTotal[];
   activeEntiteKey: string;
-}
-
-function entiteKeyOf(entite: { type: string; id: string }): string {
-  return `${entite.type}:${entite.id}`;
 }
 
 /**

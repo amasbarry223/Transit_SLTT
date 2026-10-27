@@ -25,11 +25,7 @@ export const FICHE_TABS: {
   { key: "logistique", label: "Logistique", shortLabel: "Logistique", icon: Package },
 ];
 
-export function avatarGradient(type: "Entreprise" | "Particulier"): string {
-  return type === "Entreprise"
-    ? "from-blue-600 to-indigo-700"
-    : "from-slate-600 to-slate-800";
-}
+export { avatarGradient } from "../shared";
 
 export const BON_MOTIF_TONE: Record<BonMotif, "blue" | "emerald" | "indigo"> = {
   Vente: "blue",

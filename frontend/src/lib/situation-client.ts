@@ -9,6 +9,7 @@ import { financesDossier, type FinancesDossier } from "@/lib/domain/dossier-fina
 export interface SituationLigne {
   dossier: Dossier;
   date: string;
+  numero: string;
   nature: string;
   quantite?: number;
   /** Numéros des factures liées au dossier, séparés par une virgule. */
@@ -31,25 +32,34 @@ export interface SituationTotaux {
 
 /** Années (AAAA) présentes dans les dossiers, de la plus récente à la plus ancienne. */
 export function anneesSituation(dossiers: Dossier[]): string[] {
-  return [...new Set(dossiers.map((d) => d.date.slice(0, 4)).filter(Boolean))].sort().reverse();
+  return [
+    ...new Set(
+      dossiers
+        .map((d) => (d.date || "").slice(0, 4))
+        .filter((y) => y.length === 4),
+    ),
+  ]
+    .sort()
+    .reverse();
 }
 
 export function buildSituationClient(
   dossiers: Dossier[],
-  factures: Pick<Facture, "dossierId" | "numero" | "statut">[],
+  factures: Pick<Facture, "dossierId" | "numero" | "statut">[] = [],
   annee: string = "all",
 ): { lignes: SituationLigne[]; totaux: SituationTotaux } {
   const lignes = dossiers
-    .filter((d) => annee === "all" || d.date.slice(0, 4) === annee)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .filter((d) => annee === "all" || (d.date || "").slice(0, 4) === annee)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
     .map((d) => {
       const f = financesDossier(d);
       return {
         dossier: d,
-        date: d.date,
-        nature: d.nature,
+        date: d.date || "",
+        numero: d.reference || d.id,
+        nature: d.nature || "",
         quantite: d.nombreColis,
-        factures: factures
+        factures: (factures || [])
           .filter((fa) => fa.dossierId === d.id && fa.statut !== "Annulée")
           .map((fa) => fa.numero)
           .join(", "),

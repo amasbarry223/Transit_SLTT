@@ -112,7 +112,7 @@ function resolveBlockColumns(headerRow: ExcelJS.Row, startCol: number, endCol: n
   let resteCol: number | null = null;
   for (let c = startCol + 4; c <= endCol; c++) {
     const h = normalizeHeader(cellToString(headerRow.getCell(c).value));
-    if (investiCol == null && h.includes("investi")) investiCol = c;
+    if (investiCol == null && (h.includes("investi") || h.includes("contrat"))) investiCol = c;
     if (payeCol == null && h.includes("paye")) payeCol = c;
     if (resteCol == null && h.includes("reste")) resteCol = c;
   }

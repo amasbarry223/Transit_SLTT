@@ -4,6 +4,7 @@ import { BRAND } from "@/lib/brand-colors";
 import {
   DEFAULT_DOSSIER_COUT_LABELS,
   ensureSocieteBrand,
+  prestataireDisplayName,
   type DossierCoutLabels,
   type SocieteBrand,
 } from "@/lib/societe-brand";
@@ -75,10 +76,6 @@ function fmtDevisDateShort(iso: string): string {
     month: "2-digit",
     year: "numeric",
   });
-}
-
-function prestataireDisplayName(societe: SocieteBrand): string {
-  return societe.raisonSociale || societe.nom;
 }
 
 const DEVIS_DOC_BAR_CSS = `

@@ -38,6 +38,12 @@ describe("calculerFinancesDossier", () => {
     expect(f.statutPaiement).toBe("IMPAYE");
   });
 
+  it("contrat nul et aucun paiement : soldé car reste à payer nul", () => {
+    const f = calculerFinancesDossier({ totalContrat: 0, paiements: [] });
+    expect(f.resteAPayer).toBe(0);
+    expect(f.statutPaiement).toBe("SOLDE");
+  });
+
   it("dépenses supérieures au contrat : bénéfice négatif, perte", () => {
     const f = calculerFinancesDossier({ totalContrat: 10_000_000, paiements: [], depenses: depensesExcel });
     expect(f.beneficeNet).toBe(-1_700_000);

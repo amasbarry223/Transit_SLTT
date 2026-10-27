@@ -73,7 +73,7 @@ export function DossiersTab({
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-xs text-muted-foreground">Montant</dt>
+                      <dt className="text-xs text-muted-foreground">Total contrat</dt>
                       <dd className="tabular-nums font-medium text-foreground">
                         {formatFCFA(d.totalContrat)}
                       </dd>
@@ -99,7 +99,7 @@ export function DossiersTab({
                       Statut
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Montant
+                      Total contrat
                     </TableHead>
                     <TableHead className="h-10 px-4 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Actions

@@ -5,11 +5,11 @@
 
 import type { OcrExtractedField } from "../provider";
 
-function clampConfidence(n: number): number {
+export function clampConfidence(n: number): number {
   return Math.max(0, Math.min(1, Math.round(n * 1000) / 1000));
 }
 
-function findFirst(text: string, patterns: RegExp[]): { value: string; confidence: number } | null {
+export function findFirst(text: string, patterns: RegExp[]): { value: string; confidence: number } | null {
   for (const re of patterns) {
     const m = text.match(re);
     if (m?.[1]) {

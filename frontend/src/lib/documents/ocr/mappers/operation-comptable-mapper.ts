@@ -6,23 +6,7 @@
  * humain dans le dialog de revue avant tout enregistrement.
  */
 import type { OcrExtractedField } from "../provider";
-import { normalizeDate, parseMontant } from "./dossier-mapper";
-
-function clampConfidence(n: number): number {
-  return Math.max(0, Math.min(1, Math.round(n * 1000) / 1000));
-}
-
-function findFirst(text: string, patterns: RegExp[]): { value: string; confidence: number } | null {
-  for (const re of patterns) {
-    const m = text.match(re);
-    if (m?.[1]) {
-      const value = m[1].trim();
-      const confidence = clampConfidence(0.55 + Math.min(0.4, value.length / 40));
-      return { value, confidence };
-    }
-  }
-  return null;
-}
+import { findFirst, normalizeDate, parseMontant } from "./dossier-mapper";
 
 const ENTREE_KEYWORDS = /\b(entr[ée]e|encaissement|re[çc]u\s+de|versement\s+de|remboursement)\b/i;
 const SORTIE_KEYWORDS = /\b(sortie|d[ée]caissement|pay[ée]\s+[àa]|frais|honoraire|loyer|achat)\b/i;

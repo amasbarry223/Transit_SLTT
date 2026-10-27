@@ -54,11 +54,12 @@ async function bootstrap() {
     const logger = new common_1.Logger('Bootstrap');
     logger.log(`🚀 API Transit SLTT démarrée sur http://${host}:${port}/${apiPrefix}`);
 }
+const processLogger = new common_1.Logger('Process');
 process.on('unhandledRejection', (reason) => {
-    console.error('Unhandled Rejection at:', reason);
+    processLogger.error('Unhandled Rejection at:', reason);
 });
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
+    processLogger.error('Uncaught Exception:', err);
 });
 bootstrap();
 //# sourceMappingURL=main.js.map

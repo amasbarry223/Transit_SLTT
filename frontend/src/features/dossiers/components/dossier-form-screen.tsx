@@ -199,23 +199,6 @@ function DossierFormInner() {
             />
           )}
 
-          {form.showStep(3) && (
-            <DossierTransportSection
-              isEdit={isEdit}
-              modeTransport={form.modeTransport}
-              portEntree={form.portEntree}
-              noConteneur={form.noConteneur}
-              poidsTotal={form.poidsTotal}
-              nombreColis={form.nombreColis}
-              onNombreColisChange={form.setNombreColis}
-              isMali={annexeCode === "ML" || annexes.find((a) => a.id === form.annexeId)?.nom?.toLowerCase().includes("mali")}
-              onModeTransportChange={form.setModeTransport}
-              onPortEntreeChange={form.setPortEntree}
-              onNoConteneurChange={form.setNoConteneur}
-              onPoidsTotalChange={form.setPoidsTotal}
-            />
-          )}
-
           {form.showStep(2) && (
             <DossierAmountsSection
               totalContrat={form.totalContrat}
@@ -241,6 +224,23 @@ function DossierFormInner() {
               onChange={form.updateDepense}
               onAdd={form.addDepense}
               onRemove={form.removeDepense}
+            />
+          )}
+
+          {form.showStep(3) && (
+            <DossierTransportSection
+              isEdit={isEdit}
+              modeTransport={form.modeTransport}
+              portEntree={form.portEntree}
+              noConteneur={form.noConteneur}
+              poidsTotal={form.poidsTotal}
+              nombreColis={form.nombreColis}
+              onNombreColisChange={form.setNombreColis}
+              isMali={annexeCode === "ML" || annexes.find((a) => a.id === form.annexeId)?.nom?.toLowerCase().includes("mali")}
+              onModeTransportChange={form.setModeTransport}
+              onPortEntreeChange={form.setPortEntree}
+              onNoConteneurChange={form.setNoConteneur}
+              onPoidsTotalChange={form.setPoidsTotal}
             />
           )}
 

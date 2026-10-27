@@ -26,6 +26,7 @@ __decorate([
     __metadata("design:type", String)
 ], DepenseDossierDto.prototype, "id", void 0);
 __decorate([
+    (0, class_validator_1.ValidateIf)((_o, v) => v !== '' && v != null),
     (0, class_validator_1.IsDateString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
@@ -58,6 +59,7 @@ __decorate([
     __metadata("design:type", String)
 ], PaiementDossierDto.prototype, "id", void 0);
 __decorate([
+    (0, class_validator_1.ValidateIf)((_o, v) => v !== '' && v != null),
     (0, class_validator_1.IsDateString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)

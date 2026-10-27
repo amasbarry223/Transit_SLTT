@@ -99,8 +99,8 @@ const somme = (lignes?: ReadonlyArray<{ montant: number }> | null) =>
 export function statutPaiement(totalContrat: number, montantPaye: number): StatutPaiement {
   const reste = totalContrat - montantPaye;
   if (reste < 0) return "TROP_PERCU";
-  if (montantPaye === 0 && totalContrat > 0) return "IMPAYE";
   if (reste === 0) return "SOLDE";
+  if (montantPaye === 0 && totalContrat > 0) return "IMPAYE";
   return "PARTIEL";
 }
 
@@ -150,7 +150,7 @@ export function lignesDossierDepuisApi(raw: {
   paiements?: RawDossierPaiement[];
 }): Pick<Dossier, "depenses" | "paiements"> {
   return {
-    depenses: raw.depensesDossier?.map((l) => ({
+    depenses: (raw.depensesDossier ?? []).map((l) => ({
       id: l.id,
       date: jour(l.date),
       nature: l.nature ?? "",
@@ -159,7 +159,7 @@ export function lignesDossierDepuisApi(raw: {
         : "DIVERS",
       montant: toFcfa(l.montant),
     })),
-    paiements: raw.paiements?.map((p) => ({
+    paiements: (raw.paiements ?? []).map((p) => ({
       id: p.id,
       date: jour(p.date),
       montant: toFcfa(p.montant),

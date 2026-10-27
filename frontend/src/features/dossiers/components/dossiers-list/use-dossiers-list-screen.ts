@@ -115,7 +115,11 @@ export function useDossiersListScreen() {
   const refDate = useMemo(() => getDashboardAnchorDate(), [anchorDayKey]);
 
   const availableYears = useMemo(() => {
-    const years = new Set(dossiers.map((d) => d.date.slice(0, 4)).filter(Boolean));
+    const years = new Set(
+      dossiers
+        .map((d) => (d.date || "").slice(0, 4))
+        .filter((y) => y.length === 4),
+    );
     return [...years].sort().reverse();
   }, [dossiers]);
 

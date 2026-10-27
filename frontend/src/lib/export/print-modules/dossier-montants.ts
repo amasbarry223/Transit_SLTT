@@ -10,8 +10,8 @@ import {
   type PaiementDossier,
 } from "@/lib/domain/dossier-finances";
 
-const POSITIF = "#16853f";
-const NEGATIF = "#dc2626";
+const POSITIF = BRAND.success;
+const NEGATIF = BRAND.error;
 const h2 = (titre: string) =>
   `<h2 style="margin-top:24px;font-size:14px;color:${BRAND.navy}">${htmlEscape(titre)}</h2>`;
 const date = (d?: string) => (d ? formatDateShort(d) : "—");
@@ -42,7 +42,7 @@ export function dossierMontantsHtml({
         <tbody>
           ${paiements
             .map(
-              (p) => `<tr><td>${date(p.date)}</td><td>${htmlEscape(MODE_PAIEMENT_LABELS[p.mode])}</td>` +
+              (p) => `<tr><td>${date(p.date)}</td><td>${htmlEscape(MODE_PAIEMENT_LABELS[p.mode] ?? p.mode ?? "—")}</td>` +
                 `<td>${htmlEscape(p.reference ?? "") || "—"}</td><td class="num">${formatFCFA(p.montant, false)}</td></tr>`,
             )
             .join("")}
@@ -59,7 +59,7 @@ export function dossierMontantsHtml({
           ${depenses
             .map(
               (d) => `<tr><td>${date(d.date)}</td><td>${htmlEscape(d.nature)}</td>` +
-                `<td>${htmlEscape(CATEGORIE_DEPENSE_LABELS[d.categorie])}</td><td class="num">${formatFCFA(d.montant, false)}</td></tr>`,
+                `<td>${htmlEscape(CATEGORIE_DEPENSE_LABELS[d.categorie] ?? d.categorie ?? "—")}</td><td class="num">${formatFCFA(d.montant, false)}</td></tr>`,
             )
             .join("")}
           <tr class="total-row"><th colspan="3">Total dépenses</th><td class="num">${formatFCFA(f.totalDepenses, false)}</td></tr>
@@ -75,7 +75,7 @@ export function dossierMontantsHtml({
           <tr><th>Montant payé</th><td class="num">${formatFCFA(f.montantPaye, false)}</td></tr>
           ${reste}
           <tr><th>Dépenses</th><td class="num">${formatFCFA(f.totalDepenses, false)}</td></tr>
-          <tr><th>Statut du paiement</th><td>${htmlEscape(STATUT_PAIEMENT_LABELS[f.statutPaiement])}</td></tr>
+          <tr><th>Statut du paiement</th><td>${htmlEscape(STATUT_PAIEMENT_LABELS[f.statutPaiement] ?? f.statutPaiement ?? "—")}</td></tr>
           <tr class="total-row">
             <th>Bénéfice net</th>
             <td class="num" style="color:${f.beneficeNet >= 0 ? POSITIF : NEGATIF}">

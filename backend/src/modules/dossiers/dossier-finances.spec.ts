@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { calculerFinancesDossier } from './dossier-finances';
 
 // Mêmes cas que frontend/src/lib/domain/dossier-finances.test.ts — fiche Excel
@@ -35,6 +36,12 @@ describe('calculerFinancesDossier', () => {
     expect(f.montantPaye).toBe(0);
     expect(f.resteAPayer).toBe(12_000_000);
     expect(f.statutPaiement).toBe('IMPAYE');
+  });
+
+  it('contrat nul et aucun paiement : soldé car reste à payer nul', () => {
+    const f = calculerFinancesDossier({ totalContrat: 0, paiements: [] });
+    expect(f.resteAPayer).toBe(0);
+    expect(f.statutPaiement).toBe('SOLDE');
   });
 
   it('dépenses supérieures au contrat : bénéfice négatif, perte', () => {

@@ -17,7 +17,7 @@ export function DossierLignesTables({ dossier, className }: { dossier: Dossier; 
         colonnes={["Date", "Mode", "Réf."]}
         lignes={paiements.map((p) => ({
           key: p.id ?? `${p.date}-${p.montant}`,
-          cellules: [formatDateShort(p.date), MODE_PAIEMENT_LABELS[p.mode], p.reference || "—"],
+          cellules: [formatDateShort(p.date), MODE_PAIEMENT_LABELS[p.mode] ?? p.mode ?? "—", p.reference || "—"],
           montant: p.montant,
         }))}
       />
@@ -27,7 +27,7 @@ export function DossierLignesTables({ dossier, className }: { dossier: Dossier; 
         colonnes={["Date", "Nature", "Catégorie"]}
         lignes={depenses.map((d) => ({
           key: d.id ?? `${d.date}-${d.nature}-${d.montant}`,
-          cellules: [formatDateShort(d.date), d.nature, CATEGORIE_DEPENSE_LABELS[d.categorie]],
+          cellules: [formatDateShort(d.date), d.nature, CATEGORIE_DEPENSE_LABELS[d.categorie] ?? d.categorie ?? "—"],
           montant: d.montant,
         }))}
       />
