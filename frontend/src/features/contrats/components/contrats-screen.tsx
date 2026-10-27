@@ -37,6 +37,7 @@ import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import {
   CONTRAT_STATUTS,
   CONTRAT_STATUT_TONE,
+  ContratFormModal as ContratEditModal,
 } from "./contrat-detail";
 import { filterByAnnexe } from "@/lib/filter-by-annexe";
 import { useActiveAnnexe } from "@/shared/hooks/use-active-annexe";
