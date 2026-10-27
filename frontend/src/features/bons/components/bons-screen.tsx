@@ -44,10 +44,7 @@ export function BonsScreen() {
   const sessionRole = useSession((state) => state.currentRole);
   const currentUser = useCurrentUser();
   const effectiveRole = currentUser?.role || sessionRole;
-  const isAdmin =
-    (effectiveRole as string) === "ADMIN" ||
-    effectiveRole === "Administrateur" ||
-    normalizeRole(effectiveRole) === "Administrateur";
+  const isAdmin = normalizeRole(effectiveRole) === "Administrateur";
   const canWrite = usePermission("bons:write") || isAdmin;
   const canWriteCaisse = usePermission("bons:write-caisse") || isAdmin;
   const go = useNav((state) => state.go);

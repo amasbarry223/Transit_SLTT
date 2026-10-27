@@ -63,7 +63,6 @@ export function FactureFormModal({
   const defaultTva = useConfigValue<number>("taux_tva_defaut", DEFAULT_TVA_RATE);
 
   const [clientId,     setClientId]     = React.useState(prefill?.clientId ?? "");
-  const [clientNom,    setClientNom]    = React.useState(prefill?.clientNom ?? "");
   const [annexeId,     setAnnexeId]     = React.useState(prefill?.annexeId ?? activeAnnexeId ?? "");
   const [dossierId,    setDossierId]    = React.useState(prefill?.dossierId ?? "");
   const [date,         setDate]         = React.useState(prefill?.date ?? today);
@@ -107,10 +106,11 @@ export function FactureFormModal({
   const montantTVA = Math.round(montantHT * (tva / 100));
   const montantTTC = montantHT + montantTVA;
 
+  const selectedClient = clients.find((x) => x.id === clientId);
+  const resolvedClientNom = selectedClient?.nom || prefill?.clientNom || "";
+
   function handleClientChange(id: string) {
-    const c = clients.find((x) => x.id === id);
     setClientId(id);
-    setClientNom(c?.nom ?? "");
   }
 
   function handleDossierChange(id: string) {
@@ -162,7 +162,7 @@ export function FactureFormModal({
       const f = await addFacture({
         dossierId: dossierId || null,
         clientId,
-        clientNom,
+        clientNom: resolvedClientNom,
         annexeId: resolvedAnnexeId,
         date,
         dateEcheance,
