@@ -5,34 +5,38 @@
 -- doit être exécuté qu'UNE fois, à la main (phpMyAdmin, onglet SQL).
 --
 -- Prérequis :
---   1. La phase 1 (prisma/sql/2026-10-27-dossier-depenses-paiements.sql) a
---      tourné en production (tables dossier_depenses / dossier_paiements
---      remplies, colonnes ci-dessous à 0/NULL).
+--   1. La version du 27/10/2026 est déployée et a démarré au moins une fois
+--      (phase 1 : tables dossier_depenses / dossier_paiements remplies,
+--      colonnes ci-dessous à 0/NULL).
 --   2. Les chiffres ont été vérifiés dans l'application (liste des dossiers,
 --      situation client, tableau de bord).
---   3. Une sauvegarde de la base a été faite.
+--   3. Une sauvegarde de la base a été faite (phpMyAdmin > Exporter).
 --
--- Déploiement à faire EN MÊME TEMPS que ce script (sinon le backend ne trouve
--- plus la colonne frais_prestation) :
---   backend/prisma/schema.prisma, modèle Dossier :
---     totalContrat Float @default(0) @map("frais_prestation")
---   devient
---     totalContrat Float @default(0) @map("total_contrat")
---   puis `npm run build` dans backend/ et commit de backend/dist.
---   Ordre conseillé : exécuter ce script, puis redémarrer le backend déployé
---   avec la nouvelle version.
+-- Aucun déploiement n'est nécessaire : le code ne lit plus ces colonnes.
 -- =============================================================================
 
--- Contrôle : doit renvoyer 0 avant de continuer.
+-- Étape 1 — contrôle : doit renvoyer 0. Sinon NE PAS continuer (le backend
+-- n'a pas encore démarré avec la nouvelle version).
 SELECT COUNT(*) AS montants_non_repris
 FROM `dossiers`
 WHERE `valeur_douane` IS NOT NULL OR `frais_circuit` <> 0 OR `montant_investi` <> 0;
 
+-- Étape 2 — suppression des anciennes colonnes (leurs valeurs restent dans
+-- dossiers_montants_sauvegarde_20261027).
 ALTER TABLE `dossiers`
     DROP COLUMN `valeur_douane`,
     DROP COLUMN `frais_circuit`,
-    DROP COLUMN `montant_investi`,
-    CHANGE COLUMN `frais_prestation` `total_contrat` DOUBLE NOT NULL DEFAULT 0;
+    DROP COLUMN `montant_investi`;
 
--- Une fois tout validé (quelques semaines plus tard), la sauvegarde peut partir :
+-- -----------------------------------------------------------------------------
+-- OPTIONNEL — renommer frais_prestation en total_contrat (purement cosmétique,
+-- le code l'appelle déjà totalContrat). À faire UNIQUEMENT en même temps qu'un
+-- déploiement où backend/prisma/schema.prisma passe de
+--   @map("frais_prestation")  à  @map("total_contrat")
+-- (puis npm run build + commit de backend/dist), sinon le backend plante.
+--
+-- ALTER TABLE `dossiers` CHANGE COLUMN `frais_prestation` `total_contrat` DOUBLE NOT NULL DEFAULT 0;
+-- -----------------------------------------------------------------------------
+
+-- Plus tard, quand tout est validé (quelques semaines), la sauvegarde peut partir :
 -- DROP TABLE `dossiers_montants_sauvegarde_20261027`;

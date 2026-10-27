@@ -269,10 +269,10 @@ model Dossier {
   bureauDouane     String?       @map("bureau_douane")
   numeroDeclaration String?      @map("numero_declaration")
   dateDeclaration  DateTime?     @map("date_declaration")
-  // Total contrat (montant facturé au client). Colonne SQL encore nommée
-  // frais_prestation jusqu'à la phase 2 (prisma/sql-manuel/) ; les anciennes
-  // colonnes valeur_douane / frais_circuit / montant_investi restent en base,
-  // vidées et ignorées, jusqu'à cette même phase 2.
+  // Total contrat (montant facturé au client). Colonne SQL historique
+  // frais_prestation (renommage optionnel : prisma/sql-manuel/) ; les anciennes
+  // colonnes valeur_douane / frais_circuit / montant_investi sont ignorées
+  // puis supprimées par ce même script manuel.
   totalContrat     Float         @default(0) @map("frais_prestation")
   /// Cache de Σ paiements, recalculé par le serveur à chaque écriture.
   montantPaye      Float         @default(0) @map("montant_paye")

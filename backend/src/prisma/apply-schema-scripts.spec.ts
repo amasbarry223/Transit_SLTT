@@ -1,8 +1,17 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { applySchemaScripts, splitSqlStatements } from './apply-schema-scripts';
+import { applySchemaScripts, requiredColumns, schemaScripts, splitSqlStatements } from './apply-schema-scripts';
 
-const SCRIPT = join(__dirname, '..', '..', 'prisma', 'sql', '2026-10-22-bons-livraison-notifications.sql');
+const SQL_DIR = join(__dirname, '..', '..', 'prisma', 'sql');
+const SCRIPT = join(SQL_DIR, '2026-10-22-bons-livraison-notifications.sql');
+const REPRISE = '2026-10-27-dossier-reprise-montants.sql';
+
+function resetResult() {
+  schemaScripts.status = 'none';
+  schemaScripts.applied = [];
+  schemaScripts.skipped = [];
+  delete schemaScripts.detail;
+}
 
 describe('splitSqlStatements', () => {
   it('découpe le script de production en ses deux CREATE TABLE IF NOT EXISTS, sans commentaires', () => {
@@ -14,16 +23,48 @@ describe('splitSqlStatements', () => {
   });
 });
 
+describe('requiredColumns', () => {
+  it('lit les directives @si-colonne du script de reprise des dossiers', () => {
+    expect(requiredColumns(readFileSync(join(SQL_DIR, REPRISE), 'utf8'))).toEqual([
+      { table: 'dossiers', column: 'valeur_douane' },
+      { table: 'dossiers', column: 'frais_circuit' },
+      { table: 'dossiers', column: 'montant_investi' },
+    ]);
+  });
+});
+
 describe('applySchemaScripts', () => {
-  it('exécute chaque instruction des scripts de prisma/sql', async () => {
-    const prisma = { $executeRawUnsafe: vi.fn().mockResolvedValue(0) };
+  beforeEach(resetResult);
+
+  it('exécute chaque instruction des scripts de prisma/sql tant que les colonnes requises existent', async () => {
+    const prisma = {
+      $executeRawUnsafe: vi.fn().mockResolvedValue(0),
+      $queryRawUnsafe: vi.fn().mockResolvedValue([{ n: BigInt(1) }]),
+    };
 
     const res = await applySchemaScripts(prisma as any);
 
     expect(res.status).toBe('ok');
-    expect(res.applied).toContain('2026-10-22-bons-livraison-notifications.sql');
-    expect(res.applied).toContain('2026-10-27-dossier-depenses-paiements.sql');
-    // 2 instructions (bons de livraison) + 6 (sauvegarde, 2 tables, 2 INSERT de reprise, 1 UPDATE).
+    expect(res.applied).toEqual([
+      '2026-10-22-bons-livraison-notifications.sql',
+      '2026-10-27-dossier-depenses-paiements.sql',
+      REPRISE,
+    ]);
+    // 2 (bons de livraison) + 2 (tables dossier) + 4 (sauvegarde, 2 INSERT de reprise, UPDATE).
     expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(8);
+  });
+
+  it('saute la reprise une fois les anciennes colonnes supprimées (phase 2), sans erreur', async () => {
+    const prisma = {
+      $executeRawUnsafe: vi.fn().mockResolvedValue(0),
+      $queryRawUnsafe: vi.fn().mockResolvedValue([{ n: 0 }]),
+    };
+
+    const res = await applySchemaScripts(prisma as any);
+
+    expect(res.status).toBe('ok');
+    expect(res.skipped).toEqual([REPRISE]);
+    expect(res.applied).not.toContain(REPRISE);
+    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(4);
   });
 });
