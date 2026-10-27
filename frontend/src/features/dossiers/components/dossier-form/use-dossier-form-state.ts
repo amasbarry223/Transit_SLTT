@@ -183,12 +183,14 @@ export function useDossierFormState({
 
   const updatePaiement = (key: string, patch: Partial<PaiementForm>) =>
     setPaiements((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  const addPaiement = () => setPaiements((rows) => [...rows, emptyPaiement()]);
+  const addPaiement = (initial?: Partial<PaiementForm>) =>
+    setPaiements((rows) => [...rows, { ...emptyPaiement(), ...initial, key: rowKey() }]);
   const removePaiement = (key: string) => setPaiements((rows) => rows.filter((r) => r.key !== key));
 
   const updateDepense = (key: string, patch: Partial<DepenseForm>) =>
     setDepenses((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  const addDepense = () => setDepenses((rows) => [...rows, emptyDepense()]);
+  const addDepense = (initial?: Partial<DepenseForm>) =>
+    setDepenses((rows) => [...rows, { ...emptyDepense(), ...initial, key: rowKey() }]);
   const removeDepense = (key: string) => setDepenses((rows) => rows.filter((r) => r.key !== key));
 
   const selectedAnnexe = annexes.find((item) => item.id === annexeId);
@@ -284,11 +286,9 @@ export function useDossierFormState({
 
   function validate(): boolean {
     const errs: DossierFormErrors = {};
-    if (!annexeId) errs.annexeId = "L'annexe est obligatoire.";
+    const resolvedAnnexeId = annexeId || (annexes.length > 0 ? annexes[0].id : "");
+    if (!resolvedAnnexeId) errs.annexeId = "L'annexe est obligatoire.";
     if (!clientId) errs.clientId = "Le client est obligatoire.";
-    if (!bl.trim()) errs.bl = "Le numéro de BL est obligatoire.";
-    if (!camion.trim()) errs.camion = "Le numéro de camion est obligatoire.";
-    if (!nature.trim()) errs.nature = "La nature de la marchandise est obligatoire.";
     if (!date) errs.date = "La date est obligatoire.";
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
@@ -300,7 +300,8 @@ export function useDossierFormState({
 
   function validateStep1(): boolean {
     const next: DossierFormErrors = {};
-    if (!annexeId) next.annexeId = "L'annexe est obligatoire.";
+    const resolvedAnnexeId = annexeId || (annexes.length > 0 ? annexes[0].id : "");
+    if (!resolvedAnnexeId) next.annexeId = "L'annexe est obligatoire.";
     if (!clientId) next.clientId = "Le client est obligatoire.";
     if (!nature.trim()) next.nature = "La nature de la marchandise est obligatoire.";
     if (!bl.trim()) next.bl = "Le numéro de BL est obligatoire.";
@@ -329,13 +330,16 @@ export function useDossierFormState({
 
   function buildSaveInput(clientNom: string) {
     const colis = parseInt(nombreColis, 10);
+    const resolvedAnnexeId = annexeId || (annexes.length > 0 ? annexes[0].id : "");
+    const resolvedBl = bl.trim() ? bl.trim().toUpperCase() : reference || "N/A";
+    const resolvedCamion = camion.trim() ? camion.trim().toUpperCase() : "—";
     return {
-      annexeId,
+      annexeId: resolvedAnnexeId,
       clientId,
       clientNom,
-      nature: nature.trim(),
-      bl: bl.trim().toUpperCase(),
-      camion: camion.trim().toUpperCase(),
+      nature: nature.trim() || "Marchandise générale",
+      bl: resolvedBl,
+      camion: resolvedCamion,
       date,
       dateEcheance: dateEcheance || undefined,
       dateDedouanement: dateDedouanement || undefined,

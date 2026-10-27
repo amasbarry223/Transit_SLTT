@@ -374,7 +374,7 @@ export function DossierDetailScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {activeTab === "apercu" && (
         <DossierScreenRedesign
           existingDossier={currentDossier}
