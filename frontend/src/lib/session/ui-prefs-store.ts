@@ -69,26 +69,6 @@ function schedulePersist(patch: PrefsPatch) {
   }, 300);
 }
 
-function isTheme(value: unknown): value is Theme {
-  return value === "light" || value === "dark";
-}
-
-function isDateFormat(value: unknown): value is DateFormat {
-  return value === "dmy" || value === "mdy" || value === "ymd";
-}
-
-export function prefsFromProfile(profile: {
-  theme?: string | null;
-  date_format?: string | null;
-  selected_annexe_id?: string | null;
-}): ProfileUiPrefs {
-  return {
-    theme: isTheme(profile.theme) ? profile.theme : DEFAULTS.theme,
-    dateFormat: isDateFormat(profile.date_format) ? profile.date_format : DEFAULTS.dateFormat,
-    selectedAnnexeId: profile.selected_annexe_id ?? null,
-  };
-}
-
 export const useUiPrefs = create<UiPrefsState>()((set) => ({
   ...DEFAULTS,
 

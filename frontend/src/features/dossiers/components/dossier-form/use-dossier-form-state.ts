@@ -13,12 +13,6 @@ import { parseAmount } from "@/lib/format";
 import { resolveDossierReferencePrefix } from "@/lib/societe-brand";
 import { computeDossierReference } from "@/lib/store/reference";
 
-export const WIZARD_STEPS = [
-  { id: 1, label: "Identité", hint: "Annexe, client, BL, camion, nature" },
-  { id: 2, label: "Montants", hint: "Contrat, paiements, dépenses" },
-  { id: 3, label: "Transport", hint: "Mode, conteneur, poids, colis" },
-] as const;
-
 export type DossierFormErrors = {
   annexeId?: string;
   clientId?: string;

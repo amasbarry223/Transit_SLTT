@@ -91,13 +91,6 @@ export const DOSSIER_STATUT_TONE: Record<DossierStatut, Tone> = {
   Soldé: "emerald",
 };
 
-export const DOSSIER_STATUT_DOT: Record<DossierStatut, string> = {
-  "En cours": dotClasses[DOSSIER_STATUT_TONE["En cours"]],
-  Dédouané: dotClasses[DOSSIER_STATUT_TONE["Dédouané"]],
-  Livré: dotClasses[DOSSIER_STATUT_TONE["Livré"]],
-  Soldé: dotClasses[DOSSIER_STATUT_TONE["Soldé"]],
-};
-
 export function DossierStatutBadge({ statut }: { statut: DossierStatut }) {
   return <ToneBadge tone={DOSSIER_STATUT_TONE[statut]}>{statut}</ToneBadge>;
 }

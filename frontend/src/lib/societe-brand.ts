@@ -211,14 +211,6 @@ export function ensureSocieteBrand(brand?: SocieteBrand | null): SocieteBrand {
   return DEFAULT_TRANSIT_BRAND;
 }
 
-export function requireSocieteBrand(
-  _brand: SocieteBrand | null | undefined,
-  _context?: string,
-): _brand is SocieteBrand {
-  // Toujours autoriser l'impression en injectant les valeurs par défaut si nécessaire
-  return true;
-}
-
 export function requirePrintHTMLBrand(
   _brand: PrintHTMLBrand | null | undefined,
   _context?: string,

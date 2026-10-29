@@ -61,7 +61,7 @@ export function useDossierFormActions({
   async function handleSave() {
     // Un double-clic (ou un réseau lent) avant la résolution du premier appel
     // créerait deux dossiers distincts — addDossier régénère une référence
-    // valide sur collision (insertWithReferenceRetry) au lieu d'échouer.
+    // valide sur collision (bumpTrailingSeq) au lieu d'échouer.
     if (saving) return;
     if (!canWrite) {
       toastWarning(toast, { title: "Action non autorisée", description: "Vous n'avez pas la permission d'enregistrer un dossier." });

@@ -53,38 +53,6 @@ export function bumpTrailingSeq(reference: string): string {
   return reference.replace(/(\d+)$/, (digits) => String(Number(digits) + 1).padStart(digits.length, "0"));
 }
 
-/** true si l'erreur Postgres/PostgREST est une violation de contrainte unique (23505). */
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "23505"
-  );
-}
-
-/**
- * Exécute `attemptInsert(reference)` en réessayant avec une référence
- * incrémentée si l'insertion échoue sur une violation de contrainte unique
- * (deux créations concurrentes ayant calculé la même référence). Sans ce
- * filet, la course se traduisait par une exception Postgres brute affichée
- * à l'utilisateur plutôt qu'une nouvelle tentative transparente.
- */
-export async function insertWithReferenceRetry<T>(
-  reference: string,
-  attemptInsert: (ref: string) => PromiseLike<{ data: T | null; error: { code?: string; message: string } | null }>,
-  maxAttempts = 3,
-): Promise<{ data: T; reference: string }> {
-  let ref = reference;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const { data, error } = await attemptInsert(ref);
-    if (!error) return { data: data as T, reference: ref };
-    if (!isUniqueViolation(error) || attempt === maxAttempts) throw error;
-    ref = bumpTrailingSeq(ref);
-  }
-  throw new Error("Échec de génération de référence après plusieurs tentatives.");
-}
-
 /**
  * Prochaine séquence au sein d'un sous-ensemble de références déjà existantes
  * (ex. celles d'une annexe) — indépendante du compteur global de l'entité.
