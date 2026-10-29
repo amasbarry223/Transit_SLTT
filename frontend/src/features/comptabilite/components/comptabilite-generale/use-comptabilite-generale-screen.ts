@@ -42,7 +42,12 @@ export function useComptabiliteGeneraleScreen() {
   );
 
   const entites = useMemo(() => resolveEntitesComptables(annexes), [annexes]);
-  const [activeEntiteKey, setActiveEntiteKey] = useState<string | null>(null);
+  // Le choix d'onglet n'est valable que pour l'annexe du header sous laquelle il
+  // a été fait : changer d'annexe dans le header reprend la main (avant, un clic
+  // d'onglet figeait l'écran et ignorait ensuite le sélecteur du header).
+  const [tabChoice, setTabChoice] = useState<{ key: string; forAnnexeId: string | null } | null>(null);
+  const activeEntiteKey = tabChoice && tabChoice.forAnnexeId === selectedAnnexeId ? tabChoice.key : null;
+  const setActiveEntiteKey = (key: string) => setTabChoice({ key, forAnnexeId: selectedAnnexeId });
   const resolvedEntite = useMemo(() => {
     if (entites.length === 0) return null;
     if (activeEntiteKey) {

@@ -11,13 +11,13 @@ export class CreateClotureDto {
   @IsString()
   periodeFin!: string;
 
+  /** Ignoré : le serveur recalcule le solde théorique (report + net de la période). Whitelisté pour ne pas rejeter les anciens clients. */
   @IsNumber()
   @IsOptional()
   soldeTheorique?: number;
 
   @IsNumber()
-  @IsOptional()
-  soldeConstate?: number;
+  soldeConstate!: number;
 
   @IsString()
   @IsOptional()

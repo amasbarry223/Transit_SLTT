@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { ClotureCaisse, EntiteComptable } from "@/lib/domain-types";
 import {
   computeOperationsTotals,
+  computeSoldeOuverture,
   filterOperationsByEntite,
   filterOperationsByPeriode,
 } from "@/lib/comptabilite-generale";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
-import { formatFCFA } from "@/lib/format";
+import { formatDateShort, formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -48,6 +49,7 @@ interface ClotureDialogProps {
 export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }: ClotureDialogProps) {
   const { toast } = useToast();
   const allOperations = useStore((s) => s.operationsComptables);
+  const cloturesCaisse = useStore((s) => s.cloturesCaisse);
   const recordClotureCaisse = useStore((s) => s.recordClotureCaisse);
 
   const derniereCloture = dernieresClotures[0];
@@ -66,18 +68,34 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
     setNote("");
   }, [open, derniereCloture]);
 
-  const soldeTheorique = useMemo(() => {
+  // La caisse est un cumul : théorique = report de la clôture précédente + net
+  // de la période (le serveur refait ce calcul et fait foi).
+  const soldeOuverture = useMemo(
+    () => computeSoldeOuverture(cloturesCaisse, entite, periodeDebut),
+    [cloturesCaisse, entite, periodeDebut],
+  );
+  const netPeriode = useMemo(() => {
     const entiteOperations = filterOperationsByEntite(allOperations, entite);
     const periode = filterOperationsByPeriode(entiteOperations, periodeDebut || undefined, periodeFin || undefined);
     return computeOperationsTotals(periode).soldeTheorique;
   }, [allOperations, entite, periodeDebut, periodeFin]);
+  const soldeTheorique = soldeOuverture + netPeriode;
 
   const soldeConstateNum = Number(soldeConstate.replace(/\s/g, "")) || 0;
-  const ecart = soldeTheorique - soldeConstateNum;
+  // Convention unique (identique au serveur et à l'historique) : constaté − théorique.
+  const ecart = soldeConstateNum - soldeTheorique;
+  const chevauche = Boolean(derniereCloture && periodeDebut && periodeDebut <= derniereCloture.periodeFin);
 
   async function handleSubmit() {
     if (!periodeDebut || !periodeFin || periodeFin < periodeDebut) {
       toastWarning(toast, { title: "Période invalide" });
+      return;
+    }
+    if (chevauche && derniereCloture) {
+      toastWarning(toast, {
+        title: "Période déjà clôturée",
+        description: `La dernière clôture se termine le ${formatDateShort(derniereCloture.periodeFin)} : commencez le lendemain.`,
+      });
       return;
     }
     setSubmitting(true);
@@ -107,7 +125,7 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
           <DialogTitle>Clôturer la caisse — {entite.label}</DialogTitle>
           <DialogDescription>
             Renseignez le solde compté physiquement (caisse ou relevé bancaire) pour clôturer la période — il sera
-            comparé au solde net déjà calculé automatiquement (visible dans le KPI et la colonne du journal).
+            comparé au solde théorique (report de la clôture précédente + mouvements de la période).
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -121,9 +139,15 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
               <Input id="cl-fin" type="date" value={periodeFin} onChange={(e) => setPeriodeFin(e.target.value)} className="h-10" />
             </div>
           </div>
-          <div className="rounded-lg border border-border bg-muted/30 p-3">
-            <p className="text-xs text-muted-foreground">Solde théorique (entrées − sorties de la période)</p>
-            <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">{formatFCFA(soldeTheorique)}</p>
+          {chevauche && derniereCloture && (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              Cette période chevauche la clôture du {formatDateShort(derniereCloture.periodeFin)}.
+            </p>
+          )}
+          <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <div className="flex justify-between"><span>Solde d&apos;ouverture (report)</span><span className="tabular-nums">{formatFCFA(soldeOuverture)}</span></div>
+            <div className="flex justify-between"><span>Net de la période (entrées − sorties)</span><span className="tabular-nums">{formatFCFA(netPeriode)}</span></div>
+            <div className="flex justify-between border-t border-border pt-1 text-sm font-semibold text-foreground"><span>Solde théorique</span><span className="tabular-nums">{formatFCFA(soldeTheorique)}</span></div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="cl-constate">
@@ -132,7 +156,7 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
             <Input id="cl-constate" type="number" value={soldeConstate} onChange={(e) => setSoldeConstate(e.target.value)} placeholder="Compté en caisse / relevé bancaire" className="h-10" />
           </div>
           <div className="rounded-lg border border-border p-3">
-            <p className="text-xs text-muted-foreground">Écart de clôture (théorique − constaté)</p>
+            <p className="text-xs text-muted-foreground">Écart de clôture (constaté − théorique)</p>
             <p className={cn("mt-0.5 text-lg font-semibold tabular-nums", ecart === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
               {formatFCFA(ecart)}
             </p>
@@ -144,7 +168,7 @@ export function ClotureDialog({ open, onOpenChange, entite, dernieresClotures }:
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-          <Button onClick={handleSubmit} disabled={submitting || !soldeConstate}>Clôturer</Button>
+          <Button onClick={handleSubmit} disabled={submitting || !soldeConstate || chevauche}>Clôturer</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

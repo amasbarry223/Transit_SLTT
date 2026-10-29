@@ -39,17 +39,42 @@ export function sommeFacturesEncaissees(factures: Facture[]): number {
 /**
  * Règlements reçus sur les dossiers NON facturés — quand un dossier n'a pas de
  * facture, c'est lui qui porte le montant encaissé (même règle que les bilans
- * et syncClientStats). `inPeriode`, si fourni, filtre sur `dateSolde`.
+ * et syncClientStats).
+ *
+ * `inPeriode`, si fourni, filtre chaque règlement sur SA date : trois
+ * versements de janvier, février et mars comptent chacun dans leur mois. Avant,
+ * tout le cumul était rangé dans le mois de `dateSolde` (dernier règlement) et
+ * décalait les recettes. Repli sur `dateSolde` quand le détail des paiements
+ * n'est pas chargé.
  */
 export function sommeDossiersEncaisses(
   dossiers: Dossier[],
   factures: Facture[],
-  inPeriode?: (dateSolde: string) => boolean,
+  inPeriode?: (date: string) => boolean,
 ): number {
-  return dossiersNonFactures(dossiers, factures)
-    .filter((d) => d.montantPaye > 0)
-    .filter((d) => !inPeriode || (d.dateSolde ? inPeriode(d.dateSolde) : false))
-    .reduce((sum, d) => sum + d.montantPaye, 0);
+  return dossiersNonFactures(dossiers, factures).reduce((sum, d) => {
+    if (!inPeriode) return sum + (d.montantPaye > 0 ? d.montantPaye : 0);
+    if (d.paiements && d.paiements.length > 0) {
+      return sum + d.paiements.filter((p) => p.date && inPeriode(p.date)).reduce((s, p) => s + p.montant, 0);
+    }
+    return sum + (d.montantPaye > 0 && d.dateSolde && inPeriode(d.dateSolde) ? d.montantPaye : 0);
+  }, 0);
+}
+
+/**
+ * Dépenses engagées sur les dossiers (droit de douane compris), datées ligne
+ * par ligne. Tous les dossiers comptent, facturés ou non : un coût est réel
+ * quelle que soit l'encaissement.
+ */
+export function sommeDepensesDossiers(dossiers: Dossier[], inPeriode?: (date: string) => boolean): number {
+  return dossiers.reduce(
+    (sum, d) =>
+      sum +
+      (d.depenses ?? [])
+        .filter((l) => !inPeriode || (l.date && inPeriode(l.date)))
+        .reduce((s, l) => s + l.montant, 0),
+    0,
+  );
 }
 
 /**

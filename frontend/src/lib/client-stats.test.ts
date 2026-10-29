@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { syncClientStats, sommeDossiersEncaisses } from "./client-stats";
+import { syncClientStats, sommeDepensesDossiers, sommeDossiersEncaisses } from "./client-stats";
 import type { Client, Dossier, Facture, Ecriture } from "@/lib/store";
 
 describe("syncClientStats", () => {
@@ -85,5 +85,40 @@ describe("syncClientStats", () => {
     expect(updated.totalDu).toBe(600);
     expect(updated.totalPaye).toBe(1200);
     expect(updated.totalInvesti).toBe(1600);
+  });
+});
+
+describe("sommeDossiersEncaisses — datation par règlement", () => {
+  const mois = (m: string) => (iso: string) => iso.startsWith(`2026-${m}`);
+  const dossiers = [
+    {
+      id: "d1",
+      totalContrat: 900,
+      montantPaye: 900,
+      dateSolde: "2026-03-10",
+      paiements: [
+        { date: "2026-01-05", montant: 300, mode: "ESPECES" },
+        { date: "2026-02-05", montant: 300, mode: "ESPECES" },
+        { date: "2026-03-10", montant: 300, mode: "ESPECES" },
+      ],
+    },
+  ] as Dossier[];
+
+  it("range chaque versement dans son mois, pas tout le cumul dans le mois du dernier", () => {
+    expect(sommeDossiersEncaisses(dossiers, [], mois("01"))).toBe(300);
+    expect(sommeDossiersEncaisses(dossiers, [], mois("02"))).toBe(300);
+    expect(sommeDossiersEncaisses(dossiers, [], mois("03"))).toBe(300);
+    expect(sommeDossiersEncaisses(dossiers, [])).toBe(900);
+  });
+});
+
+describe("sommeDepensesDossiers", () => {
+  it("additionne les dépenses de dossier par date, facturés ou non", () => {
+    const dossiers = [
+      { id: "d1", depenses: [{ date: "2026-01-02", nature: "Douane", categorie: "DOUANE", montant: 100 }, { date: "2026-02-02", nature: "T", categorie: "TRANSPORT", montant: 50 }] },
+      { id: "d2" },
+    ] as Dossier[];
+    expect(sommeDepensesDossiers(dossiers)).toBe(150);
+    expect(sommeDepensesDossiers(dossiers, (iso) => iso.startsWith("2026-02"))).toBe(50);
   });
 });

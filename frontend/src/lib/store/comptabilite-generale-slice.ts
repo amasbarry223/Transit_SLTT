@@ -72,9 +72,12 @@ export const createComptabiliteGeneraleSlice: StateCreator<
       creePar,
     });
 
+    // Le serveur tranche la référence (compteur persistant, collisions
+    // gérées) : on affiche celle qu'il a attribuée, pas notre proposition.
+    const reference = created?.reference ?? initialReference;
     const newOperation: OperationComptable = {
       id: created?.id ?? crypto.randomUUID(),
-      reference: initialReference,
+      reference,
       entiteType: "annexe",
       annexeId: input.annexeId,
       date: input.date,
@@ -98,7 +101,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     await get().addAuditLog(
       AUDIT_MODULE.Comptabilite,
       AUDIT_ACTION.Creation,
-      `Opération ${initialReference} — ${input.type} ${input.montant.toLocaleString("fr-FR")} FCFA (${input.nature})`,
+      `Opération ${reference} — ${input.type} ${input.montant.toLocaleString("fr-FR")} FCFA (${input.nature})`,
       input.clientId,
       { sourceType: "operation_comptable", sourceId: newOperation.id },
     );
@@ -122,7 +125,6 @@ export const createComptabiliteGeneraleSlice: StateCreator<
   },
 
   recordClotureCaisse: async (input) => {
-    const ecart = input.soldeConstate - input.soldeTheorique;
     const creeLe = new Date().toISOString();
     const cloturePar = getConnectedUserName();
 
@@ -138,6 +140,11 @@ export const createComptabiliteGeneraleSlice: StateCreator<
       clotureLe: creeLe,
     });
 
+    // Le serveur recalcule le théorique (report + net de la période) et fait
+    // foi ; les valeurs saisies côté client ne servent que de repli d'affichage.
+    const soldeTheorique = created?.soldeTheorique ?? input.soldeTheorique;
+    const ecart = created?.ecart ?? input.soldeConstate - soldeTheorique;
+
     const cloture: ClotureCaisse = {
       id: created?.id ?? crypto.randomUUID(),
       // Avant : toujours "annexe" en dur, même pour une clôture "société"
@@ -149,7 +156,7 @@ export const createComptabiliteGeneraleSlice: StateCreator<
       annexeId: input.annexeId,
       periodeDebut: input.periodeDebut,
       periodeFin: input.periodeFin,
-      soldeTheorique: input.soldeTheorique,
+      soldeTheorique,
       soldeConstate: input.soldeConstate,
       ecart,
       note: input.note,

@@ -7,7 +7,7 @@
  * la variante "societe" pour une éventuelle 2e société future, mais
  * resolveEntitesComptables n'en construit plus aucune aujourd'hui.
  */
-import type { Annexe, EntiteComptable, OperationComptable } from "@/lib/domain-types";
+import type { Annexe, ClotureCaisse, EntiteComptable, OperationComptable } from "@/lib/domain-types";
 
 /** Clé stable d'une entité comptable — sert de valeur d'onglet/sélecteur. */
 export function entiteKeyOf(entite: { type: string; id: string }): string {
@@ -56,6 +56,24 @@ export function computeOperationsTotals(operations: OperationComptable[]): Opera
   const totalEntree = operations.filter((o) => o.type === "Entrée").reduce((s, o) => s + o.montant, 0);
   const totalSortie = operations.filter((o) => o.type === "Sortie").reduce((s, o) => s + o.montant, 0);
   return { totalEntree, totalSortie, soldeTheorique: totalEntree - totalSortie };
+}
+
+/**
+ * Solde d'ouverture d'une période = solde constaté de la dernière clôture de
+ * l'entité qui se termine avant `periodeDebut` (0 pour la toute première).
+ * La caisse est un cumul : sans ce report, l'écart de la 2ᵉ clôture compare le
+ * net d'un seul mois à la caisse entière. Même règle que le serveur
+ * (comptabilite.service.ts → createCloture), qui fait foi.
+ */
+export function computeSoldeOuverture(
+  clotures: ClotureCaisse[],
+  entite: EntiteComptable,
+  periodeDebut: string,
+): number {
+  const precedente = clotures
+    .filter((c) => c.entiteType === entite.type && c.annexeId === entite.id && c.periodeFin < periodeDebut)
+    .sort((a, b) => b.periodeFin.localeCompare(a.periodeFin))[0];
+  return precedente?.soldeConstate ?? 0;
 }
 
 export interface OperationWithEcartCumule {

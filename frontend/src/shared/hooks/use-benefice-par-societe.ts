@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { computeBenefice, filterByPeriode } from "@/lib/benefice";
 import { getDashboardAnchorDate } from "@/lib/calendar-anchor";
 import { parseLocalDate } from "@/lib/format";
-import { sommeDossiersEncaisses, sommeFacturesEncaissees } from "@/lib/client-stats";
+import { sommeDepensesDossiers, sommeDossiersEncaisses, sommeFacturesEncaissees } from "@/lib/client-stats";
 import { useStore } from "@/lib/store";
 
 export type BeneficeMensuel = {
@@ -12,18 +12,13 @@ export type BeneficeMensuel = {
   benefice: number;
 };
 
-/** Bénéfice mensuel consolidé — écritures sur datePaiement (F5), dépenses + caisse (F1). */
+/** Bénéfice mensuel consolidé — recettes (factures + règlements de dossiers), dépenses (contrats, caisse, dossiers). */
 export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate()) {
-  const ecritures = useStore((s) => s.ecritures);
   const factures = useStore((s) => s.factures);
   const dossiers = useStore((s) => s.dossiers);
   const depenses = useStore((s) => s.depenses);
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
 
-  const ecrituresAvecDate = useMemo(
-    () => ecritures.map((e) => ({ ...e, date: e.datePaiement ?? e.date })),
-    [ecritures],
-  );
   const depensesAvecDate = useMemo(
     () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
     [depenses],
@@ -49,10 +44,6 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
       return !Number.isNaN(d.getTime()) && d.getFullYear() === annee && d.getMonth() === mois;
     };
     const recettes =
-      filterByPeriode(ecrituresAvecDate, annee, mois).reduce(
-        (sum, e) => sum + e.montantPaye,
-        0,
-      ) +
       // sommeFacturesEncaissees exclut les factures Annulée — une facture
       // encaissée puis annulée ne doit plus compter dans le bénéfice affiché
       // (même règle que client-stats.ts / dashboard-metrics.ts). Un reduce
@@ -69,7 +60,10 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
       filterByPeriode(caisseAvecDate, annee, mois).reduce(
         (sum, d) => sum + d.montant,
         0,
-      );
+      ) +
+      // Dépenses saisies sur les dossiers (refonte « Situation du client ») :
+      // absentes du bénéfice avant ce correctif.
+      sommeDepensesDossiers(dossiers, dansLeMois);
     const consolide: BeneficeMensuel = {
       recettes,
       depenses: depensesMois,
@@ -77,10 +71,9 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
     };
 
     return {
-      ecrituresAvecDate,
       depensesAvecDate,
       caisseAvecDate,
       consolide,
     };
-  }, [ecrituresAvecDate, depensesAvecDate, caisseAvecDate, factures, dossiers, annee, mois]);
+  }, [depensesAvecDate, caisseAvecDate, factures, dossiers, annee, mois]);
 }

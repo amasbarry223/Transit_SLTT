@@ -45,20 +45,14 @@ import {
 import { EmptyState } from "@/components/sltt/empty-state";
 import { TablePagination } from "@/components/sltt/table-pagination";
 import { cn } from "@/shared/utils/cn";
-
-export interface ClientSituation {
-  clientId: string;
-  clientNom: string;
-  annexeId?: string;
-  annexeNom?: string;
-  nbDossiers: number;
-  nbContrats: number;
-  nbFactures: number;
-  totalFacture: number;
-  totalDepenses: number;
-  avancesPayees: number;
-  resteAPayer: number;
-}
+import {
+  buildSituationsClients,
+  matchesSoldeFilter,
+  operationsDuClient,
+  TOUTES_ANNEXES,
+  type ClientSituation,
+  type SoldeFilter,
+} from "@/lib/situation-clients-compta";
 
 const PAGE_SIZE = 10;
 
@@ -67,124 +61,45 @@ export function SituationClientsPanel() {
   const dossiers = useStore((s) => s.dossiers);
   const contrats = useStore((s) => s.contrats);
   const factures = useStore((s) => s.factures);
-  const depenses = useStore((s) => s.depenses);
   const operations = useStore((s) => s.operationsComptables);
   const annexes = useStore((s) => s.annexes);
   const { selectedAnnexeId } = useActiveAnnexe();
 
-  const [annexeFilter, setAnnexeFilter] = useState<string>(selectedAnnexeId ?? "all");
+  // Le filtre local n'est valable que pour l'annexe du header sous laquelle il a
+  // été choisi : changer d'annexe dans le header reprend la main.
+  const [annexeChoice, setAnnexeChoice] = useState<{ value: string; forAnnexeId: string | null } | null>(null);
+  const annexeFilter =
+    annexeChoice && annexeChoice.forAnnexeId === selectedAnnexeId
+      ? annexeChoice.value
+      : (selectedAnnexeId ?? TOUTES_ANNEXES);
+  const setAnnexeFilter = (value: string) => setAnnexeChoice({ value, forAnnexeId: selectedAnnexeId });
   const [search, setSearch] = useState("");
-  const [soldeFilter, setSoldeFilter] = useState<"all" | "debiteur" | "solde" | "crediteur">("all");
+  const [soldeFilter, setSoldeFilter] = useState<SoldeFilter>("all");
   const [page, setPage] = useState(1);
   const [selectedClientDetail, setSelectedClientDetail] = useState<ClientSituation | null>(null);
 
-  // Calcul de la situation de chaque client
-  const situations = useMemo<ClientSituation[]>(() => {
-    return clients.map((client) => {
-      // Filtrer les objets rattachés à ce client et éventuellement à l'annexe
-      const clientDossiers = dossiers.filter((d) => {
-        if (d.clientId !== client.id) return false;
-        if (annexeFilter !== "all" && d.annexeId !== annexeFilter) return false;
-        return true;
-      });
+  const situations = useMemo(
+    () => buildSituationsClients({ clients, dossiers, contrats, factures, annexes, annexeFilter }),
+    [clients, dossiers, contrats, factures, annexes, annexeFilter],
+  );
 
-      const clientContrats = contrats.filter((c) => {
-        if (c.clientId !== client.id) return false;
-        if (annexeFilter !== "all" && c.annexeId && c.annexeId !== annexeFilter) return false;
-        return true;
-      });
-
-      // Exclut les factures Annulée, comme `cfActives`/`sommeFacturesEncaissees`
-      // (lib/client-stats.ts) : une facture annulée ne doit plus compter dans
-      // le total facturé/reste à payer d'un client.
-      const clientFactures = factures.filter((f) => {
-        if (f.clientId !== client.id) return false;
-        if (f.statut === "Annulée") return false;
-        if (annexeFilter !== "all" && f.annexeId && f.annexeId !== annexeFilter) return false;
-        return true;
-      });
-
-      // Identifiants des dossiers et contrats de ce client
-      const clientDossierIds = new Set(clientDossiers.map((d) => d.id));
-      const clientContratIds = new Set(clientContrats.map((c) => c.id));
-      const clientDepenses = depenses.filter((d) => clientContratIds.has(d.contratId));
-
-      // Opérations comptables (journal de caisse) pour ce client
-      const clientOps = operations.filter((o) => {
-        if (annexeFilter !== "all" && o.annexeId && o.annexeId !== annexeFilter) return false;
-        if (o.clientId === client.id) return true;
-        if (o.clientNom && o.clientNom.toLowerCase() === client.nom.toLowerCase()) return true;
-        if (o.dossierId && clientDossierIds.has(o.dossierId)) return true;
-        return false;
-      });
-
-      // Calculs financiers
-      // 1. Total facturé
-      const totalFacture = clientFactures.reduce((sum, f) => sum + f.montantTTC, 0);
-
-      // 2. Dépenses engagées
-      const totalDepensesContrats = clientDepenses.reduce((sum, d) => sum + d.montant, 0);
-      const totalDepensesOps = clientOps
-        .filter((o) => o.type === "Sortie")
-        .reduce((sum, o) => sum + o.montant, 0);
-      const totalDepenses = totalDepensesContrats + totalDepensesOps;
-
-      // 3. Avances payées (encaissements / règlements reçus du client)
-      const avancesOps = clientOps
-        .filter((o) => o.type === "Entrée")
-        .reduce((sum, o) => sum + o.montant, 0);
-      const avancesFactures = clientFactures
-        .filter((f) => f.statut === "Soldée")
-        .reduce((sum, f) => sum + f.montantTTC, 0);
-      const avancesPayees = Math.max(avancesOps, avancesFactures);
-
-      // 4. Montant global dû par le client (soit total factures si existantes, soit dépenses + honoraires)
-      const baseDû = totalFacture > 0 ? totalFacture : totalDepenses;
-
-      // 5. Reste à payer
-      const resteAPayer = Math.max(0, baseDû - avancesPayees);
-
-      const annexeObj = client.annexeId ? annexes.find((a) => a.id === client.annexeId) : undefined;
-
-      return {
-        clientId: client.id,
-        clientNom: client.nom,
-        annexeId: client.annexeId,
-        annexeNom: annexeObj?.nom,
-        nbDossiers: clientDossiers.length,
-        nbContrats: clientContrats.length,
-        nbFactures: clientFactures.length,
-        totalFacture,
-        totalDepenses,
-        avancesPayees,
-        resteAPayer,
-      };
-    });
-  }, [clients, dossiers, contrats, factures, depenses, operations, annexes, annexeFilter]);
-
-  // Filtrage selon la recherche et le solde
   const filteredSituations = useMemo(() => {
-    return situations.filter((s) => {
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        if (!s.clientNom.toLowerCase().includes(q)) return false;
-      }
-      if (soldeFilter === "debiteur" && s.resteAPayer <= 0) return false;
-      if (soldeFilter === "solde" && s.resteAPayer !== 0) return false;
-      if (soldeFilter === "crediteur" && s.avancesPayees <= s.totalDepenses) return false;
-      return true;
-    });
+    const q = search.trim().toLowerCase();
+    return situations.filter(
+      (s) => (!q || s.clientNom.toLowerCase().includes(q)) && matchesSoldeFilter(s, soldeFilter),
+    );
   }, [situations, search, soldeFilter]);
 
   // Totaux globaux
   const totals = useMemo(() => {
     return filteredSituations.reduce(
       (acc, s) => ({
-        depenses: acc.depenses + s.totalDepenses,
+        du: acc.du + s.totalDu,
         avances: acc.avances + s.avancesPayees,
         reste: acc.reste + s.resteAPayer,
+        tropPercu: acc.tropPercu + s.tropPercu,
       }),
-      { depenses: 0, avances: 0, reste: 0 },
+      { du: 0, avances: 0, reste: 0, tropPercu: 0 },
     );
   }, [filteredSituations]);
 
@@ -197,10 +112,11 @@ export function SituationClientsPanel() {
         { header: "Annexe", accessor: (s) => s.annexeNom ?? "Toutes" },
         { header: "Dossiers", accessor: (s) => s.nbDossiers },
         { header: "Contrats", accessor: (s) => s.nbContrats },
-        { header: "Total Facturé (FCFA)", accessor: (s) => s.totalFacture },
-        { header: "Total Dépenses (FCFA)", accessor: (s) => s.totalDepenses },
-        { header: "Avances Payées (FCFA)", accessor: (s) => s.avancesPayees },
-        { header: "Reste à Payer (FCFA)", accessor: (s) => s.resteAPayer },
+        { header: "Total dû (FCFA)", accessor: (s) => s.totalDu },
+        { header: "Encaissé (FCFA)", accessor: (s) => s.avancesPayees },
+        { header: "Reste à payer (FCFA)", accessor: (s) => s.resteAPayer },
+        { header: "Trop-perçu (FCFA)", accessor: (s) => s.tropPercu },
+        { header: "Dépenses engagées (FCFA)", accessor: (s) => s.totalDepenses },
       ],
       filteredSituations,
       { module: "Comptabilité" },
@@ -208,19 +124,24 @@ export function SituationClientsPanel() {
   }
 
   // Opérations et détails pour la modale client
-  const clientDetailOps = useMemo(() => {
-    if (!selectedClientDetail) return [];
-    return operations.filter(
-      (o) =>
-        o.clientId === selectedClientDetail.clientId ||
-        o.clientNom.toLowerCase() === selectedClientDetail.clientNom.toLowerCase(),
-    );
-  }, [selectedClientDetail, operations]);
-
   const clientDetailDossiers = useMemo(() => {
     if (!selectedClientDetail) return [];
-    return dossiers.filter((d) => d.clientId === selectedClientDetail.clientId);
-  }, [selectedClientDetail, dossiers]);
+    return dossiers.filter(
+      (d) =>
+        d.clientId === selectedClientDetail.clientId &&
+        (annexeFilter === TOUTES_ANNEXES || d.annexeId === annexeFilter),
+    );
+  }, [selectedClientDetail, dossiers, annexeFilter]);
+
+  const clientDetailOps = useMemo(() => {
+    if (!selectedClientDetail) return [];
+    return operationsDuClient(
+      operations,
+      selectedClientDetail.clientId,
+      new Set(clientDetailDossiers.map((d) => d.id)),
+      annexeFilter,
+    );
+  }, [selectedClientDetail, operations, clientDetailDossiers, annexeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSituations.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -250,9 +171,9 @@ export function SituationClientsPanel() {
               <ArrowDownRight className="size-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Total dépenses engagées</p>
+              <p className="text-xs font-medium text-muted-foreground">Total dû par les clients</p>
               <p className="text-xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
-                {formatFCFA(totals.depenses)}
+                {formatFCFA(totals.du)}
               </p>
             </div>
           </div>
@@ -264,7 +185,7 @@ export function SituationClientsPanel() {
               <ArrowUpRight className="size-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Avances & Règlements reçus</p>
+              <p className="text-xs font-medium text-muted-foreground">Règlements reçus</p>
               <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                 {formatFCFA(totals.avances)}
               </p>
@@ -278,10 +199,13 @@ export function SituationClientsPanel() {
               <AlertCircle className="size-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Reste global à recouvrer</p>
+              <p className="text-xs font-medium text-muted-foreground">Reste à recouvrer</p>
               <p className="text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
                 {formatFCFA(totals.reste)}
               </p>
+              {totals.tropPercu > 0 && (
+                <p className="text-[11px] text-muted-foreground">+ {formatFCFA(totals.tropPercu)} de trop-perçu</p>
+              )}
             </div>
           </div>
         </Card>
@@ -318,7 +242,7 @@ export function SituationClientsPanel() {
                   <SelectValue placeholder="Toutes les annexes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les annexes</SelectItem>
+                  <SelectItem value={TOUTES_ANNEXES}>Toutes les annexes</SelectItem>
                   {annexes.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       Annexe {a.nom}
@@ -343,7 +267,7 @@ export function SituationClientsPanel() {
                 <SelectItem value="all">Tous les états</SelectItem>
                 <SelectItem value="debiteur">Reste à payer &gt; 0</SelectItem>
                 <SelectItem value="solde">Soldé / À jour</SelectItem>
-                <SelectItem value="crediteur">Avances excédentaires</SelectItem>
+                <SelectItem value="crediteur">Trop-perçu</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -367,7 +291,7 @@ export function SituationClientsPanel() {
           <EmptyState
             icon={Users}
             title="Aucun client trouvé"
-            description="Modifiez vos critères de recherche ou filtre d'annexe."
+            description="Aucun client n'a de dossier ou de facture libre pour ces critères."
           />
         ) : (
           <>
@@ -385,10 +309,10 @@ export function SituationClientsPanel() {
                     Dossiers / Contrats
                   </TableHead>
                   <TableHead className="h-10 px-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Dépenses engagées
+                    Total dû
                   </TableHead>
                   <TableHead className="h-10 px-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Avances payées
+                    Encaissé
                   </TableHead>
                   <TableHead className="h-10 px-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Reste à payer
@@ -427,8 +351,8 @@ export function SituationClientsPanel() {
                     <TableCell className="px-4 py-3 text-center tabular-nums text-xs text-muted-foreground">
                       {sit.nbDossiers} dossier{sit.nbDossiers > 1 ? "s" : ""} · {sit.nbContrats} contrat{sit.nbContrats > 1 ? "s" : ""}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-right tabular-nums text-rose-600 dark:text-rose-400 font-medium">
-                      {formatFCFA(sit.totalDepenses)}
+                    <TableCell className="px-4 py-3 text-right tabular-nums font-medium">
+                      {formatFCFA(sit.totalDu)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
                       {formatFCFA(sit.avancesPayees)}
@@ -445,7 +369,11 @@ export function SituationClientsPanel() {
                       </span>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-center">
-                      {sit.resteAPayer > 0 ? (
+                      {sit.tropPercu > 0 ? (
+                        <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 text-[10px]">
+                          Trop-perçu {formatFCFA(sit.tropPercu)}
+                        </Badge>
+                      ) : sit.resteAPayer > 0 ? (
                         <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 text-[10px]">
                           Reste dû
                         </Badge>
@@ -493,22 +421,22 @@ export function SituationClientsPanel() {
                 Situation financière : {selectedClientDetail.clientNom}
               </DialogTitle>
               <DialogDescription>
-                Récapitulatif des dépenses, avances perçues et dossiers rattachés.
+                Total dû, règlements reçus et dossiers rattachés (dépenses engagées : {formatFCFA(selectedClientDetail.totalDepenses)}).
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 pt-2">
               <div className="grid grid-cols-3 gap-3 rounded-xl border border-border/80 bg-muted/40 p-4">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold">Total Dépenses</p>
-                  <p className="mt-1 text-lg font-bold text-rose-600">{formatFCFA(selectedClientDetail.totalDepenses)}</p>
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Total dû</p>
+                  <p className="mt-1 text-lg font-bold">{formatFCFA(selectedClientDetail.totalDu)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold">Avances Payées</p>
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Encaissé</p>
                   <p className="mt-1 text-lg font-bold text-emerald-600">{formatFCFA(selectedClientDetail.avancesPayees)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold">Reste à Payer</p>
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Reste à payer</p>
                   <p className="mt-1 text-lg font-bold text-amber-600">{formatFCFA(selectedClientDetail.resteAPayer)}</p>
                 </div>
               </div>
@@ -519,7 +447,7 @@ export function SituationClientsPanel() {
                   <FolderKanban className="size-4" /> Dossiers ({clientDetailDossiers.length})
                 </p>
                 {clientDetailDossiers.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucun dossier en cours pour ce client.</p>
+                  <p className="text-xs text-muted-foreground italic">Aucun dossier pour ce client.</p>
                 ) : (
                   <div className="max-h-36 overflow-y-auto space-y-1.5 rounded-lg border border-border/70 p-2">
                     {clientDetailDossiers.map((d) => (
@@ -536,7 +464,7 @@ export function SituationClientsPanel() {
               {/* Historique récent des mouvements de caisse */}
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                  <Receipt className="size-4" /> Mouvements récents de caisse ({clientDetailOps.length})
+                  <Receipt className="size-4" /> Mouvements du journal rattachés ({clientDetailOps.length})
                 </p>
                 {clientDetailOps.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Aucun mouvement enregistré pour ce client.</p>

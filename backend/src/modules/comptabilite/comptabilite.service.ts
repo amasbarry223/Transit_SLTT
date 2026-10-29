@@ -20,6 +20,24 @@ export class ComptabiliteService {
     return { OR: [{ annexeId: null }, { annexeId: { in: user.annexeIds } }] };
   }
 
+  /** Une période clôturée est figée : plus de création ni de suppression
+   *  d'opération à une date couverte par une clôture de l'annexe. Le contrôle
+   *  vivait seulement dans le formulaire de saisie (contourné par l'import
+   *  Excel/OCR et par l'API). */
+  private async assertPeriodeOuverte(annexeId: string | null | undefined, date: string) {
+    if (!annexeId) return;
+    const cloture = await this.prisma.clotureCaisse.findFirst({
+      where: { annexeId, periodeFin: { gte: date } },
+      select: { periodeFin: true },
+      orderBy: { periodeFin: 'desc' },
+    });
+    if (cloture) {
+      throw new ConflictException(
+        `La période est clôturée jusqu'au ${cloture.periodeFin} : aucune opération ne peut être ajoutée ou supprimée à cette date.`,
+      );
+    }
+  }
+
   // Opérations comptables
   async findAllOperations(user: CurrentUserType, params?: { annexeId?: string; clientId?: string }) {
     if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
@@ -74,6 +92,9 @@ export class ComptabiliteService {
       throw new BadRequestException("Le type doit être « Entrée » ou « Sortie ».");
     }
 
+    const date: string = data.date || new Date().toISOString().slice(0, 10);
+    await this.assertPeriodeOuverte(data.annexeId, date);
+
     const reference =
       data.reference &&
       !(await this.prisma.operationComptable.findUnique({
@@ -86,7 +107,7 @@ export class ComptabiliteService {
     const buildData = (ref: string) => ({
       reference: ref,
       annexeId: data.annexeId || null,
-      date: data.date || new Date().toISOString().slice(0, 10),
+      date,
       clientId: data.clientId || null,
       dossierId: data.dossierId || null,
       clientNom: data.clientNom || null,
@@ -131,6 +152,7 @@ export class ComptabiliteService {
     if (existing.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
       throw new ForbiddenException('Accès non autorisé à cette opération');
     }
+    await this.assertPeriodeOuverte(existing.annexeId, existing.date);
     await this.prisma.operationComptable.delete({ where: { id } });
     return { id };
   }
@@ -160,9 +182,10 @@ export class ComptabiliteService {
     if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas créer de clôture pour cette annexe');
     }
-    const soldeTheorique = Number(data.soldeTheorique) || 0;
-    const soldeConstate = Number(data.soldeConstate) || 0;
-    const ecart = Math.round((soldeConstate - soldeTheorique) * 100) / 100;
+    const soldeConstate = Number(data.soldeConstate);
+    if (!Number.isFinite(soldeConstate)) {
+      throw new BadRequestException('Le solde constaté est obligatoire.');
+    }
 
     if (!data.periodeDebut || !data.periodeFin) {
       throw new BadRequestException('La période de clôture (début et fin) est obligatoire.');
@@ -171,23 +194,44 @@ export class ComptabiliteService {
     if (iso.test(data.periodeDebut) && iso.test(data.periodeFin) && data.periodeDebut > data.periodeFin) {
       throw new BadRequestException('La date de début de période est postérieure à la date de fin.');
     }
-    // Une même période ne se clôture qu'une fois par annexe.
+    const annexeId: string | null = data.annexeId || null;
+    // Deux clôtures d'une même annexe ne peuvent pas se chevaucher (et a fortiori
+    // couvrir la même période) : le solde d'ouverture de la suivante serait ambigu.
     const dejaCloturee = await this.prisma.clotureCaisse.findFirst({
       where: {
-        annexeId: data.annexeId || null,
-        periodeDebut: data.periodeDebut,
-        periodeFin: data.periodeFin,
+        annexeId,
+        periodeDebut: { lte: data.periodeFin },
+        periodeFin: { gte: data.periodeDebut },
       },
       select: { id: true },
     });
     if (dejaCloturee) {
-      throw new ConflictException('Cette période a déjà été clôturée pour cette annexe.');
+      throw new ConflictException('Cette période a déjà été clôturée (ou chevauche une clôture existante) pour cette annexe.');
     }
+
+    // Solde théorique recalculé ICI : jamais repris du client. La caisse est un
+    // cumul, donc théorique = solde constaté de la clôture précédente (report)
+    // + net (entrées − sorties) de la période.
+    const precedente = await this.prisma.clotureCaisse.findFirst({
+      where: { annexeId, periodeFin: { lt: data.periodeDebut } },
+      orderBy: { periodeFin: 'desc' },
+      select: { soldeConstate: true },
+    });
+    const soldeOuverture = precedente?.soldeConstate ?? 0;
+    const groupes = await this.prisma.operationComptable.groupBy({
+      by: ['type'],
+      where: { annexeId, date: { gte: data.periodeDebut, lte: data.periodeFin } },
+      _sum: { montant: true },
+    });
+    const somme = (type: string) => groupes.find((g: any) => g.type === type)?._sum?.montant ?? 0;
+    const soldeTheorique = Math.round((soldeOuverture + somme('Entrée') - somme('Sortie')) * 100) / 100;
+    // Convention unique : écart = constaté − théorique (positif = excédent).
+    const ecart = Math.round((soldeConstate - soldeTheorique) * 100) / 100;
 
     try {
       return await this.prisma.clotureCaisse.create({
         data: {
-          annexeId: data.annexeId || null,
+          annexeId,
           periodeDebut: data.periodeDebut,
           periodeFin: data.periodeFin,
           soldeTheorique,
@@ -206,7 +250,7 @@ export class ComptabiliteService {
       // contrainte @@unique tranche, on traduit juste en la même erreur
       // métier plutôt qu'un 500 Prisma brut.
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        throw new ConflictException('Cette période a déjà été clôturée pour cette annexe.');
+        throw new ConflictException('Cette période a déjà été clôturée (ou chevauche une clôture existante) pour cette annexe.');
       }
       throw err;
     }

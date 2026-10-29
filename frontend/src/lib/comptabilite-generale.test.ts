@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   computeOperationsTotals,
+  computeSoldeOuverture,
   computeRunningEcart,
   filterOperationsByEntite,
   filterOperationsByPeriode,
   resolveEntitesComptables,
 } from "@/lib/comptabilite-generale";
-import type { Annexe, OperationComptable } from "@/lib/domain-types";
+import type { Annexe, ClotureCaisse, OperationComptable } from "@/lib/domain-types";
 
 const annexes: Annexe[] = [
   { id: "a-ci", nom: "Côte d'Ivoire", code: "CI", villeSiege: "Abidjan", devise: "FCFA", actif: true },
@@ -95,5 +96,25 @@ describe("computeRunningEcart", () => {
     const result = computeRunningEcart(ops);
     expect(result.map((r) => r.operation.id)).toEqual(["a", "b"]);
     expect(result.map((r) => r.ecartCumule)).toEqual([300, 200]);
+  });
+});
+
+describe("computeSoldeOuverture", () => {
+  const entite = { type: "annexe" as const, id: "a-ml", label: "Annexe Mali" };
+  const cl = (p: Partial<ClotureCaisse>): ClotureCaisse =>
+    ({ id: "c", entiteType: "annexe", annexeId: "a-ml", periodeDebut: "2026-01-01", periodeFin: "2026-01-31", soldeConstate: 0, ...p }) as ClotureCaisse;
+
+  it("vaut 0 pour la toute première clôture", () => {
+    expect(computeSoldeOuverture([], entite, "2026-01-01")).toBe(0);
+  });
+
+  it("reprend le solde constaté de la dernière clôture terminée avant la période, de la même annexe", () => {
+    const clotures = [
+      cl({ id: "1", periodeFin: "2026-01-31", soldeConstate: 500 }),
+      cl({ id: "2", periodeDebut: "2026-02-01", periodeFin: "2026-02-28", soldeConstate: 800 }),
+      cl({ id: "3", annexeId: "a-ci", periodeFin: "2026-02-28", soldeConstate: 9999 }),
+    ];
+    expect(computeSoldeOuverture(clotures, entite, "2026-03-01")).toBe(800);
+    expect(computeSoldeOuverture(clotures, entite, "2026-02-01")).toBe(500);
   });
 });

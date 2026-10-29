@@ -6,7 +6,7 @@ import { parseLocalDate } from "@/lib/format";
 import { exportToExcel, printBilan } from "@/lib/export";
 import { resolveClasseurPrintBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
-import { dossiersNonFactures, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
+import { dossiersNonFactures, sommeDepensesDossiers, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
 import { resteAPayer } from "@/lib/domain-types";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
@@ -23,7 +23,6 @@ export function useBilansScreen() {
   const [sortKey, setSortKey] = useState<SortKey>("reste");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const allEcritures = useStore((s) => s.ecritures);
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
   const societes = useStore((s) => s.societes);
@@ -58,10 +57,6 @@ export function useBilansScreen() {
         note: `Facture ${f.numero}`,
       }));
 
-    // ecritures est un vestige toujours vide ; on ne garde que les non-liées
-    // par prudence si une source future en réintroduit.
-    const direct = allEcritures.filter((e) => !e.dossierId);
-
     const fromDossiers = dossiersNonFactures(dossiers, factures)
       .filter((d) => d.totalContrat > 0 || d.montantPaye > 0)
       .map((d) => ({
@@ -79,8 +74,8 @@ export function useBilansScreen() {
         note: `Dossier ${d.reference}`,
       }));
 
-    return [...fromFactures, ...direct, ...fromDossiers];
-  }, [factures, allEcritures, dossiers]);
+    return [...fromFactures, ...fromDossiers];
+  }, [factures, dossiers]);
 
   const filteredEcritures = useMemo(() => {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
@@ -113,7 +108,7 @@ export function useBilansScreen() {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
     return new Date(year, month - 1);
   }, [mois]);
-  const { consolide, ecrituresAvecDate, caisseAvecDate } = useBeneficeParSociete(anchorDate);
+  const { consolide, caisseAvecDate } = useBeneficeParSociete(anchorDate);
 
   // F-ANNEXE — reporting consolidé par annexe, réservé aux utilisateurs
   // multi-annexes (RLS les laisse déjà voir les données des deux annexes ;
@@ -140,7 +135,6 @@ export function useBilansScreen() {
     const computeFor = (annexeId: string | null) => {
       const dossiersScope = annexeId ? dossiers.filter((d) => d.annexeId === annexeId) : dossiers;
       const recettes =
-        filterByAnnexeAndPeriode(ecrituresAvecDate, annexeId, year, m).reduce((sum, e) => sum + e.montantPaye, 0) +
         sommeFacturesEncaissees(filterByAnnexeAndPeriode(factures, annexeId, year, m)) +
         sommeDossiersEncaisses(dossiersScope, factures, dansLeMois);
       const depensesMois =
@@ -150,14 +144,15 @@ export function useBilansScreen() {
           annexeId,
           year,
           m,
-        ).reduce((sum, d) => sum + d.montant, 0);
+        ).reduce((sum, d) => sum + d.montant, 0) +
+        sommeDepensesDossiers(dossiersScope, dansLeMois);
       return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
     };
     return {
       consolide: computeFor(null),
       parAnnexe: annexes.map((a) => ({ annexe: a, ...computeFor(a.id) })),
     };
-  }, [ecrituresAvecDate, factures, dossiers, caisseAvecDate, depensesAvecDateEtAnnexe, annexes, mois]);
+  }, [factures, dossiers, caisseAvecDate, depensesAvecDateEtAnnexe, annexes, mois]);
 
   // Le calcul ci-dessus porte toujours sur un seul mois de référence, quelle
   // que soit la granularité "période" choisie (voir commentaire F5 plus haut)

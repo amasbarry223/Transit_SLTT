@@ -269,9 +269,9 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     )
       ? caissesResp
       : [];
-    const caisse =
-      caisses.find((c) => c.annexeId === fact.annexeId && c.statut !== "FERMEE") ??
-      caisses.find((c) => c.statut !== "FERMEE");
+    // Strictement la caisse de l'annexe de la facture : le repli sur la caisse
+    // d'une autre annexe enregistrait l'encaissement dans les mauvais comptes.
+    const caisse = caisses.find((c) => c.annexeId === fact.annexeId && c.statut !== "FERMEE");
     if (!caisse?.id) {
       throw new Error(
         "Aucune caisse ouverte pour cette annexe. Ouvrez-en une avant d'encaisser une facture.",
