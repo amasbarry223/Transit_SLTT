@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/co
 import { ComptabiliteService } from './comptabilite.service';
 import { CreateOperationDto } from './dto/create-operation.dto';
 import { CreateClotureDto } from './dto/create-cloture.dto';
+import { RattacherOperationsDto } from './dto/rattacher-operations.dto';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
 import { CurrentUser, RequirePermission } from '../../shared/decorators';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -24,6 +25,13 @@ export class ComptabiliteController {
   @RequirePermission('comptabilite:write')
   createOperation(@CurrentUser() user: CurrentUserType, @Body() body: CreateOperationDto) {
     return this.service.createOperation(user, body);
+  }
+
+  /** Rattache des écritures sans client à un client existant (complète seulement). */
+  @Post('operations/rattachement')
+  @RequirePermission('comptabilite:write')
+  rattacherOperations(@CurrentUser() user: CurrentUserType, @Body() body: RattacherOperationsDto) {
+    return this.service.rattacherOperations(user, body.liens);
   }
 
   /** Annulation par contre-passation (le journal n'est jamais supprimé). */

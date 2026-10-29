@@ -181,3 +181,41 @@ describe('ComptabiliteService.annulerOperation — contre-passation', () => {
     await expect(service.annulerOperation('o1', admin())).resolves.toMatchObject({ type: 'Entrée' });
   });
 });
+
+describe('ComptabiliteService.rattacherOperations', () => {
+  function setup() {
+    const tx = { operationComptable: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) } };
+    const prisma = {
+      client: { findMany: vi.fn().mockResolvedValue([{ id: 'c1' }]) },
+      operationComptable: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'o1', annexeId: 'annexe-ml' },
+          { id: 'o2', annexeId: 'annexe-ci' },
+        ]),
+      },
+      $transaction: vi.fn(async (fn: any) => fn(tx)),
+    };
+    return { tx, service: new ComptabiliteService(prisma as any) };
+  }
+
+  it("ne complète qu'un clientId manquant (jamais d'écrasement)", async () => {
+    const { tx, service } = setup();
+    const res = await service.rattacherOperations(admin(), [{ operationId: 'o1', clientId: 'c1' }]);
+
+    expect(res).toEqual({ rattachees: 1 });
+    expect(tx.operationComptable.updateMany).toHaveBeenCalledWith({
+      where: { id: 'o1', clientId: null },
+      data: { clientId: 'c1' },
+    });
+  });
+
+  it("ignore un client inconnu et une écriture d'une annexe non autorisée", async () => {
+    const { tx, service } = setup();
+    const user = admin({ role: 'AGENT', annexeIds: ['annexe-ml'] } as any);
+    await service.rattacherOperations(user, [
+      { operationId: 'o1', clientId: 'inconnu' },
+      { operationId: 'o2', clientId: 'c1' },
+    ]);
+    expect(tx.operationComptable.updateMany).not.toHaveBeenCalled();
+  });
+});

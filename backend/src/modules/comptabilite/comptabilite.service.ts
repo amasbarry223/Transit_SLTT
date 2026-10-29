@@ -216,6 +216,44 @@ export class ComptabiliteService {
     }
   }
 
+  /**
+   * Rattache à un client des écritures saisies avec un simple nom de tiers
+   * (historique, imports). Ne fait que COMPLÉTER un clientId manquant : un
+   * rattachement existant n'est jamais écrasé. Aucun montant ne change, donc
+   * autorisé aussi en période clôturée.
+   */
+  async rattacherOperations(user: CurrentUserType, liens: Array<{ operationId: string; clientId: string }>) {
+    if (!Array.isArray(liens) || liens.length === 0) {
+      throw new BadRequestException('Aucun rattachement fourni.');
+    }
+    if (liens.length > 1000) {
+      throw new BadRequestException('1 000 rattachements maximum par envoi.');
+    }
+    const clientIds = [...new Set(liens.map((l) => l.clientId))];
+    const clients = await this.prisma.client.findMany({ where: { id: { in: clientIds } }, select: { id: true } });
+    const clientsConnus = new Set(clients.map((c: { id: string }) => c.id));
+    const operations = await this.prisma.operationComptable.findMany({
+      where: { id: { in: liens.map((l) => l.operationId) } },
+      select: { id: true, annexeId: true },
+    });
+    const annexeParOp = new Map(operations.map((o: { id: string; annexeId: string | null }) => [o.id, o.annexeId]));
+
+    let rattachees = 0;
+    await this.prisma.$transaction(async (tx: any) => {
+      for (const { operationId, clientId } of liens) {
+        if (!annexeParOp.has(operationId) || !clientsConnus.has(clientId)) continue;
+        const annexeId = annexeParOp.get(operationId);
+        if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId)) continue;
+        const res = await tx.operationComptable.updateMany({
+          where: { id: operationId, clientId: null },
+          data: { clientId },
+        });
+        rattachees += res.count;
+      }
+    });
+    return { rattachees };
+  }
+
   // Clôtures de caisse
   async findAllClotures(user: CurrentUserType, params?: { annexeId?: string }) {
     if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {

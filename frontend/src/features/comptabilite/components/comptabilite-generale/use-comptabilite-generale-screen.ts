@@ -194,6 +194,12 @@ export function useComptabiliteGeneraleScreen() {
   }
 
   const [formOpen, setFormOpen] = useState(false);
+  const [rattachementOpen, setRattachementOpen] = useState(false);
+  // Écritures saisies avec un simple nom de tiers, à rattacher à un client.
+  const nbSansClient = useMemo(
+    () => entiteOperations.filter((o) => !o.clientId && o.clientNom.trim() !== "").length,
+    [entiteOperations],
+  );
   const [clotureOpen, setClotureOpen] = useState(false);
 
   async function exportExcel() {
@@ -266,6 +272,10 @@ export function useComptabiliteGeneraleScreen() {
     dernieresClotures,
     formOpen,
     setFormOpen,
+    entiteOperations,
+    nbSansClient,
+    rattachementOpen,
+    setRattachementOpen,
     clotureOpen,
     setClotureOpen,
     deleteTarget,

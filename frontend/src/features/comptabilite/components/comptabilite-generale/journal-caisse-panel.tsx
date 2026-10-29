@@ -23,7 +23,9 @@ import type { useComptabiliteGeneraleScreen } from "./use-comptabilite-generale-
 import { ConfirmDeleteDialog } from "@/components/sltt/confirm-delete-dialog";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
-import { PiggyBank } from "lucide-react";
+import { Link2, PiggyBank } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
+import { RattachementDialog } from "./rattachement-dialog";
 
 interface JournalCaissePanelProps {
   screen: ReturnType<typeof useComptabiliteGeneraleScreen>;
@@ -98,6 +100,19 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
               </Badge>
             ))}
           </div>
+        </Card>
+      )}
+
+      {screen.canWrite && screen.nbSansClient > 0 && (
+        <Card className="flex flex-col gap-3 border-amber-200 bg-amber-50/60 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-amber-900 dark:bg-amber-950/20">
+          <p className="text-sm text-foreground">
+            <strong>{screen.nbSansClient}</strong> écriture{screen.nbSansClient > 1 ? "s" : ""} sans client lié : elles
+            n&apos;apparaissent pas dans la situation des clients.
+          </p>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => screen.setRattachementOpen(true)}>
+            <Link2 className="size-4" />
+            Rattacher à un client
+          </Button>
         </Card>
       )}
 
@@ -226,6 +241,11 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
         onConfirm={screen.confirmDelete}
       />
 
+      <RattachementDialog
+        open={screen.rattachementOpen}
+        onOpenChange={screen.setRattachementOpen}
+        operations={screen.entiteOperations}
+      />
       <OperationFormDialog open={screen.formOpen} onOpenChange={screen.setFormOpen} entite={screen.resolvedEntite} />
       <ImportAnyDialog open={importOpen} onOpenChange={setImportOpen} entite={screen.resolvedEntite} entites={screen.entites} />
       <ClotureDialog

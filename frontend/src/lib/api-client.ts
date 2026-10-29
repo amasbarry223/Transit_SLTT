@@ -714,6 +714,12 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    /** Rattache des écritures sans client à un client existant (ne complète que les manquants). */
+    rattacherOperations: (liens: Array<{ operationId: string; clientId: string }>) =>
+      this.request<{ rattachees: number }>('/comptabilite/operations/rattachement', {
+        method: 'POST',
+        body: JSON.stringify({ liens }),
+      }),
     /** Annulation par contre-passation : renvoie l'écriture inverse créée. */
     annulerOperation: (id: string) =>
       this.request<RawOperationComptable>(`/comptabilite/operations/${id}/contre-passation`, {

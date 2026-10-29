@@ -33,6 +33,8 @@ export interface ComptabiliteGeneraleSlice {
   refreshOperationsComptables: () => Promise<void>;
   /** Annule une écriture par contre-passation (le journal n'est jamais supprimé). */
   annulerOperationComptable: (id: string) => Promise<void>;
+  /** Rattache des écritures sans client à un client ; renvoie le nombre rattaché. */
+  rattacherOperationsComptables: (liens: Array<{ operationId: string; clientId: string }>) => Promise<number>;
   recordClotureCaisse: (input: RecordClotureCaisseInput) => Promise<ClotureCaisse>;
 }
 
@@ -144,6 +146,25 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     } catch (error) {
       logWarn("Rechargement du journal comptable impossible", error);
     }
+  },
+
+  rattacherOperationsComptables: async (liens) => {
+    const res = await api.comptabilite.rattacherOperations(liens);
+    const clientParOp = new Map(liens.map((l) => [l.operationId, l.clientId]));
+    set((s) => ({
+      operationsComptables: s.operationsComptables.map((o) =>
+        !o.clientId && clientParOp.has(o.id) ? { ...o, clientId: clientParOp.get(o.id) } : o,
+      ),
+    }));
+    const rattachees = res?.rattachees ?? 0;
+    await get().addAuditLog(
+      AUDIT_MODULE.Comptabilite,
+      AUDIT_ACTION.Modification,
+      `${rattachees} écriture(s) du journal rattachée(s) à un client`,
+      undefined,
+      { sourceType: "operation_comptable", sourceId: liens[0]?.operationId ?? "" },
+    );
+    return rattachees;
   },
 
   annulerOperationComptable: async (id) => {
