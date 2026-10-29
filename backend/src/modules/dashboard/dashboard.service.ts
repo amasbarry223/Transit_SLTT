@@ -27,7 +27,7 @@ export class DashboardService {
       dossiersList,
       operationsFenetre,
       stockItems,
-      tresorerieTotal,
+      tresorerie,
     ] = await Promise.all([
       this.prisma.dossier.count({ where: annexeScope }),
       this.prisma.dossier.count({
@@ -106,6 +106,13 @@ export class DashboardService {
     const { totalARecouvrer, montantEchu, montantNonEchu, topRiskClients } = creances;
     const agingMap = creances.aging;
 
+    const tresorerieTotal = tresorerie.total;
+    // Sans clôture d'ouverture, le solde n'a pas de base (seules les écritures du
+    // journal comptent) : on le dit au lieu d'afficher un chiffre sans contexte.
+    const tresorerieSousTitre =
+      tresorerie.annexesSansCloture.length === 0
+        ? 'Dernière clôture + mouvements du journal'
+        : `À initialiser : aucune clôture pour ${tresorerie.annexesSansCloture.join(', ')} (Comptabilité → Clôturer la caisse)`;
     const deboursTotal =
       Number(depensesAgg._sum.montant || 0) + Number(depensesDossiersAgg._sum.montant || 0);
 
@@ -175,7 +182,7 @@ export class DashboardService {
         rawNumericValue: tresorerieTotal,
         formattedValue: `${tresorerieTotal.toLocaleString('fr-FR')} FCFA`,
         unit: 'FCFA',
-        subtitle: 'Dernière clôture + mouvements du journal',
+        subtitle: tresorerieSousTitre,
         type: 'tresorerie_disponible',
         category: 'finance',
         accentColor: 'teal',
@@ -541,18 +548,22 @@ export class DashboardService {
    * clôture, cumul de tout le journal de l'annexe. Avant : somme des soldes des
    * caisses, qui ignoraient règlements de dossier et saisies du journal.
    */
-  private async calculerTresorerie(annexeScope: Record<string, any>): Promise<number> {
+  private async calculerTresorerie(
+    annexeScope: Record<string, any>,
+  ): Promise<{ total: number; annexesSansCloture: string[] }> {
     const annexes = await this.prisma.annexe.findMany({
       where: annexeScope.annexeId ? { id: annexeScope.annexeId } : {},
-      select: { id: true },
+      select: { id: true, nom: true },
     });
     let total = 0;
-    for (const { id } of annexes) {
+    const annexesSansCloture: string[] = [];
+    for (const { id, nom } of annexes) {
       const cloture = await this.prisma.clotureCaisse.findFirst({
         where: { annexeId: id },
         orderBy: { periodeFin: 'desc' },
         select: { periodeFin: true, soldeConstate: true },
       });
+      if (!cloture) annexesSansCloture.push(nom);
       const groupes = await this.prisma.operationComptable.groupBy({
         by: ['type'],
         where: { annexeId: id, ...(cloture ? { date: { gt: cloture.periodeFin } } : {}) },
@@ -561,6 +572,6 @@ export class DashboardService {
       const somme = (type: string) => Number(groupes.find((g: any) => g.type === type)?._sum?.montant ?? 0);
       total += Number(cloture?.soldeConstate ?? 0) + somme('Entrée') - somme('Sortie');
     }
-    return total;
+    return { total, annexesSansCloture };
   }
 }

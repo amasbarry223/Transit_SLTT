@@ -102,3 +102,15 @@ describe('DashboardService — trésorerie et flux depuis le journal', () => {
     expect(juin).toMatchObject({ entrees: 500, sorties: 200, soldeNet: 300 });
   });
 });
+
+describe('DashboardService — trésorerie sans clôture', () => {
+  it("signale les annexes sans clôture d'ouverture dans le sous-titre du KPI", async () => {
+    const prisma: any = createEmptyPrisma();
+    prisma.annexe.findMany.mockResolvedValue([{ id: 'a1', nom: 'Mali' }]);
+    prisma.operationComptable.groupBy.mockResolvedValue([{ type: 'Sortie', _sum: { montant: 100 } }]);
+    const result = await new DashboardService(prisma).getDashboardAnalytics(admin());
+    const kpi = result.kpis.find((k: any) => k.id === 'kpi-tresorerie-disponible')!;
+    expect(kpi.rawNumericValue).toBe(-100);
+    expect(kpi.subtitle).toContain('aucune clôture pour Mali');
+  });
+});
