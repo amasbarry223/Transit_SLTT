@@ -25,7 +25,7 @@ let DashboardService = class DashboardService {
         const now = new Date();
         const debutFenetre = new Date(now.getFullYear(), now.getMonth() - 5, 1);
         const debutFenetreIso = `${debutFenetre.getFullYear()}-${String(debutFenetre.getMonth() + 1).padStart(2, '0')}-01`;
-        const [totalDossiers, dossiersEnCours, totalClients, factures, depensesAgg, depensesDossiersAgg, dossiersList, operationsFenetre, stockItems, tresorerieTotal,] = await Promise.all([
+        const [totalDossiers, dossiersEnCours, totalClients, factures, depensesAgg, depensesDossiersAgg, dossiersList, operationsFenetre, stockItems, tresorerie,] = await Promise.all([
             this.prisma.dossier.count({ where: annexeScope }),
             this.prisma.dossier.count({
                 where: {
@@ -93,6 +93,10 @@ let DashboardService = class DashboardService {
         const creances = (0, creances_1.calculerCreances)(dossiersList, factures, now);
         const { totalARecouvrer, montantEchu, montantNonEchu, topRiskClients } = creances;
         const agingMap = creances.aging;
+        const tresorerieTotal = tresorerie.total;
+        const tresorerieSousTitre = tresorerie.annexesSansCloture.length === 0
+            ? 'Dernière clôture + mouvements du journal'
+            : `À initialiser : aucune clôture pour ${tresorerie.annexesSansCloture.join(', ')} (Comptabilité → Clôturer la caisse)`;
         const deboursTotal = Number(depensesAgg._sum.montant || 0) + Number(depensesDossiersAgg._sum.montant || 0);
         const kpis = [
             {
@@ -159,7 +163,7 @@ let DashboardService = class DashboardService {
                 rawNumericValue: tresorerieTotal,
                 formattedValue: `${tresorerieTotal.toLocaleString('fr-FR')} FCFA`,
                 unit: 'FCFA',
-                subtitle: 'Dernière clôture + mouvements du journal',
+                subtitle: tresorerieSousTitre,
                 type: 'tresorerie_disponible',
                 category: 'finance',
                 accentColor: 'teal',
@@ -425,15 +429,18 @@ let DashboardService = class DashboardService {
     async calculerTresorerie(annexeScope) {
         const annexes = await this.prisma.annexe.findMany({
             where: annexeScope.annexeId ? { id: annexeScope.annexeId } : {},
-            select: { id: true },
+            select: { id: true, nom: true },
         });
         let total = 0;
-        for (const { id } of annexes) {
+        const annexesSansCloture = [];
+        for (const { id, nom } of annexes) {
             const cloture = await this.prisma.clotureCaisse.findFirst({
                 where: { annexeId: id },
                 orderBy: { periodeFin: 'desc' },
                 select: { periodeFin: true, soldeConstate: true },
             });
+            if (!cloture)
+                annexesSansCloture.push(nom);
             const groupes = await this.prisma.operationComptable.groupBy({
                 by: ['type'],
                 where: { annexeId: id, ...(cloture ? { date: { gt: cloture.periodeFin } } : {}) },
@@ -442,7 +449,7 @@ let DashboardService = class DashboardService {
             const somme = (type) => Number(groupes.find((g) => g.type === type)?._sum?.montant ?? 0);
             total += Number(cloture?.soldeConstate ?? 0) + somme('Entrée') - somme('Sortie');
         }
-        return total;
+        return { total, annexesSansCloture };
     }
 };
 exports.DashboardService = DashboardService;
