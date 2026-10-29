@@ -1,32 +1,29 @@
-import { logWarn } from "@/shared/logger";
 import type { StateCreator } from "zustand";
 import { getConnectedUserName, requireActiveAnnexeId } from "@/lib/store/connected-user";
 import { useSession } from "@/lib/session/session-store";
 import { syncContratStats } from "@/lib/contrat-stats";
-import { api, ApiError } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
 import type {
   Contrat,
   ContratInput,
   ContratStatut,
   ContratPrestation,
   ContratPrestationInput,
-  Depense,
+  ContratPrestationStatut,
 } from "@/lib/domain-types";
-import type { AddDepenseInput, SLTTState } from "@/lib/store";
+import type { RawContratPrestation } from "@/lib/api-types";
+import type { SLTTState } from "@/lib/store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 import { nextYearlyReference } from "@/lib/store/reference";
 
 export interface ContratsSlice {
   contrats: Contrat[];
-  depenses: Depense[];
   contratPrestations: ContratPrestation[];
   addContrat: (input: ContratInput) => Promise<Contrat>;
   updateContrat: (id: string, input: ContratInput) => Promise<void>;
   updateContratStatut: (id: string, statut: ContratStatut) => Promise<void>;
   removeContrat: (id: string) => Promise<void>;
   getContrat: (id: string) => Contrat | undefined;
-  addDepense: (input: AddDepenseInput) => Promise<Depense>;
-  removeDepense: (id: string) => Promise<void>;
   addContratPrestation: (input: ContratPrestationInput) => Promise<ContratPrestation>;
   updateContratPrestation: (id: string, input: Partial<ContratPrestationInput>) => Promise<void>;
   removeContratPrestation: (id: string) => Promise<void>;
@@ -34,7 +31,6 @@ export interface ContratsSlice {
 
 export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice> = (set, get) => ({
   contrats: [],
-  depenses: [],
   contratPrestations: [],
 
   addContrat: async (input) => {
@@ -77,13 +73,12 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
       notes: input.notes || undefined,
       nbPrestations: 0,
       nbPrestationsRealisees: 0,
-      totalDepenses: 0,
       creePar,
       creeLe: new Date().toISOString(),
     };
 
     set((s) => ({
-      contrats: syncContratStats(s.depenses, s.contratPrestations, [newContrat, ...s.contrats]),
+      contrats: syncContratStats(s.contratPrestations, [newContrat, ...s.contrats]),
       contratSeq: seq + 1,
     }));
     await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Contrat ${reference} créé — ${input.clientNom}`);
@@ -144,11 +139,10 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
     const contrat = get().contrats.find((c) => c.id === id);
     if (!contrat) return;
 
-    const depensesLiees = get().depenses.filter((d) => d.contratId === id).length;
     const prestationsLiees = get().contratPrestations.filter((p) => p.contratId === id).length;
-    if (depensesLiees > 0 || prestationsLiees > 0) {
+    if (prestationsLiees > 0) {
       throw new Error(
-        `Impossible de supprimer ce contrat : il comporte ${depensesLiees} dépense(s) et ${prestationsLiees} prestation(s) liée(s).`,
+        `Impossible de supprimer ce contrat : il comporte ${prestationsLiees} prestation(s). Supprimez-les d'abord.`,
       );
     }
 
@@ -163,108 +157,61 @@ export const createContratsSlice: StateCreator<SLTTState, [], [], ContratsSlice>
 
   getContrat: (id) => get().contrats.find((c) => c.id === id),
 
-  // ---- Dépenses ----
-  addDepense: async (input) => {
-    const seq = get().depenseSeq;
-    const contrat = get().contrats.find((c) => c.id === input.contratId);
-    if (!contrat) throw new Error("Contrat introuvable.");
-    const creePar = getConnectedUserName();
-
-    const newDepense: Depense = {
-      id: crypto.randomUUID(),
-      contratId: input.contratId,
-      libelle: input.libelle,
-      montant: input.montant,
-      dateDepense: input.dateDepense,
-      modePaiement: input.modePaiement,
-      note: input.note || undefined,
-      creePar,
-    };
-    set((s) => {
-      const updatedDepenses = [newDepense, ...s.depenses];
-      return {
-        depenses: updatedDepenses,
-        depenseSeq: seq + 1,
-        contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
-      };
-    });
-    await get().addAuditLog(
-      AUDIT_MODULE.Depenses,
-      AUDIT_ACTION.Creation,
-      `Dépense "${input.libelle}" (${input.montant.toLocaleString("fr-FR")} FCFA) — contrat ${contrat.reference}`,
-    );
-    return newDepense;
-  },
-
-  removeDepense: async (id) => {
-    const depense = get().depenses.find((d) => d.id === id);
-
-    // Les dépenses de contrat ne sont pour l'instant pas persistées côté API :
-    // un 404 signifie simplement "jamais enregistrée", on poursuit la suppression locale.
-    try {
-      await api.depenses.delete(id);
-    } catch (e) {
-      if (!(e instanceof ApiError) || e.status !== 404) throw e;
-      logWarn("removeDepense: dépense absente de l'API (mode local), suppression locale seule", { id });
-    }
-
-    set((s) => {
-      const updatedDepenses = s.depenses.filter((d) => d.id !== id);
-      return {
-        depenses: updatedDepenses,
-        contrats: syncContratStats(updatedDepenses, s.contratPrestations, s.contrats),
-      };
-    });
-    if (depense) {
-      await get().addAuditLog(AUDIT_MODULE.Depenses, AUDIT_ACTION.Suppression, `Dépense "${depense.libelle}" supprimée`);
-    }
-  },
-
-  // ---- Prestations optionnelles ----
+  // ---- Prestations (persistées : POST/PATCH/DELETE /contrats/:id/prestations) ----
   addContratPrestation: async (input) => {
-    const seq = get().contratPrestationSeq;
-    const creePar = getConnectedUserName();
-
-    const newPrestation: ContratPrestation = {
-      id: crypto.randomUUID(),
-      contratId: input.contratId,
+    const raw = await api.contrats.addPrestation(input.contratId, {
       libelle: input.libelle,
       description: input.description || undefined,
       montant: input.montant ?? undefined,
       statut: input.statut,
       datePrevue: input.datePrevue || undefined,
       dateRealisation: input.dateRealisation || undefined,
-      creePar,
-    };
+    });
+    const newPrestation = mapContratPrestation(raw);
     set((s) => {
       const updated = [newPrestation, ...s.contratPrestations];
-      return {
-        contratPrestations: updated,
-        contratPrestationSeq: seq + 1,
-        contrats: syncContratStats(s.depenses, updated, s.contrats),
-      };
+      return { contratPrestations: updated, contrats: syncContratStats(updated, s.contrats) };
     });
     await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Creation, `Prestation "${newPrestation.libelle}" ajoutée`);
     return newPrestation;
   },
 
   updateContratPrestation: async (id, input) => {
+    const existing = get().contratPrestations.find((p) => p.id === id);
+    if (!existing) return;
+    const { contratId: _contratId, ...patch } = input;
+    const raw = await api.contrats.updatePrestation(existing.contratId, id, patch);
+    const saved = raw?.id ? mapContratPrestation(raw) : { ...existing, ...patch };
     set((s) => {
-      const updated = s.contratPrestations.map((p) => (p.id === id ? { ...p, ...input } : p));
-      return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
+      const updated = s.contratPrestations.map((p) => (p.id === id ? saved : p));
+      return { contratPrestations: updated, contrats: syncContratStats(updated, s.contrats) };
     });
-    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Prestation "${input.libelle}" modifiée`);
+    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Modification, `Prestation "${saved.libelle}" modifiée`);
   },
 
   removeContratPrestation: async (id) => {
     const prestation = get().contratPrestations.find((p) => p.id === id);
-
+    if (!prestation) return;
+    await api.contrats.removePrestation(prestation.contratId, id);
     set((s) => {
       const updated = s.contratPrestations.filter((p) => p.id !== id);
-      return { contratPrestations: updated, contrats: syncContratStats(s.depenses, updated, s.contrats) };
+      return { contratPrestations: updated, contrats: syncContratStats(updated, s.contrats) };
     });
-    if (prestation) {
-      await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Prestation "${prestation.libelle}" supprimée`);
-    }
+    await get().addAuditLog(AUDIT_MODULE.Contrats, AUDIT_ACTION.Suppression, `Prestation "${prestation.libelle}" supprimée`);
   },
 });
+
+export function mapContratPrestation(p: RawContratPrestation): ContratPrestation {
+  return {
+    id: p.id,
+    contratId: p.contratId,
+    libelle: p.libelle || "",
+    description: p.description || undefined,
+    montant: p.montant ?? undefined,
+    statut: (p.statut || "Prévue") as ContratPrestationStatut,
+    datePrevue: p.datePrevue || undefined,
+    dateRealisation: p.dateRealisation || undefined,
+    creePar: p.creePar || undefined,
+    facturee: Boolean(p.facturee),
+  };
+}

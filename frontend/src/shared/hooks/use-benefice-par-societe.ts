@@ -12,17 +12,12 @@ export type BeneficeMensuel = {
   benefice: number;
 };
 
-/** Bénéfice mensuel consolidé — recettes (factures + règlements de dossiers), dépenses (contrats, caisse, dossiers). */
+/** Bénéfice mensuel consolidé — recettes (règlements de dossiers + factures libres), dépenses (bons de caisse, dossiers). */
 export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate()) {
   const factures = useStore((s) => s.factures);
   const dossiers = useStore((s) => s.dossiers);
-  const depenses = useStore((s) => s.depenses);
   const bonsSortieCaisse = useStore((s) => s.bonsSortieCaisse);
 
-  const depensesAvecDate = useMemo(
-    () => depenses.map((d) => ({ ...d, date: d.dateDepense })),
-    [depenses],
-  );
   const caisseAvecDate = useMemo(
     () =>
       bonsSortieCaisse.flatMap((b) =>
@@ -47,10 +42,6 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
       // Encaissé du mois : définition unique (client-stats.ts → sommeEncaisse).
       sommeEncaisse(dossiers, factures, dansLeMois);
     const depensesMois =
-      filterByPeriode(depensesAvecDate, annee, mois).reduce(
-        (sum, d) => sum + d.montant,
-        0,
-      ) +
       filterByPeriode(caisseAvecDate, annee, mois).reduce(
         (sum, d) => sum + d.montant,
         0,
@@ -65,9 +56,8 @@ export function useBeneficeParSociete(anchorDate: Date = getDashboardAnchorDate(
     };
 
     return {
-      depensesAvecDate,
       caisseAvecDate,
       consolide,
     };
-  }, [depensesAvecDate, caisseAvecDate, factures, dossiers, annee, mois]);
+  }, [caisseAvecDate, factures, dossiers, annee, mois]);
 }

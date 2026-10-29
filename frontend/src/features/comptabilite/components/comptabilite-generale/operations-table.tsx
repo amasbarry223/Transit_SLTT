@@ -24,6 +24,7 @@ const SOURCE_LABEL: Record<OperationComptable["source"], string> = {
   auto_dossier: "Auto · dossier",
   auto_facture: "Auto · facture",
   auto_depense: "Auto · dépense",
+  auto_caisse: "Auto · bon de caisse",
   contrepassation: "Contre-passation",
 };
 

@@ -14,6 +14,7 @@ import type {
   RawClient,
   RawClotureCaisse,
   RawContrat,
+  RawContratPrestation,
   RawDepense,
   RawDevis,
   RawDocument,
@@ -385,6 +386,20 @@ class ApiClient {
       }),
     delete: (id: string) =>
       this.request<RawContrat>(`/contrats/${id}`, {
+        method: 'DELETE',
+      }),
+    addPrestation: (contratId: string, data: object) =>
+      this.request<RawContratPrestation>(`/contrats/${contratId}/prestations`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updatePrestation: (contratId: string, prestationId: string, data: object) =>
+      this.request<RawContratPrestation>(`/contrats/${contratId}/prestations/${prestationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    removePrestation: (contratId: string, prestationId: string) =>
+      this.request<{ id: string }>(`/contrats/${contratId}/prestations/${prestationId}`, {
         method: 'DELETE',
       }),
   };

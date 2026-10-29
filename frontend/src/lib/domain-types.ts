@@ -444,6 +444,7 @@ export type OperationComptableSource =
   | "auto_dossier"
   | "auto_facture"
   | "auto_depense"
+  | "auto_caisse"
   /** Écriture inverse annulant une autre écriture (`contrepasseDeId`). */
   | "contrepassation";
 
@@ -582,7 +583,6 @@ export interface Contrat {
   /** Agrégats calculés côté store (syncContratStats) — pas persistés en DB. */
   nbPrestations: number;
   nbPrestationsRealisees: number;
-  totalDepenses: number;
 }
 
 export interface ContratInput {
@@ -711,27 +711,6 @@ export interface Archive {
   createdAt: string;
 }
 
-export interface Depense {
-  id: string;
-  contratId: string;
-  libelle: string;
-  montant: number;
-  dateDepense: string;
-  modePaiement: PaiementMode;
-  justificatifPath?: string;
-  note?: string;
-  creePar?: string;
-}
-
-export interface DepenseInput {
-  contratId: string;
-  libelle: string;
-  montant: number;
-  dateDepense: string;
-  modePaiement: PaiementMode;
-  note?: string;
-}
-
 export type ContratPrestationStatut = "En attente" | "Exécuté" | "Prévue" | "Réalisée" | "Annulée";
 
 export interface ContratPrestation {
@@ -744,11 +723,7 @@ export interface ContratPrestation {
   datePrevue?: string;
   dateRealisation?: string;
   creePar?: string;
-  /** Garde-fou déclaratif côté client contre la double facturation d'une
-   *  même prestation — pas une garantie serveur : ContratPrestation n'a
-   *  aucune persistance API (contrats-slice.ts::updateContratPrestation
-   *  reste un état 100% navigateur), donc cet indicateur ne survit pas
-   *  nécessairement à un F5 selon l'état du store au rechargement. */
+  /** Prestation déjà reprise dans une facture (persisté côté serveur). */
   facturee?: boolean;
 }
 

@@ -27,7 +27,6 @@ export {
   type ClientPrintRow,
   type ContratPrintData,
   type ContratPrestationPrintRow,
-  type ContratDepensePrintRow,
   type DevisData,
   type DossierPrintRow,
   type DossierPrintTotals,

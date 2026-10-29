@@ -7,6 +7,7 @@ import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapBonLivraison } from "@/lib/store/bons-livraison-slice";
 import { mapOperationComptable } from "@/lib/store/comptabilite-generale-slice";
+import { mapContratPrestation } from "@/lib/store/contrats-slice";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
 import {
@@ -320,10 +321,12 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
         notes: c.notes || undefined,
         nbPrestations: 0,
         nbPrestationsRealisees: 0,
-        totalDepenses: 0,
         creePar: c.creePar || undefined,
         creeLe: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
       }));
+
+      // Prestations persistées, chargées avec leur contrat.
+      const mappedPrestations = rawContrats.flatMap((c) => (c.prestations ?? []).map(mapContratPrestation));
 
       const rawDevis: RawDevis[] = Array.isArray(devisRes) ? devisRes : [];
       const mappedDevis = rawDevis.map((d) => {
@@ -557,7 +560,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
       }));
 
       set((state) => {
-        const nextContrats = syncContratStats(state.depenses, state.contratPrestations, mappedContrats);
+        const nextContrats = syncContratStats(mappedPrestations, mappedContrats);
 
         // Repli dérivé de DEFAULT_TRANSIT_BRAND (societe-brand.ts), pas de
         // valeurs dupliquées ici — avant ce commit, ce bloc affichait une
@@ -617,6 +620,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           factures: mappedFactures,
           fournisseurs: mappedFournisseurs,
           contrats: nextContrats,
+          contratPrestations: mappedPrestations,
           devis: mappedDevis,
           transporteurs: mappedTransporteurs,
           stock: mappedStock,

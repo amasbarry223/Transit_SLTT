@@ -15,7 +15,6 @@ export function useUnifiedDocs(): UnifiedDoc[] {
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
   const factures = useStore((s) => s.factures);
-  const depenses = useStore((s) => s.depenses);
   const contrats = useStore((s) => s.contrats);
 
   return useMemo(() => {
@@ -37,10 +36,7 @@ export function useUnifiedDocs(): UnifiedDoc[] {
         nomClient = f?.clientNom ?? nomClient;
       } else if (a.depenseId) {
         category = "depense";
-        const dep = depenses.find((x) => x.id === a.depenseId);
-        const contrat = dep ? contrats.find((c) => c.id === dep.contratId) : undefined;
-        rattachement = dep ? `Dépense — ${dep.libelle}` : "Dépense";
-        nomClient = contrat?.clientNom ?? nomClient;
+        rattachement = "Dépense";
       }
       return {
         key: `archive-${a.id}`,
@@ -104,5 +100,5 @@ export function useUnifiedDocs(): UnifiedDoc[] {
     return [...fromArchives, ...fromDossiers, ...fromContrats].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
-  }, [archives, fichiers, contratFichiers, clients, dossiers, factures, depenses, contrats]);
+  }, [archives, fichiers, contratFichiers, clients, dossiers, factures, contrats]);
 }

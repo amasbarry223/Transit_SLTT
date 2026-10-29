@@ -165,3 +165,42 @@ describe('FacturesService.enregistrerPaiement — le dossier fait foi', () => {
     });
   });
 });
+
+describe('FacturesService — cohérence facture / dossier', () => {
+  it("refuse de lier une facture au dossier d'un autre client", async () => {
+    const prisma: any = {
+      facture: { findUnique: vi.fn().mockResolvedValue(null) },
+      dossier: { findUnique: vi.fn().mockResolvedValue({ clientId: 'autre-client', annexeId: 'annexe-ml' }) },
+      setting: { findUnique: vi.fn().mockResolvedValue(null) },
+    };
+    const service = new FacturesService(prisma);
+    await expect(
+      service.create(admin(), {
+        numero: 'FAC-9',
+        clientId: 'client-1',
+        annexeId: 'annexe-ml',
+        dossierId: 'd1',
+        lignes: [{ designation: 'x', quantite: 1, prixUnitaire: 10 }],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it("une mise à jour sans dossierId garde le dossier lié (pas d'effacement silencieux)", async () => {
+    const facture = baseFacture({ dossierId: 'd1', notes: 'garder' });
+    const { prisma, tx } = createFakePrisma(facture);
+    (prisma as any).dossier = { findUnique: vi.fn().mockResolvedValue({ clientId: 'client-1', annexeId: 'annexe-ml' }) };
+    const service = new FacturesService(prisma as any);
+
+    await service.update('f1', admin(), { dateEmission: '2026-01-02' });
+
+    expect(tx.facture.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ dossierId: 'd1', notes: 'garder' }) }),
+    );
+  });
+
+  it('refuse d’annuler une facture déjà encaissée', async () => {
+    const { prisma } = createFakePrisma(baseFacture({ statut: 'PARTIELLEMENT_PAYEE', montantPaye: 100 }));
+    const service = new FacturesService(prisma as any);
+    await expect(service.updateStatut('f1', admin(), 'Annulée')).rejects.toThrow(BadRequestException);
+  });
+});

@@ -327,6 +327,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       creePar,
       lignes: input.lignes,
     });
+    // Les décaissements du bon sont journalisés côté serveur : on recharge le journal.
+    void get().refreshOperationsComptables();
 
     const newBon: BonSortieCaisse = {
       id: created?.id ?? crypto.randomUUID(),
@@ -369,6 +371,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
       annexeId: input.annexeId,
       lignes: input.lignes,
     });
+    // Les décaissements du bon sont journalisés côté serveur : on recharge le journal.
+    void get().refreshOperationsComptables();
 
     // Préfère les lignes confirmées par le serveur (ids réels) ; ne
     // reconstruit des ids locaux jetables que si la réponse est absente.
@@ -416,6 +420,8 @@ export const createBonsSlice: StateCreator<SLTTState, [], [], BonsSlice> = (set,
   removeBonSortieCaisse: async (id) => {
     // Persistance obligatoire — voir addBon ci-dessus pour la justification.
     await api.bons.deleteBonCaisse(id);
+    // Les décaissements du bon sont journalisés côté serveur : on recharge le journal.
+    void get().refreshOperationsComptables();
 
     const bon = get().bonsSortieCaisse.find((b) => b.id === id);
     set((s) => ({ bonsSortieCaisse: s.bonsSortieCaisse.filter((b) => b.id !== id) }));

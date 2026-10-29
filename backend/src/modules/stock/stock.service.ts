@@ -61,6 +61,14 @@ export class StockService {
     return n;
   }
 
+  private toNonNegativeMontant(value: unknown, libelle: string): number {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n) || n < 0) {
+      throw new BadRequestException(`${libelle} ne peut pas être négatif.`);
+    }
+    return n;
+  }
+
   async createItem(user: CurrentUserType, data: any) {
     if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException("Vous ne pouvez pas créer d'article pour cette annexe");
@@ -75,8 +83,8 @@ export class StockService {
         seuil: Number(data.seuil || 0),
         depositaire: data.depositaire || null,
         commercial: data.commercial || null,
-        sommePayee: Number(data.sommePayee || 0),
-        resteAPayer: Number(data.resteAPayer || 0),
+        sommePayee: this.toNonNegativeMontant(data.sommePayee, 'La somme payée'),
+        resteAPayer: this.toNonNegativeMontant(data.resteAPayer, 'Le reste à payer'),
         date: data.date || new Date().toISOString().slice(0, 10),
       },
       include: { annexe: true, client: true },
@@ -84,29 +92,56 @@ export class StockService {
   }
 
   async updateItem(id: string, user: CurrentUserType, data: any) {
-    await this.findOneItem(id, user);
+    const item = await this.findOneItem(id, user);
     if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas rattacher cet article à cette annexe');
     }
     const updateData: any = { ...data };
-    // Les mouvements de stock (entrée/sortie/validation de bon) passent par des
-    // décréments/incréments atomiques contrôlés ; cette route générique
-    // d'édition de fiche ne doit pas pouvoir écraser la quantité avec une
-    // valeur négative, ce qui contournerait ces garde-fous.
-    if (data.quantite !== undefined) updateData.quantite = this.toNonNegativeQuantite(data.quantite);
+    delete updateData.quantite;
     if (data.seuil !== undefined) updateData.seuil = Number(data.seuil);
-    if (data.sommePayee !== undefined) updateData.sommePayee = Number(data.sommePayee);
-    if (data.resteAPayer !== undefined) updateData.resteAPayer = Number(data.resteAPayer);
+    if (data.sommePayee !== undefined) updateData.sommePayee = this.toNonNegativeMontant(data.sommePayee, 'La somme payée');
+    if (data.resteAPayer !== undefined) updateData.resteAPayer = this.toNonNegativeMontant(data.resteAPayer, 'Le reste à payer');
 
-    return this.prisma.stockItem.update({
-      where: { id },
-      data: updateData,
-      include: { annexe: true, client: true },
+    // Une correction de quantité depuis la fiche passe par un mouvement
+    // d'AJUSTEMENT tracé dans l'historique (avant : la quantité était écrasée
+    // sans aucune trace, contournant l'historique des entrées/sorties).
+    const nouvelleQuantite = data.quantite !== undefined ? this.toNonNegativeQuantite(data.quantite) : item.quantite;
+    const delta = nouvelleQuantite - item.quantite;
+
+    return this.prisma.$transaction(async (tx: any) => {
+      if (delta !== 0) {
+        await tx.stockItem.update({ where: { id }, data: { quantite: { increment: delta } } });
+        await tx.mouvementStock.create({
+          data: {
+            stockId: id,
+            annexeId: data.annexeId ?? item.annexeId,
+            date: new Date().toISOString().slice(0, 10),
+            type: delta > 0 ? 'Entrée' : 'Sortie',
+            marchandise: data.marchandise ?? item.marchandise,
+            quantite: Math.abs(delta),
+            unite: data.unite ?? item.unite,
+            responsable: user.nom,
+            motif: 'Ajustement manuel de la quantité (fiche article)',
+          },
+        });
+      }
+      return tx.stockItem.update({
+        where: { id },
+        data: updateData,
+        include: { annexe: true, client: true },
+      });
     });
   }
 
   async deleteItem(id: string, user: CurrentUserType) {
-    await this.findOneItem(id, user);
+    const item = await this.findOneItem(id, user);
+    // La suppression efface aussi l'historique des mouvements (cascade) : on la
+    // refuse tant que de la marchandise est en stock (sortez-la d'abord).
+    if (item.quantite > 0) {
+      throw new BadRequestException(
+        `Impossible de supprimer un article encore en stock (${item.quantite} ${item.unite}). Enregistrez d'abord sa sortie.`,
+      );
+    }
     return this.prisma.$transaction(async (tx: any) => {
       await tx.bonSortie.updateMany({
         where: { stockId: id },
@@ -146,6 +181,13 @@ export class StockService {
     const quantite = Number(data.quantite);
     if (!Number.isFinite(quantite) || quantite <= 0) {
       throw new BadRequestException('La quantité du mouvement doit être supérieure à 0');
+    }
+
+    if (data.stockId) {
+      const stock = await this.prisma.stockItem.findUnique({ where: { id: data.stockId }, select: { annexeId: true } });
+      if (stock && stock.annexeId !== data.annexeId) {
+        throw new BadRequestException("L'article de stock n'appartient pas à l'annexe du mouvement.");
+      }
     }
 
     return this.prisma.$transaction(async (tx: any) => {

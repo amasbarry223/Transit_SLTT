@@ -94,7 +94,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       numero,
       annexeId: input.annexeId,
       clientId: input.clientId,
-      dossierId: input.dossierId || undefined,
+      // null explicite pour délier : le serveur garde la valeur d'un champ absent.
+      dossierId: input.dossierId || null,
       dateEmission: input.date,
       dateEcheance: input.dateEcheance,
       tauxTva: input.tauxTVA,
@@ -139,7 +140,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     // zéro au rechargement. On propage l'erreur pour que l'UI la signale.
     await api.factures.update(id, {
       clientId: input.clientId,
-      dossierId: input.dossierId || undefined,
+      // null explicite pour délier : le serveur garde la valeur d'un champ absent.
+      dossierId: input.dossierId || null,
       dateEmission: input.date,
       dateEcheance: input.dateEcheance,
       tauxTva: input.tauxTVA,

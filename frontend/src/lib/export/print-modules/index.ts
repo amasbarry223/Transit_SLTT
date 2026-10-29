@@ -29,7 +29,6 @@ export {
 export type {
   ContratPrintData,
   ContratPrestationPrintRow,
-  ContratDepensePrintRow,
 } from "@/features/contrats/services/contrat-print";
 export type { ClientPrintRow } from "@/features/clients/types";
 export { printTransporteurs, type TransporteurPrintRow } from "./transporteurs";

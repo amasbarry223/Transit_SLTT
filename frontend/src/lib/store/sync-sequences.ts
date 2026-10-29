@@ -19,8 +19,6 @@ export type SequenceCounters = Pick<
   | "dossierFournisseurSeq"
   | "contratSeq"
   | "contratFichierSeq"
-  | "depenseSeq"
-  | "contratPrestationSeq"
   | "bonSortieCaisseSeq"
   | "operationComptableSeq"
   | "recuPaiementSeq"
@@ -84,7 +82,6 @@ type SyncSource = Pick<
   | "dossierFournisseurs"
   | "contrats"
   | "contratFichiers"
-  | "depenses"
   | "contratPrestations"
   | "bonsSortieCaisse"
   | "operationsComptables"
@@ -110,8 +107,6 @@ export function syncSequencesFromData(state: SyncSource): SequenceCounters {
     dossierFournisseurSeq: nextSeqFromValues(state.dossierFournisseurs.map((df) => parseIdSeq(df.id, "DF")), state.dossierFournisseurSeq),
     contratSeq: nextSeqFromValues(state.contrats.map((c) => parseTrailingSeq(c.reference)), state.contratSeq),
     contratFichierSeq: nextSeqFromValues(state.contratFichiers.map((f) => parseIdSeq(f.id, "CF")), state.contratFichierSeq),
-    depenseSeq: nextSeqFromValues(state.depenses.map((d) => parseIdSeq(d.id, "DEP")), state.depenseSeq),
-    contratPrestationSeq: nextSeqFromValues(state.contratPrestations.map((p) => parseIdSeq(p.id, "PRES")), state.contratPrestationSeq),
     bonSortieCaisseSeq: nextSeqFromValues(state.bonsSortieCaisse.map((b) => parseNumeroSeq(b.reference)), state.bonSortieCaisseSeq),
     operationComptableSeq: nextSeqFromValues(state.operationsComptables.map((o) => parseOpcSeq(o.reference)), state.operationComptableSeq),
     recuPaiementSeq: nextSeqFromValues(state.recusPaiement.map((r) => parseRecuSeq(r.reference)), state.recuPaiementSeq),

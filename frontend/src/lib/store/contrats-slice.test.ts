@@ -35,7 +35,7 @@ function contrat(overrides: Partial<Contrat> = {}): Contrat {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useStore.setState({ contrats: [contrat()], depenses: [], contratPrestations: [], annexes: [], auditLogs: [], auditSeq: 1 });
+  useStore.setState({ contrats: [contrat()], contratPrestations: [], annexes: [], auditLogs: [], auditSeq: 1 });
 });
 
 describe("updateContrat — garde-fou de transition de statut", () => {

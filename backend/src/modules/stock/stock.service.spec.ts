@@ -16,6 +16,8 @@ function createFakePrisma(stockItem: { id: string; quantite: number }) {
     },
   };
   const prisma = {
+    // Contrôle d'annexe préalable (hors transaction) : article de la même annexe.
+    stockItem: { findUnique: vi.fn().mockResolvedValue({ annexeId: 'annexe-1' }) },
     $transaction: vi.fn(async (cb: (t: unknown) => unknown) => cb(tx)),
   };
   return { prisma, tx, stockItem };
@@ -104,6 +106,47 @@ describe('StockService.createMouvement', () => {
         type: 'Entrée',
         quantite: 0,
       }),
+    ).rejects.toThrow(BadRequestException);
+  });
+});
+
+describe('StockService — traçabilité et cohérence', () => {
+  it("une correction de quantité depuis la fiche crée un mouvement d'ajustement tracé", async () => {
+    const existing = { id: 'stock-1', annexeId: 'annexe-1', quantite: 10, marchandise: 'Riz', unite: 'sac' };
+    const tx = {
+      stockItem: { update: vi.fn().mockResolvedValue({ id: 'stock-1' }) },
+      mouvementStock: { create: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      stockItem: { findUnique: vi.fn().mockResolvedValue(existing) },
+      $transaction: vi.fn(async (cb: any) => cb(tx)),
+    };
+    await new StockService(prisma as any).updateItem('stock-1', admin(), { quantite: 7, seuil: 2 });
+
+    expect(tx.mouvementStock.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ type: 'Sortie', quantite: 3, responsable: 'Admin', stockId: 'stock-1' }),
+    });
+    // la quantité n'est jamais écrasée directement par la fiche
+    const ecrasement = tx.stockItem.update.mock.calls.find((c: any) => c[0].data.quantite !== undefined && typeof c[0].data.quantite === 'number');
+    expect(ecrasement).toBeUndefined();
+  });
+
+  it('refuse de supprimer un article encore en stock (son historique serait effacé)', async () => {
+    const prisma = {
+      stockItem: { findUnique: vi.fn().mockResolvedValue({ id: 's', annexeId: 'a', quantite: 4, unite: 'sac' }) },
+      $transaction: vi.fn(),
+    };
+    await expect(new StockService(prisma as any).deleteItem('s', admin())).rejects.toThrow(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("refuse un mouvement sur un article d'une autre annexe", async () => {
+    const prisma = {
+      stockItem: { findUnique: vi.fn().mockResolvedValue({ annexeId: 'autre-annexe' }) },
+      $transaction: vi.fn(),
+    };
+    await expect(
+      new StockService(prisma as any).createMouvement(admin(), { annexeId: 'annexe-1', stockId: 's', type: 'Entrée', quantite: 1 }),
     ).rejects.toThrow(BadRequestException);
   });
 });

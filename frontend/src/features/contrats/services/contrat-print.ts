@@ -32,13 +32,6 @@ export interface ContratPrestationPrintRow {
   statut: string;
 }
 
-export interface ContratDepensePrintRow {
-  libelle: string;
-  montant: number;
-  dateDepense: string;
-  modePaiement: string;
-}
-
 export interface ContratPrintData {
   reference: string;
   clientNom: string;
@@ -52,8 +45,6 @@ export interface ContratPrintData {
   statut: string;
   notes?: string;
   prestations: ContratPrestationPrintRow[];
-  depenses: ContratDepensePrintRow[];
-  totalDepenses: number;
 }
 
 const PIN_ICON = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>`;
@@ -203,20 +194,6 @@ export function buildContratPrintHTML(data: ContratPrintData, societe?: SocieteB
         )
         .join("")
     : `<tr><td colspan="3" class="t-empty">Aucune prestation optionnelle</td></tr>`;
-
-  const depensesRowsHTML = data.depenses.length
-    ? data.depenses
-        .map(
-          (d) => `
-    <tr>
-      <td class="t-desc">${htmlEscape(d.libelle)}</td>
-      <td class="t-mode">${htmlEscape(d.modePaiement)}</td>
-      <td class="t-date">${fmtDate(d.dateDepense)}</td>
-      <td class="t-amount">${fmtFCFA(d.montant)}</td>
-    </tr>`,
-        )
-        .join("")
-    : `<tr><td colspan="4" class="t-empty">Aucune dépense enregistrée</td></tr>`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -384,10 +361,6 @@ table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .tbl-prestations colgroup .c-desc { width: 56%; }
 .tbl-prestations colgroup .c-statut { width: 20%; }
 .tbl-prestations colgroup .c-amount { width: 24%; }
-.tbl-depenses colgroup .c-desc { width: 40%; }
-.tbl-depenses colgroup .c-mode { width: 20%; }
-.tbl-depenses colgroup .c-date { width: 18%; }
-.tbl-depenses colgroup .c-amount { width: 22%; }
 thead th {
   background: ${BRAND.navy};
   color: #fff;
@@ -556,28 +529,7 @@ ${SIGNATORIES_BLOCK_CSS}
       </table>
     </section>
 
-    <section class="lines">
-      <div class="lines-cap">Dépenses engagées</div>
-      <table class="tbl-depenses">
-        <colgroup><col class="c-desc"><col class="c-mode"><col class="c-date"><col class="c-amount"></colgroup>
-        <thead>
-          <tr>
-            <th>Libellé</th>
-            <th>Mode de paiement</th>
-            <th>Date</th>
-            <th class="t-amount">Montant</th>
-          </tr>
-        </thead>
-        <tbody>${depensesRowsHTML}</tbody>
-      </table>
-    </section>
-
     <section class="settle">
-      ${data.totalDepenses > 0 ? `
-      <div class="total-box total-box--sub">
-        <span class="lbl">Total dépenses engagées</span>
-        <span class="amt">${fmtFCFA(data.totalDepenses)}</span>
-      </div>` : ""}
       <div class="total-box total-box--main">
         <span class="lbl">Montant du contrat</span>
         <span class="amt">${fmtFCFA(data.montant)}</span>

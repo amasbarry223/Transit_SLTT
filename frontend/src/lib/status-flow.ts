@@ -19,8 +19,10 @@ export const FACTURE_ALLOWED_TRANSITIONS: Record<FactureStatut, FactureStatut[]>
   // autorise déjà l'annulation d'un envoi par erreur ; cette matrice frontend
   // ne le proposait pas, masquant un correctif légitime à tous les utilisateurs.
   Envoyée: ["Partielle", "Soldée", "Annulée", "Brouillon"],
-  Partielle: ["Soldée", "Annulée", "Partielle"],
-  Soldée: ["Annulée"],
+  // Une facture encaissée ne s'annule plus (l'argent est en caisse et sur le
+  // dossier) : même règle que le backend (factures.service.ts → updateStatut).
+  Partielle: ["Soldée", "Partielle"],
+  Soldée: [],
   Annulée: [],
 };
 

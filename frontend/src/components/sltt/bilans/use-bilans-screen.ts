@@ -27,8 +27,6 @@ export function useBilansScreen() {
   const dossiers = useStore((s) => s.dossiers);
   const societes = useStore((s) => s.societes);
   const factures = useStore((s) => s.factures);
-  const depenses = useStore((s) => s.depenses);
-  const contrats = useStore((s) => s.contrats);
   const { annexes, isMultiAnnexe } = useActiveAnnexe();
 
   const periodeLabel = getPeriodeLabel(periode, mois);
@@ -143,17 +141,6 @@ export function useBilansScreen() {
   // F-ANNEXE — reporting consolidé par annexe, réservé aux utilisateurs
   // multi-annexes (RLS les laisse déjà voir les données des deux annexes ;
   // ce bloc n'est qu'un regroupement client-side, aucun contournement RLS).
-  // Les dépenses de contrats n'ont pas de annexe_id propre (héritée du
-  // contrat parent, cf. RLS 20260817) — on la dénormalise ici.
-  const depensesAvecDateEtAnnexe = useMemo(
-    () =>
-      depenses.map((d) => ({
-        ...d,
-        date: d.dateDepense,
-        annexeId: contrats.find((c) => c.id === d.contratId)?.annexeId,
-      })),
-    [depenses, contrats],
-  );
 
   const beneficeAnnexe = useMemo(() => {
     const [year, month] = (mois || currentYearMonth()).split("-").map(Number);
@@ -172,12 +159,6 @@ export function useBilansScreen() {
         );
       const depensesMois =
         filterByAnnexeAndPeriode(caisseAvecDate, annexeId, year, m).reduce((sum, d) => sum + d.montant, 0) +
-        filterByAnnexeAndPeriode(
-          depensesAvecDateEtAnnexe.filter((d): d is typeof d & { annexeId: string } => !!d.annexeId),
-          annexeId,
-          year,
-          m,
-        ).reduce((sum, d) => sum + d.montant, 0) +
         sommeDepensesDossiers(dossiersScope, dansLeMois);
       return { recettes, depenses: depensesMois, benefice: computeBenefice(recettes, depensesMois) };
     };
@@ -185,7 +166,7 @@ export function useBilansScreen() {
       consolide: computeFor(null),
       parAnnexe: annexes.map((a) => ({ annexe: a, ...computeFor(a.id) })),
     };
-  }, [factures, dossiers, caisseAvecDate, depensesAvecDateEtAnnexe, annexes, mois]);
+  }, [factures, dossiers, caisseAvecDate, annexes, mois]);
 
   // Le calcul ci-dessus porte toujours sur un seul mois de référence, quelle
   // que soit la granularité "période" choisie (voir commentaire F5 plus haut)

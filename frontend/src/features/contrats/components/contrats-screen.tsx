@@ -7,7 +7,6 @@ import {
   FileSignature,
   Wallet,
   CheckCircle2,
-  ClipboardCheck,
   Eye,
   Pencil,
   Trash2,
@@ -79,7 +78,6 @@ export function ContratsScreen() {
 
   const contrats = useStore((s) => s.contrats);
   const clients = useStore((s) => s.clients);
-  const depenses = useStore((s) => s.depenses);
   const contratPrestations = useStore((s) => s.contratPrestations);
   const societes = useStore((s) => s.societes);
   const addContrat = useStore((s) => s.addContrat);
@@ -120,8 +118,7 @@ export function ContratsScreen() {
     const montantTotal = scoped.reduce((sum, c) => sum + c.montant, 0);
     const nbPrestations = scoped.reduce((sum, c) => sum + c.nbPrestations, 0);
     const nbRealisees = scoped.reduce((sum, c) => sum + c.nbPrestationsRealisees, 0);
-    const totalDepenses = scoped.reduce((sum, c) => sum + c.totalDepenses, 0);
-    return { actifs, montantTotal, nbPrestations, nbRealisees, totalDepenses };
+    return { actifs, montantTotal, nbPrestations, nbRealisees };
   }, [scoped]);
 
   const filtered = useMemo(() => {
@@ -183,14 +180,6 @@ export function ContratsScreen() {
     const prestations = contratPrestations
       .filter((p) => p.contratId === c.id)
       .map((p) => ({ libelle: p.libelle, description: p.description, montant: p.montant, statut: p.statut }));
-    const contratDepenses = depenses
-      .filter((d) => d.contratId === c.id)
-      .map((d) => ({
-        libelle: d.libelle,
-        montant: d.montant,
-        dateDepense: d.dateDepense,
-        modePaiement: d.modePaiement,
-      }));
     printContrat(
       {
         reference: c.reference,
@@ -205,8 +194,6 @@ export function ContratsScreen() {
         statut: c.statut,
         notes: c.notes,
         prestations,
-        depenses: contratDepenses,
-        totalDepenses: c.totalDepenses,
       },
       resolveSlttBrand(societes),
     );
@@ -236,7 +223,6 @@ export function ContratsScreen() {
           tone="emerald"
           sublabel="prestations optionnelles"
         />
-        <KpiCard label="Dépenses totales" value={formatFCFA(stats.totalDepenses)} icon={ClipboardCheck} tone="amber" />
       </div>
 
       <ListFilters

@@ -29,6 +29,24 @@ export class FacturesService {
     return Number.isFinite(parsed) ? parsed : 18;
   }
 
+  /** Une facture ne peut être liée qu'à un dossier du MÊME client et de la MÊME
+   *  annexe : le dossier fait foi pour l'encaissé, un encaissement sur la facture
+   *  crédite ce dossier (enregistrerPaiement). */
+  private async assertDossierCompatible(dossierId: string | null | undefined, clientId: string, annexeId: string) {
+    if (!dossierId) return;
+    const dossier = await this.prisma.dossier.findUnique({
+      where: { id: dossierId },
+      select: { clientId: true, annexeId: true },
+    });
+    if (!dossier) throw new BadRequestException('Le dossier lié à la facture est introuvable.');
+    if (dossier.clientId !== clientId) {
+      throw new BadRequestException("Le dossier lié appartient à un autre client que celui de la facture.");
+    }
+    if (dossier.annexeId !== annexeId) {
+      throw new BadRequestException("Le dossier lié appartient à une autre annexe que celle de la facture.");
+    }
+  }
+
   async findAll(
     user: CurrentUserType,
     query: {
@@ -121,6 +139,8 @@ export class FacturesService {
       ...factureData
     } = data;
 
+    await this.assertDossierCompatible(factureData.dossierId, factureData.clientId, factureData.annexeId);
+
     const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(
       lignes,
       factureData.tauxTva,
@@ -194,6 +214,13 @@ export class FacturesService {
     // tableau vide via `lignes || []` et un simple `PATCH /factures/:id`
     // sans le champ `lignes` remettait silencieusement HT/TVA/TTC à 0 ET
     // supprimait toutes les LigneFacture existantes (deleteMany inconditionnel).
+    // Mise à jour partielle : un champ absent du payload garde sa valeur (avant,
+    // dossier lié, échéance et notes étaient remis à null). `null` explicite efface.
+    const has = (k: string) => Object.prototype.hasOwnProperty.call(data, k);
+    const clientId = data.clientId ?? facture.clientId;
+    const dossierId = has('dossierId') ? data.dossierId || null : facture.dossierId;
+    await this.assertDossierCompatible(dossierId, clientId, facture.annexeId);
+
     const hasLignes = Array.isArray(data.lignes);
     const totals = hasLignes
       ? this.computeTotals(data.lignes, data.tauxTva, await this.getDefaultTauxTva())
@@ -206,11 +233,15 @@ export class FacturesService {
       return tx.facture.update({
         where: { id },
         data: {
-          clientId: data.clientId ?? facture.clientId,
-          dossierId: data.dossierId ?? null,
+          clientId,
+          dossierId,
           dateEmission: data.dateEmission ? new Date(data.dateEmission) : facture.dateEmission,
-          dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : null,
-          notes: data.notes ?? null,
+          dateEcheance: has('dateEcheance')
+            ? data.dateEcheance
+              ? new Date(data.dateEcheance)
+              : null
+            : facture.dateEcheance,
+          notes: has('notes') ? data.notes || null : facture.notes,
           ...(totals
             ? {
                 montantHt: totals.montantHt,
@@ -232,8 +263,9 @@ export class FacturesService {
     BROUILLON: ['ENVOYEE', 'ANNULEE'],
     ENVOYEE: ['ANNULEE', 'BROUILLON'],
     RETARD: ['ANNULEE'],
-    PARTIELLEMENT_PAYEE: ['ANNULEE'],
-    PAYEE: ['ANNULEE'],
+    // Encaissée : plus de transition manuelle (annulation refusée, cf. updateStatut).
+    PARTIELLEMENT_PAYEE: [],
+    PAYEE: [],
     ANNULEE: [],
   };
 
@@ -258,6 +290,13 @@ export class FacturesService {
     if (facture.statut !== target && !allowed.includes(target)) {
       throw new BadRequestException(
         `Transition de statut interdite : ${facture.statut} → ${target}.`,
+      );
+    }
+    // Annuler une facture encaissée ferait disparaître l'argent des totaux alors
+    // qu'il est en caisse (et sur le dossier) : il faut d'abord rembourser.
+    if (target === 'ANNULEE' && facture.montantPaye > 0) {
+      throw new BadRequestException(
+        "Une facture déjà encaissée ne peut pas être annulée : enregistrez d'abord le remboursement.",
       );
     }
     if (target === 'BROUILLON' && facture.montantPaye > 0) {

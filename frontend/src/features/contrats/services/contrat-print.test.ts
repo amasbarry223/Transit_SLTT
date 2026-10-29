@@ -43,8 +43,6 @@ describe("contrat-print", () => {
       montant: 350000,
       statut: "Actif",
       prestations: [],
-      depenses: [],
-      totalDepenses: 0,
     };
 
     it("génère les cartes structurées pour le Client et le Prestataire", () => {

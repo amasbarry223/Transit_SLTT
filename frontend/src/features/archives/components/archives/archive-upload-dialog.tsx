@@ -42,8 +42,6 @@ export function ArchiveUploadDialog({
   const clients = useStore((s) => s.clients);
   const dossiers = useStore((s) => s.dossiers);
   const factures = useStore((s) => s.factures);
-  const depenses = useStore((s) => s.depenses);
-  const contrats = useStore((s) => s.contrats);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const captureInputRef = useRef<HTMLInputElement>(null);
@@ -135,12 +133,6 @@ export function ArchiveUploadDialog({
     if (rattachementKind === "facture") {
       return factures.map((f) => ({ id: f.id, label: `${f.numero} — ${f.clientNom}` }));
     }
-    if (rattachementKind === "depense") {
-      return depenses.map((d) => {
-        const contrat = contrats.find((c) => c.id === d.contratId);
-        return { id: d.id, label: `${d.libelle}${contrat ? ` — ${contrat.reference}` : ""}` };
-      });
-    }
     return [];
   })();
 
@@ -208,7 +200,6 @@ export function ArchiveUploadDialog({
               <SelectContent>
                 <SelectItem value="dossier">Dossier</SelectItem>
                 <SelectItem value="facture">Facture</SelectItem>
-                <SelectItem value="depense">Dépense</SelectItem>
                 <SelectItem value="libre">Libre (aucun rattachement)</SelectItem>
               </SelectContent>
             </Select>
@@ -216,7 +207,7 @@ export function ArchiveUploadDialog({
 
           {rattachementKind !== "libre" && (
             <div className="space-y-2">
-              <Label>{rattachementKind === "dossier" ? "Dossier" : rattachementKind === "facture" ? "Facture" : "Dépense"}</Label>
+              <Label>{rattachementKind === "dossier" ? "Dossier" : rattachementKind === "facture" ? "Facture" : "Élément"}</Label>
               <Select
                 value={rattachementId}
                 onValueChange={setRattachementId}

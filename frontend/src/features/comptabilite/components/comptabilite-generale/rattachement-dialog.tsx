@@ -70,7 +70,7 @@ export function RattachementDialog({ open, onOpenChange, operations }: Rattachem
   });
 
   function maj(cle: string, patch: Partial<Choix>) {
-    setChoix((prev) => ({ ...prev, [cle]: { clientId: "", coche: false, ...prev[cle], ...patch } }));
+    setChoix((prev) => ({ ...prev, [cle]: { ...(prev[cle] ?? { clientId: "", coche: false }), ...patch } }));
   }
 
   async function valider() {

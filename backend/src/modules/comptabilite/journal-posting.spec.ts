@@ -146,3 +146,41 @@ describe('synchroniserJournalDossier', () => {
     expect(tx.operations.map((o: any) => o.type)).toEqual(['Sortie']);
   });
 });
+
+describe('synchroniserJournalBonCaisse', () => {
+  const bon = (lignes: any[]) => ({
+    id: 'b1',
+    reference: 'BSC-1',
+    annexeId: 'a1',
+    date: '2026-03-01',
+    createdAt: new Date('2026-03-01'),
+    lignes,
+  });
+
+  it('journalise chaque ligne en sortie, met à jour à la modification et retire tout à la suppression', async () => {
+    const { synchroniserJournalBonCaisse } = await import('./journal-posting');
+    const tx = fakeTx({ bascule: '2026-02-01T00:00:00.000Z' });
+    tx.bonSortieCaisse = {
+      findUnique: async () =>
+        bon([
+          { date: '2026-03-01', beneficiaire: 'Douanier', motif: 'Frais', montant: 100 },
+          { date: '2026-03-02', beneficiaire: 'Chauffeur', motif: 'Carburant', montant: 50 },
+        ]),
+    };
+    await synchroniserJournalBonCaisse(tx, 'b1');
+    expect(tx.operations.map((o: any) => [o.type, o.montant, o.source])).toEqual([
+      ['Sortie', 100, 'auto_caisse'],
+      ['Sortie', 50, 'auto_caisse'],
+    ]);
+
+    // modification : une seule ligne reste, montant changé
+    tx.bonSortieCaisse.findUnique = async () => bon([{ date: '2026-03-01', beneficiaire: 'Douanier', motif: 'Frais', montant: 120 }]);
+    await synchroniserJournalBonCaisse(tx, 'b1');
+    expect(tx.operations.map((o: any) => o.montant)).toEqual([120]);
+
+    // suppression du bon
+    tx.bonSortieCaisse.findUnique = async () => null;
+    await synchroniserJournalBonCaisse(tx, 'b1');
+    expect(tx.operations).toHaveLength(0);
+  });
+});

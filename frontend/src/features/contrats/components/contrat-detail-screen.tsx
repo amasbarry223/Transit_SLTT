@@ -194,8 +194,6 @@ export function ContratDetailScreen() {
         statut: contrat.statut,
         notes: contrat.notes,
         prestations: printPrestations,
-        depenses: [],
-        totalDepenses: 0,
       },
       resolveSlttBrand(societes),
     );

@@ -120,8 +120,6 @@ import {
   type ContratInput,
   type ContratStatut,
   type ContratFichier,
-  type Depense,
-  type DepenseInput,
   type ContratPrestation,
   type ContratPrestationInput,
   type ContratPrestationStatut,
@@ -178,8 +176,6 @@ export type {
   ContratInput,
   ContratStatut,
   ContratFichier,
-  Depense,
-  DepenseInput,
   ContratPrestation,
   ContratPrestationInput,
   ContratPrestationStatut,
@@ -338,10 +334,6 @@ export interface ImportStockHistoriqueInput {
 /* CONTRATS / DÉPENSES / PRESTATIONS OPTIONNELLES — INPUT TYPES        */
 /* ------------------------------------------------------------------ */
 
-export interface AddDepenseInput extends DepenseInput {
-  justificatifDataUrl?: string;
-  justificatifNom?: string;
-}
 
 export interface SubDossierInput {
   dossierId: string;
@@ -381,8 +373,6 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Document
   dossierFournisseurSeq: number;
   contratSeq: number;
   contratFichierSeq: number;
-  depenseSeq: number;
-  contratPrestationSeq: number;
 }
 
 const INITIAL_SEQUENCES = {
@@ -399,8 +389,6 @@ const INITIAL_SEQUENCES = {
   dossierFournisseurSeq: 1,
   contratSeq: 1,
   contratFichierSeq: 1,
-  depenseSeq: 1,
-  contratPrestationSeq: 1,
 } as const;
 
 export const useStore = create<SLTTState>()((set, get, api) => ({

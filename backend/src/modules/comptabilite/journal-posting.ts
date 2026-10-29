@@ -28,6 +28,8 @@ export const ORIGINE = {
   DOSSIER_DEPENSE: 'DOSSIER_DEPENSE',
   FACTURE_PAIEMENT: 'FACTURE_PAIEMENT',
   DEPENSE_PAYEE: 'DEPENSE_PAYEE',
+  /** Ligne de bon de sortie de caisse (origineId = `${bonId}#${rang}`). */
+  BON_CAISSE: 'BON_CAISSE',
   /** Écriture inverse annulant une écriture (origineId = id de l'écriture annulée). */
   CONTREPASSATION: 'CONTREPASSATION',
 } as const;
@@ -39,6 +41,7 @@ export const SOURCE_AUTO: Record<OrigineType, string> = {
   DOSSIER_DEPENSE: 'auto_dossier',
   FACTURE_PAIEMENT: 'auto_facture',
   DEPENSE_PAYEE: 'auto_depense',
+  BON_CAISSE: 'auto_caisse',
   CONTREPASSATION: 'contrepassation',
 };
 
@@ -250,5 +253,49 @@ export async function synchroniserJournalDossier(tx: any, dossierId: string): Pr
     }
   } catch (err) {
     logger.warn(`Synchronisation du journal ignorée (dossier ${dossierId}) : ${(err as Error).message}`);
+  }
+}
+
+/**
+ * Aligne le journal sur les lignes d'un bon de sortie de caisse (décaissements).
+ * Les lignes d'un bon sont recréées à chaque modification : la clé est donc le
+ * rang de la ligne (`${bonId}#${rang}`), le contenu est mis à jour en place.
+ * Bon supprimé (introuvable) : toutes ses écritures sont retirées (sauf période
+ * clôturée). Seuls les bons créés après la date de bascule sont journalisés.
+ */
+export async function synchroniserJournalBonCaisse(tx: any, bonId: string): Promise<void> {
+  try {
+    const bascule = await getBascule(tx);
+    const bon = await tx.bonSortieCaisse.findUnique({
+      where: { id: bonId },
+      include: { lignes: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } },
+    });
+    const prefixe = `${bonId}#`;
+    const vivants = new Set<string>();
+    if (bon && new Date(bon.createdAt) >= bascule) {
+      for (const [rang, l] of bon.lignes.entries()) {
+        const origineId = `${prefixe}${rang}`;
+        vivants.add(origineId);
+        await posterEcriture(tx, {
+          origineType: ORIGINE.BON_CAISSE,
+          origineId,
+          annexeId: bon.annexeId,
+          date: l.date || bon.date,
+          type: 'Sortie',
+          montant: Number(l.montant) || 0,
+          nature: `Bon de caisse ${bon.reference} — ${l.motif}`,
+          clientNom: l.beneficiaire,
+        });
+      }
+    }
+    const liens = await tx.journalLien.findMany({
+      where: { origineType: ORIGINE.BON_CAISSE, origineId: { startsWith: prefixe } },
+      select: { origineId: true },
+    });
+    for (const l of liens) {
+      if (!vivants.has(l.origineId)) await retirerEcriture(tx, ORIGINE.BON_CAISSE, l.origineId);
+    }
+  } catch (err) {
+    logger.warn(`Synchronisation du journal ignorée (bon de caisse ${bonId}) : ${(err as Error).message}`);
   }
 }

@@ -138,6 +138,20 @@ export interface RawContrat {
   notes?: string;
   creePar?: string;
   createdAt?: string;
+  prestations?: RawContratPrestation[];
+}
+
+export interface RawContratPrestation {
+  id: string;
+  contratId: string;
+  libelle?: string;
+  description?: string | null;
+  montant?: number | null;
+  statut?: string;
+  datePrevue?: string | null;
+  dateRealisation?: string | null;
+  facturee?: boolean;
+  creePar?: string | null;
 }
 
 export interface RawLigneDevis {

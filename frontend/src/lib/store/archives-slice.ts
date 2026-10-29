@@ -58,13 +58,6 @@ function resolveArchiveAnnexeId(get: () => SLTTState, input: AddArchiveInput): s
     const f = get().factures.find((x) => x.id === input.factureId);
     if (f?.annexeId) return f.annexeId;
   }
-  if (input.depenseId) {
-    const dep = get().depenses.find((x) => x.id === input.depenseId);
-    if (dep) {
-      const c = get().contrats.find((x) => x.id === dep.contratId);
-      if (c?.annexeId) return c.annexeId;
-    }
-  }
   const userId = useSession.getState().currentUserId;
   const userAnnexeIds = get().users.find((u) => u.id === userId)?.annexeIds ?? [];
   return requireActiveAnnexeId(userAnnexeIds, get().annexes);
