@@ -182,7 +182,7 @@ const paiementData = (p: any) => ({
  * frais de circuit et montantPaye scalaires deviennent des lignes de reprise,
  * seulement si le dossier n'a encore aucune ligne de ce type.
  */
-async function syncLignesEtTotaux(tx: any, dossierId: string, data: any) {
+export async function syncLignesEtTotaux(tx: any, dossierId: string, data: any) {
   if (Array.isArray(data.depensesDossier)) {
     await remplacerLignes(tx.dossierDepense, dossierId, data.depensesDossier, depenseData);
   } else {

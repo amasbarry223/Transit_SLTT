@@ -111,3 +111,57 @@ describe('FacturesService.update', () => {
     expect(tx.facture.update.mock.calls[0][0].data.montantHt).toBe(0);
   });
 });
+
+describe('FacturesService.enregistrerPaiement — le dossier fait foi', () => {
+  function setup(facture: ReturnType<typeof baseFacture>) {
+    const tx: any = {
+      facture: {
+        update: vi.fn(async (args: any) =>
+          args.data.montantPaye ? { ...facture, montantPaye: facture.montantPaye + args.data.montantPaye.increment } : { ...facture, ...args.data },
+        ),
+      },
+      transactionCaisse: { create: vi.fn().mockResolvedValue({ id: 'tx-1' }) },
+      caisse: { update: vi.fn().mockResolvedValue({}) },
+      dossierPaiement: { create: vi.fn().mockResolvedValue({}) },
+      // syncLignesEtTotaux relit le dossier pour recalculer ses totaux.
+      dossier: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'd1', totalContrat: 1180, paiements: [{ montant: 500n, date: new Date() }], depensesDossier: [] }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      journalLien: { findUnique: vi.fn().mockResolvedValue(null), create: vi.fn() },
+      operationComptable: { findFirst: vi.fn().mockResolvedValue(null), findUnique: vi.fn().mockResolvedValue(null), create: vi.fn().mockResolvedValue({ id: 'op' }) },
+      clotureCaisse: { findFirst: vi.fn().mockResolvedValue(null) },
+      setting: { findUnique: vi.fn().mockResolvedValue(null), create: vi.fn() },
+    };
+    const prisma = {
+      facture: { findUnique: vi.fn().mockResolvedValue(facture) },
+      caisse: { findUnique: vi.fn().mockResolvedValue({ id: 'c1', annexeId: 'annexe-ml', statut: 'OUVERTE' }) },
+      $transaction: vi.fn(async (cb: (t: unknown) => unknown) => cb(tx)),
+    };
+    return { tx, service: new FacturesService(prisma as any) };
+  }
+
+  it("un encaissement sur une facture liée crée un règlement du dossier, sans écriture « facture » en doublon", async () => {
+    const { tx, service } = setup(baseFacture({ statut: 'ENVOYEE', dossierId: 'd1', client: { nom: 'ACME' } }));
+
+    await service.enregistrerPaiement('f1', admin(), { montant: 500, caisseId: 'c1' });
+
+    expect(tx.dossierPaiement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ dossierId: 'd1', montant: 500n, reference: 'Facture FAC-0001' }),
+    });
+    expect(tx.dossier.update).toHaveBeenCalled(); // cache montantPaye recalculé
+    const sources = tx.operationComptable.create.mock.calls.map((c: any) => c[0].data.source);
+    expect(sources).not.toContain('auto_facture');
+  });
+
+  it("une facture libre (sans dossier) est journalisée comme encaissement de facture", async () => {
+    const { tx, service } = setup(baseFacture({ statut: 'ENVOYEE', dossierId: null, client: { nom: 'ACME' } }));
+
+    await service.enregistrerPaiement('f1', admin(), { montant: 500, caisseId: 'c1' });
+
+    expect(tx.dossierPaiement.create).not.toHaveBeenCalled();
+    expect(tx.operationComptable.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ source: 'auto_facture', type: 'Entrée', montant: 500 }),
+    });
+  });
+});

@@ -11,8 +11,10 @@ function createEmptyPrisma() {
     client: { count: vi.fn().mockResolvedValue(0) },
     facture: { findMany: vi.fn().mockResolvedValue([]) },
     depense: { aggregate: vi.fn().mockResolvedValue({ _sum: { montant: null } }) },
-    caisse: { aggregate: vi.fn().mockResolvedValue({ _sum: { soldeActuel: null } }) },
-    transactionCaisse: { findMany: vi.fn().mockResolvedValue([]) },
+    dossierDepense: { aggregate: vi.fn().mockResolvedValue({ _sum: { montant: null } }) },
+    operationComptable: { findMany: vi.fn().mockResolvedValue([]), groupBy: vi.fn().mockResolvedValue([]) },
+    annexe: { findMany: vi.fn().mockResolvedValue([]) },
+    clotureCaisse: { findFirst: vi.fn().mockResolvedValue(null) },
     stockItem: { findMany: vi.fn().mockResolvedValue([]) },
   };
 }
@@ -73,5 +75,30 @@ describe('DashboardService.getDashboardAnalytics', () => {
     // (1 500 000 - 1 000 000) / 1 000 000 = +50%
     expect(result.invoiceStats.summary.variationPrestations).toBe(50);
     expect(result.invoiceStats.summary.prestationsHT).toBe(2500000);
+  });
+});
+
+describe('DashboardService — trésorerie et flux depuis le journal', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('trésorerie = dernière clôture + mouvements postérieurs ; flux mensuel lu dans le journal', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-15T12:00:00Z'));
+    const prisma: any = createEmptyPrisma();
+    prisma.annexe.findMany.mockResolvedValue([{ id: 'a1' }]);
+    prisma.clotureCaisse.findFirst.mockResolvedValue({ periodeFin: '2026-05-31', soldeConstate: 1000 });
+    prisma.operationComptable.groupBy.mockResolvedValue([
+      { type: 'Entrée', _sum: { montant: 500 } },
+      { type: 'Sortie', _sum: { montant: 200 } },
+    ]);
+    prisma.operationComptable.findMany.mockResolvedValue([
+      { type: 'Entrée', montant: 500, date: '2026-06-02' },
+      { type: 'Sortie', montant: 200, date: '2026-06-03' },
+    ]);
+    const result = await new DashboardService(prisma).getDashboardAnalytics(admin());
+
+    expect(result.cashFlowStats.soldeDisponible).toBe(1300);
+    const juin = result.cashFlowStats.monthlyHistory[result.cashFlowStats.monthlyHistory.length - 1];
+    expect(juin).toMatchObject({ entrees: 500, sorties: 200, soldeNet: 300 });
   });
 });

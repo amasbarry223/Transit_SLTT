@@ -8,7 +8,6 @@
  */
 import type { AuditSourceType } from "@/lib/audit";
 import type { Dossier, Ecriture, Facture } from "@/lib/domain-types";
-import { dossiersNonFactures } from "@/lib/client-stats";
 
 export type ClasseurType = "Dossier" | "Paiement" | "Facture";
 
@@ -41,15 +40,10 @@ export function buildClasseurJournal(
 ): ClasseurEntry[] {
   const unsorted: Omit<ClasseurEntry, "soldeCumule">[] = [];
 
-  // Un dossier déjà facturé cède sa ligne à sa facture (ci-dessous) : une
-  // fois qu'une facture est générée à partir d'un dossier, c'est elle qui
-  // porte le montant réel dû/encaissé (elle peut inclure la TVA, avoir son
-  // propre historique de paiement via enregistrerPaiement). Avant ce
-  // correctif, le classeur affichait TOUJOURS le dossier (montants figés au
-  // moment de la facturation) ET excluait sa facture — la TVA facturée et
-  // tout paiement encaissé sur la facture après coup restaient invisibles
-  // dans le grand-livre client.
-  for (const d of dossiersNonFactures(dossiers, factures)) {
+  // Le dossier fait foi (client-stats.ts) : il porte le dû (total contrat) et
+  // les règlements, qu'il soit facturé ou non. Ses factures apparaissent pour
+  // mémoire, sans débit ni crédit (sinon double comptage).
+  for (const d of dossiers) {
     if (d.clientId !== clientId) continue;
     unsorted.push({
       id: `dossier-${d.id}`,
@@ -82,16 +76,18 @@ export function buildClasseurJournal(
 
   for (const f of factures) {
     if (f.clientId !== clientId) continue;
-    const annulee = f.statut === "Annulée";
+    // Facture liée : portée par son dossier. Annulée/brouillon : sans effet.
+    const comptee = !f.dossierId && f.statut !== "Annulée" && f.statut !== "Brouillon";
+    const libelle = f.lignes[0]?.description || "Facture";
     unsorted.push({
       id: `facture-${f.id}`,
       sourceId: f.id,
       date: f.date,
       type: "Facture",
       reference: f.numero,
-      libelle: f.lignes[0]?.description || "Facture",
-      debit: annulee ? 0 : f.montantTTC,
-      credit: annulee ? 0 : f.montantPaye,
+      libelle: f.dossierId ? `${libelle} (comptée sur son dossier)` : libelle,
+      debit: comptee ? f.montantTTC : 0,
+      credit: comptee ? f.montantPaye : 0,
       statut: f.statut,
     });
   }

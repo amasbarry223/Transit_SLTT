@@ -21,7 +21,7 @@ import {
 import { useStore } from "@/lib/store";
 import { formatDateTime, formatFCFA } from "@/lib/format";
 import { resteDuDossier } from "@/lib/domain-types";
-import { dossiersNonFactures } from "@/lib/client-stats";
+import { facturesLibres } from "@/lib/client-stats";
 import { Bell, CheckCheck, ChevronDown, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -125,24 +125,19 @@ export function Topbar() {
   const unpaidDossiers = useMemo(
     () =>
       canSeeDossiers
-        // Un dossier déjà facturé est exclu : son reste dû réel est compté
-        // dans unpaidFactures ci-dessous (sa propre facture) — sans cette
-        // exclusion, la même créance gonflait deux fois le badge d'alertes
-        // (ici avec le reste obsolète du dossier, plus bas avec celui,
-        // exact, de sa facture).
-        ? dossiersNonFactures(dossiers, factures).filter(
+        // Le dossier fait foi (client-stats.ts) : sa créance est comptée ici,
+        // facturé ou non ; seules les factures libres sont comptées plus bas.
+        ? dossiers.filter(
             (d) => resteDuDossier(d) > 0 && !overdueDossiers.some((od) => od.id === d.id),
           )
         : [],
-    [canSeeDossiers, dossiers, factures, overdueDossiers],
+    [canSeeDossiers, dossiers, overdueDossiers],
   );
 
   const unpaidFactures = useMemo(
     () =>
       canSeeFactures
-        ? factures.filter(
-            (f) => f.statut !== "Soldée" && (f.statut as string) !== "PAYEE" && f.statut !== "Annulée",
-          )
+        ? facturesLibres(factures).filter((f) => f.statut !== "Soldée" && (f.statut as string) !== "PAYEE")
         : [],
     [canSeeFactures, factures],
   );

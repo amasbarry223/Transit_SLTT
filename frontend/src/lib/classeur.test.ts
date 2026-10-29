@@ -67,7 +67,7 @@ describe("buildClasseurJournal", () => {
     expect(journal[0].type).toBe("Paiement");
   });
 
-  it("un dossier facturé cède sa ligne à sa facture (pas de doublon, pas de disparition)", () => {
+  it("le dossier fait foi : sa facture liée apparaît pour mémoire, sans débit ni crédit (pas de doublon)", () => {
     const dossiers = [
       {
         id: "d1",
@@ -96,14 +96,14 @@ describe("buildClasseurJournal", () => {
     ] as Facture[];
 
     const journal = buildClasseurJournal("c1", dossiers, [], factures);
-    // Une seule ligne : la facture. Le dossier (montants figés à la
-    // facturation) n'apparaît plus à côté — sinon la TVA facturée (180) et
-    // le paiement encaissé sur la facture (200) resteraient invisibles
-    // tout en affichant en double le montant du dossier.
-    expect(journal).toHaveLength(1);
-    expect(journal[0].type).toBe("Facture");
-    expect(journal[0].debit).toBe(1180);
-    expect(journal[0].credit).toBe(200);
+    // Le dossier porte le dû (total contrat) et ses règlements ; la facture
+    // liée est listée pour mémoire, à 0/0, et le solde reste celui du dossier.
+    expect(journal).toHaveLength(2);
+    const [dossier, facture] = journal;
+    expect(dossier).toMatchObject({ type: "Dossier", debit: 1000, credit: 400 });
+    expect(facture).toMatchObject({ type: "Facture", debit: 0, credit: 0 });
+    expect(facture.libelle).toContain("comptée sur son dossier");
+    expect(journal[journal.length - 1].soldeCumule).toBe(600);
   });
 
   it("met à zéro débit/crédit pour une facture annulée", () => {

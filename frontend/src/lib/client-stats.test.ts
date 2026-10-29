@@ -1,17 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { syncClientStats, sommeDepensesDossiers, sommeDossiersEncaisses } from "./client-stats";
+import { facturesLibres, syncClientStats, sommeDepensesDossiers, sommeEncaisse } from "./client-stats";
 import type { Client, Dossier, Facture, Ecriture } from "@/lib/store";
 
 describe("syncClientStats", () => {
-  it("un dossier facturé cède la main à sa facture (pas de double comptage dossier + facture)", () => {
+  it("le dossier fait foi : une facture liée n'est pas recomptée, une facture libre l'est", () => {
     const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
-    // d1 a déjà 400 réglés AVANT sa facturation — une fois facturé, c'est la
-    // facture (200/500) qui doit compter, plus son reste dû (300), pas les 400
-    // du dossier en plus.
     const dossiers = [{ id: "d1", clientId: "c1", totalContrat: 1000, montantPaye: 400 }] as Dossier[];
     const factures = [
-      { clientId: "c1", dossierId: "d1", statut: "Partielle", montantTTC: 500, montantPaye: 200 },
-      { clientId: "c1", dossierId: null, statut: "Partielle", montantTTC: 500, montantPaye: 200 },
+      { clientId: "c1", dossierId: "d1", statut: "Partielle", montantTTC: 1180, montantPaye: 200 }, // liée : ignorée
+      { clientId: "c1", dossierId: null, statut: "Partielle", montantTTC: 500, montantPaye: 200 }, // libre
     ] as Facture[];
     const ecritures = [
       { clientId: "c1", dossierId: "d1", montantInvesti: 500, montantPaye: 100 },
@@ -19,21 +16,11 @@ describe("syncClientStats", () => {
     ] as Ecriture[];
     const [updated] = syncClientStats(dossiers, factures, ecritures, clients);
     expect(updated.nbDossiers).toBe(1);
-    // dossier d1 exclu (facturé) + facture liée 200 + facture autonome 200 + écriture autonome 50
-    expect(updated.totalPaye).toBe(450);
-    // dossier d1 exclu (facturé) + reste facture liée 300 + reste facture autonome 300 + reste écriture autonome 250
-    expect(updated.totalDu).toBe(850);
-  });
-
-  it("exclut les dossiers rattachés à une facture du client (anti double comptage)", () => {
-    const clients: Client[] = [{ id: "c1", nbDossiers: 0, totalDu: 0, totalPaye: 0, nom: "ACME", type: "Entreprise", telephone: "", email: "", adresse: "", annexeId: "a1" }];
-    const dossiers = [{ id: "d1", clientId: "c1", totalContrat: 1000, montantPaye: 0 }] as Dossier[];
-    const factures = [
-      { clientId: "c1", dossierId: "d1", statut: "Envoyée", montantTTC: 1000, montantPaye: 0 },
-    ] as Facture[];
-    const [updated] = syncClientStats(dossiers, factures, [], clients);
-    expect(updated.totalDu).toBe(1000);
-    expect(updated.totalPaye).toBe(0);
+    // dossier 400 + facture libre 200 + écriture autonome 50
+    expect(updated.totalPaye).toBe(650);
+    // reste dossier 600 + reste facture libre 300 + reste écriture autonome 250
+    expect(updated.totalDu).toBe(1150);
+    expect(updated.totalInvesti).toBe(1000 + 500 + 300);
   });
 
   it("exclut les factures annulées du total dû", () => {
@@ -45,18 +32,31 @@ describe("syncClientStats", () => {
     expect(updated.totalDu).toBe(0);
   });
 
-  it("sommeDossiersEncaisses : dossiers réglés sans facture, filtrés par dateSolde", () => {
+  it("sommeEncaisse : règlements de tous les dossiers (facturés ou non) + factures libres, filtrables par date", () => {
     const dossiers = [
       { id: "d1", montantPaye: 400, dateSolde: "2026-03-10" },
       { id: "d2", montantPaye: 900, dateSolde: "2026-04-02" }, // hors période
-      { id: "d3", montantPaye: 700, dateSolde: "2026-03-20" }, // mais facturé -> exclu
-      { id: "d4", montantPaye: 0, dateSolde: "2026-03-15" }, // rien payé
+      { id: "d3", montantPaye: 700, dateSolde: "2026-03-20" }, // facturé : compte quand même
+      { id: "d4", montantPaye: 0, dateSolde: "2026-03-15" },
     ] as Dossier[];
-    const factures = [{ dossierId: "d3" }] as Facture[];
+    const factures = [
+      { dossierId: "d3", statut: "Partielle", date: "2026-03-20", montantPaye: 700 }, // liée : ignorée
+      { dossierId: null, statut: "Partielle", date: "2026-03-05", montantPaye: 100 }, // libre
+      { dossierId: null, statut: "Annulée", date: "2026-03-05", montantPaye: 999 },
+    ] as Facture[];
     const enMars = (iso: string) => iso >= "2026-03-01" && iso <= "2026-03-31";
-    expect(sommeDossiersEncaisses(dossiers, factures, enMars)).toBe(400);
-    // sans filtre période : d1 + d2 (d3 facturé exclu, d4 = 0)
-    expect(sommeDossiersEncaisses(dossiers, factures)).toBe(1300);
+    expect(sommeEncaisse(dossiers, factures, enMars)).toBe(400 + 700 + 100);
+    expect(sommeEncaisse(dossiers, factures)).toBe(400 + 900 + 700 + 100);
+  });
+
+  it("facturesLibres exclut les factures liées, annulées et en brouillon", () => {
+    const factures = [
+      { id: "1", dossierId: "d1", statut: "Envoyée" },
+      { id: "2", dossierId: null, statut: "Envoyée" },
+      { id: "3", dossierId: null, statut: "Annulée" },
+      { id: "4", dossierId: null, statut: "Brouillon" },
+    ] as Facture[];
+    expect(facturesLibres(factures).map((f) => f.id)).toEqual(["2"]);
   });
 
   it("compte le reste à payer d'une facture impayée même sans dossier associé", () => {
@@ -88,7 +88,7 @@ describe("syncClientStats", () => {
   });
 });
 
-describe("sommeDossiersEncaisses — datation par règlement", () => {
+describe("sommeEncaisse — datation par règlement", () => {
   const mois = (m: string) => (iso: string) => iso.startsWith(`2026-${m}`);
   const dossiers = [
     {
@@ -105,10 +105,10 @@ describe("sommeDossiersEncaisses — datation par règlement", () => {
   ] as Dossier[];
 
   it("range chaque versement dans son mois, pas tout le cumul dans le mois du dernier", () => {
-    expect(sommeDossiersEncaisses(dossiers, [], mois("01"))).toBe(300);
-    expect(sommeDossiersEncaisses(dossiers, [], mois("02"))).toBe(300);
-    expect(sommeDossiersEncaisses(dossiers, [], mois("03"))).toBe(300);
-    expect(sommeDossiersEncaisses(dossiers, [])).toBe(900);
+    expect(sommeEncaisse(dossiers, [], mois("01"))).toBe(300);
+    expect(sommeEncaisse(dossiers, [], mois("02"))).toBe(300);
+    expect(sommeEncaisse(dossiers, [], mois("03"))).toBe(300);
+    expect(sommeEncaisse(dossiers, [])).toBe(900);
   });
 });
 

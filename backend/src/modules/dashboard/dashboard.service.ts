@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 import { buildAnnexeScopeFilter } from '../../common/annexe-filter.utils';
 import { calculerFinancesDossier } from '../dossiers/dossier-finances';
+import { calculerCreances } from './creances';
 
 @Injectable()
 export class DashboardService {
@@ -10,6 +11,10 @@ export class DashboardService {
 
   async getDashboardAnalytics(user: CurrentUserType) {
     const annexeScope = buildAnnexeScopeFilter(user);
+    const now = new Date();
+    // Fenêtre du flux de trésorerie : les 6 derniers mois, 1er jour inclus.
+    const debutFenetre = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const debutFenetreIso = `${debutFenetre.getFullYear()}-${String(debutFenetre.getMonth() + 1).padStart(2, '0')}-01`;
 
     // 1. Récupération parallèle des données de base
     const [
@@ -18,10 +23,11 @@ export class DashboardService {
       totalClients,
       factures,
       depensesAgg,
-      caissesAgg,
+      depensesDossiersAgg,
       dossiersList,
-      transactionsCaisse,
+      operationsFenetre,
       stockItems,
+      tresorerieTotal,
     ] = await Promise.all([
       this.prisma.dossier.count({ where: annexeScope }),
       this.prisma.dossier.count({
@@ -43,17 +49,20 @@ export class DashboardService {
           montantPaye: true,
           dateEmission: true,
           dateEcheance: true,
+          dossierId: true,
           client: { select: { id: true, nom: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
+      // Dépenses hors dossier (contrats, fournisseurs) — sans les rejetées.
       this.prisma.depense.aggregate({
-        where: annexeScope,
+        where: { ...annexeScope, statut: { not: 'REJETEE' } },
         _sum: { montant: true },
       }),
-      this.prisma.caisse.aggregate({
-        where: annexeScope,
-        _sum: { soldeActuel: true },
+      // Dépenses saisies sur les dossiers (refonte « Situation du client »).
+      this.prisma.dossierDepense.aggregate({
+        where: Object.keys(annexeScope).length > 0 ? { dossier: annexeScope } : {},
+        _sum: { montant: true },
       }),
       this.prisma.dossier.findMany({
         where: annexeScope,
@@ -64,24 +73,20 @@ export class DashboardService {
           voieTransport: true,
           createdAt: true,
           totalContrat: true,
+          montantPaye: true,
           depensesDossier: { select: { montant: true } },
           client: { select: { id: true, nom: true } },
         },
+        // Tous les dossiers : la répartition par statut et le pipeline
+        // divisent par le total (avant : 100 derniers seulement, pourcentages faux).
         orderBy: { createdAt: 'desc' },
-        take: 100,
       }),
-      this.prisma.transactionCaisse.findMany({
-        where: { caisse: annexeScope },
-        select: {
-          id: true,
-          type: true,
-          montant: true,
-          date: true,
-          createdAt: true,
-          motif: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 200,
+      // Flux de trésorerie = journal comptable (qui reçoit désormais règlements
+      // de dossier, encaissements, dépenses et saisies), sur la fenêtre entière
+      // (avant : 200 dernières transactions de caisse seulement).
+      this.prisma.operationComptable.findMany({
+        where: { AND: [annexeScope, { date: { gte: debutFenetreIso } }] },
+        select: { type: true, montant: true, date: true },
       }),
       this.prisma.stockItem.findMany({
         where: annexeScope,
@@ -93,76 +98,16 @@ export class DashboardService {
           unite: true,
         },
       }),
+      this.calculerTresorerie(annexeScope),
     ]);
 
-    // Calculs Factures à recouvrer
-    let totalARecouvrer = 0;
-    let montantEchu = 0;
-    let montantNonEchu = 0;
-    const now = new Date();
+    // Créances : le dossier fait foi (cf. creances.ts).
+    const creances = calculerCreances(dossiersList, factures, now);
+    const { totalARecouvrer, montantEchu, montantNonEchu, topRiskClients } = creances;
+    const agingMap = creances.aging;
 
-    const agingMap = {
-      '0-30j': { montant: 0, count: 0 },
-      '31-60j': { montant: 0, count: 0 },
-      '61-90j': { montant: 0, count: 0 },
-      '+90j': { montant: 0, count: 0 },
-    };
-
-    const topRiskClients: Array<{
-      id: string;
-      clientNom: string;
-      referenceDossierOuFacture: string;
-      montant: number;
-      echeance: string;
-      statut: 'En retard' | 'À risque' | 'Contentieux' | 'En cours';
-      joursRetard: number;
-    }> = [];
-
-    factures.forEach((f: any) => {
-      const reste = Math.max(0, (f.montantTtc || 0) - (f.montantPaye || 0));
-      if (reste > 0 && f.statut !== 'ANNULEE') {
-        totalARecouvrer += reste;
-        const echeance = f.dateEcheance ? new Date(f.dateEcheance) : now;
-        const diffMs = now.getTime() - echeance.getTime();
-        const joursRetard = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (joursRetard > 0) {
-          montantEchu += reste;
-          if (joursRetard <= 30) {
-            agingMap['0-30j'].montant += reste;
-            agingMap['0-30j'].count += 1;
-          } else if (joursRetard <= 60) {
-            agingMap['31-60j'].montant += reste;
-            agingMap['31-60j'].count += 1;
-          } else if (joursRetard <= 90) {
-            agingMap['61-90j'].montant += reste;
-            agingMap['61-90j'].count += 1;
-          } else {
-            agingMap['+90j'].montant += reste;
-            agingMap['+90j'].count += 1;
-          }
-
-          if (topRiskClients.length < 5) {
-            topRiskClients.push({
-              id: f.id,
-              clientNom: f.client?.nom || 'Client',
-              referenceDossierOuFacture: f.numero,
-              montant: reste,
-              echeance: echeance.toLocaleDateString('fr-FR'),
-              statut: joursRetard > 60 ? 'Contentieux' : joursRetard > 15 ? 'En retard' : 'À risque',
-              joursRetard,
-            });
-          }
-        } else {
-          montantNonEchu += reste;
-          agingMap['0-30j'].montant += reste;
-          agingMap['0-30j'].count += 1;
-        }
-      }
-    });
-
-    const deboursTotal = depensesAgg._sum.montant || 0;
-    const tresorerieTotal = caissesAgg._sum.soldeActuel || 0;
+    const deboursTotal =
+      Number(depensesAgg._sum.montant || 0) + Number(depensesDossiersAgg._sum.montant || 0);
 
     // KPI Cards
     const kpis = [
@@ -201,7 +146,7 @@ export class DashboardService {
       },
       {
         id: 'kpi-factures-recouvrer',
-        label: 'Factures à recouvrer',
+        label: 'Reste à recouvrer',
         rawNumericValue: totalARecouvrer,
         formattedValue: `${totalARecouvrer.toLocaleString('fr-FR')} FCFA`,
         unit: 'FCFA',
@@ -217,7 +162,7 @@ export class DashboardService {
         rawNumericValue: deboursTotal,
         formattedValue: `${deboursTotal.toLocaleString('fr-FR')} FCFA`,
         unit: 'FCFA',
-        subtitle: 'Avances douanières & portuaires',
+        subtitle: 'Dépenses des dossiers et hors dossier',
         isFinancialDebours: true,
         type: 'debours_avances',
         category: 'finance',
@@ -226,11 +171,11 @@ export class DashboardService {
       },
       {
         id: 'kpi-tresorerie-disponible',
-        label: 'Trésorerie caisses',
+        label: 'Trésorerie',
         rawNumericValue: tresorerieTotal,
         formattedValue: `${tresorerieTotal.toLocaleString('fr-FR')} FCFA`,
         unit: 'FCFA',
-        subtitle: 'Soldes réels consolidés',
+        subtitle: 'Dernière clôture + mouvements du journal',
         type: 'tresorerie_disponible',
         category: 'finance',
         accentColor: 'teal',
@@ -339,12 +284,11 @@ export class DashboardService {
       let entrees = 0;
       let sorties = 0;
 
-      transactionsCaisse.forEach((tx: any) => {
-        const txDate = tx.createdAt ? new Date(tx.createdAt) : new Date();
-        if (txDate.getMonth() === targetMonth && txDate.getFullYear() === targetYear) {
-          if (tx.type === 'ENTREE') entrees += Number(tx.montant || 0);
-          else sorties += Number(tx.montant || 0);
-        }
+      const moisIso = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+      operationsFenetre.forEach((op: any) => {
+        if (String(op.date || '').slice(0, 7) !== moisIso) return;
+        if (op.type === 'Entrée') entrees += Number(op.montant || 0);
+        else sorties += Number(op.montant || 0);
       });
 
       let prestationsHT = 0;
@@ -589,5 +533,34 @@ export class DashboardService {
       operationalAlerts,
       recentOperations,
     };
+  }
+
+  /**
+   * Trésorerie par annexe = solde constaté de la dernière clôture + mouvements
+   * du journal postérieurs (même logique que la clôture de caisse) ; sans
+   * clôture, cumul de tout le journal de l'annexe. Avant : somme des soldes des
+   * caisses, qui ignoraient règlements de dossier et saisies du journal.
+   */
+  private async calculerTresorerie(annexeScope: Record<string, any>): Promise<number> {
+    const annexes = await this.prisma.annexe.findMany({
+      where: annexeScope.annexeId ? { id: annexeScope.annexeId } : {},
+      select: { id: true },
+    });
+    let total = 0;
+    for (const { id } of annexes) {
+      const cloture = await this.prisma.clotureCaisse.findFirst({
+        where: { annexeId: id },
+        orderBy: { periodeFin: 'desc' },
+        select: { periodeFin: true, soldeConstate: true },
+      });
+      const groupes = await this.prisma.operationComptable.groupBy({
+        by: ['type'],
+        where: { annexeId: id, ...(cloture ? { date: { gt: cloture.periodeFin } } : {}) },
+        _sum: { montant: true },
+      });
+      const somme = (type: string) => Number(groupes.find((g: any) => g.type === type)?._sum?.montant ?? 0);
+      total += Number(cloture?.soldeConstate ?? 0) + somme('Entrée') - somme('Sortie');
+    }
+    return total;
   }
 }

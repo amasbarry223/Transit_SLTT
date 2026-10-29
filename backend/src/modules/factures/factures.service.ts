@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ORIGINE, posterEcriture } from '../comptabilite/journal-posting';
+import { syncLignesEtTotaux } from '../dossiers/dossiers.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
@@ -351,19 +352,36 @@ export class FacturesService {
         },
       });
 
-      // Journal comptable : l'encaissement apparaît dans le journal de l'annexe.
-      await posterEcriture(tx, {
-        origineType: ORIGINE.FACTURE_PAIEMENT,
-        origineId: transaction?.id ?? `${facture.id}:${Date.now()}`,
-        annexeId: facture.annexeId,
-        date: new Date(),
-        type: 'Entrée',
-        montant,
-        nature: `Encaissement facture ${facture.numero}`,
-        clientId: facture.clientId,
-        dossierId: facture.dossierId,
-        clientNom: facture.client?.nom ?? null,
-      });
+      if (facture.dossierId) {
+        // Le DOSSIER fait foi pour l'encaissé (fiche « Situation du client ») :
+        // un encaissement sur une facture liée devient un règlement du dossier.
+        // Le journal est alimenté par la synchronisation du dossier (pas
+        // d'écriture « facture » en plus, qui ferait doublon).
+        await tx.dossierPaiement.create({
+          data: {
+            dossierId: facture.dossierId,
+            date: new Date(),
+            montant: BigInt(Math.round(montant)),
+            mode: 'ESPECES',
+            reference: `Facture ${facture.numero}`,
+          },
+        });
+        await syncLignesEtTotaux(tx, facture.dossierId, {});
+      } else {
+        // Facture libre (sans dossier) : écriture « facture » dans le journal.
+        await posterEcriture(tx, {
+          origineType: ORIGINE.FACTURE_PAIEMENT,
+          origineId: transaction?.id ?? `${facture.id}:${Date.now()}`,
+          annexeId: facture.annexeId,
+          date: new Date(),
+          type: 'Entrée',
+          montant,
+          nature: `Encaissement facture ${facture.numero}`,
+          clientId: facture.clientId,
+          dossierId: null,
+          clientNom: facture.client?.nom ?? null,
+        });
+      }
 
       // Mettre à jour le solde de la caisse
       await tx.caisse.update({

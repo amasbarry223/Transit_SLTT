@@ -2,71 +2,58 @@ import { resteAPayer, resteDuDossier } from "@/lib/domain-types";
 import type { Client, Dossier, Ecriture, Facture } from "@/lib/store";
 
 /**
- * Dossiers qui n'ont PAS (encore) été facturés. Une fois qu'une facture est
- * générée à partir d'un dossier, c'est elle qui devient la source de vérité
- * de l'encaissement et du reste dû (elle peut inclure la TVA, avoir son
- * propre historique de paiement) — le dossier ne doit plus être compté à
- * côté sous peine de double comptage ou de chiffre obsolète.
+ * Règle unique de l'encaissé et du dû client : le DOSSIER fait foi (fiche
+ * « Situation du client »).
  *
- * Centralisé ici (au lieu d'un `!factures.some(f => f.dossierId === d.id)`
- * réimplémenté à chaque écran) : cette règle a déjà divergé trois fois dans
- * le projet faute d'un point d'entrée unique — syncClientStats comptait le
- * dossier ET sa facture, et les KPI Dashboard (restes à payer, alertes
- * "dossier non soldé") ignoraient complètement qu'un dossier facturé n'a
- * plus vocation à porter son propre reste dû.
+ *   dû       = Σ total contrat des dossiers + Σ TTC des factures libres
+ *   encaissé = Σ règlements des dossiers    + Σ payé des factures libres
+ *
+ * Une facture liée à un dossier est un document : elle n'est pas recomptée.
+ * Son encaissement crée un règlement du dossier (backend factures.service →
+ * enregistrerPaiement), et l'historique a été repris une fois
+ * (prisma/sql/2026-10-30-reprise-encaissements-factures.sql). Même règle côté
+ * serveur pour le tableau de bord (backend dashboard/creances.ts) et dans la
+ * situation clients de la comptabilité (situation-clients-compta.ts).
+ *
+ * Avant : une facture liée « prenait la main » sur son dossier ici, alors que
+ * les dossiers refondus, la situation clients et le journal suivaient le
+ * dossier. Deux règles coexistaient selon l'écran.
  */
-export function dossiersNonFactures<T extends { id: string }>(
-  dossiers: readonly T[],
-  factures: readonly Pick<Facture, "dossierId">[],
-): T[] {
-  const facturedDossierIds = new Set(
-    factures.map((f) => f.dossierId).filter((x): x is string => Boolean(x)),
-  );
-  return dossiers.filter((d) => !facturedDossierIds.has(d.id));
+
+/** Factures sans dossier, ni annulées ni en brouillon. */
+export function facturesLibres<T extends Pick<Facture, "dossierId" | "statut">>(factures: readonly T[]): T[] {
+  return factures.filter((f) => !f.dossierId && f.statut !== "Annulée" && f.statut !== "Brouillon");
 }
 
 /**
- * Somme des montants payés sur des factures actives — exclut les factures
- * `Annulée`, dont l'encaissement ne doit plus compter dans un total global
- * une fois la facture annulée. Fonction unique réutilisée par tout écran
- * agrégeant des paiements de factures (Dashboard, Bilans, fiche client),
- * pour qu'ils ne divergent jamais sur ce total.
+ * Encaissé (définition unique). `inPeriode`, si fourni, filtre chaque
+ * règlement de dossier sur SA date (repli sur `dateSolde` si le détail n'est
+ * pas chargé) et chaque facture libre sur sa date.
  */
-export function sommeFacturesEncaissees(factures: Facture[]): number {
-  return factures.filter((f) => f.statut !== "Annulée").reduce((sum, f) => sum + f.montantPaye, 0);
-}
-
-/**
- * Règlements reçus sur les dossiers NON facturés — quand un dossier n'a pas de
- * facture, c'est lui qui porte le montant encaissé (même règle que les bilans
- * et syncClientStats).
- *
- * `inPeriode`, si fourni, filtre chaque règlement sur SA date : trois
- * versements de janvier, février et mars comptent chacun dans leur mois. Avant,
- * tout le cumul était rangé dans le mois de `dateSolde` (dernier règlement) et
- * décalait les recettes. Repli sur `dateSolde` quand le détail des paiements
- * n'est pas chargé.
- */
-export function sommeDossiersEncaisses(
-  dossiers: Dossier[],
-  factures: Facture[],
+export function sommeEncaisse(
+  dossiers: readonly Dossier[],
+  factures: readonly Facture[],
   inPeriode?: (date: string) => boolean,
 ): number {
-  return dossiersNonFactures(dossiers, factures).reduce((sum, d) => {
-    if (!inPeriode) return sum + (d.montantPaye > 0 ? d.montantPaye : 0);
+  const dossiersEncaisses = dossiers.reduce((sum, d) => {
+    if (!inPeriode) return sum + Math.max(0, d.montantPaye);
     if (d.paiements && d.paiements.length > 0) {
       return sum + d.paiements.filter((p) => p.date && inPeriode(p.date)).reduce((s, p) => s + p.montant, 0);
     }
     return sum + (d.montantPaye > 0 && d.dateSolde && inPeriode(d.dateSolde) ? d.montantPaye : 0);
   }, 0);
+  const facturesEncaissees = facturesLibres(factures)
+    .filter((f) => !inPeriode || inPeriode(f.date))
+    .reduce((s, f) => s + f.montantPaye, 0);
+  return dossiersEncaisses + facturesEncaissees;
 }
 
 /**
  * Dépenses engagées sur les dossiers (droit de douane compris), datées ligne
- * par ligne. Tous les dossiers comptent, facturés ou non : un coût est réel
- * quelle que soit l'encaissement.
+ * par ligne. Tous les dossiers comptent : un coût est réel quel que soit
+ * l'encaissement.
  */
-export function sommeDepensesDossiers(dossiers: Dossier[], inPeriode?: (date: string) => boolean): number {
+export function sommeDepensesDossiers(dossiers: readonly Dossier[], inPeriode?: (date: string) => boolean): number {
   return dossiers.reduce(
     (sum, d) =>
       sum +
@@ -78,18 +65,9 @@ export function sommeDepensesDossiers(dossiers: Dossier[], inPeriode?: (date: st
 }
 
 /**
- * Recalcule les agrégats client à partir des dossiers, factures et écritures.
- *
- * Un dossier facturé est exclu du total (pas sa facture) : une fois qu'une
- * facture est générée à partir d'un dossier, c'est elle qui devient la
- * source de vérité de l'encaissement (elle peut inclure la TVA, avoir son
- * propre historique de paiement) — même convention que sommeDossiersEncaisses
- * et les Bilans (use-bilans-screen.ts). Avant ce correctif, c'était l'inverse
- * (la facture était exclue, le dossier gardait son propre montantPaye) : un
- * dossier réglé avant sa facturation, puis facturé et réglé une seconde fois
- * via la facture, voyait les deux montants s'additionner sur la fiche client
- * — ni le Dashboard ni les Bilans ne reproduisaient ce doublon, seule la
- * fiche client (ce fichier) divergeait.
+ * Recalcule les agrégats client (règle ci-dessus). Les restes sont bornés à 0
+ * par dossier / facture : un dossier en trop-perçu ne compense pas un autre
+ * dossier dû.
  */
 export function syncClientStats(
   dossiers: Dossier[],
@@ -99,31 +77,23 @@ export function syncClientStats(
 ): Client[] {
   return clients.map((c) => {
     const cd = dossiers.filter((d) => d.clientId === c.id);
-    const cdNonFactures = dossiersNonFactures(cd, factures);
-    const cf = factures.filter((f) => f.clientId === c.id);
+    const cfl = facturesLibres(factures.filter((f) => f.clientId === c.id));
     const ce = ecritures.filter((e) => e.clientId === c.id && !e.dossierId);
-    const cfActives = cf.filter((f) => f.statut !== "Annulée");
     return {
       ...c,
       nbDossiers: cd.length,
       totalPaye:
-        cdNonFactures.reduce((s, d) => s + d.montantPaye, 0) +
-        sommeFacturesEncaissees(cf) +
+        cd.reduce((s, d) => s + d.montantPaye, 0) +
+        cfl.reduce((s, f) => s + f.montantPaye, 0) +
         ce.reduce((s, e) => s + e.montantPaye, 0),
       totalDu:
-        cdNonFactures.reduce((s, d) => s + resteDuDossier(d), 0) +
-        ce.reduce((s, e) => s + resteAPayer(e), 0) +
-        cfActives.reduce((s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }), 0),
-      // Même composition que totalPaye/totalDu ci-dessus (dossiers non
-      // facturés + écritures sans dossier + factures actives) — ajouté pour
-      // que la fiche client affiche le total réellement engagé sans
-      // l'approximer en aval par totalPaye + totalDu (imprécis dès qu'un
-      // enregistrement est en trop-perçu).
+        cd.reduce((s, d) => s + resteDuDossier(d), 0) +
+        cfl.reduce((s, f) => s + resteAPayer({ montantInvesti: f.montantTTC, montantPaye: f.montantPaye }), 0) +
+        ce.reduce((s, e) => s + resteAPayer(e), 0),
       totalInvesti:
-        // Engagement client d'un dossier = total contrat (ce qu'il doit).
-        cdNonFactures.reduce((s, d) => s + d.totalContrat, 0) +
-        ce.reduce((s, e) => s + e.montantInvesti, 0) +
-        cfActives.reduce((s, f) => s + f.montantTTC, 0),
+        cd.reduce((s, d) => s + d.totalContrat, 0) +
+        cfl.reduce((s, f) => s + f.montantTTC, 0) +
+        ce.reduce((s, e) => s + e.montantInvesti, 0),
     };
   });
 }

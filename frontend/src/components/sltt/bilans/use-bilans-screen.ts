@@ -6,7 +6,7 @@ import { parseLocalDate } from "@/lib/format";
 import { exportToExcel, printBilan } from "@/lib/export";
 import { resolveClasseurPrintBrand } from "@/lib/societe-brand";
 import { filterByAnnexeAndPeriode, computeBenefice } from "@/lib/benefice";
-import { dossiersNonFactures, sommeDepensesDossiers, sommeFacturesEncaissees, sommeDossiersEncaisses } from "@/lib/client-stats";
+import { facturesLibres, sommeDepensesDossiers, sommeEncaisse } from "@/lib/client-stats";
 import { resteAPayer } from "@/lib/domain-types";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
@@ -41,8 +41,9 @@ export function useBilansScreen() {
     // gonfler "Investi"/"Encaissé" du récap client alors que le Bénéfice
     // affiché juste au-dessus l'ignorait déjà — deux chiffres divergents
     // sur le même écran pour la même donnée.
-    const fromFactures = factures
-      .filter((f) => f.statut !== "Annulée")
+    // Le dossier fait foi (client-stats.ts) : seules les factures libres
+    // (sans dossier) ont leur propre ligne ; une facture liée n'est pas recomptée.
+    const fromFactures = facturesLibres(factures)
       .map((f) => ({
         id: `fac-${f.id}`,
         groupe: `fac-${f.id}`,
@@ -63,7 +64,7 @@ export function useBilansScreen() {
     // par période rangent chaque encaissement dans son mois (avant, tout le
     // cumul tombait dans le mois du dernier règlement, dateSolde). Repli sur
     // dateSolde si le détail des paiements n'est pas chargé.
-    const fromDossiers = dossiersNonFactures(dossiers, factures)
+    const fromDossiers = dossiers
       .filter((d) => d.totalContrat > 0 || d.montantPaye > 0)
       .flatMap((d) => {
         const base = {
@@ -164,8 +165,11 @@ export function useBilansScreen() {
     const computeFor = (annexeId: string | null) => {
       const dossiersScope = annexeId ? dossiers.filter((d) => d.annexeId === annexeId) : dossiers;
       const recettes =
-        sommeFacturesEncaissees(filterByAnnexeAndPeriode(factures, annexeId, year, m)) +
-        sommeDossiersEncaisses(dossiersScope, factures, dansLeMois);
+        sommeEncaisse(
+          dossiersScope,
+          annexeId ? factures.filter((f) => f.annexeId === annexeId) : factures,
+          dansLeMois,
+        );
       const depensesMois =
         filterByAnnexeAndPeriode(caisseAvecDate, annexeId, year, m).reduce((sum, d) => sum + d.montant, 0) +
         filterByAnnexeAndPeriode(
