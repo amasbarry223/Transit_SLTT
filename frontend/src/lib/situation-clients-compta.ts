@@ -46,6 +46,18 @@ interface BuildInput {
 
 const inAnnexe = (filter: string, annexeId?: string | null) => filter === TOUTES_ANNEXES || annexeId === filter;
 
+/** Index par client : évite un parcours complet des listes pour chaque client (O(n²)). */
+function grouperParClient<T extends { clientId: string }>(rows: readonly T[], garder: (r: T) => boolean): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const r of rows) {
+    if (!garder(r)) continue;
+    const list = map.get(r.clientId);
+    if (list) list.push(r);
+    else map.set(r.clientId, [r]);
+  }
+  return map;
+}
+
 export function buildSituationsClients({
   clients,
   dossiers,
@@ -54,17 +66,18 @@ export function buildSituationsClients({
   annexes,
   annexeFilter,
 }: BuildInput): ClientSituation[] {
+  const dossiersParClient = grouperParClient(dossiers, (d) => inAnnexe(annexeFilter, d.annexeId));
+  const facturesParClient = grouperParClient(
+    factures,
+    (f) => !f.dossierId && f.statut !== "Annulée" && f.statut !== "Brouillon" && inAnnexe(annexeFilter, f.annexeId),
+  );
+  const contratsParClient = grouperParClient(contrats, (c) => inAnnexe(annexeFilter, c.annexeId));
+  const nomAnnexe = new Map(annexes.map((a) => [a.id, a.nom]));
+
   const rows: ClientSituation[] = [];
   for (const client of clients) {
-    const clientDossiers = dossiers.filter((d) => d.clientId === client.id && inAnnexe(annexeFilter, d.annexeId));
-    const facturesLibres = factures.filter(
-      (f) =>
-        f.clientId === client.id &&
-        !f.dossierId &&
-        f.statut !== "Annulée" &&
-        f.statut !== "Brouillon" &&
-        inAnnexe(annexeFilter, f.annexeId),
-    );
+    const clientDossiers = dossiersParClient.get(client.id) ?? [];
+    const facturesLibres = facturesParClient.get(client.id) ?? [];
     if (clientDossiers.length === 0 && facturesLibres.length === 0) continue;
 
     let totalDu = 0;
@@ -86,9 +99,9 @@ export function buildSituationsClients({
       clientId: client.id,
       clientNom: client.nom,
       annexeId: client.annexeId,
-      annexeNom: client.annexeId ? annexes.find((a) => a.id === client.annexeId)?.nom : undefined,
+      annexeNom: client.annexeId ? nomAnnexe.get(client.annexeId) : undefined,
       nbDossiers: clientDossiers.length,
-      nbContrats: contrats.filter((c) => c.clientId === client.id && inAnnexe(annexeFilter, c.annexeId)).length,
+      nbContrats: contratsParClient.get(client.id)?.length ?? 0,
       nbFacturesLibres: facturesLibres.length,
       totalDu,
       totalDepenses,

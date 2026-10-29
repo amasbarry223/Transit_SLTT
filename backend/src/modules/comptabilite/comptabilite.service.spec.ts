@@ -204,7 +204,7 @@ describe('ComptabiliteService.rattacherOperations', () => {
 
     expect(res).toEqual({ rattachees: 1 });
     expect(tx.operationComptable.updateMany).toHaveBeenCalledWith({
-      where: { id: 'o1', clientId: null },
+      where: { id: { in: ['o1'] }, clientId: null },
       data: { clientId: 'c1' },
     });
   });

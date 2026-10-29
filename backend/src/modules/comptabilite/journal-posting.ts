@@ -65,6 +65,17 @@ export function lendemain(dateIso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Un événement n'est journalisé que s'il est postérieur à la bascule, à la fois
+ * par sa création ET par sa date. Le seul critère de création laissait passer
+ * les dossiers importés de l'historique (leur ligne « Paiement (reprise) » est
+ * créée aujourd'hui mais datée du passé) : d'anciens règlements arrivaient dans
+ * le journal, voire au lendemain de la dernière clôture, gonflant la trésorerie.
+ */
+export function apresBascule(bascule: Date, creeLe: Date | string, date: Date | string): boolean {
+  return new Date(creeLe) >= bascule && iso(date) >= iso(bascule);
+}
+
 /** Date de bascule : posée à la première utilisation, jamais modifiée ensuite. */
 export async function getBascule(tx: any): Promise<Date> {
   const existing = await tx.setting.findUnique({ where: { cle: BASCULE_CLE } });
@@ -147,7 +158,11 @@ export async function posterEcriture(tx: any, e: EcritureAuto): Promise<void> {
 
     const date = fin && dateEvt <= fin ? lendemain(fin) : dateEvt;
     const nature = date !== dateEvt ? `${e.nature} (du ${dateEvt})` : e.nature;
-    const operation = await tx.operationComptable.create({
+    // Écriture et lien créés ensemble (création imbriquée) : si le lien échoue
+    // (ex. deux synchronisations concurrentes du même événement), l'écriture
+    // n'est pas créée non plus — sinon elle restait orpheline et chaque
+    // synchronisation suivante en ajoutait une nouvelle.
+    await tx.operationComptable.create({
       data: {
         reference: await nextReference(tx),
         annexeId: e.annexeId,
@@ -161,10 +176,8 @@ export async function posterEcriture(tx: any, e: EcritureAuto): Promise<void> {
         modePaiement: e.modePaiement ?? 'Espèces',
         source: SOURCE_AUTO[e.origineType],
         creePar: 'Automatique',
+        lien: { create: { origineType: e.origineType, origineId: e.origineId } },
       },
-    });
-    await tx.journalLien.create({
-      data: { origineType: e.origineType, origineId: e.origineId, operationId: operation.id },
     });
   } catch (err) {
     logger.warn(`Écriture automatique ignorée (${e.origineType} ${e.origineId}) : ${(err as Error).message}`);
@@ -211,7 +224,7 @@ export async function synchroniserJournalDossier(tx: any, dossierId: string): Pr
 
     const idsPaiements = new Set<string>();
     for (const p of dossier.paiements) {
-      if (new Date(p.createdAt) < bascule) continue;
+      if (!apresBascule(bascule, p.createdAt, p.date)) continue;
       idsPaiements.add(p.id);
       await posterEcriture(tx, {
         ...base,
@@ -226,7 +239,7 @@ export async function synchroniserJournalDossier(tx: any, dossierId: string): Pr
     }
     const idsDepenses = new Set<string>();
     for (const d of dossier.depensesDossier) {
-      if (new Date(d.createdAt) < bascule) continue;
+      if (!apresBascule(bascule, d.createdAt, d.date)) continue;
       idsDepenses.add(d.id);
       await posterEcriture(tx, {
         ...base,
@@ -274,6 +287,7 @@ export async function synchroniserJournalBonCaisse(tx: any, bonId: string): Prom
     const vivants = new Set<string>();
     if (bon && new Date(bon.createdAt) >= bascule) {
       for (const [rang, l] of bon.lignes.entries()) {
+        if (!apresBascule(bascule, bon.createdAt, l.date || bon.date)) continue;
         const origineId = `${prefixe}${rang}`;
         vivants.add(origineId);
         await posterEcriture(tx, {

@@ -20,8 +20,10 @@ function fakeTx(opts: { cloturePeriodeFin?: string; bascule?: string; dossier?: 
       findFirst: async () => (operations.length ? { reference: operations[operations.length - 1].reference } : null),
       findUnique: async ({ where }: any) => operations.find((o) => o.reference === where.reference) ?? null,
       create: async ({ data }: any) => {
-        const op = { id: `op-${++seq}`, ...data };
+        const { lien, ...rest } = data;
+        const op = { id: `op-${++seq}`, ...rest };
         operations.push(op);
+        if (lien?.create) liens.push({ ...lien.create, operationId: op.id });
         return op;
       },
       update: async ({ where, data }: any) => Object.assign(operations.find((o) => o.id === where.id), data),
@@ -181,6 +183,33 @@ describe('synchroniserJournalBonCaisse', () => {
     // suppression du bon
     tx.bonSortieCaisse.findUnique = async () => null;
     await synchroniserJournalBonCaisse(tx, 'b1');
+    expect(tx.operations).toHaveLength(0);
+  });
+});
+
+describe("apresBascule — l'historique n'entre pas dans le journal", () => {
+  it("ignore un règlement créé après la bascule mais daté d'avant (import historique)", async () => {
+    const { apresBascule } = await import('./journal-posting');
+    const bascule = new Date('2026-10-30T08:00:00.000Z');
+    expect(apresBascule(bascule, '2026-10-30T09:00:00.000Z', '2025-03-01')).toBe(false);
+    expect(apresBascule(bascule, '2026-10-30T09:00:00.000Z', '2026-10-30')).toBe(true);
+    expect(apresBascule(bascule, '2026-10-29T09:00:00.000Z', '2026-11-02')).toBe(false);
+  });
+
+  it("synchroniserJournalDossier n'écrit rien pour un dossier importé avec un paiement historique", async () => {
+    const tx = fakeTx({
+      bascule: '2026-10-30T08:00:00.000Z',
+      dossier: {
+        id: 'd1',
+        reference: 'D-1',
+        annexeId: 'a1',
+        clientId: 'c1',
+        client: { id: 'c1', nom: 'ACME' },
+        paiements: [{ id: 'p1', date: new Date('2025-03-01'), montant: 500n, mode: 'ESPECES', createdAt: new Date('2026-10-30T09:00:00Z') }],
+        depensesDossier: [],
+      },
+    });
+    await synchroniserJournalDossier(tx, 'd1');
     expect(tx.operations).toHaveLength(0);
   });
 });
