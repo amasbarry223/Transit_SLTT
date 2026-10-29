@@ -51,11 +51,13 @@ describe('applySchemaScripts', () => {
       REPRISE,
       '2026-10-29-journal-liens.sql',
       '2026-10-30-contrat-prestations.sql',
+      '2026-10-30-pays-clients.sql',
       '2026-10-30-reprise-encaissements-factures.sql',
     ]);
     // 2 (bons de livraison) + 2 (tables dossier) + 4 (sauvegarde, 2 INSERT de reprise, UPDATE) + 1 (journal_liens)
-    // + 1 (contrat_prestations) + 3 (reprise des encaissements de factures : INSERT, UPDATE, marqueur).
-    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(13);
+    // + 1 (contrat_prestations) + 2 (pays des clients : UPDATE, marqueur)
+    // + 3 (reprise des encaissements de factures : INSERT, UPDATE, marqueur).
+    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(15);
   });
 
   it('saute la reprise une fois les anciennes colonnes supprimées (phase 2), sans erreur', async () => {
@@ -69,6 +71,6 @@ describe('applySchemaScripts', () => {
     expect(res.status).toBe('ok');
     expect(res.skipped).toEqual([REPRISE]);
     expect(res.applied).not.toContain(REPRISE);
-    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(9);
+    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(11);
   });
 });

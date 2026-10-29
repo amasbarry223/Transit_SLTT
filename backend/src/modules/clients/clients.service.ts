@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -63,6 +63,15 @@ export class ClientsService {
     return client;
   }
 
+  /** Pays par défaut = celui de l'annexe du client (avant : « Guinée » en dur,
+   *  hérité d'un modèle de départ — tous les clients étaient enregistrés en
+   *  Guinée alors que l'entreprise opère au Mali et en Côte d'Ivoire). */
+  private async paysParDefaut(annexeId?: string | null): Promise<string | null> {
+    if (!annexeId) return null;
+    const annexe = await this.prisma.annexe.findUnique({ where: { id: annexeId }, select: { pays: true } });
+    return annexe?.pays ?? null;
+  }
+
   async create(user: CurrentUserType, data: CreateClientDto) {
     assertAnnexeAccess(user, data.annexeId, 'cette annexe');
 
@@ -81,7 +90,7 @@ export class ClientsService {
         telephone: data.telephone || null,
         adresse: data.adresse || null,
         ville: data.ville || null,
-        pays: data.pays || 'Guinée',
+        pays: data.pays || (await this.paysParDefaut(data.annexeId)),
         nif: data.nif || null,
         rccm: data.rccm || null,
         actif: data.actif ?? true,
@@ -102,7 +111,7 @@ export class ClientsService {
     if (data.email !== undefined) updateData.email = data.email || null;
     if (data.adresse !== undefined) updateData.adresse = data.adresse || null;
     if (data.ville !== undefined) updateData.ville = data.ville || null;
-    if (data.pays !== undefined) updateData.pays = data.pays || 'Guinée';
+    if (data.pays !== undefined) updateData.pays = data.pays || (await this.paysParDefaut(data.annexeId));
     if (data.nif !== undefined) updateData.nif = data.nif || null;
     if (data.rccm !== undefined) updateData.rccm = data.rccm || null;
     if (data.actif !== undefined) updateData.actif = data.actif;
@@ -119,6 +128,24 @@ export class ClientsService {
 
   async remove(id: string, user: CurrentUserType) {
     await this.findOne(id, user);
+    // Un client désactivé disparaît des listes (et de la situation clients) :
+    // ses créances deviendraient invisibles. On refuse tant qu'il doit encore
+    // quelque chose (même règle que l'encaissé : dossiers + factures libres).
+    const [dossiers, factures] = await Promise.all([
+      this.prisma.dossier.findMany({ where: { clientId: id }, select: { totalContrat: true, montantPaye: true } }),
+      this.prisma.facture.findMany({
+        where: { clientId: id, dossierId: null, statut: { notIn: ['ANNULEE', 'BROUILLON'] } },
+        select: { montantTtc: true, montantPaye: true },
+      }),
+    ]);
+    const reste =
+      dossiers.reduce((s, d) => s + Math.max(0, Math.round(d.totalContrat - d.montantPaye)), 0) +
+      factures.reduce((s, f) => s + Math.max(0, Math.round(f.montantTtc - f.montantPaye)), 0);
+    if (reste > 0) {
+      throw new BadRequestException(
+        `Ce client doit encore ${reste.toLocaleString('fr-FR')} FCFA : il ne peut pas être supprimé tant que ce montant n'est pas réglé.`,
+      );
+    }
     return this.prisma.client.update({ where: { id }, data: { actif: false } });
   }
 }

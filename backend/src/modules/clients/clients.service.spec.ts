@@ -133,12 +133,43 @@ describe('ClientsService.update', () => {
 
 describe('ClientsService.remove — suppression douce', () => {
   it('désactive le client au lieu de le supprimer (actif: false)', async () => {
-    const prisma = createFakePrisma();
+    const prisma: any = createFakePrisma();
     prisma.client.findUnique.mockResolvedValue({ id: 'c1', annexeId: null });
+    // client sans dossier ni facture : rien à recouvrer
+    prisma.dossier = { findMany: vi.fn().mockResolvedValue([]) };
+    prisma.facture = { findMany: vi.fn().mockResolvedValue([]) };
     const service = new ClientsService(prisma as any);
 
     await service.remove('c1', admin());
 
+    expect(prisma.client.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { actif: false } });
+  });
+});
+
+describe('ClientsService — pays et suppression', () => {
+  it("prend le pays de l'annexe du client au lieu de « Guinée »", async () => {
+    const prisma: any = createFakePrisma();
+    prisma.client.findUnique.mockResolvedValue(null);
+    prisma.annexe = { findUnique: vi.fn().mockResolvedValue({ pays: 'Mali' }) };
+    const created: any = await new ClientsService(prisma).create(admin(), { nom: 'Client A', annexeId: 'a-ml' } as any);
+    expect(created.pays).toBe('Mali');
+  });
+
+  it('refuse de supprimer un client qui doit encore de l’argent', async () => {
+    const prisma: any = createFakePrisma();
+    prisma.client.findUnique.mockResolvedValue({ id: 'c1', annexeId: null });
+    prisma.dossier = { findMany: vi.fn().mockResolvedValue([{ totalContrat: 1000, montantPaye: 400 }]) };
+    prisma.facture = { findMany: vi.fn().mockResolvedValue([]) };
+    await expect(new ClientsService(prisma).remove('c1', admin())).rejects.toThrow(/600/);
+    expect(prisma.client.update).not.toHaveBeenCalled();
+  });
+
+  it('autorise la suppression d’un client soldé', async () => {
+    const prisma: any = createFakePrisma();
+    prisma.client.findUnique.mockResolvedValue({ id: 'c1', annexeId: null });
+    prisma.dossier = { findMany: vi.fn().mockResolvedValue([{ totalContrat: 1000, montantPaye: 1000 }]) };
+    prisma.facture = { findMany: vi.fn().mockResolvedValue([]) };
+    await new ClientsService(prisma).remove('c1', admin());
     expect(prisma.client.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { actif: false } });
   });
 });
