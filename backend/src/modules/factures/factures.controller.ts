@@ -13,6 +13,7 @@ import {
 import { FacturesService } from './factures.service';
 import { CreateFactureDto } from './dto/create-facture.dto';
 import { UpdateFactureDto } from './dto/update-facture.dto';
+import { EnregistrerPaiementFactureDto } from './dto/enregistrer-paiement.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { AnnexeGuard } from '../../auth/guards/annexe.guard';
@@ -81,7 +82,7 @@ export class FacturesController {
   async enregistrerPaiement(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserType,
-    @Body() body: { montant: number; caisseId: string; motif?: string },
+    @Body() body: EnregistrerPaiementFactureDto,
   ) {
     return this.facturesService.enregistrerPaiement(id, user, body);
   }

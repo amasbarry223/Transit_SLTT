@@ -5,7 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { ORIGINE, posterEcriture } from '../comptabilite/journal-posting';
+import { ORIGINE, modePaiementJournal, posterEcriture } from '../comptabilite/journal-posting';
 import { syncLignesEtTotaux } from '../dossiers/dossiers.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
@@ -323,7 +323,12 @@ export class FacturesService {
     return { id };
   }
 
-  async enregistrerPaiement(id: string, user: CurrentUserType, data: { montant: number; caisseId: string; motif?: string }) {
+  async enregistrerPaiement(
+    id: string,
+    user: CurrentUserType,
+    data: { montant: number; caisseId: string; motif?: string; mode?: string },
+  ) {
+    const mode = data.mode || 'ESPECES';
     const facture = await this.findOne(id, user);
 
     const montant = Number(data.montant);
@@ -401,7 +406,7 @@ export class FacturesService {
             dossierId: facture.dossierId,
             date: new Date(),
             montant: BigInt(Math.round(montant)),
-            mode: 'ESPECES',
+            mode,
             reference: `Facture ${facture.numero}`,
           },
         });
@@ -416,6 +421,7 @@ export class FacturesService {
           type: 'Entrée',
           montant,
           nature: `Encaissement facture ${facture.numero}`,
+          modePaiement: modePaiementJournal(mode),
           clientId: facture.clientId,
           dossierId: null,
           clientNom: facture.client?.nom ?? null,

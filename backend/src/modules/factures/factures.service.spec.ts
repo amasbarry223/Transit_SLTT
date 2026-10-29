@@ -144,10 +144,10 @@ describe('FacturesService.enregistrerPaiement — le dossier fait foi', () => {
   it("un encaissement sur une facture liée crée un règlement du dossier, sans écriture « facture » en doublon", async () => {
     const { tx, service } = setup(baseFacture({ statut: 'ENVOYEE', dossierId: 'd1', client: { nom: 'ACME' } }));
 
-    await service.enregistrerPaiement('f1', admin(), { montant: 500, caisseId: 'c1' });
+    await service.enregistrerPaiement('f1', admin(), { montant: 500, caisseId: 'c1', mode: 'WAVE' });
 
     expect(tx.dossierPaiement.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ dossierId: 'd1', montant: 500n, reference: 'Facture FAC-0001' }),
+      data: expect.objectContaining({ dossierId: 'd1', montant: 500n, reference: 'Facture FAC-0001', mode: 'WAVE' }),
     });
     expect(tx.dossier.update).toHaveBeenCalled(); // cache montantPaye recalculé
     const sources = tx.operationComptable.create.mock.calls.map((c: any) => c[0].data.source);

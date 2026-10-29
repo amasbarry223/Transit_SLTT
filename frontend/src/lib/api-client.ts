@@ -455,7 +455,7 @@ class ApiClient {
       this.request<RawFacture>(`/factures/${id}`, {
         method: 'DELETE',
       }),
-    enregistrerPaiement: (id: string, data: { montant: number; caisseId: string; motif?: string }) =>
+    enregistrerPaiement: (id: string, data: { montant: number; caisseId: string; motif?: string; mode?: string }) =>
       this.request<RawFacture>(`/factures/${id}/paiements`, {
         method: 'POST',
         body: JSON.stringify(data),

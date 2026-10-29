@@ -6,6 +6,7 @@ import { canTransitionFacture } from "@/lib/status-flow";
 import { getConnectedUserName } from "@/lib/store/connected-user";
 import type { Facture, FactureLigne, FactureStatut } from "@/lib/domain-types";
 import { resteAPayer } from "@/lib/domain-types";
+import type { ModePaiementDossier } from "@/lib/domain/dossier-finances";
 import type { FactureInput, SLTTState } from "@/lib/store";
 import {
   computeAnnexeScopedReference,
@@ -20,7 +21,7 @@ export interface FacturesSlice {
   updateFacture: (id: string, input: FactureInput) => Promise<void>;
   removeFacture: (id: string) => Promise<void>;
   updateFactureStatut: (id: string, statut: FactureStatut) => Promise<void>;
-  recordFacturePaiement: (id: string, montant: number) => Promise<void>;
+  recordFacturePaiement: (id: string, montant: number, mode?: ModePaiementDossier) => Promise<void>;
 }
 
 function computeInvoiceAmounts(
@@ -252,7 +253,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
     );
   },
 
-  recordFacturePaiement: async (id, montant) => {
+  recordFacturePaiement: async (id, montant, mode) => {
     const fact = get().factures.find((f) => f.id === id);
     if (!fact) return;
     if (fact.statut === "Brouillon" || fact.statut === "Annulée" || fact.statut === "Soldée") {
@@ -279,7 +280,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
         "Aucune caisse ouverte pour cette annexe. Ouvrez-en une avant d'encaisser une facture.",
       );
     }
-    await api.factures.enregistrerPaiement(id, { montant: effective, caisseId: caisse.id });
+    await api.factures.enregistrerPaiement(id, { montant: effective, caisseId: caisse.id, mode });
     // L'encaissement est journalisé côté serveur : on recharge le journal.
     void get().refreshOperationsComptables();
 

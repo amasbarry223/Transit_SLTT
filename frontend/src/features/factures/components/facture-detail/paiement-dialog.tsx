@@ -5,6 +5,7 @@ import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
 import { useStore, type Facture } from "@/lib/store";
 import { resteAPayer } from "@/lib/domain-types";
 import { formatFCFA } from "@/lib/format";
+import { MODES_PAIEMENT, MODE_PAIEMENT_LABELS, type ModePaiementDossier } from "@/lib/domain/dossier-finances";
 import { useToast } from "@/shared/hooks/use-toast";
 import { toastError, toastSuccess, toastWarning } from "@/shared/utils/toast-helpers";
 import { Button } from "@/shared/components/ui/button";
@@ -19,6 +20,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { cn } from "@/shared/utils/cn";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 export function PaiementDialog({
   facture,
@@ -33,12 +35,16 @@ export function PaiementDialog({
   const recordPaiement = useStore((s) => s.recordFacturePaiement);
   const reste = resteAPayer({ montantInvesti: facture.montantTTC, montantPaye: facture.montantPaye });
   const [montant, setMontant] = React.useState(String(reste));
+  const [mode, setMode] = React.useState<ModePaiementDossier>("ESPECES");
   const [saving, setSaving] = React.useState(false);
 
   const [prevOpen, setPrevOpen] = React.useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setMontant(String(reste));
+    if (open) {
+      setMontant(String(reste));
+      setMode("ESPECES");
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -58,7 +64,7 @@ export function PaiementDialog({
     }
     setSaving(true);
     try {
-      await recordPaiement(facture.id, m);
+      await recordPaiement(facture.id, m, mode);
       toastSuccess(toast, { title: "Paiement enregistré", description: `${m.toLocaleString("fr-FR")} FCFA encaissés.` });
       onOpenChange(false);
     } catch (err: unknown) {
@@ -131,6 +137,24 @@ export function PaiementDialog({
                 Solde
               </button>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="paiement-mode" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Mode de paiement
+            </Label>
+            <Select value={mode} onValueChange={(v) => setMode(v as ModePaiementDossier)}>
+              <SelectTrigger id="paiement-mode" className="h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MODES_PAIEMENT.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {MODE_PAIEMENT_LABELS[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>
