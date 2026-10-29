@@ -36,8 +36,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   useStore.setState({
     dossiers: [baseDossier],
-    ecritures: [],
-    ecritureSeq: 1,
     clients: [],
     factures: [],
     auditLogs: [],

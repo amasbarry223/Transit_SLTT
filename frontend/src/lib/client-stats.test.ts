@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { facturesLibres, syncClientStats, sommeDepensesDossiers, sommeEncaisse } from "./client-stats";
-import type { Client, Dossier, Facture, Ecriture } from "@/lib/store";
+import type { Client, Dossier, Facture } from "@/lib/store";
 
 describe("syncClientStats", () => {
   it("le dossier fait foi : une facture liée n'est pas recomptée, une facture libre l'est", () => {
@@ -10,17 +10,13 @@ describe("syncClientStats", () => {
       { clientId: "c1", dossierId: "d1", statut: "Partielle", montantTTC: 1180, montantPaye: 200 }, // liée : ignorée
       { clientId: "c1", dossierId: null, statut: "Partielle", montantTTC: 500, montantPaye: 200 }, // libre
     ] as Facture[];
-    const ecritures = [
-      { clientId: "c1", dossierId: "d1", montantInvesti: 500, montantPaye: 100 },
-      { clientId: "c1", dossierId: null, montantInvesti: 300, montantPaye: 50 },
-    ] as Ecriture[];
-    const [updated] = syncClientStats(dossiers, factures, ecritures, clients);
+    const [updated] = syncClientStats(dossiers, factures, clients);
     expect(updated.nbDossiers).toBe(1);
-    // dossier 400 + facture libre 200 + écriture autonome 50
-    expect(updated.totalPaye).toBe(650);
-    // reste dossier 600 + reste facture libre 300 + reste écriture autonome 250
-    expect(updated.totalDu).toBe(1150);
-    expect(updated.totalInvesti).toBe(1000 + 500 + 300);
+    // dossier 400 + facture libre 200
+    expect(updated.totalPaye).toBe(600);
+    // reste dossier 600 + reste facture libre 300
+    expect(updated.totalDu).toBe(900);
+    expect(updated.totalInvesti).toBe(1000 + 500);
   });
 
   it("exclut les factures annulées du total dû", () => {
@@ -28,7 +24,7 @@ describe("syncClientStats", () => {
     const factures = [
       { clientId: "c1", statut: "Annulée", montantTTC: 1000, montantPaye: 0 },
     ] as Facture[];
-    const [updated] = syncClientStats([], factures, [], clients);
+    const [updated] = syncClientStats([], factures, clients);
     expect(updated.totalDu).toBe(0);
   });
 
@@ -64,7 +60,7 @@ describe("syncClientStats", () => {
     const factures = [
       { clientId: "c1", statut: "Envoyée", montantTTC: 1200, montantPaye: 0 },
     ] as Facture[];
-    const [updated] = syncClientStats([], factures, [], clients);
+    const [updated] = syncClientStats([], factures, clients);
     expect(updated.nbDossiers).toBe(0);
     expect(updated.totalDu).toBe(1200);
   });
@@ -81,7 +77,7 @@ describe("syncClientStats", () => {
       { id: "d1", clientId: "c1", totalContrat: 1000, montantPaye: 1200 }, // avance de 200
       { id: "d2", clientId: "c1", totalContrat: 600, montantPaye: 0 }, // dû de 600
     ] as Dossier[];
-    const [updated] = syncClientStats(dossiers, [], [], clients);
+    const [updated] = syncClientStats(dossiers, [], clients);
     expect(updated.totalDu).toBe(600);
     expect(updated.totalPaye).toBe(1200);
     expect(updated.totalInvesti).toBe(1600);

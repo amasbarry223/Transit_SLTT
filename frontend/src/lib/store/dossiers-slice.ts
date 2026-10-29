@@ -175,7 +175,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       return {
         dossiers: updatedDossiers,
         dossierSeq: useAnnexeNumbering ? s.dossierSeq : finalSeq + 1,
-        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+        clients: syncClientStats(updatedDossiers, s.factures, s.clients),
       };
     });
     await get().addAuditLog(
@@ -245,7 +245,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       const updatedDossiers = [newDossier, ...s.dossiers];
       return {
         dossiers: updatedDossiers,
-        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+        clients: syncClientStats(updatedDossiers, s.factures, s.clients),
       };
     });
     await get().addAuditLog(
@@ -309,7 +309,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       );
       return {
         dossiers: updatedDossiers,
-        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+        clients: syncClientStats(updatedDossiers, s.factures, s.clients),
       };
     });
 
@@ -345,10 +345,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       );
       return {
         dossiers: updatedDossiers,
-        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
-        ecritures: s.ecritures.map((ecriture) =>
-          ecriture.dossierId === id ? { ...ecriture, dossierId: undefined } : ecriture,
-        ),
+        clients: syncClientStats(updatedDossiers, s.factures, s.clients),
         fichiers: s.fichiers.filter((fichier) => fichier.dossierId !== id),
         subDossiers: s.subDossiers.filter((subDossier) => subDossier.dossierId !== id),
         factures: s.factures.map((facture) =>
@@ -448,7 +445,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       const updatedDossiers = s.dossiers.map(applyPatch);
       return {
         dossiers: updatedDossiers,
-        clients: syncClientStats(updatedDossiers, s.factures, s.ecritures, s.clients),
+        clients: syncClientStats(updatedDossiers, s.factures, s.clients),
       };
     });
 

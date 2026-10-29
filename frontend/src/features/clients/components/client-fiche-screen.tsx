@@ -67,7 +67,6 @@ export function ClientFicheScreen() {
   const canWriteDossiers = usePermission("dossiers:write");
   const clients = useStore((s) => s.clients);
   const allDossiers = useStore((s) => s.dossiers);
-  const allEcritures = useStore((s) => s.ecritures);
   const allBons = useStore((s) => s.bons);
   const allFactures = useStore((s) => s.factures);
   const allStock = useStore((s) => s.stock);
@@ -129,9 +128,9 @@ export function ClientFicheScreen() {
   const classeurJournal = useMemo(
     () =>
       selectedId
-        ? buildClasseurJournal(selectedId, allDossiers, allEcritures, allFactures)
+        ? buildClasseurJournal(selectedId, allDossiers, allFactures)
         : [],
-    [selectedId, allDossiers, allEcritures, allFactures],
+    [selectedId, allDossiers, allFactures],
   );
   const classeurFiltered = useMemo(
     () => filterClasseurJournal(classeurJournal, classeurFilters),
@@ -299,7 +298,7 @@ export function ClientFicheScreen() {
 
   function openClasseurSource(entry: ClasseurEntry) {
     closeClasseurSuivi();
-    if (entry.type === "Dossier") {
+    if (entry.type === "Dossier" || entry.type === "Paiement") {
       openDossierDetail(entry.sourceId);
       return;
     }

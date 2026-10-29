@@ -9,7 +9,6 @@ export type PaiementMode =
   | "Virement"
   | "Mobile Money"
   | "Chèque";
-export type EcritureStatut = "Soldé" | "En attente";
 export type StockStatut = "Disponible" | "Stock faible";
 export type BonMotif = "Vente" | "Livraison" | "Transfert";
 export type { ClientType, Client } from "@/features/clients/types";
@@ -161,21 +160,6 @@ export interface DossierFournisseurInput {
   montantReel: number;
   statut: "En attente" | "Payé" | "Litige";
   date: string;
-}
-
-export interface Ecriture {
-  id: string;
-  date: string;
-  datePaiement?: string;
-  clientId: string;
-  clientNom: string;
-  dossierId?: string;
-  annexeId: string;
-  annexeNom?: string;
-  montantInvesti: number;
-  montantPaye: number;
-  modePaiement: PaiementMode;
-  note?: string;
 }
 
 export interface StockItem {

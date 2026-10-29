@@ -65,7 +65,6 @@ import {
 import { createBonsLivraisonSlice, type BonsLivraisonSlice } from "@/lib/store/bons-livraison-slice";
 import { createNotificationsSlice, type NotificationsSlice } from "@/lib/store/notifications-slice";
 import { createAuditSlice, type AuditSlice } from "@/lib/store/audit-slice";
-import { createEcrituresSlice, type EcrituresSlice } from "@/lib/store/ecritures-slice";
 import {
   createComptabiliteGeneraleSlice,
   type ComptabiliteGeneraleSlice,
@@ -87,7 +86,6 @@ import {
   type Client,
   type Dossier,
   type DossierStatut,
-  type Ecriture,
   type PaiementMode,
   type StockItem,
   type Mouvement,
@@ -149,7 +147,6 @@ export type {
   Client,
   Dossier,
   DossierStatut,
-  Ecriture,
   PaiementMode,
   StockItem,
   Mouvement,
@@ -359,10 +356,9 @@ export interface UserInput {
   annexeIds: string[];
 }
 
-export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, PortsSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, BonsLivraisonSlice, NotificationsSlice, AuditSlice, EcrituresSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
+export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, DocumentsSlice, DossiersSlice, TransporteursSlice, SocietesSlice, AnnexesSlice, PortsSlice, UsersSlice, ClientsSlice, FournisseursSlice, ContratsSlice, DevisSlice, FacturesSlice, StockSlice, BonsSlice, BonsLivraisonSlice, NotificationsSlice, AuditSlice, ComptabiliteGeneraleSlice, RecusPaiementSlice, FichiersSlice, DataFetchSlice, BackupSlice {
   dossierSeq: number;
   auditSeq: number;
-  ecritureSeq: number;
   clientSeq: number;
   userSeq: number;
   subDossierSeq: number;
@@ -378,7 +374,6 @@ export interface SLTTState extends ContratFichiersSlice, ArchivesSlice, Document
 const INITIAL_SEQUENCES = {
   dossierSeq: 1,
   auditSeq: 1,
-  ecritureSeq: 1,
   clientSeq: 1,
   userSeq: 1,
   subDossierSeq: 1,
@@ -411,7 +406,6 @@ export const useStore = create<SLTTState>()((set, get, api) => ({
   ...createBonsLivraisonSlice(set, get, api),
   ...createNotificationsSlice(set, get, api),
   ...createAuditSlice(set, get, api),
-  ...createEcrituresSlice(set, get, api),
   ...createComptabiliteGeneraleSlice(set, get, api),
   ...createRecusPaiementSlice(set, get, api),
   ...createFichiersSlice(set, get, api),

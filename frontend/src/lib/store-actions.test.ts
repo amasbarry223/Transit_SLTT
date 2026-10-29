@@ -6,7 +6,6 @@ import type {
   Client,
   Dossier,
   DossierFournisseur,
-  Ecriture,
   Facture,
   Fournisseur,
   SubDossier,
@@ -42,16 +41,18 @@ const baseClient: Client = {
 
 describe("removeDossier", () => {
   function seedState() {
-    const ecriture: Ecriture = {
-      id: "e1",
-      date: "2026-07-01",
-      clientId: "c1",
-      clientNom: "Golaine Tech",
-      dossierId: "d1",
+    const operation = {
+      id: "op1",
+      reference: "OPC-1",
+      entiteType: "annexe" as const,
       annexeId: "33333333-3333-3333-3333-333333333333",
-      montantInvesti: 1000,
-      montantPaye: 0,
-      modePaiement: "Espèces",
+      date: "2026-07-01",
+      dossierId: "d1",
+      clientNom: "Golaine Tech",
+      nature: "Règlement",
+      type: "Entrée" as const,
+      montant: 1000,
+      source: "saisie" as const,
     };
     const fichier = {
       id: "f1",
@@ -129,7 +130,7 @@ describe("removeDossier", () => {
     useStore.setState({
       dossiers: [baseDossier],
       clients: [baseClient],
-      ecritures: [ecriture],
+      operationsComptables: [operation],
       fichiers: [fichier],
       subDossiers: [subDossier],
       factures: [facture],
@@ -143,12 +144,12 @@ describe("removeDossier", () => {
     });
   }
 
-  it("délie les écritures liées au lieu de les supprimer", async () => {
+  it("délie les opérations du journal au lieu de les supprimer", async () => {
     seedState();
     await useStore.getState().removeDossier("d1");
-    const ecriture = useStore.getState().ecritures.find((e) => e.id === "e1");
-    expect(ecriture).toBeDefined();
-    expect(ecriture?.dossierId).toBeUndefined();
+    const operation = useStore.getState().operationsComptables.find((o) => o.id === "op1");
+    expect(operation).toBeDefined();
+    expect(operation?.dossierId).toBeUndefined();
   });
 
   it("retire les fichiers et sous-dossiers liés", async () => {

@@ -116,7 +116,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       return {
         factures: updatedFactures,
         factureSeq: useAnnexeNumbering ? s.factureSeq : finalSeq + 1,
-        clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
       };
     });
     await get().addAuditLog(
@@ -177,7 +177,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       });
       return {
         factures: updatedFactures,
-        clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
       };
     });
     if (existing) {
@@ -200,7 +200,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       const updatedFactures = s.factures.filter((f) => f.id !== id);
       return {
         factures: updatedFactures,
-        clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
       };
     });
 
@@ -239,7 +239,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       );
       return {
         factures: updatedFactures,
-        clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
       };
     });
 
@@ -298,7 +298,7 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       });
       return {
         factures: updatedFactures,
-        clients: syncClientStats(s.dossiers, updatedFactures, s.ecritures, s.clients),
+        clients: syncClientStats(s.dossiers, updatedFactures, s.clients),
       };
     });
 

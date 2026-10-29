@@ -74,7 +74,6 @@ export function DossierDetailScreen() {
   const dossierFournisseursSource = useStore((state) => state.dossierFournisseurs);
   const subDossiersSource = useStore((state) => state.subDossiers);
   const fichiersSource = useStore((state) => state.fichiers);
-  const ecrituresSource = useStore((state) => state.ecritures);
   const auditLogs = useStore((state) => state.auditLogs);
   const facturesSource = useStore((state) => state.factures);
   const bonsSource = useStore((state) => state.bons);
@@ -93,10 +92,6 @@ export function DossierDetailScreen() {
   const allFichiers = useMemo(
     () => fichiersSource.filter((item) => item.dossierId === dossierId),
     [fichiersSource, dossierId],
-  );
-  const allEcritures = useMemo(
-    () => ecrituresSource.filter((item) => item.dossierId === dossierId),
-    [ecrituresSource, dossierId],
   );
   const dossierFactures = useMemo(
     () => facturesSource.filter((item) => item.dossierId === dossierId),
@@ -146,7 +141,6 @@ export function DossierDetailScreen() {
   }, [allFichiers]);
 
   const totalFichiers = allFichiers.length;
-  const dossierEcritures = allEcritures;
 
   const dossierAuditLogs = useMemo(() => {
     if (!dossier) return [];
@@ -156,7 +150,7 @@ export function DossierDetailScreen() {
   }, [auditLogs, dossier?.reference]);
 
   const suiviCount =
-    dossierEcritures.length +
+    (dossier?.paiements?.length ?? 0) +
     dossierFactures.length +
     dossierFournisseurs.length +
     dossierAuditLogs.length;
@@ -351,8 +345,10 @@ export function DossierDetailScreen() {
     subDossiers.length > 0 && `${subDossiers.length} sous-dossier(s) définitivement supprimé(s)`,
     dossierFournisseurs.length > 0 &&
       `${dossierFournisseurs.length} fournisseur(s) lié(s) définitivement supprimé(s)`,
-    allEcritures.length > 0 &&
-      `${allEcritures.length} écriture(s) comptable(s) seront déconnectée(s) du dossier (non supprimées)`,
+    (currentDossier.paiements?.length ?? 0) > 0 &&
+      `${currentDossier.paiements!.length} règlement(s) client définitivement supprimé(s) (les écritures du journal restent)`,
+    (currentDossier.depenses?.length ?? 0) > 0 &&
+      `${currentDossier.depenses!.length} dépense(s) du dossier définitivement supprimée(s)`,
     dossierFactures.length > 0 &&
       `${dossierFactures.length} facture(s) seront déconnectée(s) du dossier (non supprimées)`,
     orphanBons.length > 0 &&
@@ -534,14 +530,12 @@ export function DossierDetailScreen() {
 
           <DossierDetailSuivi
             dossier={currentDossier}
-            ecritures={dossierEcritures}
             factures={dossierFactures}
             fournisseurs={dossierFournisseurs}
             auditLogs={dossierAuditLogs}
             onNewFacture={handleInvoice}
             onOpenFacture={(factureId) => go("facture-detail", { id: factureId })}
             onAddFournisseur={openAddFournisseur}
-            onGoComptabilite={() => go("comptabilite")}
             canWrite={canWrite}
           />
         </div>

@@ -42,7 +42,7 @@ export function BackupTab() {
   const dossiers = useStore((s) => s.dossiers);
   const factures = useStore((s) => s.factures);
   const devis = useStore((s) => s.devis);
-  const ecritures = useStore((s) => s.ecritures);
+  const operationsComptables = useStore((s) => s.operationsComptables);
   const documents = useStore((s) => s.documents);
   const stock = useStore((s) => s.stock);
   const contrats = useStore((s) => s.contrats);
@@ -70,7 +70,7 @@ export function BackupTab() {
     `${dossiers.length} dossier${dossiers.length !== 1 ? "s" : ""}`,
     `${factures.length} facture${factures.length !== 1 ? "s" : ""}`,
     `${devis.length} devis`,
-    `${ecritures.length} écriture${ecritures.length !== 1 ? "s" : ""} comptable${ecritures.length !== 1 ? "s" : ""}`,
+    `${operationsComptables.length} écriture${operationsComptables.length !== 1 ? "s" : ""} du journal comptable`,
     `${stock.length} article${stock.length !== 1 ? "s" : ""} de stock`,
     `${bons.length} bon${bons.length !== 1 ? "s" : ""} de sortie`,
     `${contrats.length} contrat${contrats.length !== 1 ? "s" : ""}`,

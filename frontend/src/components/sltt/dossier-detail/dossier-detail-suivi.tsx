@@ -9,9 +9,9 @@ import {
   Plus,
 } from "lucide-react";
 import type { Dossier } from "@/lib/domain-types";
-import { resteAPayer } from "@/lib/domain-types";
+import { financesDossier, MODE_PAIEMENT_LABELS } from "@/lib/domain/dossier-finances";
 import { formatFCFA, formatDateShort } from "@/lib/format";
-import type { Ecriture, Facture } from "@/lib/store";
+import type { Facture } from "@/lib/store";
 import type { DossierFournisseur } from "@/lib/store";
 import type { AuditEntry } from "@/lib/audit";
 import { Card } from "@/shared/components/ui/card";
@@ -27,52 +27,59 @@ import {
   TableRow,
 } from "@/shared/components/ui/table";
 import {
-  EcritureStatutBadge,
   FactureStatutBadge,
   DossierFournisseurStatutBadge,
 } from "@/components/sltt/status-badge";
 
 export function DossierDetailSuivi({
   dossier,
-  ecritures,
   factures,
   fournisseurs,
   auditLogs,
   onNewFacture,
   onOpenFacture,
   onAddFournisseur,
-  onGoComptabilite,
   canWrite = true,
 }: {
   dossier: Dossier;
-  ecritures: Ecriture[];
   factures: Facture[];
   fournisseurs: DossierFournisseur[];
   auditLogs: AuditEntry[];
   onNewFacture: () => void;
   onOpenFacture: (id: string) => void;
   onAddFournisseur: () => void;
-  onGoComptabilite: () => void;
   canWrite?: boolean;
 }) {
+  // Règlements réels du dossier (avant : « écritures », tableau toujours vide —
+  // la section affichait « Aucun paiement » même pour un dossier soldé).
+  const finances = financesDossier(dossier);
+  const paiements =
+    dossier.paiements && dossier.paiements.length > 0
+      ? dossier.paiements
+      : dossier.montantPaye > 0
+        ? [{ date: dossier.dateSolde || dossier.date, montant: dossier.montantPaye, mode: "ESPECES" as const, reference: "Cumul" }]
+        : [];
   return (
     <div className="space-y-8">
       <section className="space-y-4">
         <div>
           <h2 className="text-base font-semibold">Paiements enregistrés</h2>
-          <p className="text-xs text-muted-foreground">Écritures comptables liées à {dossier.reference}</p>
+          <p className="text-xs text-muted-foreground">
+            Règlements reçus du client pour {dossier.reference} — encaissé {formatFCFA(finances.montantPaye)} sur{" "}
+            {formatFCFA(finances.totalContrat)}
+            {finances.resteAPayer > 0
+              ? `, reste ${formatFCFA(finances.resteAPayer)}`
+              : finances.resteAPayer < 0
+                ? `, trop-perçu ${formatFCFA(-finances.resteAPayer)}`
+                : ", soldé"}
+          </p>
         </div>
         <Card className="border-border/80 p-6 shadow-sm">
-          {ecritures.length === 0 ? (
+          {paiements.length === 0 ? (
             <EmptyState
               icon={Wallet}
               title="Aucun paiement"
-              description="Les paiements apparaissent ici lors du passage en statut Soldé ou via le module Comptabilité."
-              action={
-                <Button variant="outline" onClick={onGoComptabilite}>
-                  Ouvrir la comptabilité
-                </Button>
-              }
+              description="Les règlements s'ajoutent depuis la fiche du dossier (bouton Modifier) ou à l'encaissement d'une facture liée."
             />
           ) : (
             <div className="overflow-x-auto">
@@ -80,30 +87,22 @@ export function DossierDetailSuivi({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Investi</TableHead>
-                    <TableHead className="text-right">Payé</TableHead>
-                    <TableHead className="text-right">Reste</TableHead>
-                    <TableHead>Statut</TableHead>
+                    <TableHead>Mode</TableHead>
+                    <TableHead>Référence</TableHead>
+                    <TableHead className="text-right">Montant</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ecritures.map((e) => {
-                    const resteE = resteAPayer(e);
-                    const statut: "Soldé" | "En attente" = resteE === 0 ? "Soldé" : "En attente";
-                    return (
-                      <TableRow key={e.id}>
-                        <TableCell className="tabular-nums">{formatDateShort(e.date)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatFCFA(e.montantInvesti)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-emerald-700 dark:text-emerald-300">{formatFCFA(e.montantPaye)}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {resteE > 0 ? formatFCFA(resteE) : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <EcritureStatutBadge statut={statut} />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {paiements.map((p, i) => (
+                    <TableRow key={`${p.date}-${i}`}>
+                      <TableCell className="tabular-nums">{formatDateShort(p.date)}</TableCell>
+                      <TableCell>{MODE_PAIEMENT_LABELS[p.mode] ?? p.mode}</TableCell>
+                      <TableCell className="text-muted-foreground">{p.reference || "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums text-emerald-700 dark:text-emerald-300">
+                        {formatFCFA(p.montant)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

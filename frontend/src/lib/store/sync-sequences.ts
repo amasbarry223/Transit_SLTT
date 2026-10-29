@@ -5,7 +5,6 @@ export type SequenceCounters = Pick<
   | "dossierSeq"
   | "bonSeq"
   | "auditSeq"
-  | "ecritureSeq"
   | "clientSeq"
   | "stockSeq"
   | "userSeq"
@@ -70,7 +69,6 @@ type SyncSource = Pick<
   | "bons"
   | "devis"
   | "auditLogs"
-  | "ecritures"
   | "clients"
   | "stock"
   | "users"
@@ -93,7 +91,6 @@ export function syncSequencesFromData(state: SyncSource): SequenceCounters {
     dossierSeq: nextSeqFromValues(state.dossiers.map((d) => parseTrailingSeq(d.reference)), state.dossierSeq),
     bonSeq: nextSeqFromValues(state.bons.map((b) => parseTrailingSeq(b.reference)), state.bonSeq),
     auditSeq: nextSeqFromValues(state.auditLogs.map((a) => parseIdSeq(a.id, "A")), state.auditSeq),
-    ecritureSeq: nextSeqFromValues(state.ecritures.map((e) => parseIdSeq(e.id, "E")), state.ecritureSeq),
     clientSeq: nextSeqFromValues(state.clients.map((c) => parseIdSeq(c.id, "C")), state.clientSeq),
     stockSeq: nextSeqFromValues(state.stock.map((s) => parseIdSeq(s.id, "S")), state.stockSeq),
     userSeq: nextSeqFromValues(state.users.map((u) => parseIdSeq(u.id, "U")), state.userSeq),

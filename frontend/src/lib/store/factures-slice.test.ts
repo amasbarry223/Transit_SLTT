@@ -45,7 +45,6 @@ beforeEach(() => {
   useStore.setState({
     factures: [baseFacture],
     dossiers: [],
-    ecritures: [],
     clients: [],
     auditLogs: [],
     auditSeq: 1,

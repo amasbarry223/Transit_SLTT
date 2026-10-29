@@ -7,7 +7,7 @@
  * persistée telle quelle. Les montants se modifient depuis leur source.
  */
 import type { AuditSourceType } from "@/lib/audit";
-import type { Dossier, Ecriture, Facture } from "@/lib/domain-types";
+import type { Dossier, Facture } from "@/lib/domain-types";
 
 export type ClasseurType = "Dossier" | "Paiement" | "Facture";
 
@@ -35,16 +35,17 @@ function buildDossierLibelle(d: Dossier): string {
 export function buildClasseurJournal(
   clientId: string,
   dossiers: Dossier[],
-  ecritures: Ecriture[],
   factures: Facture[],
 ): ClasseurEntry[] {
   const unsorted: Omit<ClasseurEntry, "soldeCumule">[] = [];
 
   // Le dossier fait foi (client-stats.ts) : il porte le dû (total contrat) et
-  // les règlements, qu'il soit facturé ou non. Ses factures apparaissent pour
-  // mémoire, sans débit ni crédit (sinon double comptage).
+  // les règlements, qu'il soit facturé ou non. Chaque règlement est une ligne
+  // « Paiement » à SA date (grand-livre : le solde cumulé suit les versements).
+  // Ses factures apparaissent pour mémoire, sans débit ni crédit.
   for (const d of dossiers) {
     if (d.clientId !== clientId) continue;
+    const detail = d.paiements && d.paiements.length > 0;
     unsorted.push({
       id: `dossier-${d.id}`,
       sourceId: d.id,
@@ -54,23 +55,23 @@ export function buildClasseurJournal(
       libelle: buildDossierLibelle(d),
       // Ce que le client doit sur le dossier = total contrat.
       debit: d.totalContrat,
-      credit: d.montantPaye,
+      // Détail des règlements non chargé : cumul porté par la ligne du dossier.
+      credit: detail ? 0 : d.montantPaye,
       statut: d.statut,
     });
-  }
-
-  for (const e of ecritures) {
-    if (e.clientId !== clientId || e.dossierId) continue;
-    unsorted.push({
-      id: `ecriture-${e.id}`,
-      sourceId: e.id,
-      date: e.date,
-      type: "Paiement",
-      reference: `ÉCR-${e.id.slice(0, 8).toUpperCase()}`,
-      libelle: e.note?.trim() || "Bon de paiement",
-      debit: e.montantInvesti,
-      credit: e.montantPaye,
-      statut: e.montantPaye >= e.montantInvesti ? "Soldé" : "En attente",
+    if (!detail) continue;
+    d.paiements!.forEach((p, i) => {
+      unsorted.push({
+        id: `paiement-${d.id}-${p.id ?? i}`,
+        sourceId: d.id,
+        date: p.date,
+        type: "Paiement",
+        reference: p.reference || d.reference,
+        libelle: `Règlement — dossier ${d.reference}`,
+        debit: 0,
+        credit: p.montant,
+        statut: "Encaissé",
+      });
     });
   }
 
@@ -137,6 +138,7 @@ export function computeClasseurTotals(filteredEntries: ClasseurEntry[]): Classeu
 
 export function classeurEntrySourceType(entry: ClasseurEntry): MouvementSourceType {
   if (entry.type === "Dossier") return "dossier";
-  if (entry.type === "Paiement") return "ecriture";
+  // Un règlement appartient à son dossier (sourceId = id du dossier).
+  if (entry.type === "Paiement") return "dossier";
   return "facture";
 }

@@ -4,7 +4,6 @@ import { cn } from "@/shared/utils/cn";
 import { Badge } from "@/shared/components/ui/badge";
 import {
   DossierStatut,
-  EcritureStatut,
   StockStatut,
 } from "@/lib/domain-types";
 import type { FactureStatut } from "@/lib/store";
@@ -123,14 +122,6 @@ export function StatutPaiementBadge({
       {STATUT_PAIEMENT_LABELS[statut]}
     </ToneBadge>
   );
-}
-
-export function EcritureStatutBadge({ statut }: { statut: EcritureStatut }) {
-  const map: Record<EcritureStatut, Tone> = {
-    Soldé: "emerald",
-    "En attente": "amber",
-  };
-  return <ToneBadge tone={map[statut]}>{statut}</ToneBadge>;
 }
 
 export function StockStatutBadge({ statut }: { statut: StockStatut }) {

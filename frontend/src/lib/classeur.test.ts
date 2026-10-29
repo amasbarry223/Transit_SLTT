@@ -5,7 +5,7 @@ import {
   filterClasseurJournal,
   hasClasseurPeriodFilter,
 } from "./classeur";
-import type { Dossier, Ecriture, Facture } from "@/lib/domain-types";
+import type { Dossier, Facture } from "@/lib/domain-types";
 
 describe("buildClasseurJournal", () => {
   it("trie chronologiquement et calcule le solde cumulé", () => {
@@ -34,7 +34,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Dossier[];
 
-    const journal = buildClasseurJournal("c1", dossiers, [], []);
+    const journal = buildClasseurJournal("c1", dossiers, []);
     expect(journal).toHaveLength(2);
     expect(journal[0].reference).toBe("DOS-002");
     expect(journal[0].libelle).toBe("Dossier transit — Export · BL BL-99");
@@ -42,29 +42,32 @@ describe("buildClasseurJournal", () => {
     expect(journal[1].soldeCumule).toBe(800);
   });
 
-  it("exclut les écritures liées à un dossier", () => {
-    const ecritures = [
+  it("détaille chaque règlement du dossier en ligne « Paiement » à sa date", () => {
+    const dossiers = [
       {
-        id: "e-linked",
+        id: "d1",
         clientId: "c1",
-        dossierId: "d1",
+        reference: "DOS-1",
         date: "2026-01-01",
-        montantInvesti: 100,
-        montantPaye: 0,
+        nature: "Import",
+        bl: "",
+        totalContrat: 1000,
+        montantPaye: 700,
+        statut: "En cours",
+        paiements: [
+          { id: "p1", date: "2026-01-10", montant: 300, mode: "ESPECES" },
+          { id: "p2", date: "2026-02-10", montant: 400, mode: "CHEQUE", reference: "CHQ-9" },
+        ],
       },
-      {
-        id: "e-free",
-        clientId: "c1",
-        dossierId: undefined,
-        date: "2026-01-02",
-        montantInvesti: 300,
-        montantPaye: 100,
-      },
-    ] as Ecriture[];
+    ] as Dossier[];
 
-    const journal = buildClasseurJournal("c1", [], ecritures, []);
-    expect(journal).toHaveLength(1);
-    expect(journal[0].type).toBe("Paiement");
+    const journal = buildClasseurJournal("c1", dossiers, []);
+    expect(journal.map((e) => [e.type, e.debit, e.credit, e.soldeCumule])).toEqual([
+      ["Dossier", 1000, 0, 1000],
+      ["Paiement", 0, 300, 700],
+      ["Paiement", 0, 400, 300],
+    ]);
+    expect(journal[2].reference).toBe("CHQ-9");
   });
 
   it("le dossier fait foi : sa facture liée apparaît pour mémoire, sans débit ni crédit (pas de doublon)", () => {
@@ -95,7 +98,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Facture[];
 
-    const journal = buildClasseurJournal("c1", dossiers, [], factures);
+    const journal = buildClasseurJournal("c1", dossiers, factures);
     // Le dossier porte le dû (total contrat) et ses règlements ; la facture
     // liée est listée pour mémoire, à 0/0, et le solde reste celui du dossier.
     expect(journal).toHaveLength(2);
@@ -120,7 +123,7 @@ describe("buildClasseurJournal", () => {
       },
     ] as Facture[];
 
-    const journal = buildClasseurJournal("c1", [], [], factures);
+    const journal = buildClasseurJournal("c1", [], factures);
     expect(journal[0].debit).toBe(0);
     expect(journal[0].credit).toBe(0);
   });
@@ -138,19 +141,11 @@ describe("filterClasseurJournal", () => {
         nature: "Transit",
         bl: "",
         totalContrat: 100,
-        montantPaye: 0,
+        montantPaye: 50,
         statut: "En cours",
+        paiements: [{ id: "p1", date: "2026-03-15", montant: 50, mode: "ESPECES" }],
       },
     ] as Dossier[],
-    [
-      {
-        id: "e1",
-        clientId: "c1",
-        date: "2026-03-15",
-        montantInvesti: 200,
-        montantPaye: 50,
-      },
-    ] as Ecriture[],
     [],
   );
 
@@ -182,28 +177,23 @@ describe("computeClasseurTotals", () => {
           nature: "Transit",
           bl: "",
           totalContrat: 1000,
-          montantPaye: 200,
+          montantPaye: 300,
           statut: "En cours",
+          paiements: [
+            { id: "p1", date: "2026-02-01", montant: 100, mode: "ESPECES" },
+            { id: "p2", date: "2026-03-01", montant: 200, mode: "VIREMENT" },
+          ],
         },
       ] as Dossier[],
-      [
-        {
-          id: "e1",
-          clientId: "c1",
-          date: "2026-02-01",
-          montantInvesti: 400,
-          montantPaye: 100,
-        },
-      ] as Ecriture[],
       [],
     );
 
     const filtered = filterClasseurJournal(full, { type: "Paiement" });
     const totals = computeClasseurTotals(filtered);
 
-    expect(totals.totalDebit).toBe(400);
-    expect(totals.totalCredit).toBe(100);
-    expect(totals.soldeNet).toBe(300);
+    expect(totals.totalDebit).toBe(0);
+    expect(totals.totalCredit).toBe(300);
+    expect(totals.soldeNet).toBe(-300);
   });
 });
 

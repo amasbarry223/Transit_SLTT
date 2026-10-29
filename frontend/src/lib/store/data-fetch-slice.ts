@@ -612,7 +612,6 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
           clients: syncClientStats(
             mappedDossiers,
             mappedFactures,
-            state.ecritures,
             mappedClients,
           ),
           annexes: mappedAnnexes,
