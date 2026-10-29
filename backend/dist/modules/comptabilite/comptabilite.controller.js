@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const comptabilite_service_1 = require("./comptabilite.service");
 const create_operation_dto_1 = require("./dto/create-operation.dto");
 const create_cloture_dto_1 = require("./dto/create-cloture.dto");
+const rattacher_operations_dto_1 = require("./dto/rattacher-operations.dto");
 const annexe_guard_1 = require("../../auth/guards/annexe.guard");
 const decorators_1 = require("../../shared/decorators");
 let ComptabiliteController = class ComptabiliteController {
@@ -29,6 +30,9 @@ let ComptabiliteController = class ComptabiliteController {
     }
     createOperation(user, body) {
         return this.service.createOperation(user, body);
+    }
+    rattacherOperations(user, body) {
+        return this.service.rattacherOperations(user, body.liens);
     }
     annulerOperation(id, user) {
         return this.service.annulerOperation(id, user);
@@ -60,6 +64,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, create_operation_dto_1.CreateOperationDto]),
     __metadata("design:returntype", void 0)
 ], ComptabiliteController.prototype, "createOperation", null);
+__decorate([
+    (0, common_1.Post)('operations/rattachement'),
+    (0, decorators_1.RequirePermission)('comptabilite:write'),
+    __param(0, (0, decorators_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, rattacher_operations_dto_1.RattacherOperationsDto]),
+    __metadata("design:returntype", void 0)
+], ComptabiliteController.prototype, "rattacherOperations", null);
 __decorate([
     (0, common_1.Post)('operations/:id/contre-passation'),
     (0, decorators_1.RequirePermission)('comptabilite:write'),

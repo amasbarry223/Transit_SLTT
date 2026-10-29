@@ -1,6 +1,7 @@
 import { ComptabiliteService } from './comptabilite.service';
 import { CreateOperationDto } from './dto/create-operation.dto';
 import { CreateClotureDto } from './dto/create-cloture.dto';
+import { RattacherOperationsDto } from './dto/rattacher-operations.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
 export declare class ComptabiliteController {
     private readonly service;
@@ -67,6 +68,9 @@ export declare class ComptabiliteController {
         modePaiement: string;
         source: string;
         importRef: string | null;
+    }>;
+    rattacherOperations(user: CurrentUserType, body: RattacherOperationsDto): Promise<{
+        rattachees: number;
     }>;
     annulerOperation(id: string, user: CurrentUserType): Promise<any>;
     findAllClotures(user: CurrentUserType, annexeId?: string): Promise<({

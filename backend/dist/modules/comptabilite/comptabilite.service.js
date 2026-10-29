@@ -180,6 +180,38 @@ let ComptabiliteService = class ComptabiliteService {
             throw err;
         }
     }
+    async rattacherOperations(user, liens) {
+        if (!Array.isArray(liens) || liens.length === 0) {
+            throw new common_1.BadRequestException('Aucun rattachement fourni.');
+        }
+        if (liens.length > 1000) {
+            throw new common_1.BadRequestException('1 000 rattachements maximum par envoi.');
+        }
+        const clientIds = [...new Set(liens.map((l) => l.clientId))];
+        const clients = await this.prisma.client.findMany({ where: { id: { in: clientIds } }, select: { id: true } });
+        const clientsConnus = new Set(clients.map((c) => c.id));
+        const operations = await this.prisma.operationComptable.findMany({
+            where: { id: { in: liens.map((l) => l.operationId) } },
+            select: { id: true, annexeId: true },
+        });
+        const annexeParOp = new Map(operations.map((o) => [o.id, o.annexeId]));
+        let rattachees = 0;
+        await this.prisma.$transaction(async (tx) => {
+            for (const { operationId, clientId } of liens) {
+                if (!annexeParOp.has(operationId) || !clientsConnus.has(clientId))
+                    continue;
+                const annexeId = annexeParOp.get(operationId);
+                if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId))
+                    continue;
+                const res = await tx.operationComptable.updateMany({
+                    where: { id: operationId, clientId: null },
+                    data: { clientId },
+                });
+                rattachees += res.count;
+            }
+        });
+        return { rattachees };
+    }
     async findAllClotures(user, params) {
         if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette annexe');

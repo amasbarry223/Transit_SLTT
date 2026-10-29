@@ -73,6 +73,12 @@ export declare class ComptabiliteService {
         importRef: string | null;
     }>;
     annulerOperation(id: string, user: CurrentUserType): Promise<any>;
+    rattacherOperations(user: CurrentUserType, liens: Array<{
+        operationId: string;
+        clientId: string;
+    }>): Promise<{
+        rattachees: number;
+    }>;
     findAllClotures(user: CurrentUserType, params?: {
         annexeId?: string;
     }): Promise<({
