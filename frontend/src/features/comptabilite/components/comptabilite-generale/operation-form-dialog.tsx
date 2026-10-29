@@ -83,12 +83,20 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
     setSubmitting(false);
   }, [open]);
 
-  const montantEffectif = Number(montant.replace(/\s/g, "")) || 0;
+  // FCFA entiers : pas de centimes.
+  const montantEffectif = Math.round(Number(montant.replace(/\s/g, "")) || 0);
+  // Seuls les dossiers de l'annexe de l'opération (avant : tous, on pouvait lier
+  // une opération du Mali à un dossier de Côte d'Ivoire).
+  const dossiersAnnexe = useMemo(
+    () => dossiers.filter((d) => entite.type !== "annexe" || d.annexeId === entite.id),
+    [dossiers, entite],
+  );
 
   function handleClientSelect(id: string) {
     setClientId(id);
     if (id === "none") {
       setClientId("");
+      setClientNom("");
       return;
     }
     const client = clients.find((c) => c.id === id);
@@ -199,7 +207,7 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
                 <SelectTrigger id="opc-dossier" className="h-10 w-full"><SelectValue placeholder="Aucun (Frais général)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Aucun (Frais général)</SelectItem>
-                  {dossiers.map((d) => (
+                  {dossiersAnnexe.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
                       {d.reference} ({d.bl})
                     </SelectItem>
@@ -209,24 +217,33 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="opc-client-existant">Client existant (optionnel)</Label>
+            <Label htmlFor="opc-client-existant">
+              Client / tiers <span className="text-red-500">*</span>
+            </Label>
             <Select value={clientId || "none"} onValueChange={handleClientSelect}>
-              <SelectTrigger id="opc-client-existant" className="h-10 w-full"><SelectValue placeholder="Aucun (saisie libre)" /></SelectTrigger>
+              <SelectTrigger id="opc-client-existant" className="h-10 w-full"><SelectValue placeholder="Choisir un client" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Aucun (saisie libre)</SelectItem>
+                <SelectItem value="none">Autre tiers (non enregistré)…</SelectItem>
                 {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>)}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="opc-client-nom">
-              Nom du tiers <span className="text-red-500">*</span>
-            </Label>
-            <Input id="opc-client-nom" value={clientNom} onChange={(e) => setClientNom(e.target.value)} placeholder="Ex. Ali Badra Traore" className="h-10" />
+            {/* Nom libre seulement pour un tiers absent des clients (fournisseur,
+                chauffeur…) : un client choisi fournit déjà son nom, et le lien
+                clientId le rattache à sa situation financière. */}
+            {!clientId && (
+              <Input
+                id="opc-client-nom"
+                aria-label="Nom du tiers"
+                value={clientNom}
+                onChange={(e) => setClientNom(e.target.value)}
+                placeholder="Nom du tiers (ex. fournisseur, chauffeur)"
+                className="h-10"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="opc-nature">
-              Nature de la dépense <span className="text-red-500">*</span>
+              {type === "Entrée" ? "Motif de l'encaissement" : "Nature de la dépense"} <span className="text-red-500">*</span>
             </Label>
             <Input id="opc-nature" list="opc-nature-suggestions" value={nature} onChange={(e) => setNature(e.target.value)} placeholder="Ex. Frais de circuit" className="h-10" />
             <datalist id="opc-nature-suggestions">
@@ -237,7 +254,7 @@ export function OperationFormDialog({ open, onOpenChange, entite }: OperationFor
             <Label htmlFor="opc-montant">
               Montant (FCFA) <span className="text-red-500">*</span>
             </Label>
-            <Input id="opc-montant" type="number" min="0" value={montant} onChange={(e) => setMontant(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
+            <Input id="opc-montant" type="number" min="1" step="1" inputMode="numeric" value={montant} onChange={(e) => setMontant(e.target.value)} placeholder={UI.placeholders.amountFCFA} className="h-10" />
           </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">

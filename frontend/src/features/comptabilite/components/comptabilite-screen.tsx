@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, FileSpreadsheet, FileUp, Plus, ScanLine, Users } from "lucide-react";
+import { BookOpen, FileSpreadsheet, FileUp, MoreHorizontal, Plus, ScanLine, Users } from "lucide-react";
 import { PageHeader } from "@/components/sltt/page-header";
 import { useStore } from "@/lib/store";
 import { JournalCaissePanel } from "./comptabilite-generale/journal-caisse-panel";
 import { SituationClientsPanel } from "./comptabilite-generale/situation-clients-panel";
 import { useComptabiliteGeneraleScreen } from "./comptabilite-generale/use-comptabilite-generale-screen";
 import { Button } from "@/shared/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { cn } from "@/shared/utils/cn";
 
@@ -26,29 +32,37 @@ export function ComptabiliteScreen() {
     <div className="space-y-6">
       <PageHeader
         title="Comptabilité générale & caisse"
-        description="Journal unique des opérations financières, situation financière des clients et règlements par entité et annexe active."
+        description="Journal de caisse de l'annexe, clôtures et situation financière des clients."
       >
         {activeTab === "journal" && (
-          <Button
-            variant="outline"
-            onClick={journalScreen.exportExcel}
-            disabled={journalScreen.totalItems === 0}
-            title="Exporter en Excel"
-          >
-            <FileSpreadsheet className="size-4" />
-            <span className="hidden sm:inline">Exporter Excel</span>
-          </Button>
+          // Une seule action principale visible ; les actions ponctuelles
+          // (export, import, clôture) sont regroupées dans « Plus ».
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <MoreHorizontal className="size-4" />
+                <span className="hidden sm:inline">Plus</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={journalScreen.exportExcel} disabled={journalScreen.totalItems === 0}>
+                <FileSpreadsheet className="mr-2 size-4" /> Exporter en Excel
+              </DropdownMenuItem>
+              {journalScreen.canWrite && (
+                <>
+                  <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                    <FileUp className="mr-2 size-4" /> Importer un document
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => journalScreen.setClotureOpen(true)}>
+                    <ScanLine className="mr-2 size-4" /> Clôturer la caisse
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         {activeTab === "journal" && journalScreen.canWrite && (
           <>
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <FileUp className="size-4" />
-              <span className="hidden sm:inline">Importer un document</span>
-            </Button>
-            <Button variant="outline" onClick={() => journalScreen.setClotureOpen(true)}>
-              <ScanLine className="size-4" />
-              <span className="hidden sm:inline">Clôturer la caisse</span>
-            </Button>
             <Button
               onClick={() => journalScreen.setFormOpen(true)}
               className="bg-[#ED1C24] hover:bg-[#D9161E] text-white font-bold px-5 h-10 rounded-xl shadow-lg shadow-red-600/25 border border-red-500/40 gap-2 transition-all"
