@@ -43,6 +43,12 @@ function assertValidSettingValue(cle, valeur, type) {
         throw new common_1.BadRequestException(`Type de paramètre invalide pour "${cle}" : "${type}".`);
     }
 }
+const PREFIXES_CLES_SYSTEME = ['comptabilite.', 'reprise.'];
+function assertCleModifiable(cle) {
+    if (PREFIXES_CLES_SYSTEME.some((p) => cle.startsWith(p))) {
+        throw new common_1.BadRequestException(`Le paramètre "${cle}" est géré par le système et ne peut pas être modifié.`);
+    }
+}
 function parseValue(valeur, type) {
     if (type === 'number') {
         const n = Number(valeur);
@@ -108,6 +114,7 @@ let SettingsService = class SettingsService {
         };
     }
     async setKey(cle, valeur, description, type, isPublic, groupName) {
+        assertCleModifiable(cle);
         assertValidSettingValue(cle, valeur, type);
         return this.prisma.setting.upsert({
             where: { cle },
@@ -130,6 +137,7 @@ let SettingsService = class SettingsService {
     }
     async setMany(settings) {
         const operations = Object.entries(settings).map(([cle, data]) => {
+            assertCleModifiable(cle);
             if (typeof data === 'object' && data !== null) {
                 assertValidSettingValue(cle, data.valeur, data.type);
                 return this.prisma.setting.upsert({
