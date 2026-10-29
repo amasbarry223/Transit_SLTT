@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ComptabiliteService } from './comptabilite.service';
 import { CreateOperationDto } from './dto/create-operation.dto';
 import { CreateClotureDto } from './dto/create-cloture.dto';
@@ -26,10 +26,11 @@ export class ComptabiliteController {
     return this.service.createOperation(user, body);
   }
 
-  @Delete('operations/:id')
+  /** Annulation par contre-passation (le journal n'est jamais supprimé). */
+  @Post('operations/:id/contre-passation')
   @RequirePermission('comptabilite:write')
-  deleteOperation(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
-    return this.service.deleteOperation(id, user);
+  annulerOperation(@Param('id') id: string, @CurrentUser() user: CurrentUserType) {
+    return this.service.annulerOperation(id, user);
   }
 
   @Get('clotures')

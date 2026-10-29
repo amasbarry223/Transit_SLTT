@@ -364,6 +364,8 @@ export interface RawOperationComptable {
   source?: string;
   importRef?: string;
   creePar?: string;
+  /** Lien vers l'événement d'origine (écriture automatique ou contre-passation). */
+  lien?: { origineType?: string; origineId?: string } | null;
 }
 
 export interface RawClotureCaisse {

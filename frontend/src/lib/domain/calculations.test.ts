@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { beneficeNet, resteAPayer } from "@/lib/domain/calculations";
 import {
-  FETCH_ENTITY_SOFT_CAPS,
   getRecoveryRateColor,
   RECOVERY_RATE_THRESHOLDS,
 } from "@/lib/constants/business";
@@ -20,10 +19,6 @@ describe("domain calculations", () => {
 });
 
 describe("business constants", () => {
-  it("exposes fetch soft caps", () => {
-    expect(FETCH_ENTITY_SOFT_CAPS.default).toBe(2000);
-  });
-
   it("maps recovery rate to color tokens", () => {
     expect(getRecoveryRateColor(RECOVERY_RATE_THRESHOLDS.good)).toBe("emerald");
     expect(getRecoveryRateColor(RECOVERY_RATE_THRESHOLDS.medium)).toBe("amber");

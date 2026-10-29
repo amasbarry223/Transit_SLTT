@@ -45,6 +45,7 @@ export function useBilansScreen() {
       .filter((f) => f.statut !== "Annulée")
       .map((f) => ({
         id: `fac-${f.id}`,
+        groupe: `fac-${f.id}`,
         date: f.date,
         datePaiement: f.date,
         clientId: f.clientId,
@@ -57,22 +58,50 @@ export function useBilansScreen() {
         note: `Facture ${f.numero}`,
       }));
 
+    // Un dossier non facturé donne une ligne « contrat » à sa date (montant dû)
+    // puis une ligne par règlement à SA date : le graphique mensuel et le récap
+    // par période rangent chaque encaissement dans son mois (avant, tout le
+    // cumul tombait dans le mois du dernier règlement, dateSolde). Repli sur
+    // dateSolde si le détail des paiements n'est pas chargé.
     const fromDossiers = dossiersNonFactures(dossiers, factures)
       .filter((d) => d.totalContrat > 0 || d.montantPaye > 0)
-      .map((d) => ({
-        id: `dos-${d.id}`,
-        date: d.dateSolde || d.date,
-        datePaiement: d.dateSolde || d.dateDedouanement || d.date,
-        clientId: d.clientId,
-        clientNom: d.clientNom,
-        dossierId: d.id,
-        annexeId: d.annexeId,
-        // Assiette due par le client = total contrat (dossier-finances).
-        montantInvesti: Number(d.totalContrat || 0),
-        montantPaye: Number(d.montantPaye || 0),
-        modePaiement: "Virement" as const,
-        note: `Dossier ${d.reference}`,
-      }));
+      .flatMap((d) => {
+        const base = {
+          groupe: `dos-${d.id}`,
+          clientId: d.clientId,
+          clientNom: d.clientNom,
+          dossierId: d.id,
+          annexeId: d.annexeId,
+          modePaiement: "Virement" as const,
+        };
+        const paiements =
+          d.paiements && d.paiements.length > 0
+            ? d.paiements.map((p, i) => ({ id: p.id ?? String(i), date: p.date, montant: Number(p.montant || 0) }))
+            : d.montantPaye > 0
+              ? [{ id: "cumul", date: d.dateSolde || d.date, montant: Number(d.montantPaye) }]
+              : [];
+        return [
+          {
+            ...base,
+            id: `dos-${d.id}`,
+            date: d.date,
+            datePaiement: d.date,
+            // Assiette due par le client = total contrat (dossier-finances).
+            montantInvesti: Number(d.totalContrat || 0),
+            montantPaye: 0,
+            note: `Dossier ${d.reference}`,
+          },
+          ...paiements.map((p) => ({
+            ...base,
+            id: `dos-${d.id}-pay-${p.id}`,
+            date: p.date,
+            datePaiement: p.date,
+            montantInvesti: 0,
+            montantPaye: p.montant,
+            note: `Règlement dossier ${d.reference}`,
+          })),
+        ];
+      });
 
     return [...fromFactures, ...fromDossiers];
   }, [factures, dossiers]);
@@ -193,7 +222,16 @@ export function useBilansScreen() {
         // que client-fiche-screen.tsx avant son correctif — trouvé ici dans
         // un écran distinct, "Total dû" étant explicitement le libellé de ce
         // KPI, pas un solde de grand-livre comme l'onglet Classeur).
-        const reste = clientEcritures.reduce((s, e) => s + resteAPayer(e), 0);
+        // Reste clampé par dossier/facture (les règlements d'un dossier sont des
+        // lignes à part : on les regroupe avant de borner à 0).
+        const parGroupe = new Map<string, { montantInvesti: number; montantPaye: number }>();
+        for (const e of clientEcritures) {
+          const g = parGroupe.get(e.groupe) ?? { montantInvesti: 0, montantPaye: 0 };
+          g.montantInvesti += e.montantInvesti;
+          g.montantPaye += e.montantPaye;
+          parGroupe.set(e.groupe, g);
+        }
+        const reste = [...parGroupe.values()].reduce((s, g) => s + resteAPayer(g), 0);
         const ecart = encaisse - investi;
         return { client: c.nom, investi, encaisse, reste, ecart };
       })

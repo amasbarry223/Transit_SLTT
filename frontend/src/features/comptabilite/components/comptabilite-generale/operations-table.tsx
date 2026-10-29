@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { Plus, Trash2, Wallet } from "lucide-react";
-import { isOperationSupprimable, type OperationComptable } from "@/lib/domain-types";
+import { Plus, Undo2, Wallet } from "lucide-react";
+import { isOperationAnnulable, type OperationComptable } from "@/lib/domain-types";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -24,6 +24,7 @@ const SOURCE_LABEL: Record<OperationComptable["source"], string> = {
   auto_dossier: "Auto · dossier",
   auto_facture: "Auto · facture",
   auto_depense: "Auto · dépense",
+  contrepassation: "Contre-passation",
 };
 
 interface OperationsTableProps {
@@ -33,6 +34,7 @@ interface OperationsTableProps {
   totalItems: number;
   hasActiveFilters: boolean;
   canWrite: boolean;
+  annuleesIds: ReadonlySet<string>;
   startIdx: number;
   endIdx: number;
   page: number;
@@ -47,6 +49,8 @@ interface OperationRowProps {
   ecartCumuleById: Map<string, number>;
   ecartClientCumuleById?: Map<string, number>;
   canWrite: boolean;
+  /** Écritures déjà annulées par une contre-passation. */
+  annuleesIds: ReadonlySet<string>;
   onDelete: (operation: OperationComptable) => void;
 }
 
@@ -54,6 +58,7 @@ const OperationMobileCard = memo(function OperationMobileCard({
   operation: o,
   ecartClientCumuleById,
   canWrite,
+  annuleesIds,
   onDelete,
 }: OperationRowProps) {
   return (
@@ -85,11 +90,12 @@ const OperationMobileCard = memo(function OperationMobileCard({
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge>
+          {annuleesIds.has(o.id) && <Badge variant="secondary" className="text-xs font-normal">Annulée</Badge>}
           {o.modePaiement && <Badge variant="secondary" className="text-xs font-normal">{o.modePaiement}</Badge>}
         </div>
-        {canWrite && isOperationSupprimable(o) && (
-          <Button variant="ghost" size="icon" className="size-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40" onClick={() => onDelete(o)} aria-label="Supprimer">
-            <Trash2 className="size-4" />
+        {canWrite && isOperationAnnulable(o, annuleesIds) && (
+          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground" onClick={() => onDelete(o)} aria-label={`Annuler l'opération ${o.reference}`} title="Annuler (contre-passation)">
+            <Undo2 className="size-4" />
           </Button>
         )}
       </div>
@@ -102,6 +108,7 @@ const OperationTableRow = memo(function OperationTableRow({
   ecartCumuleById,
   ecartClientCumuleById,
   canWrite,
+  annuleesIds,
   onDelete,
 }: OperationRowProps) {
   return (
@@ -136,12 +143,17 @@ const OperationTableRow = memo(function OperationTableRow({
       >
         {formatFCFA(ecartClientCumuleById?.get(o.id) ?? ecartCumuleById.get(o.id) ?? 0)}
       </TableCell>
-      <TableCell className="px-4 py-3.5"><Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge></TableCell>
+      <TableCell className="px-4 py-3.5">
+        <div className="flex flex-wrap gap-1">
+          <Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge>
+          {annuleesIds.has(o.id) && <Badge variant="secondary" className="text-xs font-normal">Annulée</Badge>}
+        </div>
+      </TableCell>
       <TableCell className="px-4 py-3.5">
         <div className="flex items-center justify-end">
-          {canWrite && isOperationSupprimable(o) && (
-            <Button variant="ghost" size="icon" className="size-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40" onClick={() => onDelete(o)} aria-label={`Supprimer l'opération ${o.reference}`} title="Supprimer">
-              <Trash2 className="size-4" />
+          {canWrite && isOperationAnnulable(o, annuleesIds) && (
+            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground" onClick={() => onDelete(o)} aria-label={`Annuler l'opération ${o.reference}`} title="Annuler (contre-passation)">
+              <Undo2 className="size-4" />
             </Button>
           )}
         </div>
@@ -157,6 +169,7 @@ export function OperationsTable({
   totalItems,
   hasActiveFilters,
   canWrite,
+  annuleesIds,
   startIdx,
   endIdx,
   page,
@@ -192,6 +205,7 @@ export function OperationsTable({
                 ecartCumuleById={ecartCumuleById}
                 ecartClientCumuleById={ecartClientCumuleById}
                 canWrite={canWrite}
+                annuleesIds={annuleesIds}
                 onDelete={onDelete}
               />
             ))}
@@ -220,6 +234,7 @@ export function OperationsTable({
                     ecartCumuleById={ecartCumuleById}
                     ecartClientCumuleById={ecartClientCumuleById}
                     canWrite={canWrite}
+                    annuleesIds={annuleesIds}
                     onDelete={onDelete}
                   />
                 ))}

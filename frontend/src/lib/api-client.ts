@@ -714,9 +714,10 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    deleteOperation: (id: string) =>
-      this.request<RawOperationComptable>(`/comptabilite/operations/${id}`, {
-        method: 'DELETE',
+    /** Annulation par contre-passation : renvoie l'écriture inverse créée. */
+    annulerOperation: (id: string) =>
+      this.request<RawOperationComptable>(`/comptabilite/operations/${id}/contre-passation`, {
+        method: 'POST',
       }),
     getClotures: (params?: { annexeId?: string }) =>
       this.request<RawClotureCaisse[]>(`/comptabilite/clotures${this.toQueryString(params)}`),

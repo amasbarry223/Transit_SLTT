@@ -110,17 +110,74 @@ describe('ComptabiliteService — verrou de période clôturée', () => {
     expect(prisma.operationComptable.create).not.toHaveBeenCalled();
   });
 
-  it("refuse de supprimer une opération d'une période clôturée", async () => {
-    const prisma = {
-      clotureCaisse: { findFirst: vi.fn().mockResolvedValue({ periodeFin: '2026-01-31' }) },
+});
+
+describe('ComptabiliteService.annulerOperation — contre-passation', () => {
+  const original = {
+    id: 'o1',
+    reference: 'OPC-7',
+    annexeId: 'annexe-ml',
+    date: '2026-01-15',
+    clientId: 'c1',
+    dossierId: null,
+    clientNom: 'ACME',
+    nature: 'Frais de circuit',
+    type: 'Sortie',
+    montant: 1000,
+    modePaiement: 'Espèces',
+    source: 'saisie',
+  };
+
+  function setup(opts: { existing?: any; dejaAnnulee?: boolean; clotureFin?: string } = {}) {
+    const tx = {
+      journalLien: {
+        findUnique: vi.fn().mockResolvedValue(opts.dejaAnnulee ? { id: 'l' } : null),
+        create: vi.fn().mockResolvedValue({}),
+      },
+      clotureCaisse: { findFirst: vi.fn().mockResolvedValue(opts.clotureFin ? { periodeFin: opts.clotureFin } : null) },
       operationComptable: {
-        findUnique: vi.fn().mockResolvedValue({ id: 'o1', annexeId: 'annexe-ml', date: '2026-01-15' }),
-        delete: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({ reference: 'OPC-7' }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockImplementation(async ({ data }) => ({ id: 'inv', ...data })),
       },
     };
-    const service = new ComptabiliteService(prisma as any);
+    const prisma = {
+      operationComptable: { findUnique: vi.fn().mockResolvedValue(opts.existing ?? original), delete: vi.fn() },
+      $transaction: vi.fn().mockImplementation(async (fn: any) => fn(tx)),
+    };
+    return { prisma, tx, service: new ComptabiliteService(prisma as any) };
+  }
 
-    await expect(service.deleteOperation('o1', admin())).rejects.toThrow(ConflictException);
+  it("ajoute l'écriture inverse (sens opposé, même montant) sans supprimer l'originale, y compris en période clôturée", async () => {
+    const { prisma, tx, service } = setup({ clotureFin: '2999-12-31' });
+
+    const inverse: any = await service.annulerOperation('o1', admin());
+
+    expect(inverse).toMatchObject({ type: 'Entrée', montant: 1000, source: 'contrepassation', reference: 'OPC-8' });
+    expect(inverse.nature).toContain('Annulation OPC-7');
+    expect(inverse.date).toBe('3000-01-01'); // lendemain de la dernière clôture
+    expect(tx.journalLien.create).toHaveBeenCalledWith({
+      data: { origineType: 'CONTREPASSATION', origineId: 'o1', operationId: 'inv' },
+    });
     expect(prisma.operationComptable.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuse une seconde annulation de la même opération', async () => {
+    const { service } = setup({ dejaAnnulee: true });
+    await expect(service.annulerOperation('o1', admin())).rejects.toThrow(ConflictException);
+  });
+
+  it("refuse d'annuler une contre-passation ou une écriture automatique liée", async () => {
+    await expect(
+      setup({ existing: { ...original, source: 'contrepassation' } }).service.annulerOperation('o1', admin()),
+    ).rejects.toThrow(ConflictException);
+    await expect(
+      setup({ existing: { ...original, source: 'auto_facture' } }).service.annulerOperation('o1', admin()),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it("autorise l'annulation d'une écriture de dossier devenue orpheline", async () => {
+    const { service } = setup({ existing: { ...original, source: 'auto_dossier', dossierId: null } });
+    await expect(service.annulerOperation('o1', admin())).resolves.toMatchObject({ type: 'Entrée' });
   });
 });

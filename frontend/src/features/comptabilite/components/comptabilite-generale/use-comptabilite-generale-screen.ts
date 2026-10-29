@@ -28,17 +28,17 @@ export function useComptabiliteGeneraleScreen() {
   const annexes = useStore((s) => s.annexes);
   const allOperations = useStore((s) => s.operationsComptables);
   const cloturesCaisse = useStore((s) => s.cloturesCaisse);
-  const removeOperationComptable = useStore((s) => s.removeOperationComptable);
+  const annulerOperationComptable = useStore((s) => s.annulerOperationComptable);
   const {
     target: deleteTarget,
     setTarget: setDeleteTarget,
     confirm: confirmDelete,
   } = useDeleteConfirm<OperationComptable>(
-    removeOperationComptable,
+    annulerOperationComptable,
     (o) => o.id,
-    (o) => o.reference,
-    "Opération supprimée",
-    "Impossible de supprimer l'opération",
+    (o) => `${o.reference} — écriture inverse ajoutée au journal`,
+    "Opération annulée",
+    "Impossible d'annuler l'opération",
   );
 
   const entites = useMemo(() => resolveEntitesComptables(annexes), [annexes]);
@@ -76,6 +76,12 @@ export function useComptabiliteGeneraleScreen() {
   const entiteOperations = useMemo(
     () => (resolvedEntite ? filterOperationsByEntite(allOperations, resolvedEntite) : []),
     [allOperations, resolvedEntite],
+  );
+
+  // Écritures déjà contre-passées (l'inverse peut être hors de la page ou du filtre).
+  const annuleesIds = useMemo(
+    () => new Set(allOperations.flatMap((o) => (o.contrepasseDeId ? [o.contrepasseDeId] : []))),
+    [allOperations],
   );
 
   const entiteOperationsWithDossierRef = useMemo(() => {
@@ -225,6 +231,7 @@ export function useComptabiliteGeneraleScreen() {
 
   return {
     canWrite,
+    annuleesIds,
     entites,
     resolvedEntite,
     resolvedTab,

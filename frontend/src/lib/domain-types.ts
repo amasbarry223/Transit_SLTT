@@ -443,14 +443,22 @@ export type OperationComptableSource =
   | "import_ocr"
   | "auto_dossier"
   | "auto_facture"
-  | "auto_depense";
+  | "auto_depense"
+  /** Écriture inverse annulant une autre écriture (`contrepasseDeId`). */
+  | "contrepassation";
 
 /**
- * Une écriture automatique se corrige à la source (dossier, facture, dépense),
- * pas dans le journal. Exception : écriture de dossier devenue orpheline
- * (dossier supprimé). Même règle que le serveur (deleteOperation).
+ * Le journal ne se supprime pas : une écriture s'annule par contre-passation,
+ * une seule fois. Une écriture automatique se corrige à la source (dossier,
+ * facture, dépense), sauf écriture de dossier devenue orpheline (dossier
+ * supprimé). Une contre-passation ne s'annule pas. Même règle que le serveur
+ * (annulerOperation).
  */
-export function isOperationSupprimable(o: Pick<OperationComptable, "source" | "dossierId">): boolean {
+export function isOperationAnnulable(
+  o: Pick<OperationComptable, "id" | "source" | "dossierId">,
+  annuleesIds: ReadonlySet<string>,
+): boolean {
+  if (annuleesIds.has(o.id) || o.source === "contrepassation") return false;
   if (!o.source.startsWith("auto_")) return true;
   return o.source === "auto_dossier" && !o.dossierId;
 }
@@ -473,6 +481,8 @@ export interface OperationComptable {
   source: OperationComptableSource;
   importRef?: string;
   creePar?: string;
+  /** Pour une contre-passation : id de l'écriture qu'elle annule. */
+  contrepasseDeId?: string;
 }
 
 export interface OperationComptableInput {

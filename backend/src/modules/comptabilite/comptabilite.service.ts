@@ -8,6 +8,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+import { ORIGINE, SOURCE_AUTO, derniereClotureFin, lendemain, nextReference } from './journal-posting';
 
 @Injectable()
 export class ComptabiliteService {
@@ -55,6 +56,7 @@ export class ComptabiliteService {
       where,
       include: {
         annexe: { select: { id: true, nom: true, code: true } },
+        lien: { select: { origineType: true, origineId: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -146,24 +148,72 @@ export class ComptabiliteService {
     }
   }
 
-  async deleteOperation(id: string, user: CurrentUserType) {
+  /**
+   * Annule une écriture par CONTRE-PASSATION : une écriture inverse (même
+   * montant, sens opposé) est ajoutée à la date du jour, l'écriture d'origine
+   * reste au journal. Plus de suppression physique : le journal garde la trace
+   * de toute correction, et une écriture d'une période clôturée peut être
+   * corrigée sans rouvrir la période (l'inverse est passée dans la période
+   * ouverte, au lendemain de la dernière clôture si besoin).
+   */
+  async annulerOperation(id: string, user: CurrentUserType) {
     const existing = await this.prisma.operationComptable.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Opération ${id} non trouvée`);
     if (existing.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
       throw new ForbiddenException('Accès non autorisé à cette opération');
     }
+    if (existing.source === SOURCE_AUTO.CONTREPASSATION) {
+      throw new ConflictException("Une contre-passation ne s'annule pas : saisissez une nouvelle opération si besoin.");
+    }
     // Écriture générée par un événement métier : elle se corrige à la source
     // (dossier, facture, dépense). Seule exception : écriture de dossier devenue
-    // orpheline (dossier supprimé) que l'on peut retirer à la main.
+    // orpheline (dossier supprimé).
     const auto = typeof existing.source === 'string' && existing.source.startsWith('auto_');
     if (auto && !(existing.source === 'auto_dossier' && !existing.dossierId)) {
       throw new ConflictException(
         "Cette écriture est générée automatiquement : modifiez le règlement, la dépense ou la facture à l'origine.",
       );
     }
-    await this.assertPeriodeOuverte(existing.annexeId, existing.date);
-    await this.prisma.operationComptable.delete({ where: { id } });
-    return { id };
+
+    try {
+      return await this.prisma.$transaction(async (tx: any) => {
+        const dejaAnnulee = await tx.journalLien.findUnique({
+          where: { origineType_origineId: { origineType: ORIGINE.CONTREPASSATION, origineId: id } },
+          select: { id: true },
+        });
+        if (dejaAnnulee) throw new ConflictException('Cette opération a déjà été annulée.');
+
+        const today = new Date().toISOString().slice(0, 10);
+        const fin = await derniereClotureFin(tx, existing.annexeId);
+        const date = fin && today <= fin ? lendemain(fin) : today;
+        const inverse = await tx.operationComptable.create({
+          data: {
+            reference: await nextReference(tx),
+            annexeId: existing.annexeId,
+            date,
+            clientId: existing.clientId,
+            dossierId: existing.dossierId,
+            clientNom: existing.clientNom,
+            nature: `Annulation ${existing.reference} — ${existing.nature}`,
+            type: existing.type === 'Entrée' ? 'Sortie' : 'Entrée',
+            montant: existing.montant,
+            modePaiement: existing.modePaiement,
+            source: SOURCE_AUTO.CONTREPASSATION,
+            creePar: user.nom,
+          },
+        });
+        await tx.journalLien.create({
+          data: { origineType: ORIGINE.CONTREPASSATION, origineId: id, operationId: inverse.id },
+        });
+        return { ...inverse, lien: { origineType: ORIGINE.CONTREPASSATION, origineId: id } };
+      });
+    } catch (err) {
+      // Deux annulations simultanées : la contrainte unique du lien tranche.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException('Cette opération a déjà été annulée.');
+      }
+      throw err;
+    }
   }
 
   // Clôtures de caisse

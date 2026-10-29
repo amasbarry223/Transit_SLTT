@@ -28,6 +28,8 @@ export const ORIGINE = {
   DOSSIER_DEPENSE: 'DOSSIER_DEPENSE',
   FACTURE_PAIEMENT: 'FACTURE_PAIEMENT',
   DEPENSE_PAYEE: 'DEPENSE_PAYEE',
+  /** Écriture inverse annulant une écriture (origineId = id de l'écriture annulée). */
+  CONTREPASSATION: 'CONTREPASSATION',
 } as const;
 export type OrigineType = (typeof ORIGINE)[keyof typeof ORIGINE];
 
@@ -37,6 +39,7 @@ export const SOURCE_AUTO: Record<OrigineType, string> = {
   DOSSIER_DEPENSE: 'auto_dossier',
   FACTURE_PAIEMENT: 'auto_facture',
   DEPENSE_PAYEE: 'auto_depense',
+  CONTREPASSATION: 'contrepassation',
 };
 
 const BASCULE_CLE = 'comptabilite.journal_bascule';
@@ -53,7 +56,7 @@ export const modePaiementJournal = (mode?: string | null) => MODE_JOURNAL[mode ?
 
 const iso = (d: Date | string) => (typeof d === 'string' ? d : d.toISOString()).slice(0, 10);
 
-function lendemain(dateIso: string): string {
+export function lendemain(dateIso: string): string {
   const d = new Date(`${dateIso}T00:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
@@ -76,7 +79,7 @@ export async function getBascule(tx: any): Promise<Date> {
 }
 
 /** Dernier jour clôturé pour l'annexe (null si aucune clôture). */
-async function derniereClotureFin(tx: any, annexeId: string | null): Promise<string | null> {
+export async function derniereClotureFin(tx: any, annexeId: string | null): Promise<string | null> {
   if (!annexeId) return null;
   const c = await tx.clotureCaisse.findFirst({
     where: { annexeId },
@@ -86,7 +89,7 @@ async function derniereClotureFin(tx: any, annexeId: string | null): Promise<str
   return c ? String(c.periodeFin).slice(0, 10) : null;
 }
 
-async function nextReference(tx: any): Promise<string> {
+export async function nextReference(tx: any): Promise<string> {
   const last = await tx.operationComptable.findFirst({
     where: { reference: { startsWith: 'OPC-' } },
     orderBy: { createdAt: 'desc' },

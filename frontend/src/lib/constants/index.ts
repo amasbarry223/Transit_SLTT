@@ -36,7 +36,6 @@ export {
 } from "./ui.constants";
 
 export {
-  FETCH_ENTITY_SOFT_CAPS,
   RECOVERY_RATE_THRESHOLDS,
   getRecoveryRateColor,
 } from "./business";

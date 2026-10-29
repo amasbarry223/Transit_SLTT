@@ -4,6 +4,7 @@ const mockApi = {
   comptabilite: {
     createOperation: vi.fn(),
     createCloture: vi.fn(),
+    annulerOperation: vi.fn(),
   },
 };
 
@@ -176,11 +177,25 @@ describe("écritures automatiques", () => {
     expect(op).toMatchObject({ id: "o1", source: "auto_dossier", montant: 300, entiteType: "annexe" });
   });
 
-  it("isOperationSupprimable : saisie oui, automatique non, sauf écriture de dossier orpheline", async () => {
-    const { isOperationSupprimable } = await import("@/lib/domain-types");
-    expect(isOperationSupprimable({ source: "saisie", dossierId: undefined })).toBe(true);
-    expect(isOperationSupprimable({ source: "auto_facture", dossierId: undefined })).toBe(false);
-    expect(isOperationSupprimable({ source: "auto_dossier", dossierId: "d1" })).toBe(false);
-    expect(isOperationSupprimable({ source: "auto_dossier", dossierId: undefined })).toBe(true);
+  it("isOperationAnnulable : saisie oui une seule fois, automatique et contre-passation non, sauf dossier orphelin", async () => {
+    const { isOperationAnnulable } = await import("@/lib/domain-types");
+    const aucune = new Set<string>();
+    expect(isOperationAnnulable({ id: "a", source: "saisie", dossierId: undefined }, aucune)).toBe(true);
+    expect(isOperationAnnulable({ id: "a", source: "saisie", dossierId: undefined }, new Set(["a"]))).toBe(false);
+    expect(isOperationAnnulable({ id: "a", source: "contrepassation", dossierId: undefined }, aucune)).toBe(false);
+    expect(isOperationAnnulable({ id: "a", source: "auto_facture", dossierId: undefined }, aucune)).toBe(false);
+    expect(isOperationAnnulable({ id: "a", source: "auto_dossier", dossierId: "d1" }, aucune)).toBe(false);
+    expect(isOperationAnnulable({ id: "a", source: "auto_dossier", dossierId: undefined }, aucune)).toBe(true);
+  });
+
+  it("annulerOperationComptable ajoute l'écriture inverse sans retirer l'originale", async () => {
+    mockApi.comptabilite.annulerOperation.mockResolvedValueOnce({ id: "inv", reference: "OPC-2", type: "Sortie", montant: 100, source: "contrepassation" });
+    useStore.setState({
+      operationsComptables: [{ id: "o1", reference: "OPC-1", entiteType: "annexe", date: "2026-01-01", clientNom: "A", nature: "x", type: "Entrée", montant: 100, source: "saisie" }],
+    });
+    await useStore.getState().annulerOperationComptable("o1");
+    const ops = useStore.getState().operationsComptables;
+    expect(ops.map((o) => o.id)).toEqual(["inv", "o1"]);
+    expect(ops[0].contrepasseDeId).toBe("o1");
   });
 });

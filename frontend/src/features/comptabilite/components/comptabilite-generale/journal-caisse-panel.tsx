@@ -201,6 +201,7 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
         totalItems={screen.totalItems}
         hasActiveFilters={screen.hasActiveFilters}
         canWrite={screen.canWrite}
+        annuleesIds={screen.annuleesIds}
         startIdx={screen.startIdx}
         endIdx={screen.endIdx}
         page={screen.page}
@@ -213,14 +214,15 @@ export function JournalCaissePanel({ screen, importOpen, setImportOpen }: Journa
       <ConfirmDeleteDialog
         open={!!screen.deleteTarget}
         onOpenChange={(open) => !open && screen.setDeleteTarget(null)}
-        title="Supprimer cette opération ?"
+        title="Annuler cette opération ?"
         description={
           <>
-            L&apos;opération <strong>{screen.deleteTarget?.reference}</strong> ({screen.deleteTarget?.clientNom} ·{" "}
-            {screen.deleteTarget?.type} · {formatFCFA(screen.deleteTarget?.montant ?? 0)}) sera définitivement
-            supprimée. Cette action est irréversible.
+            Une écriture inverse de <strong>{screen.deleteTarget?.reference}</strong> ({screen.deleteTarget?.clientNom} ·{" "}
+            {screen.deleteTarget?.type} · {formatFCFA(screen.deleteTarget?.montant ?? 0)}) sera ajoutée au journal à la
+            date du jour. L&apos;opération d&apos;origine reste visible, marquée « Annulée ».
           </>
         }
+        confirmLabel="Oui, annuler l'opération"
         onConfirm={screen.confirmDelete}
       />
 

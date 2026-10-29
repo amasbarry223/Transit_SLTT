@@ -31,7 +31,8 @@ export interface ComptabiliteGeneraleSlice {
   addOperationComptable: (input: OperationComptableInput) => Promise<OperationComptable>;
   /** Recharge le journal (écritures générées par le serveur après un règlement, une dépense…). Ne lève jamais. */
   refreshOperationsComptables: () => Promise<void>;
-  removeOperationComptable: (id: string) => Promise<void>;
+  /** Annule une écriture par contre-passation (le journal n'est jamais supprimé). */
+  annulerOperationComptable: (id: string) => Promise<void>;
   recordClotureCaisse: (input: RecordClotureCaisseInput) => Promise<ClotureCaisse>;
 }
 
@@ -54,6 +55,7 @@ export function mapOperationComptable(o: RawOperationComptable): OperationCompta
     source: (o.source || "saisie") as OperationComptableSource,
     importRef: o.importRef || undefined,
     creePar: o.creePar || undefined,
+    contrepasseDeId: o.lien?.origineType === "CONTREPASSATION" ? o.lien.origineId : undefined,
   };
 }
 
@@ -144,16 +146,20 @@ export const createComptabiliteGeneraleSlice: StateCreator<
     }
   },
 
-  removeOperationComptable: async (id) => {
-    await api.comptabilite.deleteOperation(id);
-
+  annulerOperationComptable: async (id) => {
+    const raw = await api.comptabilite.annulerOperation(id);
     const operation = get().operationsComptables.find((o) => o.id === id);
-    set((s) => ({ operationsComptables: s.operationsComptables.filter((o) => o.id !== id) }));
+    if (raw?.id) {
+      const inverse = { ...mapOperationComptable(raw), contrepasseDeId: id };
+      set((s) => ({ operationsComptables: [inverse, ...s.operationsComptables] }));
+    } else {
+      await get().refreshOperationsComptables();
+    }
     if (operation) {
       await get().addAuditLog(
         AUDIT_MODULE.Comptabilite,
-        AUDIT_ACTION.Suppression,
-        `Opération ${operation.reference} supprimée`,
+        AUDIT_ACTION.Modification,
+        `Opération ${operation.reference} annulée par contre-passation`,
         operation.clientId,
         { sourceType: "operation_comptable", sourceId: id },
       );
