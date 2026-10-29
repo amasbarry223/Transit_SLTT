@@ -13,6 +13,7 @@ exports.ComptabiliteService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const journal_posting_1 = require("./journal-posting");
 let ComptabiliteService = class ComptabiliteService {
     prisma;
     constructor(prisma) {
@@ -50,6 +51,7 @@ let ComptabiliteService = class ComptabiliteService {
             where,
             include: {
                 annexe: { select: { id: true, nom: true, code: true } },
+                lien: { select: { origineType: true, origineId: true } },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -124,20 +126,59 @@ let ComptabiliteService = class ComptabiliteService {
             throw err;
         }
     }
-    async deleteOperation(id, user) {
+    async annulerOperation(id, user) {
         const existing = await this.prisma.operationComptable.findUnique({ where: { id } });
         if (!existing)
             throw new common_1.NotFoundException(`Opération ${id} non trouvée`);
         if (existing.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette opération');
         }
+        if (existing.source === journal_posting_1.SOURCE_AUTO.CONTREPASSATION) {
+            throw new common_1.ConflictException("Une contre-passation ne s'annule pas : saisissez une nouvelle opération si besoin.");
+        }
         const auto = typeof existing.source === 'string' && existing.source.startsWith('auto_');
         if (auto && !(existing.source === 'auto_dossier' && !existing.dossierId)) {
             throw new common_1.ConflictException("Cette écriture est générée automatiquement : modifiez le règlement, la dépense ou la facture à l'origine.");
         }
-        await this.assertPeriodeOuverte(existing.annexeId, existing.date);
-        await this.prisma.operationComptable.delete({ where: { id } });
-        return { id };
+        try {
+            return await this.prisma.$transaction(async (tx) => {
+                const dejaAnnulee = await tx.journalLien.findUnique({
+                    where: { origineType_origineId: { origineType: journal_posting_1.ORIGINE.CONTREPASSATION, origineId: id } },
+                    select: { id: true },
+                });
+                if (dejaAnnulee)
+                    throw new common_1.ConflictException('Cette opération a déjà été annulée.');
+                const today = new Date().toISOString().slice(0, 10);
+                const fin = await (0, journal_posting_1.derniereClotureFin)(tx, existing.annexeId);
+                const date = fin && today <= fin ? (0, journal_posting_1.lendemain)(fin) : today;
+                const inverse = await tx.operationComptable.create({
+                    data: {
+                        reference: await (0, journal_posting_1.nextReference)(tx),
+                        annexeId: existing.annexeId,
+                        date,
+                        clientId: existing.clientId,
+                        dossierId: existing.dossierId,
+                        clientNom: existing.clientNom,
+                        nature: `Annulation ${existing.reference} — ${existing.nature}`,
+                        type: existing.type === 'Entrée' ? 'Sortie' : 'Entrée',
+                        montant: existing.montant,
+                        modePaiement: existing.modePaiement,
+                        source: journal_posting_1.SOURCE_AUTO.CONTREPASSATION,
+                        creePar: user.nom,
+                    },
+                });
+                await tx.journalLien.create({
+                    data: { origineType: journal_posting_1.ORIGINE.CONTREPASSATION, origineId: id, operationId: inverse.id },
+                });
+                return { ...inverse, lien: { origineType: journal_posting_1.ORIGINE.CONTREPASSATION, origineId: id } };
+            });
+        }
+        catch (err) {
+            if (err instanceof client_1.Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+                throw new common_1.ConflictException('Cette opération a déjà été annulée.');
+            }
+            throw err;
+        }
     }
     async findAllClotures(user, params) {
         if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {

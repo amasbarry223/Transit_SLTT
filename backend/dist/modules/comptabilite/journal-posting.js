@@ -1,7 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.modePaiementJournal = exports.SOURCE_AUTO = exports.ORIGINE = void 0;
+exports.lendemain = lendemain;
 exports.getBascule = getBascule;
+exports.derniereClotureFin = derniereClotureFin;
+exports.nextReference = nextReference;
 exports.posterEcriture = posterEcriture;
 exports.retirerEcriture = retirerEcriture;
 exports.synchroniserJournalDossier = synchroniserJournalDossier;
@@ -12,12 +15,14 @@ exports.ORIGINE = {
     DOSSIER_DEPENSE: 'DOSSIER_DEPENSE',
     FACTURE_PAIEMENT: 'FACTURE_PAIEMENT',
     DEPENSE_PAYEE: 'DEPENSE_PAYEE',
+    CONTREPASSATION: 'CONTREPASSATION',
 };
 exports.SOURCE_AUTO = {
     DOSSIER_PAIEMENT: 'auto_dossier',
     DOSSIER_DEPENSE: 'auto_dossier',
     FACTURE_PAIEMENT: 'auto_facture',
     DEPENSE_PAYEE: 'auto_depense',
+    CONTREPASSATION: 'contrepassation',
 };
 const BASCULE_CLE = 'comptabilite.journal_bascule';
 const MODE_JOURNAL = {

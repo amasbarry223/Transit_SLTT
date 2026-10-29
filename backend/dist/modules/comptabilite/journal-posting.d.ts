@@ -3,11 +3,15 @@ export declare const ORIGINE: {
     readonly DOSSIER_DEPENSE: "DOSSIER_DEPENSE";
     readonly FACTURE_PAIEMENT: "FACTURE_PAIEMENT";
     readonly DEPENSE_PAYEE: "DEPENSE_PAYEE";
+    readonly CONTREPASSATION: "CONTREPASSATION";
 };
 export type OrigineType = (typeof ORIGINE)[keyof typeof ORIGINE];
 export declare const SOURCE_AUTO: Record<OrigineType, string>;
 export declare const modePaiementJournal: (mode?: string | null) => string;
+export declare function lendemain(dateIso: string): string;
 export declare function getBascule(tx: any): Promise<Date>;
+export declare function derniereClotureFin(tx: any, annexeId: string | null): Promise<string | null>;
+export declare function nextReference(tx: any): Promise<string>;
 export interface EcritureAuto {
     origineType: OrigineType;
     origineId: string;

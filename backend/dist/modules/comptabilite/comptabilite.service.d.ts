@@ -14,6 +14,10 @@ export declare class ComptabiliteService {
             nom: string;
             code: string;
         };
+        lien: {
+            origineType: string;
+            origineId: string;
+        };
     } & {
         id: string;
         createdAt: Date;
@@ -68,9 +72,7 @@ export declare class ComptabiliteService {
         source: string;
         importRef: string | null;
     }>;
-    deleteOperation(id: string, user: CurrentUserType): Promise<{
-        id: string;
-    }>;
+    annulerOperation(id: string, user: CurrentUserType): Promise<any>;
     findAllClotures(user: CurrentUserType, params?: {
         annexeId?: string;
     }): Promise<({

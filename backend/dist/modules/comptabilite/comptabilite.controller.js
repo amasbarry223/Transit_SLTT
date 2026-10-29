@@ -30,8 +30,8 @@ let ComptabiliteController = class ComptabiliteController {
     createOperation(user, body) {
         return this.service.createOperation(user, body);
     }
-    deleteOperation(id, user) {
-        return this.service.deleteOperation(id, user);
+    annulerOperation(id, user) {
+        return this.service.annulerOperation(id, user);
     }
     findAllClotures(user, annexeId) {
         return this.service.findAllClotures(user, { annexeId });
@@ -61,14 +61,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ComptabiliteController.prototype, "createOperation", null);
 __decorate([
-    (0, common_1.Delete)('operations/:id'),
+    (0, common_1.Post)('operations/:id/contre-passation'),
     (0, decorators_1.RequirePermission)('comptabilite:write'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
-], ComptabiliteController.prototype, "deleteOperation", null);
+], ComptabiliteController.prototype, "annulerOperation", null);
 __decorate([
     (0, common_1.Get)('clotures'),
     __param(0, (0, decorators_1.CurrentUser)()),
