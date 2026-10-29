@@ -634,7 +634,11 @@ export function DossierScreenRedesign({
                 <Input
                   disabled={!canWrite}
                   className="h-9 bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-xs placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
-                  placeholder="Optionnel"
+                  // Sans libellé, « Optionnel » était recopié tel quel comme référence
+                  // (11 règlements sur 13 en base) : on dit ce qu'on attend.
+                  placeholder="Réf. : n° chèque, reçu… (facultatif)"
+                  aria-label="Référence du règlement (facultatif)"
+                  title="Référence du règlement : n° de chèque, de reçu ou de virement (facultatif)"
                   value={newPayRef}
                   onChange={(e) => setNewPayRef(e.target.value)}
                 />
