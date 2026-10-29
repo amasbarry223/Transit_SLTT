@@ -10,6 +10,7 @@ export type OrigineType = (typeof ORIGINE)[keyof typeof ORIGINE];
 export declare const SOURCE_AUTO: Record<OrigineType, string>;
 export declare const modePaiementJournal: (mode?: string | null) => string;
 export declare function lendemain(dateIso: string): string;
+export declare function apresBascule(bascule: Date, creeLe: Date | string, date: Date | string): boolean;
 export declare function getBascule(tx: any): Promise<Date>;
 export declare function derniereClotureFin(tx: any, annexeId: string | null): Promise<string | null>;
 export declare function nextReference(tx: any): Promise<string>;

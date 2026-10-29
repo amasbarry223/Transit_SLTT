@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.modePaiementJournal = exports.SOURCE_AUTO = exports.ORIGINE = void 0;
 exports.lendemain = lendemain;
+exports.apresBascule = apresBascule;
 exports.getBascule = getBascule;
 exports.derniereClotureFin = derniereClotureFin;
 exports.nextReference = nextReference;
@@ -42,6 +43,9 @@ function lendemain(dateIso) {
     const d = new Date(`${dateIso}T00:00:00.000Z`);
     d.setUTCDate(d.getUTCDate() + 1);
     return d.toISOString().slice(0, 10);
+}
+function apresBascule(bascule, creeLe, date) {
+    return new Date(creeLe) >= bascule && iso(date) >= iso(bascule);
 }
 async function getBascule(tx) {
     const existing = await tx.setting.findUnique({ where: { cle: BASCULE_CLE } });
@@ -105,7 +109,7 @@ async function posterEcriture(tx, e) {
         }
         const date = fin && dateEvt <= fin ? lendemain(fin) : dateEvt;
         const nature = date !== dateEvt ? `${e.nature} (du ${dateEvt})` : e.nature;
-        const operation = await tx.operationComptable.create({
+        await tx.operationComptable.create({
             data: {
                 reference: await nextReference(tx),
                 annexeId: e.annexeId,
@@ -119,10 +123,8 @@ async function posterEcriture(tx, e) {
                 modePaiement: e.modePaiement ?? 'Espèces',
                 source: exports.SOURCE_AUTO[e.origineType],
                 creePar: 'Automatique',
+                lien: { create: { origineType: e.origineType, origineId: e.origineId } },
             },
-        });
-        await tx.journalLien.create({
-            data: { origineType: e.origineType, origineId: e.origineId, operationId: operation.id },
         });
     }
     catch (err) {
@@ -164,7 +166,7 @@ async function synchroniserJournalDossier(tx, dossierId) {
         const num = (v) => Math.round(Number(v)) || 0;
         const idsPaiements = new Set();
         for (const p of dossier.paiements) {
-            if (new Date(p.createdAt) < bascule)
+            if (!apresBascule(bascule, p.createdAt, p.date))
                 continue;
             idsPaiements.add(p.id);
             await posterEcriture(tx, {
@@ -180,7 +182,7 @@ async function synchroniserJournalDossier(tx, dossierId) {
         }
         const idsDepenses = new Set();
         for (const d of dossier.depensesDossier) {
-            if (new Date(d.createdAt) < bascule)
+            if (!apresBascule(bascule, d.createdAt, d.date))
                 continue;
             idsDepenses.add(d.id);
             await posterEcriture(tx, {
@@ -221,6 +223,8 @@ async function synchroniserJournalBonCaisse(tx, bonId) {
         const vivants = new Set();
         if (bon && new Date(bon.createdAt) >= bascule) {
             for (const [rang, l] of bon.lignes.entries()) {
+                if (!apresBascule(bascule, bon.createdAt, l.date || bon.date))
+                    continue;
                 const origineId = `${prefixe}${rang}`;
                 vivants.add(origineId);
                 await posterEcriture(tx, {

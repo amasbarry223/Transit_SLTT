@@ -85,7 +85,10 @@ let ComptabiliteService = class ComptabiliteService {
         if (data.type !== 'Entrée' && data.type !== 'Sortie') {
             throw new common_1.BadRequestException("Le type doit être « Entrée » ou « Sortie ».");
         }
-        const date = data.date || new Date().toISOString().slice(0, 10);
+        const date = String(data.date || new Date().toISOString()).slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            throw new common_1.BadRequestException("La date de l'opération doit être au format AAAA-MM-JJ.");
+        }
         await this.assertPeriodeOuverte(data.annexeId, date);
         const reference = data.reference &&
             !(await this.prisma.operationComptable.findUnique({
@@ -195,16 +198,22 @@ let ComptabiliteService = class ComptabiliteService {
             select: { id: true, annexeId: true },
         });
         const annexeParOp = new Map(operations.map((o) => [o.id, o.annexeId]));
+        const parClient = new Map();
+        for (const { operationId, clientId } of liens) {
+            if (!annexeParOp.has(operationId) || !clientsConnus.has(clientId))
+                continue;
+            const annexeId = annexeParOp.get(operationId);
+            if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId))
+                continue;
+            parClient.set(clientId, [...(parClient.get(clientId) ?? []), operationId]);
+        }
         let rattachees = 0;
+        if (parClient.size === 0)
+            return { rattachees };
         await this.prisma.$transaction(async (tx) => {
-            for (const { operationId, clientId } of liens) {
-                if (!annexeParOp.has(operationId) || !clientsConnus.has(clientId))
-                    continue;
-                const annexeId = annexeParOp.get(operationId);
-                if (annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(annexeId))
-                    continue;
+            for (const [clientId, ids] of parClient) {
                 const res = await tx.operationComptable.updateMany({
-                    where: { id: operationId, clientId: null },
+                    where: { id: { in: ids }, clientId: null },
                     data: { clientId },
                 });
                 rattachees += res.count;

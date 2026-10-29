@@ -115,7 +115,10 @@ let StockService = class StockService {
         const delta = nouvelleQuantite - item.quantite;
         return this.prisma.$transaction(async (tx) => {
             if (delta !== 0) {
-                await tx.stockItem.update({ where: { id }, data: { quantite: { increment: delta } } });
+                const ajuste = await tx.stockItem.update({ where: { id }, data: { quantite: { increment: delta } } });
+                if (ajuste.quantite < 0) {
+                    throw new common_1.BadRequestException('Le stock a changé entre-temps : rechargez la fiche avant de corriger la quantité.');
+                }
                 await tx.mouvementStock.create({
                     data: {
                         stockId: id,
