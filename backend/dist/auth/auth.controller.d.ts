@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import type { CurrentUserType } from './auth.types';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -23,10 +24,7 @@ export declare class AuthController {
     }>;
     logout(req: Request, res: Response): Promise<void>;
     me(user: CurrentUserType): Promise<CurrentUserType>;
-    updateProfile(user: CurrentUserType, body: {
-        nom?: string;
-        email?: string;
-    }): Promise<{
+    updateProfile(user: CurrentUserType, body: UpdateProfileDto): Promise<{
         id: string;
         email: string;
         nom: string;

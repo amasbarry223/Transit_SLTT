@@ -21,6 +21,7 @@ const login_dto_1 = require("./dto/login.dto");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const decorators_1 = require("../shared/decorators");
 const cookie_config_1 = require("./cookie.config");
+const update_profile_dto_1 = require("./dto/update-profile.dto");
 function apiPrefix() {
     return process.env.API_PREFIX ?? 'api';
 }
@@ -141,7 +142,7 @@ __decorate([
     __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, update_profile_dto_1.UpdateProfileDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "updateProfile", null);
 __decorate([
