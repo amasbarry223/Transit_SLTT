@@ -486,9 +486,9 @@ function ContratFormModal({
   const dateFinValide = !dateFin || dateFin >= dateDebut;
   const canSubmit = Boolean(
     clientId &&
-      objet.trim() &&
-      dateFinValide &&
-      (!showAnnexe || annexeId),
+    objet.trim() &&
+    dateFinValide &&
+    (!showAnnexe || annexeId),
   );
 
   function handleSubmit() {
