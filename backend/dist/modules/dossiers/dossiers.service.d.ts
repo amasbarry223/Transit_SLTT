@@ -1,5 +1,6 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
+export declare function syncLignesEtTotaux(tx: any, dossierId: string, data: any): Promise<void>;
 export declare class DossiersService {
     private readonly prisma;
     constructor(prisma: PrismaService);

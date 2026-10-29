@@ -125,15 +125,7 @@ export declare class DashboardAnalyticsController {
                     count: number;
                     color: string;
                 }[];
-                topRiskClients: {
-                    id: string;
-                    clientNom: string;
-                    referenceDossierOuFacture: string;
-                    montant: number;
-                    echeance: string;
-                    statut: "En retard" | "\u00C0 risque" | "Contentieux" | "En cours";
-                    joursRetard: number;
-                }[];
+                topRiskClients: import("./creances").RisqueClient[];
             };
             operationalAlerts: {
                 id: string;
@@ -284,15 +276,7 @@ export declare class DashboardController {
                     count: number;
                     color: string;
                 }[];
-                topRiskClients: {
-                    id: string;
-                    clientNom: string;
-                    referenceDossierOuFacture: string;
-                    montant: number;
-                    echeance: string;
-                    statut: "En retard" | "\u00C0 risque" | "Contentieux" | "En cours";
-                    joursRetard: number;
-                }[];
+                topRiskClients: import("./creances").RisqueClient[];
             };
             operationalAlerts: {
                 id: string;

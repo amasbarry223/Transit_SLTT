@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DossiersService = void 0;
+exports.syncLignesEtTotaux = syncLignesEtTotaux;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");

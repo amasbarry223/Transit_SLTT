@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FacturesService = void 0;
 const common_1 = require("@nestjs/common");
 const journal_posting_1 = require("../comptabilite/journal-posting");
+const dossiers_service_1 = require("../dossiers/dossiers.service");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");
 const pagination_utils_1 = require("../../common/pagination.utils");
@@ -254,18 +255,32 @@ let FacturesService = class FacturesService {
                     effectueParId: user.id,
                 },
             });
-            await (0, journal_posting_1.posterEcriture)(tx, {
-                origineType: journal_posting_1.ORIGINE.FACTURE_PAIEMENT,
-                origineId: transaction?.id ?? `${facture.id}:${Date.now()}`,
-                annexeId: facture.annexeId,
-                date: new Date(),
-                type: 'Entrée',
-                montant,
-                nature: `Encaissement facture ${facture.numero}`,
-                clientId: facture.clientId,
-                dossierId: facture.dossierId,
-                clientNom: facture.client?.nom ?? null,
-            });
+            if (facture.dossierId) {
+                await tx.dossierPaiement.create({
+                    data: {
+                        dossierId: facture.dossierId,
+                        date: new Date(),
+                        montant: BigInt(Math.round(montant)),
+                        mode: 'ESPECES',
+                        reference: `Facture ${facture.numero}`,
+                    },
+                });
+                await (0, dossiers_service_1.syncLignesEtTotaux)(tx, facture.dossierId, {});
+            }
+            else {
+                await (0, journal_posting_1.posterEcriture)(tx, {
+                    origineType: journal_posting_1.ORIGINE.FACTURE_PAIEMENT,
+                    origineId: transaction?.id ?? `${facture.id}:${Date.now()}`,
+                    annexeId: facture.annexeId,
+                    date: new Date(),
+                    type: 'Entrée',
+                    montant,
+                    nature: `Encaissement facture ${facture.numero}`,
+                    clientId: facture.clientId,
+                    dossierId: null,
+                    clientNom: facture.client?.nom ?? null,
+                });
+            }
             await tx.caisse.update({
                 where: { id: data.caisseId },
                 data: { soldeActuel: { increment: montant } },
