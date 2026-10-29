@@ -117,3 +117,19 @@ describe('SettingsService — validation des valeurs (setKey/setMany)', () => {
     ).rejects.toThrow(BadRequestException);
   });
 });
+
+describe('SettingsService — clés système en lecture seule', () => {
+  it('refuse de modifier la date de bascule du journal ou un marqueur de reprise', async () => {
+    const prisma: any = { setting: { upsert: vi.fn() }, $transaction: vi.fn() };
+    const service = new SettingsService(prisma);
+    await expect(service.setKey('comptabilite.journal_bascule', '2020-01-01')).rejects.toThrow(/système/);
+    await expect(service.setMany({ 'reprise.encaissements_factures_20261030': '' })).rejects.toThrow(/système/);
+    expect(prisma.setting.upsert).not.toHaveBeenCalled();
+  });
+
+  it('laisse modifier les réglages métier ordinaires', async () => {
+    const prisma: any = { setting: { upsert: vi.fn().mockResolvedValue({}) } };
+    await new SettingsService(prisma).setKey('facturation_taux_tva', '18');
+    expect(prisma.setting.upsert).toHaveBeenCalled();
+  });
+});

@@ -63,6 +63,18 @@ function assertValidSettingValue(cle: string, valeur: unknown, type?: string): v
   }
 }
 
+/** Clés système posées par le backend lui-même (date de bascule du journal
+ *  comptable, marqueurs de reprise de données) : lecture seule par l'API.
+ *  Reculer `comptabilite.journal_bascule` ferait entrer l'historique dans le
+ *  journal ; effacer un marqueur `reprise.*` rejouerait une reprise. */
+const PREFIXES_CLES_SYSTEME = ['comptabilite.', 'reprise.'];
+
+function assertCleModifiable(cle: string): void {
+  if (PREFIXES_CLES_SYSTEME.some((p) => cle.startsWith(p))) {
+    throw new BadRequestException(`Le paramètre "${cle}" est géré par le système et ne peut pas être modifié.`);
+  }
+}
+
 function parseValue(valeur: string, type?: string): any {
   if (type === 'number') {
     const n = Number(valeur);
@@ -142,6 +154,7 @@ export class SettingsService {
     isPublic?: boolean,
     groupName?: string,
   ) {
+    assertCleModifiable(cle);
     assertValidSettingValue(cle, valeur, type);
     return this.prisma.setting.upsert({
       where: { cle },
@@ -165,6 +178,7 @@ export class SettingsService {
 
   async setMany(settings: Record<string, string | { valeur: string; description?: string; type?: string; isPublic?: boolean; groupName?: string }>) {
     const operations = Object.entries(settings).map(([cle, data]) => {
+      assertCleModifiable(cle);
       if (typeof data === 'object' && data !== null) {
         assertValidSettingValue(cle, data.valeur, data.type);
         return this.prisma.setting.upsert({
