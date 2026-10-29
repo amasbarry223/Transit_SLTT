@@ -140,9 +140,21 @@ export const createComptabiliteGeneraleSlice: StateCreator<
   },
 
   refreshOperationsComptables: async () => {
+    // Opérations présentes avant l'appel : une opération ajoutée PENDANT le
+    // rechargement (saisie, contre-passation) et absente de la réponse — partie
+    // avant elle — est conservée au lieu d'être masquée jusqu'au prochain F5.
+    const avant = new Set(get().operationsComptables.map((o) => o.id));
     try {
       const raw = await api.comptabilite.getOperations();
-      if (Array.isArray(raw)) set({ operationsComptables: raw.map(mapOperationComptable) });
+      if (!Array.isArray(raw)) return;
+      const serveur = raw.map(mapOperationComptable);
+      const ids = new Set(serveur.map((o) => o.id));
+      set((s) => ({
+        operationsComptables: [
+          ...s.operationsComptables.filter((o) => !avant.has(o.id) && !ids.has(o.id)),
+          ...serveur,
+        ],
+      }));
     } catch (error) {
       logWarn("Rechargement du journal comptable impossible", error);
     }

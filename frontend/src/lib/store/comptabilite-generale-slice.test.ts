@@ -5,6 +5,7 @@ const mockApi = {
     createOperation: vi.fn(),
     createCloture: vi.fn(),
     annulerOperation: vi.fn(),
+    getOperations: vi.fn(),
   },
 };
 
@@ -197,5 +198,22 @@ describe("écritures automatiques", () => {
     const ops = useStore.getState().operationsComptables;
     expect(ops.map((o) => o.id)).toEqual(["inv", "o1"]);
     expect(ops[0].contrepasseDeId).toBe("o1");
+  });
+});
+
+describe("refreshOperationsComptables", () => {
+  it("conserve une opération ajoutée pendant le rechargement, absente de la réponse", async () => {
+    const base = { entiteType: "annexe" as const, date: "2026-01-01", clientNom: "A", nature: "x", type: "Entrée" as const, montant: 1, source: "saisie" as const };
+    useStore.setState({ operationsComptables: [{ ...base, id: "ancienne", reference: "OPC-1" }] });
+    let resoudre: (v: unknown) => void = () => {};
+    mockApi.comptabilite.getOperations.mockReturnValueOnce(new Promise((r) => (resoudre = r)));
+
+    const enCours = useStore.getState().refreshOperationsComptables();
+    // saisie pendant le rechargement
+    useStore.setState((s) => ({ operationsComptables: [{ ...base, id: "nouvelle", reference: "OPC-2" }, ...s.operationsComptables] }));
+    resoudre([{ id: "ancienne", reference: "OPC-1", montant: 1, type: "Entrée" }]);
+    await enCours;
+
+    expect(useStore.getState().operationsComptables.map((o) => o.id).sort()).toEqual(["ancienne", "nouvelle"]);
   });
 });
