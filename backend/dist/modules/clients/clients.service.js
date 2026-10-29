@@ -69,6 +69,12 @@ let ClientsService = class ClientsService {
         (0, annexe_filter_utils_1.assertAnnexeAccess)(user, client.annexeId, 'ce client');
         return client;
     }
+    async paysParDefaut(annexeId) {
+        if (!annexeId)
+            return null;
+        const annexe = await this.prisma.annexe.findUnique({ where: { id: annexeId }, select: { pays: true } });
+        return annexe?.pays ?? null;
+    }
     async create(user, data) {
         (0, annexe_filter_utils_1.assertAnnexeAccess)(user, data.annexeId, 'cette annexe');
         const baseCode = data.code || `CLT-${Date.now().toString(36).toUpperCase()}`;
@@ -84,7 +90,7 @@ let ClientsService = class ClientsService {
                 telephone: data.telephone || null,
                 adresse: data.adresse || null,
                 ville: data.ville || null,
-                pays: data.pays || 'Guinée',
+                pays: data.pays || (await this.paysParDefaut(data.annexeId)),
                 nif: data.nif || null,
                 rccm: data.rccm || null,
                 actif: data.actif ?? true,
@@ -109,7 +115,7 @@ let ClientsService = class ClientsService {
         if (data.ville !== undefined)
             updateData.ville = data.ville || null;
         if (data.pays !== undefined)
-            updateData.pays = data.pays || 'Guinée';
+            updateData.pays = data.pays || (await this.paysParDefaut(data.annexeId));
         if (data.nif !== undefined)
             updateData.nif = data.nif || null;
         if (data.rccm !== undefined)
@@ -130,6 +136,18 @@ let ClientsService = class ClientsService {
     }
     async remove(id, user) {
         await this.findOne(id, user);
+        const [dossiers, factures] = await Promise.all([
+            this.prisma.dossier.findMany({ where: { clientId: id }, select: { totalContrat: true, montantPaye: true } }),
+            this.prisma.facture.findMany({
+                where: { clientId: id, dossierId: null, statut: { notIn: ['ANNULEE', 'BROUILLON'] } },
+                select: { montantTtc: true, montantPaye: true },
+            }),
+        ]);
+        const reste = dossiers.reduce((s, d) => s + Math.max(0, Math.round(d.totalContrat - d.montantPaye)), 0) +
+            factures.reduce((s, f) => s + Math.max(0, Math.round(f.montantTtc - f.montantPaye)), 0);
+        if (reste > 0) {
+            throw new common_1.BadRequestException(`Ce client doit encore ${reste.toLocaleString('fr-FR')} FCFA : il ne peut pas être supprimé tant que ce montant n'est pas réglé.`);
+        }
         return this.prisma.client.update({ where: { id }, data: { actif: false } });
     }
 };

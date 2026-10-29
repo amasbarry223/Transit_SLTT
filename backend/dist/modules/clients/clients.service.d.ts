@@ -115,6 +115,7 @@ export declare class ClientsService {
         type: import(".prisma/client").$Enums.TypeClient;
         notes: string | null;
     }>;
+    private paysParDefaut;
     create(user: CurrentUserType, data: CreateClientDto): Promise<{
         annexe: {
             id: string;
