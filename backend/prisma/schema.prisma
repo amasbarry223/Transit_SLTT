@@ -966,9 +966,29 @@ model OperationComptable {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   annexe       Annexe?  @relation(fields: [annexeId], references: [id])
+  lien         JournalLien?
 
   @@index([annexeId])
   @@map("operations_comptables")
+}
+
+// Écritures du journal générées automatiquement à partir d'un événement métier
+// (règlement/dépense de dossier, encaissement de facture, paiement de dépense).
+// Table de liaison plutôt que des colonnes sur operations_comptables : le
+// script SQL de création est rejouable à chaque démarrage (CREATE TABLE IF NOT
+// EXISTS), ce qu'un ALTER TABLE ADD COLUMN ne garantit pas selon le moteur.
+// La contrainte unique (origine_type, origine_id) rend la génération idempotente.
+model JournalLien {
+  id          String             @id @default(uuid())
+  origineType String             @map("origine_type")
+  origineId   String             @map("origine_id")
+  operationId String             @unique @map("operation_id")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  operation   OperationComptable @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@unique([origineType, origineId])
+  @@map("journal_liens")
 }
 
 model ClotureCaisse {

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Plus, Trash2, Wallet } from "lucide-react";
-import type { OperationComptable } from "@/lib/domain-types";
+import { isOperationSupprimable, type OperationComptable } from "@/lib/domain-types";
 import { formatDateShort, formatFCFA } from "@/lib/format";
 import { cn } from "@/shared/utils/cn";
 import { EmptyState } from "@/components/sltt/empty-state";
@@ -21,6 +21,9 @@ const SOURCE_LABEL: Record<OperationComptable["source"], string> = {
   saisie: "Saisie manuelle",
   import_excel: "Import Excel",
   import_ocr: "Import OCR",
+  auto_dossier: "Auto · dossier",
+  auto_facture: "Auto · facture",
+  auto_depense: "Auto · dépense",
 };
 
 interface OperationsTableProps {
@@ -84,7 +87,7 @@ const OperationMobileCard = memo(function OperationMobileCard({
           <Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge>
           {o.modePaiement && <Badge variant="secondary" className="text-xs font-normal">{o.modePaiement}</Badge>}
         </div>
-        {canWrite && (
+        {canWrite && isOperationSupprimable(o) && (
           <Button variant="ghost" size="icon" className="size-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40" onClick={() => onDelete(o)} aria-label="Supprimer">
             <Trash2 className="size-4" />
           </Button>
@@ -136,7 +139,7 @@ const OperationTableRow = memo(function OperationTableRow({
       <TableCell className="px-4 py-3.5"><Badge variant="outline" className="text-xs font-normal">{SOURCE_LABEL[o.source]}</Badge></TableCell>
       <TableCell className="px-4 py-3.5">
         <div className="flex items-center justify-end">
-          {canWrite && (
+          {canWrite && isOperationSupprimable(o) && (
             <Button variant="ghost" size="icon" className="size-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40" onClick={() => onDelete(o)} aria-label={`Supprimer l'opération ${o.reference}`} title="Supprimer">
               <Trash2 className="size-4" />
             </Button>

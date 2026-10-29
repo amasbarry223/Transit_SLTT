@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
 import { parsePagination, buildPaginatedResponse } from '../../common/pagination.utils';
+import { synchroniserJournalDossier } from '../comptabilite/journal-posting';
 import { CATEGORIES_DEPENSE, MODES_PAIEMENT, calculerFinancesDossier, toFcfa } from './dossier-finances';
 
 function normalizeVoieTransport(val?: string): 'MARITIME' | 'AERIEN' | 'TERRESTRE' | undefined {
@@ -221,6 +222,9 @@ async function syncLignesEtTotaux(tx: any, dossierId: string, data: any) {
       dateSolde: dernierPaiement ? dernierPaiement.date : null,
     },
   });
+
+  // Journal comptable : règlements et dépenses du dossier (idempotent).
+  await synchroniserJournalDossier(tx, dossierId);
 }
 
 @Injectable()

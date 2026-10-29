@@ -3,9 +3,14 @@ import { getConnectedUserName } from "@/lib/store/connected-user";
 import type {
   ClotureCaisse,
   EntiteComptableType,
+  ModePaiement,
   OperationComptable,
   OperationComptableInput,
+  OperationComptableSource,
+  OperationComptableType,
 } from "@/lib/domain-types";
+import type { RawOperationComptable } from "@/lib/api-types";
+import { logWarn } from "@/shared/logger";
 import type { SLTTState } from "@/lib/store";
 import { AUDIT_ACTION, AUDIT_MODULE } from "@/lib/audit";
 
@@ -24,11 +29,33 @@ export interface ComptabiliteGeneraleSlice {
   cloturesCaisse: ClotureCaisse[];
   operationComptableSeq: number;
   addOperationComptable: (input: OperationComptableInput) => Promise<OperationComptable>;
+  /** Recharge le journal (écritures générées par le serveur après un règlement, une dépense…). Ne lève jamais. */
+  refreshOperationsComptables: () => Promise<void>;
   removeOperationComptable: (id: string) => Promise<void>;
   recordClotureCaisse: (input: RecordClotureCaisseInput) => Promise<ClotureCaisse>;
 }
 
 import { api } from "@/lib/api-client";
+
+export function mapOperationComptable(o: RawOperationComptable): OperationComptable {
+  return {
+    id: o.id,
+    reference: o.reference || "",
+    entiteType: "annexe",
+    annexeId: o.annexeId || undefined,
+    date: o.date || "",
+    clientId: o.clientId || undefined,
+    dossierId: o.dossierId || undefined,
+    clientNom: o.clientNom || "",
+    nature: o.nature || "",
+    type: (o.type || "Entrée") as OperationComptableType,
+    montant: Number(o.montant || 0),
+    modePaiement: (o.modePaiement || "Espèces") as ModePaiement,
+    source: (o.source || "saisie") as OperationComptableSource,
+    importRef: o.importRef || undefined,
+    creePar: o.creePar || undefined,
+  };
+}
 
 export const createComptabiliteGeneraleSlice: StateCreator<
   SLTTState,
@@ -106,6 +133,15 @@ export const createComptabiliteGeneraleSlice: StateCreator<
       { sourceType: "operation_comptable", sourceId: newOperation.id },
     );
     return newOperation;
+  },
+
+  refreshOperationsComptables: async () => {
+    try {
+      const raw = await api.comptabilite.getOperations();
+      if (Array.isArray(raw)) set({ operationsComptables: raw.map(mapOperationComptable) });
+    } catch (error) {
+      logWarn("Rechargement du journal comptable impossible", error);
+    }
   },
 
   removeOperationComptable: async (id) => {

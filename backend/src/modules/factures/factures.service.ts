@@ -5,6 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { ORIGINE, posterEcriture } from '../comptabilite/journal-posting';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
@@ -339,7 +340,7 @@ export class FacturesService {
       });
 
       // Créer la transaction de caisse
-      await tx.transactionCaisse.create({
+      const transaction = await tx.transactionCaisse.create({
         data: {
           caisseId: data.caisseId,
           type: 'ENTREE',
@@ -348,6 +349,20 @@ export class FacturesService {
           factureId: facture.id,
           effectueParId: user.id,
         },
+      });
+
+      // Journal comptable : l'encaissement apparaît dans le journal de l'annexe.
+      await posterEcriture(tx, {
+        origineType: ORIGINE.FACTURE_PAIEMENT,
+        origineId: transaction?.id ?? `${facture.id}:${Date.now()}`,
+        annexeId: facture.annexeId,
+        date: new Date(),
+        type: 'Entrée',
+        montant,
+        nature: `Encaissement facture ${facture.numero}`,
+        clientId: facture.clientId,
+        dossierId: facture.dossierId,
+        clientNom: facture.client?.nom ?? null,
       });
 
       // Mettre à jour le solde de la caisse

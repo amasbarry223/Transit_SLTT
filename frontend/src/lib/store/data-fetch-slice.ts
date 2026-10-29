@@ -6,6 +6,7 @@ import { syncContratStats } from "@/lib/contrat-stats";
 import { syncClientStats } from "@/lib/client-stats";
 import { syncSequencesFromData } from "@/lib/store/sync-sequences";
 import { mapBonLivraison } from "@/lib/store/bons-livraison-slice";
+import { mapOperationComptable } from "@/lib/store/comptabilite-generale-slice";
 import { mapAuditLogFromDb } from "@/lib/audit";
 import { normalizeRole } from "@/lib/permissions";
 import {
@@ -19,9 +20,6 @@ import {
   type TransporteurStatut,
   type ContratStatut,
   type BonMotif,
-  type ModePaiement,
-  type OperationComptableType,
-  type OperationComptableSource,
   type RecuPaiementStatut,
   type Archive,
   type TypeDocument,
@@ -491,23 +489,7 @@ export const createDataFetchSlice: StateCreator<SLTTState, [], [], DataFetchSlic
       }));
 
       const rawOps: RawOperationComptable[] = Array.isArray(operationsRes) ? operationsRes : [];
-      const mappedOps = rawOps.map((o) => ({
-        id: o.id,
-        reference: o.reference || "",
-        entiteType: "annexe" as const,
-        annexeId: o.annexeId || undefined,
-        date: o.date || "",
-        clientId: o.clientId || undefined,
-        dossierId: o.dossierId || undefined,
-        clientNom: o.clientNom || "",
-        nature: o.nature || "",
-        type: (o.type || "Entrée") as OperationComptableType,
-        montant: Number(o.montant || 0),
-        modePaiement: (o.modePaiement || "Espèces") as ModePaiement,
-        source: (o.source || "saisie") as OperationComptableSource,
-        importRef: o.importRef || undefined,
-        creePar: o.creePar || undefined,
-      }));
+      const mappedOps = rawOps.map(mapOperationComptable);
 
       const rawClotures: RawClotureCaisse[] = Array.isArray(cloturesRes) ? cloturesRes : [];
       const mappedClotures = rawClotures.map((c) => ({

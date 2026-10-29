@@ -152,6 +152,15 @@ export class ComptabiliteService {
     if (existing.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
       throw new ForbiddenException('Accès non autorisé à cette opération');
     }
+    // Écriture générée par un événement métier : elle se corrige à la source
+    // (dossier, facture, dépense). Seule exception : écriture de dossier devenue
+    // orpheline (dossier supprimé) que l'on peut retirer à la main.
+    const auto = typeof existing.source === 'string' && existing.source.startsWith('auto_');
+    if (auto && !(existing.source === 'auto_dossier' && !existing.dossierId)) {
+      throw new ConflictException(
+        "Cette écriture est générée automatiquement : modifiez le règlement, la dépense ou la facture à l'origine.",
+      );
+    }
     await this.assertPeriodeOuverte(existing.annexeId, existing.date);
     await this.prisma.operationComptable.delete({ where: { id } });
     return { id };

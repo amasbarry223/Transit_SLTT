@@ -278,6 +278,8 @@ export const createFacturesSlice: StateCreator<SLTTState, [], [], FacturesSlice>
       );
     }
     await api.factures.enregistrerPaiement(id, { montant: effective, caisseId: caisse.id });
+    // L'encaissement est journalisé côté serveur : on recharge le journal.
+    void get().refreshOperationsComptables();
 
     // `fact` a été lu avant les `await` ci-dessus : recalculer `montantPaye`
     // ici sur l'état capturé perdrait un paiement concurrent (double-clic ou

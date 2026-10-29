@@ -168,3 +168,19 @@ describe("recordClotureCaisse — calcul de l’écart et étiquetage de l’ent
     expect(ids).toHaveLength(3);
   });
 });
+
+describe("écritures automatiques", () => {
+  it("mapOperationComptable conserve la source auto_* renvoyée par le serveur", async () => {
+    const { mapOperationComptable } = await import("@/lib/store/comptabilite-generale-slice");
+    const op = mapOperationComptable({ id: "o1", reference: "OPC-9", source: "auto_dossier", montant: 300, type: "Entrée" } as never);
+    expect(op).toMatchObject({ id: "o1", source: "auto_dossier", montant: 300, entiteType: "annexe" });
+  });
+
+  it("isOperationSupprimable : saisie oui, automatique non, sauf écriture de dossier orpheline", async () => {
+    const { isOperationSupprimable } = await import("@/lib/domain-types");
+    expect(isOperationSupprimable({ source: "saisie", dossierId: undefined })).toBe(true);
+    expect(isOperationSupprimable({ source: "auto_facture", dossierId: undefined })).toBe(false);
+    expect(isOperationSupprimable({ source: "auto_dossier", dossierId: "d1" })).toBe(false);
+    expect(isOperationSupprimable({ source: "auto_dossier", dossierId: undefined })).toBe(true);
+  });
+});

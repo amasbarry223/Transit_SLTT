@@ -49,9 +49,10 @@ describe('applySchemaScripts', () => {
       '2026-10-22-bons-livraison-notifications.sql',
       '2026-10-27-dossier-depenses-paiements.sql',
       REPRISE,
+      '2026-10-29-journal-liens.sql',
     ]);
-    // 2 (bons de livraison) + 2 (tables dossier) + 4 (sauvegarde, 2 INSERT de reprise, UPDATE).
-    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(8);
+    // 2 (bons de livraison) + 2 (tables dossier) + 4 (sauvegarde, 2 INSERT de reprise, UPDATE) + 1 (journal_liens).
+    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(9);
   });
 
   it('saute la reprise une fois les anciennes colonnes supprimées (phase 2), sans erreur', async () => {
@@ -65,6 +66,6 @@ describe('applySchemaScripts', () => {
     expect(res.status).toBe('ok');
     expect(res.skipped).toEqual([REPRISE]);
     expect(res.applied).not.toContain(REPRISE);
-    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(4);
+    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(5);
   });
 });

@@ -162,6 +162,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       // transition de statut échoue après rechargement (assertDossierTransition).
       statut,
     });
+    // Le serveur journalise règlements et dépenses du dossier : on recharge le journal.
+    void get().refreshOperationsComptables();
     if (created?.id) {
       newDossier.id = created.id;
       Object.assign(newDossier, montantsServeur(created));
@@ -296,6 +298,8 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
       noConteneur: input.noConteneur,
       conteneurs: input.noConteneur ? [{ numero: input.noConteneur }] : undefined,
     });
+    // Le serveur journalise règlements et dépenses du dossier : on recharge le journal.
+    void get().refreshOperationsComptables();
 
     set((s) => {
       const updatedDossiers = s.dossiers.map((dossier) =>
@@ -428,6 +432,7 @@ export const createDossiersSlice: StateCreator<SLTTState, [], [], DossiersSlice>
           modePaiement ? MODE_TRANSITION[modePaiement] : undefined,
         )
       : await api.dossiers.updateStatut(id, newStatut);
+    if (hasPaiement) void get().refreshOperationsComptables();
 
     const applyPatch = (item: Dossier): Dossier => {
       if (item.id !== id) return item;

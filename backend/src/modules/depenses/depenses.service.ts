@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { ORIGINE, posterEcriture } from '../comptabilite/journal-posting';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CurrentUserType } from '../../auth/auth.types';
 import { buildAnnexeScopeFilter, assertAnnexeAccess } from '../../common/annexe-filter.utils';
@@ -185,7 +186,7 @@ export class DepensesService {
         throw new BadRequestException('Cette dépense vient d’être payée par ailleurs.');
       }
 
-      await tx.transactionCaisse.create({
+      const transaction = await tx.transactionCaisse.create({
         data: {
           caisseId: data.caisseId,
           type: 'SORTIE',
@@ -194,6 +195,19 @@ export class DepensesService {
           depenseId: depense.id,
           effectueParId: user.id,
         },
+      });
+
+      // Journal comptable : le décaissement apparaît dans le journal de l'annexe.
+      await posterEcriture(tx, {
+        origineType: ORIGINE.DEPENSE_PAYEE,
+        origineId: transaction?.id ?? depense.id,
+        annexeId: depense.annexeId,
+        date: new Date(),
+        type: 'Sortie',
+        montant: depense.montant,
+        nature: `Dépense ${depense.numero}${depense.description ? ` — ${depense.description}` : ''}`,
+        dossierId: depense.dossierId,
+        clientNom: (depense as any).fournisseur?.nom ?? null,
       });
 
       const updatedCaisse = await tx.caisse.update({

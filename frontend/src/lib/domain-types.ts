@@ -436,7 +436,24 @@ export interface EntiteComptable {
 
 export type ModePaiement = "Espèces" | "Virement" | "Mobile Money" | "Chèque";
 export type OperationComptableType = "Entrée" | "Sortie";
-export type OperationComptableSource = "saisie" | "import_excel" | "import_ocr";
+/** `auto_*` : écriture générée par le serveur depuis un dossier, une facture ou une dépense (cf. backend journal-posting.ts). */
+export type OperationComptableSource =
+  | "saisie"
+  | "import_excel"
+  | "import_ocr"
+  | "auto_dossier"
+  | "auto_facture"
+  | "auto_depense";
+
+/**
+ * Une écriture automatique se corrige à la source (dossier, facture, dépense),
+ * pas dans le journal. Exception : écriture de dossier devenue orpheline
+ * (dossier supprimé). Même règle que le serveur (deleteOperation).
+ */
+export function isOperationSupprimable(o: Pick<OperationComptable, "source" | "dossierId">): boolean {
+  if (!o.source.startsWith("auto_")) return true;
+  return o.source === "auto_dossier" && !o.dossierId;
+}
 
 export interface OperationComptable {
   id: string;
