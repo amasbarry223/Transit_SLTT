@@ -153,9 +153,34 @@ export class DevisService {
     // au moment de la conversion) : l'éditer après coup désynchronise
     // silencieusement le devis et le dossier qu'il a produit.
     if (current.statut === 'ACCEPTE') {
-      throw new BadRequestException(
-        'Ce devis est déjà accepté et ne peut plus être modifié.',
-      );
+      // Seule exception : le rattachement au dossier créé par la conversion
+      // (devis-slice.ts → convertDevisToDossier exige un devis ACCEPTE puis
+      // enregistre le lien). Sans elle, le lien échouait TOUJOURS : le dossier
+      // était créé, le devis restait convertible et une 2e conversion dupliquait
+      // le dossier.
+      const cles = Object.keys(data).filter((k) => data[k] !== undefined);
+      const rattachementSeul =
+        !!data.dossierId &&
+        cles.every((k) => k === 'dossierId' || (k === 'statut' && data.statut === 'ACCEPTE'));
+      if (!rattachementSeul) {
+        throw new BadRequestException('Ce devis est déjà accepté et ne peut plus être modifié.');
+      }
+      if (current.dossierId) {
+        if (current.dossierId === data.dossierId) return current;
+        throw new ConflictException('Ce devis est déjà rattaché à un dossier.');
+      }
+      const dossier = await this.prisma.dossier.findUnique({
+        where: { id: data.dossierId },
+        select: { clientId: true },
+      });
+      if (!dossier || dossier.clientId !== current.clientId) {
+        throw new BadRequestException("Le dossier n'existe pas ou n'appartient pas au client du devis.");
+      }
+      return this.prisma.devis.update({
+        where: { id: current.id },
+        data: { dossierId: data.dossierId },
+        include: { lignes: true, client: true, annexe: true, port: true },
+      });
     }
     if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
       throw new ForbiddenException('Vous ne pouvez pas rattacher ce devis à cette annexe');
@@ -212,6 +237,10 @@ export class DevisService {
 
   async delete(id: string, user: CurrentUserType) {
     const devis = await this.findOne(id, user);
+    // Un devis converti est l'origine de son dossier : on le garde.
+    if (devis.dossierId) {
+      throw new BadRequestException('Ce devis a été converti en dossier : il ne peut plus être supprimé.');
+    }
     return this.prisma.devis.delete({ where: { id: devis.id } });
   }
 }

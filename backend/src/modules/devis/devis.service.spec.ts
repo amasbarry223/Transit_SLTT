@@ -122,3 +122,44 @@ describe('DevisService.update — matrice de transition de statut', () => {
     ).resolves.toMatchObject({ statut: 'ENVOYE' });
   });
 });
+
+describe('DevisService.update — rattachement après conversion', () => {
+  function prismaConversion(devis: ReturnType<typeof devisRow>, dossierClientId = 'client-1') {
+    return {
+      devis: {
+        findUnique: vi.fn().mockResolvedValue(devis),
+        update: vi.fn().mockImplementation(({ data }: any) => Promise.resolve({ ...devis, ...data })),
+      },
+      dossier: { findUnique: vi.fn().mockResolvedValue({ clientId: dossierClientId }) },
+    } as any;
+  }
+
+  it("autorise le rattachement d'un devis ACCEPTE au dossier créé par la conversion", async () => {
+    const prisma = prismaConversion(devisRow({ statut: 'ACCEPTE', clientId: 'client-1' }));
+    const res: any = await new DevisService(prisma, {} as any).update('devis-1', admin(), { statut: 'ACCEPTE', dossierId: 'd1' });
+    expect(res.dossierId).toBe('d1');
+    expect(prisma.devis.update).toHaveBeenCalledWith(expect.objectContaining({ data: { dossierId: 'd1' } }));
+  });
+
+  it("refuse un rattachement à un second dossier ou au dossier d'un autre client", async () => {
+    const dejaLie = prismaConversion(devisRow({ statut: 'ACCEPTE', clientId: 'client-1', dossierId: 'd1' }));
+    await expect(new DevisService(dejaLie, {} as any).update('devis-1', admin(), { dossierId: 'd2' })).rejects.toThrow();
+    const autreClient = prismaConversion(devisRow({ statut: 'ACCEPTE', clientId: 'client-1' }), 'client-2');
+    await expect(new DevisService(autreClient, {} as any).update('devis-1', admin(), { dossierId: 'd1' })).rejects.toThrow(BadRequestException);
+  });
+
+  it('refuse toujours une autre modification mêlée au rattachement', async () => {
+    const prisma = prismaConversion(devisRow({ statut: 'ACCEPTE', clientId: 'client-1' }));
+    await expect(
+      new DevisService(prisma, {} as any).update('devis-1', admin(), { dossierId: 'd1', notes: 'x' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+});
+
+describe('DevisService.delete', () => {
+  it('refuse de supprimer un devis déjà converti en dossier', async () => {
+    const prisma = { devis: { findUnique: vi.fn().mockResolvedValue(devisRow({ dossierId: 'd1' })), delete: vi.fn() } } as any;
+    await expect(new DevisService(prisma, {} as any).delete('devis-1', admin())).rejects.toThrow(BadRequestException);
+    expect(prisma.devis.delete).not.toHaveBeenCalled();
+  });
+});

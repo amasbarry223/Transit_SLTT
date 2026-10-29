@@ -176,7 +176,7 @@ export function DevisListTable({
                               <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
                             </DropdownMenuItem>
                           )}
-                          {canWrite && (
+                          {canWrite && !d.dossierId && (
                             <DropdownMenuItem
                               className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
                               onClick={() => setDeleteTarget(d)}
@@ -340,7 +340,7 @@ export function DevisListTable({
                                     <FolderKanban className="mr-2 size-3.5" /> Convertir en dossier
                                   </DropdownMenuItem>
                                 )}
-                                {canWrite && (
+                                {canWrite && !d.dossierId && (
                                   <DropdownMenuItem
                                     className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-950/40 focus:text-red-700"
                                     onClick={() => setDeleteTarget(d)}

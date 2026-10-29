@@ -109,8 +109,9 @@ export function DevisSummaryHeader({
                   ) : null}
                   {/* Le choix du statut se fait via le bouton "étape suivante" ci-dessus et le
                       stepper du Pipeline (colonne de droite) — ce menu ne garde que
-                      l'action "Supprimer", qui n'existe nulle part ailleurs sur l'écran. */}
-                  {canWrite && (
+                      l'action "Supprimer", qui n'existe nulle part ailleurs sur l'écran.
+                      Un devis converti en dossier ne se supprime plus (refusé par le serveur). */}
+                  {canWrite && !devis.dossierId && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground">
