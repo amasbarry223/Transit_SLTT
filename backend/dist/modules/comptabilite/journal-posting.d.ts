@@ -3,6 +3,7 @@ export declare const ORIGINE: {
     readonly DOSSIER_DEPENSE: "DOSSIER_DEPENSE";
     readonly FACTURE_PAIEMENT: "FACTURE_PAIEMENT";
     readonly DEPENSE_PAYEE: "DEPENSE_PAYEE";
+    readonly BON_CAISSE: "BON_CAISSE";
     readonly CONTREPASSATION: "CONTREPASSATION";
 };
 export type OrigineType = (typeof ORIGINE)[keyof typeof ORIGINE];
@@ -28,3 +29,4 @@ export interface EcritureAuto {
 export declare function posterEcriture(tx: any, e: EcritureAuto): Promise<void>;
 export declare function retirerEcriture(tx: any, origineType: OrigineType, origineId: string): Promise<void>;
 export declare function synchroniserJournalDossier(tx: any, dossierId: string): Promise<void>;
+export declare function synchroniserJournalBonCaisse(tx: any, bonId: string): Promise<void>;

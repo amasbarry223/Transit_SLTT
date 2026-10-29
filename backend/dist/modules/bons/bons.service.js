@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BonsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const journal_posting_1 = require("../comptabilite/journal-posting");
 let BonsService = class BonsService {
     prisma;
     constructor(prisma) {
@@ -273,7 +274,7 @@ let BonsService = class BonsService {
                             marchandise: bon.marchandise,
                             quantite: bon.quantite,
                             unite: bon.unite,
-                            responsable: 'Magasinier',
+                            responsable: user.nom,
                             bonRef: bon.reference,
                             motif: bon.motif,
                         },
@@ -363,52 +364,29 @@ let BonsService = class BonsService {
             montant: this.toPositiveMontant(l.montant),
         }));
         const montantTotal = lignes.reduce((s, l) => s + l.montant, 0);
-        return this.prisma.bonSortieCaisse.create({
-            data: {
-                reference: data.reference,
-                date,
-                annexeId: data.annexeId,
-                montantTotal,
-                creePar: user.nom,
-                lignes: { create: lignes },
-            },
-            include: { annexe: true, lignes: true },
-        });
-    }
-    async updateBonCaisse(id, user, data) {
-        let existing = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
-        if (!existing && data.reference) {
-            existing = await this.prisma.bonSortieCaisse.findUnique({ where: { reference: data.reference } });
-        }
-        if (!existing) {
-            existing = await this.prisma.bonSortieCaisse.findFirst({ where: { reference: id } });
-        }
-        if (!existing) {
-            const annexeId = data.annexeId || user.annexeIds[0];
-            if (annexeId && !this.isUserAdmin(user) && !user.annexeIds.includes(annexeId)) {
-                throw new common_1.ForbiddenException('Vous ne pouvez pas rattacher ce bon de caisse à cette annexe');
-            }
-            const date = data.date || new Date().toISOString().slice(0, 10);
-            const lignes = (data.lignes || []).map((l) => ({
-                date: l.date || date,
-                beneficiaire: l.beneficiaire,
-                motif: l.motif,
-                montant: this.toPositiveMontant(l.montant),
-            }));
-            const montantTotal = lignes.reduce((s, l) => s + l.montant, 0);
-            return this.prisma.bonSortieCaisse.create({
+        return this.prisma.$transaction(async (tx) => {
+            const bon = await tx.bonSortieCaisse.create({
                 data: {
-                    id,
-                    reference: data.reference || `N°${Date.now()}`,
+                    reference: data.reference,
                     date,
-                    annexeId,
+                    annexeId: data.annexeId,
                     montantTotal,
                     creePar: user.nom,
                     lignes: { create: lignes },
                 },
                 include: { annexe: true, lignes: true },
             });
+            await (0, journal_posting_1.synchroniserJournalBonCaisse)(tx, bon.id);
+            return bon;
+        });
+    }
+    async updateBonCaisse(id, user, data) {
+        let existing = await this.prisma.bonSortieCaisse.findUnique({ where: { id } });
+        if (!existing) {
+            existing = await this.prisma.bonSortieCaisse.findFirst({ where: { reference: id } });
         }
+        if (!existing)
+            throw new common_1.NotFoundException(`Bon de caisse ${id} non trouvé`);
         const targetId = existing.id;
         if (!this.isUserAdmin(user) && !user.annexeIds.includes(existing.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de caisse');
@@ -432,7 +410,7 @@ let BonsService = class BonsService {
             if (hasLignes) {
                 await tx.ligneBonSortieCaisse.deleteMany({ where: { bonSortieCaisseId: targetId } });
             }
-            return tx.bonSortieCaisse.update({
+            const bon = await tx.bonSortieCaisse.update({
                 where: { id: targetId },
                 data: {
                     date,
@@ -441,6 +419,8 @@ let BonsService = class BonsService {
                 },
                 include: { annexe: true, lignes: true },
             });
+            await (0, journal_posting_1.synchroniserJournalBonCaisse)(tx, targetId);
+            return bon;
         });
     }
     async deleteBonCaisse(id, user) {
@@ -454,8 +434,12 @@ let BonsService = class BonsService {
         if (!this.isUserAdmin(user) && !user.annexeIds.includes(existing.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à ce bon de caisse');
         }
-        await this.prisma.bonSortieCaisse.delete({ where: { id: existing.id } });
-        return { id: existing.id };
+        const targetId = existing.id;
+        await this.prisma.$transaction(async (tx) => {
+            await tx.bonSortieCaisse.delete({ where: { id: targetId } });
+            await (0, journal_posting_1.synchroniserJournalBonCaisse)(tx, targetId);
+        });
+        return { id: targetId };
     }
 };
 exports.BonsService = BonsService;

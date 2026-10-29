@@ -1,6 +1,7 @@
 import { ContratsService } from './contrats.service';
 import { CreateContratDto } from './dto/create-contrat.dto';
 import { UpdateContratDto } from './dto/update-contrat.dto';
+import { CreatePrestationDto, UpdatePrestationDto } from './dto/prestation.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
 export declare class ContratsController {
     private readonly contratsService;
@@ -15,6 +16,20 @@ export declare class ContratsController {
             id: string;
             nom: string;
         };
+        prestations: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            statut: string;
+            creePar: string | null;
+            montant: number | null;
+            description: string | null;
+            datePrevue: string | null;
+            contratId: string;
+            libelle: string;
+            dateRealisation: string | null;
+            facturee: boolean;
+        }[];
     } & {
         id: string;
         createdAt: Date;
@@ -194,5 +209,36 @@ export declare class ContratsController {
         objet: string;
         dateDebut: Date;
         dateFin: Date | null;
+    }>;
+    addPrestation(id: string, user: CurrentUserType, body: CreatePrestationDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        statut: string;
+        creePar: string | null;
+        montant: number | null;
+        description: string | null;
+        datePrevue: string | null;
+        contratId: string;
+        libelle: string;
+        dateRealisation: string | null;
+        facturee: boolean;
+    }>;
+    updatePrestation(id: string, prestationId: string, user: CurrentUserType, body: UpdatePrestationDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        statut: string;
+        creePar: string | null;
+        montant: number | null;
+        description: string | null;
+        datePrevue: string | null;
+        contratId: string;
+        libelle: string;
+        dateRealisation: string | null;
+        facturee: boolean;
+    }>;
+    removePrestation(id: string, prestationId: string, user: CurrentUserType): Promise<{
+        id: string;
     }>;
 }

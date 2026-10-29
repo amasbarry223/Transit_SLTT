@@ -70,6 +70,13 @@ let StockService = class StockService {
         }
         return n;
     }
+    toNonNegativeMontant(value, libelle) {
+        const n = Number(value || 0);
+        if (!Number.isFinite(n) || n < 0) {
+            throw new common_1.BadRequestException(`${libelle} ne peut pas être négatif.`);
+        }
+        return n;
+    }
     async createItem(user, data) {
         if (user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException("Vous ne pouvez pas créer d'article pour cette annexe");
@@ -84,35 +91,57 @@ let StockService = class StockService {
                 seuil: Number(data.seuil || 0),
                 depositaire: data.depositaire || null,
                 commercial: data.commercial || null,
-                sommePayee: Number(data.sommePayee || 0),
-                resteAPayer: Number(data.resteAPayer || 0),
+                sommePayee: this.toNonNegativeMontant(data.sommePayee, 'La somme payée'),
+                resteAPayer: this.toNonNegativeMontant(data.resteAPayer, 'Le reste à payer'),
                 date: data.date || new Date().toISOString().slice(0, 10),
             },
             include: { annexe: true, client: true },
         });
     }
     async updateItem(id, user, data) {
-        await this.findOneItem(id, user);
+        const item = await this.findOneItem(id, user);
         if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException('Vous ne pouvez pas rattacher cet article à cette annexe');
         }
         const updateData = { ...data };
-        if (data.quantite !== undefined)
-            updateData.quantite = this.toNonNegativeQuantite(data.quantite);
+        delete updateData.quantite;
         if (data.seuil !== undefined)
             updateData.seuil = Number(data.seuil);
         if (data.sommePayee !== undefined)
-            updateData.sommePayee = Number(data.sommePayee);
+            updateData.sommePayee = this.toNonNegativeMontant(data.sommePayee, 'La somme payée');
         if (data.resteAPayer !== undefined)
-            updateData.resteAPayer = Number(data.resteAPayer);
-        return this.prisma.stockItem.update({
-            where: { id },
-            data: updateData,
-            include: { annexe: true, client: true },
+            updateData.resteAPayer = this.toNonNegativeMontant(data.resteAPayer, 'Le reste à payer');
+        const nouvelleQuantite = data.quantite !== undefined ? this.toNonNegativeQuantite(data.quantite) : item.quantite;
+        const delta = nouvelleQuantite - item.quantite;
+        return this.prisma.$transaction(async (tx) => {
+            if (delta !== 0) {
+                await tx.stockItem.update({ where: { id }, data: { quantite: { increment: delta } } });
+                await tx.mouvementStock.create({
+                    data: {
+                        stockId: id,
+                        annexeId: data.annexeId ?? item.annexeId,
+                        date: new Date().toISOString().slice(0, 10),
+                        type: delta > 0 ? 'Entrée' : 'Sortie',
+                        marchandise: data.marchandise ?? item.marchandise,
+                        quantite: Math.abs(delta),
+                        unite: data.unite ?? item.unite,
+                        responsable: user.nom,
+                        motif: 'Ajustement manuel de la quantité (fiche article)',
+                    },
+                });
+            }
+            return tx.stockItem.update({
+                where: { id },
+                data: updateData,
+                include: { annexe: true, client: true },
+            });
         });
     }
     async deleteItem(id, user) {
-        await this.findOneItem(id, user);
+        const item = await this.findOneItem(id, user);
+        if (item.quantite > 0) {
+            throw new common_1.BadRequestException(`Impossible de supprimer un article encore en stock (${item.quantite} ${item.unite}). Enregistrez d'abord sa sortie.`);
+        }
         return this.prisma.$transaction(async (tx) => {
             await tx.bonSortie.updateMany({
                 where: { stockId: id },
@@ -148,6 +177,12 @@ let StockService = class StockService {
         const quantite = Number(data.quantite);
         if (!Number.isFinite(quantite) || quantite <= 0) {
             throw new common_1.BadRequestException('La quantité du mouvement doit être supérieure à 0');
+        }
+        if (data.stockId) {
+            const stock = await this.prisma.stockItem.findUnique({ where: { id: data.stockId }, select: { annexeId: true } });
+            if (stock && stock.annexeId !== data.annexeId) {
+                throw new common_1.BadRequestException("L'article de stock n'appartient pas à l'annexe du mouvement.");
+            }
         }
         return this.prisma.$transaction(async (tx) => {
             const mouvement = await tx.mouvementStock.create({

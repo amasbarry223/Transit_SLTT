@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const contrats_service_1 = require("./contrats.service");
 const create_contrat_dto_1 = require("./dto/create-contrat.dto");
 const update_contrat_dto_1 = require("./dto/update-contrat.dto");
+const prestation_dto_1 = require("./dto/prestation.dto");
 const annexe_guard_1 = require("../../auth/guards/annexe.guard");
 const decorators_1 = require("../../shared/decorators");
 let ContratsController = class ContratsController {
@@ -38,6 +39,15 @@ let ContratsController = class ContratsController {
     }
     remove(id, user) {
         return this.contratsService.delete(id, user);
+    }
+    addPrestation(id, user, body) {
+        return this.contratsService.addPrestation(id, user, body);
+    }
+    updatePrestation(id, prestationId, user, body) {
+        return this.contratsService.updatePrestation(id, prestationId, user, body);
+    }
+    removePrestation(id, prestationId, user) {
+        return this.contratsService.removePrestation(id, prestationId, user);
     }
 };
 exports.ContratsController = ContratsController;
@@ -89,6 +99,37 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ContratsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/prestations'),
+    (0, decorators_1.RequirePermission)('contrats.modifier'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, decorators_1.CurrentUser)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, prestation_dto_1.CreatePrestationDto]),
+    __metadata("design:returntype", void 0)
+], ContratsController.prototype, "addPrestation", null);
+__decorate([
+    (0, common_1.Patch)(':id/prestations/:prestationId'),
+    (0, decorators_1.RequirePermission)('contrats.modifier'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('prestationId')),
+    __param(2, (0, decorators_1.CurrentUser)()),
+    __param(3, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, prestation_dto_1.UpdatePrestationDto]),
+    __metadata("design:returntype", void 0)
+], ContratsController.prototype, "updatePrestation", null);
+__decorate([
+    (0, common_1.Delete)(':id/prestations/:prestationId'),
+    (0, decorators_1.RequirePermission)('contrats.modifier'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('prestationId')),
+    __param(2, (0, decorators_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], ContratsController.prototype, "removePrestation", null);
 exports.ContratsController = ContratsController = __decorate([
     (0, common_1.Controller)('contrats'),
     __metadata("design:paramtypes", [contrats_service_1.ContratsService])

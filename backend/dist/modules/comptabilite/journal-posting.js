@@ -8,6 +8,7 @@ exports.nextReference = nextReference;
 exports.posterEcriture = posterEcriture;
 exports.retirerEcriture = retirerEcriture;
 exports.synchroniserJournalDossier = synchroniserJournalDossier;
+exports.synchroniserJournalBonCaisse = synchroniserJournalBonCaisse;
 const common_1 = require("@nestjs/common");
 const logger = new common_1.Logger('JournalPosting');
 exports.ORIGINE = {
@@ -15,6 +16,7 @@ exports.ORIGINE = {
     DOSSIER_DEPENSE: 'DOSSIER_DEPENSE',
     FACTURE_PAIEMENT: 'FACTURE_PAIEMENT',
     DEPENSE_PAYEE: 'DEPENSE_PAYEE',
+    BON_CAISSE: 'BON_CAISSE',
     CONTREPASSATION: 'CONTREPASSATION',
 };
 exports.SOURCE_AUTO = {
@@ -22,6 +24,7 @@ exports.SOURCE_AUTO = {
     DOSSIER_DEPENSE: 'auto_dossier',
     FACTURE_PAIEMENT: 'auto_facture',
     DEPENSE_PAYEE: 'auto_depense',
+    BON_CAISSE: 'auto_caisse',
     CONTREPASSATION: 'contrepassation',
 };
 const BASCULE_CLE = 'comptabilite.journal_bascule';
@@ -205,6 +208,44 @@ async function synchroniserJournalDossier(tx, dossierId) {
     }
     catch (err) {
         logger.warn(`Synchronisation du journal ignorée (dossier ${dossierId}) : ${err.message}`);
+    }
+}
+async function synchroniserJournalBonCaisse(tx, bonId) {
+    try {
+        const bascule = await getBascule(tx);
+        const bon = await tx.bonSortieCaisse.findUnique({
+            where: { id: bonId },
+            include: { lignes: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } },
+        });
+        const prefixe = `${bonId}#`;
+        const vivants = new Set();
+        if (bon && new Date(bon.createdAt) >= bascule) {
+            for (const [rang, l] of bon.lignes.entries()) {
+                const origineId = `${prefixe}${rang}`;
+                vivants.add(origineId);
+                await posterEcriture(tx, {
+                    origineType: exports.ORIGINE.BON_CAISSE,
+                    origineId,
+                    annexeId: bon.annexeId,
+                    date: l.date || bon.date,
+                    type: 'Sortie',
+                    montant: Number(l.montant) || 0,
+                    nature: `Bon de caisse ${bon.reference} — ${l.motif}`,
+                    clientNom: l.beneficiaire,
+                });
+            }
+        }
+        const liens = await tx.journalLien.findMany({
+            where: { origineType: exports.ORIGINE.BON_CAISSE, origineId: { startsWith: prefixe } },
+            select: { origineId: true },
+        });
+        for (const l of liens) {
+            if (!vivants.has(l.origineId))
+                await retirerEcriture(tx, exports.ORIGINE.BON_CAISSE, l.origineId);
+        }
+    }
+    catch (err) {
+        logger.warn(`Synchronisation du journal ignorée (bon de caisse ${bonId}) : ${err.message}`);
     }
 }
 //# sourceMappingURL=journal-posting.js.map

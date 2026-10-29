@@ -148,57 +148,7 @@ export declare class StockController {
         sommePayee: number;
         resteAPayer: number;
     }>;
-    updateItem(id: string, user: CurrentUserType, body: UpdateStockItemDto): Promise<{
-        annexe: {
-            id: string;
-            email: string | null;
-            nom: string;
-            telephone: string | null;
-            actif: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            code: string;
-            adresse: string | null;
-            ville: string | null;
-            pays: string;
-            rccm: string | null;
-            nif: string | null;
-            estSiege: boolean;
-        };
-        client: {
-            id: string;
-            email: string | null;
-            nom: string;
-            telephone: string | null;
-            actif: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            annexeId: string | null;
-            code: string;
-            adresse: string | null;
-            ville: string | null;
-            pays: string | null;
-            rccm: string | null;
-            nif: string | null;
-            type: import(".prisma/client").$Enums.TypeClient;
-            notes: string | null;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        annexeId: string;
-        clientId: string | null;
-        marchandise: string;
-        date: string;
-        quantite: number;
-        unite: string;
-        seuil: number;
-        depositaire: string | null;
-        commercial: string | null;
-        sommePayee: number;
-        resteAPayer: number;
-    }>;
+    updateItem(id: string, user: CurrentUserType, body: UpdateStockItemDto): Promise<any>;
     deleteItem(id: string, user: CurrentUserType): Promise<any>;
     findAllMouvements(user: CurrentUserType, annexeId?: string, stockId?: string): Promise<({
         annexe: {

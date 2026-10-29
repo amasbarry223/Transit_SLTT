@@ -735,12 +735,34 @@ model Contrat {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  annexe Annexe @relation(fields: [annexeId], references: [id])
-  client Client @relation(fields: [clientId], references: [id])
+  annexe      Annexe               @relation(fields: [annexeId], references: [id])
+  client      Client               @relation(fields: [clientId], references: [id])
+  prestations ContratPrestation[]
 
   @@index([annexeId])
   @@index([clientId])
   @@map("contrats")
+}
+
+// Prestations d'un contrat (avant : état 100 % navigateur, perdu au rechargement).
+model ContratPrestation {
+  id              String   @id @default(uuid())
+  contratId       String   @map("contrat_id")
+  libelle         String
+  description     String?
+  montant         Float?
+  statut          String   @default("Prévue")
+  datePrevue      String?  @map("date_prevue")
+  dateRealisation String?  @map("date_realisation")
+  facturee        Boolean  @default(false)
+  creePar         String?  @map("cree_par")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  contrat Contrat @relation(fields: [contratId], references: [id], onDelete: Cascade)
+
+  @@index([contratId])
+  @@map("contrat_prestations")
 }
 
 // -----------------------------------------------------------------------------

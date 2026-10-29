@@ -4,6 +4,7 @@ export declare class FacturesService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     private getDefaultTauxTva;
+    private assertDossierCompatible;
     findAll(user: CurrentUserType, query: {
         search?: string;
         statut?: any;

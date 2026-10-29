@@ -137,42 +137,7 @@ export declare class BonsController {
         reference: string;
         montantTotal: number;
     })[]>;
-    createBonCaisse(user: CurrentUserType, body: CreateBonCaisseDto): Promise<{
-        annexe: {
-            id: string;
-            email: string | null;
-            nom: string;
-            telephone: string | null;
-            actif: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            code: string;
-            adresse: string | null;
-            ville: string | null;
-            pays: string;
-            rccm: string | null;
-            nif: string | null;
-            estSiege: boolean;
-        };
-        lignes: {
-            id: string;
-            createdAt: Date;
-            date: string;
-            montant: number;
-            motif: string;
-            bonSortieCaisseId: string;
-            beneficiaire: string;
-        }[];
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        annexeId: string;
-        creePar: string | null;
-        date: string;
-        reference: string;
-        montantTotal: number;
-    }>;
+    createBonCaisse(user: CurrentUserType, body: CreateBonCaisseDto): Promise<any>;
     updateBonCaisse(id: string, user: CurrentUserType, body: UpdateBonCaisseDto): Promise<any>;
     deleteBonCaisse(id: string, user: CurrentUserType): Promise<{
         id: string;

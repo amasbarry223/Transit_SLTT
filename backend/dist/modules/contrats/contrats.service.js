@@ -63,6 +63,7 @@ let ContratsService = class ContratsService {
             include: {
                 annexe: { select: { id: true, nom: true, code: true } },
                 client: { select: { id: true, nom: true } },
+                prestations: { orderBy: { createdAt: 'asc' } },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -102,6 +103,13 @@ let ContratsService = class ContratsService {
         }
         const dateDebut = data.dateDebut ? new Date(data.dateDebut) : new Date();
         const dateFin = data.dateFin ? new Date(data.dateFin) : undefined;
+        if (dateFin && dateFin < dateDebut) {
+            throw new common_1.BadRequestException('La date de fin du contrat est antérieure à sa date de début.');
+        }
+        const statut = data.statut || 'Actif';
+        if (!(statut in ContratsService_1.STATUT_TRANSITIONS)) {
+            throw new common_1.BadRequestException(`Statut de contrat inconnu : ${statut}.`);
+        }
         return this.prisma.contrat.create({
             data: {
                 reference: data.reference,
@@ -111,7 +119,7 @@ let ContratsService = class ContratsService {
                 dateDebut,
                 dateFin,
                 montant: toNonNegativeMontant(data.montant),
-                statut: data.statut || 'Actif',
+                statut,
                 notes: data.notes || undefined,
                 creePar: user.nom,
             },
@@ -156,6 +164,11 @@ let ContratsService = class ContratsService {
             updateData.statut = data.statut;
         if (data.notes !== undefined)
             updateData.notes = data.notes;
+        const debut = updateData.dateDebut ?? contrat.dateDebut;
+        const fin = updateData.dateFin !== undefined ? updateData.dateFin : contrat.dateFin;
+        if (fin && debut && fin < debut) {
+            throw new common_1.BadRequestException('La date de fin du contrat est antérieure à sa date de début.');
+        }
         return this.prisma.contrat.update({
             where: { id },
             data: updateData,
@@ -167,7 +180,52 @@ let ContratsService = class ContratsService {
     }
     async delete(id, user) {
         const contrat = await this.findOne(id, user);
+        const nbPrestations = await this.prisma.contratPrestation.count({ where: { contratId: contrat.id } });
+        if (nbPrestations > 0) {
+            throw new common_1.BadRequestException(`Impossible de supprimer ce contrat : il comporte ${nbPrestations} prestation(s). Supprimez-les d'abord.`);
+        }
         return this.prisma.contrat.delete({ where: { id: contrat.id } });
+    }
+    async addPrestation(contratId, user, data) {
+        const contrat = await this.findOne(contratId, user);
+        return this.prisma.contratPrestation.create({
+            data: {
+                contratId: contrat.id,
+                libelle: String(data.libelle || '').trim() || 'Prestation',
+                description: data.description || null,
+                montant: data.montant ?? null,
+                statut: data.statut || 'Prévue',
+                datePrevue: data.datePrevue || null,
+                dateRealisation: data.dateRealisation || null,
+                creePar: user.nom,
+            },
+        });
+    }
+    async findPrestation(contratId, prestationId, user) {
+        const contrat = await this.findOne(contratId, user);
+        const prestation = await this.prisma.contratPrestation.findFirst({
+            where: { id: prestationId, contratId: contrat.id },
+        });
+        if (!prestation)
+            throw new common_1.NotFoundException(`Prestation ${prestationId} non trouvée`);
+        return prestation;
+    }
+    async updatePrestation(contratId, prestationId, user, data) {
+        const prestation = await this.findPrestation(contratId, prestationId, user);
+        const patch = {};
+        for (const k of ['libelle', 'description', 'montant', 'statut', 'datePrevue', 'dateRealisation', 'facturee']) {
+            if (data[k] !== undefined)
+                patch[k] = data[k];
+        }
+        return this.prisma.contratPrestation.update({ where: { id: prestation.id }, data: patch });
+    }
+    async removePrestation(contratId, prestationId, user) {
+        const prestation = await this.findPrestation(contratId, prestationId, user);
+        if (prestation.facturee) {
+            throw new common_1.BadRequestException('Une prestation déjà facturée ne peut pas être supprimée.');
+        }
+        await this.prisma.contratPrestation.delete({ where: { id: prestation.id } });
+        return { id: prestation.id };
     }
 };
 exports.ContratsService = ContratsService;

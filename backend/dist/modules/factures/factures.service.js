@@ -30,6 +30,22 @@ let FacturesService = class FacturesService {
         const parsed = setting ? Number(setting.valeur) : NaN;
         return Number.isFinite(parsed) ? parsed : 18;
     }
+    async assertDossierCompatible(dossierId, clientId, annexeId) {
+        if (!dossierId)
+            return;
+        const dossier = await this.prisma.dossier.findUnique({
+            where: { id: dossierId },
+            select: { clientId: true, annexeId: true },
+        });
+        if (!dossier)
+            throw new common_1.BadRequestException('Le dossier lié à la facture est introuvable.');
+        if (dossier.clientId !== clientId) {
+            throw new common_1.BadRequestException("Le dossier lié appartient à un autre client que celui de la facture.");
+        }
+        if (dossier.annexeId !== annexeId) {
+            throw new common_1.BadRequestException("Le dossier lié appartient à une autre annexe que celle de la facture.");
+        }
+    }
     async findAll(user, query) {
         const { page, limit, skip } = (0, pagination_utils_1.parsePagination)(query, 20);
         (0, annexe_filter_utils_1.assertAnnexeAccess)(user, query.annexeId, 'cette annexe');
@@ -88,6 +104,7 @@ let FacturesService = class FacturesService {
         if (existing)
             throw new common_1.ConflictException(`Le numéro de facture ${data.numero} existe déjà`);
         const { lignes, montantPaye: _mp, montantHt: _mht, montantTva: _mtva, montantTtc: _mttc, statut: _st, creeParId: _cp, id: _id, createdAt: _ca, updatedAt: _ua, ...factureData } = data;
+        await this.assertDossierCompatible(factureData.dossierId, factureData.clientId, factureData.annexeId);
         const { montantHt, tauxTva, montantTva, montantTtc, lignesFormatted } = this.computeTotals(lignes, factureData.tauxTva, await this.getDefaultTauxTva());
         const dateEmission = factureData.dateEmission ? new Date(factureData.dateEmission) : new Date();
         const dateEcheance = factureData.dateEcheance ? new Date(factureData.dateEcheance) : undefined;
@@ -135,6 +152,10 @@ let FacturesService = class FacturesService {
         if (facture.statut === 'ANNULEE') {
             throw new common_1.BadRequestException('Une facture annulée ne peut plus être modifiée.');
         }
+        const has = (k) => Object.prototype.hasOwnProperty.call(data, k);
+        const clientId = data.clientId ?? facture.clientId;
+        const dossierId = has('dossierId') ? data.dossierId || null : facture.dossierId;
+        await this.assertDossierCompatible(dossierId, clientId, facture.annexeId);
         const hasLignes = Array.isArray(data.lignes);
         const totals = hasLignes
             ? this.computeTotals(data.lignes, data.tauxTva, await this.getDefaultTauxTva())
@@ -146,11 +167,15 @@ let FacturesService = class FacturesService {
             return tx.facture.update({
                 where: { id },
                 data: {
-                    clientId: data.clientId ?? facture.clientId,
-                    dossierId: data.dossierId ?? null,
+                    clientId,
+                    dossierId,
                     dateEmission: data.dateEmission ? new Date(data.dateEmission) : facture.dateEmission,
-                    dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : null,
-                    notes: data.notes ?? null,
+                    dateEcheance: has('dateEcheance')
+                        ? data.dateEcheance
+                            ? new Date(data.dateEcheance)
+                            : null
+                        : facture.dateEcheance,
+                    notes: has('notes') ? data.notes || null : facture.notes,
                     ...(totals
                         ? {
                             montantHt: totals.montantHt,
@@ -169,8 +194,8 @@ let FacturesService = class FacturesService {
         BROUILLON: ['ENVOYEE', 'ANNULEE'],
         ENVOYEE: ['ANNULEE', 'BROUILLON'],
         RETARD: ['ANNULEE'],
-        PARTIELLEMENT_PAYEE: ['ANNULEE'],
-        PAYEE: ['ANNULEE'],
+        PARTIELLEMENT_PAYEE: [],
+        PAYEE: [],
         ANNULEE: [],
     };
     static FR_TO_PRISMA_STATUT = {
@@ -189,6 +214,9 @@ let FacturesService = class FacturesService {
         const allowed = FacturesService_1.STATUT_TRANSITIONS[facture.statut] ?? [];
         if (facture.statut !== target && !allowed.includes(target)) {
             throw new common_1.BadRequestException(`Transition de statut interdite : ${facture.statut} → ${target}.`);
+        }
+        if (target === 'ANNULEE' && facture.montantPaye > 0) {
+            throw new common_1.BadRequestException("Une facture déjà encaissée ne peut pas être annulée : enregistrez d'abord le remboursement.");
         }
         if (target === 'BROUILLON' && facture.montantPaye > 0) {
             throw new common_1.BadRequestException('Une facture déjà encaissée ne peut pas repasser en brouillon.');

@@ -19,6 +19,20 @@ export declare class ContratsService {
             id: string;
             nom: string;
         };
+        prestations: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            statut: string;
+            creePar: string | null;
+            montant: number | null;
+            description: string | null;
+            datePrevue: string | null;
+            contratId: string;
+            libelle: string;
+            dateRealisation: string | null;
+            facturee: boolean;
+        }[];
     } & {
         id: string;
         createdAt: Date;
@@ -198,5 +212,37 @@ export declare class ContratsService {
         objet: string;
         dateDebut: Date;
         dateFin: Date | null;
+    }>;
+    addPrestation(contratId: string, user: CurrentUserType, data: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        statut: string;
+        creePar: string | null;
+        montant: number | null;
+        description: string | null;
+        datePrevue: string | null;
+        contratId: string;
+        libelle: string;
+        dateRealisation: string | null;
+        facturee: boolean;
+    }>;
+    private findPrestation;
+    updatePrestation(contratId: string, prestationId: string, user: CurrentUserType, data: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        statut: string;
+        creePar: string | null;
+        montant: number | null;
+        description: string | null;
+        datePrevue: string | null;
+        contratId: string;
+        libelle: string;
+        dateRealisation: string | null;
+        facturee: boolean;
+    }>;
+    removePrestation(contratId: string, prestationId: string, user: CurrentUserType): Promise<{
+        id: string;
     }>;
 }
