@@ -30,6 +30,7 @@ import {
   refreshCookieMaxAge,
   csrfCookieOptions,
 } from './cookie.config';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 function apiPrefix(): string {
   return process.env.API_PREFIX ?? 'api';
@@ -133,7 +134,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async updateProfile(
     @CurrentUser() user: CurrentUserType,
-    @Body() body: { nom?: string; email?: string },
+    @Body() body: UpdateProfileDto,
   ) {
     return this.authService.updateProfile(user.id, body);
   }
