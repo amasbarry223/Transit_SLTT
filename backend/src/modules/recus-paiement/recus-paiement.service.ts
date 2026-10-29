@@ -221,7 +221,15 @@ export class RecusPaiementService {
   }
 
   async delete(id: string, user: CurrentUserType) {
-    await this.findOne(id, user);
+    const recu = await this.findOne(id, user);
+    // Un reçu payé atteste un encaissement remis au client et fait partie d'un
+    // carnet numéroté : le supprimer effacerait la trace de l'argent reçu et
+    // trouerait la numérotation. Seul un reçu vierge (rien payé) se supprime.
+    if (recu.montantPaye > 0) {
+      throw new BadRequestException(
+        `Le reçu ${recu.reference} atteste un paiement de ${fmtFCFA(recu.montantPaye)} : il ne peut pas être supprimé (corrigez-le si nécessaire).`,
+      );
+    }
     return this.prisma.recuPaiement.delete({ where: { id } });
   }
 }

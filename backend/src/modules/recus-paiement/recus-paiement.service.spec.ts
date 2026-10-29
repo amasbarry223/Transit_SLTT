@@ -138,3 +138,23 @@ describe('RecusPaiementService.create — notification', () => {
     expect(recu.reference).toBe('RECU-0001');
   });
 });
+
+describe('RecusPaiementService.delete', () => {
+  function svc(recu: any) {
+    const prisma: any = { recuPaiement: { findUnique: vi.fn().mockResolvedValue(recu), delete: vi.fn().mockResolvedValue(recu) } };
+    return { prisma, service: new RecusPaiementService(prisma, {} as any) };
+  }
+  const admin = { id: 'a', email: 'a@x', nom: 'A', role: 'ADMIN', permissions: ['*'], annexeIds: [] } as any;
+
+  it('refuse de supprimer un reçu qui atteste un paiement', async () => {
+    const { prisma, service } = svc({ id: 'r1', reference: 'RECU-0001', annexeId: 'a1', montantPaye: 5000 });
+    await expect(service.delete('r1', admin)).rejects.toThrow(/ne peut pas être supprimé/);
+    expect(prisma.recuPaiement.delete).not.toHaveBeenCalled();
+  });
+
+  it('autorise la suppression d’un reçu vierge', async () => {
+    const { prisma, service } = svc({ id: 'r1', reference: 'RECU-0002', annexeId: 'a1', montantPaye: 0 });
+    await service.delete('r1', admin);
+    expect(prisma.recuPaiement.delete).toHaveBeenCalled();
+  });
+});
