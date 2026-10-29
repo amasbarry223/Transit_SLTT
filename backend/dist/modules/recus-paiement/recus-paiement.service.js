@@ -189,7 +189,10 @@ let RecusPaiementService = RecusPaiementService_1 = class RecusPaiementService {
         });
     }
     async delete(id, user) {
-        await this.findOne(id, user);
+        const recu = await this.findOne(id, user);
+        if (recu.montantPaye > 0) {
+            throw new common_1.BadRequestException(`Le reçu ${recu.reference} atteste un paiement de ${fmtFCFA(recu.montantPaye)} : il ne peut pas être supprimé (corrigez-le si nécessaire).`);
+        }
         return this.prisma.recuPaiement.delete({ where: { id } });
     }
 };
