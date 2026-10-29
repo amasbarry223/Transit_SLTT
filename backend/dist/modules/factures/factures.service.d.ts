@@ -289,5 +289,6 @@ export declare class FacturesService {
         montant: number;
         caisseId: string;
         motif?: string;
+        mode?: string;
     }): Promise<any>;
 }

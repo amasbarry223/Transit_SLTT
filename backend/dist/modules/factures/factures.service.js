@@ -236,6 +236,7 @@ let FacturesService = class FacturesService {
         return { id };
     }
     async enregistrerPaiement(id, user, data) {
+        const mode = data.mode || 'ESPECES';
         const facture = await this.findOne(id, user);
         const montant = Number(data.montant);
         if (!Number.isFinite(montant) || montant <= 0) {
@@ -289,7 +290,7 @@ let FacturesService = class FacturesService {
                         dossierId: facture.dossierId,
                         date: new Date(),
                         montant: BigInt(Math.round(montant)),
-                        mode: 'ESPECES',
+                        mode,
                         reference: `Facture ${facture.numero}`,
                     },
                 });
@@ -304,6 +305,7 @@ let FacturesService = class FacturesService {
                     type: 'Entrée',
                     montant,
                     nature: `Encaissement facture ${facture.numero}`,
+                    modePaiement: (0, journal_posting_1.modePaiementJournal)(mode),
                     clientId: facture.clientId,
                     dossierId: null,
                     clientNom: facture.client?.nom ?? null,

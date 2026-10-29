@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const factures_service_1 = require("./factures.service");
 const create_facture_dto_1 = require("./dto/create-facture.dto");
 const update_facture_dto_1 = require("./dto/update-facture.dto");
+const enregistrer_paiement_dto_1 = require("./dto/enregistrer-paiement.dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../../auth/guards/permissions.guard");
 const annexe_guard_1 = require("../../auth/guards/annexe.guard");
@@ -117,7 +118,7 @@ __decorate([
     __param(1, (0, decorators_1.CurrentUser)()),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, Object, enregistrer_paiement_dto_1.EnregistrerPaiementFactureDto]),
     __metadata("design:returntype", Promise)
 ], FacturesController.prototype, "enregistrerPaiement", null);
 exports.FacturesController = FacturesController = __decorate([

@@ -1,6 +1,7 @@
 import { FacturesService } from './factures.service';
 import { CreateFactureDto } from './dto/create-facture.dto';
 import { UpdateFactureDto } from './dto/update-facture.dto';
+import { EnregistrerPaiementFactureDto } from './dto/enregistrer-paiement.dto';
 import type { CurrentUserType } from '../../auth/auth.types';
 export declare class FacturesController {
     private readonly facturesService;
@@ -274,9 +275,5 @@ export declare class FacturesController {
     remove(id: string, user: CurrentUserType): Promise<{
         id: string;
     }>;
-    enregistrerPaiement(id: string, user: CurrentUserType, body: {
-        montant: number;
-        caisseId: string;
-        motif?: string;
-    }): Promise<any>;
+    enregistrerPaiement(id: string, user: CurrentUserType, body: EnregistrerPaiementFactureDto): Promise<any>;
 }
