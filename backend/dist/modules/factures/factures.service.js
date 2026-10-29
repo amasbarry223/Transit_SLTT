@@ -12,6 +12,7 @@ var FacturesService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FacturesService = void 0;
 const common_1 = require("@nestjs/common");
+const journal_posting_1 = require("../comptabilite/journal-posting");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");
 const pagination_utils_1 = require("../../common/pagination.utils");
@@ -243,7 +244,7 @@ let FacturesService = class FacturesService {
                 where: { id },
                 data: { statut },
             });
-            await tx.transactionCaisse.create({
+            const transaction = await tx.transactionCaisse.create({
                 data: {
                     caisseId: data.caisseId,
                     type: 'ENTREE',
@@ -252,6 +253,18 @@ let FacturesService = class FacturesService {
                     factureId: facture.id,
                     effectueParId: user.id,
                 },
+            });
+            await (0, journal_posting_1.posterEcriture)(tx, {
+                origineType: journal_posting_1.ORIGINE.FACTURE_PAIEMENT,
+                origineId: transaction?.id ?? `${facture.id}:${Date.now()}`,
+                annexeId: facture.annexeId,
+                date: new Date(),
+                type: 'Entrée',
+                montant,
+                nature: `Encaissement facture ${facture.numero}`,
+                clientId: facture.clientId,
+                dossierId: facture.dossierId,
+                clientNom: facture.client?.nom ?? null,
             });
             await tx.caisse.update({
                 where: { id: data.caisseId },

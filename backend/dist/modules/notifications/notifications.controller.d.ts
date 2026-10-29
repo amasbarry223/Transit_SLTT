@@ -9,9 +9,9 @@ export declare class NotificationsController {
             createdAt: Date;
             userId: string;
             titre: string;
+            lien: string | null;
             message: string;
             lue: boolean;
-            lien: string | null;
         }[];
         unreadCount: number;
     }>;

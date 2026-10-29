@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");
 const pagination_utils_1 = require("../../common/pagination.utils");
+const journal_posting_1 = require("../comptabilite/journal-posting");
 const dossier_finances_1 = require("./dossier-finances");
 function normalizeVoieTransport(val) {
     if (!val)
@@ -205,6 +206,7 @@ async function syncLignesEtTotaux(tx, dossierId, data) {
             dateSolde: dernierPaiement ? dernierPaiement.date : null,
         },
     });
+    await (0, journal_posting_1.synchroniserJournalDossier)(tx, dossierId);
 }
 let DossiersService = class DossiersService {
     prisma;

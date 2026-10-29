@@ -3,7 +3,7 @@ export declare class CreateClotureDto {
     periodeDebut: string;
     periodeFin: string;
     soldeTheorique?: number;
-    soldeConstate?: number;
+    soldeConstate: number;
     note?: string;
     cloturePar?: string;
     clotureLe?: string;

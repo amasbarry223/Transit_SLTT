@@ -1,0 +1,26 @@
+export declare const ORIGINE: {
+    readonly DOSSIER_PAIEMENT: "DOSSIER_PAIEMENT";
+    readonly DOSSIER_DEPENSE: "DOSSIER_DEPENSE";
+    readonly FACTURE_PAIEMENT: "FACTURE_PAIEMENT";
+    readonly DEPENSE_PAYEE: "DEPENSE_PAYEE";
+};
+export type OrigineType = (typeof ORIGINE)[keyof typeof ORIGINE];
+export declare const SOURCE_AUTO: Record<OrigineType, string>;
+export declare const modePaiementJournal: (mode?: string | null) => string;
+export declare function getBascule(tx: any): Promise<Date>;
+export interface EcritureAuto {
+    origineType: OrigineType;
+    origineId: string;
+    annexeId: string | null;
+    date: Date | string;
+    type: 'Entrée' | 'Sortie';
+    montant: number;
+    nature: string;
+    clientId?: string | null;
+    dossierId?: string | null;
+    clientNom?: string | null;
+    modePaiement?: string;
+}
+export declare function posterEcriture(tx: any, e: EcritureAuto): Promise<void>;
+export declare function retirerEcriture(tx: any, origineType: OrigineType, origineId: string): Promise<void>;
+export declare function synchroniserJournalDossier(tx: any, dossierId: string): Promise<void>;

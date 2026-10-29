@@ -4,6 +4,7 @@ export declare class ComptabiliteService {
     private prisma;
     constructor(prisma: PrismaService);
     private buildAnnexeFilter;
+    private assertPeriodeOuverte;
     findAllOperations(user: CurrentUserType, params?: {
         annexeId?: string;
         clientId?: string;

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DepensesService = void 0;
 const common_1 = require("@nestjs/common");
+const journal_posting_1 = require("../comptabilite/journal-posting");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const annexe_filter_utils_1 = require("../../common/annexe-filter.utils");
 const pagination_utils_1 = require("../../common/pagination.utils");
@@ -144,7 +145,7 @@ let DepensesService = class DepensesService {
             if (claimed.count === 0) {
                 throw new common_1.BadRequestException('Cette dépense vient d’être payée par ailleurs.');
             }
-            await tx.transactionCaisse.create({
+            const transaction = await tx.transactionCaisse.create({
                 data: {
                     caisseId: data.caisseId,
                     type: 'SORTIE',
@@ -153,6 +154,17 @@ let DepensesService = class DepensesService {
                     depenseId: depense.id,
                     effectueParId: user.id,
                 },
+            });
+            await (0, journal_posting_1.posterEcriture)(tx, {
+                origineType: journal_posting_1.ORIGINE.DEPENSE_PAYEE,
+                origineId: transaction?.id ?? depense.id,
+                annexeId: depense.annexeId,
+                date: new Date(),
+                type: 'Sortie',
+                montant: depense.montant,
+                nature: `Dépense ${depense.numero}${depense.description ? ` — ${depense.description}` : ''}`,
+                dossierId: depense.dossierId,
+                clientNom: depense.fournisseur?.nom ?? null,
             });
             const updatedCaisse = await tx.caisse.update({
                 where: { id: data.caisseId },

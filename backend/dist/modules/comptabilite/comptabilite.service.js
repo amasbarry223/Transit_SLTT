@@ -23,6 +23,18 @@ let ComptabiliteService = class ComptabiliteService {
             return {};
         return { OR: [{ annexeId: null }, { annexeId: { in: user.annexeIds } }] };
     }
+    async assertPeriodeOuverte(annexeId, date) {
+        if (!annexeId)
+            return;
+        const cloture = await this.prisma.clotureCaisse.findFirst({
+            where: { annexeId, periodeFin: { gte: date } },
+            select: { periodeFin: true },
+            orderBy: { periodeFin: 'desc' },
+        });
+        if (cloture) {
+            throw new common_1.ConflictException(`La période est clôturée jusqu'au ${cloture.periodeFin} : aucune opération ne peut être ajoutée ou supprimée à cette date.`);
+        }
+    }
     async findAllOperations(user, params) {
         if (params?.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(params.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette annexe');
@@ -71,6 +83,8 @@ let ComptabiliteService = class ComptabiliteService {
         if (data.type !== 'Entrée' && data.type !== 'Sortie') {
             throw new common_1.BadRequestException("Le type doit être « Entrée » ou « Sortie ».");
         }
+        const date = data.date || new Date().toISOString().slice(0, 10);
+        await this.assertPeriodeOuverte(data.annexeId, date);
         const reference = data.reference &&
             !(await this.prisma.operationComptable.findUnique({
                 where: { reference: data.reference },
@@ -81,7 +95,7 @@ let ComptabiliteService = class ComptabiliteService {
         const buildData = (ref) => ({
             reference: ref,
             annexeId: data.annexeId || null,
-            date: data.date || new Date().toISOString().slice(0, 10),
+            date,
             clientId: data.clientId || null,
             dossierId: data.dossierId || null,
             clientNom: data.clientNom || null,
@@ -117,6 +131,11 @@ let ComptabiliteService = class ComptabiliteService {
         if (existing.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(existing.annexeId)) {
             throw new common_1.ForbiddenException('Accès non autorisé à cette opération');
         }
+        const auto = typeof existing.source === 'string' && existing.source.startsWith('auto_');
+        if (auto && !(existing.source === 'auto_dossier' && !existing.dossierId)) {
+            throw new common_1.ConflictException("Cette écriture est générée automatiquement : modifiez le règlement, la dépense ou la facture à l'origine.");
+        }
+        await this.assertPeriodeOuverte(existing.annexeId, existing.date);
         await this.prisma.operationComptable.delete({ where: { id } });
         return { id };
     }
@@ -142,9 +161,10 @@ let ComptabiliteService = class ComptabiliteService {
         if (data.annexeId && user.role !== 'ADMIN' && !user.annexeIds.includes(data.annexeId)) {
             throw new common_1.ForbiddenException('Vous ne pouvez pas créer de clôture pour cette annexe');
         }
-        const soldeTheorique = Number(data.soldeTheorique) || 0;
-        const soldeConstate = Number(data.soldeConstate) || 0;
-        const ecart = Math.round((soldeConstate - soldeTheorique) * 100) / 100;
+        const soldeConstate = Number(data.soldeConstate);
+        if (!Number.isFinite(soldeConstate)) {
+            throw new common_1.BadRequestException('Le solde constaté est obligatoire.');
+        }
         if (!data.periodeDebut || !data.periodeFin) {
             throw new common_1.BadRequestException('La période de clôture (début et fin) est obligatoire.');
         }
@@ -152,21 +172,36 @@ let ComptabiliteService = class ComptabiliteService {
         if (iso.test(data.periodeDebut) && iso.test(data.periodeFin) && data.periodeDebut > data.periodeFin) {
             throw new common_1.BadRequestException('La date de début de période est postérieure à la date de fin.');
         }
+        const annexeId = data.annexeId || null;
         const dejaCloturee = await this.prisma.clotureCaisse.findFirst({
             where: {
-                annexeId: data.annexeId || null,
-                periodeDebut: data.periodeDebut,
-                periodeFin: data.periodeFin,
+                annexeId,
+                periodeDebut: { lte: data.periodeFin },
+                periodeFin: { gte: data.periodeDebut },
             },
             select: { id: true },
         });
         if (dejaCloturee) {
-            throw new common_1.ConflictException('Cette période a déjà été clôturée pour cette annexe.');
+            throw new common_1.ConflictException('Cette période a déjà été clôturée (ou chevauche une clôture existante) pour cette annexe.');
         }
+        const precedente = await this.prisma.clotureCaisse.findFirst({
+            where: { annexeId, periodeFin: { lt: data.periodeDebut } },
+            orderBy: { periodeFin: 'desc' },
+            select: { soldeConstate: true },
+        });
+        const soldeOuverture = precedente?.soldeConstate ?? 0;
+        const groupes = await this.prisma.operationComptable.groupBy({
+            by: ['type'],
+            where: { annexeId, date: { gte: data.periodeDebut, lte: data.periodeFin } },
+            _sum: { montant: true },
+        });
+        const somme = (type) => groupes.find((g) => g.type === type)?._sum?.montant ?? 0;
+        const soldeTheorique = Math.round((soldeOuverture + somme('Entrée') - somme('Sortie')) * 100) / 100;
+        const ecart = Math.round((soldeConstate - soldeTheorique) * 100) / 100;
         try {
             return await this.prisma.clotureCaisse.create({
                 data: {
-                    annexeId: data.annexeId || null,
+                    annexeId,
                     periodeDebut: data.periodeDebut,
                     periodeFin: data.periodeFin,
                     soldeTheorique,
@@ -181,7 +216,7 @@ let ComptabiliteService = class ComptabiliteService {
         }
         catch (err) {
             if (err instanceof client_1.Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-                throw new common_1.ConflictException('Cette période a déjà été clôturée pour cette annexe.');
+                throw new common_1.ConflictException('Cette période a déjà été clôturée (ou chevauche une clôture existante) pour cette annexe.');
             }
             throw err;
         }
